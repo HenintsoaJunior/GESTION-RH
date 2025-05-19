@@ -1,0 +1,28 @@
+1. Suivi du Recrutement
+    Fonctionnalités à développer (ChatGPT) : 
+    🔍 Recherche multicritère de candidatures (poste, statut, date, mot-clé).
+    📄 Création et édition de fiches de poste avec historique des modifications.
+    📈 Pipeline visuel de candidatures par étape (postulé, sélectionné, entretien, etc.).
+    🧷 Pièces jointes pour CV, lettre de motivation, fiche d’évaluation.
+    📤 Export Excel/PDF des candidats pour partage avec les managers.
+    🛂 Historique des décisions de recrutement par candidat (commentaires, validations).
+    🛎️ Notifications automatiques (nouvelle candidature, statut modifié).
+    
+    Module : Suivi du recrutement
+        Principales
+        Gestion des fiches de poste : Création, modification, et archivage des fiches (champs : intitulé, description, compétences, localisation, type de contrat).
+        Raison : Central pour structurer le recrutement.
+        Pipeline des candidatures : Visualisation des candidats par étape (réception, entretien, offre, rejet) avec possibilité de drag-and-drop pour changer les statuts.
+        Raison : Répond au besoin de suivi structuré.
+        Filtres multicritères : Recherche par poste, statut, date de candidature, compétences.
+        Raison : Facilite l’accès rapide aux données.
+        Export des données : Exportation des candidatures en CSV/Excel (champs : nom, poste, statut, date).
+        Raison : Compatible avec les outils existants (Excel).
+        
+        Interessantes
+        Scoring des candidats : Attribution automatique d’un score basé sur des critères (expérience, compétences, formation) pour faciliter le tri.
+        Intérêt : Améliore l’efficacité du filtrage. Complexité : Modérée (nécessite un algorithme simple).
+        Notifications automatiques : Envoi d’e-mails aux candidats pour confirmer réception ou suivi (ex. invitation à un entretien).
+        Intérêt : Professionnalise la communication. Complexité : Moyenne (intégration d’un service SMTP).
+        Intégration de CV parsing : Extraction automatique des données (nom, expérience, compétences) depuis un CV PDF.
+        Intérêt : Réduit la saisie manuelle. Complexité : Élevée (nécessite une librairie comme pdf2json ou une API externe).
