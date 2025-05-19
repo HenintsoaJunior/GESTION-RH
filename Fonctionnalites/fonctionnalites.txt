@@ -1,5 +1,5 @@
 1. Suivi du Recrutement
-    Fonctionnalités à développer :
+    Fonctionnalités à développer (ChatGPT) : 
     🔍 Recherche multicritère de candidatures (poste, statut, date, mot-clé).
     📄 Création et édition de fiches de poste avec historique des modifications.
     📈 Pipeline visuel de candidatures par étape (postulé, sélectionné, entretien, etc.).
