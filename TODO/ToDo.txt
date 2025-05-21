@@ -3,9 +3,10 @@ Module 1: Suivi du recrutement
         Liste des offres de poste
             Liste   
             Recherche multi-criteres
-        Insertion Candidature
+        Insertion Candidature 
             Formulaire
-                nom, prenom, date de naissance, adresse, cv, lm
+                nom, prenom, date de naissance, adresse
+                cv, lm (pdf)
             Traitement du CV
                 analyse automatique du CV
                     extraction des donnees du CV
