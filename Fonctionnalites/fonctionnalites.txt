@@ -10,6 +10,7 @@
         🛎️ Notifications automatiques (nouvelle candidature, statut modifié).
     
         Principales
+        
             Gestion des fiches de poste : Création, modification, et archivage des fiches (champs : intitulé, description, compétences, localisation, type de contrat).
                 Raison : Central pour structurer le recrutement.
             Pipeline des candidatures : Visualisation des candidats par étape (réception, entretien, offre, rejet) avec possibilité de drag-and-drop pour changer les statuts.
@@ -103,3 +104,20 @@
                 Intérêt : Améliore l’expérience utilisateur. Complexité : Faible (librairie comme PDF.js).
             Tag personnalisé : Ajout de tags libres (ex. « urgent », « confidentiel ») pour organiser les documents.
                 Intérêt : Flexibilité dans la recherche. Complexité : Faible (champ supplémentaire en BDD).
+=======
+        Gestion des fiches de poste : Création, modification, et archivage des fiches (champs : intitulé, description, compétences, localisation, type de contrat).
+            Raison : Central pour structurer le recrutement.
+        Pipeline des candidatures : Visualisation des candidats par étape (réception, entretien, offre, rejet) avec possibilité de drag-and-drop pour changer les statuts.
+            Raison : Répond au besoin de suivi structuré.
+        Filtres multicritères : Recherche par poste, statut, date de candidature, compétences.
+            Raison : Facilite l’accès rapide aux données.
+        Export des données : Exportation des candidatures en CSV/Excel (champs : nom, poste, statut, date).
+            Raison : Compatible avec les outils existants (Excel).
+        
+        Interessantes
+        Scoring des candidats : Attribution automatique d’un score basé sur des critères (expérience, compétences, formation) pour faciliter le tri.
+            Intérêt : Améliore l’efficacité du filtrage. Complexité : Modérée (nécessite un algorithme simple).
+        Notifications automatiques : Envoi d’e-mails aux candidats pour confirmer réception ou suivi (ex. invitation à un entretien).
+            Intérêt : Professionnalise la communication. Complexité : Moyenne (intégration d’un service SMTP).
+        Intégration de CV parsing : Extraction automatique des données (nom, expérience, compétences) depuis un CV PDF.
+            Intérêt : Réduit la saisie manuelle. Complexité : Élevée (nécessite une librairie comme pdf2json ou une API externe).
