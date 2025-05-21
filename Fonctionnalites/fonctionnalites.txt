@@ -1,15 +1,110 @@
-1. Suivi du Recrutement
-    Fonctionnalités à développer (ChatGPT) : 
-    🔍 Recherche multicritère de candidatures (poste, statut, date, mot-clé).
-    📄 Création et édition de fiches de poste avec historique des modifications.
-    📈 Pipeline visuel de candidatures par étape (postulé, sélectionné, entretien, etc.).
-    🧷 Pièces jointes pour CV, lettre de motivation, fiche d’évaluation.
-    📤 Export Excel/PDF des candidats pour partage avec les managers.
-    🛂 Historique des décisions de recrutement par candidat (commentaires, validations).
-    🛎️ Notifications automatiques (nouvelle candidature, statut modifié).
+1. Suivi du Recrutement 
+=> Fiches de poste, pipeline des candidatures, statut par étape, filtres multicritères, export
+    Fonctionnalités à développer :
+        🔍 Recherche multicritère de candidatures (poste, statut, date, mot-clé).
+        📄 Création et édition de fiches de poste avec historique des modifications.
+        📈 Pipeline visuel de candidatures par étape (postulé, sélectionné, entretien, etc.).
+        🧷 Pièces jointes pour CV, lettre de motivation, fiche d’évaluation.
+        📤 Export Excel/PDF des candidats pour partage avec les managers.
+        🛂 Historique des décisions de recrutement par candidat (commentaires, validations).
+        🛎️ Notifications automatiques (nouvelle candidature, statut modifié).
     
-    Module : Suivi du recrutement
         Principales
+        
+            Gestion des fiches de poste : Création, modification, et archivage des fiches (champs : intitulé, description, compétences, localisation, type de contrat).
+                Raison : Central pour structurer le recrutement.
+            Pipeline des candidatures : Visualisation des candidats par étape (réception, entretien, offre, rejet) avec possibilité de drag-and-drop pour changer les statuts.
+                Raison : Répond au besoin de suivi structuré.
+            Filtres multicritères : Recherche par poste, statut, date de candidature, compétences.
+                Raison : Facilite l’accès rapide aux données.
+            Export des données : Exportation des candidatures en CSV/Excel (champs : nom, poste, statut, date).
+                Raison : Compatible avec les outils existants (Excel).
+            
+        Interessantes
+            Scoring des candidats : Attribution automatique d’un score basé sur des critères (expérience, compétences, formation) pour faciliter le tri.
+                Intérêt : Améliore l’efficacité du filtrage. Complexité : Modérée (nécessite un algorithme simple).
+            Notifications automatiques : Envoi d’e-mails aux candidats pour confirmer réception ou suivi (ex. invitation à un entretien).
+                Intérêt : Professionnalise la communication. Complexité : Moyenne (intégration d’un service SMTP).
+            Intégration de CV parsing : Extraction automatique des données (nom, expérience, compétences) depuis un CV PDF.
+                Intérêt : Réduit la saisie manuelle. Complexité : Élevée (nécessite une librairie comme pdf2json ou une API externe).
+
+
+2. Gestion administrative RH 
+=> Génération / téléversement des offres, contrats, lettres d’affectation ou de départ
+    Fonctionnalités à développer :
+        📄 Modèles de contrats/lettres personnalisables avec variables (nom, poste, date…).
+        🖋️ Génération automatique de contrats ou lettres via formulaire.
+        📤 Téléversement et versionnage des documents (contrats signés, avenants…).
+        📬 Historique de remise (qui a généré ou envoyé tel document, à quelle date).
+        📑 Archivage automatique dans la GED selon type et salarié.
+        ⏳ Suivi des échéances : fin de contrat, période d’essai, renouvellement.
+    
+        Principales
+            Génération de documents : Modèles prédéfinis pour contrats, lettres d’affectation, ou offres salariales, avec champs personnalisables (nom, poste, salaire).
+                Raison : Automatise la gestion documentaire.
+            Téléversement de documents : Importation de fichiers (PDF, Word) associés à un salarié ou un processus (ex. contrat signé).
+                Raison : Réduit la gestion manuelle.
+            Historique des modifications : Journalisation des actions (ex. qui a généré/téléversé un document, quand).
+                Raison : Assure la traçabilité.
+
+        Interessantes
+            Signature électronique : Intégration d’un outil (ex. DocuSign ou API open-source) pour signer contrats ou lettres directement dans l’application.
+                Intérêt : Accélère les processus administratifs. Complexité : Élevée (intégration d’API, coûts éventuels).
+            Workflow d’approbation : Circuit de validation pour certains documents (ex. offre salariale validée par RH puis direction).
+                Intérêt : Renforce la conformité. Complexité : Modérée (gestion d’états dans la BDD).
+
+3. Sanctions RH	
+=> Saisie, catégorisation (avertissement, blâme…), pièce jointe, traçabilité
+    Fonctionnalités à développer :
+        ➕ Ajout de sanctions avec catégorie, date, motif, commentaire libre.
+        📎 Téléversement des pièces justificatives (rapport, lettre de blâme...).
+        🔐 Accès restreint selon le rôle utilisateur.
+        📚 Historique disciplinaire par salarié.
+        🧾 Journalisation des actions (qui a ajouté/modifié une sanction).
+        🧮 Statistiques internes : sanctions par département/type/période.
+
+        Principales
+            Saisie des sanctions : Formulaire pour enregistrer une sanction (champs : type [avertissement, blâme], salarié, date, motif).
+                Raison : Répond au besoin de classification.
+            Ajout de pièces jointes : Téléversement de documents liés (ex. courrier de sanction).
+                Raison : Nécessaire pour l’archivage.
+            Accès sécurisé : Restriction d’accès aux sanctions (RH uniquement, sauf consultation pour audit).
+                Raison : Garantit la confidentialité.
+
+        Interessantes
+            Statistiques des sanctions : Tableau de bord spécifique avec répartition par type (avertissement, blâme) ou par département.
+                Intérêt : Aide à identifier des tendances (ex. problèmes récurrents). Complexité : Faible (calculs simples, visualisation).
+            Rappels automatiques : Notification RH pour suivi des sanctions (ex. fin de période probatoire).
+                Intérêt : Améliore la gestion proactive. Complexité : Modérée (système de tâches planifiées).
+
+4. GED RH (Gestion Électronique de Documents)
+=> Upload, classement par salarié, recherche multicritère (type, nom, matricule, date), droits d’accès
+    Fonctionnalités à développer :
+        📁 Arborescence structurée par salarié + type de document.
+        🔍 Recherche avancée (type, matricule, période, nom du fichier...).
+        📂 Dépôt multiple (drag & drop) avec reconnaissance automatique de documents.
+        🔑 Droits d’accès fins (lecture/écriture par type de document et rôle).
+        📝 Historique d'accès et modifications (traçabilité).
+        📤 Export des documents en ZIP ou PDF par salarié/dossier.
+        
+        Principales
+            Téléversement et classement : Importation de documents (PDF, Word) avec métadonnées (type, salarié, matricule, date).
+                Raison : Centralise les documents sensibles.
+            Recherche multicritère : Recherche par nom, matricule, type de document, ou date.
+                Raison : Répond au besoin d’accès rapide.
+            Gestion des droits d’accès : Permissions par rôle (ex. RH : lecture/écriture, Manager : lecture pour son équipe).
+                Raison : Assure la sécurité et la confidentialité.
+            Chiffrement des documents : Stockage chiffré des fichiers sensibles (ex. contrats, sanctions).
+                Raison : Conforme aux exigences de sécurité.
+        
+        Interessantes
+            Versioning des documents : Conservation des versions précédentes d’un document modifié (ex. contrat mis à jour).
+                Intérêt : Évite la perte d’historique. Complexité : Modérée (stockage des versions en BDD).
+            Aperçu des documents : Visualisation des PDF directement dans l’interface sans téléchargement.
+                Intérêt : Améliore l’expérience utilisateur. Complexité : Faible (librairie comme PDF.js).
+            Tag personnalisé : Ajout de tags libres (ex. « urgent », « confidentiel ») pour organiser les documents.
+                Intérêt : Flexibilité dans la recherche. Complexité : Faible (champ supplémentaire en BDD).
+=======
         Gestion des fiches de poste : Création, modification, et archivage des fiches (champs : intitulé, description, compétences, localisation, type de contrat).
             Raison : Central pour structurer le recrutement.
         Pipeline des candidatures : Visualisation des candidats par étape (réception, entretien, offre, rejet) avec possibilité de drag-and-drop pour changer les statuts.
