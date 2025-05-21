@@ -62,4 +62,4 @@ Module 3: Sanctions RH
             restriction d’accès aux sanctions (RH uniquement, sauf consultation pour audit)
 
 Module 4: GED RH (Gestion Électronique de Documents)
-    
+    modif
