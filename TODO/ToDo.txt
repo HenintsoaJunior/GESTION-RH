@@ -51,7 +51,7 @@ Module 2: Gestion administrative RH
 Module 3: Sanctions RH
     Backoffice
         Saisie des sanctions
-            formulaire pour enregistrer une sanction (champs : type [avertissement, blâme], salarié, date, motif)
+            formulaire pour enregistrer une sanction (champs : type de sanction [avertissement, blâme], salarié, date d'incident, date de notification, motif)
         Ajout de pièces jointes 
             téléversement de documents liés (rapport, lettre de blâme...)
         Tableau de bord spécifique avec répartition par type (avertissement, blâme) ou par département ou par période
@@ -62,4 +62,40 @@ Module 3: Sanctions RH
             restriction d’accès aux sanctions (RH uniquement, sauf consultation pour audit)
 
 Module 4: GED RH (Gestion Électronique de Documents)
-    modif
+    Backoffice
+        Upload
+            Dépôt (multiple ou pas) avec reconnaissance automatique de documents
+                matricule, nom salarié
+        Classement par salarié 
+            Arborescence structurée par salarié + type de document ( et sous document)
+        Recherche multicritère 
+            type (contrat, cv, lm, bulletin de paie, demande de congé, ...)
+            nom 
+            matricule
+            date
+        Droits d’accès
+            permissions par rôle (ex. RH : lecture/écriture, Manager : lecture pour son équipe).
+            historique d'accès et modifications (traçabilité).
+
+Module 5: KPI Tableau de bord RH
+    filtre multicritères
+        date
+        mois
+    Graphiques
+            Taux de turnover : (Nombre de départs / Effectif moyen) × 100.
+            Pyramide des âges : Répartition des salariés par tranche d’âge.
+            Taux d’absentéisme : (Jours d’absence / Jours travaillés) × 100.
+            Répartition par genre : Pourcentage hommes/femmes.
+            Répartition par type de contrat : CDI, CDD, intérim. Raison : Répond au besoin de reporting stratégique.
+    Clique sur graphique ou total
+        details
+    Alertes
+        sur les budgets 
+
+Import/Export CSV des donnees
+Authentification par rôle + permissions fines.
+Journalisation : toutes les actions importantes sont tracées.
+Interface responsive multilingue (FR au minimum).
+Historique des modifications pour tout élément (fiche de poste, contrat...).
+Dashboard personnalisé selon le rôle : RH, Manager, Direction.
+Jeu de données anonymisé pour test/démo.
