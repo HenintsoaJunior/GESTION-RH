@@ -61,6 +61,11 @@ Module 3: Sanctions RH
         Ajout de pièces jointes 
             téléversement de documents liés (rapport, lettre de blâme...)
             aperçu possible dans l’interface (PDF/image)
+        Catégorisation
+            Chaque sanction est classée automatiquement selon son type
+            Exemples :
+                        Mineure : avertissement, rappel à l’ordre
+                        Majeure : blâme, mise à pied, licenciement
         Tableau de bord spécifique avec répartition par type (avertissement, blâme) ou par département ou par période
         Liste des sanctions
             recherche par sanction, salarié, dates
