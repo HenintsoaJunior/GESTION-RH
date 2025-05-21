@@ -33,19 +33,25 @@ Module 1: Suivi du recrutement
                     CV, LM, donnees
                     modif statut + commentaire   
             export
+                Liste des candidatures par poste
+                Statistiques (nombre de candidatures, conversion par étape, durée moyenne par étape…)
 
 Module 2: Gestion administrative RH
     Backoffice
-        Liste des modeles de documents (offres, contrats, affectation, departs)
-        Generer un document
+        Liste des modèles prédéfinis pour offres, contrats, lettres d’affectation, ou offres salariales, départs avec champs personnalisables (nom, poste, salaire).
+            possibilte de mis à jour
+        Generer un document (Word/PDF)
             formulaire 
                 choix modele
                 nom
                 poste
                 date
+            => download ou autre
         Liste des documents téleversés
         Televerser un document
                 importation de fichiers (PDF, Word) associés à un salarié ou un processus (ex. contrat signé)
+                lien avec un profil employé
+        Association de documents au profil d’un employé
         Historique de remise (qui a généré ou envoyé tel document, à quelle date, qui a généré/téléversé un document, quand)
 
 Module 3: Sanctions RH
@@ -54,10 +60,15 @@ Module 3: Sanctions RH
             formulaire pour enregistrer une sanction (champs : type de sanction [avertissement, blâme], salarié, date d'incident, date de notification, motif)
         Ajout de pièces jointes 
             téléversement de documents liés (rapport, lettre de blâme...)
+            aperçu possible dans l’interface (PDF/image)
         Tableau de bord spécifique avec répartition par type (avertissement, blâme) ou par département ou par période
         Liste des sanctions
+            recherche par sanction, salarié, dates
             clique sur un salarié
                 details de la sanction
+        Traçabilité 
+            historique complet des sanctions par employé
+            journal des actions (qui a saisi/modifié la sanction et quand)
         Accès sécurisé
             restriction d’accès aux sanctions (RH uniquement, sauf consultation pour audit)
 
@@ -66,21 +77,35 @@ Module 4: GED RH (Gestion Électronique de Documents)
         Upload
             Dépôt (multiple ou pas) avec reconnaissance automatique de documents
                 matricule, nom salarié
+            Téléversement manuel de fichiers (PDF, Word, images)
+                Champs obligatoires à remplir à l’upload :
+                Nom du fichier
+                Type de document (contrat, bulletin de paie, diplôme, attestation, etc.)
+                Salarié concerné
+                Date du document (date d’émission ou de signature)
+                Commentaire / description (facultatif)
         Classement par salarié 
             Arborescence structurée par salarié + type de document ( et sous document)
+            Les documents sont rattachés à la fiche de l’employé
+            Dans le profil d’un salarié :
+                Vue tabulaire ou arborescente de ses documents classés par type et date
+                Accès rapide au téléchargement ou à l’aperçu
         Recherche multicritère 
             type (contrat, cv, lm, bulletin de paie, demande de congé, ...)
             nom 
             matricule
             date
+            mot-clé
         Droits d’accès
             permissions par rôle (ex. RH : lecture/écriture, Manager : lecture pour son équipe).
             historique d'accès et modifications (traçabilité).
 
 Module 5: KPI Tableau de bord RH
     filtre multicritères
-        date
+        departement
+        annee
         mois
+        type de contrat
     Graphiques
             Taux de turnover : (Nombre de départs / Effectif moyen) × 100.
             Pyramide des âges : Répartition des salariés par tranche d’âge.
@@ -89,8 +114,10 @@ Module 5: KPI Tableau de bord RH
             Répartition par type de contrat : CDI, CDD, intérim. Raison : Répond au besoin de reporting stratégique.
     Clique sur graphique ou total
         details
-    Alertes
+    Alertes ou indicateurs critiques
         sur les budgets 
+        taux d’absentéisme > seuil, etc.
+    Export des graphiques en PDF/Excel
 
 Import/Export CSV des donnees
 Authentification par rôle + permissions fines.
