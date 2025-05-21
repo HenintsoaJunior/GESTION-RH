@@ -1,0 +1,65 @@
+Module 1: Suivi du recrutement
+    Frontoffice
+        Liste des offres de poste
+            Liste   
+            Recherche multi-criteres
+        Insertion Candidature
+            Formulaire
+                nom, prenom, date de naissance, adresse, cv, lm
+            Traitement du CV
+                analyse automatique du CV
+                    extraction des donnees du CV
+                    score en fonction: adresse, diplomes, langues, experiences, date de depot
+    Backoffice
+        Fiches de poste
+            Dashboard: total des fiches de poste, postes ouverts, candidatures recues
+            Liste des postes
+                clique sur un poste => details (titre, département, type, lieu, etc)
+            filtres
+                statut: ouvert, en cours, validé, fermé
+                departement
+        Liste des candidatures
+            order by date, score
+            pipeline des candidatures
+            statut par étape
+                recu, en cours, entretien, accepte, rejete
+            filtres multicritères
+                poste (liste deroulante)
+                statut
+                date => du ... au
+                mot cle
+            clique sur un candidat  
+                details du candidat 
+                    CV, LM, donnees
+                    modif statut + commentaire   
+            export
+
+Module 2: Gestion administrative RH
+    Backoffice
+        Liste des modeles de documents (offres, contrats, affectation, departs)
+        Generer un document
+            formulaire 
+                choix modele
+                nom
+                poste
+                date
+        Liste des documents téleversés
+        Televerser un document
+                importation de fichiers (PDF, Word) associés à un salarié ou un processus (ex. contrat signé)
+        Historique de remise (qui a généré ou envoyé tel document, à quelle date, qui a généré/téléversé un document, quand)
+
+Module 3: Sanctions RH
+    Backoffice
+        Saisie des sanctions
+            formulaire pour enregistrer une sanction (champs : type [avertissement, blâme], salarié, date, motif)
+        Ajout de pièces jointes 
+            téléversement de documents liés (rapport, lettre de blâme...)
+        Tableau de bord spécifique avec répartition par type (avertissement, blâme) ou par département ou par période
+        Liste des sanctions
+            clique sur un salarié
+                details de la sanction
+        Accès sécurisé
+            restriction d’accès aux sanctions (RH uniquement, sauf consultation pour audit)
+
+Module 4: GED RH (Gestion Électronique de Documents)
+    modif
