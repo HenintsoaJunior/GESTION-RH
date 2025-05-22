@@ -317,10 +317,79 @@ Fournir à la direction RH et aux managers une vision synthétique, visuelle et 
                 Support décisionnel pour la direction RH
 
 --------------------------------------------------------------------------------------------------------------------------------
-Import/Export CSV des donnees
-Authentification par rôle + permissions fines.
-Journalisation : toutes les actions importantes sont tracées.
-Interface responsive multilingue (FR au minimum).
-Historique des modifications pour tout élément (fiche de poste, contrat...).
-Dashboard personnalisé selon le rôle : RH, Manager, Direction.
-Jeu de données anonymisé pour test/démo.
+Fonctionnalités transversales – exigences générales de l’application
+        1. Import / Export CSV des données
+                Import CSV
+                    Import de données RH structurées depuis un fichier CSV :
+                        Candidatures, salariés, sanctions, contrats, etc.
+                    Détection automatique des colonnes connues
+                    Aperçu des données avant import
+                    Gestion des erreurs ligne par ligne (validation, types, champs obligatoires)
+                Export CSV
+                    Export de toutes les listes (offres, candidatures, sanctions, documents, etc.)
+                    Format CSV ou Excel
+                    Filtres appliqués reflétés dans l’export
+        2. Authentification par rôle + permissions fines
+                Rôles principaux :
+                    RH : accès complet à tous les modules et actions
+                    Manager : accès uniquement aux données de son équipe
+                    Direction / Audit : consultation uniquement (lecture, sans modification)
+                Permissions fines (ACL – Access Control List)
+                    Gestion des droits par module, par action et par utilisateur
+                    Exemple :
+                        Un manager peut consulter des documents, mais ne pas les modifier
+                        Un RH peut voir les salaires, un auditeur non
+                Authentification :
+                    Via formulaire sécurisé
+                    Gestion de session avec expiration
+                    Possibilité future d'intégration LDAP/SSO
+        3. Journalisation des actions
+                Tracé des événements critiques :
+                    Connexions / déconnexions
+                    Ajout, modification, suppression de :
+                    Sanctions, contrats, documents, candidatures, utilisateurs
+                    Téléversement et téléchargement de fichiers
+                    Changements de statut (fiche de poste, candidature...)
+                Exploitation :
+                    Journal des logs horodaté avec utilisateur, action, cible
+                    Accès restreint aux logs (RH uniquement)
+        4. Interface responsive et multilingue
+                Responsive :
+                    Compatible desktop, tablette, mobile
+                    Interface fluide avec menus adaptatifs
+                Multilingue :
+                    Langue française obligatoire
+                    Architecture i18n prévue pour ajout d’autres langues (ex : anglais)
+                    Langue stockée dans les préférences utilisateur
+        5. Historique des modifications (audit trail)
+                Traçabilité :
+                    Chaque modification sur un élément critique est enregistrée :
+                        Qui a modifié
+                        Quand
+                        Avant / après
+                    Éléments couverts :
+                        Fiche de poste
+                        Candidature
+                        Document RH
+                        Sanction
+                        Profil salarié
+                Consultation :
+                    Vue de l’historique dans les fiches concernées
+                    Restauration d’une version précédente possible (optionnelle)
+        6. Dashboard personnalisé selon rôle
+                Contenu dynamique :
+                    RH : accès à tous les KPI globaux + alertes critiques
+                    Manager : KPI liés uniquement à son équipe
+                    Direction : visualisation macro (graphes consolidés)
+                Modules visibles :
+                    L’affichage et les widgets du dashboard changent selon le rôle
+                    Navigation simplifiée : seuls les modules accessibles sont visibles
+        7. Jeu de données anonymisé (démonstration / test)
+                Objectif :
+                    Permettre une démonstration ou des tests sans données sensibles
+                Caractéristiques :
+                    Génération de données fictives réalistes :
+                        Faux noms, matricules, dates, salaires, documents
+                    Jeu de données disponible à l'installation (ex : option de « démo »)
+                    Export/import de données de test
+
