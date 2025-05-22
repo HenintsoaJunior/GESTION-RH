@@ -1,130 +1,322 @@
 Module 1: Suivi du recrutement
+Objectif :
+Permettre une gestion complète et structurée des recrutements, incluant le dépôt de candidatures par les candidats (frontoffice) et le traitement interne par les RH (backoffice).
     Frontoffice
-        Liste des offres de poste
-            Liste   
-            Recherche multi-criteres
-        Insertion Candidature 
-            Formulaire
-                nom, prenom, date de naissance, adresse
-                cv, lm (pdf)
-            Traitement du CV
-                analyse automatique du CV
-                    extraction des donnees du CV
-                    score en fonction: adresse, diplomes, langues, experiences, date de depot
-    Backoffice
-        Fiches de poste
-            Dashboard: total des fiches de poste, postes ouverts, candidatures recues
-            Liste des postes
-                clique sur un poste => details (titre, département, type, lieu, etc)
-            filtres
-                statut: ouvert, en cours, validé, fermé
-                departement
-        Liste des candidatures
-            order by date, score
-            pipeline des candidatures
-            statut par étape
-                recu, en cours, entretien, accepte, rejete
-            filtres multicritères
-                poste (liste deroulante)
-                statut
-                date => du ... au
-                mot cle
-            clique sur un candidat  
-                details du candidat 
-                    CV, LM, donnees
-                    modif statut + commentaire   
-            export
-                Liste des candidatures par poste
-                Statistiques (nombre de candidatures, conversion par étape, durée moyenne par étape…)
+        1. Liste des offres de poste
+                Affichage de toutes les offres publiées (issues des fiches de poste validées).
+                Affichage des informations clés : titre, type de contrat, département, localisation, date limite.
+                    Recherche multicritère :
+                        Mot-clé
+                        Lieu
+                        Type de contrat
+                        Département
+        2. Insertion d’une candidature
+                Formulaire de dépôt :
+                    Nom, prénom
+                    Date de naissance
+                    Adresse
+                    CV et lettre de motivation (fichiers PDF)
+                Traitement automatique du CV (optionnel mais innovant) :
+                    Parsing CV : extraction automatique d’informations (compétences, expériences, diplômes, langues…)
+                    Attribution d’un score basé sur :
+                        Adéquation du profil avec le poste (diplômes, expériences, langues)
+                        Proximité géographique
+                        Ancienneté de la candidature (date de dépôt)
+                Option de recevoir un accusé de réception automatique.
 
+    Backoffice
+       3. Fiches de poste
+                Dashboard de synthèse :
+                    Total des fiches de poste
+                    Nombre de postes ouverts / en cours / fermés
+                    Nombre de candidatures par poste
+                Liste des fiches de poste avec colonnes : titre, département, type, date de création, statut
+                Détail d’un poste :
+                    Description du poste
+                    Département, responsable, lieu
+                    Statut (ouvert, en cours, validé, fermé)
+                    Lien avec les candidatures reçues
+                Filtres :
+                    Par statut
+                    Par département
+                    Par date de création
+        4. Gestion des candidatures
+                Pipeline de suivi visuel des candidatures par étape :
+                    Reçu → En cours → Entretien → Accepté → Rejeté
+                Liste des candidatures :
+                    Triable par date de dépôt, score automatique
+                    Filtres :
+                        Poste
+                        Statut
+                        Date (intervalle)
+                        Mots-clés
+                Détail d’une candidature :
+                    Affichage du CV et de la lettre de motivation
+                    Données personnelles extraites (nom, expérience, etc.)
+                    Possibilité de :
+                        Modifier le statut
+                        Ajouter un commentaire RH
+                        Affecter à un recruteur
+                Export :
+                    Liste des candidatures par fiche de poste
+                    Statistiques :
+                        Nombre total de candidatures
+                        Conversion par étape (% passés à l’étape suivante)
+                        Durée moyenne par étape
+        Sécurité et confidentialité
+                Seuls les utilisateurs RH ou managers autorisés peuvent accéder aux candidatures.
+                Données personnelles des candidats traitées selon les règles RGPD.
+                Journalisation de toutes les actions (ajout, modification de statut, suppression).
+        Indicateurs RH associés (liés au tableau de bord global)
+                Nombre de candidatures par mois
+                Temps moyen de traitement d’une candidature
+                Taux de conversion par étape
+                Répartition des candidatures par type de poste, région, source
+
+--------------------------------------------------------------------------------------------------------------------------------
 Module 2: Gestion administrative RH
+Objectif :
+Permettre la génération, le téléversement, le classement et la traçabilité des documents RH liés aux employés : offres d’embauche, contrats, lettres d’affectation ou de départ.
     Backoffice
-        Liste des modèles prédéfinis pour offres, contrats, lettres d’affectation, ou offres salariales, départs avec champs personnalisables (nom, poste, salaire).
-            possibilte de mis à jour
-        Generer un document (Word/PDF)
-            formulaire 
-                choix modele
-                nom
-                poste
-                date
-            => download ou autre
-        Liste des documents téleversés
-        Televerser un document
-                importation de fichiers (PDF, Word) associés à un salarié ou un processus (ex. contrat signé)
-                lien avec un profil employé
-        Association de documents au profil d’un employé
-        Historique de remise (qui a généré ou envoyé tel document, à quelle date, qui a généré/téléversé un document, quand)
+        1. Gestion des modèles de documents
+                Liste des modèles disponibles (offres, contrats, lettres de départ/affectation…).
+                Chaque modèle comprend des champs personnalisables : nom, prénom, poste, date, salaire, etc.
+                Actions possibles :
+                    Créer un modèle
+                    Modifier un modèle existant
+                    Afficher la liste des modèles
+        2. Génération de documents RH
+                Formulaire de génération :
+                    Choix du modèle (liste déroulante)
+                    Saisie des variables personnalisées (nom, poste, date…)
+                Résultat :
+                    Génération du document en Word ou PDF
+                    Option de téléchargement direct
+                    Possibilité d’attacher automatiquement le document au profil du salarié concerné
+        3. Liste des documents générés
+                Affichage des documents générés via les modèles.
+                    Actions possibles :
+                        Visualiser le document
+                        Télécharger
+                        Rechercher par nom, date, type de document, etc.
+        4. Téléversement de documents RH
+                Importation de fichiers PDF/Word liés à un salarié ou à un processus RH :
+                    Contrat signé
+                    Lettre d’engagement ou de rupture
+                Formulaire de téléversement :
+                    Sélection du fichier
+                    Association au profil d’un employé
+                    Catégorie/type de document
+                    Date du document
+                Classement automatique dans la GED RH.
+        5. Liste des documents téléversés
+                Interface de consultation :
+                    Tri par salarié, type, date
+                    Recherche multicritère
+                    Téléchargement possible
+        6. Historique de remise / traçabilité documentaire
+                Journalisation automatique :
+                    Qui a généré le document ?
+                    Quand ?
+                    Pour quel salarié ?
+                    Qui a téléversé un fichier ?
+                    Affichage de l’historique dans une vue chronologique ou tabulaire
+        Sécurité & Permissions :
+                Seuls les profils RH peuvent créer, générer et téléverser des documents.
+                Les managers peuvent consulter les documents de leur équipe.
+                Les profils en lecture seule n’ont accès qu’à la visualisation sécurisée des documents selon droits définis.
 
+--------------------------------------------------------------------------------------------------------------------------------
 Module 3: Sanctions RH
+Objectif :
+Permettre une gestion complète, centralisée, sécurisée et traçable des sanctions disciplinaires au sein de l’organisation RH.
     Backoffice
-        Saisie des sanctions
-            formulaire pour enregistrer une sanction (champs : type de sanction [avertissement, blâme], salarié, date d'incident, date de notification, motif)
-        Ajout de pièces jointes 
-            téléversement de documents liés (rapport, lettre de blâme...)
-            aperçu possible dans l’interface (PDF/image)
-        Catégorisation
-            Chaque sanction est classée automatiquement selon son type
-            Exemples :
-                        Mineure : avertissement, rappel à l’ordre
-                        Majeure : blâme, mise à pied, licenciement
-        Tableau de bord spécifique avec répartition par type (avertissement, blâme) ou par département ou par période
-        Liste des sanctions
-            recherche par sanction, salarié, dates
-            clique sur un salarié
-                details de la sanction
-        Traçabilité 
-            historique complet des sanctions par employé
-            journal des actions (qui a saisi/modifié la sanction et quand)
-        Accès sécurisé
-            restriction d’accès aux sanctions (RH uniquement, sauf consultation pour audit)
+        1. Saisie des sanctions
+                Formulaire dédié à la création d’une sanction RH :
+                    Salarié concerné (sélection dans une liste ou recherche)
+                    Date de l’incident
+                    Date de notification
+                    Motif (champ texte libre ou liste déroulante de motifs fréquents)
+                    Type de sanction (liste déroulante) :
+                            Avertissement
+                            Rappel à l’ordre
+                            Blâme
+                            Mise à pied
+                            Licenciement
+        2. Ajout de pièces jointes
+                Téléversement de fichiers liés à la sanction :
+                    Lettre de notification, rapports internes, justificatifs
+                Types de fichiers acceptés : PDF (PNG, JPG)
+                Aperçu direct dans l’interface : visionneuse PDF/image intégrée
+        3. Catégorisation automatique
+                À l’enregistrement, chaque sanction est automatiquement classée dans une des deux catégories :
+                    Sanction mineure : avertissement, rappel à l’ordre
+                    Sanction majeure : blâme, mise à pied, licenciement
+                Cette catégorisation sert aux statistiques et au filtrage
+        4. Tableau de bord des sanctions
+                Indicateurs visuels et filtrables :
+                    Nombre total de sanctions
+                    Répartition par type (avertissement, blâme…)
+                    Répartition par département
+                    Répartition par mois / année
+                Affichage par graphique circulaire, histogramme ou ligne temporelle
+                Filtres :
+                    Type de sanction
+                    Département
+                    Période (mois/année)
+        5. Liste des sanctions
+                Vue tabulaire des sanctions enregistrées :
+                    Colonnes : salarié, type, motif, date incident, date notification
+                Recherche & filtres :
+                    Par nom de salarié
+                    Par type de sanction
+                    Par période
+                Clic sur un salarié :
+                    Détail complet de la sanction
+                    Téléchargement des pièces jointes
+                    Historique des modifications
+        6. Traçabilité
+                Historique par salarié :
+                    Liste chronologique de toutes les sanctions passées
+                    Vue filtrée ou exportable
+                Journalisation des actions :
+                    Qui a créé/modifié une sanction ?
+                    Quelle date/heure ?
+                    Quelle action a été effectuée (ajout, modification, suppression) ?
+        7. Accès sécurisé
+                Restrictions par rôle :
+                    RH uniquement : création, modification, suppression, consultation complète
+                    Audit/direction : accès en lecture seule (sans modification possible)
+                Chiffrement des données sensibles et pièces jointes
+                    Connexion sécurisée avec authentification par rôle
+        Bénéfices
+                Centralisation des sanctions pour un suivi plus rigoureux
+                Réduction des risques juridiques grâce à la traçabilité
+                Visualisation stratégique des zones ou périodes à risque
+                Sécurisation des données RH sensibles
 
+--------------------------------------------------------------------------------------------------------------------------------
 Module 4: GED RH (Gestion Électronique de Documents)
+Objectif :
+Mettre en place une base documentaire RH centralisée, structurée, sécurisée et facilement exploitable par les profils autorisés (RH, manager, auditeur…).
     Backoffice
-        Upload
-            Dépôt (multiple ou pas) avec reconnaissance automatique de documents
-                matricule, nom salarié
-            Téléversement manuel de fichiers (PDF, Word, images)
-                Champs obligatoires à remplir à l’upload :
-                Nom du fichier
-                Type de document (contrat, bulletin de paie, diplôme, attestation, etc.)
-                Salarié concerné
-                Date du document (date d’émission ou de signature)
-                Commentaire / description (facultatif)
-        Classement par salarié 
-            Arborescence structurée par salarié + type de document ( et sous document)
-            Les documents sont rattachés à la fiche de l’employé
-            Dans le profil d’un salarié :
-                Vue tabulaire ou arborescente de ses documents classés par type et date
-                Accès rapide au téléchargement ou à l’aperçu
-        Recherche multicritère 
-            type (contrat, cv, lm, bulletin de paie, demande de congé, ...)
-            nom 
-            matricule
-            date
-            mot-clé
-        Droits d’accès
-            permissions par rôle (ex. RH : lecture/écriture, Manager : lecture pour son équipe).
-            historique d'accès et modifications (traçabilité).
+        1. Téléversement des documents
+                Dépôt de fichiers :
+                    Téléversement manuel (drag & drop ou bouton d’import)
+                    Téléversement multiple possible
+                    Formats supportés : PDF, Word (.docx), images (.jpg, .png, .jpeg)
+                Reconnaissance automatique (optionnel) :
+                    Suggestion automatique du salarié par reconnaissance du matricule ou nom dans le nom du fichier
+                    Suggestion de type de document si mot-clé détecté dans le nom du fichier (ex : "contrat", "paie")
+                Champs obligatoires à compléter :
+                    Nom du fichier (si non extrait automatiquement)
+                    Type de document (liste définie : contrat, bulletin de paie, diplôme, attestation, CV, LM, etc.)
+                    Salarié concerné (sélection par nom ou matricule)
+                    Date du document (date d’émission ou de signature)
+                    Commentaire (facultatif)
+        2. Classement des documents
+                Organisation logique :
+                    Classement automatique par salarié
+                    Sous-classement par type de document
+                    Arborescence :
+                        /Salarié Nom Prénom/
+                            /Contrats/
+                            /Bulletins de paie/
+                            /Sanctions/
+                            /Formations/
+                Intégration dans la fiche salarié :
+                    Vue tabulaire ou arborescente des documents rattachés
+                    Actions rapides :
+                        Aperçu intégré
+                        Téléchargement direct
+                        Modification des métadonnées
+        3. Recherche multicritère
+                Moteur de recherche performant :
+                    Filtres disponibles :
+                    Type de document
+                    Nom du salarié
+                    Matricule
+                    Date du document (intervalle possible)
+                    Mots-clés (issus du titre, du commentaire ou des métadonnées)
+                Résultats triés par pertinence ou date
+        4. Droits d’accès et sécurité
+                Permissions selon le rôle :
+                    RH => Lecture + écriture sur tous les documents
+                    Manager => Lecture des documents de son équipe uniquement
+                    Consultation (Audit, direction)	=> Lecture restreinte (documents non sensibles)
+                Traçabilité :
+                    Journal des actions :
+                        Téléversement, modification, suppression
+                        Par qui, quand, sur quel document
+                        Historique d'accès : qui a consulté quel document, et quand
+                Sécurisation :
+                    Chiffrement des documents sensibles
+                    Accès restreint à l’application (authentification par rôle)
+                    Téléchargements limités aux utilisateurs autorisés
+        Bénéfices
+                Suppression du stockage manuel non sécurisé
+                Accès instantané aux documents RH archivés
+                Historique complet et sécurisé des échanges RH
+                Base solide pour les audits et le respect des obligations légales
 
+--------------------------------------------------------------------------------------------------------------------------------
 Module 5: KPI Tableau de bord RH
-    filtre multicritères
-        departement
-        annee
-        mois
-        type de contrat
-    Graphiques
-            Taux de turnover : (Nombre de départs / Effectif moyen) × 100.
-            Pyramide des âges : Répartition des salariés par tranche d’âge.
-            Taux d’absentéisme : (Jours d’absence / Jours travaillés) × 100.
-            Répartition par genre : Pourcentage hommes/femmes.
-            Répartition par type de contrat : CDI, CDD, intérim. Raison : Répond au besoin de reporting stratégique.
-    Clique sur graphique ou total
-        details
-    Alertes ou indicateurs critiques
-        sur les budgets 
-        taux d’absentéisme > seuil, etc.
-    Export des graphiques en PDF/Excel
+Objectif :
+Fournir à la direction RH et aux managers une vision synthétique, visuelle et dynamique des principaux indicateurs RH, avec des alertes sur les zones critiques.
+    Backoffice
+        1. Filtres multicritères
+                Permet de personnaliser les graphiques et analyses selon les besoins métier.
+                Filtres disponibles :
+                    Département
+                    Année
+                    Mois
+                    Type de contrat (CDI, CDD, Intérim, Stage)
+                Les filtres agissent en temps réel sur les données affichées (réactivité dynamique sur les graphiques et tableaux).
+        2. Indicateurs visuels (graphiques)
+                Graphiques interactifs générés à partir des données RH saisies dans les autres modules (recrutement, absences, sanctions, contrats…).
+                Graphiques disponibles :
+                    Taux de turnover
+                        (Nombre de départs / Effectif moyen sur la période) × 100
+                    Pyramide des âges
+                        Répartition des salariés par tranches d’âges (ex. <25, 26–35, 36–45, >46)
+                    Taux d’absentéisme
+                        (Jours d’absence cumulés / Jours théoriquement travaillés) × 100
+                    Répartition par genre
+                        Diagramme circulaire H/F (ou autre selon identité de genre)
+                    Répartition par type de contrat
+                        Histogramme : CDI, CDD, Intérim, Stage
+                    Effectif par département (optionnel)
+        3. Interaction avec les graphiques
+                Clic sur un graphique ou une donnée (ex. total des absents) :
+                    Affiche le détail sous forme de tableau
+                    Possibilité de :
+                        Visualiser la liste des salariés concernés
+                        Télécharger les données détaillées
+        4. Alertes & indicateurs critiques
+                Surveillance automatique de seuils définis par l’administrateur RH.
+                    Alertes déclenchées si :
+                        Taux d’absentéisme > seuil défini (ex. 5%)
+                        Dépassement des budgets RH :
+                        Budget global RH
+                        Budget par département
+                Affichage visuel (icônes, couleurs) dans le tableau de bord
+                Option d’alerte par email aux RH concernés (fonctionnalité avancée)
+        5. Export des données
+                Exports disponibles :
+                    Graphiques et tableaux vers PDF
+                    Données sources vers Excel (.xlsx ou .csv)
+                Boutons d’export présents à côté de chaque graphique/tableau
+        Sécurité & accès
+                RH	Tous les indicateurs, tous les départements
+                Manager	Accès uniquement aux indicateurs de son périmètre
+                Direction/Audit	Accès global en lecture seule
+        Bénéfices
+                Pilotage RH facilité, orienté données
+                Détection proactive des anomalies (absentéisme, déséquilibres…)
+                Réduction du temps de reporting
+                Support décisionnel pour la direction RH
 
+--------------------------------------------------------------------------------------------------------------------------------
 Import/Export CSV des donnees
 Authentification par rôle + permissions fines.
 Journalisation : toutes les actions importantes sont tracées.
