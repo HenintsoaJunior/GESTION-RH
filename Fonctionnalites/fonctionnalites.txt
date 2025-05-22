@@ -1,3 +1,5 @@
+///////////////////////////////// CE SONT DES IDEES DE FONCTIONNALITES /////////////////////////////////
+
 1. Suivi du Recrutement 
 => Fiches de poste, pipeline des candidatures, statut par étape, filtres multicritères, export
     Fonctionnalités à développer :
