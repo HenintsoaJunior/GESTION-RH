@@ -233,12 +233,12 @@ Mettre en place une base documentaire RH centralisée, structurée, sécurisée 
         3. Recherche multicritère
                 Moteur de recherche performant :
                     Filtres disponibles :
-                    Type de document
-                    Nom du salarié
-                    Matricule
-                    Date du document (intervalle possible)
-                    Mots-clés (issus du titre, du commentaire ou des métadonnées)
-                Résultats triés par pertinence ou date
+                        Type de document
+                        Nom du salarié
+                        Matricule
+                        Date du document (intervalle possible)
+                        Mots-clés (issus du titre, du commentaire ou des métadonnées)
+                    Résultats triés par pertinence ou date
         4. Droits d’accès et sécurité
                 Permissions selon le rôle :
                     RH => Lecture + écriture sur tous les documents
