@@ -1,15 +1,17 @@
-<?xml version="1.0" encoding="UTF-8"?><project name="RH" company="" webLink="http://" view-date="2025-05-08" view-index="0" gantt-divider-location="351" resource-divider-location="300" version="3.3.3316" locale="fr_FR">
+<?xml version="1.0" encoding="UTF-8"?><project name="RH" company="" webLink="http://" view-date="2025-05-08" view-index="0" gantt-divider-location="451" resource-divider-location="300" version="3.3.3316" locale="fr_FR">
     <description/>
     <view zooming-state="default:0" id="gantt-chart">
         <field id="tpd3" name="Nom" width="200" order="0"/>
         <field id="tpd4" name="Date de début" width="75" order="1"/>
         <field id="tpd5" name="Date de fin" width="75" order="2"/>
         <field id="tpd15" name="Notes" width="20" order="3"/>
+        <field id="tpd6" name="Durée" width="50" order="3"/>
+        <field id="tpd7" name="Avancée" width="50" order="4"/>
         <option id="filter.completedTasks" value="false"/>
         <option id="filter.dueTodayTasks" value="false"/>
         <option id="filter.overdueTasks" value="false"/>
         <option id="filter.inProgressTodayTasks" value="false"/>
-        <timeline><![CDATA[1,2,0,3]]></timeline>
+        <timeline><![CDATA[2,1,0,3]]></timeline>
         <option id="color.recent"><![CDATA[#0066ff #33ff33 #ffcc33 #ff3333]]></option>
     </view>
     <view id="resource-table">
@@ -40,9 +42,14 @@
             <taskproperty id="tpd8" name="coordinator" type="default" valuetype="text"/>
             <taskproperty id="tpd9" name="predecessorsr" type="default" valuetype="text"/>
         </taskproperties>
-        <task id="0" uid="b15cb46d5dc546c397a6d08841994750" name="Conception" color="#8cb6ce" shape="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0" meeting="false" start="2025-05-12" duration="20" complete="0" expand="true">
+        <task id="0" uid="b15cb46d5dc546c397a6d08841994750" name="Conception" color="#8cb6ce" shape="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0" meeting="false" start="2025-05-12" duration="10" complete="0" expand="true">
             <task id="4" uid="eddb546e80f84871b1dcbbf5b87a19ae" name="Atelier de cadrage avec RH + SI" meeting="false" start="2025-05-12" duration="5" complete="0" expand="true"/>
-            <task id="5" uid="bd3c40308ccc4712b1949045af793afa" name="Conception technique et maquettes" meeting="false" start="2025-05-19" duration="15" complete="0" expand="true"/>
+            <task id="5" uid="bd3c40308ccc4712b1949045af793afa" name="Conception technique et maquettes" color="#8cb6ce" meeting="false" start="2025-05-19" duration="5" complete="0" expand="false">
+                <task id="6" uid="2f330f7350564edfb25a20c879bd77af" name="Conception Maquette Module 1" meeting="false" start="2025-05-19" duration="1" complete="0" expand="true"/>
+                <task id="7" uid="2cf9e2015cfe435da07fdcf33ae63c5b" name="Conception Maquette Module 2" meeting="false" start="2025-05-21" duration="1" complete="0" expand="true"/>
+                <task id="8" uid="9917d94e5b7c4923b95118a22d5a2662" name="Conception Maquette Module 3" meeting="false" start="2025-05-22" duration="1" complete="0" expand="true"/>
+                <task id="9" uid="e027c3bd573e40b099617cc101349f0d" name="Conception Maquette Module 4" meeting="false" start="2025-05-23" duration="1" complete="0" expand="true"/>
+            </task>
         </task>
         <task id="1" uid="9c31db60bbc3418fbe3c13892264af43" name="Réalisation" color="#ff3333" meeting="false" start="2025-06-09" duration="30" complete="0" expand="true"/>
         <task id="2" uid="eea865246a534feb9b6e3f2f0de398d3" name="Mise en production" color="#ffcc33" meeting="false" start="2025-07-21" duration="10" complete="0" expand="true"/>
