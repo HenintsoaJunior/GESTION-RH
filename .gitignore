@@ -10,7 +10,6 @@ Thumbs.db
 ehthumbs.db
 *.xlsx
 ~$*.xlsx
-*.sln
 
 # --- Node (React FRONTEND) ---
 /FRONTEND/rh-front/node_modules/
@@ -41,3 +40,5 @@ ehthumbs.db
 # --- Ignorer les fichiers de dépendances lock ---
 /FRONTEND/rh-front/yarn.lock
 /FRONTEND/rh-front/package-lock.json
+
+*.sln
