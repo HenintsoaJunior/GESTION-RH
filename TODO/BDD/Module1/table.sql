@@ -1,7 +1,7 @@
 
 -- Table pour les départements
 CREATE TABLE departments(
-   department_id INT AUTO_INCREMENT,
+   department_id VARCHAR(50),
    department_name VARCHAR(100)  NOT NULL,
    PRIMARY KEY(department_id)
 );
@@ -9,14 +9,14 @@ CREATE TABLE departments(
 
 -- Table pour les types de contrat
 CREATE TABLE contract_types(
-   contract_type_id INT AUTO_INCREMENT,
+   contract_type_id VARCHAR(50),),
    contract_type_name VARCHAR(50)  NOT NULL,
    PRIMARY KEY(contract_type_id)
 );
 
 -- Table pour les candidats
 CREATE TABLE candidates(
-   candidate_id INT AUTO_INCREMENT,
+   candidate_id VARCHAR(50),
    last_name VARCHAR(100)  NOT NULL,
    first_name VARCHAR(100)  NOT NULL,
    birth_date DATE,
@@ -48,7 +48,7 @@ CREATE TABLE users(
 
 -- Table pour les offres d'emploi
 CREATE TABLE job_offers(
-   offer_id INT AUTO_INCREMENT,
+   offer_id VARCHAR(50),
    title VARCHAR(200)  NOT NULL,
    location VARCHAR(100) ,
    deadline_date DATETIME2,
@@ -68,7 +68,7 @@ CREATE TABLE job_offers(
 
 -- Table pour les candidatures
 CREATE TABLE applications(
-   application_id INT AUTO_INCREMENT,
+   application_id VARCHAR(50),,
    application_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
    cv VARBINARY(50)  NOT NULL,
    motivation_letter VARBINARY(50)  NOT NULL,
@@ -83,7 +83,7 @@ CREATE TABLE applications(
 
 -- Table pour stocker les informations extraites des CV
 CREATE TABLE cv_details(
-   cv_detail_id INT AUTO_INCREMENT,
+   cv_detail_id VARCHAR(50),
    extracted_skills VARCHAR(max),
    extracted_experience VARCHAR(max),
    extracted_education VARCHAR(max),
