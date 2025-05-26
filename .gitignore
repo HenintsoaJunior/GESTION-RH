@@ -31,7 +31,7 @@ ehthumbs.db
 /BACKEND/rh-backend/*.log
 /BACKEND/rh-backend/appsettings.Development.json
 /BACKEND/rh-backend/appsettings.Local.json
-
+/TODO/Looping/*.lo1
 # --- Ignorer les fichiers de publication ---
 /FRONTEND/rh-front/.firebase/
 /BACKEND/rh-backend/wwwroot/dist/
