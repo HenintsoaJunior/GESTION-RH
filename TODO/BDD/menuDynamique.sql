@@ -1,24 +1,46 @@
--- Insertion des langues
-INSERT INTO Language (language_id, language_name) VALUES
-('fr', 'Français'),
-('en', 'English');
+CREATE TABLE language_(
+   language_id VARCHAR(10) ,
+   language_name VARCHAR(100)  NOT NULL,
+   is_active BIT DEFAULT TRUE,
+   PRIMARY KEY(language_id)
+);
 
--- Insertion d'un module
-INSERT INTO Module (module_name, description) VALUES
-('Comptabilité', 'Gestion des finances et rapports');
+CREATE TABLE module_(
+   module_id VARCHAR(50),
+   module_name VARCHAR(100)  NOT NULL,
+   description VARCHAR(max),
+   PRIMARY KEY(module_id)
+);
 
--- Insertion des éléments de menu
-INSERT INTO Menu (module_id, menu_key, icon, link, position) VALUES
-(1, 'dashboard', 'fa-home', '/dashboard', 1),
-(1, 'reports', 'fa-chart-bar', '/reports', 2);
+CREATE TABLE menu(
+   menu_id VARCHAR(50),
+   menu_key VARCHAR(50)  NOT NULL,
+   icon VARCHAR(50) ,
+   link VARCHAR(255) ,
+   is_enabled BIT DEFAULT TRUE,
+   position_ INT,
+   module_id VARCHAR(50) ,
+   PRIMARY KEY(menu_id),
+   UNIQUE(menu_key),
+   FOREIGN KEY(module_id) REFERENCES module_(module_id)
+);
 
--- Insertion de la hiérarchie (Rapports est un sous-menu de Dashboard)
-INSERT INTO MenuHierarchy (menu_id, parent_menu_id) VALUES
-(2, 1);
+CREATE TABLE menu_hierarchy(
+   hierarchy_id VARCHAR(50),
+   parent_menu_id VARCHAR(50) ,
+   menu_id VARCHAR(50)  NOT NULL,
+   PRIMARY KEY(hierarchy_id),
+   FOREIGN KEY(parent_menu_id) REFERENCES menu(menu_id),
+   FOREIGN KEY(menu_id) REFERENCES menu(menu_id)
+);
 
--- Insertion des traductions
-INSERT INTO MenuTranslation (menu_id, language_id, label) VALUES
-(1, 'fr', 'Tableau de bord'),
-(1, 'en', 'Dashboard'),
-(2, 'fr', 'Rapports'),
-(2, 'en', 'Reports');
+CREATE TABLE menu_translation(
+   translation_id VARCHAR(50),
+   label VARCHAR(100)  NOT NULL,
+   language_id VARCHAR(10)  NOT NULL,
+   menu_id VARCHAR(50)  NOT NULL,
+   PRIMARY KEY(translation_id),
+   UNIQUE(menu_id, language_id),
+   FOREIGN KEY(language_id) REFERENCES language_(language_id),
+   FOREIGN KEY(menu_id) REFERENCES menu(menu_id)
+);
