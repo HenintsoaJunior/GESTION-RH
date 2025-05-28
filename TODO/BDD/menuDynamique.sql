@@ -1,10 +1,16 @@
-CREATE TABLE language_ (
+DROP TABLE IF EXISTS menu_translation;
+DROP TABLE IF EXISTS menu_hierarchy;
+DROP TABLE IF EXISTS menu;
+DROP TABLE IF EXISTS module;
+DROP TABLE IF EXISTS language;
+
+CREATE TABLE language (
    language_id VARCHAR(10) PRIMARY KEY,
    language_name VARCHAR(100) NOT NULL,
    is_active BIT DEFAULT 1
 );
 
-CREATE TABLE module_ (
+CREATE TABLE module (
    module_id VARCHAR(50) PRIMARY KEY,
    module_name VARCHAR(100) NOT NULL,
    description VARCHAR(MAX)
