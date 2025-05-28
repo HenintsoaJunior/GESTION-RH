@@ -57,6 +57,7 @@ Permettre une gestion complète et structurée des recrutements, incluant le dé
                         Modifier le statut
                         Ajouter un commentaire RH
                         Affecter à un recruteur
+                    Si candidature non traité avant une limite ou que l'offre a trouvé un candidat => changement automatique du statut en rejeté
                 Export :
                     Liste des candidatures par fiche de poste
                     Statistiques :
@@ -175,6 +176,7 @@ Permettre une gestion complète, centralisée, sécurisée et traçable des sanc
                     Détail complet de la sanction
                     Téléchargement des pièces jointes
                     Historique des modifications
+                Alerte automatique si par exemple le salarié a reçu plusieurs sanctions (règles de la société 3 blâmes => licenciement)
         6. Traçabilité
                 Historique par salarié :
                     Liste chronologique de toutes les sanctions passées
@@ -273,6 +275,7 @@ Fournir à la direction RH et aux managers une vision synthétique, visuelle et 
                     Type de contrat (CDI, CDD, Intérim, Stage)
                 Les filtres agissent en temps réel sur les données affichées (réactivité dynamique sur les graphiques et tableaux).
         2. Indicateurs visuels (graphiques)
+                Possibilité de modifier les formules (admin)
                 Graphiques interactifs générés à partir des données RH saisies dans les autres modules (recrutement, absences, sanctions, contrats…).
                 Graphiques disponibles :
                     Taux de turnover
