@@ -1,4 +1,4 @@
-
+-- Tokony alaina any amin'ny basen'ny société : département, type de contrat, utilisateurs, employés, budget, etc.
 -- Module 1
 -- Table pour les départements
 CREATE TABLE departments(
