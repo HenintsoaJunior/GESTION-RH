@@ -36,6 +36,7 @@ namespace MyApp.Api.Controllers.menu
             var created = await _service.CreateAsync(dto);
             return CreatedAtAction(nameof(Get), new { id = created.LanguageId }, created);
         }
+        
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] LanguageDto dto)
