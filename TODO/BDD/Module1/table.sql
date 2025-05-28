@@ -6,7 +6,6 @@ CREATE TABLE departments(
    PRIMARY KEY(department_id)
 );
 
-
 -- Table pour les types de contrat
 CREATE TABLE contract_types(
    contract_type_id VARCHAR(50),
