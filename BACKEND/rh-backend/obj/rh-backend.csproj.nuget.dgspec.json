@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "F:\\Stage-RH\\Projet\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj": {}
+    "D:\\TRAVAIL\\Github\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj": {}
   },
   "projects": {
-    "F:\\Stage-RH\\Projet\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj": {
+    "D:\\TRAVAIL\\Github\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "F:\\Stage-RH\\Projet\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj",
+        "projectUniqueName": "D:\\TRAVAIL\\Github\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj",
         "projectName": "rh-backend",
-        "projectPath": "F:\\Stage-RH\\Projet\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj",
-        "packagesPath": "C:\\Users\\ST155\\.nuget\\packages\\",
-        "outputPath": "F:\\Stage-RH\\Projet\\GESTION-RH\\BACKEND\\rh-backend\\obj\\",
+        "projectPath": "D:\\TRAVAIL\\Github\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj",
+        "packagesPath": "C:\\Users\\ST154\\.nuget\\packages\\",
+        "outputPath": "D:\\TRAVAIL\\Github\\GESTION-RH\\BACKEND\\rh-backend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\ST155\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\ST154\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -42,6 +42,20 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
+          "dependencies": {
+            "DocumentFormat.OpenXml": {
+              "target": "Package",
+              "version": "[3.3.0, )"
+            },
+            "System.Data.SqlClient": {
+              "target": "Package",
+              "version": "[4.9.0, )"
+            },
+            "itext7": {
+              "target": "Package",
+              "version": "[9.2.0, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
