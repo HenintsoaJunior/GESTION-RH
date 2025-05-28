@@ -24,7 +24,7 @@ ehthumbs.db
 # --- Visual Studio & .NET (BACKEND) ---
 
 
-# /BACKEND/rh-backend/src/MyApp.Api/appsettings.json
+/BACKEND/rh-backend/src/MyApp.Api/appsettings.json
 /BACKEND/rh-backend/src/MyApp.Api/bin
 /BACKEND/rh-backend/src/MyApp.Api/obj
 /BACKEND/rh-backend/.vs/
