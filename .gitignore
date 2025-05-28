@@ -22,15 +22,12 @@ ehthumbs.db
 /FRONTEND/rh-front/.eslintcache
 
 # --- Visual Studio & .NET (BACKEND) ---
-/BACKEND/rh-backend/bin/
-/BACKEND/rh-backend/obj/
+
+
+/BACKEND/rh-backend/src/MyApp.Api/appsettings.json
+/BACKEND/rh-backend/src/MyApp.Api/bin
+/BACKEND/rh-backend/src/MyApp.Api/obj
 /BACKEND/rh-backend/.vs/
-/BACKEND/rh-backend/*.user
-/BACKEND/rh-backend/*.suo
-/BACKEND/rh-backend/*.dbmdl
-/BACKEND/rh-backend/*.log
-/BACKEND/rh-backend/appsettings.Development.json
-/BACKEND/rh-backend/appsettings.Local.json
 /TODO/Looping/*.lo1
 # --- Ignorer les fichiers de publication ---
 /FRONTEND/rh-front/.firebase/
