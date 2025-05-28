@@ -6,11 +6,11 @@ namespace MyApp.Api.Controllers.menu
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class LanguagesController : ControllerBase
+    public class ModulesController : ControllerBase
     {
-        private readonly ILanguageService _service;
+        private readonly IModuleService _service;
 
-        public LanguagesController(ILanguageService service)
+        public ModulesController(IModuleService service)
         {
             _service = service;
         }
@@ -18,27 +18,27 @@ namespace MyApp.Api.Controllers.menu
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var languages = await _service.GetAllAsync();
-            return Ok(languages);
+            var modules = await _service.GetAllAsync();
+            return Ok(modules);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(string id)
         {
-            var language = await _service.GetByIdAsync(id);
-            return language == null ? NotFound() : Ok(language);
+            var module = await _service.GetByIdAsync(id);
+            return module == null ? NotFound() : Ok(module);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] LanguageDto dto)
+        public async Task<IActionResult> Create([FromBody] ModuleDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var created = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(Get), new { id = created.LanguageId }, created);
+            return CreatedAtAction(nameof(Get), new { id = created.ModuleId }, created);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] LanguageDto dto)
+        public async Task<IActionResult> Update(string id, [FromBody] ModuleDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var updated = await _service.UpdateAsync(id, dto);

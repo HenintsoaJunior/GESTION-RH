@@ -6,11 +6,11 @@ namespace MyApp.Api.Controllers.menu
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class LanguagesController : ControllerBase
+    public class MenusController : ControllerBase
     {
-        private readonly ILanguageService _service;
+        private readonly IMenuService _service;
 
-        public LanguagesController(ILanguageService service)
+        public MenusController(IMenuService service)
         {
             _service = service;
         }
@@ -18,27 +18,27 @@ namespace MyApp.Api.Controllers.menu
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var languages = await _service.GetAllAsync();
-            return Ok(languages);
+            var menus = await _service.GetAllAsync();
+            return Ok(menus);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(string id)
         {
-            var language = await _service.GetByIdAsync(id);
-            return language == null ? NotFound() : Ok(language);
+            var menu = await _service.GetByIdAsync(id);
+            return menu == null ? NotFound() : Ok(menu);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] LanguageDto dto)
+        public async Task<IActionResult> Create([FromBody] MenuDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var created = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(Get), new { id = created.LanguageId }, created);
+            return CreatedAtAction(nameof(Get), new { id = created.MenuId }, created);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] LanguageDto dto)
+        public async Task<IActionResult> Update(string id, [FromBody] MenuDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var updated = await _service.UpdateAsync(id, dto);

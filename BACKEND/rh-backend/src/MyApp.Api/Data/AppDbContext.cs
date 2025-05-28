@@ -7,6 +7,10 @@ namespace MyApp.Api.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
         public DbSet<Language> Languages { get; set; }
-        
+        public DbSet<Module> Modules { get; set; }
+        public DbSet<Menu> Menus { get; set; }
+        public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
+        public DbSet<MenuTranslation> MenuTranslations { get; set;  }
+
     }
 }
