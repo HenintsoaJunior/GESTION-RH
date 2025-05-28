@@ -1,4 +1,5 @@
 
+-- Module 1
 -- Table pour les départements
 CREATE TABLE departments(
    department_id VARCHAR(50),
@@ -118,3 +119,6 @@ CREATE TABLE application_comments(
    FOREIGN KEY(user_id) REFERENCES users(user_id),
    FOREIGN KEY(application_id) REFERENCES applications(application_id)
 );
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Module 2

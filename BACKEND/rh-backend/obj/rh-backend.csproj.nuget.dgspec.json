@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "D:\\TRAVAIL\\Github\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj": {}
+    "F:\\Stage-RH\\Projet\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj": {}
   },
   "projects": {
-    "D:\\TRAVAIL\\Github\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj": {
+    "F:\\Stage-RH\\Projet\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\TRAVAIL\\Github\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj",
+        "projectUniqueName": "F:\\Stage-RH\\Projet\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj",
         "projectName": "rh-backend",
-        "projectPath": "D:\\TRAVAIL\\Github\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj",
-        "packagesPath": "C:\\Users\\ST154\\.nuget\\packages\\",
-        "outputPath": "D:\\TRAVAIL\\Github\\GESTION-RH\\BACKEND\\rh-backend\\obj\\",
+        "projectPath": "F:\\Stage-RH\\Projet\\GESTION-RH\\BACKEND\\rh-backend\\rh-backend.csproj",
+        "packagesPath": "C:\\Users\\ST155\\.nuget\\packages\\",
+        "outputPath": "F:\\Stage-RH\\Projet\\GESTION-RH\\BACKEND\\rh-backend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\ST154\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\ST155\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"

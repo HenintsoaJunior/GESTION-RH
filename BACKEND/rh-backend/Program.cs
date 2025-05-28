@@ -36,8 +36,7 @@ if (app.Environment.IsDevelopment())
     try
     {
         // Récupérer la chaîne de connexion depuis la configuration
-        string connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-            ?? "Server=localhost\\SQLEXPRESS;Database=master;User Id=CORP\\154;Password=Carasco@20;TrustServerCertificate=True;";
+        string connectionString = "Server=localhost;Database=test;Integrated Security=true;TrustServerCertificate=True;";
 
         using (var connection = new SqlConnection(connectionString))
         {
