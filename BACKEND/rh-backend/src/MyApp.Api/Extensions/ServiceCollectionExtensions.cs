@@ -1,3 +1,4 @@
+using System.Reflection;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
@@ -8,14 +9,31 @@ namespace MyApp.Api.Extensions
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
+        public static void RegisterServicesAndRepositories(this IServiceCollection services)
         {
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
-            services.AddScoped<IProductRepository, ProductRepository>();
-            services.AddScoped<IProductService, ProductService>();
-            services.AddAutoMapper(typeof(Program));
-            return services;
+            var assembly = Assembly.GetExecutingAssembly();
+
+            var repoTypes = assembly.GetTypes()
+                .Where(t => t.IsClass && !t.IsAbstract && t.Name.EndsWith("Repository"))
+                .ToList();
+
+            foreach (var implType in repoTypes)
+            {
+                var interfaceType = implType.GetInterface($"I{implType.Name}");
+                if (interfaceType != null)
+                    services.AddScoped(interfaceType, implType);
+            }
+
+            var serviceTypes = assembly.GetTypes()
+                .Where(t => t.IsClass && !t.IsAbstract && t.Name.EndsWith("Service"))
+                .ToList();
+
+            foreach (var implType in serviceTypes)
+            {
+                var interfaceType = implType.GetInterface($"I{implType.Name}");
+                if (interfaceType != null)
+                    services.AddScoped(interfaceType, implType);
+            }
         }
     }
 }
