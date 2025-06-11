@@ -4,52 +4,43 @@ using MyApp.Api.Services.menu;
 
 namespace MyApp.Api.Controllers.menu
 {
-    [Route("api/[controller]")]
     [ApiController]
-    public class MenusController : ControllerBase
+    [Route("api/[controller]")]
+    public class MenuController : ControllerBase
     {
-        private readonly IMenuService _service;
+        private readonly IMenuService _menuService;
 
-        public MenusController(IMenuService service)
+        public MenuController(IMenuService menuService)
         {
-            _service = service;
+            _menuService = menuService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [HttpGet("hierarchy/{languageId}")]
+        public async Task<ActionResult<IEnumerable<MenuHierarchyDto>>> GetMenuHierarchy(string languageId)
         {
-            var menus = await _service.GetAllAsync();
-            return Ok(menus);
+            try
+            {
+                var menuHierarchy = await _menuService.GetMenuHierarchyAsync(languageId);
+                return Ok(menuHierarchy);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erreur lors de la récupération du menu: {ex.Message}");
+            }
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(string id)
+        [HttpGet("modules")]
+        public async Task<ActionResult<IEnumerable<ModuleDto>>> GetModules()
         {
-            var menu = await _service.GetByIdAsync(id);
-            return menu == null ? NotFound() : Ok(menu);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] MenuDto dto)
-        {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-            var created = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(Get), new { id = created.MenuId }, created);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] MenuDto dto)
-        {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-            var updated = await _service.UpdateAsync(id, dto);
-            return updated == null ? NotFound() : NoContent();
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
-        {
-            var deleted = await _service.DeleteAsync(id);
-            return deleted ? NoContent() : NotFound();
+            try
+            {
+                var modules = await _menuService.GetModulesAsync();
+                return Ok(modules);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erreur lors de la récupération des modules: {ex.Message}");
+            }
         }
     }
 }

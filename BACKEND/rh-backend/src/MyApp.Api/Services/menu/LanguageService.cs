@@ -41,6 +41,7 @@ namespace MyApp.Api.Services.menu
                 LanguageId = dto.LanguageId,
                 LanguageName = dto.LanguageName,
                 Abr = dto.Abr,
+                CountryCode = dto.CountryCode,
                 IsActive = dto.IsActive
             };
             var created = await _repository.CreateAsync(language);
@@ -57,6 +58,7 @@ namespace MyApp.Api.Services.menu
                 LanguageId = id,
                 LanguageName = dto.LanguageName,
                 Abr = dto.Abr,
+                CountryCode = dto.CountryCode,
                 IsActive = dto.IsActive
             };
             var updated = await _repository.UpdateAsync(language);
@@ -79,6 +81,7 @@ namespace MyApp.Api.Services.menu
                 LanguageId = language.LanguageId,
                 LanguageName = language.LanguageName,
                 Abr = language.Abr,
+                CountryCode = language.CountryCode,
                 IsActive = language.IsActive
             };
         }

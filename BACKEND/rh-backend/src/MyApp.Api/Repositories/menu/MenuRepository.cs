@@ -8,10 +8,28 @@ namespace MyApp.Api.Repositories.menu
     {
         Task<IEnumerable<Menu>> GetAllAsync();
         Task<Menu?> GetByIdAsync(string id);
-        Task<Menu> CreateAsync(Menu menu);
-        Task<Menu> UpdateAsync(Menu menu);
-        Task DeleteAsync(string id);
-        Task<bool> ExistsAsync(string id);
+        Task<IEnumerable<Menu>> GetByModuleIdAsync(string moduleId);
+        Task<IEnumerable<Menu>> GetEnabledMenusAsync();
+    }
+
+    public interface IMenuHierarchyRepository
+    {
+        Task<IEnumerable<MenuHierarchy>> GetAllAsync();
+        Task<IEnumerable<MenuHierarchy>> GetByParentIdAsync(string? parentId);
+        Task<IEnumerable<MenuHierarchy>> GetRootMenusAsync();
+    }
+
+    public interface IModuleRepository
+    {
+        Task<IEnumerable<Module>> GetAllAsync();
+        Task<Module?> GetByIdAsync(string id);
+    }
+
+    public interface IMenuTranslationRepository
+    {
+        Task<IEnumerable<MenuTranslation>> GetByLanguageIdAsync(string languageId);
+        Task<MenuTranslation?> GetByMenuAndLanguageAsync(string menuId, string languageId);
+        Task<IEnumerable<MenuTranslation>> GetByMenuIdAsync(string menuId);
     }
 
     public class MenuRepository : IMenuRepository
@@ -25,7 +43,7 @@ namespace MyApp.Api.Repositories.menu
 
         public async Task<IEnumerable<Menu>> GetAllAsync()
         {
-            return await _context.Menus.ToListAsync();
+            return await _context.Menus.OrderBy(m => m.Position).ToListAsync();
         }
 
         public async Task<Menu?> GetByIdAsync(string id)
@@ -33,33 +51,99 @@ namespace MyApp.Api.Repositories.menu
             return await _context.Menus.FindAsync(id);
         }
 
-        public async Task<Menu> CreateAsync(Menu menu)
+        public async Task<IEnumerable<Menu>> GetByModuleIdAsync(string moduleId)
         {
-            _context.Menus.Add(menu);
-            await _context.SaveChangesAsync();
-            return menu;
+            return await _context.Menus
+                .Where(m => m.ModuleId == moduleId)
+                .OrderBy(m => m.Position)
+                .ToListAsync();
         }
 
-        public async Task<Menu> UpdateAsync(Menu menu)
+        public async Task<IEnumerable<Menu>> GetEnabledMenusAsync()
         {
-            _context.Entry(menu).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return menu;
+            return await _context.Menus
+                .Where(m => m.IsEnabled)
+                .OrderBy(m => m.Position)
+                .ToListAsync();
+        }
+    }
+
+    public class MenuHierarchyRepository : IMenuHierarchyRepository
+    {
+        private readonly AppDbContext _context;
+
+        public MenuHierarchyRepository(AppDbContext context)
+        {
+            _context = context;
         }
 
-        public async Task DeleteAsync(string id)
+        public async Task<IEnumerable<MenuHierarchy>> GetAllAsync()
         {
-            var menu = await _context.Menus.FindAsync(id);
-            if (menu != null)
-            {
-                _context.Menus.Remove(menu);
-                await _context.SaveChangesAsync();
-            }
+            return await _context.MenuHierarchies.ToListAsync();
         }
 
-        public async Task<bool> ExistsAsync(string id)
+        public async Task<IEnumerable<MenuHierarchy>> GetByParentIdAsync(string? parentId)
         {
-            return await _context.Menus.AnyAsync(m => m.MenuId == id);
+            return await _context.MenuHierarchies
+                .Where(mh => mh.ParentMenuId == parentId)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<MenuHierarchy>> GetRootMenusAsync()
+        {
+            return await _context.MenuHierarchies
+                .Where(mh => mh.ParentMenuId == null)
+                .ToListAsync();
+        }
+    }
+
+    public class ModuleRepository : IModuleRepository
+    {
+        private readonly AppDbContext _context;
+
+        public ModuleRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<IEnumerable<Module>> GetAllAsync()
+        {
+            return await _context.Modules.ToListAsync();
+        }
+
+        public async Task<Module?> GetByIdAsync(string id)
+        {
+            return await _context.Modules.FindAsync(id);
+        }
+    }
+
+    public class MenuTranslationRepository : IMenuTranslationRepository
+    {
+        private readonly AppDbContext _context;
+
+        public MenuTranslationRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<IEnumerable<MenuTranslation>> GetByLanguageIdAsync(string languageId)
+        {
+            return await _context.MenuTranslations
+                .Where(mt => mt.LanguageId == languageId)
+                .ToListAsync();
+        }
+
+        public async Task<MenuTranslation?> GetByMenuAndLanguageAsync(string menuId, string languageId)
+        {
+            return await _context.MenuTranslations
+                .FirstOrDefaultAsync(mt => mt.MenuId == menuId && mt.LanguageId == languageId);
+        }
+
+        public async Task<IEnumerable<MenuTranslation>> GetByMenuIdAsync(string menuId)
+        {
+            return await _context.MenuTranslations
+                .Where(mt => mt.MenuId == menuId)
+                .ToListAsync();
         }
     }
 }
