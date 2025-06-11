@@ -1,87 +1,101 @@
-using MyApp.Api.Entities.menu;
 using MyApp.Api.Models.menu;
+using MyApp.Api.Entities.menu;
 using MyApp.Api.Repositories.menu;
 
 namespace MyApp.Api.Services.menu
 {
     public interface IMenuService
     {
-        Task<IEnumerable<MenuDto>> GetAllAsync();
-        Task<MenuDto?> GetByIdAsync(string id);
-        Task<MenuDto> CreateAsync(MenuDto dto);
-        Task<MenuDto?> UpdateAsync(string id, MenuDto dto);
-        Task<bool> DeleteAsync(string id);
+        Task<IEnumerable<MenuHierarchyDto>> GetMenuHierarchyAsync(string languageId);
+        Task<IEnumerable<ModuleDto>> GetModulesAsync();
+        Task<IEnumerable<ModuleDto>> GetModulesWithMenusAsync(string languageId);
     }
 
     public class MenuService : IMenuService
     {
-        private readonly IMenuRepository _repository;
+        private readonly IMenuRepository _menuRepository;
+        private readonly IMenuHierarchyRepository _hierarchyRepository;
+        private readonly IModuleRepository _moduleRepository;
+        private readonly IMenuTranslationRepository _translationRepository;
 
-        public MenuService(IMenuRepository repository)
+        public MenuService(
+            IMenuRepository menuRepository,
+            IMenuHierarchyRepository hierarchyRepository,
+            IModuleRepository moduleRepository,
+            IMenuTranslationRepository translationRepository)
         {
-            _repository = repository;
+            _menuRepository = menuRepository;
+            _hierarchyRepository = hierarchyRepository;
+            _moduleRepository = moduleRepository;
+            _translationRepository = translationRepository;
         }
 
-        public async Task<IEnumerable<MenuDto>> GetAllAsync()
+        public async Task<IEnumerable<MenuHierarchyDto>> GetMenuHierarchyAsync(string languageId)
         {
-            var menus = await _repository.GetAllAsync();
-            return menus.Select(MapToDto);
-        }
+            var rootHierarchies = await _hierarchyRepository.GetRootMenusAsync();
+            var result = new List<MenuHierarchyDto>();
 
-        public async Task<MenuDto?> GetByIdAsync(string id)
-        {
-            var menu = await _repository.GetByIdAsync(id);
-            return menu == null ? null : MapToDto(menu);
-        }
-
-        public async Task<MenuDto> CreateAsync(MenuDto dto)
-        {
-            var menu = new Menu
+            foreach (var hierarchy in rootHierarchies)
             {
-                MenuId = dto.MenuId,
-                MenuKey = dto.MenuKey,
-                Icon = dto.Icon,
-                Link = dto.Link,
-                IsEnabled = dto.IsEnabled,
-                Position = dto.Position,
-                ModuleId = dto.ModuleId
-            };
-            var created = await _repository.CreateAsync(menu);
-            return MapToDto(created);
+                var dto = await BuildMenuHierarchyDto(hierarchy, languageId);
+                if (dto != null)
+                {
+                    result.Add(dto);
+                }
+            }
+
+            return result.OrderBy(r => r.Menu.Position).ToList();
         }
 
-        public async Task<MenuDto?> UpdateAsync(string id, MenuDto dto)
+        public async Task<IEnumerable<ModuleDto>> GetModulesAsync()
         {
-            if (!await _repository.ExistsAsync(id))
+            var modules = await _moduleRepository.GetAllAsync();
+            return modules.Select(MapToModuleDto);
+        }
+
+        public async Task<IEnumerable<ModuleDto>> GetModulesWithMenusAsync(string languageId)
+        {
+            var modules = await _moduleRepository.GetAllAsync();
+            var result = new List<ModuleDto>();
+
+            foreach (var module in modules)
+            {
+                var moduleDto = MapToModuleDto(module);
+                
+                var moduleMenus = await _menuRepository.GetByModuleIdAsync(module.ModuleId);
+                var moduleMenuHierarchies = new List<MenuHierarchyDto>();
+
+                foreach (var menu in moduleMenus.Where(m => m.IsEnabled))
+                {
+                    var hierarchies = await _hierarchyRepository.GetAllAsync();
+                    var menuHierarchy = hierarchies.FirstOrDefault(h => h.MenuId == menu.MenuId);
+                    
+                    if (menuHierarchy != null)
+                    {
+                        var hierarchyDto = await BuildMenuHierarchyDto(menuHierarchy, languageId);
+                        if (hierarchyDto != null)
+                        {
+                            moduleMenuHierarchies.Add(hierarchyDto);
+                        }
+                    }
+                }
+
+                moduleDto.Menus = moduleMenuHierarchies.OrderBy(m => m.Menu.Position).ToList();
+                result.Add(moduleDto);
+            }
+
+            return result;
+        }
+
+        private async Task<MenuHierarchyDto?> BuildMenuHierarchyDto(MenuHierarchy hierarchy, string languageId)
+        {
+            var menu = await _menuRepository.GetByIdAsync(hierarchy.MenuId);
+            if (menu == null || !menu.IsEnabled)
                 return null;
 
-            var menu = new Menu
-            {
-                MenuId = id,
-                MenuKey = dto.MenuKey,
-                Icon = dto.Icon,
-                Link = dto.Link,
-                IsEnabled = dto.IsEnabled,
-                Position = dto.Position,
-                ModuleId = dto.ModuleId
-            };
-
-            var updated = await _repository.UpdateAsync(menu);
-            return MapToDto(updated);
-        }
-
-        public async Task<bool> DeleteAsync(string id)
-        {
-            if (!await _repository.ExistsAsync(id))
-                return false;
-
-            await _repository.DeleteAsync(id);
-            return true;
-        }
-
-        private MenuDto MapToDto(Menu menu)
-        {
-            return new MenuDto
+            var translation = await _translationRepository.GetByMenuAndLanguageAsync(hierarchy.MenuId, languageId);
+            
+            var menuDto = new MenuDto
             {
                 MenuId = menu.MenuId,
                 MenuKey = menu.MenuKey,
@@ -89,7 +103,42 @@ namespace MyApp.Api.Services.menu
                 Link = menu.Link,
                 IsEnabled = menu.IsEnabled,
                 Position = menu.Position,
-                ModuleId = menu.ModuleId
+                ModuleId = menu.ModuleId,
+                Label = translation?.Label ?? menu.MenuKey // Fallback sur MenuKey si pas de traduction
+            };
+
+            var hierarchyDto = new MenuHierarchyDto
+            {
+                HierarchyId = hierarchy.HierarchyId,
+                ParentMenuId = hierarchy.ParentMenuId,
+                MenuId = hierarchy.MenuId,
+                Menu = menuDto,
+                Children = new List<MenuHierarchyDto>()
+            };
+
+            // Récupérer les sous-menus
+            var childHierarchies = await _hierarchyRepository.GetByParentIdAsync(hierarchy.MenuId);
+            foreach (var childHierarchy in childHierarchies)
+            {
+                var childDto = await BuildMenuHierarchyDto(childHierarchy, languageId);
+                if (childDto != null)
+                {
+                    hierarchyDto.Children.Add(childDto);
+                }
+            }
+
+            hierarchyDto.Children = hierarchyDto.Children.OrderBy(c => c.Menu.Position).ToList();
+            return hierarchyDto;
+        }
+
+        private ModuleDto MapToModuleDto(Module module)
+        {
+            return new ModuleDto
+            {
+                ModuleId = module.ModuleId,
+                ModuleName = module.ModuleName,
+                Description = module.Description,
+                Menus = new List<MenuHierarchyDto>()
             };
         }
     }

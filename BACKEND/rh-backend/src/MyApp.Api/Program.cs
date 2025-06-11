@@ -4,6 +4,16 @@ using MyApp.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", builder =>
+    {
+        builder.WithOrigins("http://localhost:3000")
+               .AllowAnyHeader()
+               .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -21,6 +31,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("AllowReactApp");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 

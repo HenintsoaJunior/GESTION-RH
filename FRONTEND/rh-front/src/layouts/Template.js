@@ -1,131 +1,334 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  FiUsers,
-  FiFileText,
-  FiSettings,
-  FiMenu,
-  FiChevronDown,
-  FiBell,
-  FiUser,
-  FiSearch,
-  FiHelpCircle,
-  FiCalendar,
-  FiBarChart2,
-  FiLayers,
-  FiCheckSquare,
-  FiTrendingUp,
-  FiGrid,
-  FiStar,
-  FiShield,
-  FiUserPlus,
-  FiClipboard,
-  FiBookmark,
-  FiLogOut,
-  FiActivity,
-  FiAward,
-  FiCpu,
-  FiHome,
-  FiInfo,
-  FiMessageSquare,
-} from "react-icons/fi";
+import * as FaIcons from "react-icons/fa";
 import { MdPalette } from "react-icons/md";
+import ReactCountryFlag from "react-country-flag";
 import "./Template.css";
 
 export default function Template({ children }) {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState({
-    dashboard: false,
-    candidature: false,
-    fiche: false,
-    gestion: false,
-  });
-  const [activeItem, setActiveItem] = useState("dashboard-overview");
+  const [expandedMenus, setExpandedMenus] = useState({});
+  const [activeItem, setActiveItem] = useState("dashboard");
   const [headerTitle, setHeaderTitle] = useState("Dashboard");
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "default");
+  const [menuData, setMenuData] = useState([]);
+  const [languages, setLanguages] = useState([]);
+  const [selectedLanguage, setSelectedLanguage] = useState(() => {
+    return localStorage.getItem("selectedLanguage") || "fr";
+  });
+  const [isMenuLoading, setIsMenuLoading] = useState(false);
+  const [isLanguagesLoading, setIsLanguagesLoading] = useState(false);
 
-  // Theme configuration with colors and names
-  const themes = [
+  // Refs pour éviter les rechargements inutiles
+  const menuDataRef = useRef({});
+  const languagesRef = useRef([]);
+  const isInitializedRef = useRef(false);
+  const lastLocationRef = useRef("");
+  const lastLanguageRef = useRef("");
+  const navigationUpdateRef = useRef(false);
+
+  // Base URL for API calls
+  const baseUrl = "http://localhost:5183";
+
+  // Theme configuration
+  const themes = useMemo(() => [
     { id: "default", name: "Défaut (Vert)", color: "#7ab55c" },
     { id: "gray", name: "Gris", color: "#9d9d9c" },
     { id: "warm", name: "Chaud", color: "#e30613" },
     { id: "light", name: "Clair", color: "#c6dc96" },
-  ];
+  ], []);
 
-  // Menu configuration for mapping routes to active items, titles, and menus
-  const menuConfig = {
-    "/dashboard": { itemId: "dashboard-overview", title: "Dashboard", menu: "dashboard" },
-    "/all-candidates": { itemId: "candidates-all", title: "Candidature", menu: "candidature" },
-    "/new-candidates": { itemId: "candidates-new", title: "Nouvelles candidatures", menu: "candidature" },
-    "#analytics": { itemId: "dashboard-analytics", title: "Analytiques", menu: "dashboard" },
-    "#reports": { itemId: "dashboard-reports", title: "Rapports", menu: "dashboard" },
-    "#performance": { itemId: "dashboard-performance", title: "Performance", menu: "dashboard" },
-    "#interviews": { itemId: "candidates-interviews", title: "Entretiens", menu: "candidature" },
-    "#shortlisted": { itemId: "candidates-shortlisted", title: "Présélectionnés", menu: "candidature" },
-    "#create-job": { itemId: "jobs-create", title: "Créer une fiche", menu: "fiche" },
-    "#active-jobs": { itemId: "jobs-active", title: "Postes actifs", menu: "fiche" },
-    "#archived-jobs": { itemId: "jobs-archived", title: "Archives", menu: "fiche" },
-    "#job-templates": { itemId: "jobs-templates", title: "Modèles", menu: "fiche" },
-    "#users": { itemId: "admin-users", title: "Utilisateurs", menu: "gestion" },
-    "#departments": { itemId: "admin-departments", title: "Départements", menu: "gestion" },
-    "#roles": { itemId: "admin-roles", title: "Rôles & Permissions", menu: "gestion" },
-    "#system": { itemId: "admin-system", title: "Paramètres système", menu: "gestion" },
-    "#profile": { itemId: "profile", title: "Mon profil", menu: null },
-    "#settings": { itemId: "settings", title: "Paramètres", menu: null },
-    "#help": { itemId: "help", title: "Aide", menu: null },
-    "/": { itemId: "logout", title: "Déconnexion", menu: null },
-  };
+  // Function to get FontAwesome icon component dynamically
+  const getIconComponent = useCallback((iconName) => {
+    const formattedIconName = `Fa${iconName
+      .replace("fa-", "")
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join("")}`;
+    return FaIcons[formattedIconName] || FaIcons.FaFile;
+  }, []);
 
-  // Set initial state based on current route, preserving other menu states
+  // Fetch languages from API
   useEffect(() => {
-    const path = location.pathname === "/" ? "/" : location.pathname + location.hash;
-    const config = menuConfig[path] || menuConfig["/dashboard"];
-    setActiveItem(config.itemId);
-    setHeaderTitle(config.title);
-    if (config.menu) {
-      setExpandedMenus((prev) => ({
-        ...prev,
-        [config.menu]: true,
-      }));
+    const fetchLanguages = async () => {
+      if (languagesRef.current.length > 0 || isLanguagesLoading) return;
+
+      setIsLanguagesLoading(true);
+      try {
+        const response = await fetch(`${baseUrl}/api/Languages`);
+        if (!response.ok) throw new Error("Erreur réseau");
+
+        const data = await response.json();
+        languagesRef.current = data;
+        setLanguages(data);
+
+        if (!selectedLanguage && data.length > 0) {
+          const defaultLang = data.find((lang) => lang.isActive)?.languageId || data[0].languageId;
+          setSelectedLanguage(defaultLang);
+          localStorage.setItem("selectedLanguage", defaultLang);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des langues:", error);
+      } finally {
+        setIsLanguagesLoading(false);
+      }
+    };
+
+    fetchLanguages();
+  }, []);
+
+  // Fetch menu data from API
+  useEffect(() => {
+    const fetchMenuData = async () => {
+      if (!selectedLanguage || isMenuLoading) return;
+
+      if (lastLanguageRef.current === selectedLanguage) return;
+
+      const currentMenuKey = `menu_${selectedLanguage}`;
+      if (menuDataRef.current[currentMenuKey]) {
+        setMenuData(menuDataRef.current[currentMenuKey]);
+        lastLanguageRef.current = selectedLanguage;
+        return;
+      }
+
+      setIsMenuLoading(true);
+      try {
+        const response = await fetch(`${baseUrl}/api/Menu/hierarchy/${selectedLanguage}`);
+        if (!response.ok) throw new Error("Erreur réseau");
+
+        const data = await response.json();
+        menuDataRef.current[currentMenuKey] = data;
+        setMenuData(data);
+        lastLanguageRef.current = selectedLanguage;
+
+        if (!isInitializedRef.current) {
+          const initialExpanded = {};
+          data.forEach((item) => {
+            if (item.children.length > 0) {
+              initialExpanded[item.menu.menuKey] = false;
+            }
+          });
+          setExpandedMenus(initialExpanded);
+          isInitializedRef.current = true;
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération du menu:", error);
+      } finally {
+        setIsMenuLoading(false);
+      }
+    };
+
+    fetchMenuData();
+  }, [selectedLanguage]);
+
+  // Update active item, header title, and expanded menus based on route
+  useEffect(() => {
+    if (menuData.length === 0) return;
+
+    const currentPath = location.pathname === "/" ? "/" : location.pathname + location.hash;
+
+    if (lastLocationRef.current === currentPath) return;
+
+    if (navigationUpdateRef.current) return;
+
+    lastLocationRef.current = currentPath;
+    navigationUpdateRef.current = true;
+
+    let matchedItem = null;
+    let matchedParentMenu = null;
+    let matchedTitle = "";
+
+    const findMenuItem = (items) => {
+      for (const item of items) {
+        if (item.menu.link === currentPath) {
+          matchedItem = item.menu.menuKey;
+          matchedTitle = item.menu.label;
+          return true;
+        }
+        if (item.children.length > 0) {
+          for (const child of item.children) {
+            if (child.menu.link === currentPath) {
+              matchedItem = child.menu.menuKey;
+              matchedParentMenu = item.menu.menuKey;
+              matchedTitle = child.menu.label;
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    };
+
+    if (findMenuItem(menuData)) {
+      // Batch updates
+      const updates = {};
+      let needsUpdate = false;
+
+      if (activeItem !== matchedItem) {
+        updates.activeItem = matchedItem;
+        needsUpdate = true;
+      }
+      if (headerTitle !== matchedTitle) {
+        updates.headerTitle = matchedTitle;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        if (updates.activeItem) setActiveItem(updates.activeItem);
+        if (updates.headerTitle) setHeaderTitle(updates.headerTitle);
+      }
+
+      // Close all menus except the matched parent
+      setExpandedMenus((prev) => {
+        const newExpanded = { ...prev };
+        Object.keys(newExpanded).forEach((key) => {
+          newExpanded[key] = key === matchedParentMenu;
+        });
+        return newExpanded;
+      });
+    } else {
+      // Default case: close all menus and set dashboard
+      if (activeItem !== "dashboard") {
+        setActiveItem("dashboard");
+      }
+      if (headerTitle !== "Dashboard") {
+        setHeaderTitle("");
+      }
+      setExpandedMenus((prev) => {
+        const newExpanded = { ...prev };
+        Object.keys(newExpanded).forEach((key) => {
+          newExpanded[key] = false;
+        });
+        return newExpanded;
+      });
     }
+
+    setTimeout(() => {
+      navigationUpdateRef.current = false;
+    }, 50);
   }, [location.pathname, location.hash]);
 
-  const toggleSidebar = () => {
+  const toggleSidebar = useCallback(() => {
     setCollapsed(!collapsed);
-  };
+  }, []);
 
-  const toggleMobileSidebar = () => {
+  const toggleMobileSidebar = useCallback(() => {
     setMobileOpen(!mobileOpen);
-  };
+  }, [mobileOpen]);
 
-  const toggleMenu = (menu) => {
+  const toggleMenu = useCallback((menuKey) => {
     setExpandedMenus((prev) => ({
       ...prev,
-      [menu]: !prev[menu],
+      [menuKey]: !prev[menuKey],
     }));
-  };
+  }, []);
+  
+  const setActive = useCallback(
+    (itemId, title, parentMenuKey) => () => {
+      navigationUpdateRef.current = true;
 
-  const setActive = (itemId, title, menu) => () => {
-    setActiveItem(itemId);
-    setHeaderTitle(title);
-    setMobileOpen(false);
-    if (menu) {
-      setExpandedMenus((prev) => ({
-        ...prev,
-        [menu]: true,
-      }));
-    }
-  };
+      setActiveItem(itemId);
+      setHeaderTitle(title);
+      setMobileOpen(false);
 
-  const handleThemeChange = (newTheme) => {
+      // Close all menus except the parent of the clicked link
+      setExpandedMenus((prev) => {
+        const newExpanded = { ...prev };
+        Object.keys(newExpanded).forEach((key) => {
+          newExpanded[key] = key === parentMenuKey;
+        });
+        return newExpanded;
+      });
+
+      setTimeout(() => {
+        navigationUpdateRef.current = false;
+      }, 100);
+    },
+    []
+  );
+
+  const handleThemeChange = useCallback((newTheme) => {
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
-  };
+  }, []);
+
+  const handleLanguageChange = useCallback(
+    (languageId) => {
+      if (languageId !== selectedLanguage) {
+        setSelectedLanguage(languageId);
+        localStorage.setItem("selectedLanguage", languageId);
+      }
+    },
+    [selectedLanguage]
+  );
+
+  const renderMenuItem = useCallback(
+    (item) => {
+      const IconComponent = getIconComponent(item.menu.icon);
+      const hasChildren = item.children.length > 0;
+      const isExpanded = expandedMenus[item.menu.menuKey];
+      const isActive = activeItem === item.menu.menuKey;
+
+      return (
+        <li className="nav-item" key={item.hierarchyId}>
+          {hasChildren ? (
+            <button
+              className={`nav-button ${isExpanded ? "expanded" : ""}`}
+              onClick={() => toggleMenu(item.menu.menuKey)}
+            >
+              <div className="nav-icon-wrapper">
+                <IconComponent className="nav-icon" />
+              </div>
+              <span className="nav-text">{item.menu.label}</span>
+              {!collapsed && (
+                <FaIcons.FaChevronDown
+                  className={`nav-arrow ${isExpanded ? "rotated" : ""}`}
+                />
+              )}
+            </button>
+          ) : (
+            <Link
+              to={item.menu.link}
+              className={`nav-button ${isActive ? "active" : ""}`}
+              onClick={setActive(item.menu.menuKey, item.menu.label, null)}
+            >
+              <div className="nav-icon-wrapper">
+                <IconComponent className="nav-icon" />
+              </div>
+              <span className="nav-text">{item.menu.label}</span>
+            </Link>
+          )}
+          {hasChildren && (
+            <ul className={`submenu ${isExpanded ? "expanded" : ""}`}>
+              {item.children.map((child) => {
+                const ChildIcon = getIconComponent(child.menu.icon);
+                const isChildActive = activeItem === child.menu.menuKey;
+
+                return (
+                  <li key={child.hierarchyId}>
+                    <Link
+                      to={child.menu.link}
+                      className={isChildActive ? "active" : ""}
+                      onClick={setActive(child.menu.menuKey, child.menu.label, item.menu.menuKey)}
+                    >
+                      <ChildIcon className="submenu-icon" />
+                      <span>{child.menu.label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </li>
+      );
+    },
+    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive]
+  );
 
   return (
     <div className={`app theme-${theme}`}>
@@ -134,7 +337,7 @@ export default function Template({ children }) {
       <aside className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}>
         <div className="sidebar-header">
           <div className="logo-container">
-            <img src="Logo.png" alt="Logo" className="logo-image" />
+            <img src="/Logo.png" alt="Logo" className="logo-image" />
           </div>
         </div>
 
@@ -143,255 +346,27 @@ export default function Template({ children }) {
         </div>
 
         <nav className="sidebar-nav">
-          <ul>
-            <li className="nav-item">
-              <button
-                className={`nav-button ${expandedMenus.dashboard ? "expanded" : ""}`}
-                onClick={() => toggleMenu("dashboard")}
-              >
-                <div className="nav-icon-wrapper">
-                  <FiHome className="nav-icon" />
-                </div>
-                <span className="nav-text">Dashboard</span>
-                {!collapsed && (
-                  <>
-                    <span className="nav-badge new">Nouveau</span>
-                    <FiChevronDown className={`nav-arrow ${expandedMenus.dashboard ? "rotated" : ""}`} />
-                  </>
-                )}
-              </button>
-              <ul className={`submenu ${expandedMenus.dashboard ? "expanded" : ""}`}>
-                <li>
-                  <Link
-                    to="/dashboard"
-                    className={activeItem === "dashboard-overview" ? "active" : ""}
-                    onClick={setActive("dashboard-overview", "Dashboard", "dashboard")}
-                  >
-                    <FiBarChart2 className="submenu-icon" />
-                    <span>Vue d'ensemble</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#analytics"
-                    className={activeItem === "dashboard-analytics" ? "active" : ""}
-                    onClick={setActive("dashboard-analytics", "Analytiques", "dashboard")}
-                  >
-                    <FiTrendingUp className="submenu-icon" />
-                    <span>Analytiques</span>
-                    <span className="submenu-badge">5</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#reports"
-                    className={activeItem === "dashboard-reports" ? "active" : ""}
-                    onClick={setActive("dashboard-reports", "Rapports", "dashboard")}
-                  >
-                    <FiFileText className="submenu-icon" />
-                    <span>Rapports</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#performance"
-                    className={activeItem === "dashboard-performance" ? "active" : ""}
-                    onClick={setActive("dashboard-performance", "Performance", "dashboard")}
-                  >
-                    <FiActivity className="submenu-icon" />
-                    <span>Performance</span>
-                  </Link>
-                </li>
-              </ul>
-            </li>
+          {isMenuLoading ? (
+            <div className="menu-loading-dots">Chargement du menu ...</div>
+          ) : (
+            <ul>
+              {menuData.map((item) => renderMenuItem(item))}
 
-            <li className="nav-item">
-              <button
-                className={`nav-button ${expandedMenus.candidature ? "expanded" : ""}`}
-                onClick={() => toggleMenu("candidature")}
-              >
-                <div className="nav-icon-wrapper">
-                  <FiUsers className="nav-icon" />
-                </div>
-                <span className="nav-text">Candidature</span>
-                {!collapsed && (
-                  <>
-                    <span className="nav-badge count">12</span>
-                    <FiChevronDown className={`nav-arrow ${expandedMenus.candidature ? "rotated" : ""}`} />
-                  </>
-                )}
-              </button>
-              <ul className={`submenu ${expandedMenus.candidature ? "expanded" : ""}`}>
-                <li>
-                  <Link
-                    to="/all-candidates"
-                    className={activeItem === "candidates-all" ? "active" : ""}
-                    onClick={setActive("candidates-all", "Candidature", "candidature")}
-                  >
-                    <FiUsers className="submenu-icon" />
-                    <span>Tous les candidats</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/new-candidates"
-                    className={activeItem === "candidates-new" ? "active" : ""}
-                    onClick={setActive("candidates-new", "Nouvelles candidatures", "candidature")}
-                  >
-                    <FiUserPlus className="submenu-icon" />
-                    <span>Nouvelles candidatures</span>
-                    <span className="submenu-badge hot">8</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#interviews"
-                    className={activeItem === "candidates-interviews" ? "active" : ""}
-                    onClick={setActive("candidates-interviews", "Entretiens", "candidature")}
-                  >
-                    <FiCalendar className="submenu-icon" />
-                    <span>Entretiens</span>
-                    <span className="submenu-badge">4</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#shortlisted"
-                    className={activeItem === "candidates-shortlisted" ? "active" : ""}
-                    onClick={setActive("candidates-shortlisted", "Présélectionnés", "candidature")}
-                  >
-                    <FiStar className="submenu-icon" />
-                    <span>Présélectionnés</span>
-                  </Link>
-                </li>
-              </ul>
-            </li>
+              <div className="sidebar-divider">
+                <span>{!collapsed && "ADMINISTRATION"}</span>
+              </div>
 
-            <li className="nav-item">
-              <button
-                className={`nav-button ${expandedMenus.fiche ? "expanded" : ""}`}
-                onClick={() => toggleMenu("fiche")}
-              >
-                <div className="nav-icon-wrapper">
-                  <FiClipboard className="nav-icon" />
-                </div>
-                <span className="nav-text">Fiche de poste</span>
-                {!collapsed && <FiChevronDown className={`nav-arrow ${expandedMenus.fiche ? "rotated" : ""}`} />}
-              </button>
-              <ul className={`submenu ${expandedMenus.fiche ? "expanded" : ""}`}>
-                <li>
-                  <Link
-                    to="#create-job"
-                    className={activeItem === "jobs-create" ? "active" : ""}
-                    onClick={setActive("jobs-create", "Créer une fiche", "fiche")}
-                  >
-                    <FiFileText className="submenu-icon" />
-                    <span>Créer une fiche</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#active-jobs"
-                    className={activeItem === "jobs-active" ? "active" : ""}
-                    onClick={setActive("jobs-active", "Postes actifs", "fiche")}
-                  >
-                    <FiCheckSquare className="submenu-icon" />
-                    <span>Postes actifs</span>
-                    <span className="submenu-badge">7</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#archived-jobs"
-                    className={activeItem === "jobs-archived" ? "active" : ""}
-                    onClick={setActive("jobs-archived", "Archives", "fiche")}
-                  >
-                    <FiBookmark className="submenu-icon" />
-                    <span>Archives</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#job-templates"
-                    className={activeItem === "jobs-templates" ? "active" : ""}
-                    onClick={setActive("jobs-templates", "Modèles", "fiche")}
-                  >
-                    <FiGrid className="submenu-icon" />
-                    <span>Modèles</span>
-                  </Link>
-                </li>
-              </ul>
-            </li>
-
-            <div className="sidebar-divider">
-              <span>{!collapsed && "ADMINISTRATION"}</span>
-            </div>
-
-            <li className="nav-item">
-              <button
-                className={`nav-button ${expandedMenus.gestion ? "expanded" : ""}`}
-                onClick={() => toggleMenu("gestion")}
-              >
-                <div className="nav-icon-wrapper">
-                  <FiSettings className="nav-icon" />
-                </div>
-                <span className="nav-text">Gestion administrative</span>
-                {!collapsed && <FiChevronDown className={`nav-arrow ${expandedMenus.gestion ? "rotated" : ""}`} />}
-              </button>
-              <ul className={`submenu ${expandedMenus.gestion ? "expanded" : ""}`}>
-                <li>
-                  <Link
-                    to="#users"
-                    className={activeItem === "admin-users" ? "active" : ""}
-                    onClick={setActive("admin-users", "Utilisateurs", "gestion")}
-                  >
-                    <FiUser className="submenu-icon" />
-                    <span>Utilisateurs</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#departments"
-                    className={activeItem === "admin-departments" ? "active" : ""}
-                    onClick={setActive("admin-departments", "Départements", "gestion")}
-                  >
-                    <FiLayers className="submenu-icon" />
-                    <span>Départements</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#roles"
-                    className={activeItem === "admin-roles" ? "active" : ""}
-                    onClick={setActive("admin-roles", "Rôles & Permissions", "gestion")}
-                  >
-                    <FiShield className="submenu-icon" />
-                    <span>Rôles & Permissions</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#system"
-                    className={activeItem === "admin-system" ? "active" : ""}
-                    onClick={setActive("admin-system", "Paramètres système", "gestion")}
-                  >
-                    <FiCpu className="submenu-icon" />
-                    <span>Paramètres système</span>
-                  </Link>
-                </li>
-              </ul>
-            </li>
-
-            <li className="nav-item premium-feature">
-              <button className="nav-button">
-                <div className="nav-icon-wrapper premium">
-                  <FiAward className="nav-icon" />
-                </div>
-                <span className="nav-text">Fonctionnalités Premium</span>
-                {!collapsed && <span className="nav-badge premium">PRO</span>}
-              </button>
-            </li>
-          </ul>
+              <li className="nav-item premium-feature">
+                <button className="nav-button">
+                  <div className="nav-icon-wrapper premium">
+                    <FaIcons.FaAward className="nav-icon" />
+                  </div>
+                  <span className="nav-text">Fonctionnalités Premium</span>
+                  {!collapsed && <span className="nav-badge premium">PRO</span>}
+                </button>
+              </li>
+            </ul>
+          )}
         </nav>
 
         <div className="sidebar-footer">
@@ -437,33 +412,56 @@ export default function Template({ children }) {
         <header className="header">
           <div className="header-left">
             <button className="menu-toggle" onClick={toggleMobileSidebar}>
-              <FiMenu />
+              <FaIcons.FaBars />
             </button>
-            <button className="sidebar-toggle" onClick={toggleSidebar}>
-              <FiChevronDown className={collapsed ? "rotate" : ""} />
-            </button>
+            {/* <button className="sidebar-toggle" onClick={toggleSidebar}>
+              <FaIcons.FaChevronDown className={collapsed ? "rotate" : ""} />
+            </button> */}
             <h1>{headerTitle}</h1>
           </div>
 
           <div className="header-center">
             <div className="search-container">
-              <FiSearch className="search-icon" />
+              <FaIcons.FaSearch className="search-icon" />
               <input type="text" placeholder="Rechercher..." className="search-input" />
             </div>
           </div>
 
           <div className="header-right">
             <div className="header-icons">
+              <div className="language-selector">
+                <ReactCountryFlag
+                  countryCode={languages.find((lang) => lang.languageId === selectedLanguage)?.countryCode || "US"}
+                  svg
+                  style={{
+                    width: "20px",
+                    height: "15px",
+                    marginRight: "8px",
+                  }}
+                />
+                <select
+                  value={selectedLanguage}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
+                  className="language-dropdown"
+                  disabled={isLanguagesLoading}
+                >
+                  {languages.map((lang) => (
+                    <option key={lang.languageId} value={lang.languageId}>
+                      {lang.abr} - {lang.languageName}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <button className="header-icon-button">
-                <FiMessageSquare />
+                <FaIcons.FaComment />
                 <span className="notification-badge">3</span>
               </button>
               <button className="header-icon-button">
-                <FiBell />
+                <FaIcons.FaBell />
                 <span className="notification-badge">5</span>
               </button>
               <button className="header-icon-button">
-                <FiInfo />
+                <FaIcons.FaInfoCircle />
               </button>
               <div className="user-profile-dropdown">
                 <div className="user-profile">
@@ -472,24 +470,40 @@ export default function Template({ children }) {
                     <span className="user-name">John Doe</span>
                     <span className="user-role">Administrateur</span>
                   </div>
-                  <FiChevronDown className="dropdown-arrow" />
+                  <FaIcons.FaChevronDown className="dropdown-arrow" />
                 </div>
                 <div className="user-dropdown-menu">
-                  <Link to="#profile" className="dropdown-item" onClick={setActive("profile", "Mon profil")}>
-                    <FiUser className="dropdown-icon" />
+                  <Link
+                    to="#profile"
+                    className="dropdown-item"
+                    onClick={setActive("profile", "Mon profil", null)}
+                  >
+                    <FaIcons.FaUser className="dropdown-icon" />
                     <span>Mon profil</span>
                   </Link>
-                  <Link to="#settings" className="dropdown-item" onClick={setActive("settings", "Paramètres")}>
-                    <FiSettings className="dropdown-icon" />
+                  <Link
+                    to="#settings"
+                    className="dropdown-item"
+                    onClick={setActive("settings", "Paramètres", null)}
+                  >
+                    <FaIcons.FaCog className="dropdown-icon" />
                     <span>Paramètres</span>
                   </Link>
-                  <Link to="#help" className="dropdown-item" onClick={setActive("help", "Aide")}>
-                    <FiHelpCircle className="dropdown-icon" />
+                  <Link
+                    to="#help"
+                    className="dropdown-item"
+                    onClick={setActive("help", "Aide", null)}
+                  >
+                    <FaIcons.FaQuestionCircle className="dropdown-icon" />
                     <span>Aide</span>
                   </Link>
                   <div className="dropdown-divider"></div>
-                  <Link to="/" className="dropdown-item" onClick={setActive("logout", "Déconnexion")}>
-                    <FiLogOut className="dropdown-icon" />
+                  <Link
+                    to="/"
+                    className="dropdown-item"
+                    onClick={setActive("logout", "Déconnexion", null)}
+                  >
+                    <FaIcons.FaSignOutAlt className="dropdown-icon" />
                     <span>Déconnexion</span>
                   </Link>
                 </div>

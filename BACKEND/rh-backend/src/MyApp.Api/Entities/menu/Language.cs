@@ -21,6 +21,11 @@ namespace MyApp.Api.Entities.menu
         [MaxLength(50)]
         public string Abr { get; set; } = null!;
 
+        [Required]
+        [Column("country_code")]
+        [MaxLength(5)]
+        public string CountryCode { get; set; } = null!;
+
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
     }
