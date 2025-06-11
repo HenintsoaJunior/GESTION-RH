@@ -26,7 +26,9 @@ ehthumbs.db
 
 /BACKEND/rh-backend/src/MyApp.Api/appsettings.json
 /BACKEND/rh-backend/src/MyApp.Api/bin
+/BACKEND/rh-backend/src/MyApp.Api/Migrations
 /BACKEND/rh-backend/src/MyApp.Api/obj
+/BACKEND/rh-backend/obj
 /BACKEND/rh-backend/.vs/
 /TODO/Looping/*.lo1
 # --- Ignorer les fichiers de publication ---
