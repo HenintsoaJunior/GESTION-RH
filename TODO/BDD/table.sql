@@ -1,5 +1,22 @@
 -- Tokony alaina any amin'ny basen'ny société : département, type de contrat, utilisateurs, employés, budget, etc.
--- Module 1
+
+-- Drop tables if they exist
+DROP TABLE IF EXISTS departments;
+DROP TABLE IF EXISTS contract_types;
+DROP TABLE IF EXISTS candidates;
+DROP TABLE IF EXISTS action_type;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS job_offers;
+DROP TABLE IF EXISTS applications;
+DROP TABLE IF EXISTS cv_details;
+DROP TABLE IF EXISTS action_logs;
+DROP TABLE IF EXISTS application_comments;
+DROP TABLE IF EXISTS approval_flow;
+DROP TABLE IF EXISTS recruitment_request;
+DROP TABLE IF EXISTS recruitment_approval;
+DROP TABLE IF EXISTS recruitment_notifications;
+
+-- Module 1 : Suivi du recrutement
 -- Table pour les départements
 CREATE TABLE departments(
    department_id VARCHAR(50),
@@ -119,6 +136,52 @@ CREATE TABLE application_comments(
    FOREIGN KEY(user_id) REFERENCES users(user_id),
    FOREIGN KEY(application_id) REFERENCES applications(application_id)
 );
+
+-- Table pour l'ordre des approbateurs
+CREATE TABLE approval_flow(
+   approval_flow_id VARCHAR(50) ,
+   approval_order INT NOT NULL,
+   department_id INT NOT NULL,
+   PRIMARY KEY(approval_flow_id),
+   FOREIGN KEY(department_id) REFERENCES departments(department_id)
+);
+
+-- Table pour les demandes de recrutement
+CREATE TABLE recruitment_request(
+   recruitment_request_id VARCHAR(50) ,
+   job_title VARCHAR(100)  NOT NULL,
+   description VARCHAR(max),
+   request_date DATE NOT NULL DEFAULT CURRENT_DATE,
+   status VARCHAR(20)  DEFAULT 'pending',
+   requester_id VARCHAR(50)  NOT NULL,
+   PRIMARY KEY(recruitment_request_id),
+   FOREIGN KEY(requester_id) REFERENCES users(user_id)
+);
+
+-- Table pour l'approbation des demandes
+CREATE TABLE recruitment_approval(
+   approver_id_ VARCHAR(50) ,
+   recruitment_request_id VARCHAR(50) ,
+   status VARCHAR(50) ,
+   approval_order VARCHAR(50) ,
+   approval_date DATE,
+   comment VARCHAR(max),
+   signature VARBINARY(max),
+   PRIMARY KEY(approver_id_, recruitment_request_id),
+   FOREIGN KEY(approver_id_) REFERENCES departments(department_id),
+   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_request(recruitment_request_id)
+);
+
+-- table pour les notifications
+CREATE TABLE recruitment_notifications(
+   recruitment_notification_id VARCHAR(50) ,
+   message VARCHAR(50) ,
+   date_message DATE,
+   recruitment_request_id VARCHAR(50)  NOT NULL,
+   PRIMARY KEY(recruitment_notification_id),
+   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_request(recruitment_request_id)
+);
+
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- Module 2
