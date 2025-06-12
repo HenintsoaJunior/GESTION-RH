@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Upload, X, FileText, ImageIcon, File } from "lucide-react"
-import "./recruitment-request.css"
+import { Upload, X, FileText, ImageIcon, File, Send } from 'lucide-react'
+import "../../../styles/generic-form-styles.css"
 
-export default function RecruitmentRequest() {
+export default function RecruitmentRequestForm() {
   const fileInputRef = useRef(null)
   const quillRef = useRef(null)
   const [quillLoaded, setQuillLoaded] = useState(false)
@@ -30,7 +30,6 @@ export default function RecruitmentRequest() {
 
   useEffect(() => {
     if (quillLoaded && typeof window !== "undefined" && window.Quill && !quillRef.current) {
-      // Custom attachment blot
       const Embed = window.Quill.import("blots/embed")
 
       class AttachmentBlot extends Embed {
@@ -68,7 +67,7 @@ export default function RecruitmentRequest() {
               [{ color: [] }, { background: [] }],
               [{ list: "ordered" }, { list: "bullet" }],
               [{ align: [] }],
-              ["link", "image", { attachment: true }], // Add attachment to toolbar
+              ["link", "image", { attachment: true }],
               ["clean"],
             ],
             handlers: {
@@ -95,10 +94,6 @@ export default function RecruitmentRequest() {
         },
         placeholder: "Décrivez le poste en détail...",
       })
-
-      // Remove custom button since handler is now in toolbar
-      // const attachButton = document.createElement("button")
-      // ...
     }
   }, [quillLoaded])
 
@@ -161,115 +156,148 @@ export default function RecruitmentRequest() {
     event.preventDefault()
     const formData = new FormData(event.target)
     const jobTitle = formData.get("jobTitle")
+    const department = formData.get("department")
+    const contractType = formData.get("contractType")
+    const location = formData.get("location")
+    const salary = formData.get("salary")
+    const startDate = formData.get("startDate")
     const description = quillRef.current ? quillRef.current.root.innerHTML : ""
 
     console.log("Form submitted:", {
       jobTitle,
+      department,
+      contractType,
+      location,
+      salary,
+      startDate,
       description,
       files: selectedFiles.map((f) => f.name),
     })
   }
 
   return (
-    <div className="recruitment-container">
+    <div className="form-page">
       <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
 
-      <div className="recruitment-header">
-        <h1 className="recruitment-title">Demande de recrutement</h1>
-        <p className="recruitment-description">
-          Remplissez ce formulaire pour soumettre votre demande de recrutement. Tous les champs sont requis pour traiter
-          votre demande efficacement.
+      <div className="form-header">
+        <h1 className="form-title">Demande de recrutement</h1>
+        <p className="form-description">
+          Remplissez ce formulaire pour soumettre votre demande de recrutement. Tous les champs marqués d'un astérisque (*) sont requis pour traiter votre demande efficacement.
         </p>
       </div>
 
-      <form className="recruitment-form" onSubmit={handleSubmit}>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label" htmlFor="jobTitle">
-              Intitulé du poste *
-            </label>
-            <input
-              type="text"
-              id="jobTitle"
-              name="jobTitle"
-              placeholder="Ex: Développeur Full Stack Senior"
-              className="form-input"
-              required
-            />
-          </div>
+      <form className="generic-form" onSubmit={handleSubmit}>
+        <table className="form-table">
+          <tbody>
 
-          <div className="form-group">
-            <label className="form-label">Pièces jointes</label>
-            <div
-              className={`file-upload-area ${dragActive ? "drag-active" : ""}`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <div className="file-upload-content">
-                <Upload className="upload-icon" />
-                <div className="upload-text">
-                  <span className="upload-main">Glissez vos fichiers ici</span>
-                  <span className="upload-sub">ou</span>
-                  <button type="button" className="upload-button" onClick={handleFileButtonClick}>
-                    Parcourir les fichiers
-                  </button>
-                </div>
-                <div className="upload-formats">PDF, DOC, DOCX, TXT, JPG, PNG (Max 10MB)</div>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                style={{ display: "none" }}
-                accept=".pdf,.doc,.docx,.txt,.jpg,.png,.gif"
-                onChange={handleFileChange}
-              />
-            </div>
+            <tr>
+              <th className="form-label-cell">
+                <label className="form-label form-label-required" htmlFor="jobTitle">
+                  Intitulé du poste
+                </label>
+              </th>
+              <td className="form-input-cell">
+                <input
+                  type="text"
+                  id="jobTitle"
+                  name="jobTitle"
+                  placeholder="Ex: Développeur Full Stack Senior"
+                  className="form-input"
+                  required
+                />
+              </td>
+            </tr>
 
-            {selectedFiles.length > 0 && (
-              <div className="selected-files">
-                <h4 className="selected-files-title">Fichiers sélectionnés:</h4>
-                <div className="files-list">
-                  {selectedFiles.map((file, index) => (
-                    <div key={index} className="file-item">
-                      <div className="file-info">
-                        {getFileIconComponent(file)}
-                        <div className="file-details">
-                          <span className="file-name">{file.name}</span>
-                          <span className="file-size">{formatFileSize(file.size)}</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="remove-file"
-                        onClick={() => removeFile(index)}
-                        title="Supprimer le fichier"
-                      >
-                        <X className="w-4 h-4" />
+            <tr>
+              <th className="form-label-cell">
+                <label className="form-label">
+                  Pièces jointes
+                </label>
+              </th>
+              <td className="form-input-cell">
+                <div
+                  className={`file-upload-area ${dragActive ? "drag-active" : ""}`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                >
+                  <div className="file-upload-content">
+                    <Upload className="upload-icon" />
+                    <div className="upload-text">
+                      <span className="upload-main">Glissez vos fichiers ici</span>
+                      <span className="upload-sub">ou</span>
+                      <button type="button" className="upload-button" onClick={handleFileButtonClick}>
+                        Parcourir les fichiers
                       </button>
                     </div>
-                  ))}
+                    <div className="upload-formats">
+                      Fiche de poste, organigramme, documents RH (PDF, DOC, DOCX, TXT, JPG, PNG - Max 10MB)
+                    </div>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.txt,.jpg,.png,.gif"
+                    onChange={handleFileChange}
+                  />
                 </div>
-              </div>
-            )}
-          </div>
 
-          <div className="form-group description-group">
-            <label className="form-label">Description du poste *</label>
-            <div className="description-container">
-              <div id="editor" style={{ minHeight: "200px" }}></div>
-            </div>
-          </div>
+                {selectedFiles.length > 0 && (
+                  <div className="selected-files">
+                    <h4 className="selected-files-title">Fichiers sélectionnés:</h4>
+                    <div className="files-list">
+                      {selectedFiles.map((file, index) => (
+                        <div key={index} className="file-item">
+                          <div className="file-info">
+                            {getFileIconComponent(file)}
+                            <div className="file-details">
+                              <span className="file-name">{file.name}</span>
+                              <span className="file-size">{formatFileSize(file.size)}</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="remove-file"
+                            onClick={() => removeFile(index)}
+                            title="Supprimer le fichier"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </td>
+            </tr>
 
-          <div className="form-group submit-group">
-            <button type="submit" className="submit-btn">
-              <span>Envoyer la demande</span>
-              <span className="submit-arrow">→</span>
-            </button>
-          </div>
-        </div>
+            <tr>
+              <th className="form-label-cell">
+                <label className="form-label form-label-required">
+                  Description détaillée
+                </label>
+              </th>
+              <td className="form-input-cell">
+                <div className="rich-editor-container">
+                  <div id="editor" style={{ minHeight: "200px" }}></div>
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td colSpan="2" className="form-submit-cell">
+                <button type="submit" className="btn btn-primary btn-large">
+                  <Send className="w-4 h-4" />
+                  Envoyer la demande
+                  <span className="btn-arrow">→</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </form>
     </div>
   )
