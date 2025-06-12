@@ -34,9 +34,9 @@ namespace MyApp.Api.Entities.users
         [Required]
         [Column("department_id")]
         [MaxLength(50)]
-        [ForeignKey("Department")]
         public string DepartmentId { get; set; } = null!;
 
+        [ForeignKey("DepartmentId")]
         public Department? Department { get; set; }
     }
 }

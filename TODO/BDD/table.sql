@@ -180,3 +180,6 @@ CREATE TABLE recruitment_notifications (
    PRIMARY KEY(recruitment_notification_id),
    FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_request(recruitment_request_id)
 );
+
+ALTER TABLE recruitment_request ADD approval_date DATE NULL;
+
