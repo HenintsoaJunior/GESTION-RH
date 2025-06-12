@@ -162,9 +162,9 @@ CREATE TABLE recruitment_approval (
    approver_id_ VARCHAR(50),
    recruitment_request_id VARCHAR(50),
    status VARCHAR(50),
-   approval_order VARCHAR(50),
+   approval_order INT,
    approval_date DATE,
-   comment VARCHAR(MAX),
+   comments VARCHAR(MAX),
    signature VARBINARY(MAX),
    PRIMARY KEY(approver_id_, recruitment_request_id),
    FOREIGN KEY(approver_id_) REFERENCES departments(department_id),
@@ -182,4 +182,3 @@ CREATE TABLE recruitment_notifications (
 );
 
 ALTER TABLE recruitment_request ADD approval_date DATE NULL;
-
