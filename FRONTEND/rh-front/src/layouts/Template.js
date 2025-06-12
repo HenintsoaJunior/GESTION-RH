@@ -10,7 +10,7 @@ import "./Template.css";
 
 export default function Template({ children }) {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [activeItem, setActiveItem] = useState("dashboard");
@@ -37,7 +37,7 @@ export default function Template({ children }) {
 
   // Theme configuration
   const themes = useMemo(() => [
-    { id: "default", name: "Défaut (Vert)", color: "#7ab55c" },
+    { id: "default", name: "Défaut (Vert)", color: "#69B42E" },
     { id: "gray", name: "Gris", color: "#9d9d9c" },
     { id: "warm", name: "Chaud", color: "#e30613" },
     { id: "light", name: "Clair", color: "#c6dc96" },
@@ -213,9 +213,9 @@ export default function Template({ children }) {
     }, 50);
   }, [location.pathname, location.hash]);
 
-  const toggleSidebar = useCallback(() => {
-    setCollapsed(!collapsed);
-  }, []);
+  // const toggleSidebar = useCallback(() => {
+  //   setCollapsed(!collapsed);
+  // }, []);
 
   const toggleMobileSidebar = useCallback(() => {
     setMobileOpen(!mobileOpen);

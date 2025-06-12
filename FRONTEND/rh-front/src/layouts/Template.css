@@ -1,10 +1,10 @@
 :root {
-  --primary-color: #7ab55c; /* Pantone 368 C, adjusted from #69B42E */
+  --primary-color: #69B42E; /* Pantone 368 C, adjusted from #69B42E */
   --primary-light: #a3d183; /* Derived from #C6DC96 */
   --primary-dark: #5a8c42;
   --primary-hover: #8bc76d;
   --primary-transparent: rgba(122, 181, 92, 0.1);
-  --primary-gradient: linear-gradient(135deg, #5a8c42 0%, #7ab55c 100%);
+  --primary-gradient: linear-gradient(135deg, #5a8c42 0%, #69B42E 100%);
   --accent-color: #9d9d9c; /* Pantone Cool Gray 10 C */
   --accent-hover: #8c8c8b;
   --text-color: #333;
@@ -42,7 +42,7 @@
   --primary-dark: #8c8c8b;
   --primary-hover: #a8a8a7;
   --primary-gradient: linear-gradient(135deg, #8c8c8b 0%, #9d9d9c 100%);
-  --accent-color: #7ab55c;
+  --accent-color: #69B42E;
   --accent-hover: #5a8c42;
   --text-color: #333;
   --bg-light: #e8e8e8;
