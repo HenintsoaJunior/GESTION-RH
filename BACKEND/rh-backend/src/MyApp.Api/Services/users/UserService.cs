@@ -139,7 +139,6 @@ namespace MyApp.Api.Services.users
                 UserId = user.UserId,
                 Name = user.Name,
                 Email = user.Email,
-                Password = user.Password,
                 Role = user.Role,
                 DepartmentId = user.DepartmentId
             };
