@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Entities.action_type;
+using MyApp.Api.Entities.contract_types;
 using MyApp.Api.Entities.departments;
 using MyApp.Api.Entities.menu;
+using MyApp.Api.Entities.users;
 
 namespace MyApp.Api.Data
 {
@@ -14,6 +17,12 @@ namespace MyApp.Api.Data
         public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<MenuTranslation> MenuTranslations { get; set; }
+
+        public DbSet<ContractType> ContractTypes { get; set; }
+
+        public DbSet<ActionType> ActionTypes { get; set; }
+
+        public DbSet<User> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
