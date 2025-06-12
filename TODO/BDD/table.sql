@@ -58,7 +58,7 @@ CREATE TABLE users(
    email VARCHAR(100)  NOT NULL,
    password VARCHAR(255)  NOT NULL,
    role VARCHAR(50)  NOT NULL,
-   department_id INT NOT NULL,
+   department_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(user_id),
    FOREIGN KEY(department_id) REFERENCES departments(department_id)
 );
@@ -76,7 +76,7 @@ CREATE TABLE job_offers(
    required_languages VARCHAR(200),
    status ENUM('DRAFT', 'PUBLISHED', 'CLOSED') DEFAULT 'DRAFT',
    created_at DATETIME2 DEFAULT CURRENT_TIMESTAMP,
-   department_id INT,
+   department_id VARCHAR(50),
    contract_type_id INT,
    PRIMARY KEY(offer_id),
    FOREIGN KEY(department_id) REFERENCES departments(department_id),
@@ -87,8 +87,8 @@ CREATE TABLE job_offers(
 CREATE TABLE applications(
    application_id VARCHAR(50),
    application_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
-   cv VARBINARY(50)  NOT NULL,
-   motivation_letter VARBINARY(50)  NOT NULL,
+   cv VARBINARY(MAX)  NOT NULL,
+   motivation_letter VARBINARY(MAX)  NOT NULL,
    matching_score SMALLINT,
    status ENUM('SUBMITTED', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED') DEFAULT 'SUBMITTED',
    offer_id INT,
@@ -141,7 +141,7 @@ CREATE TABLE application_comments(
 CREATE TABLE approval_flow(
    approval_flow_id VARCHAR(50) ,
    approval_order INT NOT NULL,
-   department_id INT NOT NULL,
+   department_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(approval_flow_id),
    FOREIGN KEY(department_id) REFERENCES departments(department_id)
 );
