@@ -1,20 +1,75 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "../../../components/Button";
 import { Input } from "../../../components/Input";
 import { NativeSelect, NativeSelectItem } from "../../../components/Select";
-import { Download, Plus, Edit, Trash2 } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import "../../../styles/generic-table-styles.css";
+import { BASE_URL } from "../../../config/apiConfig";
+import { parseData, formatDate, cleanFilters, hasActiveFilters } from "../../../utils/utils";
 
 export default function RecruitmentRequestList() {
   const [filters, setFilters] = useState({
-    statut: "actif",
-    dateStart: "2024-01-01",
-    dateEnd: "2024-12-31",
-    categorie: "tous",
+    status: "",
+    jobTitleKeyword: "",
+    requestDateMin: "",
+    requestDateMax: "",
+    approvalDateMin: "",
+    approvalDateMax: "",
   });
+  const [requests, setRequests] = useState([]);
+
+  const recruitmentTypeHints = useMemo(() => ({
+    recruitmentRequestId: "string",
+    jobTitle: "string",
+    description: "string",
+    status: "string",
+    requestDate: "date",
+    approvalDate: "date",
+    priority: "string",
+    vacancyCount: "int",
+    salary: "double",
+  }), []);
+
+  const fetchRequests = useCallback(
+    async (filters = {}) => {
+      try {
+        const cleanedFilters = cleanFilters(filters);
+        const hasFilters = hasActiveFilters(cleanedFilters);
+
+        let response;
+
+        if (hasFilters) {
+          response = await fetch(`${BASE_URL}/api/RecruitmentRequest/search`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "*/*",
+            },
+            body: JSON.stringify(cleanedFilters),
+          });
+        } else {
+          response = await fetch(`${BASE_URL}/api/RecruitmentRequest`, {
+            headers: { Accept: "*/*" },
+          });
+        }
+
+        const data = await response.json();
+        const parsedData = parseData(data, recruitmentTypeHints);
+        setRequests(parsedData);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des demandes :", error);
+        setRequests([]);
+      }
+    },
+    [recruitmentTypeHints]
+  );
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
@@ -22,8 +77,20 @@ export default function RecruitmentRequestList() {
 
   const handleFilterSubmit = (event) => {
     event.preventDefault();
-    console.log("Filtres appliqués :", filters);
-    // TODO: Appliquer les filtres au tableau ou effectuer une requête API
+    fetchRequests(filters);
+  };
+
+  const handleResetFilters = () => {
+    const resetFilters = {
+      status: "",
+      jobTitleKeyword: "",
+      requestDateMin: "",
+      requestDateMax: "",
+      approvalDateMin: "",
+      approvalDateMax: "",
+    };
+    setFilters(resetFilters);
+    fetchRequests(resetFilters);
   };
 
   return (
@@ -38,53 +105,79 @@ export default function RecruitmentRequestList() {
                   <td>
                     <label className="filter-label">Statut</label>
                     <NativeSelect
-                      name="statut"
-                      value={filters.statut}
-                      onValueChange={(value) => handleFilterChange("statut", value)}
-                      placeholder="Sélectionner un statut"
+                      name="status"
+                      value={filters.status}
+                      onValueChange={(value) => handleFilterChange("status", value)}
                     >
-                      <NativeSelectItem value="actif">Actif</NativeSelectItem>
-                      <NativeSelectItem value="inactif">Inactif</NativeSelectItem>
-                      <NativeSelectItem value="en-attente">En attente</NativeSelectItem>
+                      <NativeSelectItem value="">Tous</NativeSelectItem>
+                      <NativeSelectItem value="En Attente">En Attente</NativeSelectItem>
+                      <NativeSelectItem value="Approuvé">Approuvé</NativeSelectItem>
+                      <NativeSelectItem value="Rejeté">Rejeté</NativeSelectItem>
                     </NativeSelect>
                   </td>
                   <td>
-                    <label className="filter-label">Date de création entre</label>
-                    <div className="date-range">
-                      <Input
-                        name="date-start"
-                        type="date"
-                        value={filters.dateStart}
-                        onChange={(e) => handleFilterChange("dateStart", e.target.value)}
-                        className="flex-1"
-                      />
-                      <span className="date-range-separator">et</span>
-                      <Input
-                        name="date-end"
-                        type="date"
-                        value={filters.dateEnd}
-                        onChange={(e) => handleFilterChange("dateEnd", e.target.value)}
-                        className="flex-1"
-                      />
-                    </div>
-                  </td>
-                  <td>
-                    <label className="filter-label">Catégorie</label>
-                    <NativeSelect
-                      name="categorie"
-                      value={filters.categorie}
-                      onValueChange={(value) => handleFilterChange("categorie", value)}
-                      placeholder="Sélectionner une catégorie"
-                    >
-                      <NativeSelectItem value="tous">Tous</NativeSelectItem>
-                      <NativeSelectItem value="produit">Produit</NativeSelectItem>
-                      <NativeSelectItem value="service">Service</NativeSelectItem>
-                    </NativeSelect>
+                    <label className="filter-label">Mot-clé du titre</label>
+                    <Input
+                      name="jobTitleKeyword"
+                      type="text"
+                      value={filters.jobTitleKeyword}
+                      onChange={(e) => handleFilterChange("jobTitleKeyword", e.target.value)}
+                      className="flex-1"
+                    />
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan={3}>
-                    <Button type="submit" className="filter-submit-btn">Rechercher</Button>
+                  <td>
+                    <label className="filter-label">Date de demande min</label>
+                    <Input
+                      name="requestDateMin"
+                      type="date"
+                      value={filters.requestDateMin}
+                      onChange={(e) => handleFilterChange("requestDateMin", e.target.value)}
+                      className="flex-1"
+                    />
+                  </td>
+                  <td>
+                    <label className="filter-label">Date de demande max</label>
+                    <Input
+                      name="requestDateMax"
+                      type="date"
+                      value={filters.requestDateMax}
+                      onChange={(e) => handleFilterChange("requestDateMax", e.target.value)}
+                      className="flex-1"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label className="filter-label">Date d'approbation min</label>
+                    <Input
+                      name="approvalDateMin"
+                      type="date"
+                      value={filters.approvalDateMin}
+                      onChange={(e) => handleFilterChange("approvalDateMin", e.target.value)}
+                      className="flex-1"
+                    />
+                  </td>
+                  <td>
+                    <label className="filter-label">Date d'approbation max</label>
+                    <Input
+                      name="approvalDateMax"
+                      type="date"
+                      value={filters.approvalDateMax}
+                      onChange={(e) => handleFilterChange("approvalDateMax", e.target.value)}
+                      className="flex-1"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={2}>
+                    <div className="flex gap-md">
+                      <Button type="submit" className="filter-submit-btn">Rechercher</Button>
+                      <Button type="button" className="btn-secondary" onClick={handleResetFilters}>
+                        Réinitialiser
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -120,112 +213,54 @@ export default function RecruitmentRequestList() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>
-                  <div className="cell-content">
-                    <div className="cell-title">Projet Alpha</div>
-                    <div className="cell-subtitle">Description du projet</div>
-                  </div>
-                </td>
-                <td>Développement</td>
-                <td>15/03/2024</td>
-                <td>
-                  <span className="status-badge status-badge-success">Actif</span>
-                </td>
-                <td>
-                  <span className="status-badge status-badge-warning">Haute</span>
-                </td>
-                <td>
-                  <div className="flex gap-sm">
-                    <Button size="sm" className="action-btn btn-small">
-                      <Edit className="w-3 h-3" />
-                      Modifier
-                    </Button>
-                    <Button size="sm" className="action-btn action-btn-secondary btn-small">
-                      <Trash2 className="w-3 h-3" />
-                      Supprimer
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div className="cell-content">
-                    <div className="cell-title">Projet Beta</div>
-                    <div className="cell-subtitle">Autre description</div>
-                  </div>
-                </td>
-                <td>Design</td>
-                <td>20/03/2024</td>
-                <td>
-                  <span className="status-badge status-badge-info">En cours</span>
-                </td>
-                <td>
-                  <span className="status-badge status-badge-success">Normale</span>
-                </td>
-                <td>
-                  <div className="flex gap-sm">
-                    <Button size="sm" className="action-btn btn-small">
-                      <Edit className="w-3 h-3" />
-                      Modifier
-                    </Button>
-                    <Button size="sm" className="action-btn action-btn-secondary btn-small">
-                      <Trash2 className="w-3 h-3" />
-                      Supprimer
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div className="cell-content">
-                    <div className="cell-title">Projet Gamma</div>
-                    <div className="cell-subtitle">Troisième projet</div>
-                  </div>
-                </td>
-                <td>Marketing</td>
-                <td>25/03/2024</td>
-                <td>
-                  <span className="status-badge status-badge-danger">Suspendu</span>
-                </td>
-                <td>
-                  <span className="status-badge status-badge-info">Basse</span>
-                </td>
-                <td>
-                  <div className="flex gap-sm">
-                    <Button size="sm" className="action-btn btn-small">
-                      <Edit className="w-3 h-3" />
-                      Modifier
-                    </Button>
-                    <Button size="sm" className="action-btn action-btn-secondary btn-small">
-                      <Trash2 className="w-3 h-3" />
-                      Supprimer
-                    </Button>
-                  </div>
-                </td>
-              </tr>
+              {requests.length > 0 ? (
+                requests.map((request) => (
+                  <tr key={request.recruitmentRequestId}>
+                    <td>
+                      <div className="cell-content">
+                        <div className="cell-title">{request.jobTitle}</div>
+                        <div className="cell-subtitle">{request.description}</div>
+                      </div>
+                    </td>
+                    <td>Développement</td>
+                    <td>{formatDate(request.requestDate)}</td>
+                    <td>
+                      <span className={`status-badge status-badge-${
+                        request.status === "En Attente" ? "info" : "success"
+                      }`}>
+                        {request.status}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="status-badge status-badge-warning">{request.priority || 'Normale'}</span>
+                    </td>
+                    <td>
+                      <div className="flex gap-sm">
+                        <Button size="sm" className="action-btn btn-small">
+                          <Download className="w-3 h-3" />
+                          Télécharger
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6}>Aucune donnée trouvée.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
         <div className="pagination">
-          <div className="pagination-info">Affichage de 1 à 10 sur 156 entrées</div>
+          <div className="pagination-info">
+            Affichage de 1 à {requests.length} sur {requests.length} entrées
+          </div>
           <div className="pagination-controls">
             <Button variant="outline" size="sm" className="pagination-btn-active">
               1
-            </Button>
-            <Button variant="outline" size="sm" className="pagination-btn">
-              2
-            </Button>
-            <Button variant="outline" size="sm" className="pagination-btn">
-              3
-            </Button>
-            <Button variant="outline" size="sm" className="pagination-btn">
-              ...
-            </Button>
-            <Button variant="outline" size="sm" className="pagination-btn">
-              16
             </Button>
           </div>
         </div>
