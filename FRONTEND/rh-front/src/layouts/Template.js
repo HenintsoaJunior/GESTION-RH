@@ -7,6 +7,8 @@ import * as FaIcons from "react-icons/fa";
 import { MdPalette } from "react-icons/md";
 import ReactCountryFlag from "react-country-flag";
 import "./Template.css";
+import { BASE_URL } from "../config/apiConfig";
+
 
 export default function Template({ children }) {
   const location = useLocation();
@@ -31,9 +33,6 @@ export default function Template({ children }) {
   const lastLocationRef = useRef("");
   const lastLanguageRef = useRef("");
   const navigationUpdateRef = useRef(false);
-
-  // Base URL for API calls
-  const baseUrl = "http://localhost:5183";
 
   // Theme configuration
   const themes = useMemo(() => [
@@ -60,7 +59,7 @@ export default function Template({ children }) {
 
       setIsLanguagesLoading(true);
       try {
-        const response = await fetch(`${baseUrl}/api/Languages`);
+        const response = await fetch(`${BASE_URL}/api/Languages`);
         if (!response.ok) throw new Error("Erreur réseau");
 
         const data = await response.json();
@@ -98,7 +97,7 @@ export default function Template({ children }) {
 
       setIsMenuLoading(true);
       try {
-        const response = await fetch(`${baseUrl}/api/Menu/hierarchy/${selectedLanguage}`);
+        const response = await fetch(`${BASE_URL}/api/Menu/hierarchy/${selectedLanguage}`);
         if (!response.ok) throw new Error("Erreur réseau");
 
         const data = await response.json();
