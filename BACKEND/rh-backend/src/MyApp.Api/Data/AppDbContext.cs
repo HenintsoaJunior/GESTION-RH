@@ -28,6 +28,8 @@ namespace MyApp.Api.Data
 
         public DbSet<RecruitmentRequest> RecruitmentRequests { get; set; }
 
+        public DbSet<ApprovalFlow> ApprovalFlows { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Menu>()
