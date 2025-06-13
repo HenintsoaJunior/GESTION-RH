@@ -23,7 +23,7 @@ namespace MyApp.Api.Entities.recruitment
 
         [Required]
         [Column("request_date")]
-        public DateTime RequestDate { get; set; }
+        public DateTime RequestDate { get; set; } = DateTime.UtcNow;
 
         [Column("status")]
         [MaxLength(20)]

@@ -21,3 +21,9 @@ INSERT INTO users (user_id, name, email, password, role, department_id) VALUES
 ('USR002', 'Marc Leroy', 'marc.leroy@entreprise.fr', 'password456', 'Manager', 'DEP002'),
 ('USR003', 'Sophie Bernard', 'sophie.bernard@entreprise.fr', 'azerty789', 'Manager', 'DEP003'),
 ('USR004', 'Julien Moreau', 'julien.moreau@entreprise.fr', '123motdepasse', 'RH', 'DEP001');
+
+INSERT INTO approval_flow (approval_flow_id, approval_order, department_id)
+VALUES 
+('AF001', 1, 'DEP001'),
+('AF002', 2, 'DEP002'),
+('AF003', 3, 'DEP003');
