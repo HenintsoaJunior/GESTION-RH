@@ -184,3 +184,10 @@
    ALTER TABLE recruitment_request ADD approval_date DATE NULL;
 
 
+CREATE TABLE recruitment_request_files(
+   files_id VARCHAR(50),
+   file VARBINARY(max) NOT NULL,
+   recruitment_request_id VARCHAR(50)  NOT NULL,
+   PRIMARY KEY(files_id),
+   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_request(recruitment_request_id)
+);                                                 
