@@ -346,12 +346,10 @@
 
 /* ===== ÉDITEUR DE TEXTE RICHE ===== */
 .rich-editor-container {
-  border: 2px solid var(--border-light);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  transition: border-color 0.2s ease;
+  width: 100%;
+  max-width: 800px; 
+  margin: 0 auto;
 }
-
 .rich-editor-container:focus-within {
   border-color: var(--border-focus);
   box-shadow: var(--shadow-focus);
@@ -365,14 +363,20 @@
 }
 
 .ql-container {
-  border: none !important;
-  font-family: var(--font-family) !important;
-  font-size: var(--font-size-sm) !important;
+  width: 100%;
+  max-width: 800px;
+  box-sizing: border-box;
+  word-break: break-word; /* Modern standard, replaces overflow-wrap and word-wrap */
+  white-space: normal;
 }
 
 .ql-editor {
-  min-height: 200px !important;
-  padding: var(--spacing-xl) !important;
+  min-height: 200px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  white-space: normal;
+  box-sizing: border-box; /* Added for consistent box model */
+  padding: 12px; /* Added for better text spacing */
 }
 
 .ql-editor.ql-blank::before {

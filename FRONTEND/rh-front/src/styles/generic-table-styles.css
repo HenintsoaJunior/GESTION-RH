@@ -598,3 +598,76 @@
 .pagination-btn {
   transition: all 0.2s ease;
 }
+
+/* NativeSelect.css */
+.native-select-wrapper {
+  position: relative !important;
+  display: inline-block !important;
+  width: 100% !important;
+}
+
+.native-select-input {
+  /* Reset des styles natifs */
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: none !important;
+}
+
+
+.native-select-input:empty,
+.native-select-input[value=""] {
+  color: #6b7280 !important;
+}
+
+.native-select-icon-wrapper {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+}
+
+.native-select-icon {
+  width: 16px !important;
+  height: 16px !important;
+  color: #6b7280 !important;
+  transition: transform 0.2s ease-in-out !important;
+  flex-shrink: 0 !important;
+}
+
+.native-select-icon-open {
+  transform: rotate(180deg) !important;
+}
+
+.native-select-option {
+  color: #111827 !important;
+  background-color: white !important;
+  padding: 8px 12px !important;
+}
+
+/* Assurer la compatibilité avec les styles existants */
+.native-select-wrapper * {
+  box-sizing: border-box !important;
+}
+
+/* Override spécifique pour éviter les conflits */
+.filter-form .native-select-wrapper,
+.table-container .native-select-wrapper {
+  position: relative !important;
+}
+
+.filter-form .native-select-icon-wrapper,
+.table-container .native-select-icon-wrapper {
+  position: absolute !important;
+  top: 50% !important;
+  right: 12px !important;
+  transform: translateY(-50%) !important;
+  bottom: auto !important;
+  width: auto !important;
+}
