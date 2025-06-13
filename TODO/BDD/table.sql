@@ -184,4 +184,3 @@
    ALTER TABLE recruitment_request ADD approval_date DATE NULL;
 
 
-
