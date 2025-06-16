@@ -12,11 +12,11 @@ namespace MyApp.Api.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        public DbSet<Language> Languages { get; set; }
-        public DbSet<Module> Modules { get; set; }
-        public DbSet<Menu> Menus { get; set; }
-        public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
-        public DbSet<MenuTranslation> MenuTranslations { get; set; }
+        public DbSet<RecruitmentRequestFile> RecruitmentRequestFiles { get; set; }
+
+        public DbSet<ApprovalFlow> ApprovalFlows { get; set; }
+
+        public DbSet<RecruitmentRequest> RecruitmentRequests { get; set; }
 
         public DbSet<Department> Departments { get; set; }
 
@@ -25,10 +25,11 @@ namespace MyApp.Api.Data
         public DbSet<ActionType> ActionTypes { get; set; }
 
         public DbSet<User> Users { get; set; }
-
-        public DbSet<RecruitmentRequest> RecruitmentRequests { get; set; }
-
-        public DbSet<ApprovalFlow> ApprovalFlows { get; set; }
+        public DbSet<Language> Languages { get; set; }
+        public DbSet<Module> Modules { get; set; }
+        public DbSet<Menu> Menus { get; set; }
+        public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
+        public DbSet<MenuTranslation> MenuTranslations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

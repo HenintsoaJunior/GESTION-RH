@@ -1,8 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 using MyApp.Api.Entities.departments;
-using MyApp.Api.Entities.users;
 
 namespace MyApp.Api.Entities.recruitment
 {

@@ -185,9 +185,9 @@
 
 
 CREATE TABLE recruitment_request_files(
-   files_id VARCHAR(50),
-   file VARBINARY(max) NOT NULL,
+   file_id VARCHAR(50),
+   file_name VARBINARY(max) NOT NULL,
    recruitment_request_id VARCHAR(50)  NOT NULL,
-   PRIMARY KEY(files_id),
+   PRIMARY KEY(file_id),
    FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_request(recruitment_request_id)
 );                                                 
