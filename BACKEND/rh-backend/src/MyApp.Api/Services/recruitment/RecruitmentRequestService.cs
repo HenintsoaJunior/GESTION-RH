@@ -1,7 +1,6 @@
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Repositories.recruitment;
 
-
 namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentRequestService
