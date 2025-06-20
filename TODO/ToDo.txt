@@ -115,7 +115,13 @@ Permettre la génération, le téléversement, le classement et la traçabilité
                     Tri par salarié, type, date
                     Recherche multicritère
                     Téléchargement possible
-        6. Historique de remise / traçabilité documentaire
+	6. Statistiques clés
+		Affichage sous forme de cartes de KPI :
+		Nombre total de modèles de documents disponibles
+		Nombre de documents RH générés ce mois
+		Nombre de documents téléversés ce mois
+		Pourcentage de documents attachés aux profils salariés
+        7. Historique de remise / traçabilité documentaire
                 Journalisation automatique :
                     Qui a généré le document ?
                     Quand ?
