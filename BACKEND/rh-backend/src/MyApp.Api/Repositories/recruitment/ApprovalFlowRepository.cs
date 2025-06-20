@@ -9,7 +9,7 @@ namespace MyApp.Api.Repositories.recruitment
         Task<IEnumerable<ApprovalFlow>> GetAllAsync();
         Task<ApprovalFlow?> GetByIdAsync(string id);
         Task AddAsync(ApprovalFlow flow);
-        Task UpdateAsync(ApprovalFlow flow);
+        Task UpdateAsync(ApprovalFlow flow); // Gardé comme async pour cohérence avec l'interface
         Task DeleteAsync(string id);
         Task SaveChangesAsync();
     }
@@ -39,9 +39,10 @@ namespace MyApp.Api.Repositories.recruitment
             await _context.ApprovalFlows.AddAsync(flow);
         }
 
-        public async Task UpdateAsync(ApprovalFlow flow)
+        public Task UpdateAsync(ApprovalFlow flow) // Retiré async car pas d'opération asynchrone
         {
             _context.ApprovalFlows.Update(flow);
+            return Task.CompletedTask; // Retourne une tâche complétée pour respecter la signature Task
         }
 
         public async Task DeleteAsync(string id)

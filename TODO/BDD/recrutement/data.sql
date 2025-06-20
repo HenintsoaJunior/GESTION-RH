@@ -27,3 +27,10 @@ VALUES
 ('AF001', 1, 'DEP001'),
 ('AF002', 2, 'DEP002'),
 ('AF003', 3, 'DEP003');
+
+
+
+delete from recruitment_request_files;
+delete from recruitment_approval;
+delete from recruitment_notifications;
+delete from recruitment_request;

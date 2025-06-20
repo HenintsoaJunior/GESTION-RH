@@ -31,6 +31,8 @@ namespace MyApp.Api.Data
         public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
         public DbSet<MenuTranslation> MenuTranslations { get; set; }
 
+        public DbSet<RecruitmentRequestFile> RecruitmentRequestFiles { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Menu>()
