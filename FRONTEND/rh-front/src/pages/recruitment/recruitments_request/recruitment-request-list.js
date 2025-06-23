@@ -1,67 +1,75 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Button } from "../../../components/Button";
-import { Input } from "../../../components/Input";
-import { NativeSelect, NativeSelectItem } from "../../../components/Select";
-import { Download, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
-import "../../../styles/generic-table-styles.css";
-import { BASE_URL } from "../../../config/apiConfig";
-import { parseData, formatDate, cleanFilters, hasActiveFilters } from "../../../utils/utils";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '../../../components/Button';
+import { Input } from '../../../components/Input';
+import { NativeSelect, NativeSelectItem } from '../../../components/Select';
+import { FileText, Plus, Download } from 'lucide-react';
+import { BASE_URL } from '../../../config/apiConfig';
+import { parseData, formatDate, cleanFilters, hasActiveFilters } from '../../../utils/utils';
+import '../../../styles/generic-table-styles.css';
 
-export default function RecruitmentRequestList() {
-  const [filters, setFilters] = useState({
-    status: "",
-    jobTitleKeyword: "",
-    requestDateMin: "",
-    requestDateMax: "",
-    approvalDateMin: "",
-    approvalDateMax: "",
-  });
+const RecruitmentRequestList = () => {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    status: '',
+    jobTitleKeyword: '',
+    requestDateMin: '',
+    requestDateMax: '',
+    approvalDateMin: '',
+    approvalDateMax: '',
+  });
 
   const recruitmentTypeHints = useMemo(() => ({
-    recruitmentRequestId: "string",
-    jobTitle: "string",
-    description: "string",
-    status: "string",
-    requestDate: "date",
-    approvalDate: "date",
-    priority: "string",
-    vacancyCount: "int",
-    salary: "double",
+    recruitmentRequestId: 'string',
+    jobTitle: 'string',
+    description: 'string',
+    status: 'string',
+    requestDate: 'date',
+    approvalDate: 'date',
+    priority: 'string',
+    vacancyCount: 'int',
+    salary: 'double',
   }), []);
 
   const fetchRequests = useCallback(
     async (filters = {}) => {
       try {
+        setLoading(true);
         const cleanedFilters = cleanFilters(filters);
         const hasFilters = hasActiveFilters(cleanedFilters);
 
         let response;
-
         if (hasFilters) {
           response = await fetch(`${BASE_URL}/api/RecruitmentRequest/search`, {
-            method: "POST",
+            method: 'POST',
             headers: {
-              "Content-Type": "application/json",
-              Accept: "*/*",
+              'Content-Type': 'application/json',
+              'Accept': '*/*',
             },
             body: JSON.stringify(cleanedFilters),
           });
         } else {
           response = await fetch(`${BASE_URL}/api/RecruitmentRequest`, {
-            headers: { Accept: "*/*" },
+            headers: { 'Accept': '*/*' },
           });
+        }
+
+        if (!response.ok) {
+          throw new Error('Erreur lors de la récupération des demandes');
         }
 
         const data = await response.json();
         const parsedData = parseData(data, recruitmentTypeHints);
         setRequests(parsedData);
-      } catch (error) {
-        console.error("Erreur lors de la récupération des demandes :", error);
-        setRequests([]);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
     },
     [recruitmentTypeHints]
@@ -82,20 +90,84 @@ export default function RecruitmentRequestList() {
 
   const handleResetFilters = () => {
     const resetFilters = {
-      status: "",
-      jobTitleKeyword: "",
-      requestDateMin: "",
-      requestDateMax: "",
-      approvalDateMin: "",
-      approvalDateMax: "",
+      status: '',
+      jobTitleKeyword: '',
+      requestDateMin: '',
+      requestDateMax: '',
+      approvalDateMin: '',
+      approvalDateMax: '',
     };
     setFilters(resetFilters);
     fetchRequests(resetFilters);
   };
 
+  const getStatusBadge = (status) => {
+    return (
+      <span className={`status-badge status-badge-${
+        status === 'En Attente' ? 'info' : 
+        status === 'Approuvé' ? 'success' : 
+        status === 'Rejeté' ? 'danger' : 
+        status === 'En Cours' ? 'warning' : 'info'
+      }`}>
+        {status}
+      </span>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="table-page">
+        <div className="table-container">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p>Chargement des demandes...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="table-page">
+        <div className="table-container">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center text-red-500">
+              <p className="text-lg font-semibold">Erreur</p>
+              <p>{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="table-page">
       <div className="table-container">
+        {/* En-tête */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Demandes de recrutement</h1>
+            <p className="text-gray-600 mt-1">Gérez toutes les demandes de recrutement</p>
+          </div>
+          <div className="action-buttons-container">
+            <Button className="btn-secondary">
+              <Download className="w-4 h-4" />
+              Exporter
+            </Button>
+            <Button 
+              onClick={() => navigate('/recruitment/recruitment-request-form')} 
+              className="btn-primary"
+            >
+              <Plus className="w-4 h-4" />
+              Ajouter un élément
+            </Button>
+          </div>
+        </div>
+
         {/* Formulaire de filtres */}
         <div className="filter-form">
           <form onSubmit={handleFilterSubmit}>
@@ -107,10 +179,11 @@ export default function RecruitmentRequestList() {
                     <NativeSelect
                       name="status"
                       value={filters.status}
-                      onValueChange={(value) => handleFilterChange("status", value)}
+                      onValueChange={(value) => handleFilterChange('status', value)}
                     >
                       <NativeSelectItem value="">Tous</NativeSelectItem>
                       <NativeSelectItem value="En Attente">En Attente</NativeSelectItem>
+                      <NativeSelectItem value="En Cours">En Cours</NativeSelectItem>
                       <NativeSelectItem value="Approuvé">Approuvé</NativeSelectItem>
                       <NativeSelectItem value="Rejeté">Rejeté</NativeSelectItem>
                     </NativeSelect>
@@ -121,7 +194,7 @@ export default function RecruitmentRequestList() {
                       name="jobTitleKeyword"
                       type="text"
                       value={filters.jobTitleKeyword}
-                      onChange={(e) => handleFilterChange("jobTitleKeyword", e.target.value)}
+                      onChange={(e) => handleFilterChange('jobTitleKeyword', e.target.value)}
                       className="flex-1"
                     />
                   </td>
@@ -133,7 +206,7 @@ export default function RecruitmentRequestList() {
                       name="requestDateMin"
                       type="date"
                       value={filters.requestDateMin}
-                      onChange={(e) => handleFilterChange("requestDateMin", e.target.value)}
+                      onChange={(e) => handleFilterChange('requestDateMin', e.target.value)}
                       className="flex-1"
                     />
                   </td>
@@ -143,7 +216,7 @@ export default function RecruitmentRequestList() {
                       name="requestDateMax"
                       type="date"
                       value={filters.requestDateMax}
-                      onChange={(e) => handleFilterChange("requestDateMax", e.target.value)}
+                      onChange={(e) => handleFilterChange('requestDateMax', e.target.value)}
                       className="flex-1"
                     />
                   </td>
@@ -155,7 +228,7 @@ export default function RecruitmentRequestList() {
                       name="approvalDateMin"
                       type="date"
                       value={filters.approvalDateMin}
-                      onChange={(e) => handleFilterChange("approvalDateMin", e.target.value)}
+                      onChange={(e) => handleFilterChange('approvalDateMin', e.target.value)}
                       className="flex-1"
                     />
                   </td>
@@ -165,7 +238,7 @@ export default function RecruitmentRequestList() {
                       name="approvalDateMax"
                       type="date"
                       value={filters.approvalDateMax}
-                      onChange={(e) => handleFilterChange("approvalDateMax", e.target.value)}
+                      onChange={(e) => handleFilterChange('approvalDateMax', e.target.value)}
                       className="flex-1"
                     />
                   </td>
@@ -185,27 +258,13 @@ export default function RecruitmentRequestList() {
           </form>
         </div>
 
-        {/* Boutons d'action */}
-        <div className="action-buttons-container">
-          <Button className="btn-secondary">
-            <Download className="w-4 h-4" />
-            Exporter
-          </Button>
-          <Link to="/recruitment/recruitment-request-form">
-            <Button className="btn-primary">
-              <Plus className="w-4 h-4" />
-              Ajouter un élément
-            </Button>
-          </Link>
-        </div>
-
         {/* Tableau de données */}
         <div className="data-table-wrapper">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Nom</th>
-                <th>Catégorie</th>
+                <th>Poste</th>
+                <th>Demandeur</th>
                 <th>Date de création</th>
                 <th>Statut</th>
                 <th>Priorité</th>
@@ -219,26 +278,26 @@ export default function RecruitmentRequestList() {
                     <td>
                       <div className="cell-content">
                         <div className="cell-title">{request.jobTitle}</div>
-                        <div className="cell-subtitle">{request.description}</div>
+                        <div className="cell-subtitle">ID: {request.recruitmentRequestId}</div>
                       </div>
                     </td>
-                    <td>Développement</td>
+                    <td>{request.requesterId || 'N/A'}</td>
                     <td>{formatDate(request.requestDate)}</td>
+                    <td>{getStatusBadge(request.status)}</td>
                     <td>
-                      <span className={`status-badge status-badge-${
-                        request.status === "En Attente" ? "info" : "success"
-                      }`}>
-                        {request.status}
+                      <span className="status-badge status-badge-warning">
+                        {request.priority || 'Normale'}
                       </span>
                     </td>
                     <td>
-                      <span className="status-badge status-badge-warning">{request.priority || 'Normale'}</span>
-                    </td>
-                    <td>
                       <div className="flex gap-sm">
-                        <Button size="sm" className="action-btn btn-small">
-                          <Download className="w-3 h-3" />
-                          Télécharger
+                        <Button
+                          size="sm"
+                          className="action-btn btn-small"
+                          onClick={() => navigate(`/recruitment/recruitment-request/${request.recruitmentRequestId}/files`)}
+                        >
+                          <FileText className="w-3 h-3" />
+                          Documents
                         </Button>
                       </div>
                     </td>
@@ -267,4 +326,6 @@ export default function RecruitmentRequestList() {
       </div>
     </div>
   );
-}
+};
+
+export default RecruitmentRequestList;
