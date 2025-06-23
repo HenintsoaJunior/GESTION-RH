@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Upload, X, FileText, ImageIcon, File, Send } from 'lucide-react'
+import { BASE_URL } from "../../../config/apiConfig"
 import "../../../styles/generic-form-styles.css"
 
 export default function RecruitmentRequestForm() {
@@ -10,6 +11,7 @@ export default function RecruitmentRequestForm() {
   const [quillLoaded, setQuillLoaded] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState([])
   const [dragActive, setDragActive] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (typeof window !== "undefined" && !window.Quill && !quillLoaded) {
@@ -152,27 +154,62 @@ export default function RecruitmentRequestForm() {
     return <File className="w-4 h-4" />
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    const formData = new FormData(event.target)
-    const jobTitle = formData.get("jobTitle")
-    const department = formData.get("department")
-    const contractType = formData.get("contractType")
-    const location = formData.get("location")
-    const salary = formData.get("salary")
-    const startDate = formData.get("startDate")
-    const description = quillRef.current ? quillRef.current.root.innerHTML : ""
+    setIsSubmitting(true)
 
-    console.log("Form submitted:", {
-      jobTitle,
-      department,
-      contractType,
-      location,
-      salary,
-      startDate,
-      description,
-      files: selectedFiles.map((f) => f.name),
-    })
+    try {
+      const formData = new FormData()
+      const form = event.target
+      
+      // Récupération des données du formulaire
+      const jobTitle = form.jobTitle.value
+      const description = quillRef.current ? quillRef.current.root.innerHTML : ""
+
+      // Construction du FormData selon l'API attendue
+      formData.append('RecruitmentRequestId', '') // Laisser vide pour génération automatique
+      formData.append('JobTitle', jobTitle)
+      formData.append('Description', description)
+      formData.append('Status', 'En Cours')
+      formData.append('RequesterId', 'USR001') // À adapter selon votre logique d'authentification
+      formData.append('RequestDate', new Date().toISOString())
+      formData.append('ApprovalDate', new Date().toISOString())
+
+      // Ajout des fichiers
+      selectedFiles.forEach((file) => {
+        formData.append('Files', file)
+      })
+
+      // Envoi vers l'API
+      const response = await fetch(`${BASE_URL}/api/RecruitmentRequest`, {
+        method: 'POST',
+        body: formData,
+        // Ne pas définir Content-Type, le navigateur le fera automatiquement avec la boundary
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Demande créée avec succès:', result)
+        
+        // Réinitialiser le formulaire
+        form.reset()
+        setSelectedFiles([])
+        if (quillRef.current) {
+          quillRef.current.root.innerHTML = ''
+        }
+        
+        alert('Demande de recrutement soumise avec succès!')
+      } else {
+        const errorData = await response.json()
+        console.error('Erreur lors de la soumission:', errorData)
+        alert('Erreur lors de la soumission de la demande. Veuillez réessayer.')
+      }
+    } catch (error) {
+      console.error('Erreur réseau:', error)
+      alert('Erreur de connexion. Veuillez vérifier votre connexion et réessayer.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -204,6 +241,7 @@ export default function RecruitmentRequestForm() {
                   placeholder="Ex: Développeur Full Stack Senior"
                   className="form-input"
                   required
+                  disabled={isSubmitting}
                 />
               </td>
             </tr>
@@ -227,7 +265,12 @@ export default function RecruitmentRequestForm() {
                     <div className="upload-text">
                       <span className="upload-main">Glissez vos fichiers ici</span>
                       <span className="upload-sub">ou</span>
-                      <button type="button" className="upload-button" onClick={handleFileButtonClick}>
+                      <button 
+                        type="button" 
+                        className="upload-button" 
+                        onClick={handleFileButtonClick}
+                        disabled={isSubmitting}
+                      >
                         Parcourir les fichiers
                       </button>
                     </div>
@@ -242,6 +285,7 @@ export default function RecruitmentRequestForm() {
                     className="hidden"
                     accept=".pdf,.doc,.docx,.txt,.jpg,.png,.gif"
                     onChange={handleFileChange}
+                    disabled={isSubmitting}
                   />
                 </div>
 
@@ -263,6 +307,7 @@ export default function RecruitmentRequestForm() {
                             className="remove-file"
                             onClick={() => removeFile(index)}
                             title="Supprimer le fichier"
+                            disabled={isSubmitting}
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -282,16 +327,20 @@ export default function RecruitmentRequestForm() {
               </th>
               <td className="form-input-cell">
                 <div className="rich-editor-container">
-                  <div id="editor" style={{ minHeight: "200px" }}></div>
+                  <div id="editor" style={{ minHeight: "200px", opacity: isSubmitting ? 0.5 : 1 }}></div>
                 </div>
               </td>
             </tr>
 
             <tr>
               <td colSpan="2" className="form-submit-cell">
-                <button type="submit" className="btn btn-primary btn-large">
+                <button 
+                  type="submit" 
+                  className="btn btn-primary btn-large"
+                  disabled={isSubmitting}
+                >
                   <Send className="w-4 h-4" />
-                  Envoyer la demande
+                  {isSubmitting ? 'Envoi en cours...' : 'Envoyer la demande'}
                   <span className="btn-arrow">→</span>
                 </button>
               </td>
