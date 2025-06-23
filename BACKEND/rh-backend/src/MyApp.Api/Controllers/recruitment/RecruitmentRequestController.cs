@@ -20,6 +20,13 @@ public class RecruitmentRequestController : ControllerBase
         _fileService = fileService;
     }
 
+    [HttpGet("files")]
+    public async Task<IActionResult> GetFilesByRecruitmentRequestId([FromQuery] string recruitment_request_id)
+    {
+        var results = await _fileService.GetFilesByRecruitmentRequestIdAsync(recruitment_request_id);
+        return Ok(results);
+    }
+
     [HttpPost("search")]
     public async Task<IActionResult> Search([FromBody] RecruitmentRequestCriteria criteria)
     {
@@ -75,7 +82,7 @@ public class RecruitmentRequestController : ControllerBase
             RequesterId = requestDto.RequesterId ?? string.Empty,
             RequestDate = requestDto.RequestDate,
             ApprovalDate = requestDto.ApprovalDate
-        };
+        };                                                                                                                                 
 
         await _requestService.AddRequestAsync(request);
 
