@@ -9,9 +9,11 @@ namespace MyApp.Api.Repositories.recruitment
     {
         Task<IEnumerable<RecruitmentRequestFile>> GetAllAsync();
         Task<RecruitmentRequestFile?> GetByIdAsync(string id);
+        Task<IEnumerable<RecruitmentRequestFile>> GetFilesByRecruitmentRequestIdAsync(string recruitmentRequestId);
         Task AddAsync(RecruitmentRequestFile file);
         Task SaveChangesAsync();
     }
+
 
     public class RecruitmentRequestFileRepository : IRecruitmentRequestFileRepository
     {
@@ -32,6 +34,13 @@ namespace MyApp.Api.Repositories.recruitment
             return await _context.RecruitmentRequestFiles.FindAsync(id);
         }
 
+        public async Task<IEnumerable<RecruitmentRequestFile>> GetFilesByRecruitmentRequestIdAsync(string recruitmentRequestId)
+        {
+            return await _context.RecruitmentRequestFiles
+                .Where(f => f.RecruitmentRequestId == recruitmentRequestId)
+                .ToListAsync();
+        }
+
         public async Task AddAsync(RecruitmentRequestFile file)
         {
             await _context.RecruitmentRequestFiles.AddAsync(file);
@@ -42,5 +51,4 @@ namespace MyApp.Api.Repositories.recruitment
             await _context.SaveChangesAsync();
         }
     }
-
 }

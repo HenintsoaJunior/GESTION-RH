@@ -7,8 +7,10 @@ namespace MyApp.Api.Services.recruitment
     {
         Task<IEnumerable<RecruitmentRequestFile>> GetAllFilesAsync();
         Task<RecruitmentRequestFile?> GetFileByIdAsync(string id);
+        Task<IEnumerable<RecruitmentRequestFile>> GetFilesByRecruitmentRequestIdAsync(string recruitmentRequestId);
         Task AddFileAsync(RecruitmentRequestFile file);
     }
+
 
     public class RecruitmentRequestFileService : IRecruitmentRequestFileService
     {
@@ -18,6 +20,7 @@ namespace MyApp.Api.Services.recruitment
         {
             _repository = repository;
         }
+
         public async Task<IEnumerable<RecruitmentRequestFile>> GetAllFilesAsync()
         {
             return await _repository.GetAllAsync();
@@ -28,11 +31,16 @@ namespace MyApp.Api.Services.recruitment
             return await _repository.GetByIdAsync(id);
         }
 
-        public async Task AddFileAsync(RecruitmentRequestFile file)
+        public async Task<IEnumerable<RecruitmentRequestFile>> GetFilesByRecruitmentRequestIdAsync(string recruitmentRequestId)
+        {
+            return await _repository.GetFilesByRecruitmentRequestIdAsync(recruitmentRequestId);
+        }
 
+        public async Task AddFileAsync(RecruitmentRequestFile file)
         {
             await _repository.AddAsync(file);
             await _repository.SaveChangesAsync();
         }
     }
+
 }
