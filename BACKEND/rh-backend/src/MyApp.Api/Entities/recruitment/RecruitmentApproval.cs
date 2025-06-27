@@ -7,7 +7,6 @@ namespace MyApp.Api.Entities.recruitment
     [Table("recruitment_approval")]
     public class RecruitmentApproval
     {
-
         [Column("approver_id")]
         [MaxLength(50)]
         public string ApproverId { get; set; } = null!;
