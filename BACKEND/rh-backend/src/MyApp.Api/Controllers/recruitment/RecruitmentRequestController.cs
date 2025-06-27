@@ -9,21 +9,52 @@ using MyApp.Api.Models.recruitment;
 [Route("api/[controller]")]
 public class RecruitmentRequestController : ControllerBase
 {
-    private readonly IRecruitmentRequestService _requestService;
+    private readonly IRecruitmentApprovalService _approvalService;
     private readonly IRecruitmentRequestFileService _fileService; // Ajout du service pour les fichiers
+    private readonly IRecruitmentRequestService _requestService;
 
     public RecruitmentRequestController(
         IRecruitmentRequestService requestService,
-        IRecruitmentRequestFileService fileService) // Injection du nouveau service
+        IRecruitmentRequestFileService fileService,
+        IRecruitmentApprovalService approvalService) // Injection du nouveau service
     {
         _requestService = requestService;
         _fileService = fileService;
+        _approvalService = approvalService;
+    }
+
+    [HttpGet("by-request/{requestId}")]
+    public async Task<IActionResult> GetApprovalByRequestId(string requestId)
+    {
+        var approvals = await _approvalService.GetApprovalsByRequestIdAsync(requestId);
+        return Ok(approvals);
+    }
+
+    [HttpGet("by-approver/{approverId}")]
+    public async Task<IActionResult> GetApprovalByApprover(string approverId)
+    {
+        var approvals = await _approvalService.GetByApproverAsync(approverId);
+        return Ok(approvals);
+    }
+
+    [HttpPost("validate")]
+    public async Task<IActionResult> ValidateApproval([FromBody] RecruitmentApproval approval)
+    {
+        await _approvalService.ValidateApprovalAsync(approval);
+        return Ok("Approval validated.");
+    }
+
+    [HttpPost("recommend")]
+    public async Task<IActionResult> RecommendApproval([FromBody] RecruitmentApproval approval)
+    {
+        await _approvalService.RecommendApprovalAsync(approval);
+        return Ok("Approval recommended.");
     }
 
     [HttpGet("files")]
     public async Task<IActionResult> GetFilesByRecruitmentRequestId([FromQuery] string recruitment_request_id)
     {
-        var results = await _fileService.GetFilesByRecruitmentRequestIdAsync(recruitment_request_id);
+        var results = await _fileService.GetFilesByRecruitmentRequestIdAsync(recruitment_request_id  );
         return Ok(results);
     }
 
@@ -41,18 +72,27 @@ public class RecruitmentRequestController : ControllerBase
         return Ok(results);
     }
 
+    [HttpGet("requests/{idRequester}")]
+    public async Task<IActionResult> GetRequestsByRequester(string idRequester)
+    {
+        var requests = await _requestService.GetRequestsByRequesterAsync(idRequester);
+        if (requests == null) return NotFound();
+        return Ok(requests);
+    }
+    // toutes les demandes
     [HttpGet]
     public async Task<IActionResult> GetAll() =>
         Ok(await _requestService.GetAllRequestsAsync());
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(string id)
+    [HttpGet("request/{id}")]
+    public async Task<IActionResult> GetRequestById(string id)
     {
         var request = await _requestService.GetRequestByIdAsync(id);
         if (request == null) return NotFound();
         return Ok(request);
     }
 
+    // création de la demande
    [HttpPost]
     public async Task<IActionResult> Create([FromForm] CreateRecruitmentRequestDto requestDto)
     {
@@ -108,6 +148,6 @@ public class RecruitmentRequestController : ControllerBase
             }
         }
 
-        return CreatedAtAction(nameof(GetById), new { id = request.RecruitmentRequestId }, request);
+        return CreatedAtAction(nameof(GetRequestById), new { id = request.RecruitmentRequestId }, request);
     }
 }

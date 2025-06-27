@@ -7,6 +7,7 @@ namespace MyApp.Api.Services.recruitment
     {
         Task<IEnumerable<RecruitmentRequest>> GetByCriteriaAsync(RecruitmentRequestCriteria criteria);
         Task<IEnumerable<RecruitmentRequest>> GetPaginatedRequestsAsync(int startIndex, int count);
+        Task<IEnumerable<RecruitmentRequest>> GetRequestsByRequesterAsync(string requesterId);
         Task<IEnumerable<RecruitmentRequest>> GetAllRequestsAsync();
         Task<RecruitmentRequest?> GetRequestByIdAsync(string id);
         Task AddRequestAsync(RecruitmentRequest request);
@@ -31,7 +32,10 @@ namespace MyApp.Api.Services.recruitment
         {
             return await _repository.GetPaginatedAsync(startIndex, count);
         }
-
+        public async Task<IEnumerable<RecruitmentRequest>> GetRequestsByRequesterAsync(string requesterId)
+        {
+            return await _repository.GetByRequesterAsync(requesterId);
+        }
 
         public async Task<IEnumerable<RecruitmentRequest>> GetAllRequestsAsync()
         {
