@@ -5,6 +5,8 @@ import Dashboard from '../pages/Dashboard';
 import Template from '../layouts/Template';
 import RecruitmentRequestForm from '../pages/recruitment/recruitments_request/recruitment-request-form';
 import RecruitmentRequestList from '../pages/recruitment/recruitments_request/recruitment-request-list';
+import PDFViewer from '../pages/recruitment/recruitments_request/pdf/pdf-viewer';
+
 function AppRouter() {
   return (
     <BrowserRouter>
@@ -13,6 +15,7 @@ function AppRouter() {
         <Route element={<Template><Outlet /></Template>}>
           <Route path="/recruitment/recruitment-request" element={<RecruitmentRequestList />} />
           <Route path="/recruitment/recruitment-request-form" element={<RecruitmentRequestForm />} />
+          <Route path="/recruitment/recruitment-request/:recruitmentRequestId/files" element={<PDFViewer />} />
           <Route path="/admin/documents" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Route>
