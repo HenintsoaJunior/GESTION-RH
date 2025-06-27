@@ -158,6 +158,7 @@
       FOREIGN KEY(requester_id) REFERENCES users(user_id)
    );
 
+   -- Table pour les fichiers reliés à une demande de validation de recrutement
    CREATE TABLE recruitment_request_files(
       file_id VARCHAR(50),
       file_name VARBINARY(max) NOT NULL,
@@ -192,14 +193,3 @@
 
    ALTER TABLE recruitment_request ADD approval_date DATE NULL;
 
-
-<<<<<<< HEAD:TODO/BDD/table.sql
-=======
-CREATE TABLE recruitment_request_files(
-   file_id VARCHAR(50),
-   file_name VARBINARY(max) NOT NULL,
-   recruitment_request_id VARCHAR(50)  NOT NULL,
-   PRIMARY KEY(file_id),
-   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_request(recruitment_request_id)
-);                                                 
->>>>>>> dev:TODO/BDD/recrutement/table.sql
