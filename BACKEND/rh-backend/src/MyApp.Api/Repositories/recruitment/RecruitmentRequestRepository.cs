@@ -7,8 +7,8 @@ namespace MyApp.Api.Repositories.recruitment
     public interface IRecruitmentRequestRepository
     {
         Task<IEnumerable<RecruitmentRequest>> GetByCriteriaAsync(RecruitmentRequestCriteria criteria);
-
         Task<IEnumerable<RecruitmentRequest>> GetPaginatedAsync(int startIndex, int count);
+        Task<IEnumerable<RecruitmentRequest>> GetByRequesterAsync(string requesterId);
         Task<IEnumerable<RecruitmentRequest>> GetAllAsync();
         Task<RecruitmentRequest?> GetByIdAsync(string id);
         Task AddAsync(RecruitmentRequest request);
@@ -18,6 +18,11 @@ namespace MyApp.Api.Repositories.recruitment
     public class RecruitmentRequestRepository : IRecruitmentRequestRepository
     {
         private readonly AppDbContext _context;
+
+        public RecruitmentRequestRepository(AppDbContext context)
+        {
+            _context = context;
+        }
 
         public async Task<IEnumerable<RecruitmentRequest>> GetByCriteriaAsync(RecruitmentRequestCriteria criteria)
         {
@@ -54,10 +59,11 @@ namespace MyApp.Api.Repositories.recruitment
                 .ToListAsync();
         }
 
-
-        public RecruitmentRequestRepository(AppDbContext context)
+        public async Task<IEnumerable<RecruitmentRequest>> GetByRequesterAsync(string requesterId)
         {
-            _context = context;
+            return await _context.RecruitmentRequests
+                .Where(r => r.RequesterId == requesterId)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<RecruitmentRequest>> GetAllAsync()
