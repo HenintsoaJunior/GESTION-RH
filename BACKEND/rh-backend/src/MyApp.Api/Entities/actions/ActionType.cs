@@ -1,10 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace MyApp.Api.Entities.action_type
+namespace MyApp.Api.Entities.actions
 {
     [Table("action_type")]
-    public class ActionType
+    public class ActionType : BaseEntity
     {
         [Key]
         [Column("action_type_id")]

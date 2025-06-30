@@ -1,10 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace MyApp.Api.Entities.contract_types
+namespace MyApp.Api.Entities.contracts
 {
     [Table("contract_types")]
-    public class ContractType
+    public class ContractType : BaseEntity
     {
         [Key]
         [Column("contract_type_id")]

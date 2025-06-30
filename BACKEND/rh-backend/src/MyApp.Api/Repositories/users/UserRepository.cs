@@ -48,6 +48,7 @@ namespace MyApp.Api.Repositories.users
 
         public async Task<User> UpdateAsync(User user)
         {
+            EntityAuditHelper.SetUpdatedTimestamp(user);
             _context.Entry(user).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return user;

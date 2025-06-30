@@ -12,7 +12,7 @@ namespace MyApp.Api.Entities.recruitment
         public string FileId { get; set; } = null!;
 
         [Required]
-        [Column("file_name")]
+        [Column("files")]
         public byte[] FileName { get; set; } = null!; // VARBINARY(max) mappé à byte[]
 
         [Required]

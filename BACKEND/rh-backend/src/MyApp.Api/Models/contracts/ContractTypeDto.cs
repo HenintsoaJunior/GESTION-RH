@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MyApp.Api.Models.contract_types
+namespace MyApp.Api.Models.contracts
 {
     public class ContractTypeDto
     {

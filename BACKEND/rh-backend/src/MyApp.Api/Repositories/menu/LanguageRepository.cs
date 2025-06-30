@@ -42,6 +42,7 @@ namespace MyApp.Api.Repositories.menu
 
         public async Task<Language> UpdateAsync(Language language)
         {
+            EntityAuditHelper.SetUpdatedTimestamp(language);
             _context.Entry(language).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return language;

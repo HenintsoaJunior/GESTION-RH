@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace MyApp.Api.Entities.menu
 {
     [Table("menu_translation")]
-    public class MenuTranslation
+    public class MenuTranslation : BaseEntity
     {
         [Key]
         [Column("translation_id")]
