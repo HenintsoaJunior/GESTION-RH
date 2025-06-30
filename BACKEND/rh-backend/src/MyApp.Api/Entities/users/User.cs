@@ -12,9 +12,15 @@ namespace MyApp.Api.Entities.users
         [MaxLength(50)]
         public string UserId { get; set; } = null!;
 
-        [Column("name")]
+        [Required]
+        [Column("first_name")]
         [MaxLength(255)]
-        public string? Name { get; set; }
+        public string FirstName { get; set; } = null!;
+
+        [Required]
+        [Column("last_name")]
+        [MaxLength(255)]
+        public string LastName { get; set; } = null!;
 
         [Required]
         [Column("email")]
@@ -30,6 +36,12 @@ namespace MyApp.Api.Entities.users
         [Column("role")]
         [MaxLength(50)]
         public string Role { get; set; } = null!;
+
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Column("updated_at")]
+        public DateTime? UpdatedAt { get; set; }
 
         [Required]
         [Column("department_id")]

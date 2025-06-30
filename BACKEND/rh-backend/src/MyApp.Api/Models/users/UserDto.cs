@@ -8,8 +8,13 @@ namespace MyApp.Api.Models.users
         [MaxLength(50)]
         public string UserId { get; set; } = default!;
 
+        [Required]
         [MaxLength(255)]
-        public string? Name { get; set; }
+        public string FirstName { get; set; } = default!;
+
+        [Required]
+        [MaxLength(255)]
+        public string LastName { get; set; } = default!;
 
         [Required]
         [MaxLength(100)]

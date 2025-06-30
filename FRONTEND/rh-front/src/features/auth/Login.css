@@ -59,14 +59,14 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  width: 100%; /* Ensure form takes full width */
+  width: 100%;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  width: 100%; /* Ensure form-group takes full width */
+  width: 100%;
 }
 
 .form-label {
@@ -85,7 +85,11 @@
 }
 
 .form-input[type="email"] {
-  padding-right: 2.5rem; /* Match password input's toggle button space */
+  padding-right: 0.75rem;
+}
+
+.form-input.password-input {
+  padding-right: 2.5rem; /* Space for the toggle button */
 }
 
 .form-input:focus {
@@ -113,7 +117,7 @@
 
 .password-input-container {
   position: relative;
-  width: 100%; /* Ensure container matches input width */
+  width: 100%;
 }
 
 .password-toggle {
@@ -129,6 +133,12 @@
   align-items: center;
   justify-content: center;
   padding: 0;
+  z-index: 10;
+}
+
+.password-toggle svg {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .login-button {
@@ -165,4 +175,9 @@
 
 .signup-link:hover {
   text-decoration: underline;
+}
+
+.error-message {
+  font-size: 0.875rem;
+  text-align: center;
 }
