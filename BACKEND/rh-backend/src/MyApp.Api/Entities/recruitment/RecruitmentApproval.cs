@@ -5,13 +5,13 @@ using MyApp.Api.Entities.departments;
 namespace MyApp.Api.Entities.recruitment
 {
     [Table("recruitment_approval")]
-    public class RecruitmentApproval
+    public class RecruitmentApproval : BaseEntity
     {
         [Key, Column("approver_id_")]
         [MaxLength(50)]
         public string ApproverId { get; set; } = null!;
 
-        [Key, Column("recruitment_request_id")]
+        [Column("recruitment_request_id")]
         [MaxLength(50)]
         public string RecruitmentRequestId { get; set; } = null!;
 
