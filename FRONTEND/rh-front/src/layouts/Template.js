@@ -9,7 +9,6 @@ import ReactCountryFlag from "react-country-flag";
 import "./Template.css";
 import { BASE_URL } from "../config/apiConfig";
 
-
 export default function Template({ children }) {
   const location = useLocation();
   const [collapsed] = useState(false);
@@ -33,6 +32,20 @@ export default function Template({ children }) {
   const lastLocationRef = useRef("");
   const lastLanguageRef = useRef("");
   const navigationUpdateRef = useRef(false);
+
+  // Retrieve user data from localStorage
+  const user = JSON.parse(localStorage.getItem("user")) || {
+    firstName: "John",
+    lastName: "Doe",
+    role: "Administrateur",
+  };
+
+  // Generate initials for avatar
+  const getInitials = useCallback((firstName, lastName) => {
+    const firstInitial = firstName ? firstName[0] : "J";
+    const lastInitial = lastName ? lastName[0] : "D";
+    return `${firstInitial}${lastInitial}`.toUpperCase();
+  }, []);
 
   // Theme configuration
   const themes = useMemo(() => [
@@ -200,7 +213,7 @@ export default function Template({ children }) {
       }
       setExpandedMenus((prev) => {
         const newExpanded = { ...prev };
-        Object.keys(newExpanded).forEach((key) => {
+        Object.keys(newExpanded).forEach( key => {
           newExpanded[key] = false;
         });
         return newExpanded;
@@ -464,10 +477,10 @@ export default function Template({ children }) {
               </button>
               <div className="user-profile-dropdown">
                 <div className="user-profile">
-                  <div className="user-avatar">JD</div>
+                  <div className="user-avatar">{getInitials(user.firstName, user.lastName)}</div>
                   <div className="user-info">
-                    <span className="user-name">John Doe</span>
-                    <span className="user-role">Administrateur</span>
+                    <span className="user-name">{`${user.firstName} ${user.lastName}`}</span>
+                    <span className="user-role">{user.role}</span>
                   </div>
                   <FaIcons.FaChevronDown className="dropdown-arrow" />
                 </div>
