@@ -11,6 +11,7 @@
    DROP TABLE IF EXISTS action_logs;
    DROP TABLE IF EXISTS cv_details;
    DROP TABLE IF EXISTS applications;
+   DROP TABLE IF EXISTS job_descriptions;
    DROP TABLE IF EXISTS job_offers;
    DROP TABLE IF EXISTS users;
    DROP TABLE IF EXISTS action_type;
@@ -76,26 +77,37 @@
       FOREIGN KEY(department_id) REFERENCES departments(department_id)
    );
 
-   -- Table pour les offres d'emploi
-   CREATE TABLE job_offers(
-      offer_id VARCHAR(50),
+   -- Table pour les fiches de poste
+   CREATE TABLE job_descriptions (
+      description_id VARCHAR(50) PRIMARY KEY,
       title VARCHAR(200) NOT NULL,
       location VARCHAR(100),
-      deadline_date DATETIME2,
       description VARCHAR(MAX),
       required_skills VARCHAR(MAX),
       required_experience VARCHAR(MAX),
       required_education VARCHAR(200),
       required_languages VARCHAR(200),
-      status VARCHAR(20) DEFAULT 'Publié', --CHECK(status IN('BROUILLON', 'PUBLIÉ', 'FERMÉ')),
-      created_at DATETIME2 DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME2,
       contract_type_id VARCHAR(50),
       department_id VARCHAR(50),
-      PRIMARY KEY(offer_id),
+      created_at DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME2,
       FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id),
       FOREIGN KEY(department_id) REFERENCES departments(department_id)
    );
+
+   -- Table pour les offres d'emploi
+   CREATE TABLE job_offers (
+      offer_id VARCHAR(50) PRIMARY KEY,
+      description_id VARCHAR(50),
+      status VARCHAR(20) DEFAULT 'Publié', -- BROUILLON, PUBLIÉ, FERMÉ
+      publication_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+      deadline_date DATETIME2,
+      created_at DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME2,
+      FOREIGN KEY(description_id) REFERENCES job_descriptions(description_id)
+   );
+
+
 
    -- Table pour les candidatures
    CREATE TABLE applications(

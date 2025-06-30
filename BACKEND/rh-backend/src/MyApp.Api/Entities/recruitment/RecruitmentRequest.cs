@@ -6,7 +6,7 @@ using MyApp.Api.Entities.users;
 namespace MyApp.Api.Entities.recruitment
 {
     [Table("recruitment_request")]
-    public class RecruitmentRequest
+    public class RecruitmentRequest : BaseEntity
     {
         [Key]
         [Column("recruitment_request_id")]

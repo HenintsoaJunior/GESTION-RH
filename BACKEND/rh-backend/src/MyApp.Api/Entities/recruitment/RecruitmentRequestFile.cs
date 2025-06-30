@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace MyApp.Api.Entities.recruitment
 {
     [Table("recruitment_request_files")]
-    public class RecruitmentRequestFile
+    public class RecruitmentRequestFile : BaseEntity
     {
         [Key]
         [Column("file_id")]

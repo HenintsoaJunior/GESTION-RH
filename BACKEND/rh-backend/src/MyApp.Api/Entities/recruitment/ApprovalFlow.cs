@@ -7,7 +7,7 @@ using MyApp.Api.Entities.users;
 namespace MyApp.Api.Entities.recruitment
 {
     [Table("approval_flow")]
-    public class ApprovalFlow
+    public class ApprovalFlow : BaseEntity
     {
         [Key]
         [Column("approval_flow_id")]

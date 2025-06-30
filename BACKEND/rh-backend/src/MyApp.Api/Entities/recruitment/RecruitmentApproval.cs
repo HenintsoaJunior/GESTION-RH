@@ -5,7 +5,7 @@ using MyApp.Api.Entities.departments;
 namespace MyApp.Api.Entities.recruitment
 {
     [Table("recruitment_approval")]
-    public class RecruitmentApproval
+    public class RecruitmentApproval : BaseEntity
     {
         [Key, Column("approver_id_")]
         [MaxLength(50)]
