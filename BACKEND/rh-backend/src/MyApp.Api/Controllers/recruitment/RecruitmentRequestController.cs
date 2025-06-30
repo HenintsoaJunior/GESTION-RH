@@ -147,7 +147,6 @@ public class RecruitmentRequestController : ControllerBase
                 }
             }
         }
-
         return CreatedAtAction(nameof(GetRequestById), new { id = request.RecruitmentRequestId }, request);
     }
 }

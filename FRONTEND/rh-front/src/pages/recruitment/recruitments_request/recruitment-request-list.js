@@ -150,7 +150,6 @@ const RecruitmentRequestList = () => {
         {/* En-tête */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Demandes de recrutement</h1>
             <p className="text-gray-600 mt-1">Gérez toutes les demandes de recrutement</p>
           </div>
           <div className="action-buttons-container">
