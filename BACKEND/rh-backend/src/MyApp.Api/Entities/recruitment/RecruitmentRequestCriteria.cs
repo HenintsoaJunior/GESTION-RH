@@ -1,6 +1,6 @@
 namespace MyApp.Api.Entities.recruitment
 {
-    public class RecruitmentRequestCriteria
+    public class RecruitmentRequestCriteria : BaseEntity
     {
         public string? Status { get; set; }
         public string? JobTitleKeyword { get; set; }

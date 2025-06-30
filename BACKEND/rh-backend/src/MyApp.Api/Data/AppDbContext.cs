@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Entities;
 using MyApp.Api.Entities.action_type;
 using MyApp.Api.Entities.contract_types;
 using MyApp.Api.Entities.departments;
@@ -32,6 +33,25 @@ namespace MyApp.Api.Data
         public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
         public DbSet<MenuTranslation> MenuTranslations { get; set; }
 
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var entries = ChangeTracker.Entries<BaseEntity>();
+            foreach (var entry in entries)
+            {
+                if (entry.State == EntityState.Modified)
+                {
+                    entry.Entity.UpdatedAt = DateTime.Now;
+                }
+
+                // Optionnel : fixer la date de création si elle est vide (utile si tu as des seeds ou ajouts manuels)
+                if (entry.State == EntityState.Added && entry.Entity.CreatedAt == default)
+                {
+                    entry.Entity.CreatedAt = DateTime.Now;
+                }
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
