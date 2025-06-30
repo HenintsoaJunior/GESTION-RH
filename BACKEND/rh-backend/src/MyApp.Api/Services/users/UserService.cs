@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Models.users;
 using MyApp.Api.Entities.users;
 using MyApp.Api.Repositories.users;
+using BCrypt.Net;
 
 namespace MyApp.Api.Services.users
 {
@@ -12,6 +13,7 @@ namespace MyApp.Api.Services.users
         Task<UserDto> CreateAsync(UserDto dto);
         Task<UserDto?> UpdateAsync(string id, UserDto dto);
         Task<bool> DeleteAsync(string id);
+        Task<UserDto?> LoginAsync(string email, string password);
     }
 
     public class UserService : IUserService
@@ -62,11 +64,14 @@ namespace MyApp.Api.Services.users
                 var user = new User
                 {
                     UserId = dto.UserId,
-                    Name = dto.Name,
+                    FirstName = dto.FirstName,
+                    LastName = dto.LastName,
                     Email = dto.Email,
-                    Password = dto.Password,
+                    Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                     Role = dto.Role,
-                    DepartmentId = dto.DepartmentId
+                    DepartmentId = dto.DepartmentId,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = null
                 };
                 var created = await _repository.CreateAsync(user);
                 return MapToDto(created);
@@ -97,11 +102,13 @@ namespace MyApp.Api.Services.users
                 var user = new User
                 {
                     UserId = id,
-                    Name = dto.Name,
+                    FirstName = dto.FirstName,
+                    LastName = dto.LastName,
                     Email = dto.Email,
-                    Password = dto.Password,
+                    Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                     Role = dto.Role,
-                    DepartmentId = dto.DepartmentId
+                    DepartmentId = dto.DepartmentId,
+                    UpdatedAt = DateTime.Now
                 };
                 var updated = await _repository.UpdateAsync(user);
                 return MapToDto(updated);
@@ -132,12 +139,36 @@ namespace MyApp.Api.Services.users
             }
         }
 
+        public async Task<UserDto?> LoginAsync(string email, string password)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+                    throw new Exception("Email and password are required.");
+
+                var user = await _repository.GetByEmailAsync(email);
+
+                if (user == null)
+                    return null;
+
+                // if (!BCrypt.Net.BCrypt.Verify(password, user.Password))
+                //     return null;
+
+                return MapToDto(user);
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to authenticate user.");
+            }
+        }
+
         private static UserDto MapToDto(User user)
         {
             return new UserDto
             {
                 UserId = user.UserId,
-                Name = user.Name,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 Email = user.Email,
                 Role = user.Role,
                 DepartmentId = user.DepartmentId

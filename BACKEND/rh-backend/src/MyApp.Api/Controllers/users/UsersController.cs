@@ -91,5 +91,24 @@ namespace MyApp.Api.Controllers.users
                 return StatusCode(500, $"An error occurred while deleting user with ID {id}.");
             }
         }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDto dto)
+        {
+            try
+            {
+                if (!ModelState.IsValid) return BadRequest(ModelState);
+
+                var user = await _service.LoginAsync(dto.Email, dto.Password);
+                if (user == null)
+                    return Unauthorized("Invalid email or password.");
+
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }
