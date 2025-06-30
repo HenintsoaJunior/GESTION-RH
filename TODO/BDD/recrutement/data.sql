@@ -138,7 +138,7 @@ INSERT INTO recruitment_request_files (file_id, files, recruitment_request_id) V
 ('FILE009', 0xDEADBEEF, 'RR009'),
 ('FILE010', 0xDEADBEEF, 'RR010');
 
-INSERT INTO recruitment_approval (approver_id_, recruitment_request_id, status, approval_order, comment, signature) VALUES
+INSERT INTO recruitment_approval (approver_id, recruitment_request_id, status, approval_order, comment, signature) VALUES
 ('DEP004', 'RR001', 'En attente', 1, 'À valider', 0xCAFEBABE),
 ('DEP003', 'RR002', 'En attente', 2, 'En cours d’analyse', 0xCAFEBABE),
 ('DEP001', 'RR003', 'En attente', 3, 'Demande à vérifier', 0xCAFEBABE),
@@ -185,3 +185,5 @@ INSERT INTO action_logs (log_id, entity_type, action_description, action_at, use
 ('LOG008', 'candidate', 'Archivé automatiquement', '2025-06-08', 'USR004', 'ACT004'),
 ('LOG009', 'application', 'Validation manager', '2025-06-09', 'USR001', 'ACT002'),
 ('LOG010', 'recruitment_approval', 'Ajout signature', '2025-06-10', 'USR002', 'ACT001');
+
+
