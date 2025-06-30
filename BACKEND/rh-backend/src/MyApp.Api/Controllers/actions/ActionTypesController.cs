@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MyApp.Api.Models.action_type;
-using MyApp.Api.Services.action_type;
+using MyApp.Api.Models.actions;
+using MyApp.Api.Services.actions;
 
-namespace MyApp.Api.Controllers.action_type
+namespace MyApp.Api.Controllers.actions
 {
     [Route("api/[controller]")]
     [ApiController]

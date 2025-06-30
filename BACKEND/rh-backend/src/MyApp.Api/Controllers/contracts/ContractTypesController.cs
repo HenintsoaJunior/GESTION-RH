@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MyApp.Api.Models.contract_types;
-using MyApp.Api.Services.contract_types;
+using MyApp.Api.Models.contracts;
+using MyApp.Api.Services.contracts;
 
-namespace MyApp.Api.Controllers.contract_types
+namespace MyApp.Api.Controllers.contracts
 {
     [Route("api/[controller]")]
     [ApiController]

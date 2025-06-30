@@ -11,8 +11,8 @@
    DROP TABLE IF EXISTS action_logs;
    DROP TABLE IF EXISTS cv_details;
    DROP TABLE IF EXISTS applications;
-   DROP TABLE IF EXISTS job_descriptions;
    DROP TABLE IF EXISTS job_offers;
+   DROP TABLE IF EXISTS job_descriptions;
    DROP TABLE IF EXISTS users;
    DROP TABLE IF EXISTS action_type;
    DROP TABLE IF EXISTS candidates;

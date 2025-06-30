@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MyApp.Api.Models.action_type
+namespace MyApp.Api.Models.actions
 {
     public class ActionTypeDto
     {

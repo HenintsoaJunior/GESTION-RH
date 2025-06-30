@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using MyApp.Api.Models.contract_types;
-using MyApp.Api.Entities.contract_types;
-using MyApp.Api.Repositories.contract_types;
+using MyApp.Api.Models.contracts;
+using MyApp.Api.Entities.contracts;
+using MyApp.Api.Repositories.contracts;
 
-namespace MyApp.Api.Services.contract_types
+namespace MyApp.Api.Services.contracts
 {
     public interface IContractTypeService
     {

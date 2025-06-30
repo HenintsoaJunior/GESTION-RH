@@ -41,6 +41,7 @@ namespace MyApp.Api.Repositories.recruitment
 
         public Task UpdateAsync(ApprovalFlow flow) // Retiré async car pas d'opération asynchrone
         {
+            EntityAuditHelper.SetUpdatedTimestamp(flow);
             _context.ApprovalFlows.Update(flow);
             return Task.CompletedTask; // Retourne une tâche complétée pour respecter la signature Task
         }

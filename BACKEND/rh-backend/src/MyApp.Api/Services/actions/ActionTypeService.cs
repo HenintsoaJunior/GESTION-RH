@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using MyApp.Api.Models.action_type;
-using MyApp.Api.Entities.action_type;
-using MyApp.Api.Repositories.action_type;
+using MyApp.Api.Models.actions;
+using MyApp.Api.Entities.actions;
+using MyApp.Api.Repositories.actions;
 
-namespace MyApp.Api.Services.action_type
+namespace MyApp.Api.Services.actions
 {
     public interface IActionTypeService
     {

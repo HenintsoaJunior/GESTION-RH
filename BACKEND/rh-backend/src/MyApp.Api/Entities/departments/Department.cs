@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace MyApp.Api.Entities.departments
 {
     [Table("departments")]
-    public class Department
+    public class Department : BaseEntity
     {
         [Key]
         [Column("department_id")]

@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
-using MyApp.Api.Entities.action_type;
+using MyApp.Api.Entities.actions;
 
-namespace MyApp.Api.Repositories.action_type
+namespace MyApp.Api.Repositories.actions
 {
     public interface IActionTypeRepository
     {
@@ -42,6 +42,7 @@ namespace MyApp.Api.Repositories.action_type
 
         public async Task<ActionType> UpdateAsync(ActionType actionType)
         {
+            EntityAuditHelper.SetUpdatedTimestamp(actionType);
             _context.Entry(actionType).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return actionType;

@@ -11,6 +11,7 @@ DELETE FROM action_logs;
 DELETE FROM cv_details;
 DELETE FROM applications;
 DELETE FROM job_offers;
+DELETE FROM job_descriptions;
 DELETE FROM users;
 DELETE FROM action_type;
 DELETE FROM candidates;
@@ -59,29 +60,47 @@ INSERT INTO candidates (candidate_id, last_name, first_name, birth_date, address
 ('CAND009', 'Randrianarivelo', 'Mickael', '1997-01-21', 'Mahajanga', 'mickael.randrianarivelo@mail.com'),
 ('CAND010', 'Rakotomanga', 'Hanitra', '1999-10-05', 'Antsiranana', 'hanitra.rakotomanga@mail.com');
 
-INSERT INTO job_offers (offer_id, title, location, deadline_date, description, required_skills, required_experience, required_education, required_languages, contract_type_id, department_id) VALUES
-('JOB001', 'Développeur Web', 'Antananarivo', '2025-07-31', 'Développement d’applications web internes.', 'HTML, CSS, JavaScript', '2 ans', 'Licence', 'Français', 'CT001', 'DEP002'),
-('JOB002', 'Chargé de Communication', 'Fianarantsoa', '2025-07-25', 'Mise en place des campagnes marketing.', 'Rédaction, Photoshop', '1 an', 'Master', 'Français, Anglais', 'CT002', 'DEP003'),
-('JOB003', 'Comptable', 'Antsirabe', '2025-08-10', 'Tenue de la comptabilité générale.', 'Sage, Excel', '3 ans', 'BTS', 'Français', 'CT001', 'DEP004'),
-('JOB004', 'Assistant RH', 'Toamasina', '2025-08-01', 'Gestion administrative du personnel.', 'Pack Office, Communication', '1 an', 'Licence', 'Français', 'CT003', 'DEP001'),
-('JOB005', 'Data Analyst', 'Antananarivo', '2025-07-28', 'Analyse de données pour la prise de décision.', 'SQL, Power BI', '2 ans', 'Master', 'Français, Anglais', 'CT001', 'DEP002'),
-('JOB006', 'Community Manager', 'Mahajanga', '2025-07-20', 'Animation des réseaux sociaux.', 'Facebook, Instagram, Canva', '1 an', 'Licence', 'Français', 'CT002', 'DEP003'),
-('JOB007', 'Chef de Projet', 'Antsiranana', '2025-08-15', 'Pilotage de projets transverses.', 'Gestion de projet, Leadership', '5 ans', 'Master', 'Français, Anglais', 'CT001', 'DEP002'),
-('JOB008', 'Stagiaire Finance', 'Toliara', '2025-07-18', 'Assistance sur les opérations comptables.', 'Excel, Analyse financière', '0 an', 'Licence', 'Français', 'CT003', 'DEP004'),
-('JOB009', 'UX/UI Designer', 'Antananarivo', '2025-08-05', 'Conception d’interfaces utilisateurs.', 'Figma, Adobe XD', '2 ans', 'Licence', 'Français, Anglais', 'CT002', 'DEP002'),
-('JOB010', 'Responsable Marketing', 'Toamasina', '2025-08-12', 'Stratégie marketing globale.', 'SEO, Google Ads', '4 ans', 'Master', 'Français', 'CT001', 'DEP003');
+INSERT INTO job_descriptions (
+  description_id, title, location, description, required_skills, required_experience,
+  required_education, required_languages, contract_type_id, department_id
+) VALUES
+('JD001', 'Développeur Web', 'Antananarivo', 'Développement d’applications web internes.', 'HTML, CSS, JavaScript', '2 ans', 'Licence', 'Français', 'CT001', 'DEP002'),
+('JD002', 'Chargé de Communication', 'Fianarantsoa', 'Mise en place des campagnes marketing.', 'Rédaction, Photoshop', '1 an', 'Master', 'Français, Anglais', 'CT002', 'DEP003'),
+('JD003', 'Comptable', 'Antsirabe', 'Tenue de la comptabilité générale.', 'Sage, Excel', '3 ans', 'BTS', 'Français', 'CT001', 'DEP004'),
+('JD004', 'Assistant RH', 'Toamasina', 'Gestion administrative du personnel.', 'Pack Office, Communication', '1 an', 'Licence', 'Français', 'CT003', 'DEP001'),
+('JD005', 'Data Analyst', 'Antananarivo', 'Analyse de données pour la prise de décision.', 'SQL, Power BI', '2 ans', 'Master', 'Français, Anglais', 'CT001', 'DEP002'),
+('JD006', 'Community Manager', 'Mahajanga', 'Animation des réseaux sociaux.', 'Facebook, Instagram, Canva', '1 an', 'Licence', 'Français', 'CT002', 'DEP003'),
+('JD007', 'Chef de Projet', 'Antsiranana', 'Pilotage de projets transverses.', 'Gestion de projet, Leadership', '5 ans', 'Master', 'Français, Anglais', 'CT001', 'DEP002'),
+('JD008', 'Stagiaire Finance', 'Toliara', 'Assistance sur les opérations comptables.', 'Excel, Analyse financière', '0 an', 'Licence', 'Français', 'CT003', 'DEP004'),
+('JD009', 'UX/UI Designer', 'Antananarivo', 'Conception d’interfaces utilisateurs.', 'Figma, Adobe XD', '2 ans', 'Licence', 'Français, Anglais', 'CT002', 'DEP002'),
+('JD010', 'Responsable Marketing', 'Toamasina', 'Stratégie marketing globale.', 'SEO, Google Ads', '4 ans', 'Master', 'Français', 'CT001', 'DEP003');
+
+INSERT INTO job_offers (
+  offer_id, description_id, status, publication_date, deadline_date
+) VALUES
+('OFF001', 'JD001', 'Publié', '2025-06-25', '2025-07-31'),
+('OFF002', 'JD002', 'Publié', '2025-06-25', '2025-07-25'),
+('OFF003', 'JD003', 'Publié', '2025-06-26', '2025-08-10'),
+('OFF004', 'JD004', 'Publié', '2025-06-26', '2025-08-01'),
+('OFF005', 'JD005', 'Publié', '2025-06-27', '2025-07-28'),
+('OFF006', 'JD006', 'Publié', '2025-06-27', '2025-07-20'),
+('OFF007', 'JD007', 'Publié', '2025-06-28', '2025-08-15'),
+('OFF008', 'JD008', 'Publié', '2025-06-28', '2025-07-18'),
+('OFF009', 'JD009', 'Publié', '2025-06-29', '2025-08-05'),
+('OFF010', 'JD010', 'Publié', '2025-06-29', '2025-08-12');
+
 
 INSERT INTO applications (application_id, application_date, cv, motivation_letter, matching_score, status, candidate_id, offer_id) VALUES
-('APP001', '2025-06-01', 0x1234, 0x5678, 85, 'Reçue', 'CAND001', 'JOB001'),
-('APP002', '2025-06-02', 0x1234, 0x5678, 78, 'Reçue', 'CAND002', 'JOB002'),
-('APP003', '2025-06-03', 0x1234, 0x5678, 92, 'Reçue', 'CAND003', 'JOB003'),
-('APP004', '2025-06-04', 0x1234, 0x5678, 70, 'Reçue', 'CAND004', 'JOB004'),
-('APP005', '2025-06-05', 0x1234, 0x5678, 88, 'Reçue', 'CAND005', 'JOB005'),
-('APP006', '2025-06-06', 0x1234, 0x5678, 73, 'Reçue', 'CAND006', 'JOB006'),
-('APP007', '2025-06-07', 0x1234, 0x5678, 80, 'Reçue', 'CAND007', 'JOB007'),
-('APP008', '2025-06-08', 0x1234, 0x5678, 90, 'Reçue', 'CAND008', 'JOB008'),
-('APP009', '2025-06-09', 0x1234, 0x5678, 75, 'Reçue', 'CAND009', 'JOB009'),
-('APP010', '2025-06-10', 0x1234, 0x5678, 82, 'Reçue', 'CAND010', 'JOB010');
+('APP001', '2025-06-01', 0x1234, 0x5678, 85, 'Reçue', 'CAND001', 'OFF001'),
+('APP002', '2025-06-02', 0x1234, 0x5678, 78, 'Reçue', 'CAND002', 'OFF002'),
+('APP003', '2025-06-03', 0x1234, 0x5678, 92, 'Reçue', 'CAND003', 'OFF003'),
+('APP004', '2025-06-04', 0x1234, 0x5678, 70, 'Reçue', 'CAND004', 'OFF004'),
+('APP005', '2025-06-05', 0x1234, 0x5678, 88, 'Reçue', 'CAND005', 'OFF005'),
+('APP006', '2025-06-06', 0x1234, 0x5678, 73, 'Reçue', 'CAND006', 'OFF006'),
+('APP007', '2025-06-07', 0x1234, 0x5678, 80, 'Reçue', 'CAND007', 'OFF007'),
+('APP008', '2025-06-08', 0x1234, 0x5678, 90, 'Reçue', 'CAND008', 'OFF008'),
+('APP009', '2025-06-09', 0x1234, 0x5678, 75, 'Reçue', 'CAND009', 'OFF009'),
+('APP010', '2025-06-10', 0x1234, 0x5678, 82, 'Reçue', 'CAND010', 'OFF010');
 
 INSERT INTO cv_details (cv_detail_id, extracted_skills, extracted_experience, extracted_education, extracted_languages, application_id) VALUES
 ('CV001', 'HTML, CSS', '2 ans chez ABC', 'Licence Informatique', 'Français', 'APP001'),
