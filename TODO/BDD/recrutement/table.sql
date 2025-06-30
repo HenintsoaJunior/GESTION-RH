@@ -207,7 +207,7 @@
 
    -- Table pour l'approbation des demandes
    CREATE TABLE recruitment_approval(
-      approver_id_ VARCHAR(50),
+      approver_id VARCHAR(50),
       recruitment_request_id VARCHAR(50),
       status VARCHAR(50),
       approval_order INT,
@@ -216,8 +216,8 @@
       signature VARBINARY(MAX),
       created_at DATETIME2 DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME2,
-      PRIMARY KEY(approver_id_, recruitment_request_id),
-      FOREIGN KEY(approver_id_) REFERENCES departments(department_id),
+      PRIMARY KEY(approver_id, recruitment_request_id),
+      FOREIGN KEY(approver_id) REFERENCES departments(department_id),
       FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_request(recruitment_request_id)
    );
 
