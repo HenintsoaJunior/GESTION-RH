@@ -49,6 +49,7 @@ namespace MyApp.Api.Repositories.recruitment
 
         public Task UpdateAsync(RecruitmentApproval approval)
         {
+            EntityAuditHelper.SetUpdatedTimestamp(approval);
             _context.RecruitmentApprovals.Update(approval);
             return Task.CompletedTask;
         }

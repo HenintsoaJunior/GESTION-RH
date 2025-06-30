@@ -5,7 +5,7 @@ using MyApp.Api.Entities.departments;
 namespace MyApp.Api.Entities.users
 {
     [Table("users")]
-    public class User
+    public class User : BaseEntity
     {
         [Key]
         [Column("user_id")]

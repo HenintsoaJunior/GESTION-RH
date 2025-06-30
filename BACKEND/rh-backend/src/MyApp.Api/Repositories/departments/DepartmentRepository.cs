@@ -42,6 +42,7 @@ namespace MyApp.Api.Repositories.departments
 
         public async Task<Department> UpdateAsync(Department department)
         {
+            EntityAuditHelper.SetUpdatedTimestamp(department);
             _context.Entry(department).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return department;

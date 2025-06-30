@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
-using MyApp.Api.Entities.contract_types;
+using MyApp.Api.Entities.contracts;
 
-namespace MyApp.Api.Repositories.contract_types
+namespace MyApp.Api.Repositories.contracts
 {
     public interface IContractTypeRepository
     {
@@ -42,6 +42,7 @@ namespace MyApp.Api.Repositories.contract_types
 
         public async Task<ContractType> UpdateAsync(ContractType contractType)
         {
+            EntityAuditHelper.SetUpdatedTimestamp(contractType);
             _context.Entry(contractType).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return contractType;

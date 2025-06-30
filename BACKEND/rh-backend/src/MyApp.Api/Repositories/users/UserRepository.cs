@@ -88,6 +88,7 @@ namespace MyApp.Api.Repositories.users
             {
                 throw new Exception($"Failed to update user with ID {user.UserId}.");
             }
+
         }
 
         public async Task DeleteAsync(string id)
