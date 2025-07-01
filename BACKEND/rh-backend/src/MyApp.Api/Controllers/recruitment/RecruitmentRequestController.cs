@@ -154,28 +154,43 @@ namespace MyApp.Api.Controllers.recruitment
 
             await _requestService.AddRequestAsync(request);
 
-            if (requestDto.Files != null && requestDto.Files.Count > 0)
+            if (requestDto.Files != null)
             {
-                foreach (var file in requestDto.Files)
-                {
-                    if (file.Length > 0)
-                    {
-                        using var memoryStream = new MemoryStream();
-                        await file.CopyToAsync(memoryStream);
-                        var fileBytes = memoryStream.ToArray();
-
-                        var recruitmentRequestFile = new RecruitmentRequestFile
-                        {
-                            FileId = Guid.NewGuid().ToString(),
-                            FileName = fileBytes,
-                            RecruitmentRequestId = request.RecruitmentRequestId
-                        };
-
-                        await _fileService.AddFileAsync(recruitmentRequestFile);
-                    }
-                }
+                await ProcessRecruitmentRequestFilesAsync(requestDto.Files, request.RecruitmentRequestId);
             }
+
             return CreatedAtAction(nameof(GetRequestById), new { id = request.RecruitmentRequestId }, request);
         }
+
+        private async Task ProcessRecruitmentRequestFilesAsync(IFormFileCollection files, string recruitmentRequestId)
+        {
+            if (files == null || files.Count == 0)
+                return;
+
+            foreach (var file in files)
+            {
+                if (file.Length > 0)
+                {
+                    await SaveRecruitmentRequestFileAsync(file, recruitmentRequestId);
+                }
+            }
+        }
+
+        private async Task SaveRecruitmentRequestFileAsync(IFormFile file, string recruitmentRequestId)
+        {
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            var fileBytes = memoryStream.ToArray();
+
+            var recruitmentRequestFile = new RecruitmentRequestFile
+            {
+                FileId = Guid.NewGuid().ToString(),
+                FileName = fileBytes,
+                RecruitmentRequestId = recruitmentRequestId
+            };
+
+            await _fileService.AddFileAsync(recruitmentRequestFile);
+        }
+    
     }
 }
