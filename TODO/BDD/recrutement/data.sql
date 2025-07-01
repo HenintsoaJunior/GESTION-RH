@@ -186,4 +186,3 @@ INSERT INTO action_logs (log_id, entity_type, action_description, action_at, use
 ('LOG009', 'application', 'Validation manager', '2025-06-09', 'USR001', 'ACT002'),
 ('LOG010', 'recruitment_approval', 'Ajout signature', '2025-06-10', 'USR002', 'ACT001');
 
-

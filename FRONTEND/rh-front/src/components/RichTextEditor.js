@@ -119,7 +119,15 @@ export default function RichTextEditor({ placeholder, onChange, disabled }) {
   return (
     <div className="rich-editor-container">
       <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
-      <div id="editor" style={{ minHeight: "200px", opacity: disabled ? 0.5 : 1 }}></div>
+      <style jsx>{`
+        #editor {
+          min-height: 200px;
+          max-height: 400px; /* Hauteur maximale pour activer le défilement */
+          overflow-y: auto; /* Active le défilement vertical */
+          opacity: ${disabled ? 0.5 : 1};
+        }
+      `}</style>
+      <div id="editor"></div>
     </div>
   )
 }
