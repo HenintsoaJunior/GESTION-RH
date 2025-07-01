@@ -7,7 +7,7 @@ namespace MyApp.Api.Repositories.recruitment
     public interface IRecruitmentRequestRepository
     {
         Task<IEnumerable<RecruitmentRequest>> GetByCriteriaAsync(RecruitmentRequestCriteria criteria);
-        Task<IEnumerable<RecruitmentRequest>> GetPaginatedAsync(int startIndex, int count);
+        Task<IEnumerable<RecruitmentRequest>> GetPaginatedAsync(int startIndex, int count, string requesterId);
         Task<IEnumerable<RecruitmentRequest>> GetByRequesterAsync(string requesterId);
         Task<IEnumerable<RecruitmentRequest>> GetAllAsync();
         Task<RecruitmentRequest?> GetByIdAsync(string id);
@@ -27,6 +27,7 @@ namespace MyApp.Api.Repositories.recruitment
         public async Task<IEnumerable<RecruitmentRequest>> GetByCriteriaAsync(RecruitmentRequestCriteria criteria)
         {
             var query = _context.RecruitmentRequests.AsQueryable();
+            query = query.Where(r => r.RequesterId == criteria.RequesterId);
 
             if (!string.IsNullOrEmpty(criteria.Status))
                 query = query.Where(r => r.Status == criteria.Status);
@@ -50,9 +51,10 @@ namespace MyApp.Api.Repositories.recruitment
         }
 
 
-        public async Task<IEnumerable<RecruitmentRequest>> GetPaginatedAsync(int startIndex, int count)
+        public async Task<IEnumerable<RecruitmentRequest>> GetPaginatedAsync(int startIndex, int count, string requesterId)
         {
             return await _context.RecruitmentRequests
+                .Where(r => r.RequesterId == requesterId)
                 .OrderByDescending(r => r.RequestDate) //ou autre champs
                 .Skip(startIndex)
                 .Take(count)
