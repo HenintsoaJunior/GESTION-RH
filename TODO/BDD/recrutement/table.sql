@@ -225,7 +225,7 @@
    CREATE TABLE recruitment_notifications(
       recruitment_notification_id VARCHAR(50),
       message VARCHAR(50),
-      date_message DATETIME2,
+      date_message DATETIME2 DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME2 DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME2,
       recruitment_request_id VARCHAR(50) NOT NULL,

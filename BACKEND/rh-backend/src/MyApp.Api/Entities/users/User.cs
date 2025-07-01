@@ -36,6 +36,7 @@ namespace MyApp.Api.Entities.users
         [Column("role")]
         [MaxLength(50)]
         public string Role { get; set; } = null!;
+        
         [Required]
         [Column("department_id")]
         [MaxLength(50)]
