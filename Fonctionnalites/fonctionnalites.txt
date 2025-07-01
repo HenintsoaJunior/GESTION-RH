@@ -1,3 +1,5 @@
+///////////////////////////////// CE SONT DES IDEES DE FONCTIONNALITES /////////////////////////////////
+
 1. Suivi du Recrutement 
 => Fiches de poste, pipeline des candidatures, statut par étape, filtres multicritères, export
     Fonctionnalités à développer :
@@ -10,7 +12,6 @@
         🛎️ Notifications automatiques (nouvelle candidature, statut modifié).
     
         Principales
-        
             Gestion des fiches de poste : Création, modification, et archivage des fiches (champs : intitulé, description, compétences, localisation, type de contrat).
                 Raison : Central pour structurer le recrutement.
             Pipeline des candidatures : Visualisation des candidats par étape (réception, entretien, offre, rejet) avec possibilité de drag-and-drop pour changer les statuts.
@@ -104,20 +105,64 @@
                 Intérêt : Améliore l’expérience utilisateur. Complexité : Faible (librairie comme PDF.js).
             Tag personnalisé : Ajout de tags libres (ex. « urgent », « confidentiel ») pour organiser les documents.
                 Intérêt : Flexibilité dans la recherche. Complexité : Faible (champ supplémentaire en BDD).
-=======
-        Gestion des fiches de poste : Création, modification, et archivage des fiches (champs : intitulé, description, compétences, localisation, type de contrat).
-            Raison : Central pour structurer le recrutement.
-        Pipeline des candidatures : Visualisation des candidats par étape (réception, entretien, offre, rejet) avec possibilité de drag-and-drop pour changer les statuts.
-            Raison : Répond au besoin de suivi structuré.
-        Filtres multicritères : Recherche par poste, statut, date de candidature, compétences.
-            Raison : Facilite l’accès rapide aux données.
-        Export des données : Exportation des candidatures en CSV/Excel (champs : nom, poste, statut, date).
-            Raison : Compatible avec les outils existants (Excel).
+
+5. KPI Tableau de bord RH
+=> KPI de base : recrutement, turnover, pyramide des âges, absences, genre, type de contrat, etc
+    Fonctionnalités à développer :
+        📊 Indicateurs dynamiques : Taux de turnover, taux d’absentéisme, pyramide des âges, genre, type de contrat.
+        📅 Filtrage par période, service, site.
+        🔁 Mise à jour automatique des données à partir de la BDD.
+        ⬇️ Export Excel ou PDF des rapports mensuels.
+        🧮 Comparatif annuel/mensuel (évolution des effectifs, absences…).
+        🎯 Visualisation graphique (courbes, histogrammes, diagrammes circulaires).
+        📬 Alertes ou indicateurs critiques (taux d’absentéisme > seuil, etc.).
+    
+    Principales
+        KPI de base : Calcul et affichage des indicateurs suivants :
+            Taux de turnover : (Nombre de départs / Effectif moyen) × 100.
+            Pyramide des âges : Répartition des salariés par tranche d’âge.
+            Taux d’absentéisme : (Jours d’absence / Jours travaillés) × 100.
+            Répartition par genre : Pourcentage hommes/femmes.
+            Répartition par type de contrat : CDI, CDD, intérim. Raison : Répond au besoin de reporting stratégique.
+        Export des KPI : Téléchargement des indicateurs en CSV/Excel.
+            Raison : Facilite le partage avec la direction.
+        Mise à jour automatique : Rafraîchissement des KPI basé sur les données saisies (ex. nouvelle embauche).
+            Raison : Assure un reporting en temps réel.
+    
+    Interessantes
+        KPI avancés :
+            Taux de rétention : Pourcentage de salariés restant après X mois.
+            Durée moyenne de recrutement : Temps entre ouverture du poste et embauche.
+            Coût par recrutement : Estimation basée sur données saisies (ex. annonces, heures RH). Intérêt : Enrichit le pilotage stratégique. Complexité : Modérée (calculs basés sur données existantes).
+        Personnalisation des KPI : Interface pour sélectionner les indicateurs à afficher (ex. RH choisit turnover + absences).
+            Intérêt : Adaptabilité aux besoins RH. Complexité : Moyenne (interface dynamique).
+        Visualisations interactives : Graphiques dynamiques (ex. clic sur un segment de la pyramide des âges pour détails).
+            Intérêt : Améliore l’analyse visuelle. Complexité : Modérée (librairie Chart.js).
+
+6. Fonctionnalités transversales
+    🔒 Fonctions Transverses à Intégrer
+        🔐 Authentification par rôle + permissions fines.
+        🕵️ Journalisation : toutes les actions importantes sont tracées.
+        🌐 Interface responsive multilingue (FR au minimum).
+        📑 Historique des modifications pour tout élément (fiche de poste, contrat...).
+        📎 Import/Export CSV pour bulk data.
+        🛂 Dashboard personnalisé selon le rôle : RH, Manager, Direction.
+        🧪 Jeu de données anonymisé pour test/démo.
+        
+        Principales
+            Authentification par rôle : Connexion sécurisée avec profils RH, Manager, Consultation (lecture seule).
+                Raison : Exigence de sécurité et d’accès différencié.
+            Interface responsive : Compatible desktop et tablette, accessible via Chrome/Firefox.
+                Raison : Nécessaire pour l’intranet.
+            Multilingue (français) : Interface en français, avec structure prête pour ajouter d’autres langues.
+                Raison : Exigence explicite.
+            Journalisation : Enregistrement des actions utilisateurs (ex. connexion, téléversement, modification).
+                Raison : Répond au besoin de traçabilité.
         
         Interessantes
-        Scoring des candidats : Attribution automatique d’un score basé sur des critères (expérience, compétences, formation) pour faciliter le tri.
-            Intérêt : Améliore l’efficacité du filtrage. Complexité : Modérée (nécessite un algorithme simple).
-        Notifications automatiques : Envoi d’e-mails aux candidats pour confirmer réception ou suivi (ex. invitation à un entretien).
-            Intérêt : Professionnalise la communication. Complexité : Moyenne (intégration d’un service SMTP).
-        Intégration de CV parsing : Extraction automatique des données (nom, expérience, compétences) depuis un CV PDF.
-            Intérêt : Réduit la saisie manuelle. Complexité : Élevée (nécessite une librairie comme pdf2json ou une API externe).
+            Mode hors ligne : Cache local pour consulter des documents ou KPI sans connexion (via Service Workers).
+                Intérêt : Utile si l’intranet est instable. Complexité : Élevée (gestion du cache).
+            Tableau de bord mobile : Optimisation spécifique pour smartphones (ex. raccourcis pour KPI ou recherche).
+                Intérêt : Répond à des usages nomades. Complexité : Moyenne (CSS responsive avancé).
+            Audit trail avancé : Exportation du journal des actions pour audits externes (ex. RGPD).
+                Intérêt : Renforce la conformité. Complexité : Faible (export CSV des logs).

@@ -1,0 +1,36 @@
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+
+Creer la meme chose sur cette code :
+-AppDbContext
+-Entity
+-Model
+-Service
+-Repository
+-Controller
+
+
+
+
+
+
+
+vert ravinala :
+69B42E
+#FFFF
+#0000
+
+Font familly mont-cerat
+
+creer une formulaire comme sur l'image et pour le formulaire utilise table td tr th et mettre le input dans le tr td pour bien les allignier 
+
+Utilise react js modifie ca :
+"use client";
+
+export default function RecruitmentRequest() {
+  return (
+      <div className="recruitment_request">
+        <p>BIEN ZANDRY</p>
+      </div>
+  );
+}
