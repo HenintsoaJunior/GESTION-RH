@@ -36,13 +36,7 @@ namespace MyApp.Api.Entities.users
         [Column("role")]
         [MaxLength(50)]
         public string Role { get; set; } = null!;
-
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-
-        [Column("updated_at")]
-        public DateTime? UpdatedAt { get; set; }
-
+        
         [Required]
         [Column("department_id")]
         [MaxLength(50)]
