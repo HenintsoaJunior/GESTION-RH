@@ -1,7 +1,16 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using MyApp.Api.Entities.users;
+
 namespace MyApp.Api.Entities.recruitment
 {
     public class RecruitmentRequestCriteria : BaseEntity
     {
+        [Column("requester_id")]
+        [MaxLength(50)]
+        public string RequesterId { get; set; } = null!;
+        [ForeignKey("RequesterId")]
+        public User? Requester { get; set; } = null!;
         public string? Status { get; set; }
         public string? JobTitleKeyword { get; set; }
         public DateTime? RequestDateMin { get; set; }

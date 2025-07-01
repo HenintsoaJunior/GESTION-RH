@@ -5,6 +5,8 @@ namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentApprovalService
     {
+        Task<IEnumerable<RecruitmentApproval>> GetRecommendedApprovalsByRequesterAsync(string requesterId);
+        Task<IEnumerable<RecruitmentApproval>> GetValidatedApprovalsByApproverAsync(string approverId);
         Task<IEnumerable<RecruitmentApproval>> GetApprovalsByRequestIdAsync(string requestId);
         Task<IEnumerable<RecruitmentApproval>> GetByApproverAsync(string approverId);
         Task ValidateApprovalAsync(RecruitmentApproval approval);
@@ -20,6 +22,16 @@ namespace MyApp.Api.Services.recruitment
         {
             _repository = repository;
         }
+
+        public async Task<IEnumerable<RecruitmentApproval>> GetRecommendedApprovalsByRequesterAsync(string requesterId)
+        {
+            return await _repository.GetRecommendedApprovalsByRequesterAsync(requesterId);
+        }
+        public async Task<IEnumerable<RecruitmentApproval>> GetValidatedApprovalsByApproverAsync(string approverId)
+        {
+            return await _repository.GetValidatedByApproverAsync(approverId);
+        }
+
 
         public async Task<IEnumerable<RecruitmentApproval>> GetApprovalsByRequestIdAsync(string requestId)
         {
