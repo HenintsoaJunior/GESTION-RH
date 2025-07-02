@@ -6,11 +6,17 @@ import { BASE_URL } from "../../../config/apiConfig"
 import "../../../styles/generic-form-styles.css"
 import RichTextEditor from "../../../components/RichTextEditor"
 import FileUpload from "../../../components/FileUpload"
+import Alert from "../../../components/Alert"
 
 export default function RecruitmentRequestForm() {
   const [selectedFiles, setSelectedFiles] = useState([])
   const [description, setDescription] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [alert, setAlert] = useState({ isOpen: false, type: 'info', message: '' })
+
+  const showAlert = (type, message) => {
+    setAlert({ isOpen: true, type, message });
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -46,15 +52,15 @@ export default function RecruitmentRequestForm() {
         form.reset()
         setSelectedFiles([])
         setDescription('')
-        alert('Demande de recrutement soumise avec succès!')
+        showAlert('success', 'Demande de recrutement soumise avec succès!')
       } else {
         const errorData = await response.json()
         console.error('Erreur lors de la soumission:', errorData)
-        alert('Erreur lors de la soumission de la demande. Veuillez réessayer.')
+        showAlert('error', 'Erreur lors de la soumission de la demande. Veuillez réessayer.')
       }
     } catch (error) {
       console.error('Erreur réseau:', error)
-      alert('Erreur de connexion. Veuillez vérifier votre connexion et réessayer.')
+ showAlert('error', 'Erreur de connexion. Veuillez vérifier votre connexion et réessayer.')
     } finally {
       setIsSubmitting(false)
     }
@@ -62,6 +68,12 @@ export default function RecruitmentRequestForm() {
 
   return (
     <div className="form-page">
+      <Alert
+        type={alert.type}
+        message={alert.message}
+        isOpen={alert.isOpen}
+        onClose={() => setAlert({ ...alert, isOpen: false })}
+      />
       <div className="form-header">
         <h1 className="form-title">Demande de recrutement</h1>
         <p className="form-description">
