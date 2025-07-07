@@ -108,7 +108,6 @@
    );
 
 
-
    -- Table pour les candidatures
    CREATE TABLE applications(
       application_id VARCHAR(50),
