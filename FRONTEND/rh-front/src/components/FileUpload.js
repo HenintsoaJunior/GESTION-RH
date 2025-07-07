@@ -1,66 +1,78 @@
-"use client"
+"use client";
 
-import { useRef, useState } from "react"
-import { Upload, X, FileText, ImageIcon, File } from 'lucide-react'
+import { useRef, useState } from "react";
+import { Upload, X, FileText, ImageIcon, File } from "lucide-react";
 
 export default function FileUpload({ onFilesChange, disabled }) {
-  const fileInputRef = useRef(null)
-  const [selectedFiles, setSelectedFiles] = useState([])
-  const [dragActive, setDragActive] = useState(false)
+  const fileInputRef = useRef(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [dragActive, setDragActive] = useState(false);
 
   const handleFileButtonClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
+    if (fileInputRef.current && !disabled) {
+      fileInputRef.current.click();
     }
-  }
+  };
 
   const handleFileChange = (event) => {
-    const files = Array.from(event.target.files)
-    setSelectedFiles((prev) => [...prev, ...files])
-    onFilesChange([...selectedFiles, ...files])
-  }
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+      const updatedFiles = [...selectedFiles, ...files];
+      setSelectedFiles(updatedFiles);
+      onFilesChange(updatedFiles);
+      // Réinitialiser l'input pour permettre de re-sélectionner les mêmes fichiers
+      event.target.value = null;
+    }
+  };
 
   const handleDrag = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true)
-    } else if (e.type === "dragleave") {
-      setDragActive(false)
+    e.preventDefault();
+    e.stopPropagation();
+    if (!disabled) {
+      if (e.type === "dragenter" || e.type === "dragover") {
+        setDragActive(true);
+      } else if (e.type === "dragleave") {
+        setDragActive(false);
+      }
     }
-  }
+  };
 
   const handleDrop = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
-
-    const files = Array.from(e.dataTransfer.files)
-    setSelectedFiles((prev) => [...prev, ...files])
-    onFilesChange([...selectedFiles, ...files])
-  }
+    e.preventDefault();
+    e.stopPropagation();
+    if (!disabled) {
+      setDragActive(false);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        const updatedFiles = [...selectedFiles, ...files];
+        setSelectedFiles(updatedFiles);
+        onFilesChange(updatedFiles);
+      }
+    }
+  };
 
   const removeFile = (index) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
-    onFilesChange(selectedFiles.filter((_, i) => i !== index))
-  }
+    const updatedFiles = selectedFiles.filter((_, i) => i !== index);
+    setSelectedFiles(updatedFiles);
+    onFilesChange(updatedFiles);
+  };
 
   const getFileIconComponent = (file) => {
-    if (file.type.startsWith("image/")) return <ImageIcon className="w-4 h-4" />
-    if (file.type.includes("pdf") || file.type.includes("doc")) return <FileText className="w-4 h-4" />
-    return <File className="w-4 h-4" />
-  }
+    if (file.type.startsWith("image/")) return <ImageIcon className="w-4 h-4" />;
+    if (file.type.includes("pdf") || file.type.includes("doc")) return <FileText className="w-4 h-4" />;
+    return <File className="w-4 h-4" />;
+  };
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return "0 Bytes"
-    const k = 1024
-    const sizes = ["Bytes", "KB", "MB", "GB"]
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-  }
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
 
   return (
-    <div>
+    <div className="file-upload-container">
       <div
         className={`file-upload-area ${dragActive ? "drag-active" : ""}`}
         onDragEnter={handleDrag}
@@ -73,9 +85,9 @@ export default function FileUpload({ onFilesChange, disabled }) {
           <div className="upload-text">
             <span className="upload-main">Glissez vos fichiers ici</span>
             <span className="upload-sub">ou</span>
-            <button 
-              type="button" 
-              className="upload-button" 
+            <button
+              type="button"
+              className="upload-button"
               onClick={handleFileButtonClick}
               disabled={disabled}
             >
@@ -87,6 +99,7 @@ export default function FileUpload({ onFilesChange, disabled }) {
           </div>
         </div>
         <input
+          id="file-upload-input"
           ref={fileInputRef}
           type="file"
           multiple
@@ -99,10 +112,10 @@ export default function FileUpload({ onFilesChange, disabled }) {
 
       {selectedFiles.length > 0 && (
         <div className="selected-files">
-          <h4 className="selected-files-title">Fichiers sélectionnés:</h4>
+          <h4 className="selected-files-title">Fichiers sélectionnés :</h4>
           <div className="files-list">
             {selectedFiles.map((file, index) => (
-              <div key={index} className="file-item">
+              <div key={`file-${index}`} className="file-item">
                 <div className="file-info">
                   {getFileIconComponent(file)}
                   <div className="file-details">
@@ -125,5 +138,5 @@ export default function FileUpload({ onFilesChange, disabled }) {
         </div>
       )}
     </div>
-  )
+  );
 }
