@@ -12,8 +12,8 @@
   --text-muted: #888;
   --text-sidebar: #000000; /* Sidebar text set to black */
   --bg-light: #f5f5f5;
-  --bg-sidebar: #9D9D9C; /* Sidebar background explicitly set to #9D9D9C */
-  --bg-sidebar-hover: #8c8c8b; /* Slightly darker for hover */
+  --bg-sidebar: #f5f5f5; /* Sidebar background explicitly set to #9D9D9C */
+  --bg-sidebar-hover: #dadada85; /* Slightly darker for hover */
   --bg-sidebar-active: #69B42E; /* Active state matches button color */
   --white: #ffffff;
   --border-color: #e0e0e0;

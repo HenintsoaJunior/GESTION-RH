@@ -9,6 +9,7 @@ import { FileText, Plus, Download } from 'lucide-react';
 import { BASE_URL } from '../../../config/apiConfig';
 import { parseData, formatDate, cleanFilters, hasActiveFilters } from '../../../utils/utils';
 import '../../../styles/generic-table-styles.css';
+import '../../../styles/generic-search-styles.css';
 
 const RecruitmentRequestList = () => {
   const navigate = useNavigate();
