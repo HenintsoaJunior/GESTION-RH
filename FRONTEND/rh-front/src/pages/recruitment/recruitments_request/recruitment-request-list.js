@@ -168,89 +168,124 @@ const RecruitmentRequestList = () => {
         </div>
 
         {/* Formulaire de filtres */}
-        <div className="filter-form">
-          <form onSubmit={handleFilterSubmit}>
-            <table className="filter-table">
+        <div className="form-container">
+          <div className="table-header">
+            <div className="table-icon">☙</div>
+            
+            <h2 className="table-title">Recherche</h2>
+          </div>
+          <form className="generic-form" onSubmit={handleFilterSubmit}>
+            <table className="form-table">
               <tbody>
                 <tr>
-                  <td>
-                    <label className="filter-label">Statut</label>
-                    <NativeSelect
-                      name="status"
-                      value={filters.status}
-                      onValueChange={(value) => handleFilterChange('status', value)}
-                    >
-                      <NativeSelectItem value="">Tous</NativeSelectItem>
-                      <NativeSelectItem value="En Attente">En Attente</NativeSelectItem>
-                      <NativeSelectItem value="En Cours">En Cours</NativeSelectItem>
-                      <NativeSelectItem value="Approuvé">Approuvé</NativeSelectItem>
-                      <NativeSelectItem value="Rejeté">Rejeté</NativeSelectItem>
-                    </NativeSelect>
-                  </td>
-                  <td>
-                    <label className="filter-label">Mot-clé du titre</label>
-                    <Input
-                      name="jobTitleKeyword"
-                      type="text"
-                      value={filters.jobTitleKeyword}
-                      onChange={(e) => handleFilterChange('jobTitleKeyword', e.target.value)}
-                      className="flex-1"
-                    />
-                  </td>
+                    <th className="form-label-cell">
+                      <label className="form-label form-label-required">
+                        Status
+                      </label>
+                    </th>
+                    <td>
+                      <NativeSelect
+                        name="status"
+                        value={filters.status}
+                        onValueChange={(value) => handleFilterChange('status', value)}
+                      >
+                        <NativeSelectItem value="">Tous</NativeSelectItem>
+                        <NativeSelectItem value="En Attente">En Attente</NativeSelectItem>
+                        <NativeSelectItem value="En Cours">En Cours</NativeSelectItem>
+                        <NativeSelectItem value="Approuvé">Approuvé</NativeSelectItem>
+                        <NativeSelectItem value="Rejeté">Rejeté</NativeSelectItem>
+                      </NativeSelect>
+                    </td>
+                    <th className="form-label-cell">
+                      <label className="form-label form-label-required">
+                        Mot-clé du titre
+                      </label>
+                    </th>
+                    <td>
+                      <Input
+                        name="jobTitleKeyword"
+                        type="text"
+                        value={filters.jobTitleKeyword}
+                        onChange={(e) => handleFilterChange('jobTitleKeyword', e.target.value)}
+                        className="form-input"
+                      />
+                    </td>
                 </tr>
                 <tr>
-                  <td>
-                    <label className="filter-label">Date de demande min</label>
-                    <Input
-                      name="requestDateMin"
-                      type="date"
-                      value={filters.requestDateMin}
-                      onChange={(e) => handleFilterChange('requestDateMin', e.target.value)}
-                      className="flex-1"
-                    />
-                  </td>
-                  <td>
-                    <label className="filter-label">Date de demande max</label>
-                    <Input
-                      name="requestDateMax"
-                      type="date"
-                      value={filters.requestDateMax}
-                      onChange={(e) => handleFilterChange('requestDateMax', e.target.value)}
-                      className="flex-1"
-                    />
-                  </td>
+                  <th className="form-label-cell">
+                    <label className="form-label form-label-required">
+                      Date de demande min
+                    </label>
+                  </th>
+                    <td>
+                      <Input
+                        name="requestDateMin"
+                        type="date"
+                        value={filters.requestDateMin}
+                        onChange={(e) => handleFilterChange('requestDateMin', e.target.value)}
+                        className="form-input"
+                      />
+                    </td>
+                  
+                    <th className="form-label-cell">
+                      <label className="form-label form-label-required">
+                      Date de demande max
+                      </label>
+                    </th>
+                    <td>
+                      <Input
+                        name="requestDateMax"
+                        type="date"
+                        value={filters.requestDateMax}
+                        onChange={(e) => handleFilterChange('requestDateMax', e.target.value)}
+                        className="form-input"
+                      />
+                    </td>
                 </tr>
                 <tr>
+
+                    <th className="form-label-cell">
+                      <label className="form-label form-label-required">
+                        Date d'approbation min
+                      </label>
+                    </th>
+                    
+                    <td>
+                      <Input
+                        name="approvalDateMin"
+                        type="date"
+                        value={filters.approvalDateMin}
+                        onChange={(e) => handleFilterChange('approvalDateMin', e.target.value)}
+                        className="form-input"
+                      />
+                    </td>
+                  
+                    
+                  <th className="form-label-cell">
+                    <label className="form-label form-label-required">  
+                      Date d'approbation max
+                    </label>
+                  </th>
+                  
                   <td>
-                    <label className="filter-label">Date d'approbation min</label>
-                    <Input
-                      name="approvalDateMin"
-                      type="date"
-                      value={filters.approvalDateMin}
-                      onChange={(e) => handleFilterChange('approvalDateMin', e.target.value)}
-                      className="flex-1"
-                    />
-                  </td>
-                  <td>
-                    <label className="filter-label">Date d'approbation max</label>
                     <Input
                       name="approvalDateMax"
                       type="date"
                       value={filters.approvalDateMax}
                       onChange={(e) => handleFilterChange('approvalDateMax', e.target.value)}
-                      className="flex-1"
+                      className="form-input"
                     />
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan={2}>
-                    <div className="flex gap-md">
-                      <Button type="submit" className="filter-submit-btn">Rechercher</Button>
-                      <Button type="button" className="btn-secondary" onClick={handleResetFilters}>
-                        Réinitialiser
-                      </Button>
-                    </div>
-                  </td>
+                    <td colSpan={4}>
+                      <div className="flex gap-md justify-end">
+                        <Button type="submit" className="filter-submit-btn">Rechercher</Button>
+                        <Button type="button" className="btn-secondary" onClick={handleResetFilters}>
+                          Réinitialiser
+                        </Button>
+                      </div>
+                    </td>
                 </tr>
               </tbody>
             </table>
