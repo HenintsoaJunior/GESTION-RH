@@ -388,20 +388,6 @@ export default function Template({ children }) {
                 <div className="sidebar-footer-title">Ravinala Airports</div>
                 <div className="sidebar-footer-subtitle">Système de recrutement v2.1</div>
               </div>
-              <div className="theme-selector">
-                <MdPalette className="theme-icon" />
-                <div className="theme-dots">
-                  {themes.map((t) => (
-                    <button
-                      key={t.id}
-                      className={`theme-dot ${theme === t.id ? "active" : ""}`}
-                      style={{ backgroundColor: t.color }}
-                      onClick={() => handleThemeChange(t.id)}
-                      title={t.name}
-                    ></button>
-                  ))}
-                </div>
-              </div>
             </>
           ) : (
             <div className="theme-selector theme-selector-small">
@@ -464,17 +450,7 @@ export default function Template({ children }) {
                   ))}
                 </select>
               </div>
-              <button className="header-icon-button">
-                <FaIcons.FaComment />
-                <span className="notification-badge">3</span>
-              </button>
-              <button className="header-icon-button">
-                <FaIcons.FaBell />
-                <span className="notification-badge">5</span>
-              </button>
-              <button className="header-icon-button">
-                <FaIcons.FaInfoCircle />
-              </button>
+              
               <div className="user-profile-dropdown">
                 <div className="user-profile">
                   <div className="user-avatar">{getInitials(user.firstName, user.lastName)}</div>

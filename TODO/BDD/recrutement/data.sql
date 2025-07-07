@@ -36,10 +36,10 @@ INSERT INTO action_type (action_type_id, type) VALUES
 ('ACT004', 'Archivage');
 
 INSERT INTO users (user_id, first_name, last_name, email, password, role, department_id) VALUES
-('USR001', 'Claire', 'Dubois', 'claire.dubois@entreprise.fr', CONVERT(NVARCHAR(128), HASHBYTES('SHA2_256', 'motdepasse123' + 'sel_unique_1'), 2), 'RH', 'DEP001'),
-('USR002', 'Marc', 'Leroy', 'marc.leroy@entreprise.fr', CONVERT(NVARCHAR(128), HASHBYTES('SHA2_256', 'password456' + 'sel_unique_2'), 2), 'Manager', 'DEP002'),
-('USR003', 'Sophie', 'Bernard', 'sophie.bernard@entreprise.fr', CONVERT(NVARCHAR(128), HASHBYTES('SHA2_256', 'azerty789' + 'sel_unique_3'), 2), 'Manager', 'DEP003'),
-('USR004', 'Julien', 'Moreau', 'julien.moreau@entreprise.fr', CONVERT(NVARCHAR(128), HASHBYTES('SHA2_256', '123motdepasse' + 'sel_unique_4'), 2), 'RH', 'DEP001');
+('USR001', 'Claire', 'Dubois', 'claire.dubois@entreprise.fr', '1234', 'RH', 'DEP001'),
+('USR002', 'Marc', 'Leroy', 'marc.leroy@entreprise.fr', '1234', 'Manager', 'DEP002'),
+('USR003', 'Sophie', 'Bernard', 'sophie.bernard@entreprise.fr', '1234', 'Manager', 'DEP003'),
+('USR004', 'Julien', 'Moreau', 'julien.moreau@entreprise.fr', '1234', 'RH', 'DEP001');
 
 INSERT INTO approval_flow (approval_flow_id, approval_order, department_id)
 VALUES 
