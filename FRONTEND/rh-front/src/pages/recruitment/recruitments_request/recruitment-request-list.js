@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/Button';
@@ -9,6 +7,7 @@ import { FileText, Plus, Download } from 'lucide-react';
 import { BASE_URL } from '../../../config/apiConfig';
 import { parseData, formatDate, cleanFilters, hasActiveFilters } from '../../../utils/utils';
 import '../../../styles/generic-table-styles.css';
+import '../../../styles/generic-search-styles.css';
 
 const RecruitmentRequestList = () => {
   const navigate = useNavigate();
@@ -168,18 +167,17 @@ const RecruitmentRequestList = () => {
         </div>
 
         {/* Formulaire de filtres */}
-        <div className="form-container">
+        <div className="form-container-filter">
           <div className="table-header">
             <div className="table-icon">☙</div>
-            
             <h2 className="table-title">Recherche</h2>
           </div>
-          <form className="generic-form" onSubmit={handleFilterSubmit}>
-            <table className="form-table">
+          <form className="generic-form-filter" onSubmit={handleFilterSubmit}>
+            <table className="form-table-filter">
               <tbody>
                 <tr>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">
+                    <th className="form-label-cell-filter">
+                      <label className="form-label-filter form-label-required-filter">
                         Status
                       </label>
                     </th>
@@ -188,6 +186,7 @@ const RecruitmentRequestList = () => {
                         name="status"
                         value={filters.status}
                         onValueChange={(value) => handleFilterChange('status', value)}
+                        className="form-select-filter"
                       >
                         <NativeSelectItem value="">Tous</NativeSelectItem>
                         <NativeSelectItem value="En Attente">En Attente</NativeSelectItem>
@@ -196,8 +195,8 @@ const RecruitmentRequestList = () => {
                         <NativeSelectItem value="Rejeté">Rejeté</NativeSelectItem>
                       </NativeSelect>
                     </td>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">
+                    <th className="form-label-cell-filter">
+                      <label className="form-label-filter form-label-required-filter">
                         Mot-clé du titre
                       </label>
                     </th>
@@ -207,13 +206,13 @@ const RecruitmentRequestList = () => {
                         type="text"
                         value={filters.jobTitleKeyword}
                         onChange={(e) => handleFilterChange('jobTitleKeyword', e.target.value)}
-                        className="form-input"
+                        className="form-input-filter"
                       />
                     </td>
                 </tr>
                 <tr>
-                  <th className="form-label-cell">
-                    <label className="form-label form-label-required">
+                  <th className="form-label-cell-filter">
+                    <label className="form-label-filter form-label-required-filter">
                       Date de demande min
                     </label>
                   </th>
@@ -223,12 +222,12 @@ const RecruitmentRequestList = () => {
                         type="date"
                         value={filters.requestDateMin}
                         onChange={(e) => handleFilterChange('requestDateMin', e.target.value)}
-                        className="form-input"
+                        className="form-input-filter"
                       />
                     </td>
                   
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">
+                    <th className="form-label-cell-filter">
+                      <label className="form-label-filter form-label-required-filter">
                       Date de demande max
                       </label>
                     </th>
@@ -238,14 +237,14 @@ const RecruitmentRequestList = () => {
                         type="date"
                         value={filters.requestDateMax}
                         onChange={(e) => handleFilterChange('requestDateMax', e.target.value)}
-                        className="form-input"
+                        className="form-input-filter"
                       />
                     </td>
                 </tr>
                 <tr>
 
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">
+                    <th className="form-label-cell-filter">
+                      <label className="form-label-filter form-label-required-filter">
                         Date d'approbation min
                       </label>
                     </th>
@@ -256,13 +255,13 @@ const RecruitmentRequestList = () => {
                         type="date"
                         value={filters.approvalDateMin}
                         onChange={(e) => handleFilterChange('approvalDateMin', e.target.value)}
-                        className="form-input"
+                        className="form-input-filter"
                       />
                     </td>
                   
                     
-                  <th className="form-label-cell">
-                    <label className="form-label form-label-required">  
+                  <th className="form-label-cell-filter">
+                    <label className="form-label-filter form-label-required-filter">  
                       Date d'approbation max
                     </label>
                   </th>
@@ -273,15 +272,15 @@ const RecruitmentRequestList = () => {
                       type="date"
                       value={filters.approvalDateMax}
                       onChange={(e) => handleFilterChange('approvalDateMax', e.target.value)}
-                      className="form-input"
+                      className="form-input-filter"
                     />
                   </td>
                 </tr>
                 <tr>
                     <td colSpan={4}>
                       <div className="flex gap-md justify-end">
-                        <Button type="submit" className="filter-submit-btn">Rechercher</Button>
-                        <Button type="button" className="btn-secondary" onClick={handleResetFilters}>
+                        <Button type="submit" className="filter-submit-btn-filter">Rechercher</Button>
+                        <Button type="button" className="btn-secondary-filter" onClick={handleResetFilters}>
                           Réinitialiser
                         </Button>
                       </div>

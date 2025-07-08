@@ -68,7 +68,7 @@
   box-shadow: var(--shadow-sm);
   margin: var(--spacing-xl) auto;
   padding: var(--spacing-lg);
-  max-width: 100%;
+  max-width: 800px;
   position: relative;
   overflow: hidden;
 }
@@ -127,10 +127,10 @@
   width: 100%;
   padding: var(--spacing-sm);
   height: 32px; /* Hauteur fixe pour uniformité */
-  border: none; /* Suppression de la bordure par défaut */
+  border: 3px solid transparent; /* Bordure transparente pour éviter le changement de taille */
   border-radius: 0;
   font-size: var(--font-size-sm);
-  font-family: "Courier New", monospace;
+  font-family: var(--font-family); /* Utilisation de Montserrat */
   background-color: #f5f5f5;
   color: #222222;
   box-sizing: border-box;
@@ -142,14 +142,14 @@
 .form-table input:hover,
 .form-table select:hover,
 .form-table textarea:hover {
-  border: 2px solid var(--primary-color);
+  border: 3px solid var(--primary-color); /* Même épaisseur que focus */
 }
 
 /* Styles pour le focus */
 .form-table input:focus,
 .form-table select:focus,
 .form-table textarea:focus {
-  border: 3px solid var(--primary-color);
+  border: 3px solid var(--primary-color); /* Même épaisseur que par défaut */
   background-color: #ffffff;
   outline: none;
   box-shadow: inset 0 0 2px rgba(105, 180, 46, 0.3); /* Effet CRT */
@@ -277,6 +277,7 @@
 .ql-editor {
   min-height: 200px;
   padding: var(--spacing-md);
+  font-family: var(--font-family); /* Utilisation de Montserrat */
 }
 
 .ql-editor.ql-blank::before {
@@ -394,7 +395,6 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: var(--spacing-md);
 }
 
 .files-list {

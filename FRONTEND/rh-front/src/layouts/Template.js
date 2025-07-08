@@ -4,7 +4,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
-import { MdPalette } from "react-icons/md";
 import ReactCountryFlag from "react-country-flag";
 import "./Template.css";
 import { BASE_URL } from "../config/apiConfig";
