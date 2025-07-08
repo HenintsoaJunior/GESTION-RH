@@ -1,4 +1,3 @@
-/* generic-form-styles-filter.css - Styles pour formulaires de filtres */
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
 @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
 
@@ -7,9 +6,7 @@
   /* Couleurs principales */
   --primary-color: #69B42E;
   --primary-hover: #5A9625;
-  --primary-light: rgba(105, 180, 46, 0.1);
   --primary-shadow: rgba(105, 180, 46, 0.2);
-  --primary-shadow-hover: rgba(105, 180, 46, 0.3);
   --text-primary: #9D9D9C;
   --error-color: #e74c3c;
   --error-hover: #d62c1a;
@@ -17,17 +14,13 @@
   /* Couleurs de fond */
   --bg-primary: #ffffff;
   --bg-secondary: #f8f9fa;
-  --bg-tertiary: #fafafa;
 
   /* Couleurs de texte */
   --text-secondary: #555555;
   --text-muted: #6b7280;
-  --text-light: #9ca3af;
-  --text-placeholder: #9ca3af;
 
   /* Couleurs de bordure */
   --border-light: #ddd;
-  --border-medium: #d1d5db;
   --border-focus: var(--primary-color);
 
   /* Espacements */
@@ -37,27 +30,20 @@
   --spacing-lg: 16px;
   --spacing-xl: 20px;
   --spacing-2xl: 24px;
-  --spacing-3xl: 32px;
-  --spacing-4xl: 40px;
 
   /* Rayons de bordure */
   --radius-sm: 3px;
   --radius-md: 4px;
-  --radius-lg: 12px;
 
   /* Typographie */
   --font-family: "Montserrat", sans-serif;
   --font-size-xs: 12px;
   --font-size-sm: 14px;
   --font-size-md: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 20px;
   --font-size-2xl: 24px;
 
   /* Ombres */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
-  --shadow-focus: 0 0 4px var(--primary-shadow);
 }
 
 /* ===== CONTENEUR PRINCIPAL ===== */
@@ -73,19 +59,19 @@
 }
 
 /* ===== EN-TÊTE DE FORMULAIRE ===== */
-.table-header-filter {
+.table-header {
   display: flex;
   align-items: center;
   margin-bottom: var(--spacing-lg);
 }
 
-.table-icon-filter {
-  font-size: var(--font-size-xl);
+.table-icon {
+  font-size: var(--font-size-2xl);
   margin-right: var(--spacing-sm);
   color: var(--text-primary);
 }
 
-.table-title-filter {
+.table-title {
   font-size: var(--font-size-2xl);
   font-weight: 600;
   color: var(--text-primary);
@@ -112,59 +98,48 @@
   text-align: right;
   width: 15%;
   vertical-align: top;
-  font-weight: 600;
   color: var(--text-secondary);
 }
 
-.form-input-cell-filter {
-  width: 35%;
+.form-label-filter {
+  font-weight: normal;
 }
 
 .form-table-filter input,
-.form-table-filter select,
-.form-table-filter textarea {
+.form-table-filter select {
   width: 100%;
   padding: var(--spacing-sm);
-  height: 32px; /* Hauteur fixe pour uniformité */
-  border: none; /* Suppression de la bordure par défaut */
+  height: 32px;
+  border: none;
   border-radius: 0;
   font-size: var(--font-size-sm);
   font-family: "Courier New", monospace;
   background-color: #f5f5f5;
   color: #222222;
   box-sizing: border-box;
-  transition: none; /* Suppression de l'animation */
+  transition: none;
   position: relative;
-}
-
-/* Ajouter la bordure au survol */
-.form-table-filter input:hover,
-.form-table-filter select:hover,
-.form-table-filter textarea:hover {
-  border: 2px solid var(--primary-color);
 }
 
 /* Styles pour le focus */
 .form-table-filter input:focus,
-.form-table-filter select:focus,
-.form-table-filter textarea:focus {
-  border: 3px solid var(--primary-color);
+.form-table-filter select:focus {
   background-color: #ffffff;
-  outline: none;
-  box-shadow: inset 0 0 2px rgba(105, 180, 46, 0.3); /* Effet CRT */
+  outline: 2px solid var(--primary-color);
+  box-shadow: inset 0 0 2px rgba(105, 180, 46, 0.3);
 }
 
 .form-table-filter select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  padding-right: var(--spacing-2xl); /* Espace pour la flèche */
+  padding-right: var(--spacing-2xl);
   position: relative;
   background: #f5f5f5;
 }
 
 .form-table-filter select::after {
-  content: "▼"; /* Flèche ASCII */
+  content: "▼";
   position: absolute;
   right: var(--spacing-sm);
   top: 50%;
@@ -174,21 +149,9 @@
   pointer-events: none;
 }
 
-.form-table-filter textarea {
-  resize: vertical;
-  min-height: 120px; /* Ajusté pour plus d'espace */
-  height: form-table;
-}
-
 /* ===== BOUTONS D'ACTION ===== */
-.form-actions-filter {
-  text-align: center;
-  padding-top: var(--spacing-xl);
-}
-
-.submit-btn-filter,
-.reset-btn-filter,
-.add-btn-filter {
+.filter-submit-btn-filter,
+.btn-secondary-filter {
   padding: var(--spacing-md) var(--spacing-2xl);
   border: none;
   border-radius: var(--radius-md);
@@ -202,32 +165,22 @@
   font-family: var(--font-family);
 }
 
-.submit-btn-filter {
+.filter-submit-btn-filter {
   background-color: var(--primary-color);
   color: white;
 }
 
-.reset-btn-filter {
+.btn-secondary-filter {
   background-color: var(--error-color);
   color: white;
 }
 
-.add-btn-filter {
-  background-color: var(--primary-color);
-  color: white;
-  margin-top: var(--spacing-lg);
-}
-
-.submit-btn-filter:hover {
+.filter-submit-btn-filter:hover {
   background-color: var(--primary-hover);
 }
 
-.reset-btn-filter:hover {
+.btn-secondary-filter:hover {
   background-color: var(--error-hover);
-}
-
-.add-btn-filer:hover {
-  background-color: var(--primary-hover);
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
@@ -248,19 +201,8 @@
     padding-bottom: var(--spacing-sm);
   }
 
-  .form-input-cell-filter {
-    padding-top: 0;
-  }
-
-  .form-actions-filter {
-    display: flex;
-    justify-content: center;
-    gap: var(--spacing-md);
-  }
-
-  .submit-btn-filter,
-  .reset-btn-filter,
-  .add-btn-filter {
+  .filter-submit-btn-filter,
+  .btn-secondary-filter {
     width: auto;
   }
 }
@@ -270,9 +212,8 @@
     display: block;
   }
 
-  .submit-btn-filter,
-  .reset-btn-filter,
-  .add-btn-filter {
+  .filter-submit-btn-filter,
+  .btn-secondary-filter {
     width: 100%;
     margin: var(--spacing-sm) 0;
   }
