@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Utils.pdf;
 
-namespace WebApplication.Controllers
+namespace MyApp.Api.Controllers.actions
 {
     [Route("api/[controller]")]
     [ApiController]
