@@ -3,17 +3,17 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyApp.Api.Entities.departments
 {
-    [Table("departments")]
-    public class Department : BaseEntity
+    [Table("direction")]
+    public class Direction : BaseEntity
     {
         [Key]
-        [Column("department_id")]
+        [Column("direction_id")]
         [MaxLength(50)]
-        public string DepartmentId { get; set; } = null!;
+        public string DirectionId { get; set; } = null!;
 
         [Required]
-        [Column("department_name")]
+        [Column("direction_name")]
         [MaxLength(100)]
-        public string DepartmentName { get; set; } = null!;
+        public string DirectionName { get; set; } = null!;
     }
 }
