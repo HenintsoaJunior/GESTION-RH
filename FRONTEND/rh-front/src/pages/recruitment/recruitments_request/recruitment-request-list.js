@@ -22,6 +22,9 @@ const RecruitmentRequestList = () => {
     approvalDateMin: '',
     approvalDateMax: '',
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5); // Default to 5 items per page
+  const [totalEntries, setTotalEntries] = useState(0);
 
   const recruitmentTypeHints = useMemo(() => ({
     recruitmentRequestId: 'string',
@@ -36,55 +39,95 @@ const RecruitmentRequestList = () => {
   }), []);
 
   const fetchRequests = useCallback(
-    async (filters = {}) => {
+    async (filters = {}, page = 1) => {
       try {
         setLoading(true);
         const cleanedFilters = cleanFilters(filters);
         const hasFilters = hasActiveFilters(cleanedFilters);
+        const start = (page - 1) * pageSize;
 
-        let response;
+        let totalResponse, paginatedResponse;
+
+        // Fetch total entries
         if (hasFilters) {
-          response = await fetch(`${BASE_URL}/api/RecruitmentRequest/search`, {
+          totalResponse = await fetch(`${BASE_URL}/api/RecruitmentRequest/search`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Accept': '*/*',
             },
-            body: JSON.stringify(cleanedFilters),
+            body: JSON.stringify(cleanedFilters), // No start/count for total
           });
         } else {
-          response = await fetch(`${BASE_URL}/api/RecruitmentRequest`, {
+          totalResponse = await fetch(`${BASE_URL}/api/RecruitmentRequest`, {
             headers: { 'Accept': '*/*' },
           });
         }
 
-        if (!response.ok) {
-          throw new Error('Erreur lors de la récupération des demandes');
+        if (!totalResponse.ok) {
+          throw new Error(`Erreur lors de la récupération du total: ${totalResponse.status}`);
         }
 
-        const data = await response.json();
-        const parsedData = parseData(data, recruitmentTypeHints);
+        const totalData = await totalResponse.json();
+        console.log('Total API Response:', totalData); // Debug: Log total response
+        const total = Number(totalData.totalEntries || totalData.length || 0);
+        setTotalEntries(total);
+        console.log('Total Entries Set:', total); // Debug: Log totalEntries
+
+        // Fetch paginated data
+        if (hasFilters) {
+          paginatedResponse = await fetch(`${BASE_URL}/api/RecruitmentRequest/search`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': '*/*',
+            },
+            body: JSON.stringify({ ...cleanedFilters, start, count: pageSize }),
+          });
+        } else {
+          paginatedResponse = await fetch(
+            `${BASE_URL}/api/RecruitmentRequest/requests/paginated?start=${start}&count=${pageSize}`,
+            {
+              headers: { 'Accept': '*/*' },
+            }
+          );
+        }
+
+        if (!paginatedResponse.ok) {
+          throw new Error(`Erreur lors de la récupération des données paginées: ${paginatedResponse.status}`);
+        }
+
+        const paginatedData = await paginatedResponse.json();
+        console.log('Paginated API Response:', paginatedData); // Debug: Log paginated response
+
+        const parsedData = parseData(paginatedData.requests || paginatedData, recruitmentTypeHints);
+        console.log('Parsed Data:', parsedData); // Debug: Log parsed data
+        console.log('Parsed Data Length:', parsedData.length); // Debug: Log number of items
+
         setRequests(parsedData);
       } catch (err) {
+        console.error('Fetch Error:', err); // Debug: Log any errors
         setError(err.message);
       } finally {
         setLoading(false);
       }
     },
-    [recruitmentTypeHints]
+    [recruitmentTypeHints, pageSize]
   );
 
   useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
+    fetchRequests(filters, currentPage);
+  }, [fetchRequests, currentPage, filters]);
 
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
+    setCurrentPage(1);
   };
 
   const handleFilterSubmit = (event) => {
     event.preventDefault();
-    fetchRequests(filters);
+    setCurrentPage(1);
+    fetchRequests(filters, 1);
   };
 
   const handleResetFilters = () => {
@@ -97,17 +140,33 @@ const RecruitmentRequestList = () => {
       approvalDateMax: '',
     };
     setFilters(resetFilters);
-    fetchRequests(resetFilters);
+    setCurrentPage(1);
+    fetchRequests(resetFilters, 1);
   };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (value) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
+    fetchRequests(filters, 1);
+  };
+
+  const totalPages = Math.ceil(totalEntries / pageSize);
+  console.log('Pagination Info:', { currentPage, pageSize, totalEntries, totalPages }); // Debug: Log pagination state
 
   const getStatusBadge = (status) => {
     return (
-      <span className={`status-badge status-badge-${
-        status === 'En Attente' ? 'info' : 
-        status === 'Approuvé' ? 'success' : 
-        status === 'Rejeté' ? 'danger' : 
-        status === 'En Cours' ? 'warning' : 'info'
-      }`}>
+      <span
+        className={`status-badge status-badge-${
+          status === 'En Attente' ? 'info' :
+          status === 'Approuvé' ? 'success' :
+          status === 'Rejeté' ? 'danger' :
+          status === 'En Cours' ? 'warning' : 'info'
+        }`}
+      >
         {status}
       </span>
     );
@@ -156,8 +215,8 @@ const RecruitmentRequestList = () => {
               <Download className="w-4 h-4" />
               Exporter
             </Button>
-            <Button 
-              onClick={() => navigate('/recruitment/recruitment-request-form')} 
+            <Button
+              onClick={() => navigate('/recruitment/recruitment-request-form')}
               className="btn-primary"
             >
               <Plus className="w-4 h-4" />
@@ -172,43 +231,43 @@ const RecruitmentRequestList = () => {
             <div className="table-icon">☙</div>
             <h2 className="table-title">Recherche</h2>
           </div>
-          <form className="generic-form-filter" onSubmit={handleFilterSubmit}>
+          <div className="generic-form-filter">
             <table className="form-table-filter">
               <tbody>
                 <tr>
-                    <th className="form-label-cell-filter">
-                      <label className="form-label-filter form-label-required-filter">
-                        Status
-                      </label>
-                    </th>
-                    <td>
-                      <NativeSelect
-                        name="status"
-                        value={filters.status}
-                        onValueChange={(value) => handleFilterChange('status', value)}
-                        className="form-select-filter"
-                      >
-                        <NativeSelectItem value="">Tous</NativeSelectItem>
-                        <NativeSelectItem value="En Attente">En Attente</NativeSelectItem>
-                        <NativeSelectItem value="En Cours">En Cours</NativeSelectItem>
-                        <NativeSelectItem value="Approuvé">Approuvé</NativeSelectItem>
-                        <NativeSelectItem value="Rejeté">Rejeté</NativeSelectItem>
-                      </NativeSelect>
-                    </td>
-                    <th className="form-label-cell-filter">
-                      <label className="form-label-filter form-label-required-filter">
-                        Mot-clé du titre
-                      </label>
-                    </th>
-                    <td>
-                      <Input
-                        name="jobTitleKeyword"
-                        type="text"
-                        value={filters.jobTitleKeyword}
-                        onChange={(e) => handleFilterChange('jobTitleKeyword', e.target.value)}
-                        className="form-input-filter"
-                      />
-                    </td>
+                  <th className="form-label-cell-filter">
+                    <label className="form-label-filter form-label-required-filter">
+                      Status
+                    </label>
+                  </th>
+                  <td>
+                    <NativeSelect
+                      name="status"
+                      value={filters.status}
+                      onValueChange={(value) => handleFilterChange('status', value)}
+                      className="form-select-filter"
+                    >
+                      <NativeSelectItem value="">Tous</NativeSelectItem>
+                      <NativeSelectItem value="En Attente">En Attente</NativeSelectItem>
+                      <NativeSelectItem value="En Cours">En Cours</NativeSelectItem>
+                      <NativeSelectItem value="Approuvé">Approuvé</NativeSelectItem>
+                      <NativeSelectItem value="Rejeté">Rejeté</NativeSelectItem>
+                    </NativeSelect>
+                  </td>
+                  <th className="form-label-cell-filter">
+                    <label className="form-label-filter form-label-required-filter">
+                      Mot-clé du titre
+                    </label>
+                  </th>
+                  <td>
+                    <Input
+                      name="jobTitleKeyword"
+                      type="text"
+                      value={filters.jobTitleKeyword}
+                      onChange={(e) => handleFilterChange('jobTitleKeyword', e.target.value)}
+                      className="form-input-filter"
+                    />
+                  </td>
                 </tr>
                 <tr>
                   <th className="form-label-cell-filter">
@@ -216,56 +275,50 @@ const RecruitmentRequestList = () => {
                       Date de demande min
                     </label>
                   </th>
-                    <td>
-                      <Input
-                        name="requestDateMin"
-                        type="date"
-                        value={filters.requestDateMin}
-                        onChange={(e) => handleFilterChange('requestDateMin', e.target.value)}
-                        className="form-input-filter"
-                      />
-                    </td>
-                  
-                    <th className="form-label-cell-filter">
-                      <label className="form-label-filter form-label-required-filter">
+                  <td>
+                    <Input
+                      name="requestDateMin"
+                      type="date"
+                      value={filters.requestDateMin}
+                      onChange={(e) => handleFilterChange('requestDateMin', e.target.value)}
+                      className="form-input-filter"
+                    />
+                  </td>
+                  <th className="form-label-cell-filter">
+                    <label className="form-label-filter form-label-required-filter">
                       Date de demande max
-                      </label>
-                    </th>
-                    <td>
-                      <Input
-                        name="requestDateMax"
-                        type="date"
-                        value={filters.requestDateMax}
-                        onChange={(e) => handleFilterChange('requestDateMax', e.target.value)}
-                        className="form-input-filter"
-                      />
-                    </td>
+                    </label>
+                  </th>
+                  <td>
+                    <Input
+                      name="requestDateMax"
+                      type="date"
+                      value={filters.requestDateMax}
+                      onChange={(e) => handleFilterChange('requestDateMax', e.target.value)}
+                      className="form-input-filter"
+                    />
+                  </td>
                 </tr>
                 <tr>
-
-                    <th className="form-label-cell-filter">
-                      <label className="form-label-filter form-label-required-filter">
-                        Date d'approbation min
-                      </label>
-                    </th>
-                    
-                    <td>
-                      <Input
-                        name="approvalDateMin"
-                        type="date"
-                        value={filters.approvalDateMin}
-                        onChange={(e) => handleFilterChange('approvalDateMin', e.target.value)}
-                        className="form-input-filter"
-                      />
-                    </td>
-                  
-                    
                   <th className="form-label-cell-filter">
-                    <label className="form-label-filter form-label-required-filter">  
+                    <label className="form-label-filter form-label-required-filter">
+                      Date d'approbation min
+                    </label>
+                  </th>
+                  <td>
+                    <Input
+                      name="approvalDateMin"
+                      type="date"
+                      value={filters.approvalDateMin}
+                      onChange={(e) => handleFilterChange('approvalDateMin', e.target.value)}
+                      className="form-input-filter"
+                    />
+                  </td>
+                  <th className="form-label-cell-filter">
+                    <label className="form-label-filter form-label-required-filter">
                       Date d'approbation max
                     </label>
                   </th>
-                  
                   <td>
                     <Input
                       name="approvalDateMax"
@@ -277,18 +330,20 @@ const RecruitmentRequestList = () => {
                   </td>
                 </tr>
                 <tr>
-                    <td colSpan={4}>
-                      <div className="flex gap-md justify-end">
-                        <Button type="submit" className="filter-submit-btn-filter">Rechercher</Button>
-                        <Button type="button" className="btn-secondary-filter" onClick={handleResetFilters}>
-                          Réinitialiser
-                        </Button>
-                      </div>
-                    </td>
+                  <td colSpan={4}>
+                    <div className="flex gap-md justify-end">
+                      <Button type="submit" className="filter-submit-btn-filter" onClick={handleFilterSubmit}>
+                        Rechercher
+                      </Button>
+                      <Button type="button" className="btn-secondary-filter" onClick={handleResetFilters}>
+                        Réinitialiser
+                      </Button>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
-          </form>
+          </div>
         </div>
 
         {/* Tableau de données */}
@@ -348,11 +403,48 @@ const RecruitmentRequestList = () => {
         {/* Pagination */}
         <div className="pagination">
           <div className="pagination-info">
-            Affichage de 1 à {requests.length} sur {requests.length} entrées
+            Affichage de {(currentPage - 1) * pageSize + 1} à{' '}
+            {Math.min(currentPage * pageSize, totalEntries)} sur {totalEntries} entrées
           </div>
-          <div className="pagination-controls">
-            <Button variant="outline" size="sm" className="pagination-btn-active">
-              1
+          <div className="pagination-controls flex items-center gap-md">
+            <NativeSelect
+              value={pageSize}
+              onValueChange={handlePageSizeChange}
+              className="w-24"
+            >
+              <NativeSelectItem value={5}>5</NativeSelectItem>
+              <NativeSelectItem value={10}>10</NativeSelectItem>
+              <NativeSelectItem value={25}>25</NativeSelectItem>
+              <NativeSelectItem value={50}>50</NativeSelectItem>
+            </NativeSelect>
+            <Button
+              variant="outline"
+              size="sm"
+              className="pagination-btn"
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              Précédent
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                variant="outline"
+                size="sm"
+                className={page === currentPage ? 'pagination-btn-active' : 'pagination-btn'}
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              className="pagination-btn"
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              Suivant
             </Button>
           </div>
         </div>

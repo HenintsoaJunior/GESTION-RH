@@ -7,7 +7,7 @@ namespace MyApp.Api.Repositories.recruitment
     public interface IRecruitmentRequestRepository
     {
         Task<IEnumerable<RecruitmentRequest>> GetByCriteriaAsync(RecruitmentRequestCriteria criteria);
-        Task<IEnumerable<RecruitmentRequest>> GetPaginatedAsync(int startIndex, int count, string requesterId);
+        Task<IEnumerable<RecruitmentRequest>> GetPaginatedAsync(int startIndex, int count, string? requesterId = null);
         Task<IEnumerable<RecruitmentRequest>> GetByRequesterAsync(string requesterId);
         Task<IEnumerable<RecruitmentRequest>> GetAllAsync();
         Task<RecruitmentRequest?> GetByIdAsync(string id);
@@ -51,11 +51,15 @@ namespace MyApp.Api.Repositories.recruitment
         }
 
 
-        public async Task<IEnumerable<RecruitmentRequest>> GetPaginatedAsync(int startIndex, int count, string requesterId)
+        public async Task<IEnumerable<RecruitmentRequest>> GetPaginatedAsync(int startIndex, int count, string? requesterId = null)
         {
-            return await _context.RecruitmentRequests
-                .Where(r => r.RequesterId == requesterId)
-                .OrderByDescending(r => r.RequestDate) //ou autre champs
+            var query = _context.RecruitmentRequests.AsQueryable();
+            if (!string.IsNullOrEmpty(requesterId))
+            {
+                query = query.Where(r => r.RequesterId == requesterId);
+            }
+            return await query
+                .OrderByDescending(r => r.RequestDate)
                 .Skip(startIndex)
                 .Take(count)
                 .ToListAsync();
