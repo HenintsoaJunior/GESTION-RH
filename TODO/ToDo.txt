@@ -64,6 +64,7 @@ Permettre une gestion complète et structurée des recrutements, incluant le dé
                         Nombre total de candidatures
                         Conversion par étape (% passés à l’étape suivante)
                         Durée moyenne par étape
+        5.Test et évaluation des candidats
         Sécurité et confidentialité
                 Seuls les utilisateurs RH ou managers autorisés peuvent accéder aux candidatures.
                 Données personnelles des candidats traitées selon les règles RGPD.
@@ -325,6 +326,21 @@ Fournir à la direction RH et aux managers une vision synthétique, visuelle et 
                 Réduction du temps de reporting
                 Support décisionnel pour la direction RH
 
+--------------------------------------------------------------------------------------------------------------------------------
+Suivi du budget
+    Rapprochement et suivi
+    Evolution rem
+    Rapport mensuel
+
+--------------------------------------------------------------------------------------------------------------------------------
+Gestion de mission
+    Etat de paiement des indemnités de mission
+        régularisation des indemnités de mission
+            mi génerer indemnité par jour pour transport, petite dej, dej, hebergement (en fonction de la catégorie du salarié) 
+    Liste missions 
+        actuels
+        historiques
+    Créer etat de paiement (créer une mission => input)
 --------------------------------------------------------------------------------------------------------------------------------
 Fonctionnalités transversales – exigences générales de l’application
         1. Import / Export CSV des données
