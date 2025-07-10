@@ -91,10 +91,17 @@ namespace MyApp.Api.Controllers.recruitment
 
         // demandes paginé
         [HttpGet("requests/paginated")]
-        public async Task<IActionResult> GetPaginated([FromQuery] int start, [FromQuery] int count, [FromQuery] string requesterId)
+        public async Task<IActionResult> GetPaginated([FromQuery] int start, [FromQuery] int count, [FromQuery] string? requesterId = null)
         {
+            if (count <= 0 || count > 100)
+            {
+                return BadRequest("Le nombre d'éléments par page doit être entre 1 et 100.");
+            }
             var results = await _requestService.GetPaginatedRequestsAsync(start, count, requesterId);
-            return Ok(results);
+            var total = string.IsNullOrEmpty(requesterId)
+                ? await _context.RecruitmentRequests.CountAsync()
+                : await _context.RecruitmentRequests.Where(r => r.RequesterId == requesterId).CountAsync();
+            return Ok(new { requests = results, totalEntries = total });
         }
 
         // les demandes par id demandeur
