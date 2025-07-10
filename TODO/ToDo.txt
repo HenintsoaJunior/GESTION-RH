@@ -65,6 +65,12 @@ Permettre une gestion complète et structurée des recrutements, incluant le dé
                         Conversion par étape (% passés à l’étape suivante)
                         Durée moyenne par étape
         5.Test et évaluation des candidats
+        6. Demande de recrutement
+            Demandeur => complète un formulaire de Demande
+            Validation de la demande selon cet ordre
+                Directeur concerné, DRH, DAF, DG
+                En cas de recommandation => retout immédiat vers le Demandeur
+            PDF généré après validation
         Sécurité et confidentialité
                 Seuls les utilisateurs RH ou managers autorisés peuvent accéder aux candidatures.
                 Données personnelles des candidats traitées selon les règles RGPD.
