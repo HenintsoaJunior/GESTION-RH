@@ -1,11 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using MyApp.Api.Entities;
-using MyApp.Api.Entities.actions;
-using MyApp.Api.Entities.contracts;
-using MyApp.Api.Entities.departments;
-using MyApp.Api.Entities.jobs;
+using MyApp.Api.Entities.contract;
+using MyApp.Api.Entities.direction;
+using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.menu;
-using MyApp.Api.Entities.recruitment;
+using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.users;
 
 namespace MyApp.Api.Data
@@ -13,20 +11,16 @@ namespace MyApp.Api.Data
     public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-         public DbSet<JobDescription> JobDescriptions { get; set; }
-        public DbSet<RecruitmentApproval> RecruitmentApprovals { get; set; }
-        public DbSet<RecruitmentRequestFile> RecruitmentRequestFiles { get; set; }
-
-        public DbSet<ApprovalFlow> ApprovalFlows { get; set; }
-
-        public DbSet<RecruitmentRequest> RecruitmentRequests { get; set; }
-
+        public DbSet<EmployeeCategory> EmployeeCategories { get; set; }   
+        public DbSet<ContractType> ContractTypes { get; set; }   
+        public DbSet<Gender> Genders { get; set; }   
+        public DbSet<MaritalStatus> MaritalStatuses { get; set; }   
+        public DbSet<Nationality> Nationalities { get; set; }
+        public DbSet<Site> Sites { get; set; }
+        public DbSet<Unit> Units { get; set; }
+        public DbSet<Service> Services { get; set; }
         public DbSet<Department> Departments { get; set; }
-
-        public DbSet<ContractType> ContractTypes { get; set; }
-
-        public DbSet<ActionType> ActionTypes { get; set; }
-
+        public DbSet<Direction> Directions { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Language> Languages { get; set; }
         public DbSet<Module> Modules { get; set; }

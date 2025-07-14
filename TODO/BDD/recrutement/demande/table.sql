@@ -96,7 +96,7 @@ CREATE TABLE contract_types(
 CREATE TABLE employee_categories(
    employee_category_id VARCHAR(50) ,
    code VARCHAR(50)  NOT NULL,
-   label VARCHAR(100)  NOT NULL,
+   label VARCHAR(50)  NOT NULL,
    PRIMARY KEY(employee_category_id),
    UNIQUE(code)
 );
