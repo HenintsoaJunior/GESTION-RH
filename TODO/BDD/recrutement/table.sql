@@ -287,7 +287,7 @@ CREATE TABLE application_comments (
 CREATE INDEX idx_application_comments_application_id ON application_comments(application_id); -- Index pour optimiser les jointures
 CREATE INDEX idx_application_comments_user_id ON application_comments(user_id); -- Index pour optimiser les jointures
 
--- Table validation des deamndes de recrutement
+-- Table validation des demandes de recrutement
 CREATE TABLE recruitment_approval (
    direction_id VARCHAR(50),
    recruitment_request_id VARCHAR(50),
