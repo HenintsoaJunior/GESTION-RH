@@ -3,7 +3,7 @@ DROP TABLE IF EXISTS menu_hierarchy;
 DROP TABLE IF EXISTS menu;
 DROP TABLE IF EXISTS module;
 
--- Create tables
+-- Create table
 CREATE TABLE module (
    module_id VARCHAR(50) PRIMARY KEY,
    module_name VARCHAR(100) NOT NULL,
