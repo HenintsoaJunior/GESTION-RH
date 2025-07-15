@@ -1,12 +1,12 @@
 import "../../../styles/generic-form-styles.css";
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Pour la navigation
 import { BASE_URL } from "../../../config/apiConfig";
 import RichTextEditor from "../../../components/RichTextEditor";
 import Alert from "../../../components/Alert";
 import * as FaIcons from "react-icons/fa";
-import AddItemModal from "../../../components/AddItemModal";
 
-// Composant d'autocomplétion personnalisé style ERPNext avec modal
+// Composant d'autocomplétion personnalisé style ERPNext avec redirection
 const AutoCompleteInput = ({
   value,
   onChange,
@@ -15,14 +15,15 @@ const AutoCompleteInput = ({
   disabled,
   onAddNew,
   className = "form-input",
-  fieldType = "", // Type de champ pour le modal
-  fieldLabel = "", // Label pour le modal
+  fieldType = "", // Type de champ pour la redirection
+  fieldLabel = "", // Label pour la redirection
+  addNewRoute = "", // Route vers laquelle rediriger
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (value) {
@@ -60,83 +61,75 @@ const AutoCompleteInput = ({
 
   const handleAddNew = () => {
     if (value && !suggestions.includes(value)) {
-      // Ouvrir le modal au lieu d'ajouter directement
-      setIsModalOpen(true);
+      // Rediriger vers la page de création avec les paramètres
+      const queryParams = new URLSearchParams({
+        fieldType: fieldType,
+        fieldLabel: fieldLabel,
+        initialValue: value,
+        returnUrl: window.location.pathname
+      });
+      
+      const redirectUrl = addNewRoute || `/add-${fieldType}`;
+      navigate(`${redirectUrl}?${queryParams.toString()}`);
       setIsOpen(false);
     }
   };
 
-  const handleModalAdd = (newItem) => {
-    if (onAddNew) {
-      onAddNew(newItem);
-      onChange(newItem); // Sélectionner automatiquement l'élément ajouté
-    }
-  };
+  // Supprimer handleModalAdd car nous n'utilisons plus de modal
 
   const canAddNew = value && !suggestions.some((s) => s.toLowerCase() === value.toLowerCase());
 
   return (
-    <>
-      <div ref={containerRef} className="autocomplete-container">
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={handleInputChange}
-          onFocus={() => setIsOpen(true)}
-          placeholder={placeholder}
-          disabled={disabled}
-          className={className}
-        />
-        <span
-          onClick={() => !disabled && setIsOpen(!isOpen)}
-          className="autocomplete-icon"
-        >
-          {isOpen ? "▲" : "▼"}
-        </span>
-
-        {isOpen && !disabled && (
-          <div className="autocomplete-dropdown">
-            {filteredSuggestions.length > 0 ? (
-              filteredSuggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  className="autocomplete-suggestion"
-                >
-                  {suggestion}
-                </div>
-              ))
-            ) : (
-              <div className="autocomplete-no-suggestion">
-                Aucune suggestion trouvée
-              </div>
-            )}
-
-            {value && (
-              <div className="autocomplete-add-option">
-                <div
-                  onClick={handleAddNew}
-                  className={`autocomplete-add-item ${canAddNew ? "enabled" : "disabled"}`}
-                >
-                  <FaIcons.FaPlus className="icon" />
-                  {canAddNew ? `Ajouter "${value}"` : `"${value}" existe déjà`}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Modal pour ajouter un nouvel élément */}
-      <AddItemModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAdd={handleModalAdd}
-        fieldType={fieldType}
-        fieldLabel={fieldLabel}
+    <div ref={containerRef} className="autocomplete-container">
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={handleInputChange}
+        onFocus={() => setIsOpen(true)}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={className}
       />
-    </>
+      <span
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className="autocomplete-icon"
+      >
+        {isOpen ? "▲" : "▼"}
+      </span>
+
+      {isOpen && !disabled && (
+        <div className="autocomplete-dropdown">
+          {filteredSuggestions.length > 0 ? (
+            filteredSuggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                onClick={() => handleSuggestionClick(suggestion)}
+                className="autocomplete-suggestion"
+              >
+                {suggestion}
+              </div>
+            ))
+          ) : (
+            <div className="autocomplete-no-suggestion">
+              Aucune suggestion trouvée
+            </div>
+          )}
+
+          {value && (
+            <div className="autocomplete-add-option">
+              <div
+                onClick={handleAddNew}
+                className={`autocomplete-add-item ${canAddNew ? "enabled" : "disabled"}`}
+              >
+                <FaIcons.FaPlus className="icon" />
+                {canAddNew ? `Ajouter "${value}"` : `"${value}" existe déjà`}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -394,6 +387,7 @@ export default function RecruitmentRequestForm() {
                     onAddNew={(value) => handleAddNewSuggestion("direction", value)}
                     fieldType="direction"
                     fieldLabel="direction"
+                    addNewRoute="/parametres/direction/add"
                   />
                 </td>
                 <th className="form-label-cell">
@@ -409,6 +403,7 @@ export default function RecruitmentRequestForm() {
                     onAddNew={(value) => handleAddNewSuggestion("departement", value)}
                     fieldType="departement"
                     fieldLabel="département"
+                    addNewRoute="/parametres/departement/add"
                   />
                 </td>
               </tr>
@@ -426,6 +421,7 @@ export default function RecruitmentRequestForm() {
                     onAddNew={(value) => handleAddNewSuggestion("service", value)}
                     fieldType="service"
                     fieldLabel="service"
+                    addNewRoute="/parametres/service/add"
                   />
                 </td>
                 <th className="form-label-cell">
