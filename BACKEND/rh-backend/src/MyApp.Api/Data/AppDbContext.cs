@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.direction;
 using MyApp.Api.Entities.employee;
+using MyApp.Api.Entities.jobs;
 using MyApp.Api.Entities.menu;
+using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.users;
 
@@ -11,6 +13,18 @@ namespace MyApp.Api.Data
     public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        public DbSet<JobOffer> JobOffers { get; set; } 
+        public DbSet<JobDescription> JobDescriptions { get; set; } 
+        public DbSet<RecruitmentApproval> RecruitmentApprovals { get; set; } 
+        public DbSet<EmployeeNationality> EmployeeNationalities { get; set; } 
+        public DbSet<ApprovalFlow> ApprovalFlows { get; set; } 
+        public DbSet<RecruitmentRequestDetail> RecruitmentRequestDetails { get; set; } 
+        public DbSet<Employee> Employees { get; set; } 
+        public DbSet<RecruitmentRequest> RecruitmentRequests { get; set; } 
+        public DbSet<RecruitmentRequestReplacementReason> RecruitmentRequestReplacementReasons { get; set; } 
+        public DbSet<ReplacementReason> ReplacementReasons { get; set; }  
+        public DbSet<RecruitmentReason> RecruitmentReasons { get; set; }  
+        public DbSet<WorkingTimeType> WorkingTimeTypes { get; set; }  
         public DbSet<EmployeeCategory> EmployeeCategories { get; set; }   
         public DbSet<ContractType> ContractTypes { get; set; }   
         public DbSet<Gender> Genders { get; set; }   
