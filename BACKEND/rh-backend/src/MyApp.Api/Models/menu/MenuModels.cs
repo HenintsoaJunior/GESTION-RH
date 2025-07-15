@@ -9,7 +9,6 @@ namespace MyApp.Api.Models.menu
         public bool IsEnabled { get; set; } = true;
         public int? Position { get; set; }
         public string? ModuleId { get; set; }
-        public string Label { get; set; } = default!; // Depuis MenuTranslation
     }
 
     public class MenuHierarchyDto
@@ -27,13 +26,5 @@ namespace MyApp.Api.Models.menu
         public string ModuleName { get; set; } = default!;
         public string? Description { get; set; }
         public List<MenuHierarchyDto> Menus { get; set; } = new();
-    }
-
-    public class MenuTranslationDto
-    {
-        public string TranslationId { get; set; } = default!;
-        public string Label { get; set; } = default!;
-        public string LanguageId { get; set; } = default!;
-        public string MenuId { get; set; } = default!;
     }
 }

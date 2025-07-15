@@ -1,18 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Upload, X, FileText, ImageIcon, File } from "lucide-react";
+import { useState } from "react";
+import { X, FileText, ImageIcon, File } from "lucide-react";
 
 export default function FileUpload({ onFilesChange, disabled }) {
-  const fileInputRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [dragActive, setDragActive] = useState(false);
-
-  const handleFileButtonClick = () => {
-    if (fileInputRef.current && !disabled) {
-      fileInputRef.current.click();
-    }
-  };
 
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files);
@@ -20,34 +12,6 @@ export default function FileUpload({ onFilesChange, disabled }) {
       const updatedFiles = [...selectedFiles, ...files];
       setSelectedFiles(updatedFiles);
       onFilesChange(updatedFiles);
-      // Réinitialiser l'input pour permettre de re-sélectionner les mêmes fichiers
-      event.target.value = null;
-    }
-  };
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!disabled) {
-      if (e.type === "dragenter" || e.type === "dragover") {
-        setDragActive(true);
-      } else if (e.type === "dragleave") {
-        setDragActive(false);
-      }
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!disabled) {
-      setDragActive(false);
-      const files = Array.from(e.dataTransfer.files);
-      if (files.length > 0) {
-        const updatedFiles = [...selectedFiles, ...files];
-        setSelectedFiles(updatedFiles);
-        onFilesChange(updatedFiles);
-      }
     }
   };
 
@@ -73,41 +37,23 @@ export default function FileUpload({ onFilesChange, disabled }) {
 
   return (
     <div className="file-upload-container">
-      <div
-        className={`file-upload-area ${dragActive ? "drag-active" : ""}`}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-      >
-        <div className="file-upload-content">
-          <Upload className="upload-icon" />
-          <div className="upload-text">
-            <span className="upload-main">Glissez vos fichiers ici</span>
-            <span className="upload-sub">ou</span>
-            <button
-              type="button"
-              className="upload-button"
-              onClick={handleFileButtonClick}
-              disabled={disabled}
-            >
-              Parcourir les fichiers
-            </button>
-          </div>
-          <div className="upload-formats">
-            Fiche de poste, organigramme, documents RH (PDF, DOC, DOCX, TXT, JPG, PNG - Max 10MB)
-          </div>
+      <div className="file-upload-area">
+        <label className="file-upload-label">
+          <input
+            type="file"
+            multiple
+            accept=".pdf,.doc,.docx,.txt,.jpg,.png,.gif"
+            onChange={handleFileChange}
+            disabled={disabled}
+            className="file-input"
+          />
+          <span className="file-upload-button">
+            Choisir des fichiers
+          </span>
+        </label>
+        <div className="upload-formats">
+          Fiche de poste, organigramme, documents RH (PDF, DOC, DOCX, TXT, JPG, PNG - Max 10MB)
         </div>
-        <input
-          id="file-upload-input"
-          ref={fileInputRef}
-          type="file"
-          multiple
-          className="hidden"
-          accept=".pdf,.doc,.docx,.txt,.jpg,.png,.gif"
-          onChange={handleFileChange}
-          disabled={disabled}
-        />
       </div>
 
       {selectedFiles.length > 0 && (

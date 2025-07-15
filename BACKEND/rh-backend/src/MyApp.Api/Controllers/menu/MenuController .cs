@@ -15,12 +15,12 @@ namespace MyApp.Api.Controllers.menu
             _menuService = menuService;
         }
 
-        [HttpGet("hierarchy/{languageId}")]
-        public async Task<ActionResult<IEnumerable<MenuHierarchyDto>>> GetMenuHierarchy(string languageId)
+        [HttpGet("hierarchy")]
+        public async Task<ActionResult<IEnumerable<MenuHierarchyDto>>> GetMenuHierarchy()
         {
             try
             {
-                var menuHierarchy = await _menuService.GetMenuHierarchyAsync(languageId);
+                var menuHierarchy = await _menuService.GetMenuHierarchyAsync();
                 return Ok(menuHierarchy);
             }
             catch (Exception ex)
