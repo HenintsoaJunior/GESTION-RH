@@ -1,19 +1,48 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../../../components/Button';
-import { Input } from '../../../components/Input';
-import { NativeSelect, NativeSelectItem } from '../../../components/Select';
 import { FileText, Plus, Download } from 'lucide-react';
-import { BASE_URL } from '../../../config/apiConfig';
-import { parseData, formatDate, cleanFilters, hasActiveFilters } from '../../../utils/utils';
+import { formatDate } from '../../../utils/utils';
 import '../../../styles/generic-table-styles.css';
-import '../../../styles/generic-search-styles.css';
+
+// Données statiques
+const staticRequests = [
+  {
+    recruitmentRequestId: '1',
+    jobTitle: 'Développeur Full Stack',
+    requesterId: 'EMP001',
+    requestDate: '2025-06-01',
+    status: 'En Attente',
+    priority: 'Haute',
+  },
+  {
+    recruitmentRequestId: '2',
+    jobTitle: 'Designer UX/UI',
+    requesterId: 'EMP002',
+    requestDate: '2025-06-15',
+    status: 'Approuvé',
+    priority: 'Moyenne',
+  },
+  {
+    recruitmentRequestId: '3',
+    jobTitle: 'Manager de Projet',
+    requesterId: 'EMP003',
+    requestDate: '2025-07-01',
+    status: 'En Cours',
+    priority: 'Normale',
+  },
+  {
+    recruitmentRequestId: '4',
+    jobTitle: 'Analyste Data',
+    requesterId: 'EMP004',
+    requestDate: '2025-07-10',
+    status: 'Rejeté',
+    priority: 'Basse',
+  },
+];
 
 const RecruitmentRequestList = () => {
   const navigate = useNavigate();
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [requests, setRequests] = useState(staticRequests);
   const [filters, setFilters] = useState({
     status: '',
     jobTitleKeyword: '',
@@ -23,96 +52,56 @@ const RecruitmentRequestList = () => {
     approvalDateMax: '',
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5); // Default to 5 items per page
-  const [totalEntries, setTotalEntries] = useState(0);
+  const [pageSize, setPageSize] = useState(5);
+  const [totalEntries, setTotalEntries] = useState(staticRequests.length);
 
   const recruitmentTypeHints = useMemo(() => ({
     recruitmentRequestId: 'string',
     jobTitle: 'string',
     description: 'string',
     status: 'string',
-    requestDate: 'date',
-    approvalDate: 'date',
+    requestDate: 'date approvalDate: date',
     priority: 'string',
     vacancyCount: 'int',
     salary: 'double',
   }), []);
 
   const fetchRequests = useCallback(
-    async (filters = {}, page = 1) => {
-      try {
-        setLoading(true);
-        const cleanedFilters = cleanFilters(filters);
-        const hasFilters = hasActiveFilters(cleanedFilters);
-        const start = (page - 1) * pageSize;
+    (filters = {}, page = 1) => {
+      let filteredRequests = [...staticRequests];
 
-        let totalResponse, paginatedResponse;
-
-        // Fetch total entries
-        if (hasFilters) {
-          totalResponse = await fetch(`${BASE_URL}/api/RecruitmentRequest/search`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': '*/*',
-            },
-            body: JSON.stringify(cleanedFilters), // No start/count for total
-          });
-        } else {
-          totalResponse = await fetch(`${BASE_URL}/api/RecruitmentRequest`, {
-            headers: { 'Accept': '*/*' },
-          });
-        }
-
-        if (!totalResponse.ok) {
-          throw new Error(`Erreur lors de la récupération du total: ${totalResponse.status}`);
-        }
-
-        const totalData = await totalResponse.json();
-        console.log('Total API Response:', totalData); // Debug: Log total response
-        const total = Number(totalData.totalEntries || totalData.length || 0);
-        setTotalEntries(total);
-        console.log('Total Entries Set:', total); // Debug: Log totalEntries
-
-        // Fetch paginated data
-        if (hasFilters) {
-          paginatedResponse = await fetch(`${BASE_URL}/api/RecruitmentRequest/search`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': '*/*',
-            },
-            body: JSON.stringify({ ...cleanedFilters, start, count: pageSize }),
-          });
-        } else {
-          paginatedResponse = await fetch(
-            `${BASE_URL}/api/RecruitmentRequest/requests/paginated?start=${start}&count=${pageSize}`,
-            {
-              headers: { 'Accept': '*/*' },
-            }
-          );
-        }
-
-        if (!paginatedResponse.ok) {
-          throw new Error(`Erreur lors de la récupération des données paginées: ${paginatedResponse.status}`);
-        }
-
-        const paginatedData = await paginatedResponse.json();
-        console.log('Paginated API Response:', paginatedData); // Debug: Log paginated response
-
-        const parsedData = parseData(paginatedData.requests || paginatedData, recruitmentTypeHints);
-        console.log('Parsed Data:', parsedData); // Debug: Log parsed data
-        console.log('Parsed Data Length:', parsedData.length); // Debug: Log number of items
-
-        setRequests(parsedData);
-      } catch (err) {
-        console.error('Fetch Error:', err); // Debug: Log any errors
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      // Appliquer les filtres
+      if (filters.status) {
+        filteredRequests = filteredRequests.filter(
+          (req) => req.status === filters.status
+        );
       }
+      if (filters.jobTitleKeyword) {
+        filteredRequests = filteredRequests.filter((req) =>
+          req.jobTitle.toLowerCase().includes(filters.jobTitleKeyword.toLowerCase())
+        );
+      }
+      if (filters.requestDateMin) {
+        filteredRequests = filteredRequests.filter(
+          (req) => new Date(req.requestDate) >= new Date(filters.requestDateMin)
+        );
+      }
+      if (filters.requestDateMax) {
+        filteredRequests = filteredRequests.filter(
+          (req) => new Date(req.requestDate) <= new Date(filters.requestDateMax)
+        );
+      }
+
+      // Mettre à jour le nombre total d'entrées
+      setTotalEntries(filteredRequests.length);
+
+      // Pagination
+      const start = (page - 1) * pageSize;
+      const paginatedRequests = filteredRequests.slice(start, start + pageSize);
+
+      setRequests(paginatedRequests);
     },
-    [recruitmentTypeHints, pageSize]
+    [pageSize]
   );
 
   useEffect(() => {
@@ -148,19 +137,18 @@ const RecruitmentRequestList = () => {
     setCurrentPage(page);
   };
 
-  const handlePageSizeChange = (value) => {
-    setPageSize(Number(value));
+  const handlePageSizeChange = (event) => {
+    setPageSize(Number(event.target.value));
     setCurrentPage(1);
     fetchRequests(filters, 1);
   };
 
   const totalPages = Math.ceil(totalEntries / pageSize);
-  console.log('Pagination Info:', { currentPage, pageSize, totalEntries, totalPages }); // Debug: Log pagination state
 
   const getStatusBadge = (status) => {
     return (
       <span
-        className={`status-badge status-badge-${
+        className={`ascii-status ascii-status-${
           status === 'En Attente' ? 'info' :
           status === 'Approuvé' ? 'success' :
           status === 'Rejeté' ? 'danger' :
@@ -172,172 +160,142 @@ const RecruitmentRequestList = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="table-page">
-        <div className="table-container">
-          <div className="flex items-center justify-center min-h-screen">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p>Chargement des demandes...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="table-page">
-        <div className="table-container">
-          <div className="flex items-center justify-center min-h-screen">
-            <div className="text-center text-red-500">
-              <p className="text-lg font-semibold">Erreur</p>
-              <p>{error}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="table-page">
-      <div className="table-container">
+    <div className="ascii-page">
+      <div className="ascii-container">
         {/* En-tête */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="ascii-header flex justify-between items-center mb-6">
           <div>
-            <p className="text-gray-600 mt-1">Gérez toutes les demandes de recrutement</p>
+            <p className="ascii-text-muted mt-1">Gérez toutes les demandes de recrutement</p>
           </div>
-          <div className="action-buttons-container">
-            <Button className="btn-secondary">
+          <div className="ascii-actions">
+            <button className="ascii-btn-secondary">
               <Download className="w-4 h-4" />
               Exporter
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={() => navigate('/recruitment/recruitment-request-form')}
-              className="btn-primary"
+              className="ascii-btn-primary"
             >
               <Plus className="w-4 h-4" />
               Ajouter un élément
-            </Button>
+            </button>
           </div>
         </div>
 
         {/* Formulaire de filtres */}
-        <div className="form-container-filter">
-          <div className="table-header">
-            <div className="table-icon">☙</div>
-            <h2 className="table-title">Recherche</h2>
+        <div className="ascii-filter-container">
+          <div className="ascii-filter-header">
+            <div className="ascii-filter-icon">☙</div>
+            <h2 className="ascii-filter-title">Recherche</h2>
           </div>
-          <div className="generic-form-filter">
-            <table className="form-table-filter">
+          <div className="ascii-filter-form">
+            <table className="ascii-filter-table">
               <tbody>
                 <tr>
-                  <th className="form-label-cell-filter">
-                    <label className="form-label-filter form-label-required-filter">
+                  <th className="ascii-label-cell">
+                    <label className="ascii-label ascii-label-required">
                       Status
                     </label>
                   </th>
                   <td>
-                    <NativeSelect
+                    <select
                       name="status"
                       value={filters.status}
-                      onValueChange={(value) => handleFilterChange('status', value)}
-                      className="form-select-filter"
+                      onChange={(e) => handleFilterChange('status', e.target.value)}
+                      className="ascii-select"
                     >
-                      <NativeSelectItem value="">Tous</NativeSelectItem>
-                      <NativeSelectItem value="En Attente">En Attente</NativeSelectItem>
-                      <NativeSelectItem value="En Cours">En Cours</NativeSelectItem>
-                      <NativeSelectItem value="Approuvé">Approuvé</NativeSelectItem>
-                      <NativeSelectItem value="Rejeté">Rejeté</NativeSelectItem>
-                    </NativeSelect>
+                      <option value="">Tous</option>
+                      <option value="En Attente">En Attente</option>
+                      <option value="En Cours">En Cours</option>
+                      <option value="Approuvé">Approuvé</option>
+                      <option value="Rejeté">Rejeté</option>
+                    </select>
                   </td>
-                  <th className="form-label-cell-filter">
-                    <label className="form-label-filter form-label-required-filter">
+                  <th className="ascii-label-cell">
+                    <label className="ascii-label ascii-label-required">
                       Mot-clé du titre
                     </label>
                   </th>
                   <td>
-                    <Input
+                    <input
                       name="jobTitleKeyword"
                       type="text"
                       value={filters.jobTitleKeyword}
                       onChange={(e) => handleFilterChange('jobTitleKeyword', e.target.value)}
-                      className="form-input-filter"
+                      className="ascii-input"
                     />
                   </td>
                 </tr>
                 <tr>
-                  <th className="form-label-cell-filter">
-                    <label className="form-label-filter form-label-required-filter">
+                  <th className="ascii-label-cell">
+                    <label className="ascii-label ascii-label-required">
                       Date de demande min
                     </label>
                   </th>
                   <td>
-                    <Input
+                    <input
                       name="requestDateMin"
                       type="date"
                       value={filters.requestDateMin}
                       onChange={(e) => handleFilterChange('requestDateMin', e.target.value)}
-                      className="form-input-filter"
+                      className="ascii-input"
                     />
                   </td>
-                  <th className="form-label-cell-filter">
-                    <label className="form-label-filter form-label-required-filter">
+                  <th className="ascii-label-cell">
+                    <label className="ascii-label ascii-label-required">
                       Date de demande max
                     </label>
                   </th>
                   <td>
-                    <Input
+                    <input
                       name="requestDateMax"
                       type="date"
                       value={filters.requestDateMax}
                       onChange={(e) => handleFilterChange('requestDateMax', e.target.value)}
-                      className="form-input-filter"
+                      className="ascii-input"
                     />
                   </td>
                 </tr>
                 <tr>
-                  <th className="form-label-cell-filter">
-                    <label className="form-label-filter form-label-required-filter">
+                  <th className="ascii-label-cell">
+                    <label className="ascii-label ascii-label-required">
                       Date d'approbation min
                     </label>
                   </th>
                   <td>
-                    <Input
+                    <input
                       name="approvalDateMin"
                       type="date"
                       value={filters.approvalDateMin}
                       onChange={(e) => handleFilterChange('approvalDateMin', e.target.value)}
-                      className="form-input-filter"
+                      className="ascii-input"
                     />
                   </td>
-                  <th className="form-label-cell-filter">
-                    <label className="form-label-filter form-label-required-filter">
+                  <th className="ascii-label-cell">
+                    <label className="ascii-label ascii-label-required">
                       Date d'approbation max
                     </label>
                   </th>
                   <td>
-                    <Input
+                    <input
                       name="approvalDateMax"
                       type="date"
                       value={filters.approvalDateMax}
                       onChange={(e) => handleFilterChange('approvalDateMax', e.target.value)}
-                      className="form-input-filter"
+                      className="ascii-input"
                     />
                   </td>
                 </tr>
                 <tr>
                   <td colSpan={4}>
                     <div className="flex gap-md justify-end">
-                      <Button type="submit" className="filter-submit-btn-filter" onClick={handleFilterSubmit}>
+                      <button type="submit" className="ascii-filter-submit" onClick={handleFilterSubmit}>
                         Rechercher
-                      </Button>
-                      <Button type="button" className="btn-secondary-filter" onClick={handleResetFilters}>
+                      </button>
+                      <button type="button" className="ascii-btn-secondary" onClick={handleResetFilters}>
                         Réinitialiser
-                      </Button>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -347,8 +305,8 @@ const RecruitmentRequestList = () => {
         </div>
 
         {/* Tableau de données */}
-        <div className="data-table-wrapper">
-          <table className="data-table">
+        <div className="ascii-table-wrapper">
+          <table className="ascii-data-table">
             <thead>
               <tr>
                 <th>Poste</th>
@@ -364,29 +322,28 @@ const RecruitmentRequestList = () => {
                 requests.map((request) => (
                   <tr key={request.recruitmentRequestId}>
                     <td>
-                      <div className="cell-content">
-                        <div className="cell-title">{request.jobTitle}</div>
-                        <div className="cell-subtitle">ID: {request.recruitmentRequestId}</div>
+                      <div className="ascii-cell-content">
+                        <div className="ascii-cell-title">{request.jobTitle}</div>
+                        <div className="ascii-cell-subtitle">ID: {request.recruitmentRequestId}</div>
                       </div>
                     </td>
                     <td>{request.requesterId || 'N/A'}</td>
                     <td>{formatDate(request.requestDate)}</td>
                     <td>{getStatusBadge(request.status)}</td>
                     <td>
-                      <span className="status-badge status-badge-warning">
+                      <span className="ascii-status ascii-status-warning">
                         {request.priority || 'Normale'}
                       </span>
                     </td>
                     <td>
                       <div className="flex gap-sm">
-                        <Button
-                          size="sm"
-                          className="action-btn btn-small"
+                        <button
+                          className="ascii-action-btn ascii-btn-small"
                           onClick={() => navigate(`/recruitment/recruitment-request/${request.recruitmentRequestId}/files`)}
                         >
                           <FileText className="w-3 h-3" />
                           Documents
-                        </Button>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -401,51 +358,45 @@ const RecruitmentRequestList = () => {
         </div>
 
         {/* Pagination */}
-        <div className="pagination">
-          <div className="pagination-info">
+        <div className="ascii-pagination">
+          <div className="ascii-pagination-info">
             Affichage de {(currentPage - 1) * pageSize + 1} à{' '}
             {Math.min(currentPage * pageSize, totalEntries)} sur {totalEntries} entrées
           </div>
-          <div className="pagination-controls flex items-center gap-md">
-            <NativeSelect
+          <div className="ascii-pagination-controls flex items-center gap-md">
+            <select
               value={pageSize}
-              onValueChange={handlePageSizeChange}
-              className="w-24"
+              onChange={handlePageSizeChange}
+              className="ascii-select w-24"
             >
-              <NativeSelectItem value={5}>5</NativeSelectItem>
-              <NativeSelectItem value={10}>10</NativeSelectItem>
-              <NativeSelectItem value={25}>25</NativeSelectItem>
-              <NativeSelectItem value={50}>50</NativeSelectItem>
-            </NativeSelect>
-            <Button
-              variant="outline"
-              size="sm"
-              className="pagination-btn"
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+            <button
+              className="ascii-pagination-btn"
               disabled={currentPage === 1}
               onClick={() => handlePageChange(currentPage - 1)}
             >
               Précédent
-            </Button>
+            </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
+              <button
                 key={page}
-                variant="outline"
-                size="sm"
-                className={page === currentPage ? 'pagination-btn-active' : 'pagination-btn'}
+                className={page === currentPage ? 'ascii-pagination-btn-active' : 'ascii-pagination-btn'}
                 onClick={() => handlePageChange(page)}
               >
                 {page}
-              </Button>
+              </button>
             ))}
-            <Button
-              variant="outline"
-              size="sm"
-              className="pagination-btn"
+            <button
+              className="ascii-pagination-btn"
               disabled={currentPage === totalPages || totalPages === 0}
               onClick={() => handlePageChange(currentPage + 1)}
             >
               Suivant
-            </Button>
+            </button>
           </div>
         </div>
       </div>

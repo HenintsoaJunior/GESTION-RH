@@ -24,7 +24,7 @@
   --text-muted: #6b7280;
   --text-light: #9ca3af;
   --text-placeholder: #9ca3af;
-  --text-input: #000000; /* Texte noir pour les champs */
+  --text-input: #000000;
 
   /* Couleurs de bordure */
   --border-light: #ddd;
@@ -116,7 +116,7 @@
   vertical-align: middle;
   font-weight: 600;
   color: var(--text-secondary);
-  font-size: var(--font-size-md); /* 16px pour les labels */
+  font-size: var(--font-size-md);
 }
 
 .form-input-cell {
@@ -128,29 +128,26 @@
 .form-table select,
 .form-table textarea {
   width: 100%;
-  height: 35px; /* Reduced from 42px to 40px */
+  height: 35px;
   border: 3px solid transparent;
   border-radius: 0;
-  font-size: var(--font-size-xs); /* 12px pour le texte dans les champs */
+  font-size: var(--font-size-xs);
   font-family: var(--font-family);
   background-color: #f5f5f5;
-  color: var(--text-input); /* Texte noir dans les champs */
+  color: var(--text-input);
   box-sizing: border-box;
-  transition: none;
   position: relative;
   display: flex;
   align-items: center;
   line-height: 1.2;
 }
 
-/* Ajouter la bordure au survol */
 .form-table input:hover,
 .form-table select:hover,
 .form-table textarea:hover {
   border: 3px solid var(--primary-color);
 }
 
-/* Styles pour le focus */
 .form-table input:focus,
 .form-table select:focus,
 .form-table textarea:focus {
@@ -159,7 +156,61 @@
   outline: none;
   box-shadow: inset 0 0 2px rgba(105, 180, 46, 0.3);
 }
+/* ===== STYLES POUR H3 DANS FORM-SECTION ===== */
+.form-section h3 {
+  margin-top: 10px; /* Espacement supérieur de 10px pour chaque h3 */
+}
+/* ===== STYLES POUR RADIO BUTTONS ===== */
+.form-table input[type="radio"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-medium);
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  vertical-align: middle;
+  margin: 0 var(--spacing-sm) 0 0;
+}
 
+.form-table input[type="radio"]:checked {
+  border-color: var(--primary-color);
+  background-color: var(--primary-color);
+  position: relative;
+}
+
+.form-table input[type="radio"]:checked::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.form-table input[type="radio"]:hover {
+  border-color: var(--primary-color);
+}
+
+.form-table input[type="radio"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 4px var(--primary-shadow);
+}
+
+.form-table input[type="radio"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  border-color: var(--border-light);
+  background-color: #e0e0e0;
+}
+
+/* ===== STYLES POUR SELECT ===== */
 .form-table select {
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -174,11 +225,11 @@
 }
 
 .form-table select option {
-  padding: var(--spacing-lg) var(--spacing-md); /* Increased padding for more space */
-  line-height: 1.6; /* Increased line-height for better text spacing */
-  font-size: var(--font-size-xs); /* 12px pour les options */
+  padding: var(--spacing-lg) var(--spacing-md);
+  line-height: 1.6;
+  font-size: var(--font-size-xs);
   background: #ffffff;
-  color: var(--text-input); /* Texte noir pour les options */
+  color: var(--text-input);
 }
 
 @supports (-webkit-appearance: none) {
@@ -204,12 +255,11 @@
   pointer-events: none;
 }
 
-/* Spécifique pour Firefox */
 .form-table select::-moz-focus-inner {
   border: 0;
 }
 
-/* Style spécifique pour les inputs de type file */
+/* ===== STYLES POUR INPUT FILE ===== */
 .form-table input[type="file"] {
   display: flex;
   align-items: center;
@@ -218,22 +268,8 @@
   cursor: pointer;
 }
 
-.form-table input[type="file"]::-webkit-file-upload-button {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  margin-right: var(--spacing-sm);
-  border: none;
-  border-radius: var(--radius-sm);
-  background-color: var(--primary-color);
-  color: white;
-  font-size: var(--font-size-xs); /* 12px pour le bouton de fichier */
-  cursor: pointer;
-  font-family: var(--font-family);
-}
 
-.form-table input[type="file"]::-webkit-file-upload-button:hover {
-  background-color: var(--primary-hover);
-}
-
+/* ===== STYLES POUR TEXTAREA ===== */
 .form-table textarea {
   resize: vertical;
   min-height: 120px;
@@ -248,18 +284,18 @@
   text-align: left;
   font-weight: 600;
   color: var(--text-secondary);
-  font-size: var(--font-size-md); /* 16px pour les en-têtes de tableau */
+  font-size: var(--font-size-md);
 }
 
 #positionsTable td {
   vertical-align: middle;
-  font-size: var(--font-size-xs); /* 12px pour les cellules de tableau */
+  font-size: var(--font-size-xs);
 }
 
 #positionsTable td input,
 #positionsTable td select,
 #positionsTable td textarea {
-  color: var(--text-input); /* Texte noir pour les champs du tableau */
+  color: var(--text-input);
 }
 
 /* ===== BOUTONS D'ACTION ===== */
@@ -286,7 +322,6 @@
   font-weight: 600;
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
-  transition: background-color 0.3s, transform 0.2s ease;
   box-shadow: var(--shadow-sm);
 }
 
@@ -295,9 +330,17 @@
   color: #ffffff;
 }
 
+.submit-btn:hover {
+  background-color: var(--primary-hover);
+}
+
 .reset-btn {
   background-color: var(--error-color);
   color: #ffffff;
+}
+
+.reset-btn:hover {
+  background-color: var(--error-hover);
 }
 
 .add-btn {
@@ -306,19 +349,8 @@
   margin-top: var(--spacing-lg);
 }
 
-.submit-btn:hover {
-  background-color: var(--primary-hover);
-  transform: translateY(-1px);
-}
-
-.reset-btn:hover {
-  background-color: var(--error-hover);
-  transform: translateY(-1px);
-}
-
 .add-btn:hover {
   background-color: var(--primary-hover);
-  transform: translateY(-1px);
 }
 
 .submit-btn:disabled,
@@ -335,12 +367,10 @@
   padding: var(--spacing-sm);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.2s ease;
 }
 
 .remove-item:hover {
   background-color: var(--error-hover);
-  transform: scale(1.05);
 }
 
 /* ===== ÉDITEUR DE TEXTE RICHE ===== */
@@ -365,8 +395,8 @@
   min-height: 200px;
   padding: var(--spacing-md);
   font-family: var(--font-family);
-  font-size: var(--font-size-xs); /* 12px pour l'éditeur de texte */
-  color: var(--text-input); /* Texte noir pour l'éditeur */
+  font-size: var(--font-size-xs);
+  color: var(--text-input);
 }
 
 .ql-editor.ql-blank::before {
@@ -436,7 +466,6 @@
   right: var(--spacing-sm);
   top: 50%;
   transform: translateY(-50%);
-  cursor: pointer;
   font-size: var(--font-size-xs);
   color: var(--text-muted);
 }
@@ -453,12 +482,12 @@
 }
 
 .autocomplete-suggestions-container {
-  max-height: 150px; /* Hauteur pour environ 3 éléments */
+  max-height: 150px;
   overflow-y: auto;
 }
 
 .autocomplete-dropdown.scrollable .autocomplete-suggestions-container {
-  max-height: 120px; /* Hauteur réduite quand il y a l'option "Ajouter" */
+  max-height: 120px;
 }
 
 .autocomplete-suggestion {
@@ -466,7 +495,7 @@
   cursor: pointer;
   border-bottom: 1px solid #eee;
   font-size: 12px;
-  color: var(--text-input); /* Texte noir pour les suggestions */
+  color: var(--text-input);
 }
 
 .autocomplete-suggestion:hover {
