@@ -1,12 +1,14 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 import Login from '../features/auth/Login';
-import Dashboard from '../pages/Dashboard';
 import Template from '../layouts/Template';
 import RecruitmentRequestForm from '../pages/recruitment/recruitments_request/recruitment-request-form';
 import RecruitmentRequestList from '../pages/recruitment/recruitments_request/recruitment-request-list';
 import PDFViewer from '../pages/recruitment/recruitments_request/pdf/pdf-viewer';
-
+import ContractTypeForm from '../pages/recruitment/contract/contract-type-form'
+import DirectionForm from '../pages/direction/direction-form'
+import DepartmentForm from '../pages/direction/department-form'
+import ServiceForm from '../pages/direction/service-form'
 function AppRouter() {
   return (
     <BrowserRouter>
@@ -16,8 +18,11 @@ function AppRouter() {
           <Route path="/recruitment/recruitment-request" element={<RecruitmentRequestList />} />
           <Route path="/recruitment/recruitment-request-form" element={<RecruitmentRequestForm />} />
           <Route path="/recruitment/recruitment-request/:recruitmentRequestId/files" element={<PDFViewer />} />
-          <Route path="/admin/documents" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/recruitment/contract-type-form" element={<ContractTypeForm />} />
+          <Route path="/direction/direction-form" element={<DirectionForm />} />
+          <Route path="/direction/department-form" element={<DepartmentForm />} />
+          <Route path="/direction/service-form" element={<ServiceForm />} />
+          
         </Route>
       </Routes>
     </BrowserRouter>

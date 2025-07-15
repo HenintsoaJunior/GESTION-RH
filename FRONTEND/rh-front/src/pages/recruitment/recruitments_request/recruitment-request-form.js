@@ -1,138 +1,12 @@
 import "../../../styles/generic-form-styles.css";
-import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Pour la navigation
+import { useState } from "react";
 import { BASE_URL } from "../../../config/apiConfig";
 import RichTextEditor from "../../../components/RichTextEditor";
 import Alert from "../../../components/Alert";
 import * as FaIcons from "react-icons/fa";
+import AutoCompleteInput from "../../../components/AutoCompleteInput";
 
-// Composant d'autocomplétion personnalisé style ERPNext avec redirection
-const AutoCompleteInput = ({
-  value,
-  onChange,
-  suggestions,
-  placeholder,
-  disabled,
-  onAddNew,
-  className = "form-input",
-  fieldType = "", // Type de champ pour la redirection
-  fieldLabel = "", // Label pour la redirection
-  addNewRoute = "", // Route vers laquelle rediriger
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
-  const containerRef = useRef(null);
-  const inputRef = useRef(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (value) {
-      const filtered = suggestions.filter((s) =>
-        s.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredSuggestions(filtered);
-    } else {
-      setFilteredSuggestions(suggestions);
-    }
-  }, [value, suggestions]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleInputChange = (e) => {
-    const newValue = e.target.value;
-    onChange(newValue);
-    setIsOpen(true);
-  };
-
-  const handleSuggestionClick = (suggestion) => {
-    onChange(suggestion);
-    setIsOpen(false);
-    inputRef.current?.blur();
-  };
-
-  const handleAddNew = () => {
-    if (value && !suggestions.includes(value)) {
-      // Rediriger vers la page de création avec les paramètres
-      const queryParams = new URLSearchParams({
-        fieldType: fieldType,
-        fieldLabel: fieldLabel,
-        initialValue: value,
-        returnUrl: window.location.pathname
-      });
-      
-      const redirectUrl = addNewRoute || `/add-${fieldType}`;
-      navigate(`${redirectUrl}?${queryParams.toString()}`);
-      setIsOpen(false);
-    }
-  };
-
-  // Supprimer handleModalAdd car nous n'utilisons plus de modal
-
-  const canAddNew = value && !suggestions.some((s) => s.toLowerCase() === value.toLowerCase());
-
-  return (
-    <div ref={containerRef} className="autocomplete-container">
-      <input
-        ref={inputRef}
-        type="text"
-        value={value}
-        onChange={handleInputChange}
-        onFocus={() => setIsOpen(true)}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={className}
-      />
-      <span
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        className="autocomplete-icon"
-      >
-        {isOpen ? "▲" : "▼"}
-      </span>
-
-      {isOpen && !disabled && (
-        <div className="autocomplete-dropdown">
-          {filteredSuggestions.length > 0 ? (
-            filteredSuggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                onClick={() => handleSuggestionClick(suggestion)}
-                className="autocomplete-suggestion"
-              >
-                {suggestion}
-              </div>
-            ))
-          ) : (
-            <div className="autocomplete-no-suggestion">
-              Aucune suggestion trouvée
-            </div>
-          )}
-
-          {value && (
-            <div className="autocomplete-add-option">
-              <div
-                onClick={handleAddNew}
-                className={`autocomplete-add-item ${canAddNew ? "enabled" : "disabled"}`}
-              >
-                <FaIcons.FaPlus className="icon" />
-                {canAddNew ? `Ajouter "${value}"` : `"${value}" existe déjà`}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
+// Composant principal du formulaire
 export default function RecruitmentRequestForm() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [description, setDescription] = useState("");
@@ -151,6 +25,7 @@ export default function RecruitmentRequestForm() {
   });
 
   const [attachment, setAttachment] = useState({
+    typeContrat: "",
     direction: "",
     departement: "",
     service: "",
@@ -163,6 +38,7 @@ export default function RecruitmentRequestForm() {
   });
 
   const [suggestions, setSuggestions] = useState({
+    typeContrat: ["CDD", "CDI", "Intérimaire"],
     direction: ["Direction Générale", "Direction Technique", "Direction Administrative", "Direction Commerciale"],
     departement: ["Département IT", "Département RH", "Département Finance", "Département Marketing", "Département Production"],
     service: ["Service Développement", "Service Support", "Service Comptabilité", "Service Ventes"],
@@ -179,7 +55,7 @@ export default function RecruitmentRequestForm() {
       ...prev,
       [field]: [...prev[field], value],
     }));
-    showAlert("success", `"${value}" ajouté aux suggestions`);
+    showAlert("success", `"${value}" ajouté aux suggestions"`);
   };
 
   const handleFileChange = (e) => {
@@ -224,6 +100,7 @@ export default function RecruitmentRequestForm() {
         setPositionInfo({ intitule: "", effectif: 1 });
         setContractType({ selectedType: "", duree: "", autreDetail: "" });
         setAttachment({
+          typeContrat: "",
           direction: "",
           departement: "",
           service: "",
@@ -248,6 +125,7 @@ export default function RecruitmentRequestForm() {
     setPositionInfo({ intitule: "", effectif: 1 });
     setContractType({ selectedType: "", duree: "", autreDetail: "" });
     setAttachment({
+      typeContrat: "",
       direction: "",
       departement: "",
       service: "",
@@ -320,20 +198,19 @@ export default function RecruitmentRequestForm() {
                 <th className="form-label-cell">
                   <label className="form-label">Type de contrat</label>
                 </th>
+
                 <td className="form-input-cell">
-                  <select
-                    value={contractType.selectedType}
-                    onChange={(e) => setContractType((prev) => ({ ...prev, selectedType: e.target.value }))}
-                    className="form-input"
+                  <AutoCompleteInput
+                    value={attachment.typeContrat}
+                    onChange={(value) => setAttachment((prev) => ({ ...prev, typeContrat: value }))}
+                    suggestions={suggestions.typeContrat}
+                    placeholder="Saisir ou sélectionner..."
                     disabled={isSubmitting}
-                  >
-                    <option value="">Sélectionner...</option>
-                    <option value="cdi">CDI</option>
-                    <option value="cdd">CDD</option>
-                    <option value="interimaire">Intérimaire</option>
-                    <option value="vie">VIE</option>
-                    <option value="autre">Autre</option>
-                  </select>
+                    onAddNew={(value) => handleAddNewSuggestion("typeContrat", value)}
+                    fieldType="typeContrat"
+                    fieldLabel="typeContrat"
+                    addNewRoute="/recruitment/contract-type-form"
+                  />
                 </td>
                 <th className="form-label-cell">
                   <label className="form-label">Durée (si CDD, VIE ou intérimaire)</label>
@@ -387,7 +264,7 @@ export default function RecruitmentRequestForm() {
                     onAddNew={(value) => handleAddNewSuggestion("direction", value)}
                     fieldType="direction"
                     fieldLabel="direction"
-                    addNewRoute="/parametres/direction/add"
+                    addNewRoute="/direction/direction-form"
                   />
                 </td>
                 <th className="form-label-cell">
@@ -403,7 +280,7 @@ export default function RecruitmentRequestForm() {
                     onAddNew={(value) => handleAddNewSuggestion("departement", value)}
                     fieldType="departement"
                     fieldLabel="département"
-                    addNewRoute="/parametres/departement/add"
+                    addNewRoute="/direction/department-form"
                   />
                 </td>
               </tr>
@@ -421,7 +298,7 @@ export default function RecruitmentRequestForm() {
                     onAddNew={(value) => handleAddNewSuggestion("service", value)}
                     fieldType="service"
                     fieldLabel="service"
-                    addNewRoute="/parametres/service/add"
+                    addNewRoute="/direction/service-form"
                   />
                 </td>
                 <th className="form-label-cell">
@@ -434,6 +311,7 @@ export default function RecruitmentRequestForm() {
                       setAttachment((prev) => ({ ...prev, superieurHierarchique: value }))
                     }
                     suggestions={suggestions.superieurHierarchique}
+                    showAddOption={false}
                     placeholder="Saisir ou sélectionner..."
                     disabled={isSubmitting}
                     onAddNew={(value) => handleAddNewSuggestion("superieurHierarchique", value)}
@@ -451,6 +329,7 @@ export default function RecruitmentRequestForm() {
                     value={attachment.fonctionSuperieur}
                     onChange={(value) => setAttachment((prev) => ({ ...prev, fonctionSuperieur: value }))}
                     suggestions={suggestions.fonctionSuperieur}
+                    showAddOption={false}
                     placeholder="Saisir ou sélectionner..."
                     disabled={isSubmitting}
                     onAddNew={(value) => handleAddNewSuggestion("fonctionSuperieur", value)}
