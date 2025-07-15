@@ -1,0 +1,4 @@
+[
+    { "languageId": "fr", "isActive": true, "countryCode": "FR", "abr": "FR", "languageName": "Français" },
+    { "languageId": "en", "isActive": false, "countryCode": "US", "abr": "EN", "languageName": "English" }
+  ]

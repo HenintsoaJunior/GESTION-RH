@@ -25,11 +25,10 @@ export default function Template({ children }) {
   const [isLanguagesLoading, setIsLanguagesLoading] = useState(false);
 
   // Refs pour éviter les rechargements inutiles
-  const menuDataRef = useRef({});
+  const menuDataRef = useRef(null);
   const languagesRef = useRef([]);
   const isInitializedRef = useRef(false);
   const lastLocationRef = useRef("");
-  const lastLanguageRef = useRef("");
   const navigationUpdateRef = useRef(false);
 
   // Retrieve user data from localStorage
@@ -64,15 +63,28 @@ export default function Template({ children }) {
     return FaIcons[formattedIconName] || FaIcons.FaFile;
   }, []);
 
-  // Fetch languages from API
+  // Fonction pour obtenir le label d'un menu
+  const getMenuLabel = useCallback((menuItem) => {
+    // Si le label est null ou vide, utiliser le menuKey comme fallback
+    if (!menuItem.label || menuItem.label === null) {
+      // Convertir le menuKey en format lisible
+      return menuItem.menuKey
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+    return menuItem.label;
+  }, []);
+
+  // Fetch languages from JSON file
   useEffect(() => {
     const fetchLanguages = async () => {
       if (languagesRef.current.length > 0 || isLanguagesLoading) return;
 
       setIsLanguagesLoading(true);
       try {
-        const response = await fetch(`${BASE_URL}/api/Languages`);
-        if (!response.ok) throw new Error("Erreur réseau");
+        const response = await fetch("/languages.json");
+        if (!response.ok) throw new Error("Erreur lors du chargement du fichier JSON");
 
         const data = await response.json();
         languagesRef.current = data;
@@ -96,26 +108,21 @@ export default function Template({ children }) {
   // Fetch menu data from API
   useEffect(() => {
     const fetchMenuData = async () => {
-      if (!selectedLanguage || isMenuLoading) return;
+      if (isMenuLoading) return;
 
-      if (lastLanguageRef.current === selectedLanguage) return;
-
-      const currentMenuKey = `menu_${selectedLanguage}`;
-      if (menuDataRef.current[currentMenuKey]) {
-        setMenuData(menuDataRef.current[currentMenuKey]);
-        lastLanguageRef.current = selectedLanguage;
+      if (menuDataRef.current) {
+        setMenuData(menuDataRef.current);
         return;
       }
 
       setIsMenuLoading(true);
       try {
-        const response = await fetch(`${BASE_URL}/api/Menu/hierarchy/${selectedLanguage}`);
+        const response = await fetch(`${BASE_URL}/api/Menu/hierarchy`);
         if (!response.ok) throw new Error("Erreur réseau");
 
         const data = await response.json();
-        menuDataRef.current[currentMenuKey] = data;
+        menuDataRef.current = data;
         setMenuData(data);
-        lastLanguageRef.current = selectedLanguage;
 
         if (!isInitializedRef.current) {
           const initialExpanded = {};
@@ -135,7 +142,7 @@ export default function Template({ children }) {
     };
 
     fetchMenuData();
-  }, [selectedLanguage]);
+  }, []);
 
   // Update active item, header title, and expanded menus based on route
   useEffect(() => {
@@ -158,7 +165,7 @@ export default function Template({ children }) {
       for (const item of items) {
         if (item.menu.link === currentPath) {
           matchedItem = item.menu.menuKey;
-          matchedTitle = item.menu.label;
+          matchedTitle = getMenuLabel(item.menu);
           return true;
         }
         if (item.children.length > 0) {
@@ -166,7 +173,7 @@ export default function Template({ children }) {
             if (child.menu.link === currentPath) {
               matchedItem = child.menu.menuKey;
               matchedParentMenu = item.menu.menuKey;
-              matchedTitle = child.menu.label;
+              matchedTitle = getMenuLabel(child.menu);
               return true;
             }
           }
@@ -208,7 +215,7 @@ export default function Template({ children }) {
         setActiveItem("dashboard");
       }
       if (headerTitle !== "Dashboard") {
-        setHeaderTitle("");
+        setHeaderTitle("Dashboard");
       }
       setExpandedMenus((prev) => {
         const newExpanded = { ...prev };
@@ -222,11 +229,7 @@ export default function Template({ children }) {
     setTimeout(() => {
       navigationUpdateRef.current = false;
     }, 50);
-  }, [location.pathname, location.hash]);
-
-  // const toggleSidebar = useCallback(() => {
-  //   setCollapsed(!collapsed);
-  // }, []);
+  }, [location.pathname, location.hash, menuData, getMenuLabel]);
 
   const toggleMobileSidebar = useCallback(() => {
     setMobileOpen(!mobileOpen);
@@ -238,7 +241,7 @@ export default function Template({ children }) {
       [menuKey]: !prev[menuKey],
     }));
   }, []);
-  
+
   const setActive = useCallback(
     (itemId, title, parentMenuKey) => () => {
       navigationUpdateRef.current = true;
@@ -284,6 +287,7 @@ export default function Template({ children }) {
       const hasChildren = item.children.length > 0;
       const isExpanded = expandedMenus[item.menu.menuKey];
       const isActive = activeItem === item.menu.menuKey;
+      const menuLabel = getMenuLabel(item.menu);
 
       return (
         <li className="nav-item" key={item.hierarchyId}>
@@ -295,7 +299,7 @@ export default function Template({ children }) {
               <div className="nav-icon-wrapper">
                 <IconComponent className="nav-icon" />
               </div>
-              <span className="nav-text">{item.menu.label}</span>
+              <span className="nav-text">{menuLabel}</span>
               {!collapsed && (
                 <FaIcons.FaChevronDown
                   className={`nav-arrow ${isExpanded ? "rotated" : ""}`}
@@ -306,12 +310,12 @@ export default function Template({ children }) {
             <Link
               to={item.menu.link}
               className={`nav-button ${isActive ? "active" : ""}`}
-              onClick={setActive(item.menu.menuKey, item.menu.label, null)}
+              onClick={setActive(item.menu.menuKey, menuLabel, null)}
             >
               <div className="nav-icon-wrapper">
                 <IconComponent className="nav-icon" />
               </div>
-              <span className="nav-text">{item.menu.label}</span>
+              <span className="nav-text">{menuLabel}</span>
             </Link>
           )}
           {hasChildren && (
@@ -319,16 +323,17 @@ export default function Template({ children }) {
               {item.children.map((child) => {
                 const ChildIcon = getIconComponent(child.menu.icon);
                 const isChildActive = activeItem === child.menu.menuKey;
+                const childLabel = getMenuLabel(child.menu);
 
                 return (
                   <li key={child.hierarchyId}>
                     <Link
                       to={child.menu.link}
                       className={isChildActive ? "active" : ""}
-                      onClick={setActive(child.menu.menuKey, child.menu.label, item.menu.menuKey)}
+                      onClick={setActive(child.menu.menuKey, childLabel, item.menu.menuKey)}
                     >
                       <ChildIcon className="submenu-icon" />
-                      <span>{child.menu.label}</span>
+                      <span>{childLabel}</span>
                     </Link>
                   </li>
                 );
@@ -338,7 +343,7 @@ export default function Template({ children }) {
         </li>
       );
     },
-    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive]
+    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel]
   );
 
   return (
@@ -411,9 +416,6 @@ export default function Template({ children }) {
             <button className="menu-toggle" onClick={toggleMobileSidebar}>
               <FaIcons.FaBars />
             </button>
-            {/* <button className="sidebar-toggle" onClick={toggleSidebar}>
-              <FaIcons.FaChevronDown className={collapsed ? "rotate" : ""} />
-            </button> */}
             <h1>{headerTitle}</h1>
           </div>
 
