@@ -103,6 +103,7 @@
 
 .form-label-filter {
   font-weight: normal;
+  font-size: var(--font-size-md); /* 16px pour les labels */
 }
 
 .form-table-filter input,
@@ -112,7 +113,7 @@
   height: 32px;
   border: none;
   border-radius: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs); /* 12px pour les champs */
   font-family: "Courier New", monospace;
   background-color: #f5f5f5;
   color: #222222;

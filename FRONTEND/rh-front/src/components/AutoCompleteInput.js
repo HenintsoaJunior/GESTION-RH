@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
-import AddItemModal from "./AddItemModal"; // Importer le composant modal
 
-// Composant d'autocomplétion personnalisé style ERPNext avec modal
+// Composant d'autocomplétion personnalisé style ERPNext avec redirection
 const AutoCompleteInput = ({
   value,
   onChange,
@@ -11,14 +11,17 @@ const AutoCompleteInput = ({
   disabled,
   onAddNew,
   className = "form-input",
-  fieldType = "", // Type de champ pour le modal
-  fieldLabel = "", // Label pour le modal
+  fieldType = "", // Type de champ pour la redirection
+  fieldLabel = "", // Label pour la redirection
+  addNewRoute = "", // Route vers laquelle rediriger
+  showAddOption = true, // Contrôle si l'option "Ajouter" doit être affichée
+  maxVisibleItems = 3, // Nombre max d'éléments visibles avant dropdown
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (value) {
@@ -56,83 +59,102 @@ const AutoCompleteInput = ({
 
   const handleAddNew = () => {
     if (value && !suggestions.includes(value)) {
-      // Ouvrir le modal au lieu d'ajouter directement
-      setIsModalOpen(true);
+      // Rediriger vers la page de création avec les paramètres
+      const queryParams = new URLSearchParams({
+        fieldType: fieldType,
+        fieldLabel: fieldLabel,
+        initialValue: value,
+        returnUrl: window.location.pathname,
+      });
+      
+      const redirectUrl = addNewRoute || `/add-${fieldType}`;
+      navigate(`${redirectUrl}?${queryParams.toString()}`);
       setIsOpen(false);
-    }
-  };
-
-  const handleModalAdd = (newItem) => {
-    if (onAddNew) {
-      onAddNew(newItem);
-      onChange(newItem); // Sélectionner automatiquement l'élément ajouté
+      // Call onAddNew if provided to update suggestions
+      if (onAddNew) {
+        onAddNew(value);
+      }
     }
   };
 
   const canAddNew = value && !suggestions.some((s) => s.toLowerCase() === value.toLowerCase());
 
-  return (
-    <>
-      <div ref={containerRef} className="autocomplete-container">
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={handleInputChange}
-          onFocus={() => setIsOpen(true)}
-          placeholder={placeholder}
-          disabled={disabled}
-          className={className}
-        />
-        <span
-          onClick={() => !disabled && setIsOpen(!isOpen)}
-          className="autocomplete-icon"
-        >
-          {isOpen ? "▲" : "▼"}
-        </span>
+  // Détermine si on doit afficher le dropdown avec défilement
+  const shouldShowScrollable = filteredSuggestions.length > maxVisibleItems;
 
-        {isOpen && !disabled && (
-          <div className="autocomplete-dropdown">
-            {filteredSuggestions.length > 0 ? (
-              filteredSuggestions.map((suggestion, index) => (
+  return (
+    <div
+      ref={containerRef}
+      className="autocomplete-container"
+      role="combobox"
+      aria-controls="autocomplete-dropdown"
+      aria-expanded={isOpen}
+      aria-haspopup="listbox"
+    >
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={handleInputChange}
+        onFocus={() => setIsOpen(true)}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={className}
+        aria-autocomplete="list"
+        aria-controls="autocomplete-dropdown"
+        aria-activedescendant={isOpen && filteredSuggestions.length > 0 ? "suggestion-0" : undefined}
+      />
+      <span
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className="autocomplete-icon"
+        aria-label={isOpen ? "Masquer les suggestions" : "Afficher les suggestions"}
+      >
+        {isOpen ? <FaIcons.FaAngleUp /> : <FaIcons.FaAngleDown />}
+      </span>
+
+      {isOpen && !disabled && (
+        <div 
+          id="autocomplete-dropdown" 
+          className={`autocomplete-dropdown ${shouldShowScrollable ? 'scrollable' : ''}`}
+          role="listbox"
+        >
+          {filteredSuggestions.length > 0 ? (
+            <div className="autocomplete-suggestions-container">
+              {filteredSuggestions.map((suggestion, index) => (
                 <div
                   key={index}
+                  id={`suggestion-${index}`}
                   onClick={() => handleSuggestionClick(suggestion)}
                   className="autocomplete-suggestion"
+                  role="option"
+                  aria-selected={value === suggestion}
                 >
                   {suggestion}
                 </div>
-              ))
-            ) : (
-              <div className="autocomplete-no-suggestion">
-                Aucune suggestion trouvée
-              </div>
-            )}
+              ))}
+            </div>
+          ) : (
+            <div className="autocomplete-no-suggestion" role="status">
+              Aucune suggestion trouvée
+            </div>
+          )}
 
-            {value && (
-              <div className="autocomplete-add-option">
-                <div
-                  onClick={handleAddNew}
-                  className={`autocomplete-add-item ${canAddNew ? "enabled" : "disabled"}`}
-                >
-                  <FaIcons.FaPlus className="icon" />
-                  {canAddNew ? `Ajouter "${value}"` : `"${value}" existe déjà`}
-                </div>
+          {value && showAddOption && (
+            <div className="autocomplete-add-option">
+              <div
+                onClick={handleAddNew}
+                className={`autocomplete-add-item ${canAddNew ? "enabled" : "disabled"}`}
+                role="button"
+                aria-disabled={!canAddNew}
+              >
+                <FaIcons.FaPlus className="icon" />
+                {canAddNew ? `Ajouter "${value}"` : `"${value}" existe déjà`}
               </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Modal pour ajouter un nouvel élément */}
-      <AddItemModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAdd={handleModalAdd}
-        fieldType={fieldType}
-        fieldLabel={fieldLabel}
-      />
-    </>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
