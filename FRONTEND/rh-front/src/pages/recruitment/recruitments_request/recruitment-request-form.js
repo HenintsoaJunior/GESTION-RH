@@ -4,8 +4,9 @@ import { BASE_URL } from "../../../config/apiConfig";
 import RichTextEditor from "../../../components/RichTextEditor";
 import Alert from "../../../components/Alert";
 import * as FaIcons from "react-icons/fa";
+import AddItemModal from "../../../components/AddItemModal";
 
-// Composant d'autocomplétion personnalisé style ERPNext
+// Composant d'autocomplétion personnalisé style ERPNext avec modal
 const AutoCompleteInput = ({
   value,
   onChange,
@@ -14,9 +15,12 @@ const AutoCompleteInput = ({
   disabled,
   onAddNew,
   className = "form-input",
+  fieldType = "", // Type de champ pour le modal
+  fieldLabel = "", // Label pour le modal
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -55,65 +59,84 @@ const AutoCompleteInput = ({
   };
 
   const handleAddNew = () => {
-    if (onAddNew && value && !suggestions.includes(value)) {
-      onAddNew(value);
+    if (value && !suggestions.includes(value)) {
+      // Ouvrir le modal au lieu d'ajouter directement
+      setIsModalOpen(true);
       setIsOpen(false);
+    }
+  };
+
+  const handleModalAdd = (newItem) => {
+    if (onAddNew) {
+      onAddNew(newItem);
+      onChange(newItem); // Sélectionner automatiquement l'élément ajouté
     }
   };
 
   const canAddNew = value && !suggestions.some((s) => s.toLowerCase() === value.toLowerCase());
 
   return (
-    <div ref={containerRef} className="autocomplete-container">
-      <input
-        ref={inputRef}
-        type="text"
-        value={value}
-        onChange={handleInputChange}
-        onFocus={() => setIsOpen(true)}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={className}
+    <>
+      <div ref={containerRef} className="autocomplete-container">
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={handleInputChange}
+          onFocus={() => setIsOpen(true)}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={className}
+        />
+        <span
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          className="autocomplete-icon"
+        >
+          {isOpen ? "▲" : "▼"}
+        </span>
+
+        {isOpen && !disabled && (
+          <div className="autocomplete-dropdown">
+            {filteredSuggestions.length > 0 ? (
+              filteredSuggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="autocomplete-suggestion"
+                >
+                  {suggestion}
+                </div>
+              ))
+            ) : (
+              <div className="autocomplete-no-suggestion">
+                Aucune suggestion trouvée
+              </div>
+            )}
+
+            {value && (
+              <div className="autocomplete-add-option">
+                <div
+                  onClick={handleAddNew}
+                  className={`autocomplete-add-item ${canAddNew ? "enabled" : "disabled"}`}
+                >
+                  <FaIcons.FaPlus className="icon" />
+                  {canAddNew ? `Ajouter "${value}"` : `"${value}" existe déjà`}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal pour ajouter un nouvel élément */}
+      <AddItemModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAdd={handleModalAdd}
+        fieldType={fieldType}
+        fieldLabel={fieldLabel}
       />
-      <span
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        className="autocomplete-icon"
-      >
-        {isOpen ? "▲" : "▼"}
-      </span>
-
-      {isOpen && !disabled && (
-        <div className="autocomplete-dropdown">
-          {filteredSuggestions.length > 0 ? (
-            filteredSuggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                onClick={() => handleSuggestionClick(suggestion)}
-                className="autocomplete-suggestion"
-              >
-                {suggestion}
-              </div>
-            ))
-          ) : (
-            <div className="autocomplete-no-suggestion">
-              Aucune suggestion trouvée
-            </div>
-          )}
-
-          {value && (
-            <div className="autocomplete-add-option">
-              <div
-                onClick={handleAddNew}
-                className={`autocomplete-add-item ${canAddNew ? "enabled" : "disabled"}`}
-              >
-                <FaIcons.FaPlus className="icon" />
-                {canAddNew ? `Ajouter "${value}"` : `"${value}" existe déjà`}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 
@@ -369,6 +392,8 @@ export default function RecruitmentRequestForm() {
                     placeholder="Saisir ou sélectionner..."
                     disabled={isSubmitting}
                     onAddNew={(value) => handleAddNewSuggestion("direction", value)}
+                    fieldType="direction"
+                    fieldLabel="direction"
                   />
                 </td>
                 <th className="form-label-cell">
@@ -382,6 +407,8 @@ export default function RecruitmentRequestForm() {
                     placeholder="Saisir ou sélectionner..."
                     disabled={isSubmitting}
                     onAddNew={(value) => handleAddNewSuggestion("departement", value)}
+                    fieldType="departement"
+                    fieldLabel="département"
                   />
                 </td>
               </tr>
@@ -397,6 +424,8 @@ export default function RecruitmentRequestForm() {
                     placeholder="Saisir ou sélectionner..."
                     disabled={isSubmitting}
                     onAddNew={(value) => handleAddNewSuggestion("service", value)}
+                    fieldType="service"
+                    fieldLabel="service"
                   />
                 </td>
                 <th className="form-label-cell">
@@ -412,6 +441,8 @@ export default function RecruitmentRequestForm() {
                     placeholder="Saisir ou sélectionner..."
                     disabled={isSubmitting}
                     onAddNew={(value) => handleAddNewSuggestion("superieurHierarchique", value)}
+                    fieldType="superieurHierarchique"
+                    fieldLabel="supérieur hiérarchique"
                   />
                 </td>
               </tr>
@@ -427,6 +458,8 @@ export default function RecruitmentRequestForm() {
                     placeholder="Saisir ou sélectionner..."
                     disabled={isSubmitting}
                     onAddNew={(value) => handleAddNewSuggestion("fonctionSuperieur", value)}
+                    fieldType="fonctionSuperieur"
+                    fieldLabel="fonction"
                   />
                 </td>
               </tr>
