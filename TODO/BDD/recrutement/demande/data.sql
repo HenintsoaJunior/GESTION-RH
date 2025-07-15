@@ -95,11 +95,11 @@ VALUES
     ('Mobilité interne', CURRENT_TIMESTAMP, NULL);
 
 
-INSERT INTO recruitment_request_replacement_reasons (recruitment_reason_id, replacement_reason_id, description)
-VALUES 
-    ('RR_0001', 'RPR_0002', 'Démission de M. Rakoto pour poursuivre des études à l''étranger.'),
-    ('RR_0001', 'RPR_0004', 'Retraite anticipée de Mme Rabe après 30 ans de service.'),
-    ('RR_0001', 'RPR_0007', 'Congé de maternité de Mme Andriana, prévu pour 6 mois.');
+-- INSERT INTO recruitment_request_replacement_reasons (recruitment_reason_id, replacement_reason_id, description)
+-- VALUES 
+--     ('RR_0001', 'RPR_0002', 'Démission de M. Rakoto pour poursuivre des études à l''étranger.'),
+--     ('RR_0001', 'RPR_0004', 'Retraite anticipée de Mme Rabe après 30 ans de service.'),
+--     ('RR_0001', 'RPR_0007', 'Congé de maternité de Mme Andriana, prévu pour 6 mois.');
 
 
 INSERT INTO recruitment_requests (

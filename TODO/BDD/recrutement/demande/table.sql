@@ -136,34 +136,39 @@ CREATE TABLE replacement_reasons(
 );
 
 CREATE TABLE recruitment_request_replacement_reasons(
-   recruitment_reason_id VARCHAR(50) ,
-   replacement_reason_id VARCHAR(50) ,
-   description VARCHAR(max),
-   PRIMARY KEY(recruitment_reason_id, replacement_reason_id),
-   FOREIGN KEY(recruitment_reason_id) REFERENCES recruitment_reasons(recruitment_reason_id),
+   recruitment_request_id VARCHAR(50),
+   replacement_reason_id VARCHAR(50),
+   description VARCHAR(0),
+   PRIMARY KEY(recruitment_request_id, replacement_reason_id),
+   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
    FOREIGN KEY(replacement_reason_id) REFERENCES replacement_reasons(replacement_reason_id)
 );
 
-CREATE TABLE recruitment_requests (
-   recruitment_request_id VARCHAR(50) PRIMARY KEY,
+
+CREATE TABLE recruitment_requests(
+   recruitment_request_id VARCHAR(50),
    position_title VARCHAR(255) NOT NULL,
    position_count INT DEFAULT 1,
    contract_duration VARCHAR(100) NULL,
    former_employee_name VARCHAR(255) NULL,
    replacement_date DATE NULL,
-   new_position_explanation VARCHAR(MAX) NULL,
+   new_position_explanation VARCHAR(0) MAX NULL,
    desired_start_date DATE NULL,
-   created_at DATETIME2 DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME2 DEFAULT CURRENT_TIMESTAMP,
-   status VARCHAR(10) DEFAULT 'BROUILLON',
-   files VARBINARY(MAX),
-   recruitment_reason_id VARCHAR(50) NOT NULL,
-   site_id VARCHAR(50) NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   status VARCHAR(10) DEFAULT 'En attente',
+   files VARBINARY(0) MAX,
+   requester_id VARCHAR(50) NOT NULL,
    contract_type_id VARCHAR(50) NOT NULL,
-   FOREIGN KEY(recruitment_reason_id) REFERENCES recruitment_reasons(recruitment_reason_id),
+   site_id VARCHAR(50) NOT NULL,
+   recruitment_reason_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(recruitment_request_id),
+   FOREIGN KEY(requester_id) REFERENCES users(user_id),
+   FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id),
    FOREIGN KEY(site_id) REFERENCES site(site_id),
-   FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id)
+   FOREIGN KEY(recruitment_reason_id) REFERENCES recruitment_reasons(recruitment_reason_id)
 );
+
 
 CREATE TABLE employees (
    employee_id VARCHAR(50) PRIMARY KEY,
@@ -255,17 +260,44 @@ CREATE TABLE employee_nationalities (
     FOREIGN KEY(nationality_id) REFERENCES nationalities(nationality_id)
 );
 
+
 CREATE TABLE recruitment_approval(
-   recruitment_request_id VARCHAR(50) ,
-   approval_flow_id VARCHAR(50) ,
-   status VARCHAR(50) ,
+   recruitment_request_id VARCHAR(50),
+   approver_id VARCHAR(50),
+   approval_flow_id VARCHAR(50),
+   status VARCHAR(50),
    approval_order INT,
    approval_date DATE,
-   comment VARCHAR(max),
-   signature VARBINARY(max),
-   created_at DATETIME2,
-   updated_at DATETIME2,
-   PRIMARY KEY(recruitment_request_id, approval_flow_id),
+   comment TEXT,
+   signature LONGBINARY,
+   created_at DATETIME,
+   updated_at DATETIME,
+   PRIMARY KEY(recruitment_request_id, approver_id, approval_flow_id),
    FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
+   FOREIGN KEY(approver_id) REFERENCES users(user_id),
    FOREIGN KEY(approval_flow_id) REFERENCES approval_flow(approval_flow_id)
 );
+
+CREATE TABLE job_descriptions(
+   description_id VARCHAR(50),
+   title VARCHAR(200) NOT NULL,
+   description TEXT,
+   attributions TEXT,
+   required_education TEXT,
+   required_experience TEXT,
+   required_personal_qualities TEXT,
+   required_skills TEXT,
+   required_languages TEXT,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   organigram VARCHAR(50) NOT NULL,
+   hierarchical_attachment VARCHAR(50) NOT NULL,
+   site_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(description_id),
+   FOREIGN KEY(organigram) REFERENCES service(service_id),
+   FOREIGN KEY(hierarchical_attachment) REFERENCES service(service_id),
+   FOREIGN KEY(site_id) REFERENCES site(site_id)
+);
+
+
+
