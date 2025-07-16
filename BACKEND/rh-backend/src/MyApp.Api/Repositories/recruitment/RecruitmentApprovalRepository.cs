@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
+using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.recruitment;
 
 namespace MyApp.Api.Repositories.recruitment
@@ -9,7 +10,7 @@ namespace MyApp.Api.Repositories.recruitment
         Task<IEnumerable<RecruitmentApproval>> GetByApprovalFlowAsync(string flowId);
         Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId);
         Task<IEnumerable<RecruitmentApproval>> GetByStatusAndApproverIdAsync(string status, string approverId);
-        Task AddAsync(RecruitmentApproval approval);
+        Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlow> approvalFlows);
         Task UpdateAsync(RecruitmentApproval approval);
         Task<RecruitmentApproval?> GetAsync(string requestId, string approverId, string flowId);
         Task SaveChangesAsync();
@@ -59,9 +60,14 @@ namespace MyApp.Api.Repositories.recruitment
             return await _context.RecruitmentApprovals.FindAsync(requestId, approverId, flowId);
         }
 
-        public async Task AddAsync(RecruitmentApproval approval)
+        public async Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlow> approvalFlows)
         {
-            await _context.RecruitmentApprovals.AddAsync(approval);
+            foreach (var flow in approvalFlows)
+            {
+                approval.ApprovalFlowId = flow.ApprovalFlowId; 
+                approval.ApprovalOrder = flow.ApprovalOrder;
+                await _context.RecruitmentApprovals.AddAsync(approval);
+            }
         }
 
         public Task UpdateAsync(RecruitmentApproval approval)

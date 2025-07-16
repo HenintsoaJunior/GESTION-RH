@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.recruitment;
+using MyApp.Api.Models.recruitment;
 using MyApp.Api.Services.recruitment;
 
 namespace MyApp.Api.Controllers.recruitment
@@ -50,10 +51,10 @@ namespace MyApp.Api.Controllers.recruitment
 
         // POST: api/RecruitmentRequest
         [HttpPost("create")]
-        public async Task<IActionResult> Create([FromBody] RecruitmentRequest request)
+        public async Task<IActionResult> Create([FromBody] RecruitmentRequestDTO request)
         {
-            await _service.AddAsync(request);
-            return CreatedAtAction(nameof(GetById), new { id = request.RecruitmentRequestId }, request);
+            await _service.CreateRequest(request);
+            return CreatedAtAction(nameof(GetById), new { id = request.RecruitmentRequest.RecruitmentRequestId }, request);
         }
 
         // PUT: api/RecruitmentRequest/{id}
