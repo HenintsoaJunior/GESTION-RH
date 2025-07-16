@@ -9,6 +9,6 @@ namespace MyApp.Api.Entities.employee
         [Key]
         [Column("employee_category_id")]
         [MaxLength(50)]
-        public string EmployeeCategoryId { get; set; } = Guid.NewGuid().ToString();
+        public string EmployeeCategoryId { get; set; } = null!;
     }
 }

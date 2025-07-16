@@ -9,6 +9,6 @@ namespace MyApp.Api.Entities.employee
         [Key]
         [Column("gender_id")]
         [MaxLength(50)]
-        public string GenderId { get; set; } = Guid.NewGuid().ToString();
+        public string GenderId { get; set; } = null!;
     }
 }

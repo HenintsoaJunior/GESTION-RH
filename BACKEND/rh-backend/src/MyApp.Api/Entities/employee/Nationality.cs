@@ -9,7 +9,7 @@ namespace MyApp.Api.Entities.employee
         [Key]
         [Column("nationality_id")]
         [MaxLength(50)]
-        public string NationalityId { get; set; } = Guid.NewGuid().ToString();
+        public string NationalityId { get; set; } = null!;
 
         [Required]
         [Column("code")]

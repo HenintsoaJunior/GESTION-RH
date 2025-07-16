@@ -9,7 +9,7 @@ namespace MyApp.Api.Entities.direction
         [Key]
         [Column("service_id")]
         [MaxLength(50)]
-        public string ServiceId { get; set; } = Guid.NewGuid().ToString();
+        public string ServiceId { get; set; } = null!;
 
         [Required]
         [Column("service_name")]
