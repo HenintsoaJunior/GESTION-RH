@@ -1,13 +1,13 @@
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.recruitment;
-using MyApp.Api.Models.recruitment;
+using MyApp.Api.Models.form.recruitment;
 using MyApp.Api.Repositories.recruitment;
 
 namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentRequestService
     {
-        Task CreateRequest(RecruitmentRequestDTO request);
+        Task CreateRequest(RecruitmentRequest request, IEnumerable<ApprovalFlow> approvalFlows);
         Task<IEnumerable<RecruitmentRequest>> GetAllAsync();
         Task<RecruitmentRequest?> GetByRequestIdAsync(string requestId);
         Task<IEnumerable<RecruitmentRequest>> GetByRequesterIdAsync(string requesterId);
@@ -20,25 +20,33 @@ namespace MyApp.Api.Services.recruitment
     public class RecruitmentRequestService : IRecruitmentRequestService
     {
         private readonly IRecruitmentRequestRepository _requestRepository;
+        private readonly IRecruitmentRequestDetailRepository _requestDetailRepository;
         private readonly IRecruitmentApprovalRepository _approvalRepository;
         private readonly IRecruitmentRequestReplacementReasonRepository _replacementReasonRepository;
 
-        public RecruitmentRequestService(IRecruitmentRequestRepository requestRepository, IRecruitmentApprovalRepository approvalRepository, IRecruitmentRequestReplacementReasonRepository replacementReasonRepository)
+        public RecruitmentRequestService(IRecruitmentRequestRepository requestRepository, IRecruitmentRequestDetailRepository requestDetailRepository, IRecruitmentApprovalRepository approvalRepository, IRecruitmentRequestReplacementReasonRepository replacementReasonRepository)
         {
             _requestRepository = requestRepository;
+            _requestDetailRepository = requestDetailRepository;
             _approvalRepository = approvalRepository;
             _replacementReasonRepository = replacementReasonRepository;
         }
 
-        public async Task CreateRequest(RecruitmentRequestDTO request)
+        public async Task CreateRequest(RecruitmentRequest request, IEnumerable<ApprovalFlow> approvalFlows)
         {
-            await AddAsync(request.RecruitmentRequest);
-            string requestId = request.RecruitmentRequest.RecruitmentRequestId;
+            await AddAsync(request);
+            string requestId = request.RecruitmentRequestId;
+            // 
+            // insertion dans recruitment_details
+            RecruitmentRequestDetail detail = request.RecruitmentRequestDetail;
+            detail.RecruitmentRequestId = requestId;
+            await _requestDetailRepository.AddAsync(detail);
+            await _requestDetailRepository.SaveChangesAsync();
 
             // insertion dans la table recruitment_approval
             RecruitmentApproval approval = request.RecruitmentApproval;
             approval.RecruitmentRequestId = requestId;
-            await _approvalRepository.AddAsync(approval, request.ApprovalFlows);
+            await _approvalRepository.AddAsync(approval, approvalFlows);
             await _approvalRepository.SaveChangesAsync();
 
             // insertion dans la table recruitment_request_replacement_reason
