@@ -15,7 +15,7 @@ namespace MyApp.Api.Entities.employee
         [ForeignKey("EmployeeId")]
         public Employee? Employee { get; set; }
 
-        [ForeignKey("Nationality")]
+        [ForeignKey("NationalityId")]
         public Nationality? Nationality { get; set; }
     }
 }
