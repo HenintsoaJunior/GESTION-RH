@@ -36,7 +36,7 @@ namespace MyApp.Api.Services.recruitment
         {
             await AddAsync(request);
             string requestId = request.RecruitmentRequestId;
-
+            // 
             // insertion dans recruitment_details
             RecruitmentRequestDetail detail = request.RecruitmentRequestDetail;
             detail.RecruitmentRequestId = requestId;
