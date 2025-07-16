@@ -101,34 +101,6 @@ VALUES
 --     ('RR_0001', 'RPR_0004', 'Retraite anticipée de Mme Rabe après 30 ans de service.'),
 --     ('RR_0001', 'RPR_0007', 'Congé de maternité de Mme Andriana, prévu pour 6 mois.');
 
-
-INSERT INTO recruitment_requests (
-    position_title,
-    position_count,
-    contract_duration,
-    former_employee_name,
-    replacement_date,
-    new_position_explanation,
-    desired_start_date,
-    created_at,
-    updated_at,
-    status,
-    files,
-    recruitment_reason_id,
-    site_id,
-    contract_type_id
-)
-VALUES 
-    ('Développeur Full Stack', 2, '12 mois', 'Jean Dupont', '2025-06-01', NULL, '2025-08-01', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'RR_0001', 'ST_0001', 'CT_0001'),
-    ('Analyste Financier', 1, 'CDI', NULL, NULL, 'Nouveau poste pour expansion', '2025-09-01', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'RR_0001', 'ST_0002', 'CT_0002'),
-    ('Technicien de Maintenance', 3, '6 mois', 'Marie Lefèvre', '2025-05-15', NULL, '2025-07-15', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'RR_0001', 'ST_0001', 'CT_0003'),
-    ('Responsable RH', 1, 'CDI', 'Luc Martin', '2025-04-30', NULL, '2025-06-30', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'RR_0001', 'ST_0001', 'CT_0002'),
-    ('Assistant Commercial', 2, '3 mois', NULL, NULL, 'Projet temporaire', '2025-07-01', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'RR_0001', 'ST_0001', 'CT_0003'),
-    ('Chef de Projet', 1, '18 mois', 'Sophie Bernard', '2025-06-10', NULL, '2025-08-15', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'RR_0001', 'ST_0002', 'CT_0001'),
-    ('Agent de Sécurité', 4, 'CDD 6 mois', NULL, NULL, 'Renforcement équipe', '2025-07-10', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'RR_0001', 'ST_0002', 'CT_0003');
-
-
-
 INSERT INTO employees (
     employee_id, employee_code, last_name, first_name, birth_date, birth_place, children_count,
     cin_number, cin_date, cin_place, cnaPS_number, address, address_complement,
@@ -191,17 +163,45 @@ VALUES
  'GEN_0002', 'MS_0002', 'ST_0001');
 
 
+INSERT INTO users (
+    email, password, role, created_at, updated_at, function_, employee_id
+)
+VALUES
+    ('jean.dupont@company.com', '1234', 'Employee', CURRENT_TIMESTAMP, NULL, 'Développeur Full Stack', 'EMP_0001'),
+    ('marie.rakoto@company.com', '1234', 'Employee', CURRENT_TIMESTAMP, NULL, 'Analyste Financier', 'EMP_0002'),
+    ('sophie.lefevre@company.com', '1234', 'Manager', CURRENT_TIMESTAMP, NULL, 'Responsable RH', 'EMP_0003'),
+    ('luc.bernard@company.com', '1234', 'Employee', CURRENT_TIMESTAMP, NULL, 'Technicien de Maintenance', 'EMP_0004'),
+    ('andriana.rabe@company.com', '1234', 'Employee', CURRENT_TIMESTAMP, NULL, 'Assistant Commercial', 'EMP_0005');
+
+
+INSERT INTO recruitment_requests (
+    position_title, position_count, contract_duration, 
+    former_employee_name, replacement_date, new_position_explanation, 
+    desired_start_date, created_at, updated_at, status, files, 
+    requester_id, recruitment_reason_id, site_id, contract_type_id
+)
+VALUES 
+    ('Développeur Full Stack', 2, '12 mois', 'Jean Dupont', '2025-06-01', NULL, '2025-08-01', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'USR_0001', 'RR_0001', 'ST_0001', 'CT_0001'),
+    ('Analyste Financier', 1, 'CDI', NULL, NULL, 'Nouveau poste pour expansion', '2025-09-01', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'USR_0002', 'RR_0001', 'ST_0002', 'CT_0002'),
+    ('Technicien de Maintenance', 3, '6 mois', 'Marie Lefèvre', '2025-05-15', NULL, '2025-07-15', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'USR_0004', 'RR_0001', 'ST_0001', 'CT_0003'),
+    ('Responsable RH', 1, 'CDI', 'Luc Martin', '2025-04-30', NULL, '2025-06-30', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'USR_0003', 'RR_0001', 'ST_0001', 'CT_0002'),
+    ('Assistant Commercial', 2, '3 mois', NULL, NULL, 'Projet temporaire', '2025-07-01', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'USR_0005', 'RR_0001', 'ST_0001', 'CT_0003'),
+    ('Chef de Projet', 1, '18 mois', 'Sophie Bernard', '2025-06-10', NULL, '2025-08-15', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'USR_0003', 'RR_0001', 'ST_0002', 'CT_0001'),
+    ('Agent de Sécurité', 4, 'CDD 6 mois', NULL, NULL, 'Renforcement équipe', '2025-07-10', CURRENT_TIMESTAMP, NULL, 'BROUILLON', NULL, 'USR_0003', 'RR_0001', 'ST_0002', 'CT_0003');
+
+
+
 INSERT INTO recruitment_request_details (
     recruitment_request_detail_id, supervisor_position, created_at, updated_at,
     direct_supervisor_id, service_id, department_id, direction_id, recruitment_request_id
 )
 VALUES
-    (NULL, 'Lead Développeur', CURRENT_TIMESTAMP, NULL, 'EMP_0006', 'SR_0001', 'DP_0001', 'DR_0001', 'RRQ_0001'),
+    (NULL, 'Lead Développeur', CURRENT_TIMESTAMP, NULL, 'EMP_0001', 'SR_0001', 'DP_0001', 'DR_0001', 'RRQ_0001'),
     (NULL, 'Manager Financier', CURRENT_TIMESTAMP, NULL, 'EMP_0002', 'SR_0007', 'DP_0007', 'DR_0007', 'RRQ_0002'),
     (NULL, 'Chef d''Équipe Maintenance', CURRENT_TIMESTAMP, NULL, 'EMP_0004', 'SR_0005', 'DP_0005', 'DR_0005', 'RRQ_0003'),
     (NULL, 'Directeur RH', CURRENT_TIMESTAMP, NULL, 'EMP_0003', 'SR_0004', 'DP_0004', 'DR_0004', 'RRQ_0004'),
     (NULL, 'Responsable Commercial', CURRENT_TIMESTAMP, NULL, 'EMP_0005', 'SR_0002', 'DP_0002', 'DR_0002', 'RRQ_0005'),
-    (NULL, 'Manager de Projet', CURRENT_TIMESTAMP, NULL, 'EMP_0006', 'SR_0001', 'DP_0001', 'DR_0001', 'RRQ_0006'),
+    (NULL, 'Manager de Projet', CURRENT_TIMESTAMP, NULL, 'EMP_0001', 'SR_0001', 'DP_0001', 'DR_0001', 'RRQ_0006'),
     (NULL, 'Superviseur Sécurité', CURRENT_TIMESTAMP, NULL, 'EMP_0004', 'SR_0003', 'DP_0003', 'DR_0003', 'RRQ_0007');
 
 
@@ -228,28 +228,36 @@ INSERT INTO employee_nationalities (
     employee_id, nationality_id
 )
 VALUES
-    ('EMP_0006', 'NAT_0001'), -- Jean Dupont: Malagasy
-    ('EMP_0006', 'NAT_0002'), -- Jean Dupont: Français
+    ('EMP_0001', 'NAT_0001'), -- Jean Dupont: Malagasy
+    ('EMP_0001', 'NAT_0002'), -- Jean Dupont: Français
     ('EMP_0002', 'NAT_0001'), -- Marie Rakoto: Malagasy
     ('EMP_0003', 'NAT_0002'), -- Sophie Lefèvre: Français
     ('EMP_0004', 'NAT_0001'), -- Luc Bernard: Malagasy
     ('EMP_0005', 'NAT_0001'); -- Andriana Rabe: Malagasy
 
 
-
 INSERT INTO recruitment_approval (
-    recruitment_request_id, approval_flow_id, status, approval_order, approval_date, comment, signature, created_at, updated_at
+    recruitment_request_id,
+    approver_id,
+    approval_flow_id,
+    status,
+    approval_order,
+    approval_date,
+    comment,
+    signature,
+    created_at,
+    updated_at
 )
 VALUES
-    ('RRQ_0001', 'AF_0002', 'Approuvé', 2, '2025-07-12', 'Budget validé', NULL, CURRENT_TIMESTAMP, NULL),
-    ('RRQ_0002', 'AF_0003', 'En attente', 1, NULL, 'En revue financière', NULL, CURRENT_TIMESTAMP, NULL),
-    ('RRQ_0002', 'AF_0004', 'En attente', 2, NULL, NULL, NULL, CURRENT_TIMESTAMP, NULL),
-    ('RRQ_0003', 'AF_0005', 'Approuvé', 1, '2025-07-11', 'Remplacement urgent', NULL, CURRENT_TIMESTAMP, NULL),
-    ('RRQ_0003', 'AF_0006', 'Approuvé', 2, '2025-07-12', 'Validé par DSI', NULL, CURRENT_TIMESTAMP, NULL),
-    ('RRQ_0004', 'AF_0007', 'En attente', 1, NULL, 'En attente de validation RH', NULL, CURRENT_TIMESTAMP, NULL),
-    ('RRQ_0005', 'AF_0008', 'Approuvé', 1, '2025-07-11', 'Projet temporaire approuvé', NULL, CURRENT_TIMESTAMP, NULL),
-    ('RRQ_0005', 'AF_0009', 'Approuvé', 2, '2025-07-12', 'Budget marketing validé', NULL, CURRENT_TIMESTAMP, NULL),
-    ('RRQ_0006', 'AF_0010', 'En attente', 1, NULL, 'En revue par superviseur', NULL, CURRENT_TIMESTAMP, NULL),
-    ('RRQ_0006', 'AF_0011', 'En attente', 2, NULL, NULL, NULL, CURRENT_TIMESTAMP, NULL),
-    ('RRQ_0007', 'AF_0012', 'Approuvé', 1, '2025-07-11', 'Renforcement sécurité validé', NULL, CURRENT_TIMESTAMP, NULL),
-    ('RRQ_0007', 'AF_0013', 'Approuvé', 2, '2025-07-12', 'Conforme aux normes DQRSE', NULL, CURRENT_TIMESTAMP, NULL);
+    ('RRQ_0001', 'USR_0001', 'AF_0002', 'Approuvé', 2, '2025-07-12', 'Budget validé', NULL, CURRENT_TIMESTAMP, NULL),
+    ('RRQ_0002', 'USR_0002', 'AF_0003', 'En attente', 1, NULL, 'En revue financière', NULL, CURRENT_TIMESTAMP, NULL),
+    ('RRQ_0002', 'USR_0003', 'AF_0004', 'En attente', 2, NULL, NULL, NULL, CURRENT_TIMESTAMP, NULL),
+    ('RRQ_0003', 'USR_0004', 'AF_0005', 'Approuvé', 1, '2025-07-11', 'Remplacement urgent', NULL, CURRENT_TIMESTAMP, NULL),
+    ('RRQ_0003', 'USR_0003', 'AF_0006', 'Approuvé', 2, '2025-07-12', 'Validé par DSI', NULL, CURRENT_TIMESTAMP, NULL),
+    ('RRQ_0004', 'USR_0003', 'AF_0007', 'En attente', 1, NULL, 'En attente de validation RH', NULL, CURRENT_TIMESTAMP, NULL),
+    ('RRQ_0005', 'USR_0005', 'AF_0008', 'Approuvé', 1, '2025-07-11', 'Projet temporaire approuvé', NULL, CURRENT_TIMESTAMP, NULL),
+    ('RRQ_0005', 'USR_0003', 'AF_0009', 'Approuvé', 2, '2025-07-12', 'Budget marketing validé', NULL, CURRENT_TIMESTAMP, NULL),
+    ('RRQ_0006', 'USR_0003', 'AF_0010', 'En attente', 1, NULL, 'En revue par superviseur', NULL, CURRENT_TIMESTAMP, NULL),
+    ('RRQ_0006', 'USR_0003', 'AF_0011', 'En attente', 2, NULL, NULL, NULL, CURRENT_TIMESTAMP, NULL),
+    ('RRQ_0007', 'USR_0003', 'AF_0012', 'Approuvé', 1, '2025-07-11', 'Renforcement sécurité validé', NULL, CURRENT_TIMESTAMP, NULL),
+    ('RRQ_0007', 'USR_0003', 'AF_0013', 'Approuvé', 2, '2025-07-12', 'Conforme aux normes DQRSE', NULL, CURRENT_TIMESTAMP, NULL);
