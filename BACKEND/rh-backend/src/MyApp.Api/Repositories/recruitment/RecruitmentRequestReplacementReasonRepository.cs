@@ -7,7 +7,8 @@ namespace MyApp.Api.Repositories.recruitment
     public interface IRecruitmentRequestReplacementReasonRepository
     {
         Task<IEnumerable<RecruitmentRequestReplacementReason>> GetAllAsync();
-       Task<IEnumerable<RecruitmentRequestReplacementReason>> GetByRequestIdAsync(string requestId);
+        Task<IEnumerable<RecruitmentRequestReplacementReason>> GetByRequestIdAsync(string requestId);
+        Task AddRangeAsync(IEnumerable<RecruitmentRequestReplacementReason> entities);
         Task AddAsync(RecruitmentRequestReplacementReason entity);
         Task DeleteAsync(string requestId);
         Task SaveChangesAsync();
@@ -37,6 +38,12 @@ namespace MyApp.Api.Repositories.recruitment
                 .Include(r => r.ReplacementReason)
                 .ToListAsync();
         }
+
+        public async Task AddRangeAsync(IEnumerable<RecruitmentRequestReplacementReason> entities)
+        {
+            await _context.RecruitmentRequestReplacementReasons.AddRangeAsync(entities);
+        }
+
 
         public async Task AddAsync(RecruitmentRequestReplacementReason entity)
         {
