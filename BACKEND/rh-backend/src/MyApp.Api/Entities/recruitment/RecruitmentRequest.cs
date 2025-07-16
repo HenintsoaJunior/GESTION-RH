@@ -78,5 +78,6 @@ namespace MyApp.Api.Entities.recruitment
         public RecruitmentRequestDetail RecruitmentRequestDetail { get; set; } = null!;
         public RecruitmentApproval RecruitmentApproval { get; set; } = null!;
         public IEnumerable<RecruitmentRequestReplacementReason>? ReplacementReasons { get; set; } = null;
+        public IEnumerable<ApprovalFlow>? ApprovalFlows { get; set; } = null;
     }
 }

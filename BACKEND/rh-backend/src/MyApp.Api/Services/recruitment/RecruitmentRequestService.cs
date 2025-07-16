@@ -1,4 +1,3 @@
-using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Models.form.recruitment;
 using MyApp.Api.Repositories.recruitment;
@@ -7,7 +6,7 @@ namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentRequestService
     {
-        Task CreateRequest(RecruitmentRequest request, IEnumerable<ApprovalFlow> approvalFlows);
+        Task CreateRequest(RecruitmentRequest request);
         Task<IEnumerable<RecruitmentRequest>> GetAllAsync();
         Task<RecruitmentRequest?> GetByRequestIdAsync(string requestId);
         Task<IEnumerable<RecruitmentRequest>> GetByRequesterIdAsync(string requesterId);
@@ -32,11 +31,11 @@ namespace MyApp.Api.Services.recruitment
             _replacementReasonRepository = replacementReasonRepository;
         }
 
-        public async Task CreateRequest(RecruitmentRequest request, IEnumerable<ApprovalFlow> approvalFlows)
+        public async Task CreateRequest(RecruitmentRequest request)
         {
             await AddAsync(request);
             string requestId = request.RecruitmentRequestId;
-            // 
+
             // insertion dans recruitment_details
             RecruitmentRequestDetail detail = request.RecruitmentRequestDetail;
             detail.RecruitmentRequestId = requestId;
@@ -46,7 +45,7 @@ namespace MyApp.Api.Services.recruitment
             // insertion dans la table recruitment_approval
             RecruitmentApproval approval = request.RecruitmentApproval;
             approval.RecruitmentRequestId = requestId;
-            await _approvalRepository.AddAsync(approval, approvalFlows);
+            await _approvalRepository.AddAsync(approval, request.ApprovalFlows);
             await _approvalRepository.SaveChangesAsync();
 
             // insertion dans la table recruitment_request_replacement_reason
