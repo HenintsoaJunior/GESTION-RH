@@ -67,6 +67,10 @@ IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_approval_flow_id')
     DROP SEQUENCE seq_approval_flow_id;
 GO
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_user_id')
+    DROP SEQUENCE seq_user_id;
+GO
+
 -- Drop triggers if they exist
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_insert_direction' AND parent_class_desc = 'OBJECT_OR_COLUMN')
     DROP TRIGGER trg_insert_direction;
@@ -134,6 +138,10 @@ GO
 
 IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_insert_approval_flow' AND parent_class_desc = 'OBJECT_OR_COLUMN')
     DROP TRIGGER trg_insert_approval_flow;
+GO
+
+IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_insert_users' AND parent_class_desc = 'OBJECT_OR_COLUMN')
+    DROP TRIGGER trg_insert_users;
 GO
 
 -- Create sequences
@@ -282,6 +290,15 @@ CREATE SEQUENCE seq_recruitment_request_detail_id
 GO
 
 CREATE SEQUENCE seq_approval_flow_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+CREATE SEQUENCE seq_user_id
     AS INT
     START WITH 1
     INCREMENT BY 1
@@ -533,6 +550,7 @@ BEGIN
         updated_at,
         status,
         files,
+        requester_id,
         recruitment_reason_id,
         site_id,
         contract_type_id
@@ -550,6 +568,7 @@ BEGIN
         ISNULL(updated_at, CURRENT_TIMESTAMP),
         status,
         files,
+        requester_id,
         recruitment_reason_id,
         site_id,
         contract_type_id
@@ -705,6 +724,37 @@ BEGIN
         ISNULL(created_at, CURRENT_TIMESTAMP),
         ISNULL(updated_at, CURRENT_TIMESTAMP),
         approver_id
+    FROM inserted;
+END;
+GO
+
+-- Create trigger for users
+CREATE TRIGGER trg_insert_users
+ON users
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    INSERT INTO users (
+        user_id,
+        email,
+        password,
+        role,
+        created_at,
+        updated_at,
+        function_,
+        employee_id
+    )
+    SELECT 
+        'USR_' + RIGHT('0000' + CAST(NEXT VALUE FOR seq_user_id AS VARCHAR(4)), 4),
+        email,
+        password,
+        role,
+        ISNULL(created_at, CURRENT_TIMESTAMP),
+        updated_at,
+        function_,
+        employee_id
     FROM inserted;
 END;
 GO
