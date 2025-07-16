@@ -6,19 +6,19 @@ import * as FaIcons from "react-icons/fa";
 
 export default function DirectionForm() {
   const [formData, setFormData] = useState({
-    direction_name: "",
+    directionName: "",
     acronym: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [returnUrl, setReturnUrl] = useState("");
 
-  // Parse URL query parameters to set initial value for direction_name
+  // Parse URL query parameters to set initial value for directionName
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const initialValue = params.get("initialValue") || "";
     const url = params.get("returnUrl") || "";
-    setFormData((prev) => ({ ...prev, direction_name: initialValue }));
+    setFormData((prev) => ({ ...prev, directionName: initialValue }));
     setReturnUrl(url);
   }, []);
 
@@ -31,17 +31,14 @@ export default function DirectionForm() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${BASE_URL}/api/directions`, {
+      const response = await fetch(`${BASE_URL}/api/Direction`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          direction_id: crypto.randomUUID(),
-          direction_name: formData.direction_name,
+          directionName: formData.directionName,
           acronym: formData.acronym,
-          created_at: new Date().toISOString(),
-          updated_at: null,
         }),
       });
 
@@ -49,14 +46,14 @@ export default function DirectionForm() {
         await response.json();
         showAlert("success", "Direction créée avec succès !");
         event.target.reset();
-        setFormData({ direction_name: "", acronym: "" });
-        // Redirect to returnUrl if provided
+        setFormData({ directionName: "", acronym: "" });
         if (returnUrl) {
           window.location.href = returnUrl;
         }
       } else {
         const errorData = await response.json();
-        showAlert("error", errorData.message || "Erreur lors de la création de la direction.");
+        const message = errorData.message || `Erreur ${response.status}: Échec de la création de la direction.`;
+        showAlert("error", message);
       }
     } catch (error) {
       showAlert("error", "Erreur de connexion. Veuillez vérifier votre connexion et réessayer.");
@@ -66,7 +63,7 @@ export default function DirectionForm() {
   };
 
   const handleReset = () => {
-    setFormData({ direction_name: "", acronym: "" });
+    setFormData({ directionName: "", acronym: "" });
     showAlert("info", "Formulaire réinitialisé.");
   };
 
@@ -93,8 +90,8 @@ export default function DirectionForm() {
                 <td className="form-input-cell">
                   <input
                     type="text"
-                    value={formData.direction_name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, direction_name: e.target.value }))}
+                    value={formData.directionName}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, directionName: e.target.value }))}
                     placeholder="Saisir ou sélectionner..."
                     className="form-input"
                     required

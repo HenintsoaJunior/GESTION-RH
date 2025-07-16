@@ -119,6 +119,12 @@
   font-size: var(--font-size-md);
 }
 
+/* New style for required field labels */
+.form-label-required::after {
+  content: " *";
+  color: red;
+}
+
 .form-input-cell {
   width: 35%;
   vertical-align: middle;

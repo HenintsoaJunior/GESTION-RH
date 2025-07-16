@@ -7,7 +7,7 @@ namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentRequestService
     {
-        Task CreateRequest(RecruitmentRequestDTO request);
+        // Task CreateRequest(RecruitmentRequestDTO request);
         Task<IEnumerable<RecruitmentRequest>> GetAllAsync();
         Task<RecruitmentRequest?> GetByRequestIdAsync(string requestId);
         Task<IEnumerable<RecruitmentRequest>> GetByRequesterIdAsync(string requesterId);

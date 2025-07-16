@@ -7,22 +7,52 @@ import AutoCompleteInput from "../../components/AutoCompleteInput";
 
 export default function DepartmentForm() {
   const [formData, setFormData] = useState({
-    department_name: "",
-    direction: "",
+    departmentName: "",
+    directionId: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [returnUrl, setReturnUrl] = useState("");
-  const [suggestions, setSuggestions] = useState({
-    direction: ["Direction Générale", "Direction Technique", "Direction Administrative", "Direction Commerciale"],
-  });
+  const [suggestions, setSuggestions] = useState([]);
+  const [directionMap, setDirectionMap] = useState({}); // Maps directionName to directionId
 
-  // Parse URL query parameters to set initial value for department_name
+  // Fetch directions from API
+  useEffect(() => {
+    const fetchDirections = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/api/Direction`, {
+          method: "GET",
+          headers: {
+            "Accept": "text/plain",
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          // Set suggestions as array of directionName
+          const directionNames = data.map((dir) => dir.directionName);
+          // Create mapping of directionName to directionId
+          const map = data.reduce((acc, dir) => ({
+            ...acc,
+            [dir.directionName]: dir.directionId,
+          }), {});
+          setSuggestions(directionNames);
+          setDirectionMap(map);
+        } else {
+          showAlert("error", "Erreur lors du chargement des directions.");
+        }
+      } catch (error) {
+        showAlert("error", "Erreur de connexion lors du chargement des directions.");
+      }
+    };
+    fetchDirections();
+  }, []);
+
+  // Parse URL query parameters to set initial value for departmentName
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const initialValue = params.get("initialValue") || "";
     const url = params.get("returnUrl") || "";
-    setFormData((prev) => ({ ...prev, department_name: initialValue }));
+    setFormData((prev) => ({ ...prev, departmentName: initialValue }));
     setReturnUrl(url);
   }, []);
 
@@ -31,10 +61,11 @@ export default function DepartmentForm() {
   };
 
   const handleAddNewSuggestion = (field, value) => {
-    setSuggestions((prev) => ({
-      ...prev,
-      [field]: [...prev[field], value],
-    }));
+    // Note: Temporary directionId until integrated with POST /api/Direction
+    const tempId = `DR_${Math.random().toString(36).substr(2, 9)}`;
+    setSuggestions((prev) => [...prev, value]);
+    setDirectionMap((prev) => ({ ...prev, [value]: tempId }));
+    setFormData((prev) => ({ ...prev, directionId: tempId }));
     showAlert("success", `"${value}" ajouté aux suggestions pour ${field}`);
   };
 
@@ -43,17 +74,14 @@ export default function DepartmentForm() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${BASE_URL}/api/departments`, {
+      const response = await fetch(`${BASE_URL}/api/Department`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          department_id: crypto.randomUUID(),
-          department_name: formData.department_name,
-          direction_id: formData.direction, // Using direction as the value for direction_id
-          created_at: new Date().toISOString(),
-          updated_at: null,
+          departmentName: formData.departmentName,
+          directionId: formData.directionId,
         }),
       });
 
@@ -61,14 +89,14 @@ export default function DepartmentForm() {
         await response.json();
         showAlert("success", "Département créé avec succès !");
         event.target.reset();
-        setFormData({ department_name: "", direction: "" });
-        // Redirect to returnUrl if provided
+        setFormData({ departmentName: "", directionId: "" });
         if (returnUrl) {
           window.location.href = returnUrl;
         }
       } else {
         const errorData = await response.json();
-        showAlert("error", errorData.message || "Erreur lors de la création du département.");
+        const message = errorData.message || `Erreur ${response.status}: Échec de la création du département.`;
+        showAlert("error", message);
       }
     } catch (error) {
       showAlert("error", "Erreur de connexion. Veuillez vérifier votre connexion et réessayer.");
@@ -78,7 +106,7 @@ export default function DepartmentForm() {
   };
 
   const handleReset = () => {
-    setFormData({ department_name: "", direction: "" });
+    setFormData({ departmentName: "", directionId: "" });
     showAlert("info", "Formulaire réinitialisé.");
   };
 
@@ -105,8 +133,8 @@ export default function DepartmentForm() {
                 <td className="form-input-cell">
                   <input
                     type="text"
-                    value={formData.department_name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, department_name: e.target.value }))}
+                    value={formData.departmentName}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, departmentName: e.target.value }))}
                     placeholder="Saisir ou sélectionner..."
                     className="form-input"
                     required
@@ -120,14 +148,17 @@ export default function DepartmentForm() {
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
-                    value={formData.direction}
-                    onChange={(value) => setFormData((prev) => ({ ...prev, direction: value }))}
-                    suggestions={suggestions.direction}
+                    value={Object.keys(directionMap).find((name) => directionMap[name] === formData.directionId) || ""}
+                    onChange={(value) => {
+                      const directionId = directionMap[value] || "";
+                      setFormData((prev) => ({ ...prev, directionId }));
+                    }}
+                    suggestions={suggestions}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner..."
                     disabled={isSubmitting}
-                    onAddNew={(value) => handleAddNewSuggestion("direction", value)}
-                    fieldType="direction"
+                    onAddNew={(value) => handleAddNewSuggestion("directionId", value)}
+                    fieldType="directionId"
                     fieldLabel="direction"
                     addNewRoute="/direction/direction-form"
                     required

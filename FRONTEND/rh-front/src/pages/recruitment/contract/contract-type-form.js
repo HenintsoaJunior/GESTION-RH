@@ -31,13 +31,12 @@ export default function ContractTypeForm() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${BASE_URL}/api/contract_types`, {
+      const response = await fetch(`${BASE_URL}/api/ContractType`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          contract_type_id: crypto.randomUUID(),
           code: formData.code,
           label: formData.label,
         }),
@@ -48,13 +47,13 @@ export default function ContractTypeForm() {
         showAlert("success", "Type de contrat créé avec succès !");
         event.target.reset();
         setFormData({ code: "", label: "" });
-        // Redirect to returnUrl if provided
         if (returnUrl) {
           window.location.href = returnUrl;
         }
       } else {
         const errorData = await response.json();
-        showAlert("error", errorData.message || "Erreur lors de la création du type de contrat.");
+        const message = errorData.message || `Erreur ${response.status}: Échec de la création du type de contrat.`;
+        showAlert("error", message);
       }
     } catch (error) {
       showAlert("error", "Erreur de connexion. Veuillez vérifier votre connexion et réessayer.");
@@ -102,7 +101,7 @@ export default function ContractTypeForm() {
               </tr>
               <tr>
                 <th className="form-label-cell">
-                  <label className="form-label form-label-required">Libellé</label>
+                  <label className="form-label">Libellé</label>
                 </th>
                 <td className="form-input-cell">
                   <input
@@ -111,7 +110,6 @@ export default function ContractTypeForm() {
                     onChange={(e) => setFormData((prev) => ({ ...prev, label: e.target.value }))}
                     placeholder="Ex: Contrat à Durée Déterminée..."
                     className="form-input"
-                    required
                     disabled={isSubmitting}
                   />
                 </td>
