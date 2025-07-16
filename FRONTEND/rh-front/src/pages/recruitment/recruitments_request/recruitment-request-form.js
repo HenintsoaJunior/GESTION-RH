@@ -1,18 +1,33 @@
 import "../../../styles/generic-form-styles.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BASE_URL } from "../../../config/apiConfig";
 import RichTextEditor from "../../../components/RichTextEditor";
 import Alert from "../../../components/Alert";
 import * as FaIcons from "react-icons/fa";
 import AutoCompleteInput from "../../../components/AutoCompleteInput";
 
-// Composant principal du formulaire
 export default function RecruitmentRequestForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
+  const [contractTypes, setContractTypes] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [directions, setDirections] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [sites, setSites] = useState([]);
+  const [services, setServices] = useState([]);
+  const [recruitmentReasons, setRecruitmentReasons] = useState([]);
+  const [replacementReasons, setReplacementReasons] = useState([]);
+  const [isLoadingContractTypes, setIsLoadingContractTypes] = useState(true);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
+  const [isLoadingDirections, setIsLoadingDirections] = useState(true);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
+  const [isLoadingSites, setIsLoadingSites] = useState(true);
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
+  const [isLoadingRecruitmentReasons, setIsLoadingRecruitmentReasons] = useState(true);
+  const [isLoadingReplacementReasons, setIsLoadingReplacementReasons] = useState(true);
 
   const [positionInfo, setPositionInfo] = useState({
     intitule: "",
@@ -38,30 +53,349 @@ export default function RecruitmentRequestForm() {
     selectedSite: "",
   });
 
-  // État pour le motif de recrutement
   const [recruitmentMotive, setRecruitmentMotive] = useState("");
 
-  // État pour les détails du remplacement
   const [replacementDetails, setReplacementDetails] = useState({
-    motifs: [
-      { motifRemplacement: "Décès", detail: "Mort lors d'un accident" },
-      { motifRemplacement: "Démission", detail: "Salaire insuffisant" },
-      { motifRemplacement: "Licenciement", detail: "Toujours en Retard" },
-    ],
+    motifs: [{ motifRemplacement: "", detail: "" }],
     dateSurvenance: "",
     nomPrenomsTitulaire: "",
     datePriseService: "",
   });
 
   const [suggestions, setSuggestions] = useState({
-    typeContrat: ["CDD", "CDI", "Intérimaire"],
-    direction: ["Direction Générale", "Direction Technique", "Direction Administrative", "Direction Commerciale"],
-    departement: ["Département IT", "Département RH", "Département Finance", "Département Marketing", "Département Production"],
-    service: ["Service Développement", "Service Support", "Service Comptabilité", "Service Ventes"],
-    superieurHierarchique: ["Jean Dupont", "Marie Martin", "Pierre Durant", "Sophie Moreau"],
+    typeContrat: [],
+    direction: [],
+    departement: [],
+    service: [],
+    superieurHierarchique: [],
     fonctionSuperieur: ["Directeur", "Manager", "Chef de Service", "Superviseur", "Responsable"],
-    motifRemplacement: ["Décès", "Démission", "Licenciement", "Retraite", "Mutation", "Promotion"],
+    motifRemplacement: [],
+    site: [],
   });
+
+  // Fetch Contract Types
+  const fetchContractTypes = async () => {
+    try {
+      setIsLoadingContractTypes(true);
+      const response = await fetch(`${BASE_URL}/api/ContractType`, {
+        method: "GET",
+        headers: { accept: "application/json" },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setContractTypes(data);
+        setSuggestions((prev) => ({
+          ...prev,
+          typeContrat: data.map((ct) => ct.label),
+        }));
+      } else {
+        showAlert("warning", "Impossible de charger les types de contrat.");
+        setSuggestions((prev) => ({
+          ...prev,
+          typeContrat: ["CDD", "CDI", "CTT"],
+        }));
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des types de contrat:", error);
+      showAlert("warning", "Erreur de connexion pour les types de contrat.");
+      setSuggestions((prev) => ({
+        ...prev,
+        typeContrat: ["CDD", "CDI", "CTT"],
+      }));
+    } finally {
+      setIsLoadingContractTypes(false);
+    }
+  };
+
+  // Fetch Directions
+  const fetchDirections = async () => {
+    try {
+      setIsLoadingDirections(true);
+      const response = await fetch(`${BASE_URL}/api/Direction`, {
+        method: "GET",
+        headers: { accept: "application/json" },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDirections(data);
+        setSuggestions((prev) => ({
+          ...prev,
+          direction: data.map((dir) => dir.directionName),
+        }));
+      } else {
+        showAlert("warning", "Impossible de charger les directions.");
+        setSuggestions((prev) => ({
+          ...prev,
+          direction: ["Direction Technique", "Direction Commerciale et Marketing", "Ressources Humaines"],
+        }));
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des directions:", error);
+      showAlert("warning", "Erreur de connexion pour les directions.");
+      setSuggestions((prev) => ({
+        ...prev,
+        direction: ["Direction Technique", "Direction Commerciale et Marketing", "Ressources Humaines"],
+      }));
+    } finally {
+      setIsLoadingDirections(false);
+    }
+  };
+
+  // Fetch Departments
+  const fetchDepartments = async () => {
+    try {
+      setIsLoadingDepartments(true);
+      const response = await fetch(`${BASE_URL}/api/Department`, {
+        method: "GET",
+        headers: { accept: "application/json" },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDepartments(data);
+        setSuggestions((prev) => ({
+          ...prev,
+          departement: data.map((dep) => dep.departmentName),
+        }));
+      } else {
+        showAlert("warning", "Impossible de charger les départements.");
+        setSuggestions((prev) => ({
+          ...prev,
+          departement: ["Bureau d'Études", "Marketing Digital", "Recrutement"],
+        }));
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des départements:", error);
+      showAlert("warning", "Erreur de connexion pour les départements.");
+      setSuggestions((prev) => ({
+        ...prev,
+        departement: ["Bureau d'Études", "Marketing Digital", "Recrutement"],
+      }));
+    } finally {
+      setIsLoadingDepartments(false);
+    }
+  };
+
+  // Fetch Employees
+  const fetchEmployees = async () => {
+    try {
+      setIsLoadingEmployees(true);
+      const response = await fetch(`${BASE_URL}/api/Employee`, {
+        method: "GET",
+        headers: { accept: "application/json" },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setEmployees(data);
+        setSuggestions((prev) => ({
+          ...prev,
+          superieurHierarchique: data.map((emp) => `${emp.firstName} ${emp.lastName}`),
+        }));
+      } else {
+        showAlert("warning", "Impossible de charger les employés.");
+        setSuggestions((prev) => ({
+          ...prev,
+          superieurHierarchique: ["Jean Dupont", "Marie Rakoto", "Sophie Lefèvre"],
+        }));
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des employés:", error);
+      showAlert("warning", "Erreur de connexion pour les employés.");
+      setSuggestions((prev) => ({
+        ...prev,
+        superieurHierarchique: ["Jean Dupont", "Marie Rakoto", "Sophie Lefèvre"],
+      }));
+    } finally {
+      setIsLoadingEmployees(false);
+    }
+  };
+
+  // Fetch Sites
+  const fetchSites = async () => {
+    try {
+      setIsLoadingSites(true);
+      const response = await fetch(`${BASE_URL}/api/Site`, {
+        method: "GET",
+        headers: { accept: "application/json" },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSites(data);
+        setSuggestions((prev) => ({
+          ...prev,
+          site: data.map((site) => site.siteName),
+        }));
+      } else {
+        showAlert("warning", "Impossible de charger les sites.");
+        setSuggestions((prev) => ({
+          ...prev,
+          site: ["Antananarivo", "Nosy Be"],
+        }));
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des sites:", error);
+      showAlert("warning", "Erreur de connexion pour les sites.");
+      setSuggestions((prev) => ({
+        ...prev,
+        site: ["Antananarivo", "Nosy Be"],
+      }));
+    } finally {
+      setIsLoadingSites(false);
+    }
+  };
+
+  // Fetch Services
+  const fetchServices = async () => {
+    try {
+      setIsLoadingServices(true);
+      const response = await fetch(`${BASE_URL}/api/Service`, {
+        method: "GET",
+        headers: { accept: "application/json" },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setServices(data);
+        setSuggestions((prev) => ({
+          ...prev,
+          service: data.map((service) => service.serviceName),
+        }));
+      } else {
+        showAlert("warning", "Impossible de charger les services.");
+        setSuggestions((prev) => ({
+          ...prev,
+          service: [
+            "Conception Technique",
+            "Campagnes Publicitaires",
+            "Contrôle Qualité",
+            "Formation Interne",
+            "Maintenance Réseau",
+            "Gestion des Stocks",
+            "Audit Financier",
+          ],
+        }));
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des services:", error);
+      showAlert("warning", "Erreur de connexion pour les services.");
+      setSuggestions((prev) => ({
+        ...prev,
+        service: [
+          "Conception Technique",
+          "Campagnes Publicitaires",
+          "Contrôle Qualité",
+          "Formation Interne",
+          "Maintenance Réseau",
+          "Gestion des Stocks",
+          "Audit Financier",
+        ],
+      }));
+    } finally {
+      setIsLoadingServices(false);
+    }
+  };
+
+  // Fetch Recruitment Reasons
+  const fetchRecruitmentReasons = async () => {
+    try {
+      setIsLoadingRecruitmentReasons(true);
+      const response = await fetch(`${BASE_URL}/api/RecruitmentReason`, {
+        method: "GET",
+        headers: { accept: "application/json" },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRecruitmentReasons(data);
+      } else {
+        showAlert("warning", "Impossible de charger les motifs de recrutement.");
+        setRecruitmentReasons([
+          { recruitmentReasonId: "RR_0001", name: "Remplacement d'un employé" },
+          { recruitmentReasonId: "RR_0002", name: "Création d'un nouveau poste" },
+          { recruitmentReasonId: "RR_0003", name: "Dotation prévue au budget" },
+        ]);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des motifs de recrutement:", error);
+      showAlert("warning", "Erreur de connexion pour les motifs de recrutement.");
+      setRecruitmentReasons([
+        { recruitmentReasonId: "RR_0001", name: "Remplacement d'un employé" },
+        { recruitmentReasonId: "RR_0002", name: "Création d'un nouveau poste" },
+        { recruitmentReasonId: "RR_0003", name: "Dotation prévue au budget" },
+      ]);
+    } finally {
+      setIsLoadingRecruitmentReasons(false);
+    }
+  };
+
+  // Fetch Replacement Reasons
+  const fetchReplacementReasons = async () => {
+    try {
+      setIsLoadingReplacementReasons(true);
+      const response = await fetch(`${BASE_URL}/api/ReplacementReason`, {
+        method: "GET",
+        headers: { accept: "application/json" },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setReplacementReasons(data);
+        setSuggestions((prev) => ({
+          ...prev,
+          motifRemplacement: data.map((reason) => reason.name),
+        }));
+      } else {
+        showAlert("warning", "Impossible de charger les raisons de remplacement.");
+        setSuggestions((prev) => ({
+          ...prev,
+          motifRemplacement: [
+            "Décès",
+            "Démission",
+            "Essai non-concluant",
+            "Licenciement",
+            "Mobilité interne",
+            "Retraite",
+            "Rupture de contrat à l’amiable",
+          ],
+        }));
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des raisons de remplacement:", error);
+      showAlert("warning", "Erreur de connexion pour les raisons de remplacement.");
+      setSuggestions((prev) => ({
+        ...prev,
+        motifRemplacement: [
+          "Décès",
+          "Démission",
+          "Essai non-concluant",
+          "Licenciement",
+          "Mobilité interne",
+          "Retraite",
+          "Rupture de contrat à l’amiable",
+        ],
+      }));
+    } finally {
+      setIsLoadingReplacementReasons(false);
+    }
+  };
+
+  // Load all data on component mount
+  useEffect(() => {
+    fetchContractTypes();
+    fetchDirections();
+    fetchDepartments();
+    fetchEmployees();
+    fetchSites();
+    fetchServices();
+    fetchRecruitmentReasons();
+    fetchReplacementReasons();
+  }, []);
+
+  const getContractTypeId = (label) => {
+    const contractType = contractTypes.find((ct) => ct.label === label);
+    return contractType ? contractType.contractTypeId : null;
+  };
+
+  const getContractTypeCode = (label) => {
+    const contractType = contractTypes.find((ct) => ct.label === label);
+    return contractType ? contractType.code : null;
+  };
 
   const showAlert = (type, message) => {
     setAlert({ isOpen: true, type, message });
@@ -92,7 +426,6 @@ export default function RecruitmentRequestForm() {
     }
   };
 
-  // Fonction pour ajouter une nouvelle ligne de motif
   const handleAddMotif = () => {
     setReplacementDetails((prev) => ({
       ...prev,
@@ -100,7 +433,6 @@ export default function RecruitmentRequestForm() {
     }));
   };
 
-  // Fonction pour supprimer une ligne de motif
   const handleRemoveMotif = (index) => {
     setReplacementDetails((prev) => ({
       ...prev,
@@ -108,7 +440,6 @@ export default function RecruitmentRequestForm() {
     }));
   };
 
-  // Fonction pour mettre à jour un motif ou un détail
   const handleMotifChange = (index, field, value) => {
     setReplacementDetails((prev) => {
       const updatedMotifs = [...prev.motifs];
@@ -124,6 +455,9 @@ export default function RecruitmentRequestForm() {
     try {
       const formData = new FormData();
 
+      const contractTypeId = getContractTypeId(attachment.typeContrat);
+      const contractTypeCode = getContractTypeCode(attachment.typeContrat);
+
       formData.append("RecruitmentRequestId", "");
       formData.append("Description", description);
       formData.append("Status", "En Cours");
@@ -132,12 +466,23 @@ export default function RecruitmentRequestForm() {
       formData.append("ApprovalDate", new Date().toISOString());
 
       formData.append("PositionInfo", JSON.stringify(positionInfo));
-      formData.append("ContractType", JSON.stringify(contractType));
+      formData.append(
+        "ContractType",
+        JSON.stringify({
+          ...contractType,
+          contractTypeId: contractTypeId,
+          contractTypeCode: contractTypeCode,
+          contractTypeLabel: attachment.typeContrat,
+        })
+      );
       formData.append("Attachment", JSON.stringify(attachment));
       formData.append("WorkSite", JSON.stringify(workSite));
       formData.append("RecruitmentMotive", recruitmentMotive);
       formData.append("ReplacementDetails", JSON.stringify(replacementDetails));
-      formData.append("PostCreation", JSON.stringify({ justification: description, datePriseService: replacementDetails.datePriseService }));
+      formData.append(
+        "PostCreation",
+        JSON.stringify({ justification: description, datePriseService: replacementDetails.datePriseService })
+      );
 
       selectedFiles.forEach((file) => {
         formData.append("Files", file);
@@ -180,18 +525,13 @@ export default function RecruitmentRequestForm() {
     setWorkSite({ selectedSite: "" });
     setRecruitmentMotive("");
     setReplacementDetails({
-      motifs: [
-        { motifRemplacement: "Décès", detail: "Mort lors d'un accident" },
-        { motifRemplacement: "Démission", detail: "Salaire insuffisant" },
-        { motifRemplacement: "Licenciement", detail: "Toujours en Retard" },
-      ],
+      motifs: [{ motifRemplacement: "", detail: "" }],
       dateSurvenance: "",
       nomPrenomsTitulaire: "",
       datePriseService: "",
     });
   };
 
-  // Rendu du premier formulaire
   const renderFirstForm = () => (
     <form id="recruitmentRequestForm" className="generic-form">
       <div className="form-section">
@@ -235,7 +575,6 @@ export default function RecruitmentRequestForm() {
       </div>
 
       <div className="form-section">
-       
         <h3>Nature de l'Engagement Contractuel</h3>
         <table className="form-table">
           <tbody>
@@ -248,16 +587,16 @@ export default function RecruitmentRequestForm() {
                   value={attachment.typeContrat}
                   onChange={(value) => setAttachment((prev) => ({ ...prev, typeContrat: value }))}
                   suggestions={suggestions.typeContrat}
-                  placeholder="Saisir ou sélectionner..."
-                  disabled={isSubmitting}
+                  placeholder={isLoadingContractTypes ? "Chargement..." : "Saisir ou sélectionner..."}
+                  disabled={isSubmitting || isLoadingContractTypes}
                   onAddNew={(value) => handleAddNewSuggestion("typeContrat", value)}
                   fieldType="typeContrat"
-                  fieldLabel="typeContrat"
+                  fieldLabel="type de contrat"
                   addNewRoute="/recruitment/contract-type-form"
                 />
               </td>
               <th className="form-label-cell">
-                <label className="form-label">Durée (si CDD, VIE ou intérimaire)</label>
+                <label className="form-label">Durée (si CDD, CTT ou intérimaire)</label>
               </th>
               <td className="form-input-cell">
                 <input
@@ -302,8 +641,8 @@ export default function RecruitmentRequestForm() {
                   value={attachment.direction}
                   onChange={(value) => setAttachment((prev) => ({ ...prev, direction: value }))}
                   suggestions={suggestions.direction}
-                  placeholder="Saisir ou sélectionner..."
-                  disabled={isSubmitting}
+                  placeholder={isLoadingDirections ? "Chargement..." : "Saisir ou sélectionner..."}
+                  disabled={isSubmitting || isLoadingDirections}
                   onAddNew={(value) => handleAddNewSuggestion("direction", value)}
                   fieldType="direction"
                   fieldLabel="direction"
@@ -318,8 +657,8 @@ export default function RecruitmentRequestForm() {
                   value={attachment.departement}
                   onChange={(value) => setAttachment((prev) => ({ ...prev, departement: value }))}
                   suggestions={suggestions.departement}
-                  placeholder="Saisir ou sélectionner..."
-                  disabled={isSubmitting}
+                  placeholder={isLoadingDepartments ? "Chargement..." : "Saisir ou sélectionner..."}
+                  disabled={isSubmitting || isLoadingDepartments}
                   onAddNew={(value) => handleAddNewSuggestion("departement", value)}
                   fieldType="departement"
                   fieldLabel="département"
@@ -336,8 +675,8 @@ export default function RecruitmentRequestForm() {
                   value={attachment.service}
                   onChange={(value) => setAttachment((prev) => ({ ...prev, service: value }))}
                   suggestions={suggestions.service}
-                  placeholder="Saisir ou sélectionner..."
-                  disabled={isSubmitting}
+                  placeholder={isLoadingServices ? "Chargement..." : "Saisir ou sélectionner..."}
+                  disabled={isSubmitting || isLoadingServices}
                   onAddNew={(value) => handleAddNewSuggestion("service", value)}
                   fieldType="service"
                   fieldLabel="service"
@@ -354,10 +693,9 @@ export default function RecruitmentRequestForm() {
                     setAttachment((prev) => ({ ...prev, superieurHierarchique: value }))
                   }
                   suggestions={suggestions.superieurHierarchique}
+                  placeholder={isLoadingEmployees ? "Chargement..." : "Saisir ou sélectionner..."}
+                  disabled={isSubmitting || isLoadingEmployees}
                   showAddOption={false}
-                  placeholder="Saisir ou sélectionner..."
-                  disabled={isSubmitting}
-                  onAddNew={(value) => handleAddNewSuggestion("superieurHierarchique", value)}
                   fieldType="superieurHierarchique"
                   fieldLabel="supérieur hiérarchique"
                 />
@@ -372,10 +710,9 @@ export default function RecruitmentRequestForm() {
                   value={attachment.fonctionSuperieur}
                   onChange={(value) => setAttachment((prev) => ({ ...prev, fonctionSuperieur: value }))}
                   suggestions={suggestions.fonctionSuperieur}
-                  showAddOption={false}
                   placeholder="Saisir ou sélectionner..."
                   disabled={isSubmitting}
-                  onAddNew={(value) => handleAddNewSuggestion("fonctionSuperieur", value)}
+                  showAddOption={false}
                   fieldType="fonctionSuperieur"
                   fieldLabel="fonction"
                 />
@@ -394,16 +731,16 @@ export default function RecruitmentRequestForm() {
                 <label className="form-label">Site</label>
               </th>
               <td className="form-input-cell">
-                <select
+                <AutoCompleteInput
                   value={workSite.selectedSite}
-                  onChange={(e) => setWorkSite((prev) => ({ ...prev, selectedSite: e.target.value }))}
-                  className="form-input"
-                  disabled={isSubmitting}
-                >
-                  <option value="">Sélectionner...</option>
-                  <option value="ivato">Ivato - Antananarivo</option>
-                  <option value="fascene">Fascène - Nosy Be</option>
-                </select>
+                  onChange={(value) => setWorkSite((prev) => ({ ...prev, selectedSite: value }))}
+                  suggestions={suggestions.site}
+                  placeholder={isLoadingSites ? "Chargement..." : "Saisir ou sélectionner..."}
+                  disabled={isSubmitting || isLoadingSites}
+                  showAddOption={false}
+                  fieldType="site"
+                  fieldLabel="site"
+                />
               </td>
             </tr>
           </tbody>
@@ -458,7 +795,6 @@ export default function RecruitmentRequestForm() {
     </form>
   );
 
-  // Rendu du second formulaire
   const renderSecondForm = () => (
     <form id="recruitmentRequestForm2" className="generic-form" onSubmit={handleSubmit}>
       <div className="form-section">
@@ -471,50 +807,26 @@ export default function RecruitmentRequestForm() {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="form-label-cell">Remplacement d'un employé</td>
-              <td className="form-input-cell">
-                <input
-                  type="radio"
-                  name="recruitmentMotive"
-                  value="replacement"
-                  checked={recruitmentMotive === "replacement"}
-                  onChange={(e) => setRecruitmentMotive(e.target.value)}
-                  disabled={isSubmitting}
-                />
-              </td>
-            </tr>
-            <tr>
-              <td className="form-label-cell">Dotation prévue au budget</td>
-              <td className="form-input-cell">
-                <input
-                  type="radio"
-                  name="recruitmentMotive"
-                  value="budget"
-                  checked={recruitmentMotive === "budget"}
-                  onChange={(e) => setRecruitmentMotive(e.target.value)}
-                  disabled={isSubmitting}
-                />
-              </td>
-            </tr>
-            <tr>
-              <td className="form-label-cell">Création de poste</td>
-              <td className="form-input-cell">
-                <input
-                  type="radio"
-                  name="recruitmentMotive"
-                  value="creation"
-                  checked={recruitmentMotive === "creation"}
-                  onChange={(e) => setRecruitmentMotive(e.target.value)}
-                  disabled={isSubmitting}
-                />
-              </td>
-            </tr>
+            {recruitmentReasons.map((reason) => (
+              <tr key={reason.recruitmentReasonId}>
+                <td className="form-label-cell">{reason.name}</td>
+                <td className="form-input-cell">
+                  <input
+                    type="radio"
+                    name="recruitmentMotive"
+                    value={reason.name}
+                    checked={recruitmentMotive === reason.name}
+                    onChange={(e) => setRecruitmentMotive(e.target.value)}
+                    disabled={isSubmitting || isLoadingRecruitmentReasons}
+                  />
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
-      {recruitmentMotive === "replacement" && (
+      {recruitmentMotive === "Remplacement d'un employé" && (
         <div className="form-section">
           <h3>Détails du Motif du remplacement</h3>
           <div className="form-subsection">
@@ -534,16 +846,14 @@ export default function RecruitmentRequestForm() {
                         value={motif.motifRemplacement}
                         onChange={(value) => handleMotifChange(index, "motifRemplacement", value)}
                         suggestions={suggestions.motifRemplacement}
-                        placeholder="Saisir ou sélectionner..."
-                        disabled={isSubmitting}
+                        placeholder={isLoadingReplacementReasons ? "Chargement..." : "Saisir ou sélectionner..."}
+                        disabled={isSubmitting || isLoadingReplacementReasons}
                         onAddNew={(value) => handleAddNewSuggestion("motifRemplacement", value)}
                         fieldType="motifRemplacement"
                         fieldLabel="motif"
                       />
                     </td>
-                    <
-
-td className="form-input-cell">
+                    <td className="form-input-cell">
                       <input
                         type="text"
                         value={motif.detail}
@@ -558,7 +868,7 @@ td className="form-input-cell">
                         type="button"
                         className="remove-item"
                         onClick={() => handleRemoveMotif(index)}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || replacementDetails.motifs.length === 1}
                         title="Supprimer la ligne"
                       >
                         <FaIcons.FaTrash className="w-4 h-4" />
@@ -637,7 +947,7 @@ td className="form-input-cell">
         </div>
       )}
 
-      {recruitmentMotive === "creation" && (
+      {recruitmentMotive === "Création d'un nouveau poste" && (
         <>
           <div className="form-section">
             <h3>Explications pour la création de poste</h3>
