@@ -53,7 +53,7 @@ namespace MyApp.Api.Controllers.recruitment
 
         // POST: api/RecruitmentRequest
         [HttpPost("create")]
-        public async Task<IActionResult> Create([FromBody] RecruitmentRequestDTOForm requestForm, IEnumerable<ApprovalFlow> approvalFlows)
+        public async Task<IActionResult> Create([FromBody] RecruitmentRequestDTOForm requestForm)
         {
             var request = new RecruitmentRequest
             {
@@ -102,9 +102,18 @@ namespace MyApp.Api.Controllers.recruitment
                     ReplacementReasonId = rr.ReplacementReasonId,
                     Description = rr.Description
                 }),
+
+                ApprovalFlows = requestForm.ApprovalFlows?.Select(flow => new ApprovalFlow
+                {
+                    ApprovalOrder = flow.ApprovalOrder,
+                    ApproverRole = flow.ApproverRole,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    ApproverId = flow.ApproverId
+                }).ToList()
             };
 
-            await _service.CreateRequest(request, approvalFlows);
+            await _service.CreateRequest(request);
             return CreatedAtAction(nameof(GetById), new { id = request.RecruitmentRequestId }, request);
         }
 
