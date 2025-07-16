@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Entities.contract;
+using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.users;
 
@@ -73,5 +74,9 @@ namespace MyApp.Api.Entities.recruitment
 
         [ForeignKey("RecruitmentReasonId")]
         public RecruitmentReason? RecruitmentReason { get; set; }
+
+        public RecruitmentRequestDetail RecruitmentRequestDetail { get; set; } = null!;
+        public RecruitmentApproval RecruitmentApproval { get; set; } = null!;
+        public IEnumerable<RecruitmentRequestReplacementReason>? ReplacementReasons { get; set; } = null;
     }
 }

@@ -9,7 +9,7 @@ namespace MyApp.Api.Entities.recruitment
     {
         [Key]
         [Column("recruitment_request_detail_id")]
-        public string? RecruitmentRequestDetailId { get; set; } = Guid.NewGuid().ToString();
+        public string? RecruitmentRequestDetailId { get; set; } = null!;
 
         [Required]
         [Column("supervisor_position")]

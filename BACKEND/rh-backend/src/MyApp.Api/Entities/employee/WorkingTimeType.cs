@@ -9,6 +9,6 @@ namespace MyApp.Api.Entities.employee
         [Key]
         [Column("working_time_type_id")]
         [MaxLength(50)]
-        public string WorkingTimeTypeId { get; set; } = Guid.NewGuid().ToString();
+        public string WorkingTimeTypeId { get; set; } = null!;
     }
 }

@@ -9,7 +9,7 @@ namespace MyApp.Api.Entities.employee
         [Key]
         [Column("marital_status_id")]
         [MaxLength(50)]
-        public string MaritalStatusId { get; set; } = Guid.NewGuid().ToString();
+        public string MaritalStatusId { get; set; } = null!;
 
         [Required]
         [Column("code")]

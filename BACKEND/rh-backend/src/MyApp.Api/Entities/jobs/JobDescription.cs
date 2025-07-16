@@ -11,7 +11,7 @@ namespace MyApp.Api.Entities.jobs
         [Key]
         [Column("description_id")]
         [MaxLength(50)]
-        public string DescriptionId { get; set; } = Guid.NewGuid().ToString();
+        public string DescriptionId { get; set; } = null!;
 
         [Required]
         [Column("title")]

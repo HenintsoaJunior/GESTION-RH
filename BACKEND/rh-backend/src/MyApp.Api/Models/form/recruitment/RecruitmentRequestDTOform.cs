@@ -1,13 +1,51 @@
-using MyApp.Api.Entities.employee;
-using MyApp.Api.Entities.recruitment;
-using MyApp.Api.Models.form.recruitment;
-namespace MyApp.Api.Models.recruitment
+using System.ComponentModel.DataAnnotations;
+using MyApp.Api.Model.form.employee;
+namespace MyApp.Api.Models.form.recruitment
 {
-    public class RecruitmentRequestDTOform
+    public class RecruitmentRequestDTOForm
     {
-        public RecruitmentRequest RecruitmentRequest { get; set; } = null!;
-        public RecruitmentApprovalDTOform RecruitmentApproval { get; set; } = null!;
-        // public IEnumerable<RecruitmentRequestReplacementReason>? ReplacementReasons { get; set; } = null;
-        // public IEnumerable<ApprovalFlow>? ApprovalFlows { get; set; } = null;
+
+        [Required]
+        [MaxLength(255)]
+        public string PositionTitle { get; set; } = null!;
+
+        public int PositionCount { get; set; } = 1;
+
+        [MaxLength(100)]
+        public string? ContractDuration { get; set; }
+
+        [MaxLength(255)]
+        public string? FormerEmployeeName { get; set; }
+
+        public DateTime? ReplacementDate { get; set; }
+
+        [MaxLength(250)]
+        public string? NewPositionExplanation { get; set; }
+
+        public DateTime? DesiredStartDate { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime? UpdatedAt { get; set; }
+
+        [MaxLength(10)]
+        public string Status { get; set; } = "En attente";
+
+        public byte[]? Files { get; set; } // à gérer en base64 côté frontend
+
+        [Required]
+        public string RequesterId { get; set; } = null!;
+
+        [Required]
+        public string ContractTypeId { get; set; } = null!;
+
+        [Required]
+        public string SiteId { get; set; } = null!;
+
+        [Required]
+        public string RecruitmentReasonId { get; set; } = null!;
+        public RecruitmentRequestDetailDTOForm RecruitmentRequestDetail { get; set; } = null!;
+        public RecruitmentApprovalDTOForm RecruitmentApproval { get; set; } = null!;
+        public IEnumerable<RecruitmentRequestReplacementReasonDTOForm>? ReplacementReasons { get; set; } = null;
     }
 }

@@ -9,6 +9,6 @@ namespace MyApp.Api.Entities.recruitment
         [Key]
         [Column("replacement_reason_id")]
         [MaxLength(50)]
-        public string ReplacementReasonId { get; set; } = Guid.NewGuid().ToString();
+        public string ReplacementReasonId { get; set; } = null!;
     }
 }

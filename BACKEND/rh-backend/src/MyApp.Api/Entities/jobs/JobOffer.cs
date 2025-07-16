@@ -12,7 +12,7 @@ namespace MyApp.Api.Entities.jobs
         [Key]
         [Column("offer_id")]
         [MaxLength(50)]
-        public string OfferId { get; set; } = Guid.NewGuid().ToString();
+        public string OfferId { get; set; } = null!;
 
         [Column("status")]
         [MaxLength(20)]

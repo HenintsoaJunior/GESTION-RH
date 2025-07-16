@@ -2,11 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MyApp.Api.Models.form.recruitment
 {
-    public class RecruitmentApprovalDTOform
+    public class RecruitmentApprovalDTOForm
     {
-        [Required]
-        public string RecruitmentRequestId { get; set; } = null!;
-
         [Required]
         public string ApproverId { get; set; } = null!;
 
