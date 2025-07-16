@@ -7,22 +7,50 @@ import AutoCompleteInput from "../../components/AutoCompleteInput";
 
 export default function ServiceForm() {
   const [formData, setFormData] = useState({
-    service_name: "",
-    department: "",
+    serviceName: "",
+    departmentId: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [returnUrl, setReturnUrl] = useState("");
-  const [suggestions, setSuggestions] = useState({
-    department: ["Département IT", "Département RH", "Département Finance", "Département Marketing"],
-  });
+  const [suggestions, setSuggestions] = useState([]);
+  const [departmentMap, setDepartmentMap] = useState({}); // Maps departmentName to departmentId
 
-  // Parse URL query parameters to set initial value for service_name
+  // Fetch departments from API
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/api/Department`, {
+          method: "GET",
+          headers: {
+            "Accept": "text/plain",
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const departmentNames = data.map((dept) => dept.departmentName);
+          const map = data.reduce((acc, dept) => ({
+            ...acc,
+            [dept.departmentName]: dept.departmentId,
+          }), {});
+          setSuggestions(departmentNames);
+          setDepartmentMap(map);
+        } else {
+          showAlert("error", `Erreur ${response.status}: Erreur lors du chargement des départements.`);
+        }
+      } catch (error) {
+        showAlert("error", "Erreur de connexion lors du chargement des départements.");
+      }
+    };
+    fetchDepartments();
+  }, []);
+
+  // Parse URL query parameters to set initial value for serviceName
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const initialValue = params.get("initialValue") || "";
     const url = params.get("returnUrl") || "";
-    setFormData((prev) => ({ ...prev, service_name: initialValue }));
+    setFormData((prev) => ({ ...prev, serviceName: initialValue }));
     setReturnUrl(url);
   }, []);
 
@@ -30,30 +58,19 @@ export default function ServiceForm() {
     setAlert({ isOpen: true, type, message });
   };
 
-  const handleAddNewSuggestion = (field, value) => {
-    setSuggestions((prev) => ({
-      ...prev,
-      [field]: [...prev[field], value],
-    }));
-    showAlert("success", `"${value}" ajouté aux suggestions pour ${field}`);
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${BASE_URL}/api/services`, {
+      const response = await fetch(`${BASE_URL}/api/Service`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          service_id: crypto.randomUUID(),
-          service_name: formData.service_name,
-          department_id: formData.department, // Using department as the value for department_id
-          created_at: new Date().toISOString(),
-          updated_at: null,
+          serviceName: formData.serviceName,
+          departmentId: formData.departmentId,
         }),
       });
 
@@ -61,14 +78,14 @@ export default function ServiceForm() {
         await response.json();
         showAlert("success", "Service créé avec succès !");
         event.target.reset();
-        setFormData({ service_name: "", department: "" });
-        // Redirect to returnUrl if provided
+        setFormData({ serviceName: "", departmentId: "" });
         if (returnUrl) {
           window.location.href = returnUrl;
         }
       } else {
         const errorData = await response.json();
-        showAlert("error", errorData.message || "Erreur lors de la création du service.");
+        const message = errorData.message || `Erreur ${response.status}: Échec de la création du service.`;
+        showAlert("error", message);
       }
     } catch (error) {
       showAlert("error", "Erreur de connexion. Veuillez vérifier votre connexion et réessayer.");
@@ -78,7 +95,7 @@ export default function ServiceForm() {
   };
 
   const handleReset = () => {
-    setFormData({ service_name: "", department: "" });
+    setFormData({ serviceName: "", departmentId: "" });
     showAlert("info", "Formulaire réinitialisé.");
   };
 
@@ -105,8 +122,8 @@ export default function ServiceForm() {
                 <td className="form-input-cell">
                   <input
                     type="text"
-                    value={formData.service_name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, service_name: e.target.value }))}
+                    value={formData.serviceName}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, serviceName: e.target.value }))}
                     placeholder="Saisir ou sélectionner..."
                     className="form-input"
                     required
@@ -120,13 +137,15 @@ export default function ServiceForm() {
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
-                    value={formData.department}
-                    onChange={(value) => setFormData((prev) => ({ ...prev, department: value }))}
-                    suggestions={suggestions.department}
+                    value={Object.keys(departmentMap).find((name) => departmentMap[name] === formData.departmentId) || ""}
+                    onChange={(value) => {
+                      const departmentId = departmentMap[value] || "";
+                      setFormData((prev) => ({ ...prev, departmentId }));
+                    }}
+                    suggestions={suggestions}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner..."
                     disabled={isSubmitting}
-                    onAddNew={(value) => handleAddNewSuggestion("department", value)}
                     fieldType="department"
                     fieldLabel="département"
                     addNewRoute="/direction/department-form"

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.contract;
 using MyApp.Api.Services.contract;
+using MyApp.Api.Models.form.contract;
 using System;
 using System.Threading.Tasks;
 
@@ -50,7 +51,7 @@ namespace MyApp.Api.Controllers.contract
         }
 
         [HttpPost]
-        public async Task<ActionResult> Add([FromBody] ContractType contractType)
+        public async Task<ActionResult> Add([FromBody] ContractTypeDTOForm form)
         {
             try
             {
@@ -58,6 +59,12 @@ namespace MyApp.Api.Controllers.contract
                 {
                     return BadRequest(ModelState);
                 }
+
+                var contractType = new ContractType
+                {
+                    Code = form.Code,
+                    Label = form.Label
+                };
 
                 await _contractTypeService.AddAsync(contractType);
                 return CreatedAtAction(nameof(GetById), new { id = contractType.ContractTypeId }, contractType);
@@ -67,6 +74,7 @@ namespace MyApp.Api.Controllers.contract
                 return StatusCode(500, $"Une erreur est survenue: {ex.Message}");
             }
         }
+
 
         [HttpPut("{id}")]
         public async Task<ActionResult> Update(string id, [FromBody] ContractType contractType)

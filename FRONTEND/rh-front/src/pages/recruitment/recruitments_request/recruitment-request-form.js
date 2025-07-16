@@ -86,7 +86,7 @@ export default function RecruitmentRequestForm() {
         setContractTypes(data);
         setSuggestions((prev) => ({
           ...prev,
-          typeContrat: data.map((ct) => ct.label),
+          typeContrat: data.map((ct) => ct.code),
         }));
       } else {
         showAlert("warning", "Impossible de charger les types de contrat.");

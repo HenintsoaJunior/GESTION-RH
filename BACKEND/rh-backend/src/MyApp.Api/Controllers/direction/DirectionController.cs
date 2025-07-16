@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.direction;
+using MyApp.Api.Models.form.direction;
 using MyApp.Api.Services.direction;
 using System.Threading.Tasks;
 
@@ -35,14 +36,21 @@ namespace MyApp.Api.Controllers.direction
         }
 
         [HttpPost]
-        public async Task<ActionResult<Direction>> Create(Direction direction)
+        public async Task<ActionResult<Direction>> Add([FromBody] DirectionDTOForm form)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
+            var direction = new Direction
+            {
+                DirectionName = form.DirectionName,
+                Acronym = form.Acronym
+            };
+
             await _directionService.AddAsync(direction);
+
             return CreatedAtAction(nameof(GetById), new { id = direction.DirectionId }, direction);
         }
 

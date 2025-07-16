@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.direction;
+using MyApp.Api.Models.form.direction;
 using MyApp.Api.Services.direction;
 using System.Threading.Tasks;
 
@@ -35,16 +36,24 @@ namespace MyApp.Api.Controllers.direction
         }
 
         [HttpPost]
-        public async Task<ActionResult<Service>> Create(Service service)
+        public async Task<ActionResult<Service>> Add([FromBody] ServiceDTOForm form)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
+            var service = new Service
+            {
+                ServiceName = form.ServiceName,
+                DepartmentId = form.DepartmentId
+            };
+
             await _serviceService.AddAsync(service);
+
             return CreatedAtAction(nameof(GetById), new { id = service.ServiceId }, service);
         }
+
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, Service service)
