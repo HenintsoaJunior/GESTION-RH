@@ -1,6 +1,8 @@
+using iText.Kernel.Colors;
 using Microsoft.AspNetCore.Mvc;
+using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.recruitment;
-using MyApp.Api.Models.recruitment;
+using MyApp.Api.Models.form.recruitment;
 using MyApp.Api.Services.recruitment;
 
 namespace MyApp.Api.Controllers.recruitment
@@ -51,10 +53,59 @@ namespace MyApp.Api.Controllers.recruitment
 
         // POST: api/RecruitmentRequest
         [HttpPost("create")]
-        public async Task<IActionResult> Create([FromBody] RecruitmentRequestDTO request)
+        public async Task<IActionResult> Create([FromBody] RecruitmentRequestDTOForm requestForm, IEnumerable<ApprovalFlow> approvalFlows)
         {
-            await _service.CreateRequest(request);
-            return CreatedAtAction(nameof(GetById), new { id = request.RecruitmentRequest.RecruitmentRequestId }, request);
+            var request = new RecruitmentRequest
+            {
+                PositionTitle = requestForm.PositionTitle,
+                PositionCount = requestForm.PositionCount,
+                ContractDuration = requestForm.ContractDuration,
+                FormerEmployeeName = requestForm.FormerEmployeeName,
+                ReplacementDate = requestForm.ReplacementDate,
+                NewPositionExplanation = requestForm.NewPositionExplanation,
+                DesiredStartDate = requestForm.DesiredStartDate,
+                CreatedAt = requestForm.CreatedAt,
+                UpdatedAt = requestForm.UpdatedAt ?? DateTime.UtcNow,
+                Status = requestForm.Status,
+                Files = requestForm.Files,
+                RequesterId = requestForm.RequesterId,
+                ContractTypeId = requestForm.ContractTypeId,
+                SiteId = requestForm.SiteId,
+                RecruitmentReasonId = requestForm.RecruitmentReasonId,
+
+                RecruitmentRequestDetail = new RecruitmentRequestDetail
+                {
+                    SupervisorPosition = requestForm.RecruitmentRequestDetail.SupervisorPosition,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    DirectionId = requestForm.RecruitmentRequestDetail.DirectionId,
+                    DepartmentId = requestForm.RecruitmentRequestDetail.DepartmentId,
+                    ServiceId = requestForm.RecruitmentRequestDetail.ServiceId,
+                    DirectSupervisorId = requestForm.RecruitmentRequestDetail.DirectSupervisorId,
+                },
+
+                RecruitmentApproval = new RecruitmentApproval
+                {
+                    ApproverId = requestForm.RecruitmentApproval.ApproverId,
+                    ApprovalFlowId = requestForm.RecruitmentApproval.ApprovalFlowId,
+                    Status = requestForm.RecruitmentApproval.Status,
+                    ApprovalOrder = requestForm.RecruitmentApproval.ApprovalOrder,
+                    ApprovalDate = requestForm.RecruitmentApproval.ApprovalDate,
+                    Comment = requestForm.RecruitmentApproval.Comment,
+                    Signature = requestForm.RecruitmentApproval.Signature,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+
+                ReplacementReasons = requestForm.ReplacementReasons?.Select(rr => new RecruitmentRequestReplacementReason
+                {
+                    ReplacementReasonId = rr.ReplacementReasonId,
+                    Description = rr.Description
+                }),
+            };
+
+            await _service.CreateRequest(request, approvalFlows);
+            return CreatedAtAction(nameof(GetById), new { id = request.RecruitmentRequestId }, request);
         }
 
         // PUT: api/RecruitmentRequest/{id}

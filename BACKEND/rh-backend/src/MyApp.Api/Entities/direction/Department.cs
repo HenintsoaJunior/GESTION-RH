@@ -9,7 +9,7 @@ namespace MyApp.Api.Entities.direction
         [Key]
         [Column("department_id")]
         [MaxLength(50)]
-        public string DepartmentId { get; set; } = Guid.NewGuid().ToString();
+        public string DepartmentId { get; set; } = null!;
 
         [Column("department_name")]
         [MaxLength(255)]

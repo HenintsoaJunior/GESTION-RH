@@ -9,6 +9,6 @@ namespace MyApp.Api.Entities.contract
         [Key]
         [Column("contract_type_id")]
         [MaxLength(50)]
-        public string ContractTypeId { get; set; } = Guid.NewGuid().ToString();
+        public string ContractTypeId { get; set; } = null!;
     }
 }

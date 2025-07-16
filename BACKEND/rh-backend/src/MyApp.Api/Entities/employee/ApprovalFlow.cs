@@ -7,7 +7,7 @@ namespace MyApp.Api.Entities.employee
     {
         [Key]
         [Column("approval_flow_id")]
-        public string ApprovalFlowId { get; set; } = Guid.NewGuid().ToString();
+        public string ApprovalFlowId { get; set; } = null!;
 
         [Column("approval_order")]
         [Required]
