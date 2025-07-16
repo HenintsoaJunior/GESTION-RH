@@ -8,7 +8,7 @@ namespace MyApp.Api.Entities.employee
         [Key, Column(Order = 0)]
         public string? EmployeeId { get; set; }
 
-        [Key, Column(Order = 1)]
+        [Column(Order = 1)]
         public string? NationalityId { get; set; }
 
         // Navigation properties

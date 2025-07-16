@@ -12,11 +12,11 @@ namespace MyApp.Api.Entities.recruitment
         [Required]
         public string RecruitmentRequestId { get; set; } = string.Empty;
 
-        [Key, Column("approver_id", Order = 1)]
+        [Column("approver_id", Order = 1)]
         [Required]
         public string ApproverId { get; set; } = string.Empty;
 
-        [Key, Column("approval_flow_id", Order = 2)]
+        [Column("approval_flow_id", Order = 2)]
         [Required]
         public string ApprovalFlowId { get; set; } = string.Empty;
 
