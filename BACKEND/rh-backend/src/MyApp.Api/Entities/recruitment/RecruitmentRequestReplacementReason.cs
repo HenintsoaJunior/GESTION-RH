@@ -10,7 +10,7 @@ namespace MyApp.Api.Entities.recruitment
         [MaxLength(50)]
         public string RecruitmentRequestId { get; set; } = null!;
 
-        [Key, Column(Order = 1)]
+        [Column(Order = 1)]
         [MaxLength(50)]
         public string ReplacementReasonId { get; set; } = null!;
 
