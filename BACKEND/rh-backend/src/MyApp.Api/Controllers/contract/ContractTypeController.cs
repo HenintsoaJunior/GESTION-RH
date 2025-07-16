@@ -62,9 +62,11 @@ namespace MyApp.Api.Controllers.contract
 
                 var contractType = new ContractType
                 {
+                    ContractTypeId = Guid.NewGuid().ToString(),
                     Code = form.Code,
                     Label = form.Label
                 };
+
 
                 await _contractTypeService.AddAsync(contractType);
                 return CreatedAtAction(nameof(GetById), new { id = contractType.ContractTypeId }, contractType);

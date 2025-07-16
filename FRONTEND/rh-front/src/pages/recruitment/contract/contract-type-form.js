@@ -47,9 +47,9 @@ export default function ContractTypeForm() {
         showAlert("success", "Type de contrat créé avec succès !");
         event.target.reset();
         setFormData({ code: "", label: "" });
-        if (returnUrl) {
-          window.location.href = returnUrl;
-        }
+        // if (returnUrl) {
+        //   window.location.href = returnUrl;
+        // }
       } else {
         const errorData = await response.json();
         const message = errorData.message || `Erreur ${response.status}: Échec de la création du type de contrat.`;
