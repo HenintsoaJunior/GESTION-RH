@@ -6,9 +6,9 @@ namespace MyApp.Api.Repositories.jobs
 {
     public interface IJobOfferRepository
     {
+        Task<IEnumerable<JobOffer>> GetAllByCriteriaAsync(JobOffer criteria);
         Task<IEnumerable<JobOffer>> GetAllAsync();
         Task<JobOffer?> GetByIdAsync(string id);
-        Task<IEnumerable<JobOffer>> GetByStatusAsync(string status);
         Task AddAsync(JobOffer offer);
         Task UpdateAsync(JobOffer offer);
         Task DeleteAsync(JobOffer offer);
@@ -22,6 +22,44 @@ namespace MyApp.Api.Repositories.jobs
         {
             _context = context;
         }
+
+        public async Task<IEnumerable<JobOffer>> GetAllByCriteriaAsync(JobOffer criteria)
+        {
+            var query = _context.JobOffers
+                .Include(o => o.ContractType)
+                .Include(o => o.Site)
+                .Include(o => o.JobDescription)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(criteria.Status))
+            {
+                query = query.Where(o => o.Status == criteria.Status);
+            }
+
+            if (!string.IsNullOrEmpty(criteria.SiteId))
+            {
+                query = query.Where(o => o.SiteId == criteria.SiteId);
+            }
+
+            if (!string.IsNullOrEmpty(criteria.DescriptionId))
+            {
+                query = query.Where(o => o.DescriptionId == criteria.DescriptionId);
+            }
+
+            if (!string.IsNullOrEmpty(criteria.ContractTypeId))
+            {
+                query = query.Where(o => o.ContractTypeId == criteria.ContractTypeId);
+            }
+
+            if (criteria.CreatedAt != default(DateTime))
+            {
+                // Tu peux ajuster ce filtre pour comparer uniquement la date sans l'heure si besoin
+                query = query.Where(o => o.CreatedAt.Date == criteria.CreatedAt.Date);
+            }
+
+            return await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+        }
+
 
         public async Task<IEnumerable<JobOffer>> GetAllAsync()
         {
@@ -40,14 +78,6 @@ namespace MyApp.Api.Repositories.jobs
                 .Include(o => o.Site)
                 .Include(o => o.JobDescription)
                 .FirstOrDefaultAsync(o => o.OfferId == id);
-        }
-
-        public async Task<IEnumerable<JobOffer>> GetByStatusAsync(string status)
-        {
-            return await _context.JobOffers
-                .Where(o => o.Status == status)
-                .OrderByDescending(o => o.CreatedAt)
-                .ToListAsync();
         }
 
         public async Task AddAsync(JobOffer offer)

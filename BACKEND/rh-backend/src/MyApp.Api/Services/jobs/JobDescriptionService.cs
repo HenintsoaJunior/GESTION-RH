@@ -5,9 +5,9 @@ namespace MyApp.Api.Services.jobs
 {
     public interface IJobDescriptionService
     {
+        Task<IEnumerable<JobDescription>>  GetAllByCriteriaAsync(JobDescription criteria);
         Task<IEnumerable<JobDescription>> GetAllAsync();
         Task<JobDescription?> GetByIdAsync(string id);
-        Task<IEnumerable<JobDescription>> GetBySiteAsync(string siteId);
         Task AddAsync(JobDescription jobDescription);
         Task UpdateAsync(JobDescription jobDescription);
         Task DeleteAsync(JobDescription jobDescription);
@@ -21,6 +21,11 @@ namespace MyApp.Api.Services.jobs
             _repository = repository;
         }
 
+        public async Task<IEnumerable<JobDescription>> GetAllByCriteriaAsync(JobDescription criteria)
+        {
+            return await _repository.GetAllByCriteriaAsync(criteria);
+        }
+
         public async Task<IEnumerable<JobDescription>> GetAllAsync()
         {
             return await _repository.GetAllAsync();
@@ -29,11 +34,6 @@ namespace MyApp.Api.Services.jobs
         public async Task<JobDescription?> GetByIdAsync(string id)
         {
             return await _repository.GetByIdAsync(id);
-        }
-
-        public async Task<IEnumerable<JobDescription>> GetBySiteAsync(string siteId)
-        {
-            return await _repository.GetBySiteAsync(siteId);
         }
 
         public async Task AddAsync(JobDescription jobDescription)
