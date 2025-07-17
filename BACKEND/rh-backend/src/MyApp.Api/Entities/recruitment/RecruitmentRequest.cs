@@ -10,9 +10,8 @@ namespace MyApp.Api.Entities.recruitment
     [Table("recruitment_requests")]
     public class RecruitmentRequest : BaseEntity
     {
-        [Key]
         [Column("recruitment_request_id")]
-        public string RecruitmentRequestId { get; set; } = default!;
+        public string ? RecruitmentRequestId { get; set; }
 
         [Column("position_title")]
         [Required]

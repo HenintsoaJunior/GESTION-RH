@@ -45,6 +45,7 @@ namespace MyApp.Api.Controllers.direction
 
             var direction = new Direction
             {
+                DirectionId = Guid.NewGuid().ToString(),
                 DirectionName = form.DirectionName,
                 Acronym = form.Acronym
             };

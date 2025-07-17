@@ -1,223 +1,235 @@
 :root {
-  /* Couleurs principales */
-  --primary-color: #69b42e;
-  --primary-hover: #5a9625;
-  --primary-light: rgba(105, 180, 46, 0.1);
-  --primary-shadow: rgba(105, 180, 46, 0.2);
-  --primary-shadow-hover: rgba(105, 180, 46, 0.3);
-  --text-primary: #9d9d9c;
-  --error-color: #e74c3c;
-  --error-hover: #d62c1a;
+  /* Couleurs ERP - Palette professionnelle */
+  --erp-primary: #2563eb;
+  --erp-primary-hover: #1d4ed8;
+  --erp-primary-light: rgba(37, 99, 235, 0.1);
+  --erp-accent: #06b6d4;
+  --erp-accent-hover: #0891b2;
+  
+  /* Couleurs de fond ERP */
+  --erp-bg-primary: #ffffff;
+  --erp-bg-secondary: #f8fafc;
+  --erp-bg-tertiary: #f1f5f9;
+  --erp-bg-card: #ffffff;
+  --erp-bg-overlay: rgba(15, 23, 42, 0.1);
 
-  /* Couleurs de fond */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #fafafa;
+  /* Couleurs de texte ERP */
+  --erp-text-primary: #0f172a;
+  --erp-text-secondary: #475569;
+  --erp-text-muted: #64748b;
+  --erp-text-light: #94a3b8;
+  --erp-text-white: #ffffff;
 
-  /* Couleurs de texte */
-  --text-secondary: #555555;
-  --text-muted: #6b7280;
-  --text-light: #9ca3af;
-  --text-placeholder: #9ca3af;
-  --text-input: #000000;
+  /* Couleurs de bordure ERP */
+  --erp-border-light: #e2e8f0;
+  --erp-border-medium: #cbd5e1;
+  --erp-border-focus: var(--erp-primary);
 
-  /* Couleurs de bordure */
-  --border-light: #ddd;
-  --border-medium: #d1d5db;
-  --border-focus: var(--primary-color);
+  /* Espacements ERP */
+  --erp-spacing-xs: 2px;
+  --erp-spacing-sm: 4px;
+  --erp-spacing-md: 8px;
+  --erp-spacing-lg: 12px;
+  --erp-spacing-xl: 16px;
+  --erp-spacing-2xl: 20px;
+  --erp-spacing-3xl: 24px;
+  --erp-spacing-4xl: 32px;
 
-  /* Espacements */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 20px;
-  --spacing-2xl: 24px;
-  --spacing-3xl: 32px;
-  --spacing-4xl: 40px;
+  /* Rayons de bordure ERP - Plus carrés */
+  --erp-radius-sm: 2px;
+  --erp-radius-md: 4px;
+  --erp-radius-lg: 6px;
+  --erp-radius-xl: 8px;
 
-  /* Rayons de bordure */
-  --radius-sm: 3px;
-  --radius-md: 4px;
-  --radius-lg: 12px;
+  /* Typographie ERP */
+  --erp-font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --erp-font-size-xs: 11px;
+  --erp-font-size-sm: 12px;
+  --erp-font-size-md: 14px;
+  --erp-font-size-lg: 16px;
+  --erp-font-size-xl: 18px;
+  --erp-font-size-2xl: 20px;
+  --erp-font-weight-normal: 400;
+  --erp-font-weight-medium: 500;
+  --erp-font-weight-semibold: 600;
 
-  /* Typographie */
-  --font-family: "Montserrat", sans-serif;
-  --font-size-xs: 12px;
-  --font-size-sm: 14px;
-  --font-size-md: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
+  /* Ombres ERP - Plus subtiles */
+  --erp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --erp-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --erp-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --erp-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
-  /* Ombres */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
-  --shadow-focus: 0 0 4px var(--primary-shadow);
+/* Couleurs spécifiques pour les alerts ERP - Thème clair */
+  --erp-success-bg: #f0fdf4;
+  --erp-success-border: #16a34a;
+  --erp-success-text: #15803d;
+  --erp-success-icon: #16a34a;
+  --erp-success-icon-bg: #dcfce7;
 
-  /* Couleurs spécifiques pour les alerts */
-  --success-bg: #f0f9f0;
-  --success-border: var(--primary-color);
-  --success-text: #2d5016;
-  --success-icon: var(--primary-color);
+  --erp-error-bg: #fef2f2;
+  --erp-error-border: #dc2626;
+  --erp-error-text: #b91c1c;
+  --erp-error-icon: #dc2626;
+  --erp-error-icon-bg: #fee2e2;
 
-  --error-bg: #fef2f2;
-  --error-border: var(--error-color);
-  --error-text: #7f1d1d;
-  --error-icon: var(--error-color);
+  --erp-info-bg: #eff6ff;
+  --erp-info-border: #2563eb;
+  --erp-info-text: #1d4ed8;
+  --erp-info-icon: #2563eb;
+  --erp-info-icon-bg: #dbeafe;
 
-  --info-bg: #eff6ff;
-  --info-border: #3b82f6;
-  --info-text: #1e3a8a;
-  --info-icon: #3b82f6;
-
-  --warning-bg: #fffbeb;
-  --warning-border: #f59e0b;
-  --warning-text: #92400e;
-  --warning-icon: #f59e0b;
+  --erp-warning-bg: #fffbeb;
+  --erp-warning-border: #d97706;
+  --erp-warning-text: #b45309;
+  --erp-warning-icon: #d97706;
+  --erp-warning-icon-bg: #fef3c7;
 }
 
-/* Container principal de l'alert */
+/* Container principal de l'alert - Style ERP */
 .alert-container {
   position: fixed;
-  top: var(--spacing-2xl);
-  right: var(--spacing-2xl);
-  z-index: 1000;
-  width: 400px;
-  max-width: calc(100vw - var(--spacing-4xl));
-  font-family: var(--font-family);
+  top: 72px; /* Position standard ERP */
+  right: var(--erp-spacing-2xl);
+  z-index: 9999;
+  font-family: var(--erp-font-family);
+  width: 100%;
+  max-width: 420px;
+  pointer-events: none;
 }
 
-/* Alert principale */
+/* Alert principale - Design ERP professionnel */
 .alert {
-  background: var(--bg-primary);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--border-light);
+  background: var(--alert-bg-color);
+  border-radius: var(--erp-radius-lg);
+  box-shadow: var(--erp-shadow-lg);
+  border: 1px solid var(--alert-border-color);
+  border-left: 4px solid var(--alert-border-color);
   overflow: hidden;
   position: relative;
+  width: 100%;
+  pointer-events: auto;
   transform: translateX(100%);
   opacity: 0;
-  animation: slideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  animation: slideInRight 0.3s ease-out forwards;
+  backdrop-filter: blur(8px);
 }
 
 .alert.closing {
-  animation: slideOut 0.3s ease-in-out forwards;
+  animation: slideOutRight 0.25s ease-in forwards;
 }
 
-/* Barre colorée à gauche */
-.alert::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--alert-border-color);
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-}
-
-/* Contenu de l'alert */
+/* Contenu de l'alert - Layout ERP */
 .alert-content {
-  padding: var(--spacing-xl);
+  padding: var(--erp-spacing-xl);
   display: flex;
   align-items: flex-start;
-  gap: var(--spacing-md);
-  background: var(--alert-bg-color);
+  gap: var(--erp-spacing-lg);
   position: relative;
+  z-index: 1;
 }
 
-/* Icône */
+/* Icône - Style ERP minimaliste */
 .alert-icon {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--erp-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--alert-icon-bg);
   color: var(--alert-icon-color);
-  margin-top: 2px;
+  margin-top: var(--erp-spacing-xs);
 }
 
-/* Message */
+/* Message - Typographie ERP */
 .alert-message {
   flex: 1;
   margin: 0;
-  font-size: var(--font-size-sm);
-  font-weight: 500;
+  font-size: var(--erp-font-size-sm);
+  font-weight: var(--erp-font-weight-medium);
   color: var(--alert-text-color);
   line-height: 1.5;
+  margin-top: var(--erp-spacing-sm);
+  letter-spacing: -0.01em;
 }
 
-/* Bouton de fermeture */
+/* Bouton de fermeture - Style ERP thème clair */
 .alert-close {
   flex-shrink: 0;
   background: none;
   border: none;
   color: var(--alert-text-color);
   cursor: pointer;
-  padding: var(--spacing-xs);
-  border-radius: var(--radius-sm);
+  padding: var(--erp-spacing-sm);
+  border-radius: var(--erp-radius-sm);
   transition: all 0.2s ease;
-  opacity: 0.7;
-  margin-top: -2px;
+  opacity: 0.6;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--erp-spacing-xs);
 }
 
 .alert-close:hover {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.05);
-  transform: scale(1.1);
+  background: rgba(0, 0, 0, 0.08);
+  transform: scale(1.05);
 }
 
-/* Barre de progression */
+.alert-close:active {
+  transform: scale(0.95);
+}
+
+/* Barre de progression - Style ERP discret */
 .alert-progress {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 3px;
+  height: 2px;
   background: var(--alert-border-color);
-  border-radius: 0 0 0 var(--radius-sm);
+  border-radius: 0;
   animation: progress 5s linear forwards;
-  opacity: 0.6;
+  opacity: 0.3;
 }
 
-/* Types d'alerts */
+/* Types d'alerts - Couleurs ERP */
 .alert-success {
-  --alert-bg-color: var(--success-bg);
-  --alert-border-color: var(--success-border);
-  --alert-text-color: var(--success-text);
-  --alert-icon-color: var(--success-icon);
-  --alert-icon-bg: rgba(105, 180, 46, 0.15);
+  --alert-bg-color: var(--erp-success-bg);
+  --alert-border-color: var(--erp-success-border);
+  --alert-text-color: var(--erp-success-text);
+  --alert-icon-color: var(--erp-success-icon);
+  --alert-icon-bg: var(--erp-success-icon-bg);
 }
 
 .alert-error {
-  --alert-bg-color: var(--error-bg);
-  --alert-border-color: var(--error-border);
-  --alert-text-color: var(--error-text);
-  --alert-icon-color: var(--error-icon);
-  --alert-icon-bg: rgba(231, 76, 60, 0.15);
+  --alert-bg-color: var(--erp-error-bg);
+  --alert-border-color: var(--erp-error-border);
+  --alert-text-color: var(--erp-error-text);
+  --alert-icon-color: var(--erp-error-icon);
+  --alert-icon-bg: var(--erp-error-icon-bg);
 }
 
 .alert-info {
-  --alert-bg-color: var(--info-bg);
-  --alert-border-color: var(--info-border);
-  --alert-text-color: var(--info-text);
-  --alert-icon-color: var(--info-icon);
-  --alert-icon-bg: rgba(59, 130, 246, 0.15);
+  --alert-bg-color: var(--erp-info-bg);
+  --alert-border-color: var(--erp-info-border);
+  --alert-text-color: var(--erp-info-text);
+  --alert-icon-color: var(--erp-info-icon);
+  --alert-icon-bg: var(--erp-info-icon-bg);
 }
 
 .alert-warning {
-  --alert-bg-color: var(--warning-bg);
-  --alert-border-color: var(--warning-border);
-  --alert-text-color: var(--warning-text);
-  --alert-icon-color: var(--warning-icon);
-  --alert-icon-bg: rgba(245, 158, 11, 0.15);
+  --alert-bg-color: var(--erp-warning-bg);
+  --alert-border-color: var(--erp-warning-border);
+  --alert-text-color: var(--erp-warning-text);
+  --alert-icon-color: var(--erp-warning-icon);
+  --alert-icon-bg: var(--erp-warning-icon-bg);
 }
 
-/* Animations */
-@keyframes slideIn {
+/* Animations ERP - Slide depuis la droite */
+@keyframes slideInRight {
   from {
     transform: translateX(100%);
     opacity: 0;
@@ -228,7 +240,7 @@
   }
 }
 
-@keyframes slideOut {
+@keyframes slideOutRight {
   from {
     transform: translateX(0);
     opacity: 1;
@@ -248,32 +260,109 @@
   }
 }
 
-/* Responsive */
-@media (max-width: 640px) {
+/* Responsive ERP */
+@media (max-width: 768px) {
   .alert-container {
-    top: var(--spacing-lg);
-    right: var(--spacing-lg);
-    left: var(--spacing-lg);
-    width: auto;
+    right: var(--erp-spacing-lg);
+    left: var(--erp-spacing-lg);
     max-width: none;
+    top: 60px;
   }
 
   .alert-content {
-    padding: var(--spacing-lg);
+    padding: var(--erp-spacing-lg);
+    gap: var(--erp-spacing-md);
+  }
+
+  .alert-icon {
+    width: 28px;
+    height: 28px;
   }
 
   .alert-message {
-    font-size: var(--font-size-xs);
+    font-size: var(--erp-font-size-xs);
+  }
+
+  .alert-close {
+    width: 24px;
+    height: 24px;
+    padding: var(--erp-spacing-xs);
   }
 }
 
-/* Effet de hover sur l'alert entière */
+/* Effet hover ERP subtil */
 .alert:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15), 0 6px 15px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  box-shadow: var(--erp-shadow-xl);
+  transition: box-shadow 0.2s ease;
 }
 
 .alert:hover .alert-progress {
   animation-play-state: paused;
+}
+
+/* Thème clair uniquement - Design ERP optimisé */
+:root {
+  /* Couleurs renforcées pour le thème clair */
+  --erp-bg-primary: #ffffff;
+  --erp-bg-secondary: #f8fafc;
+  --erp-bg-tertiary: #f1f5f9;
+  --erp-bg-card: #ffffff;
+  --erp-text-primary: #0f172a;
+  --erp-text-secondary: #475569;
+  --erp-text-muted: #64748b;
+  --erp-border-light: #e2e8f0;
+  --erp-border-medium: #cbd5e1;
+
+  /* Couleurs des alerts optimisées pour le clair */
+  --erp-success-bg: #f0fdf4;
+  --erp-success-border: #16a34a;
+  --erp-success-text: #15803d;
+  --erp-success-icon: #16a34a;
+  --erp-success-icon-bg: #dcfce7;
+
+  --erp-error-bg: #fef2f2;
+  --erp-error-border: #dc2626;
+  --erp-error-text: #b91c1c;
+  --erp-error-icon: #dc2626;
+  --erp-error-icon-bg: #fee2e2;
+
+  --erp-info-bg: #eff6ff;
+  --erp-info-border: #2563eb;
+  --erp-info-text: #1d4ed8;
+  --erp-info-icon: #2563eb;
+  --erp-info-icon-bg: #dbeafe;
+
+  --erp-warning-bg: #fffbeb;
+  --erp-warning-border: #d97706;
+  --erp-warning-text: #b45309;
+  --erp-warning-icon: #d97706;
+  --erp-warning-icon-bg: #fef3c7;
+}
+
+/* Accessibilité ERP */
+@media (prefers-reduced-motion: reduce) {
+  .alert,
+  .alert-close {
+    animation: none;
+    transition: none;
+  }
+  
+  .alert-progress {
+    animation: none;
+  }
+}
+
+/* Focus states pour accessibilité */
+.alert-close:focus {
+  outline: 2px solid var(--erp-primary);
+  outline-offset: 2px;
+}
+
+/* États multiples alerts */
+.alert-container + .alert-container {
+  top: calc(72px + 80px);
+}
+
+.alert-container + .alert-container + .alert-container {
+  top: calc(72px + 160px);
 }

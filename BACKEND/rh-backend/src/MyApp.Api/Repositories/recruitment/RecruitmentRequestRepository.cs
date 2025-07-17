@@ -1,3 +1,4 @@
+// ===== REPOSITORY INTERFACE =====
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.recruitment;
@@ -14,8 +15,10 @@ namespace MyApp.Api.Repositories.recruitment
         Task UpdateAsync(RecruitmentRequest request);
         Task DeleteAsync(string id);
         Task SaveChangesAsync();
+        Task ReloadAsync(RecruitmentRequest request); // NOUVELLE MÉTHODE
     }
 
+    // ===== REPOSITORY IMPLEMENTATION =====
     public class RecruitmentRequestRepository : IRecruitmentRequestRepository
     {
         private readonly AppDbContext _context;
@@ -77,6 +80,12 @@ namespace MyApp.Api.Repositories.recruitment
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
+        }
+
+        // NOUVELLE MÉTHODE - Recharge l'entité depuis la base de données
+        public async Task ReloadAsync(RecruitmentRequest request)
+        {
+            await _context.Entry(request).ReloadAsync();
         }
     }
 }

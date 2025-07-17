@@ -45,6 +45,7 @@ namespace MyApp.Api.Controllers.direction
 
             var service = new Service
             {
+                ServiceId = Guid.NewGuid().ToString(),
                 ServiceName = form.ServiceName,
                 DepartmentId = form.DepartmentId
             };

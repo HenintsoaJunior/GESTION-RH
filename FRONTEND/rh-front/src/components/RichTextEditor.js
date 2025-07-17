@@ -1,22 +1,16 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import Quill from "quill"
-import "../styles/quill.snow.css"
 
+let isQuillScriptLoaded = false
 
-export default function RichTextEditor({ 
-  placeholder, 
-  onChange, 
-  disabled 
-}) {
+export default function RichTextEditor({ placeholder, onChange, disabled }) {
   const quillRef = useRef(null)
-  const editorRef = useRef(null)
 
   useEffect(() => {
     const initializeQuill = () => {
-      if (!quillRef.current && editorRef.current) {
-        const Embed = Quill.import("blots/embed")
+      if (typeof window !== "undefined" && window.Quill && !quillRef.current) {
+        const Embed = window.Quill.import("blots/embed")
 
         class AttachmentBlot extends Embed {
           static create(value) {
@@ -41,9 +35,9 @@ export default function RichTextEditor({
         AttachmentBlot.tagName = "div"
         AttachmentBlot.className = "ql-attachment"
 
-        Quill.register(AttachmentBlot)
+        window.Quill.register(AttachmentBlot)
 
-        quillRef.current = new Quill(editorRef.current, {
+        quillRef.current = new window.Quill("#editor", {
           theme: "snow",
           modules: {
             toolbar: {
@@ -86,34 +80,26 @@ export default function RichTextEditor({
             onChange(quillRef.current.root.innerHTML)
           }
         })
-
-        // Gérer l'état disabled
-        if (disabled) {
-          quillRef.current.disable()
-        }
       }
     }
 
-    initializeQuill()
-
-    // Cleanup function
-    return () => {
-      if (quillRef.current) {
-        quillRef.current = null
+    if (typeof window !== "undefined" && !isQuillScriptLoaded && !window.Quill) {
+      const script = document.createElement("script")
+      script.src = "https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"
+      script.async = true
+      script.onload = () => {
+        isQuillScriptLoaded = true
+        initializeQuill()
       }
-    }
-  }, [placeholder, onChange, disabled])
+      script.onerror = () => console.error("Failed to load Quill script")
+      document.head.appendChild(script)
 
-  // Gérer les changements de l'état disabled
-  useEffect(() => {
-    if (quillRef.current) {
-      if (disabled) {
-        quillRef.current.disable()
-      } else {
-        quillRef.current.enable()
+      return () => {
       }
+    } else {
+      initializeQuill()
     }
-  }, [disabled])
+  }, [placeholder, onChange])
 
   const getFileIcon = (type) => {
     if (type.startsWith("image/")) return "🖼️"
@@ -132,42 +118,8 @@ export default function RichTextEditor({
 
   return (
     <div className="rich-editor-container">
-      <style jsx>{`
-        .rich-editor-container .ql-editor {
-          min-height: 200px;
-          max-height: 400px;
-          overflow-y: auto;
-        }
-        
-        .rich-editor-container .ql-attachment {
-          margin: 10px 0;
-          padding: 10px;
-          border: 1px solid #e0e0e0;
-          border-radius: 4px;
-          background-color: #f9f9f9;
-        }
-        
-        .rich-editor-container .attachment-preview {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .rich-editor-container .attachment-icon {
-          font-size: 16px;
-        }
-        
-        .rich-editor-container .attachment-name {
-          font-weight: 500;
-          flex: 1;
-        }
-        
-        .rich-editor-container .attachment-size {
-          color: #666;
-          font-size: 12px;
-        }
-      `}</style>
-      <div ref={editorRef}></div>
+      <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
+      <div id="editor" style={{ minHeight: "200px", opacity: disabled ? 0.5 : 1 }}></div>
     </div>
   )
 }

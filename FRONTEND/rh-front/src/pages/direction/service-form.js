@@ -79,9 +79,9 @@ export default function ServiceForm() {
         showAlert("success", "Service créé avec succès !");
         event.target.reset();
         setFormData({ serviceName: "", departmentId: "" });
-        if (returnUrl) {
-          window.location.href = returnUrl;
-        }
+        // if (returnUrl) {
+        //   window.location.href = returnUrl;
+        // }
       } else {
         const errorData = await response.json();
         const message = errorData.message || `Erreur ${response.status}: Échec de la création du service.`;

@@ -90,9 +90,9 @@ export default function DepartmentForm() {
         showAlert("success", "Département créé avec succès !");
         event.target.reset();
         setFormData({ departmentName: "", directionId: "" });
-        if (returnUrl) {
-          window.location.href = returnUrl;
-        }
+        // if (returnUrl) {
+        //   window.location.href = returnUrl;
+        // }
       } else {
         const errorData = await response.json();
         const message = errorData.message || `Erreur ${response.status}: Échec de la création du département.`;
