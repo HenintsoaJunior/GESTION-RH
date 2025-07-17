@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Entities.jobs;
 using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.site;
+using MyApp.Api.Models.form.jobs;
 
 namespace MyApp.Api.Entities.jobs
 {
@@ -50,5 +51,18 @@ namespace MyApp.Api.Entities.jobs
 
         [ForeignKey("DescriptionId")]
         public JobDescription? JobDescription { get; set; }
+
+        public JobOffer() { }
+        public JobOffer(JobOfferDTOForm jobOfferDTOForm)
+        {
+            OfferId = jobOfferDTOForm.OfferId;
+            Status = jobOfferDTOForm.Status;
+            PublicationDate = jobOfferDTOForm.PublicationDate;
+            DeadlineDate = jobOfferDTOForm.DeadlineDate;
+            Duration = jobOfferDTOForm.Duration;
+            ContractTypeId = jobOfferDTOForm.ContractTypeId;
+            SiteId = jobOfferDTOForm.SiteId;
+            DescriptionId = jobOfferDTOForm.DescriptionId;
+        }
     }
 }
