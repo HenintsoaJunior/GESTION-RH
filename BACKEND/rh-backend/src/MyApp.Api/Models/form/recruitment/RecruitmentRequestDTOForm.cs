@@ -44,9 +44,9 @@ namespace MyApp.Api.Models.form.recruitment
 
         [Required]
         public string RecruitmentReasonId { get; set; } = null!;
-        public RecruitmentRequestDetailDTOForm RecruitmentRequestDetail { get; set; } = null!;
-        public RecruitmentApprovalDTOForm RecruitmentApproval { get; set; } = null!;
-        public IEnumerable<RecruitmentRequestReplacementReasonDTOForm>? ReplacementReasons { get; set; } = null;
-        public IEnumerable<ApprovalFlowDTOForm>? ApprovalFlows { get; set; } = null;
+        // public RecruitmentRequestDetailDTOForm RecruitmentRequestDetail { get; set; } = null!;
+        // public RecruitmentApprovalDTOForm RecruitmentApproval { get; set; } = null!;
+        // public IEnumerable<RecruitmentRequestReplacementReasonDTOForm>? ReplacementReasons { get; set; } = null;
+        // public IEnumerable<ApprovalFlowDTOForm>? ApprovalFlows { get; set; } = null;
     }
 }

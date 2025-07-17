@@ -57,6 +57,7 @@ namespace MyApp.Api.Controllers.recruitment
         {
             var request = new RecruitmentRequest
             {
+                //RecruitmentRequestId = Guid.NewGuid().ToString(),
                 PositionTitle = requestForm.PositionTitle,
                 PositionCount = requestForm.PositionCount,
                 ContractDuration = requestForm.ContractDuration,
@@ -72,45 +73,6 @@ namespace MyApp.Api.Controllers.recruitment
                 ContractTypeId = requestForm.ContractTypeId,
                 SiteId = requestForm.SiteId,
                 RecruitmentReasonId = requestForm.RecruitmentReasonId,
-
-                RecruitmentRequestDetail = new RecruitmentRequestDetail
-                {
-                    SupervisorPosition = requestForm.RecruitmentRequestDetail.SupervisorPosition,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    DirectionId = requestForm.RecruitmentRequestDetail.DirectionId,
-                    DepartmentId = requestForm.RecruitmentRequestDetail.DepartmentId,
-                    ServiceId = requestForm.RecruitmentRequestDetail.ServiceId,
-                    DirectSupervisorId = requestForm.RecruitmentRequestDetail.DirectSupervisorId,
-                },
-
-                RecruitmentApproval = new RecruitmentApproval
-                {
-                    ApproverId = requestForm.RecruitmentApproval.ApproverId,
-                    ApprovalFlowId = requestForm.RecruitmentApproval.ApprovalFlowId,
-                    Status = requestForm.RecruitmentApproval.Status,
-                    ApprovalOrder = requestForm.RecruitmentApproval.ApprovalOrder,
-                    ApprovalDate = requestForm.RecruitmentApproval.ApprovalDate,
-                    Comment = requestForm.RecruitmentApproval.Comment,
-                    Signature = requestForm.RecruitmentApproval.Signature,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                },
-
-                ReplacementReasons = requestForm.ReplacementReasons?.Select(rr => new RecruitmentRequestReplacementReason
-                {
-                    ReplacementReasonId = rr.ReplacementReasonId,
-                    Description = rr.Description
-                }),
-
-                ApprovalFlows = requestForm.ApprovalFlows?.Select(flow => new ApprovalFlow
-                {
-                    ApprovalOrder = flow.ApprovalOrder,
-                    ApproverRole = flow.ApproverRole,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    ApproverId = flow.ApproverId
-                }).ToList()
             };
 
             await _service.CreateRequest(request);

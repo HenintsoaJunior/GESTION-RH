@@ -1,67 +1,68 @@
-import "../../../styles/generic-form-styles.css";
 import { useState, useEffect } from "react";
-import { BASE_URL } from "../../../config/apiConfig";
+import * as FaIcons from "react-icons/fa";
 import RichTextEditor from "../../../components/RichTextEditor";
 import Alert from "../../../components/Alert";
-import * as FaIcons from "react-icons/fa";
 import AutoCompleteInput from "../../../components/AutoCompleteInput";
+import "../../../styles/generic-form-styles.css";
+import {
+  fetchData,
+  getContractTypeId,
+  getSiteId,
+  getRecruitmentReasonId,
+  getReplacementReasonId,
+  getDirectionId,
+  getDepartmentId,
+  getServiceId,
+  getSupervisorId,
+  showAlert,
+  handleAddNewSuggestion,
+} from "../../../utils/utils";
+import { BASE_URL } from "../../../config/apiConfig";
 
 export default function RecruitmentRequestForm() {
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
+  const [formData, setFormData] = useState({
+    positionInfo: { intitule: "", effectif: 1 },
+    contractType: { selectedType: "", duree: "", autreDetail: "" },
+    attachment: {
+      typeContrat: "",
+      direction: "",
+      departement: "",
+      service: "",
+      superieurHierarchique: "",
+      fonctionSuperieur: "",
+    },
+    workSite: { selectedSite: "" },
+    recruitmentMotive: "",
+    replacementDetails: {
+      motifs: [{ motifRemplacement: "", detail: "" }],
+      dateSurvenance: "",
+      nomPrenomsTitulaire: "",
+      datePriseService: "",
+    },
+    description: "",
+    selectedFiles: [],
+  });
   const [contractTypes, setContractTypes] = useState([]);
-  const [departments, setDepartments] = useState([]);
   const [directions, setDirections] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [sites, setSites] = useState([]);
   const [services, setServices] = useState([]);
   const [recruitmentReasons, setRecruitmentReasons] = useState([]);
   const [replacementReasons, setReplacementReasons] = useState([]);
-  const [isLoadingContractTypes, setIsLoadingContractTypes] = useState(true);
-  const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
-  const [isLoadingDirections, setIsLoadingDirections] = useState(true);
-  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
-  const [isLoadingSites, setIsLoadingSites] = useState(true);
-  const [isLoadingServices, setIsLoadingServices] = useState(true);
-  const [isLoadingRecruitmentReasons, setIsLoadingRecruitmentReasons] = useState(true);
-  const [isLoadingReplacementReasons, setIsLoadingReplacementReasons] = useState(true);
-
-  const [positionInfo, setPositionInfo] = useState({
-    intitule: "",
-    effectif: 1,
+  const [isLoading, setIsLoading] = useState({
+    contractTypes: true,
+    directions: true,
+    departments: true,
+    employees: true,
+    sites: true,
+    services: true,
+    recruitmentReasons: true,
+    replacementReasons: true,
   });
-
-  const [contractType, setContractType] = useState({
-    selectedType: "",
-    duree: "",
-    autreDetail: "",
-  });
-
-  const [attachment, setAttachment] = useState({
-    typeContrat: "",
-    direction: "",
-    departement: "",
-    service: "",
-    superieurHierarchique: "",
-    fonctionSuperieur: "",
-  });
-
-  const [workSite, setWorkSite] = useState({
-    selectedSite: "",
-  });
-
-  const [recruitmentMotive, setRecruitmentMotive] = useState("");
-
-  const [replacementDetails, setReplacementDetails] = useState({
-    motifs: [{ motifRemplacement: "", detail: "" }],
-    dateSurvenance: "",
-    nomPrenomsTitulaire: "",
-    datePriseService: "",
-  });
-
   const [suggestions, setSuggestions] = useState({
     typeContrat: [],
     direction: [],
@@ -73,349 +74,107 @@ export default function RecruitmentRequestForm() {
     site: [],
   });
 
-  // Fetch Contract Types
-  const fetchContractTypes = async () => {
-    try {
-      setIsLoadingContractTypes(true);
-      const response = await fetch(`${BASE_URL}/api/ContractType`, {
-        method: "GET",
-        headers: { accept: "application/json" },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setContractTypes(data);
-        setSuggestions((prev) => ({
-          ...prev,
-          typeContrat: data.map((ct) => ct.code),
-        }));
-      } else {
-        showAlert("warning", "Impossible de charger les types de contrat.");
-        setSuggestions((prev) => ({
-          ...prev,
-          typeContrat: ["CDD", "CDI", "CTT"],
-        }));
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des types de contrat:", error);
-      showAlert("warning", "Erreur de connexion pour les types de contrat.");
-      setSuggestions((prev) => ({
-        ...prev,
-        typeContrat: ["CDD", "CDI", "CTT"],
-      }));
-    } finally {
-      setIsLoadingContractTypes(false);
-    }
-  };
-
-  // Fetch Directions
-  const fetchDirections = async () => {
-    try {
-      setIsLoadingDirections(true);
-      const response = await fetch(`${BASE_URL}/api/Direction`, {
-        method: "GET",
-        headers: { accept: "application/json" },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDirections(data);
-        setSuggestions((prev) => ({
-          ...prev,
-          direction: data.map((dir) => dir.directionName),
-        }));
-      } else {
-        showAlert("warning", "Impossible de charger les directions.");
-        setSuggestions((prev) => ({
-          ...prev,
-          direction: ["Direction Technique", "Direction Commerciale et Marketing", "Ressources Humaines"],
-        }));
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des directions:", error);
-      showAlert("warning", "Erreur de connexion pour les directions.");
-      setSuggestions((prev) => ({
-        ...prev,
-        direction: ["Direction Technique", "Direction Commerciale et Marketing", "Ressources Humaines"],
-      }));
-    } finally {
-      setIsLoadingDirections(false);
-    }
-  };
-
-  // Fetch Departments
-  const fetchDepartments = async () => {
-    try {
-      setIsLoadingDepartments(true);
-      const response = await fetch(`${BASE_URL}/api/Department`, {
-        method: "GET",
-        headers: { accept: "application/json" },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data);
-        setSuggestions((prev) => ({
-          ...prev,
-          departement: data.map((dep) => dep.departmentName),
-        }));
-      } else {
-        showAlert("warning", "Impossible de charger les départements.");
-        setSuggestions((prev) => ({
-          ...prev,
-          departement: ["Bureau d'Études", "Marketing Digital", "Recrutement"],
-        }));
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des départements:", error);
-      showAlert("warning", "Erreur de connexion pour les départements.");
-      setSuggestions((prev) => ({
-        ...prev,
-        departement: ["Bureau d'Études", "Marketing Digital", "Recrutement"],
-      }));
-    } finally {
-      setIsLoadingDepartments(false);
-    }
-  };
-
-  // Fetch Employees
-  const fetchEmployees = async () => {
-    try {
-      setIsLoadingEmployees(true);
-      const response = await fetch(`${BASE_URL}/api/Employee`, {
-        method: "GET",
-        headers: { accept: "application/json" },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setEmployees(data);
-        setSuggestions((prev) => ({
-          ...prev,
-          superieurHierarchique: data.map((emp) => `${emp.firstName} ${emp.lastName}`),
-        }));
-      } else {
-        showAlert("warning", "Impossible de charger les employés.");
-        setSuggestions((prev) => ({
-          ...prev,
-          superieurHierarchique: ["Jean Dupont", "Marie Rakoto", "Sophie Lefèvre"],
-        }));
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des employés:", error);
-      showAlert("warning", "Erreur de connexion pour les employés.");
-      setSuggestions((prev) => ({
-        ...prev,
-        superieurHierarchique: ["Jean Dupont", "Marie Rakoto", "Sophie Lefèvre"],
-      }));
-    } finally {
-      setIsLoadingEmployees(false);
-    }
-  };
-
-  // Fetch Sites
-  const fetchSites = async () => {
-    try {
-      setIsLoadingSites(true);
-      const response = await fetch(`${BASE_URL}/api/Site`, {
-        method: "GET",
-        headers: { accept: "application/json" },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSites(data);
-        setSuggestions((prev) => ({
-          ...prev,
-          site: data.map((site) => site.siteName),
-        }));
-      } else {
-        showAlert("warning", "Impossible de charger les sites.");
-        setSuggestions((prev) => ({
-          ...prev,
-          site: ["Antananarivo", "Nosy Be"],
-        }));
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des sites:", error);
-      showAlert("warning", "Erreur de connexion pour les sites.");
-      setSuggestions((prev) => ({
-        ...prev,
-        site: ["Antananarivo", "Nosy Be"],
-      }));
-    } finally {
-      setIsLoadingSites(false);
-    }
-  };
-
-  // Fetch Services
-  const fetchServices = async () => {
-    try {
-      setIsLoadingServices(true);
-      const response = await fetch(`${BASE_URL}/api/Service`, {
-        method: "GET",
-        headers: { accept: "application/json" },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setServices(data);
-        setSuggestions((prev) => ({
-          ...prev,
-          service: data.map((service) => service.serviceName),
-        }));
-      } else {
-        showAlert("warning", "Impossible de charger les services.");
-        setSuggestions((prev) => ({
-          ...prev,
-          service: [
-            "Conception Technique",
-            "Campagnes Publicitaires",
-            "Contrôle Qualité",
-            "Formation Interne",
-            "Maintenance Réseau",
-            "Gestion des Stocks",
-            "Audit Financier",
-          ],
-        }));
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des services:", error);
-      showAlert("warning", "Erreur de connexion pour les services.");
-      setSuggestions((prev) => ({
-        ...prev,
-        service: [
-          "Conception Technique",
-          "Campagnes Publicitaires",
-          "Contrôle Qualité",
-          "Formation Interne",
-          "Maintenance Réseau",
-          "Gestion des Stocks",
-          "Audit Financier",
-        ],
-      }));
-    } finally {
-      setIsLoadingServices(false);
-    }
-  };
-
-  // Fetch Recruitment Reasons
-  const fetchRecruitmentReasons = async () => {
-    try {
-      setIsLoadingRecruitmentReasons(true);
-      const response = await fetch(`${BASE_URL}/api/RecruitmentReason`, {
-        method: "GET",
-        headers: { accept: "application/json" },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setRecruitmentReasons(data);
-      } else {
-        showAlert("warning", "Impossible de charger les motifs de recrutement.");
-        setRecruitmentReasons([
-          { recruitmentReasonId: "RR_0001", name: "Remplacement d'un employé" },
-          { recruitmentReasonId: "RR_0002", name: "Création d'un nouveau poste" },
-          { recruitmentReasonId: "RR_0003", name: "Dotation prévue au budget" },
-        ]);
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des motifs de recrutement:", error);
-      showAlert("warning", "Erreur de connexion pour les motifs de recrutement.");
-      setRecruitmentReasons([
-        { recruitmentReasonId: "RR_0001", name: "Remplacement d'un employé" },
-        { recruitmentReasonId: "RR_0002", name: "Création d'un nouveau poste" },
-        { recruitmentReasonId: "RR_0003", name: "Dotation prévue au budget" },
-      ]);
-    } finally {
-      setIsLoadingRecruitmentReasons(false);
-    }
-  };
-
-  // Fetch Replacement Reasons
-  const fetchReplacementReasons = async () => {
-    try {
-      setIsLoadingReplacementReasons(true);
-      const response = await fetch(`${BASE_URL}/api/ReplacementReason`, {
-        method: "GET",
-        headers: { accept: "application/json" },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setReplacementReasons(data);
-        setSuggestions((prev) => ({
-          ...prev,
-          motifRemplacement: data.map((reason) => reason.name),
-        }));
-      } else {
-        showAlert("warning", "Impossible de charger les raisons de remplacement.");
-        setSuggestions((prev) => ({
-          ...prev,
-          motifRemplacement: [
-            "Décès",
-            "Démission",
-            "Essai non-concluant",
-            "Licenciement",
-            "Mobilité interne",
-            "Retraite",
-            "Rupture de contrat à l’amiable",
-          ],
-        }));
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des raisons de remplacement:", error);
-      showAlert("warning", "Erreur de connexion pour les raisons de remplacement.");
-      setSuggestions((prev) => ({
-        ...prev,
-        motifRemplacement: [
-          "Décès",
-          "Démission",
-          "Essai non-concluant",
-          "Licenciement",
-          "Mobilité interne",
-          "Retraite",
-          "Rupture de contrat à l’amiable",
-        ],
-      }));
-    } finally {
-      setIsLoadingReplacementReasons(false);
-    }
-  };
-
   // Load all data on component mount
   useEffect(() => {
-    fetchContractTypes();
-    fetchDirections();
-    fetchDepartments();
-    fetchEmployees();
-    fetchSites();
-    fetchServices();
-    fetchRecruitmentReasons();
-    fetchReplacementReasons();
+    fetchData(
+      "/api/ContractType",
+      setContractTypes,
+      setIsLoading,
+      setSuggestions,
+      "contractTypes",
+      "typeContrat",
+      (ct) => ct.code,
+      "les types de contrat",
+      (type, message) => showAlert(setAlert, type, message)
+    );
+    fetchData(
+      "/api/Direction",
+      setDirections,
+      setIsLoading,
+      setSuggestions,
+      "directions",
+      "direction",
+      (dir) => dir.directionName,
+      "les directions",
+      (type, message) => showAlert(setAlert, type, message)
+    );
+    fetchData(
+      "/api/Department",
+      setDepartments,
+      setIsLoading,
+      setSuggestions,
+      "departments",
+      "departement",
+      (dep) => dep.departmentName,
+      "les départements",
+      (type, message) => showAlert(setAlert, type, message)
+    );
+    fetchData(
+      "/api/Employee",
+      setEmployees,
+      setIsLoading,
+      setSuggestions,
+      "employees",
+      "superieurHierarchique",
+      (emp) => `${emp.firstName} ${emp.lastName}`,
+      "les employés",
+      (type, message) => showAlert(setAlert, type, message)
+    );
+    fetchData(
+      "/api/Site",
+      setSites,
+      setIsLoading,
+      setSuggestions,
+      "sites",
+      "site",
+      (site) => site.siteName,
+      "les sites",
+      (type, message) => showAlert(setAlert, type, message)
+    );
+    fetchData(
+      "/api/Service",
+      setServices,
+      setIsLoading,
+      setSuggestions,
+      "services",
+      "service",
+      (service) => service.serviceName,
+      "les services",
+      (type, message) => showAlert(setAlert, type, message)
+    );
+    fetchData(
+      "/api/RecruitmentReason",
+      setRecruitmentReasons,
+      setIsLoading,
+      setSuggestions,
+      "recruitmentReasons",
+      null,
+      null,
+      "les motifs de recrutement",
+      (type, message) => showAlert(setAlert, type, message)
+    );
+    fetchData(
+      "/api/ReplacementReason",
+      setReplacementReasons,
+      setIsLoading,
+      setSuggestions,
+      "replacementReasons",
+      "motifRemplacement",
+      (reason) => reason.name,
+      "les raisons de remplacement",
+      (type, message) => showAlert(setAlert, type, message)
+    );
   }, []);
 
-  const getContractTypeId = (label) => {
-    const contractType = contractTypes.find((ct) => ct.label === label);
-    return contractType ? contractType.contractTypeId : null;
-  };
-
-  const getContractTypeCode = (label) => {
-    const contractType = contractTypes.find((ct) => ct.label === label);
-    return contractType ? contractType.code : null;
-  };
-
-  const showAlert = (type, message) => {
-    setAlert({ isOpen: true, type, message });
-  };
-
-  const handleAddNewSuggestion = (field, value) => {
-    setSuggestions((prev) => ({
-      ...prev,
-      [field]: [...prev[field], value],
-    }));
-    showAlert("success", `"${value}" ajouté aux suggestions`);
-  };
-
+  // Handle file change
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    setSelectedFiles(files);
+    setFormData((prev) => ({ ...prev, selectedFiles: files }));
   };
 
+  // Handle navigation
   const handleNext = () => {
-    if (currentStep === 1) {
+    if (currentStep === 1 && validateFirstStep()) {
       setCurrentStep(2);
     }
   };
@@ -426,112 +185,207 @@ export default function RecruitmentRequestForm() {
     }
   };
 
+  // Handle adding/removing motifs
   const handleAddMotif = () => {
-    setReplacementDetails((prev) => ({
+    setFormData((prev) => ({
       ...prev,
-      motifs: [...prev.motifs, { motifRemplacement: "", detail: "" }],
+      replacementDetails: {
+        ...prev.replacementDetails,
+        motifs: [...prev.replacementDetails.motifs, { motifRemplacement: "", detail: "" }],
+      },
     }));
   };
 
   const handleRemoveMotif = (index) => {
-    setReplacementDetails((prev) => ({
+    setFormData((prev) => ({
       ...prev,
-      motifs: prev.motifs.filter((_, i) => i !== index),
+      replacementDetails: {
+        ...prev.replacementDetails,
+        motifs: prev.replacementDetails.motifs.filter((_, i) => i !== index),
+      },
     }));
   };
 
   const handleMotifChange = (index, field, value) => {
-    setReplacementDetails((prev) => {
-      const updatedMotifs = [...prev.motifs];
+    setFormData((prev) => {
+      const updatedMotifs = [...prev.replacementDetails.motifs];
       updatedMotifs[index] = { ...updatedMotifs[index], [field]: value };
-      return { ...prev, motifs: updatedMotifs };
+      return {
+        ...prev,
+        replacementDetails: { ...prev.replacementDetails, motifs: updatedMotifs },
+      };
     });
+  };
+
+  // Form validation
+  const validateFirstStep = () => {
+    const { positionInfo, attachment, workSite } = formData;
+    if (!positionInfo.intitule) {
+      showAlert(setAlert, "error", "L'intitulé du poste est requis.");
+      return false;
+    }
+    if (positionInfo.effectif < 1) {
+      showAlert(setAlert, "error", "L'effectif doit être supérieur ou égal à 1.");
+      return false;
+    }
+    if (!attachment.typeContrat) {
+      showAlert(setAlert, "error", "Le type de contrat est requis.");
+      return false;
+    }
+    if (!workSite.selectedSite) {
+      showAlert(setAlert, "error", "Le site de travail est requis.");
+      return false;
+    }
+    return true;
+  };
+
+  const validateSecondStep = () => {
+    const { recruitmentMotive, description, replacementDetails } = formData;
+    if (!recruitmentMotive) {
+      showAlert(setAlert, "error", "Le motif de recrutement est requis.");
+      return false;
+    }
+    if (recruitmentMotive === "Création d'un nouveau poste" && !description) {
+      showAlert(setAlert, "error", "La description du nouveau poste est requise.");
+      return false;
+    }
+    if (recruitmentMotive === "Remplacement d'un employé") {
+      if (
+        replacementDetails.motifs.some((motif) => !motif.motifRemplacement || !motif.detail)
+      ) {
+        showAlert(setAlert, "error", "Tous les motifs de remplacement doivent être remplis.");
+        return false;
+      }
+      if (!replacementDetails.nomPrenomsTitulaire) {
+        showAlert(setAlert, "error", "Le nom de l'ancien titulaire est requis.");
+        return false;
+      }
+    }
+    if (!replacementDetails.datePriseService) {
+      showAlert(setAlert, "error", "La date de prise de service est requise.");
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!validateSecondStep()) return;
     setIsSubmitting(true);
 
     try {
-      const formData = new FormData();
+      const { positionInfo, contractType, attachment, workSite, recruitmentMotive, replacementDetails, description, selectedFiles } = formData;
 
-      const contractTypeId = getContractTypeId(attachment.typeContrat);
-      const contractTypeCode = getContractTypeCode(attachment.typeContrat);
+      const filesString = selectedFiles.map(file => file.name).join(', ');
 
-      formData.append("RecruitmentRequestId", "");
-      formData.append("Description", description);
-      formData.append("Status", "En Cours");
-      formData.append("RequesterId", "USR001");
-      formData.append("RequestDate", new Date().toISOString());
-      formData.append("ApprovalDate", new Date().toISOString());
+      const requestData = {
+        positionTitle: positionInfo.intitule,
+        positionCount: positionInfo.effectif,
+        contractDuration: contractType.duree || "",
+        formerEmployeeName: replacementDetails.nomPrenomsTitulaire || "",
+        replacementDate: replacementDetails.dateSurvenance ? new Date(replacementDetails.dateSurvenance).toISOString() : new Date().toISOString(),
+        newPositionExplanation: description || "",
+        desiredStartDate: replacementDetails.datePriseService ? new Date(replacementDetails.datePriseService).toISOString() : new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: "En Cours",
+        files: filesString,
+        requesterId: "USR_0001", // TODO: Replace with authenticated user ID
+        contractTypeId: getContractTypeId(attachment.typeContrat, contractTypes) || "",
+        siteId: getSiteId(workSite.selectedSite, sites) || "",
+        recruitmentReasonId: getRecruitmentReasonId(recruitmentMotive, recruitmentReasons) || "",
+        recruitmentRequestDetail: {
+          supervisorPosition: attachment.fonctionSuperieur || "",
+          recruitmentRequestId: "",
+          directionId: getDirectionId(attachment.direction, directions) || "",
+          departmentId: getDepartmentId(attachment.departement, departments) || "",
+          serviceId: getServiceId(attachment.service, services) || "",
+          directSupervisorId: getSupervisorId(attachment.superieurHierarchique, employees) || "",
+        },
+        recruitmentApproval: {
+          approverId: "USR_0001", // TODO: Replace with dynamic value
+          approvalFlowId: "AF_0005", // TODO: Replace with dynamic value
+          status: "Pending",
+          approvalOrder: 0,
+          approvalDate: new Date().toISOString(),
+          comment: "",
+          signature: "",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        replacementReasons: replacementDetails.motifs
+          .filter(motif => motif.motifRemplacement && motif.detail)
+          .map((motif) => ({
+            recruitmentRequestId: "",
+            replacementReasonId: getReplacementReasonId(motif.motifRemplacement, replacementReasons) || "",
+            description: motif.detail,
+          })),
+        approvalFlows: [
+          {
+            approvalOrder: 1,
+            approverRole: "Chef d'Équipe", // TODO: Replace with dynamic value
+            approverId: "AF_0005", // TODO: Replace with dynamic value
+          },
+        ],
+      };
 
-      formData.append("PositionInfo", JSON.stringify(positionInfo));
-      formData.append(
-        "ContractType",
-        JSON.stringify({
-          ...contractType,
-          contractTypeId: contractTypeId,
-          contractTypeCode: contractTypeCode,
-          contractTypeLabel: attachment.typeContrat,
-        })
-      );
-      formData.append("Attachment", JSON.stringify(attachment));
-      formData.append("WorkSite", JSON.stringify(workSite));
-      formData.append("RecruitmentMotive", recruitmentMotive);
-      formData.append("ReplacementDetails", JSON.stringify(replacementDetails));
-      formData.append(
-        "PostCreation",
-        JSON.stringify({ justification: description, datePriseService: replacementDetails.datePriseService })
-      );
+      console.log("Données envoyées:", requestData);
 
-      selectedFiles.forEach((file) => {
-        formData.append("Files", file);
-      });
-
-      const response = await fetch(`${BASE_URL}/api/RecruitmentRequest`, {
+      const response = await fetch(`${BASE_URL}/api/RecruitmentRequest/create`, {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(requestData),
       });
 
       if (response.ok) {
-        await response.json();
-        showAlert("success", "Demande de recrutement soumise avec succès !");
+        const result = await response.json();
+        console.log("Réponse du serveur:", result);
+        showAlert(setAlert, "success", "Demande de recrutement soumise avec succès !");
         handleReset();
       } else {
-        await response.json();
-        showAlert("error", "Erreur lors de la soumission de la demande. Veuillez réessayer.");
+        const errorData = await response.text();
+        console.error("Erreur serveur:", errorData);
+        showAlert(setAlert, "error", `Erreur lors de la soumission : ${errorData || response.statusText}`);
       }
     } catch (error) {
-      showAlert("error", "Erreur de connexion. Veuillez vérifier votre connexion et réessayer.");
+      console.error("Erreur:", error);
+      showAlert(setAlert, "error", `Erreur de connexion : ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Reset form
   const handleReset = () => {
     setCurrentStep(1);
-    setSelectedFiles([]);
-    setDescription("");
-    setPositionInfo({ intitule: "", effectif: 1 });
-    setContractType({ selectedType: "", duree: "", autreDetail: "" });
-    setAttachment({
-      typeContrat: "",
-      direction: "",
-      departement: "",
-      service: "",
-      superieurHierarchique: "",
-      fonctionSuperieur: "",
-    });
-    setWorkSite({ selectedSite: "" });
-    setRecruitmentMotive("");
-    setReplacementDetails({
-      motifs: [{ motifRemplacement: "", detail: "" }],
-      dateSurvenance: "",
-      nomPrenomsTitulaire: "",
-      datePriseService: "",
+    setFormData({
+      positionInfo: { intitule: "", effectif: 1 },
+      contractType: { selectedType: "", duree: "", autreDetail: "" },
+      attachment: {
+        typeContrat: "",
+        direction: "",
+        departement: "",
+        service: "",
+        superieurHierarchique: "",
+        fonctionSuperieur: "",
+      },
+      workSite: { selectedSite: "" },
+      recruitmentMotive: "",
+      replacementDetails: {
+        motifs: [{ motifRemplacement: "", detail: "" }],
+        dateSurvenance: "",
+        nomPrenomsTitulaire: "",
+        datePriseService: "",
+      },
+      description: "",
+      selectedFiles: [],
     });
   };
 
+  // Render first step form
   const renderFirstForm = () => (
     <form id="recruitmentRequestForm" className="generic-form">
       <div className="form-section">
@@ -545,8 +399,13 @@ export default function RecruitmentRequestForm() {
               <td className="form-input-cell">
                 <input
                   type="text"
-                  value={positionInfo.intitule}
-                  onChange={(e) => setPositionInfo((prev) => ({ ...prev, intitule: e.target.value }))}
+                  value={formData.positionInfo.intitule}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      positionInfo: { ...prev.positionInfo, intitule: e.target.value },
+                    }))
+                  }
                   placeholder="Ex: Développeur Full Stack"
                   className="form-input"
                   required
@@ -559,9 +418,12 @@ export default function RecruitmentRequestForm() {
               <td className="form-input-cell">
                 <input
                   type="number"
-                  value={positionInfo.effectif}
+                  value={formData.positionInfo.effectif}
                   onChange={(e) =>
-                    setPositionInfo((prev) => ({ ...prev, effectif: parseInt(e.target.value) || 1 }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      positionInfo: { ...prev.positionInfo, effectif: parseInt(e.target.value) || 1 },
+                    }))
                   }
                   min="1"
                   className="form-input"
@@ -580,16 +442,27 @@ export default function RecruitmentRequestForm() {
           <tbody>
             <tr>
               <th className="form-label-cell">
-                <label className="form-label">Type de contrat</label>
+                <label className="form-label form-label-required">Type de contrat</label>
               </th>
               <td className="form-input-cell">
                 <AutoCompleteInput
-                  value={attachment.typeContrat}
-                  onChange={(value) => setAttachment((prev) => ({ ...prev, typeContrat: value }))}
+                  value={formData.attachment.typeContrat}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      attachment: { ...prev.attachment, typeContrat: value },
+                    }))
+                  }
                   suggestions={suggestions.typeContrat}
-                  placeholder={isLoadingContractTypes ? "Chargement..." : "Saisir ou sélectionner..."}
-                  disabled={isSubmitting || isLoadingContractTypes}
-                  onAddNew={(value) => handleAddNewSuggestion("typeContrat", value)}
+                  placeholder={
+                    isLoading.contractTypes
+                      ? "Chargement..."
+                      : suggestions.typeContrat.length === 0
+                      ? "Aucune suggestion disponible"
+                      : "Saisir ou sélectionner..."
+                  }
+                  disabled={isSubmitting || isLoading.contractTypes}
+                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, (type, message) => showAlert(setAlert, type, message), "typeContrat", value)}
                   fieldType="typeContrat"
                   fieldLabel="type de contrat"
                   addNewRoute="/recruitment/contract-type-form"
@@ -601,8 +474,13 @@ export default function RecruitmentRequestForm() {
               <td className="form-input-cell">
                 <input
                   type="text"
-                  value={contractType.duree}
-                  onChange={(e) => setContractType((prev) => ({ ...prev, duree: e.target.value }))}
+                  value={formData.contractType.duree}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      contractType: { ...prev.contractType, duree: e.target.value },
+                    }))
+                  }
                   placeholder="Ex : 6 mois, 1 an"
                   className="form-input"
                   disabled={isSubmitting}
@@ -616,8 +494,13 @@ export default function RecruitmentRequestForm() {
               <td className="form-input-cell" colSpan="3">
                 <input
                   type="text"
-                  value={contractType.autreDetail}
-                  onChange={(e) => setContractType((prev) => ({ ...prev, autreDetail: e.target.value }))}
+                  value={formData.contractType.autreDetail}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      contractType: { ...prev.contractType, autreDetail: e.target.value },
+                    }))
+                  }
                   placeholder="Préciser le type de contrat"
                   className="form-input"
                   disabled={isSubmitting}
@@ -638,12 +521,23 @@ export default function RecruitmentRequestForm() {
               </th>
               <td className="form-input-cell">
                 <AutoCompleteInput
-                  value={attachment.direction}
-                  onChange={(value) => setAttachment((prev) => ({ ...prev, direction: value }))}
+                  value={formData.attachment.direction}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      attachment: { ...prev.attachment, direction: value },
+                    }))
+                  }
                   suggestions={suggestions.direction}
-                  placeholder={isLoadingDirections ? "Chargement..." : "Saisir ou sélectionner..."}
-                  disabled={isSubmitting || isLoadingDirections}
-                  onAddNew={(value) => handleAddNewSuggestion("direction", value)}
+                  placeholder={
+                    isLoading.directions
+                      ? "Chargement..."
+                      : suggestions.direction.length === 0
+                      ? "Aucune suggestion disponible"
+                      : "Saisir ou sélectionner..."
+                  }
+                  disabled={isSubmitting || isLoading.directions}
+                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, (type, message) => showAlert(setAlert, type, message), "direction", value)}
                   fieldType="direction"
                   fieldLabel="direction"
                   addNewRoute="/direction/direction-form"
@@ -654,12 +548,23 @@ export default function RecruitmentRequestForm() {
               </th>
               <td className="form-input-cell">
                 <AutoCompleteInput
-                  value={attachment.departement}
-                  onChange={(value) => setAttachment((prev) => ({ ...prev, departement: value }))}
+                  value={formData.attachment.departement}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      attachment: { ...prev.attachment, departement: value },
+                    }))
+                  }
                   suggestions={suggestions.departement}
-                  placeholder={isLoadingDepartments ? "Chargement..." : "Saisir ou sélectionner..."}
-                  disabled={isSubmitting || isLoadingDepartments}
-                  onAddNew={(value) => handleAddNewSuggestion("departement", value)}
+                  placeholder={
+                    isLoading.departments
+                      ? "Chargement..."
+                      : suggestions.departement.length === 0
+                      ? "Aucune suggestion disponible"
+                      : "Saisir ou sélectionner..."
+                  }
+                  disabled={isSubmitting || isLoading.departments}
+                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, (type, message) => showAlert(setAlert, type, message), "departement", value)}
                   fieldType="departement"
                   fieldLabel="département"
                   addNewRoute="/direction/department-form"
@@ -672,12 +577,23 @@ export default function RecruitmentRequestForm() {
               </th>
               <td className="form-input-cell">
                 <AutoCompleteInput
-                  value={attachment.service}
-                  onChange={(value) => setAttachment((prev) => ({ ...prev, service: value }))}
+                  value={formData.attachment.service}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      attachment: { ...prev.attachment, service: value },
+                    }))
+                  }
                   suggestions={suggestions.service}
-                  placeholder={isLoadingServices ? "Chargement..." : "Saisir ou sélectionner..."}
-                  disabled={isSubmitting || isLoadingServices}
-                  onAddNew={(value) => handleAddNewSuggestion("service", value)}
+                  placeholder={
+                    isLoading.services
+                      ? "Chargement..."
+                      : suggestions.service.length === 0
+                      ? "Aucune suggestion disponible"
+                      : "Saisir ou sélectionner..."
+                  }
+                  disabled={isSubmitting || isLoading.services}
+                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, (type, message) => showAlert(setAlert, type, message), "service", value)}
                   fieldType="service"
                   fieldLabel="service"
                   addNewRoute="/direction/service-form"
@@ -688,13 +604,22 @@ export default function RecruitmentRequestForm() {
               </th>
               <td className="form-input-cell">
                 <AutoCompleteInput
-                  value={attachment.superieurHierarchique}
+                  value={formData.attachment.superieurHierarchique}
                   onChange={(value) =>
-                    setAttachment((prev) => ({ ...prev, superieurHierarchique: value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      attachment: { ...prev.attachment, superieurHierarchique: value },
+                    }))
                   }
                   suggestions={suggestions.superieurHierarchique}
-                  placeholder={isLoadingEmployees ? "Chargement..." : "Saisir ou sélectionner..."}
-                  disabled={isSubmitting || isLoadingEmployees}
+                  placeholder={
+                    isLoading.employees
+                      ? "Chargement..."
+                      : suggestions.superieurHierarchique.length === 0
+                      ? "Aucune suggestion disponible"
+                      : "Saisir ou sélectionner..."
+                  }
+                  disabled={isSubmitting || isLoading.employees}
                   showAddOption={false}
                   fieldType="superieurHierarchique"
                   fieldLabel="supérieur hiérarchique"
@@ -707,10 +632,19 @@ export default function RecruitmentRequestForm() {
               </th>
               <td className="form-input-cell" colSpan="3">
                 <AutoCompleteInput
-                  value={attachment.fonctionSuperieur}
-                  onChange={(value) => setAttachment((prev) => ({ ...prev, fonctionSuperieur: value }))}
+                  value={formData.attachment.fonctionSuperieur}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      attachment: { ...prev.attachment, fonctionSuperieur: value },
+                    }))
+                  }
                   suggestions={suggestions.fonctionSuperieur}
-                  placeholder="Saisir ou sélectionner..."
+                  placeholder={
+                    suggestions.fonctionSuperieur.length === 0
+                      ? "Aucune suggestion disponible"
+                      : "Saisir ou sélectionner..."
+                  }
                   disabled={isSubmitting}
                   showAddOption={false}
                   fieldType="fonctionSuperieur"
@@ -728,15 +662,26 @@ export default function RecruitmentRequestForm() {
           <tbody>
             <tr>
               <th className="form-label-cell">
-                <label className="form-label">Site</label>
+                <label className="form-label form-label-required">Site</label>
               </th>
               <td className="form-input-cell">
                 <AutoCompleteInput
-                  value={workSite.selectedSite}
-                  onChange={(value) => setWorkSite((prev) => ({ ...prev, selectedSite: value }))}
+                  value={formData.workSite.selectedSite}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      workSite: { ...prev.workSite, selectedSite: value },
+                    }))
+                  }
                   suggestions={suggestions.site}
-                  placeholder={isLoadingSites ? "Chargement..." : "Saisir ou sélectionner..."}
-                  disabled={isSubmitting || isLoadingSites}
+                  placeholder={
+                    isLoading.sites
+                      ? "Chargement..."
+                      : suggestions.site.length === 0
+                      ? "Aucune suggestion disponible"
+                      : "Saisir ou sélectionner..."
+                  }
+                  disabled={isSubmitting || isLoading.sites}
                   showAddOption={false}
                   fieldType="site"
                   fieldLabel="site"
@@ -795,233 +740,243 @@ export default function RecruitmentRequestForm() {
     </form>
   );
 
-  const renderSecondForm = () => (
-    <form id="recruitmentRequestForm2" className="generic-form" onSubmit={handleSubmit}>
-      <div className="form-section">
-        <h3>Motif du Recrutement</h3>
-        <table className="form-table">
-          <thead>
-            <tr>
-              <th className="form-label-cell">Motif</th>
-              <th className="form-input-cell">Sélection</th>
+  // Render second step form
+  // Render second step form
+const renderSecondForm = () => (
+  <form id="recruitmentRequestForm2" className="generic-form" onSubmit={handleSubmit}>
+    <div className="form-section">
+      <h3>Motif du Recrutement</h3>
+      <table className="form-table">
+        <thead>
+          <tr>
+            <th className="form-label-cell">Motif</th>
+            <th className="form-input-cell">Sélection</th>
+          </tr>
+        </thead>
+        <tbody>
+          {recruitmentReasons.map((reason) => (
+            <tr key={reason.recruitmentReasonId}>
+              <td className="form-label-cell">{reason.name}</td>
+              <td className="form-input-cell">
+                <input
+                  type="radio"
+                  name="recruitmentMotive"
+                  value={reason.name}
+                  checked={formData.recruitmentMotive === reason.name}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, recruitmentMotive: e.target.value }))
+                  }
+                  disabled={isSubmitting || isLoading.recruitmentReasons}
+                />
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {recruitmentReasons.map((reason) => (
-              <tr key={reason.recruitmentReasonId}>
-                <td className="form-label-cell">{reason.name}</td>
-                <td className="form-input-cell">
-                  <input
-                    type="radio"
-                    name="recruitmentMotive"
-                    value={reason.name}
-                    checked={recruitmentMotive === reason.name}
-                    onChange={(e) => setRecruitmentMotive(e.target.value)}
-                    disabled={isSubmitting || isLoadingRecruitmentReasons}
-                  />
-                </td>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {formData.recruitmentMotive === "Remplacement d'un employé" && (
+      <div className="form-section">
+        <h3>Détails du Motif du remplacement</h3>
+        <div className="form-subsection">
+          <table className="form-table">
+            <thead>
+              <tr>
+                <th className="form-label-cell">Motif</th>
+                <th className="form-input-cell">Détail</th>
+                <th className="form-input-cell">Action</th>
               </tr>
-            ))}
+            </thead>
+            <tbody>
+              {formData.replacementDetails.motifs.map((motif, index) => (
+                <tr key={index}>
+                  <td className="form-input-cell">
+                    <AutoCompleteInput
+                      value={motif.motifRemplacement}
+                      onChange={(value) => handleMotifChange(index, "motifRemplacement", value)}
+                      suggestions={suggestions.motifRemplacement}
+                      placeholder={
+                        isLoading.replacementReasons
+                          ? "Chargement..."
+                          : suggestions.motifRemplacement.length === 0
+                          ? "Aucune suggestion disponible"
+                          : "Saisir ou sélectionner..."
+                      }
+                      disabled={isSubmitting || isLoading.replacementReasons}
+                      onAddNew={(value) =>
+                        handleAddNewSuggestion(
+                          setSuggestions,
+                          (type, message) => showAlert(setAlert, type, message),
+                          "motifRemplacement",
+                          value
+                        )
+                      }
+                      fieldType="motifRemplacement"
+                      fieldLabel="motif"
+                    />
+                  </td>
+                  <td className="form-input-cell">
+                    <input
+                      type="text"
+                      value={motif.detail}
+                      onChange={(e) => handleMotifChange(index, "detail", e.target.value)}
+                      placeholder="Détail du motif..."
+                      className="form-input"
+                      disabled={isSubmitting}
+                    />
+                  </td>
+                  <td className="form-input-cell">
+                    <button
+                      type="button"
+                      className="remove-item"
+                      onClick={() => handleRemoveMotif(index)}
+                      disabled={isSubmitting || formData.replacementDetails.motifs.length === 1}
+                      title="Supprimer la ligne"
+                    >
+                      <FaIcons.FaTrash className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button
+            type="button"
+            className="add-btn"
+            onClick={handleAddMotif}
+            disabled={isSubmitting}
+            title="Ajouter une ligne"
+          >
+            <FaIcons.FaPlus className="w-4 h-4" />
+            Ajouter un motif
+          </button>
+        </div>
+
+        <table className="form-table">
+          <tbody>
+            <tr>
+              <th className="form-label-cell">
+                <label className="form-label form-label-required">Date de survenance</label>
+              </th>
+              <td className="form-input-cell">
+                <input
+                  type="date"
+                  value={formData.replacementDetails.dateSurvenance}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      replacementDetails: { ...prev.replacementDetails, dateSurvenance: e.target.value },
+                    }))
+                  }
+                  className="form-input"
+                  disabled={isSubmitting}
+                />
+              </td>
+              <th className="form-label-cell">
+                <label className="form-label form-label-required">Nom et prénoms de l'ancien(ne) titulaire</label>
+              </th>
+              <td className="form-input-cell">
+                <input
+                  type="text"
+                  value={formData.replacementDetails.nomPrenomsTitulaire}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      replacementDetails: { ...prev.replacementDetails, nomPrenomsTitulaire: e.target.value },
+                    }))
+                  }
+                  placeholder="Entrer le nom"
+                  className="form-input"
+                  disabled={isSubmitting}
+                />
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
+    )}
 
-      {recruitmentMotive === "Remplacement d'un employé" && (
-        <div className="form-section">
-          <h3>Détails du Motif du remplacement</h3>
-          <div className="form-subsection">
-            <table className="form-table">
-              <thead>
-                <tr>
-                  <th className="form-label-cell">Motif</th>
-                  <th className="form-input-cell">Détail</th>
-                  <th className="form-input-cell">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {replacementDetails.motifs.map((motif, index) => (
-                  <tr key={index}>
-                    <td className="form-input-cell">
-                      <AutoCompleteInput
-                        value={motif.motifRemplacement}
-                        onChange={(value) => handleMotifChange(index, "motifRemplacement", value)}
-                        suggestions={suggestions.motifRemplacement}
-                        placeholder={isLoadingReplacementReasons ? "Chargement..." : "Saisir ou sélectionner..."}
-                        disabled={isSubmitting || isLoadingReplacementReasons}
-                        onAddNew={(value) => handleAddNewSuggestion("motifRemplacement", value)}
-                        fieldType="motifRemplacement"
-                        fieldLabel="motif"
-                      />
-                    </td>
-                    <td className="form-input-cell">
-                      <input
-                        type="text"
-                        value={motif.detail}
-                        onChange={(e) => handleMotifChange(index, "detail", e.target.value)}
-                        placeholder="Détail du motif..."
-                        className="form-input"
-                        disabled={isSubmitting}
-                      />
-                    </td>
-                    <td className="form-input-cell">
-                      <button
-                        type="button"
-                        className="remove-item"
-                        onClick={() => handleRemoveMotif(index)}
-                        disabled={isSubmitting || replacementDetails.motifs.length === 1}
-                        title="Supprimer la ligne"
-                      >
-                        <FaIcons.FaTrash className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <button
-              type="button"
-              className="add-btn"
-              onClick={handleAddMotif}
-              disabled={isSubmitting}
-              title="Ajouter une ligne"
-            >
-              <FaIcons.FaPlus className="w-4 h-4" />
-              Ajouter un motif
-            </button>
-          </div>
-
+    {formData.recruitmentMotive === "Création d'un nouveau poste" && (
+      <div className="form-section">
+        <h3>Explications pour la création de poste</h3>
+        <div className="form-subsection">
           <table className="form-table">
             <tbody>
               <tr>
                 <th className="form-label-cell">
-                  <label className="form-label">Date de survenance</label>
+                  <label className="form-label form-label-required" htmlFor="description">
+                    Description détaillée
+                  </label>
                 </th>
                 <td className="form-input-cell">
-                  <input
-                    type="date"
-                    value={replacementDetails.dateSurvenance}
-                    onChange={(e) => setReplacementDetails((prev) => ({ ...prev, dateSurvenance: e.target.value }))}
-                    className="form-input"
-                    disabled={isSubmitting}
-                  />
-                </td>
-                <th className="form-label-cell">
-                  <label className="form-label">Nom et prénoms de l'ancien(ne) titulaire</label>
-                </th>
-                <td className="form-input-cell">
-                  <input
-                    type="text"
-                    value={replacementDetails.nomPrenomsTitulaire}
-                    onChange={(e) => setReplacementDetails((prev) => ({ ...prev, nomPrenomsTitulaire: e.target.value }))}
-                    placeholder="Entrer le nom"
-                    className="form-input"
+                  <RichTextEditor
+                    placeholder="Décrivez le poste en détail..."
+                    onChange={(value) => setFormData((prev) => ({ ...prev, description: value }))}
                     disabled={isSubmitting}
                   />
                 </td>
               </tr>
             </tbody>
           </table>
-
-          <div className="form-section">
-            <h3>Planification</h3>
-            <table className="form-table">
-              <tbody>
-                <tr>
-                  <th className="form-label-cell">
-                    <label className="form-label">Date de prise de service souhaitée</label>
-                  </th>
-                  <td className="form-input-cell">
-                    <input
-                      type="date"
-                      value={replacementDetails.datePriseService}
-                      onChange={(e) => setReplacementDetails((prev) => ({ ...prev, datePriseService: e.target.value }))}
-                      className="form-input"
-                      disabled={isSubmitting}
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <p className="form-note">Rappel : la durée d'un processus normal de sélection est de 8 semaines</p>
-          </div>
         </div>
-      )}
-
-      {recruitmentMotive === "Création d'un nouveau poste" && (
-        <>
-          <div className="form-section">
-            <h3>Explications pour la création de poste</h3>
-            <div className="form-subsection">
-              <table className="form-table">
-                <tbody>
-                  <tr>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required" htmlFor="description">
-                        Description détaillée
-                      </label>
-                    </th>
-                    <td className="form-input-cell">
-                      <RichTextEditor
-                        placeholder="Décrivez le poste en détail..."
-                        onChange={setDescription}
-                        disabled={isSubmitting}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="form-section">
-            <h3>Planification</h3>
-            <table className="form-table">
-              <tbody>
-                <tr>
-                  <th className="form-label-cell">
-                    <label className="form-label">Date de prise de service souhaitée</label>
-                  </th>
-                  <td className="form-input-cell">
-                    <input
-                      type="date"
-                      value={replacementDetails.datePriseService}
-                      onChange={(e) => setReplacementDetails((prev) => ({ ...prev, datePriseService: e.target.value }))}
-                      className="form-input"
-                      disabled={isSubmitting}
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <p className="form-note">Rappel : la durée d'un processus normal de sélection est de 8 semaines</p>
-          </div>
-        </>
-      )}
-
-      <div className="form-actions">
-        <button
-          type="button"
-          className="reset-btn"
-          onClick={handlePrevious}
-          disabled={isSubmitting}
-          title="Précédent"
-        >
-          <FaIcons.FaArrowLeft className="w-4 h-4" />
-          Précédent
-        </button>
-
-        <button
-          type="submit"
-          className="submit-btn"
-          disabled={isSubmitting}
-          title="Valider la demande"
-        >
-          {isSubmitting ? "Envoi en cours..." : "Valider"}
-          <FaIcons.FaCheck className="w-4 h-4" />
-        </button>
       </div>
-    </form>
-  );
+    )}
+
+    {/* Afficher la section Planification pour tous les motifs sélectionnés */}
+    {formData.recruitmentMotive && (
+      <div className="form-section">
+        <h3>Planification</h3>
+        <table className="form-table">
+          <tbody>
+            <tr>
+              <th className="form-label-cell">
+                <label className="form-label form-label-required">Date de prise de service souhaitée</label>
+              </th>
+              <td className="form-input-cell">
+                <input
+                  type="date"
+                  value={formData.replacementDetails.datePriseService}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      replacementDetails: { ...prev.replacementDetails, datePriseService: e.target.value },
+                    }))
+                  }
+                  className="form-input"
+                  disabled={isSubmitting}
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="form-note">Rappel : la durée d'un processus normal de sélection est de 8 semaines</p>
+      </div>
+    )}
+
+    <div className="form-actions">
+      <button
+        type="button"
+        className="reset-btn"
+        onClick={handlePrevious}
+        disabled={isSubmitting}
+        title="Précédent"
+      >
+        <FaIcons.FaArrowLeft className="w-4 h-4" />
+        Précédent
+      </button>
+
+      <button
+        type="submit"
+        className="submit-btn"
+        disabled={isSubmitting}
+        title="Valider la demande"
+      >
+        {isSubmitting ? "Envoi en cours..." : "Valider"}
+        <FaIcons.FaCheck className="w-4 h-4" />
+      </button>
+    </div>
+  </form>
+);
 
   return (
     <div className="form-container">
