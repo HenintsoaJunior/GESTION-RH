@@ -1,0 +1,4 @@
+sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i table.sql
+sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i trigger.sql
+sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i data.sql
+

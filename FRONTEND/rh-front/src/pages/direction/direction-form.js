@@ -47,9 +47,9 @@ export default function DirectionForm() {
         showAlert("success", "Direction créée avec succès !");
         event.target.reset();
         setFormData({ directionName: "", acronym: "" });
-        if (returnUrl) {
-          window.location.href = returnUrl;
-        }
+        // if (returnUrl) {
+        //   window.location.href = returnUrl;
+        // }
       } else {
         const errorData = await response.json();
         const message = errorData.message || `Erreur ${response.status}: Échec de la création de la direction.`;
