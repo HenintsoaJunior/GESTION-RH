@@ -16,13 +16,5 @@ namespace MyApp.Api.Entities.employee
         [Column("approver_role")]
         [MaxLength(50)]
         public string? ApproverRole { get; set; }
-
-        [Required]
-        [Column("approver_id")]
-        public string? ApproverId { get; set; }
-
-        // Navigation
-        [ForeignKey("ApproverId")]
-        public Employee? Approver { get; set; }
     }
 }

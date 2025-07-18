@@ -10,6 +10,7 @@ namespace MyApp.Api.Repositories.recruitment
         Task<IEnumerable<RecruitmentRequestReplacementReason>> GetByRequestIdAsync(string requestId);
         Task AddRangeAsync(IEnumerable<RecruitmentRequestReplacementReason> entities);
         Task AddAsync(RecruitmentRequestReplacementReason entity);
+        Task DeleteAsync(string requestId, string reasonId);
         Task DeleteAsync(string requestId);
         Task SaveChangesAsync();
     }
@@ -48,6 +49,15 @@ namespace MyApp.Api.Repositories.recruitment
         public async Task AddAsync(RecruitmentRequestReplacementReason entity)
         {
             await _context.RecruitmentRequestReplacementReasons.AddAsync(entity);
+        }
+
+        public async Task DeleteAsync(string requestId, string reasonId)
+        {
+            var existing = await _context.RecruitmentRequestReplacementReasons.FindAsync(requestId, reasonId);
+            if (existing != null)
+            {
+                _context.RecruitmentRequestReplacementReasons.Remove(existing);
+            }
         }
 
         public async Task DeleteAsync(string requestId)

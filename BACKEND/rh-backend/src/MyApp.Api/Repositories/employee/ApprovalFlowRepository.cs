@@ -8,7 +8,6 @@ namespace MyApp.Api.Repositories.employee
     {
         Task<IEnumerable<ApprovalFlow>> GetAllAsync();
         Task<ApprovalFlow?> GetByIdAsync(string id);
-        Task<IEnumerable<ApprovalFlow>> GetByApproverIdAsync(string approverId);
         Task AddAsync(ApprovalFlow flow);
         Task UpdateAsync(ApprovalFlow flow);
         Task DeleteAsync(string id);
@@ -27,7 +26,6 @@ namespace MyApp.Api.Repositories.employee
         public async Task<IEnumerable<ApprovalFlow>> GetAllAsync()
         {
             return await _context.ApprovalFlows
-                .Include(a => a.Approver)
                 .OrderBy(a => a.ApprovalOrder)
                 .ToListAsync();
         }
@@ -35,18 +33,9 @@ namespace MyApp.Api.Repositories.employee
         public async Task<ApprovalFlow?> GetByIdAsync(string id)
         {
             return await _context.ApprovalFlows
-                .Include(a => a.Approver)
                 .FirstOrDefaultAsync(a => a.ApprovalFlowId == id);
         }
 
-        public async Task<IEnumerable<ApprovalFlow>> GetByApproverIdAsync(string approverId)
-        {
-            return await _context.ApprovalFlows
-                .Where(a => a.ApproverId == approverId)
-                .Include(a => a.Approver)
-                .OrderBy(a => a.ApprovalOrder)
-                .ToListAsync();
-        }
 
         public async Task AddAsync(ApprovalFlow flow)
         {

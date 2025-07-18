@@ -6,7 +6,7 @@ namespace MyApp.Api.Entities.recruitment
     [Table("recruitment_request_replacement_reasons")]
     public class RecruitmentRequestReplacementReason
     {
-        [Key, Column(Order = 0)]
+        [Column(Order = 0)]
         [MaxLength(50)]
         public string RecruitmentRequestId { get; set; } = null!;
 

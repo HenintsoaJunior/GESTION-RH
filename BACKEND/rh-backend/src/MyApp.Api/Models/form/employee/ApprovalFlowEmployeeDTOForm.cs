@@ -1,0 +1,13 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace MyApp.Api.Model.form.employee
+{
+    public class ApprovalFlowEmployeeDTOForm
+    {
+        public string EmployeeId { get; set; } = string.Empty;
+        public string ApprovalFlowId { get; set; } = string.Empty;
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+
+    }
+}

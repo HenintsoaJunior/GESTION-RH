@@ -16,10 +16,6 @@ namespace MyApp.Api.Entities.recruitment
         [Required]
         public string ApproverId { get; set; } = string.Empty;
 
-        [Column("approval_flow_id", Order = 2)]
-        [Required]
-        public string ApprovalFlowId { get; set; } = string.Empty;
-
         [Column("status")]
         [MaxLength(50)]
         public string? Status { get; set; }
@@ -42,8 +38,5 @@ namespace MyApp.Api.Entities.recruitment
 
         [ForeignKey("ApproverId")]
         public User? Approver { get; set; }
-
-        [ForeignKey("ApprovalFlowId")]
-        public ApprovalFlow? ApprovalFlow { get; set; }
     }
 }

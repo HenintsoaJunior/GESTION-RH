@@ -130,46 +130,7 @@ namespace MyApp.Api.Controllers.recruitment
                     return BadRequest("Les détails de la demande de recrutement sont requis");
                 }
 
-                var request = new RecruitmentRequest
-                {
-                    PositionTitle = requestForm.PositionTitle,
-                    PositionCount = requestForm.PositionCount,
-                    ContractDuration = requestForm.ContractDuration,
-                    FormerEmployeeName = requestForm.FormerEmployeeName,
-                    ReplacementDate = requestForm.ReplacementDate,
-                    NewPositionExplanation = requestForm.NewPositionExplanation,
-                    DesiredStartDate = requestForm.DesiredStartDate,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    Status = requestForm.Status ?? "En attente",
-                    Files = requestForm.Files,
-                    RequesterId = requestForm.RequesterId,
-                    ContractTypeId = requestForm.ContractTypeId,
-                    SiteId = requestForm.SiteId,
-                    RecruitmentReasonId = requestForm.RecruitmentReasonId,
-                    RecruitmentRequestDetail = new RecruitmentRequestDetail
-                    {
-                        SupervisorPosition = requestForm.RecruitmentRequestDetail.SupervisorPosition,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow,
-                        DirectionId = requestForm.RecruitmentRequestDetail.DirectionId,
-                        DepartmentId = requestForm.RecruitmentRequestDetail.DepartmentId,
-                        ServiceId = requestForm.RecruitmentRequestDetail.ServiceId,
-                        DirectSupervisorId = requestForm.RecruitmentRequestDetail.DirectSupervisorId,
-                    },
-                     RecruitmentApproval = new RecruitmentApproval
-                    {
-                        ApproverId = requestForm.RecruitmentApproval.ApproverId,
-                        ApprovalFlowId = requestForm.RecruitmentApproval.ApprovalFlowId,
-                        Status = requestForm.RecruitmentApproval.Status,
-                        ApprovalOrder = requestForm.RecruitmentApproval.ApprovalOrder,
-                        ApprovalDate = requestForm.RecruitmentApproval.ApprovalDate,
-                        Comment = requestForm.RecruitmentApproval.Comment,
-                        Signature = requestForm.RecruitmentApproval.Signature,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    },
-                };
+                var request = new RecruitmentRequest(requestForm);
 
                 _logger.LogInformation("Création d'une nouvelle demande de recrutement pour le poste: {PositionTitle}", request.PositionTitle);
                 
