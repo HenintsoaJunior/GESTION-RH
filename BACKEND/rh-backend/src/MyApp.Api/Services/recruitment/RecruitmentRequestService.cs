@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Models.form.recruitment;
 using MyApp.Api.Repositories.recruitment;
-using MyApp.Api.Utils.generator; 
+using MyApp.Api.Utils.generator;
 
 namespace MyApp.Api.Services.recruitment
 {
@@ -21,23 +21,23 @@ namespace MyApp.Api.Services.recruitment
     public class RecruitmentRequestService : IRecruitmentRequestService
     {
         private readonly IRecruitmentRequestRepository _requestRepository;
-        private readonly IRecruitmentRequestDetailRepository _requestDetailRepository;
-        private readonly IRecruitmentApprovalRepository _approvalRepository;
+        private readonly IRecruitmentRequestDetailService _requestDetailService;
+        private readonly IRecruitmentApprovalService _approvalService;
         private readonly IRecruitmentRequestReplacementReasonRepository _replacementReasonRepository;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<RecruitmentRequestService> _logger;
 
         public RecruitmentRequestService(
             IRecruitmentRequestRepository requestRepository,
-            IRecruitmentRequestDetailRepository requestDetailRepository,
-            IRecruitmentApprovalRepository approvalRepository,
+            IRecruitmentRequestDetailService requestDetailService,
+            IRecruitmentApprovalService approvalService,
             IRecruitmentRequestReplacementReasonRepository replacementReasonRepository,
             ISequenceGenerator sequenceGenerator,
             ILogger<RecruitmentRequestService> logger)
         {
             _requestRepository = requestRepository;
-            _requestDetailRepository = requestDetailRepository;
-            _approvalRepository = approvalRepository;
+            _requestDetailService = requestDetailService;
+            _approvalService = approvalService;
             _replacementReasonRepository = replacementReasonRepository;
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
@@ -57,15 +57,18 @@ namespace MyApp.Api.Services.recruitment
                 if (detail != null)
                 {
                     detail.RecruitmentRequestId = request.RecruitmentRequestId;
-                    detail.RecruitmentRequestDetailId = _sequenceGenerator.GenerateSequence("seq_recruitment_request_detail_id", "REQDET", 6, "-");
-
-                    if (string.IsNullOrEmpty(detail.RecruitmentRequestDetailId))
-                    {
-                        _logger.LogError("Échec de la génération de RecruitmentRequestDetailId");
-                        throw new InvalidOperationException("RecruitmentRequestDetailId ne peut pas être null.");
-                    }
-
+                    
+                    // Supprimez la référence temporairement pour éviter les problèmes de FK
                     request.RecruitmentRequestDetail = null!;
+                }
+
+                // Vérifiez si RecruitmentApproval existe
+                RecruitmentApproval? approval = request.RecruitmentApproval;
+                if (approval != null)
+                {
+                    approval.RecruitmentRequestId = request.RecruitmentRequestId;
+                    // Supprimez la référence temporairement pour éviter les problèmes de FK
+                    request.RecruitmentApproval = null!;
                 }
 
                 // Ajoutez la demande principale
@@ -73,12 +76,18 @@ namespace MyApp.Api.Services.recruitment
                 await _requestRepository.SaveChangesAsync();
                 _logger.LogInformation("Demande de recrutement créée avec l'ID: {RequestId}", request.RecruitmentRequestId);
 
-                // Ajoutez le détail séparément si nécessaire
+                // Ajoutez le détail via le service dédié
                 if (detail != null)
                 {
-                    await _requestDetailRepository.AddAsync(detail);
-                    await _requestDetailRepository.SaveChangesAsync();
+                    await _requestDetailService.AddAsync(detail);
                     _logger.LogInformation("Détail de la demande de recrutement créé avec l'ID: {DetailId}", detail.RecruitmentRequestDetailId);
+                }
+
+                // Ajoutez l'approbation via le service dédié
+                if (approval != null)
+                {
+                    await _approvalService.AddAsync(approval);
+                    _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", approval.RecruitmentRequestId);
                 }
 
                 return request.RecruitmentRequestId;
