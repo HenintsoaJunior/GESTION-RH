@@ -6,10 +6,9 @@ namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentApprovalService
     {
-        Task<IEnumerable<RecruitmentApproval>> GetByApprovalFlowAsync(string flowId);
         Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId);
         Task<IEnumerable<RecruitmentApproval>> GetByStatusAndApproverIdAsync(string status, string approverId);
-        Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlow> approvalFlows);
+        Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlowEmployee> approvalFlows);
         Task AddAsync(RecruitmentApproval approval);
         
         Task UpdateAsync(RecruitmentApproval approval);
@@ -23,11 +22,6 @@ namespace MyApp.Api.Services.recruitment
         public RecruitmentApprovalService(IRecruitmentApprovalRepository repository)
         {
             _repository = repository;
-        }
-
-        public async Task<IEnumerable<RecruitmentApproval>> GetByApprovalFlowAsync(string flowId)
-        {
-            return await _repository.GetByApprovalFlowAsync(flowId);
         }
 
         public async Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId)
@@ -45,7 +39,7 @@ namespace MyApp.Api.Services.recruitment
             return await _repository.GetAsync(requestId, approverId, flowId);
         }
 
-        public async Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlow> approvalFlows)
+        public async Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlowEmployee> approvalFlows)
         {
             await _repository.AddAsync(approval, approvalFlows);
             await _repository.SaveChangesAsync();

@@ -10,8 +10,5 @@ namespace MyApp.Api.Model.form.employee
         [MaxLength(50)]
         public string? ApproverRole { get; set; }
 
-        [Required]
-        [MaxLength(50)]
-        public string ApproverId { get; set; } = null!;
     }
 }

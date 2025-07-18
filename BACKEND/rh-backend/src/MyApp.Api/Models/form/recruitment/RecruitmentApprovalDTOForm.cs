@@ -6,10 +6,7 @@ namespace MyApp.Api.Models.form.recruitment
     {
         [Required]
         public string ApproverId { get; set; } = null!;
-
-        [Required]
-        public string ApprovalFlowId { get; set; } = null!;
-
+        
         public string? Status { get; set; }
 
         public int ApprovalOrder { get; set; }

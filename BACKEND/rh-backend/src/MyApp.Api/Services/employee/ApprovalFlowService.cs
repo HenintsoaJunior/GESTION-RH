@@ -7,7 +7,6 @@ namespace MyApp.Api.Services.employee
     {
         Task<IEnumerable<ApprovalFlow>> GetAllAsync();
         Task<ApprovalFlow?> GetByIdAsync(string id);
-        Task<IEnumerable<ApprovalFlow>> GetByApproverIdAsync(string approverId);
         Task AddAsync(ApprovalFlow flow);
         Task UpdateAsync(ApprovalFlow flow);
         Task DeleteAsync(string id);
@@ -31,12 +30,6 @@ namespace MyApp.Api.Services.employee
         {
             return await _repository.GetByIdAsync(id);
         }
-
-        public async Task<IEnumerable<ApprovalFlow>> GetByApproverIdAsync(string approverId)
-        {
-            return await _repository.GetByApproverIdAsync(approverId);
-        }
-
         public async Task AddAsync(ApprovalFlow flow)
         {
             await _repository.AddAsync(flow);

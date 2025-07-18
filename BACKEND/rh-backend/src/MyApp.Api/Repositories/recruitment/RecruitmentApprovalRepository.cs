@@ -7,10 +7,9 @@ namespace MyApp.Api.Repositories.recruitment
 {
     public interface IRecruitmentApprovalRepository
     {
-        Task<IEnumerable<RecruitmentApproval>> GetByApprovalFlowAsync(string flowId);
         Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId);
         Task<IEnumerable<RecruitmentApproval>> GetByStatusAndApproverIdAsync(string status, string approverId);
-        Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlow> approvalFlows);
+        Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlowEmployee> approvalFlows);
         Task AddAsync(RecruitmentApproval approval);
         Task UpdateAsync(RecruitmentApproval approval);
         Task<RecruitmentApproval?> GetAsync(string requestId, string approverId, string flowId);
@@ -24,17 +23,6 @@ namespace MyApp.Api.Repositories.recruitment
         public RecruitmentApprovalRepository(AppDbContext context)
         {
             _context = context;
-        }
-
-        public async Task<IEnumerable<RecruitmentApproval>> GetByApprovalFlowAsync(string flowId)
-        {
-            return await _context.RecruitmentApprovals
-                .Where(a => a.ApprovalFlowId == flowId)
-                .OrderByDescending(a => a.CreatedAt)
-                .Include(a => a.RecruitmentRequest)
-                .Include(a => a.Approver)
-                .Include(a => a.ApprovalFlow)
-                .ToListAsync();
         }
 
         public async Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId)
@@ -61,12 +49,12 @@ namespace MyApp.Api.Repositories.recruitment
             return await _context.RecruitmentApprovals.FindAsync(requestId, approverId, flowId);
         }
 
-        public async Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlow> approvalFlows)
+        public async Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlowEmployee> approvalFlows)
         {
             foreach (var flow in approvalFlows)
             {
-                approval.ApprovalFlowId = flow.ApprovalFlowId; 
-                approval.ApprovalOrder = flow.ApprovalOrder;
+                approval.ApproverId = flow.Employee.EmployeeId; 
+                approval.ApprovalOrder = flow.ApprovalFlow.ApprovalOrder;
                 await _context.RecruitmentApprovals.AddAsync(approval);
             }
         }

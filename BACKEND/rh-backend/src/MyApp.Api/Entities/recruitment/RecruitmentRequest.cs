@@ -4,6 +4,7 @@ using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.users;
+using MyApp.Api.Models.form.recruitment;
 
 namespace MyApp.Api.Entities.recruitment
 {
@@ -11,7 +12,7 @@ namespace MyApp.Api.Entities.recruitment
     public class RecruitmentRequest : BaseEntity
     {
         [Column("recruitment_request_id")]
-        public string ? RecruitmentRequestId { get; set; }
+        public string? RecruitmentRequestId { get; set; }
 
         [Column("position_title")]
         [Required]
@@ -75,8 +76,37 @@ namespace MyApp.Api.Entities.recruitment
         public RecruitmentReason? RecruitmentReason { get; set; }
 
         public RecruitmentRequestDetail RecruitmentRequestDetail { get; set; } = null!;
-        public RecruitmentApproval RecruitmentApproval { get; set; } = null!;
         public IEnumerable<RecruitmentRequestReplacementReason>? ReplacementReasons { get; set; } = null;
-        public IEnumerable<ApprovalFlow>? ApprovalFlows { get; set; } = null;
+
+        public RecruitmentRequest() { }
+
+        public RecruitmentRequest(RecruitmentRequestDTOForm requestForm)
+        {
+            PositionTitle = requestForm.PositionTitle;
+            PositionCount = requestForm.PositionCount;
+            ContractDuration = requestForm.ContractDuration;
+            FormerEmployeeName = requestForm.FormerEmployeeName;
+            ReplacementDate = requestForm.ReplacementDate;
+            NewPositionExplanation = requestForm.NewPositionExplanation;
+            DesiredStartDate = requestForm.DesiredStartDate;
+            CreatedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
+            Status = requestForm.Status ?? "En attente";
+            Files = requestForm.Files;
+            RequesterId = requestForm.RequesterId;
+            ContractTypeId = requestForm.ContractTypeId;
+            SiteId = requestForm.SiteId;
+            RecruitmentReasonId = requestForm.RecruitmentReasonId;
+            RecruitmentRequestDetail = new RecruitmentRequestDetail
+            {
+                SupervisorPosition = requestForm.RecruitmentRequestDetail.SupervisorPosition,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                DirectionId = requestForm.RecruitmentRequestDetail.DirectionId,
+                DepartmentId = requestForm.RecruitmentRequestDetail.DepartmentId,
+                ServiceId = requestForm.RecruitmentRequestDetail.ServiceId,
+                DirectSupervisorId = requestForm.RecruitmentRequestDetail.DirectSupervisorId,
+            };
+        }
     }
 }

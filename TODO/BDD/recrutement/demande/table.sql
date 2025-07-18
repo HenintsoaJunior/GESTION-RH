@@ -243,10 +243,19 @@ CREATE TABLE approval_flow(
    approver_role VARCHAR(50),
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
-   approver_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(approval_flow_id),
-   FOREIGN KEY(approver_id) REFERENCES employees(employee_id)
+   PRIMARY KEY(approval_flow_id)
 );
+
+CREATE TABLE approval_flow_employee(
+   employee_id VARCHAR(50),
+   approval_flow_id VARCHAR(50),
+   created_at DATETIME,
+   updated_at DATETIME,
+   PRIMARY KEY(employee_id, approval_flow_id),
+   FOREIGN KEY(employee_id) REFERENCES employees(employee_id),
+   FOREIGN KEY(approval_flow_id) REFERENCES approval_flow(approval_flow_id)
+);
+
 
 CREATE TABLE users(
    user_id VARCHAR(50),
@@ -303,10 +312,10 @@ CREATE TABLE recruitment_request_details(
    FOREIGN KEY(direct_supervisor_id) REFERENCES employees(employee_id)
 );
 
+
 CREATE TABLE recruitment_approval(
    recruitment_request_id VARCHAR(50),
    approver_id VARCHAR(50),
-   approval_flow_id VARCHAR(50),
    status VARCHAR(50),
    approval_order INT,
    approval_date DATE,
@@ -314,11 +323,12 @@ CREATE TABLE recruitment_approval(
    signature VARBINARY(250),
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
-   PRIMARY KEY(recruitment_request_id, approver_id, approval_flow_id),
+   PRIMARY KEY(recruitment_request_id, approver_id),
    FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
-   FOREIGN KEY(approver_id) REFERENCES users(user_id),
-   FOREIGN KEY(approval_flow_id) REFERENCES approval_flow(approval_flow_id)
+   FOREIGN KEY(approver_id) REFERENCES users(user_id)
 );
+
+
 
 CREATE TABLE employee_nationalities(
    employee_id VARCHAR(50),
