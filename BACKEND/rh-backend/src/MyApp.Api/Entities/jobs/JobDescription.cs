@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Entities.direction;
 using MyApp.Api.Entities.site;
+using MyApp.Model.form.Jobs;
 
 namespace MyApp.Api.Entities.jobs
 {
@@ -63,5 +64,22 @@ namespace MyApp.Api.Entities.jobs
 
         [ForeignKey("SiteId")]
         public Site? Site { get; set; }
+
+        public JobDescription() { }
+
+        public JobDescription(JobDescriptionDTOForm jobDescriptionDTOForm)
+        {
+            Title = jobDescriptionDTOForm.Title;
+            Description = jobDescriptionDTOForm.Description;
+            Attributions = jobDescriptionDTOForm.Attributions;
+            RequiredEducation = jobDescriptionDTOForm.RequiredEducation;
+            RequiredExperience = jobDescriptionDTOForm.RequiredExperience;
+            RequiredPersonalQualities = jobDescriptionDTOForm.RequiredPersonalQualities;
+            RequiredSkills = jobDescriptionDTOForm.RequiredSkills;
+            RequiredLanguages = jobDescriptionDTOForm.RequiredLanguages;
+            OrganigramId = jobDescriptionDTOForm.OrganigramId;
+            HierarchicalAttachmentId = jobDescriptionDTOForm.HierarchicalAttachmentId;
+            SiteId = jobDescriptionDTOForm.SiteId;
+        }
     }
 }

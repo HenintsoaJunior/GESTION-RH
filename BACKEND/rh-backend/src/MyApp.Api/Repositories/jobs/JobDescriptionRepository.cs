@@ -1,14 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.jobs;
+using MyApp.Model.form.Jobs;
 
 namespace MyApp.Api.Repositories.jobs
 {
     public interface IJobDescriptionRepository
     {
+        Task<IEnumerable<JobDescription>> GetAllByCriteriaAsync(JobDescription criteria);
         Task<IEnumerable<JobDescription>> GetAllAsync();
         Task<JobDescription?> GetByIdAsync(string id);
-        Task<IEnumerable<JobDescription>> GetBySiteAsync(string siteId);
         Task AddAsync(JobDescription jobDescription);
         Task UpdateAsync(JobDescription jobDescription);
         Task DeleteAsync(JobDescription jobDescription);
@@ -21,6 +22,31 @@ namespace MyApp.Api.Repositories.jobs
         public JobDescriptionRepository(AppDbContext context)
         {
             _context = context;
+        }
+
+        public async Task<IEnumerable<JobDescription>> GetAllByCriteriaAsync(JobDescription criteria)
+        {
+            var query = _context.JobDescriptions
+                .Include(j => j.Site)
+                .Include(j => j.Organigram)
+                .Include(j => j.HierarchicalAttachment)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(criteria.SiteId))
+                query = query.Where(j => j.SiteId == criteria.SiteId);
+
+            if (!string.IsNullOrWhiteSpace(criteria.OrganigramId))
+                query = query.Where(j => j.OrganigramId == criteria.OrganigramId);
+
+            if (!string.IsNullOrWhiteSpace(criteria.HierarchicalAttachmentId))
+                query = query.Where(j => j.HierarchicalAttachmentId == criteria.HierarchicalAttachmentId);
+
+            if (!string.IsNullOrWhiteSpace(criteria.Title))
+                query = query.Where(j => j.Title.Contains(criteria.Title));
+
+            return await query
+                .OrderByDescending(j => j.CreatedAt)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<JobDescription>> GetAllAsync()
@@ -40,17 +66,6 @@ namespace MyApp.Api.Repositories.jobs
                 .Include(j => j.Organigram)
                 .Include(j => j.HierarchicalAttachment)
                 .FirstOrDefaultAsync(j => j.DescriptionId == id);
-        }
-
-        public async Task<IEnumerable<JobDescription>> GetBySiteAsync(string siteId)
-        {
-            return await _context.JobDescriptions
-                .Include(j => j.Site)
-                .Include(j => j.Organigram)
-                .Include(j => j.HierarchicalAttachment)
-                .Where(j => j.SiteId == siteId)
-                .OrderByDescending(j => j.CreatedAt)
-                .ToListAsync();
         }
 
         public async Task AddAsync(JobDescription jobDescription)
