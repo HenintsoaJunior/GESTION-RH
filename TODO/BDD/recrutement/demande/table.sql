@@ -352,8 +352,8 @@ CREATE TABLE recruitment_request_replacement_reasons(
 CREATE TABLE applications(
    application_id VARCHAR(50),
    application_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-   cv LONGBINARY NOT NULL,
-   motivation_letter LONGBINARY NOT NULL,
+   cv VARBINARY(250) NOT NULL,
+   motivation_letter VARBINARY(250) NOT NULL,
    matching_score SMALLINT,
    status VARCHAR(20) DEFAULT 'SOUMIS', --CHECK(status IN('SOUMIS', 'EN_REVUE', 'ACCEPTÉ', 'REJETÉ')),
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
