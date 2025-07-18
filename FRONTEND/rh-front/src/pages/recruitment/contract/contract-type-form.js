@@ -11,15 +11,15 @@ export default function ContractTypeForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  const [returnUrl, setReturnUrl] = useState("");
+  // const [returnUrl, setReturnUrl] = useState("");
 
   // Parse URL query parameters to set initial value for code
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const initialValue = params.get("initialValue") || "";
-    const url = params.get("returnUrl") || "";
+    // const url = params.get("returnUrl") || "";
     setFormData((prev) => ({ ...prev, code: initialValue }));
-    setReturnUrl(url);
+    // setReturnUrl(url);
   }, []);
 
   const showAlert = (type, message) => {

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MyApp.Models.parent.Jobs
+namespace MyApp.Api.Models.parent.Jobs
 {
     public class JobDescriptionDTO
     {

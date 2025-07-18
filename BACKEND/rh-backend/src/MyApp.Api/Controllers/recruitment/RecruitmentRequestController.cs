@@ -156,7 +156,19 @@ namespace MyApp.Api.Controllers.recruitment
                         DepartmentId = requestForm.RecruitmentRequestDetail.DepartmentId,
                         ServiceId = requestForm.RecruitmentRequestDetail.ServiceId,
                         DirectSupervisorId = requestForm.RecruitmentRequestDetail.DirectSupervisorId,
-                    }
+                    },
+                     RecruitmentApproval = new RecruitmentApproval
+                    {
+                        ApproverId = requestForm.RecruitmentApproval.ApproverId,
+                        ApprovalFlowId = requestForm.RecruitmentApproval.ApprovalFlowId,
+                        Status = requestForm.RecruitmentApproval.Status,
+                        ApprovalOrder = requestForm.RecruitmentApproval.ApprovalOrder,
+                        ApprovalDate = requestForm.RecruitmentApproval.ApprovalDate,
+                        Comment = requestForm.RecruitmentApproval.Comment,
+                        Signature = requestForm.RecruitmentApproval.Signature,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
                 };
 
                 _logger.LogInformation("Création d'une nouvelle demande de recrutement pour le poste: {PositionTitle}", request.PositionTitle);
