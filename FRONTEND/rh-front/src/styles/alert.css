@@ -88,7 +88,7 @@
 /* Container principal de l'alert - Style ERP */
 .alert-container {
   position: fixed;
-  top: 72px; /* Position standard ERP */
+  bottom: var(--erp-spacing-2xl); /* Changé de top à bottom */
   right: var(--erp-spacing-2xl);
   z-index: 9999;
   font-family: var(--erp-font-family);
@@ -266,7 +266,7 @@
     right: var(--erp-spacing-lg);
     left: var(--erp-spacing-lg);
     max-width: none;
-    top: 60px;
+    bottom: var(--erp-spacing-lg); /* Changé de top à bottom */
   }
 
   .alert-content {
@@ -360,9 +360,9 @@
 
 /* États multiples alerts */
 .alert-container + .alert-container {
-  top: calc(72px + 80px);
+  bottom: calc(var(--erp-spacing-2xl) + 80px); /* Changé de top à bottom */
 }
 
 .alert-container + .alert-container + .alert-container {
-  top: calc(72px + 160px);
+  bottom: calc(var(--erp-spacing-2xl) + 160px); /* Changé de top à bottom */
 }
