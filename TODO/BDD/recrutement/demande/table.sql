@@ -1,11 +1,15 @@
--- Dropping tables in reverse order to handle foreign key constraints
+-- Tables sans dépendants ou en bout de chaîne de dépendances
+DROP TABLE IF EXISTS approval_flow_employee;
 DROP TABLE IF EXISTS recruitment_approval;
 DROP TABLE IF EXISTS employee_nationalities;
 DROP TABLE IF EXISTS recruitment_request_replacement_reasons;
 DROP TABLE IF EXISTS recruitment_request_details;
 DROP TABLE IF EXISTS recruitment_requests;
+DROP TABLE IF EXISTS application_comments;
+DROP TABLE IF EXISTS cv_details;
+DROP TABLE IF EXISTS applications;
 DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS approval_flow;
+DROP TABLE IF EXISTS candidates;
 DROP TABLE IF EXISTS employees;
 DROP TABLE IF EXISTS job_offers;
 DROP TABLE IF EXISTS job_descriptions;
@@ -22,6 +26,9 @@ DROP TABLE IF EXISTS employee_categories;
 DROP TABLE IF EXISTS working_time_types;
 DROP TABLE IF EXISTS recruitment_reasons;
 DROP TABLE IF EXISTS replacement_reasons;
+DROP TABLE IF EXISTS approval_flow;
+
+
 CREATE TABLE direction(
    direction_id VARCHAR(50),
    direction_name VARCHAR(100) NOT NULL,
@@ -59,6 +66,15 @@ CREATE TABLE units(
    service_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(unit_id),
    FOREIGN KEY(service_id) REFERENCES service(service_id)
+);
+
+CREATE TABLE approval_flow(
+   approval_flow_id VARCHAR(50),
+   approval_order INT NOT NULL,
+   approver_role VARCHAR(50),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(approval_flow_id)
 );
 
 CREATE TABLE site(
@@ -182,6 +198,19 @@ CREATE TABLE job_offers(
    FOREIGN KEY(description_id) REFERENCES job_descriptions(description_id)
 );
 
+CREATE TABLE candidates(
+   candidate_id VARCHAR(50),
+   last_name VARCHAR(100) NOT NULL,
+   first_name VARCHAR(100) NOT NULL,
+   birth_date DATE,
+   address VARCHAR(255),
+   email VARCHAR(100) NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(candidate_id),
+   UNIQUE(email)
+);
+
 CREATE TABLE employees(
    employee_id VARCHAR(50),
    employee_code VARCHAR(50),
@@ -237,26 +266,6 @@ CREATE TABLE employees(
    FOREIGN KEY(unit_id) REFERENCES units(unit_id)
 );
 
-CREATE TABLE approval_flow(
-   approval_flow_id VARCHAR(50),
-   approval_order INT NOT NULL,
-   approver_role VARCHAR(50),
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   PRIMARY KEY(approval_flow_id)
-);
-
-CREATE TABLE approval_flow_employee(
-   employee_id VARCHAR(50),
-   approval_flow_id VARCHAR(50),
-   created_at DATETIME,
-   updated_at DATETIME,
-   PRIMARY KEY(employee_id, approval_flow_id),
-   FOREIGN KEY(employee_id) REFERENCES employees(employee_id),
-   FOREIGN KEY(approval_flow_id) REFERENCES approval_flow(approval_flow_id)
-);
-
-
 CREATE TABLE users(
    user_id VARCHAR(50),
    email VARCHAR(100) NOT NULL,
@@ -268,6 +277,47 @@ CREATE TABLE users(
    employee_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(user_id),
    FOREIGN KEY(employee_id) REFERENCES employees(employee_id)
+);
+
+CREATE TABLE applications(
+   application_id VARCHAR(50),
+   application_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+   cv VARBINARY(250) NOT NULL,
+   motivation_letter VARBINARY(250) NOT NULL,
+   matching_score SMALLINT,
+   status VARCHAR(20) DEFAULT 'SOUMIS' CHECK(status IN('SOUMIS', 'EN_REVUE', 'ACCEPTÉ', 'REJETÉ')),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   offer_id VARCHAR(50),
+   candidate_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(application_id),
+   FOREIGN KEY(offer_id) REFERENCES job_offers(offer_id),
+   FOREIGN KEY(candidate_id) REFERENCES candidates(candidate_id)
+);
+
+CREATE TABLE cv_details(
+   cv_detail_id VARCHAR(50),
+   extracted_skills TEXT,
+   extracted_experience TEXT,
+   extracted_education TEXT,
+   extracted_languages TEXT,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   application_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(cv_detail_id),
+   FOREIGN KEY(application_id) REFERENCES applications(application_id)
+);
+
+CREATE TABLE application_comments(
+   comment_id VARCHAR(50),
+   comment_text TEXT,
+   created_at DATETIME NOT NULL,
+   updated_at DATETIME,
+   application_id VARCHAR(50) NOT NULL,
+   user_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(comment_id),
+   FOREIGN KEY(application_id) REFERENCES applications(application_id),
+   FOREIGN KEY(user_id) REFERENCES users(user_id)
 );
 
 CREATE TABLE recruitment_requests(
@@ -312,7 +362,6 @@ CREATE TABLE recruitment_request_details(
    FOREIGN KEY(direct_supervisor_id) REFERENCES employees(employee_id)
 );
 
-
 CREATE TABLE recruitment_approval(
    recruitment_request_id VARCHAR(50),
    approver_id VARCHAR(50),
@@ -327,8 +376,6 @@ CREATE TABLE recruitment_approval(
    FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
    FOREIGN KEY(approver_id) REFERENCES users(user_id)
 );
-
-
 
 CREATE TABLE employee_nationalities(
    employee_id VARCHAR(50),
@@ -347,20 +394,11 @@ CREATE TABLE recruitment_request_replacement_reasons(
    FOREIGN KEY(replacement_reason_id) REFERENCES replacement_reasons(replacement_reason_id)
 );
 
-
--- candidatures 
-CREATE TABLE applications(
-   application_id VARCHAR(50),
-   application_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-   cv VARBINARY(250) NOT NULL,
-   motivation_letter VARBINARY(250) NOT NULL,
-   matching_score SMALLINT,
-   status VARCHAR(20) DEFAULT 'SOUMIS', --CHECK(status IN('SOUMIS', 'EN_REVUE', 'ACCEPTÉ', 'REJETÉ')),
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   offer_id VARCHAR(50),
-   candidate_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(application_id),
-   FOREIGN KEY(offer_id) REFERENCES job_offers(offer_id),
-   FOREIGN KEY(candidate_id) REFERENCES candidates(candidate_id)
+CREATE TABLE approval_flow_employee(
+   employee_id VARCHAR(50),
+   approval_flow_id VARCHAR(50),
+   PRIMARY KEY(employee_id, approval_flow_id),
+   FOREIGN KEY(employee_id) REFERENCES employees(employee_id),
+   FOREIGN KEY(approval_flow_id) REFERENCES approval_flow(approval_flow_id)
 );
+

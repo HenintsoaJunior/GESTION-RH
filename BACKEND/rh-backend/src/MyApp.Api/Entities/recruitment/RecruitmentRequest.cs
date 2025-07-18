@@ -107,6 +107,11 @@ namespace MyApp.Api.Entities.recruitment
                 ServiceId = requestForm.RecruitmentRequestDetail.ServiceId,
                 DirectSupervisorId = requestForm.RecruitmentRequestDetail.DirectSupervisorId,
             };
+            ReplacementReasons = requestForm.ReplacementReasons?.Select(rr => new RecruitmentRequestReplacementReason
+            {
+                ReplacementReasonId = rr.ReplacementReasonId,
+                Description = rr.Description
+            });
         }
     }
 }
