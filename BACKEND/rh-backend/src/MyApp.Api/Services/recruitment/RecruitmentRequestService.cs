@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Logging;
 using MyApp.Api.Entities.recruitment;
-using MyApp.Api.Models.form.recruitment;
+using MyApp.Api.Repositories.employee;
 using MyApp.Api.Repositories.recruitment;
+using MyApp.Api.Services.employee;
 using MyApp.Api.Utils.generator;
 
 namespace MyApp.Api.Services.recruitment
@@ -22,23 +22,26 @@ namespace MyApp.Api.Services.recruitment
     {
         private readonly IRecruitmentRequestRepository _requestRepository;
         private readonly IRecruitmentRequestDetailService _requestDetailService;
+        private readonly IRecruitmentRequestReplacementReasonService _replacementReasonService;
+        private readonly IApprovalFlowEmployeeRepository _approvalFlowRepository;
         private readonly IRecruitmentApprovalService _approvalService;
-        private readonly IRecruitmentRequestReplacementReasonRepository _replacementReasonRepository;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<RecruitmentRequestService> _logger;
 
         public RecruitmentRequestService(
             IRecruitmentRequestRepository requestRepository,
             IRecruitmentRequestDetailService requestDetailService,
+            IRecruitmentRequestReplacementReasonService replacementReasonService,
+            IApprovalFlowEmployeeRepository approvalFlowRepository,
             IRecruitmentApprovalService approvalService,
-            IRecruitmentRequestReplacementReasonRepository replacementReasonRepository,
             ISequenceGenerator sequenceGenerator,
             ILogger<RecruitmentRequestService> logger)
         {
             _requestRepository = requestRepository;
             _requestDetailService = requestDetailService;
+            _replacementReasonService = replacementReasonService;
+            _approvalFlowRepository = approvalFlowRepository;
             _approvalService = approvalService;
-            _replacementReasonRepository = replacementReasonRepository;
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
         }
@@ -51,44 +54,45 @@ namespace MyApp.Api.Services.recruitment
                 {
                     request.RecruitmentRequestId = _sequenceGenerator.GenerateSequence("seq_recruitment_request_id", "REQ", 6, "-");
                 }
+                // Ajoutez la demande principale
+                await _requestRepository.AddAsync(request);
+                await _requestRepository.SaveChangesAsync();
+                _logger.LogInformation("Demande de recrutement créée avec l'ID: {RequestId}", request.RecruitmentRequestId);
 
                 // Vérifiez si RecruitmentRequestDetail existe
                 RecruitmentRequestDetail? detail = request.RecruitmentRequestDetail;
                 if (detail != null)
                 {
                     detail.RecruitmentRequestId = request.RecruitmentRequestId;
-                    
+                    // Ajoutez le détail via le service dédié
+                    await _requestDetailService.AddAsync(detail);
+                    _logger.LogInformation("Détail de la demande de recrutement créé avec l'ID: {DetailId}", detail.RecruitmentRequestDetailId);
                     // Supprimez la référence temporairement pour éviter les problèmes de FK
                     request.RecruitmentRequestDetail = null!;
                 }
 
-                // Vérifiez si RecruitmentApproval existe
-                RecruitmentApproval? approval = request.RecruitmentApproval;
-                if (approval != null)
+                // Vérifiez si RecruitmentRequestReplacementReason existe
+                IEnumerable<RecruitmentRequestReplacementReason>? requestReplacementReasons = request.ReplacementReasons;
+                if (requestReplacementReasons != null)
                 {
-                    approval.RecruitmentRequestId = request.RecruitmentRequestId;
+                    foreach (var reason in requestReplacementReasons)
+                    {
+                        reason.RecruitmentRequestId = request.RecruitmentRequestId;
+                    }
+                    // Ajoutez le détail via le service dédié
+                    await _replacementReasonService.AddRangeAsync(requestReplacementReasons);
+                    _logger.LogInformation("Raisons du remplacement de la demande de recrutement créé");
                     // Supprimez la référence temporairement pour éviter les problèmes de FK
-                    request.RecruitmentApproval = null!;
+                    request.ReplacementReasons = null!;
                 }
 
-                // Ajoutez la demande principale
-                await _requestRepository.AddAsync(request);
-                await _requestRepository.SaveChangesAsync();
-                _logger.LogInformation("Demande de recrutement créée avec l'ID: {RequestId}", request.RecruitmentRequestId);
-
-                // Ajoutez le détail via le service dédié
-                if (detail != null)
-                {
-                    await _requestDetailService.AddAsync(detail);
-                    _logger.LogInformation("Détail de la demande de recrutement créé avec l'ID: {DetailId}", detail.RecruitmentRequestDetailId);
-                }
-
+                IEnumerable <ApprovalFlowEmployee>? approvalFlowEmployee = (IEnumerable<ApprovalFlowEmployee>?)_approvalFlowRepository.GetAllGroupedByApproverRoleWithActiveEmployeesAsync();
+                // insertion dans recruitment_request
+                RecruitmentApproval approval = new RecruitmentApproval();
+                approval.RecruitmentRequestId = request.RecruitmentRequestId;
                 // Ajoutez l'approbation via le service dédié
-                if (approval != null)
-                {
-                    await _approvalService.AddAsync(approval);
-                    _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", approval.RecruitmentRequestId);
-                }
+                await _approvalService.AddAsync(approval, approvalFlowEmployee);
+                _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", approval.RecruitmentRequestId);
 
                 return request.RecruitmentRequestId;
             }

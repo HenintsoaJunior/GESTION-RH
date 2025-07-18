@@ -13,6 +13,7 @@ namespace MyApp.Api.Data
     public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        public DbSet<ApprovalFlowEmployee> ApprovalFlowEmployees { get; set; } 
         public DbSet<JobOffer> JobOffers { get; set; } 
         public DbSet<JobDescription> JobDescriptions { get; set; } 
         public DbSet<RecruitmentApproval> RecruitmentApprovals { get; set; } 
