@@ -1,15 +1,14 @@
-// ===== SERVICE INTERFACE =====
 using Microsoft.Extensions.Logging;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Models.form.recruitment;
 using MyApp.Api.Repositories.recruitment;
+using MyApp.Api.Utils.generator; 
 
 namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentRequestService
     {
-        Task<string> CreateRequestAsync(RecruitmentRequest request);
-        Task<string> CreateRequest(RecruitmentRequest request); // AJOUT POUR COMPATIBILITÉ
+        Task<string> CreateRequest(RecruitmentRequest request);
         Task<IEnumerable<RecruitmentRequest>> GetAllAsync();
         Task<RecruitmentRequest?> GetByRequestIdAsync(string requestId);
         Task<IEnumerable<RecruitmentRequest>> GetByRequesterIdAsync(string requesterId);
@@ -19,13 +18,13 @@ namespace MyApp.Api.Services.recruitment
         Task DeleteAsync(string requestId);
     }
 
-    // ===== SERVICE IMPLEMENTATION =====
     public class RecruitmentRequestService : IRecruitmentRequestService
     {
         private readonly IRecruitmentRequestRepository _requestRepository;
         private readonly IRecruitmentRequestDetailRepository _requestDetailRepository;
         private readonly IRecruitmentApprovalRepository _approvalRepository;
         private readonly IRecruitmentRequestReplacementReasonRepository _replacementReasonRepository;
+        private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<RecruitmentRequestService> _logger;
 
         public RecruitmentRequestService(
@@ -33,29 +32,56 @@ namespace MyApp.Api.Services.recruitment
             IRecruitmentRequestDetailRepository requestDetailRepository,
             IRecruitmentApprovalRepository approvalRepository,
             IRecruitmentRequestReplacementReasonRepository replacementReasonRepository,
+            ISequenceGenerator sequenceGenerator,
             ILogger<RecruitmentRequestService> logger)
         {
             _requestRepository = requestRepository;
             _requestDetailRepository = requestDetailRepository;
             _approvalRepository = approvalRepository;
             _replacementReasonRepository = replacementReasonRepository;
+            _sequenceGenerator = sequenceGenerator;
             _logger = logger;
         }
 
-        public async Task<string> CreateRequestAsync(RecruitmentRequest request)
+        public async Task<string> CreateRequest(RecruitmentRequest request)
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(request.RecruitmentRequestId))
+                {
+                    request.RecruitmentRequestId = _sequenceGenerator.GenerateSequence("seq_recruitment_request_id", "REQ", 6, "-");
+                }
+
+                // Vérifiez si RecruitmentRequestDetail existe
+                RecruitmentRequestDetail? detail = request.RecruitmentRequestDetail;
+                if (detail != null)
+                {
+                    detail.RecruitmentRequestId = request.RecruitmentRequestId;
+                    detail.RecruitmentRequestDetailId = _sequenceGenerator.GenerateSequence("seq_recruitment_request_detail_id", "REQDET", 6, "-");
+
+                    if (string.IsNullOrEmpty(detail.RecruitmentRequestDetailId))
+                    {
+                        _logger.LogError("Échec de la génération de RecruitmentRequestDetailId");
+                        throw new InvalidOperationException("RecruitmentRequestDetailId ne peut pas être null.");
+                    }
+
+                    request.RecruitmentRequestDetail = null!;
+                }
+
+                // Ajoutez la demande principale
                 await _requestRepository.AddAsync(request);
                 await _requestRepository.SaveChangesAsync();
-                
-                // Recharger l'entité pour obtenir l'ID généré par le trigger
-                await _requestRepository.ReloadAsync(request);
-                
-                string requestId = request.RecruitmentRequestId;
-                _logger.LogInformation("RequestID EST BLALALALLALALA {RequestId}", requestId);
-                
-                return requestId;
+                _logger.LogInformation("Demande de recrutement créée avec l'ID: {RequestId}", request.RecruitmentRequestId);
+
+                // Ajoutez le détail séparément si nécessaire
+                if (detail != null)
+                {
+                    await _requestDetailRepository.AddAsync(detail);
+                    await _requestDetailRepository.SaveChangesAsync();
+                    _logger.LogInformation("Détail de la demande de recrutement créé avec l'ID: {DetailId}", detail.RecruitmentRequestDetailId);
+                }
+
+                return request.RecruitmentRequestId;
             }
             catch (Exception ex)
             {
@@ -63,13 +89,7 @@ namespace MyApp.Api.Services.recruitment
                 throw;
             }
         }
-
-        // AJOUT POUR COMPATIBILITÉ AVEC LE CONTRÔLEUR
-        public async Task<string> CreateRequest(RecruitmentRequest request)
-        {
-            return await CreateRequestAsync(request);
-        }
-
+        
         public async Task<IEnumerable<RecruitmentRequest>> GetAllAsync()
         {
             try
@@ -149,10 +169,15 @@ namespace MyApp.Api.Services.recruitment
                     throw new ArgumentNullException(nameof(request), "La demande de recrutement ne peut pas être null");
                 }
 
+                if (string.IsNullOrWhiteSpace(request.RecruitmentRequestId))
+                {
+                    request.RecruitmentRequestId = _sequenceGenerator.GenerateSequence("seq_recruitment_request_id", "REQ", 6, "-");
+                }
+
                 await _requestRepository.AddAsync(request);
                 await _requestRepository.SaveChangesAsync();
                 
-                _logger.LogInformation("Demande de recrutement ajoutée avec succès");
+                _logger.LogInformation("Demande de recrutement ajoutée avec succès avec l'ID: {RequestId}", request.RecruitmentRequestId);
             }
             catch (Exception ex)
             {

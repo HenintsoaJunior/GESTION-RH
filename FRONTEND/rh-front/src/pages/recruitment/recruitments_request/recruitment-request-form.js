@@ -85,7 +85,8 @@ export default function RecruitmentRequestForm() {
       "typeContrat",
       (ct) => ct.code,
       "les types de contrat",
-      (type, message) => showAlert(setAlert, type, message)
+      //(type, message) => showAlert(setAlert, type, message)
+      () => {}
     );
     fetchData(
       "/api/Direction",
@@ -96,7 +97,7 @@ export default function RecruitmentRequestForm() {
       "direction",
       (dir) => dir.directionName,
       "les directions",
-      (type, message) => showAlert(setAlert, type, message)
+      () => {}
     );
     fetchData(
       "/api/Department",
@@ -107,7 +108,7 @@ export default function RecruitmentRequestForm() {
       "departement",
       (dep) => dep.departmentName,
       "les départements",
-      (type, message) => showAlert(setAlert, type, message)
+      () => {}
     );
     fetchData(
       "/api/Employee",
@@ -118,7 +119,7 @@ export default function RecruitmentRequestForm() {
       "superieurHierarchique",
       (emp) => `${emp.firstName} ${emp.lastName}`,
       "les employés",
-      (type, message) => showAlert(setAlert, type, message)
+      () => {}
     );
     fetchData(
       "/api/Site",
@@ -129,7 +130,7 @@ export default function RecruitmentRequestForm() {
       "site",
       (site) => site.siteName,
       "les sites",
-      (type, message) => showAlert(setAlert, type, message)
+      () => {}
     );
     fetchData(
       "/api/Service",
@@ -140,7 +141,7 @@ export default function RecruitmentRequestForm() {
       "service",
       (service) => service.serviceName,
       "les services",
-      (type, message) => showAlert(setAlert, type, message)
+      () => {}
     );
     fetchData(
       "/api/RecruitmentReason",
@@ -151,7 +152,7 @@ export default function RecruitmentRequestForm() {
       null,
       null,
       "les motifs de recrutement",
-      (type, message) => showAlert(setAlert, type, message)
+      () => {}
     );
     fetchData(
       "/api/ReplacementReason",
@@ -162,7 +163,7 @@ export default function RecruitmentRequestForm() {
       "motifRemplacement",
       (reason) => reason.name,
       "les raisons de remplacement",
-      (type, message) => showAlert(setAlert, type, message)
+      () => {}
     );
   }, []);
 
@@ -462,7 +463,7 @@ export default function RecruitmentRequestForm() {
                       : "Saisir ou sélectionner..."
                   }
                   disabled={isSubmitting || isLoading.contractTypes}
-                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, (type, message) => showAlert(setAlert, type, message), "typeContrat", value)}
+                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, () => {}, "typeContrat", value)}
                   fieldType="typeContrat"
                   fieldLabel="type de contrat"
                   addNewRoute="/recruitment/contract-type-form"
@@ -537,7 +538,7 @@ export default function RecruitmentRequestForm() {
                       : "Saisir ou sélectionner..."
                   }
                   disabled={isSubmitting || isLoading.directions}
-                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, (type, message) => showAlert(setAlert, type, message), "direction", value)}
+                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, () => {}, "direction", value)}
                   fieldType="direction"
                   fieldLabel="direction"
                   addNewRoute="/direction/direction-form"
@@ -564,7 +565,7 @@ export default function RecruitmentRequestForm() {
                       : "Saisir ou sélectionner..."
                   }
                   disabled={isSubmitting || isLoading.departments}
-                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, (type, message) => showAlert(setAlert, type, message), "departement", value)}
+                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, () => {}, "departement", value)}
                   fieldType="departement"
                   fieldLabel="département"
                   addNewRoute="/direction/department-form"
@@ -593,7 +594,7 @@ export default function RecruitmentRequestForm() {
                       : "Saisir ou sélectionner..."
                   }
                   disabled={isSubmitting || isLoading.services}
-                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, (type, message) => showAlert(setAlert, type, message), "service", value)}
+                  onAddNew={(value) => handleAddNewSuggestion(setSuggestions, () => {}, "service", value)}
                   fieldType="service"
                   fieldLabel="service"
                   addNewRoute="/direction/service-form"
@@ -806,7 +807,7 @@ const renderSecondForm = () => (
                       onAddNew={(value) =>
                         handleAddNewSuggestion(
                           setSuggestions,
-                          (type, message) => showAlert(setAlert, type, message),
+                          () => {},
                           "motifRemplacement",
                           value
                         )
