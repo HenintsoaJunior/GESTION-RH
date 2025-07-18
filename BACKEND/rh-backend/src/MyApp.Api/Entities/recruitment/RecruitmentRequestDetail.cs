@@ -5,6 +5,7 @@ using MyApp.Api.Entities.employee;
 
 namespace MyApp.Api.Entities.recruitment
 {
+    [Table("recruitment_request_details")]
     public class RecruitmentRequestDetail : BaseEntity
     {
         [Key]

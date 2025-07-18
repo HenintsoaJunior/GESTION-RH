@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Extensions;
 using Utils.pdf;
+using MyApp.Api.Utils.generator;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,9 @@ builder.Services.AddCors(options =>
                .AllowAnyMethod();
     });
 });
+
+
+builder.Services.AddScoped<ISequenceGenerator, SequenceGenerator>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

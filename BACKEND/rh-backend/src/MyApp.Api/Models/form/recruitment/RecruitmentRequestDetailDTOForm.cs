@@ -10,10 +10,6 @@ namespace MyApp.Api.Models.form.recruitment
 
         [Required]
         [MaxLength(50)]
-        public string RecruitmentRequestId { get; set; } = string.Empty;
-
-        [Required]
-        [MaxLength(50)]
         public string DirectionId { get; set; } = string.Empty;
 
         [Required]
