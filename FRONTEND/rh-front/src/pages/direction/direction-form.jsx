@@ -1,26 +1,26 @@
-import "../../../styles/generic-form-styles.css";
+import "styles/generic-form-styles.css";
 import { useState, useEffect } from "react";
-import { BASE_URL } from "../../../config/apiConfig";
-import Alert from "../../../components/Alert";
+import { BASE_URL } from "config/apiConfig";
+import Alert from "components/alert";
 import * as FaIcons from "react-icons/fa";
 
-export default function ContractTypeForm() {
+export default function DirectionForm() {
   const [formData, setFormData] = useState({
-    code: "",
-    label: "",
+    directionName: "",
+    acronym: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  // const [returnUrl, setReturnUrl] = useState("");
+  const [setReturnUrl] = useState("");
 
-  // Parse URL query parameters to set initial value for code
+  // Parse URL query parameters to set initial value for directionName
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const initialValue = params.get("initialValue") || "";
-    // const url = params.get("returnUrl") || "";
-    setFormData((prev) => ({ ...prev, code: initialValue }));
-    // setReturnUrl(url);
-  }, []);
+    const url = params.get("returnUrl") || "";
+    setFormData((prev) => ({ ...prev, directionName: initialValue }));
+    setReturnUrl(url);
+  }, [setReturnUrl]);
 
   const showAlert = (type, message) => {
     setAlert({ isOpen: true, type, message });
@@ -31,28 +31,28 @@ export default function ContractTypeForm() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${BASE_URL}/api/ContractType`, {
+      const response = await fetch(`${BASE_URL}/api/Direction`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          code: formData.code,
-          label: formData.label,
+          directionName: formData.directionName,
+          acronym: formData.acronym,
         }),
       });
 
       if (response.ok) {
         await response.json();
-        showAlert("success", "Type de contrat créé avec succès !");
+        showAlert("success", "Direction créée avec succès !");
         event.target.reset();
-        setFormData({ code: "", label: "" });
+        setFormData({ directionName: "", acronym: "" });
         // if (returnUrl) {
         //   window.location.href = returnUrl;
         // }
       } else {
         const errorData = await response.json();
-        const message = errorData.message || `Erreur ${response.status}: Échec de la création du type de contrat.`;
+        const message = errorData.message || `Erreur ${response.status}: Échec de la création de la direction.`;
         showAlert("error", message);
       }
     } catch (error) {
@@ -63,7 +63,7 @@ export default function ContractTypeForm() {
   };
 
   const handleReset = () => {
-    setFormData({ code: "", label: "" });
+    setFormData({ directionName: "", acronym: "" });
     showAlert("info", "Formulaire réinitialisé.");
   };
 
@@ -76,22 +76,22 @@ export default function ContractTypeForm() {
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
       <div className="table-header">
-        <h2 className="table-title">Création d'un Type de Contrat</h2>
+        <h2 className="table-title">Création d'une Direction</h2>
       </div>
 
-      <form id="contractTypeForm" className="generic-form" onSubmit={handleSubmit}>
+      <form id="directionForm" className="generic-form" onSubmit={handleSubmit}>
         <div className="form-section">
           <table className="form-table">
             <tbody>
               <tr>
                 <th className="form-label-cell">
-                  <label className="form-label form-label-required">Code</label>
+                  <label className="form-label form-label-required">Nom de la Direction</label>
                 </th>
                 <td className="form-input-cell">
                   <input
                     type="text"
-                    value={formData.code}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, code: e.target.value }))}
+                    value={formData.directionName}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, directionName: e.target.value }))}
                     placeholder="Saisir ou sélectionner..."
                     className="form-input"
                     required
@@ -101,14 +101,14 @@ export default function ContractTypeForm() {
               </tr>
               <tr>
                 <th className="form-label-cell">
-                  <label className="form-label">Libellé</label>
+                  <label className="form-label">Acronyme</label>
                 </th>
                 <td className="form-input-cell">
                   <input
                     type="text"
-                    value={formData.label}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, label: e.target.value }))}
-                    placeholder="Ex: Contrat à Durée Déterminée..."
+                    value={formData.acronym}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, acronym: e.target.value }))}
+                    placeholder="Ex: DG, DT..."
                     className="form-input"
                     disabled={isSubmitting}
                   />
@@ -123,7 +123,7 @@ export default function ContractTypeForm() {
             type="submit"
             className="submit-btn"
             disabled={isSubmitting}
-            title="Enregistrer le type de contrat"
+            title="Enregistrer la direction"
           >
             {isSubmitting ? "Envoi en cours..." : "Enregistrer"}
             <FaIcons.FaArrowRight className="w-4 h-4" />

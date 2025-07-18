@@ -11,8 +11,8 @@
   --primary-shadow: rgba(105, 180, 46, 0.2);
   --primary-shadow-hover: rgba(105, 180, 46, 0.3);
   --text-primary: #9d9d9c;
-  --error-color: #e74c3c;
-  --error-hover: #d62c1a;
+  --error-color: #E30613; /* Couleur d'erreur mise à jour */
+  --error-hover: #c20510; /* Teinte plus foncée pour le survol */
 
   /* Couleurs de fond */
   --bg-primary: #ffffff;
@@ -119,10 +119,10 @@
   font-size: var(--font-size-md);
 }
 
-/* New style for required field labels */
+/* Style pour les labels des champs requis */
 .form-label-required::after {
   content: " *";
-  color: red;
+  color: var(--error-color);
 }
 
 .form-input-cell {
@@ -161,9 +161,22 @@
   box-shadow: inset 0 0 2px var(--primary-shadow);
 }
 
+/* Style pour les champs avec erreur */
+.form-table input.input-error,
+.form-table select.input-error,
+.form-table textarea.input-error,
+.autocomplete-input.input-error,
+.rich-text-editor.input-error {
+  border: 3px solid var(--error-color) !important;
+}
+
+.form-table input[type="radio"].input-error {
+  outline: 3px solid var(--error-color) !important;
+}
+
 /* ===== STYLES POUR H3 DANS FORM-SECTION ===== */
 .form-section h3 {
-  margin-top: 10px; /* Espacement supérieur de 10px pour chaque h3 */
+  margin-top: 10px;
 }
 
 /* ===== STYLES POUR RADIO BUTTONS ===== */

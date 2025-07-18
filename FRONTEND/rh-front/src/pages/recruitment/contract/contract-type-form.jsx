@@ -1,25 +1,25 @@
-import "../../styles/generic-form-styles.css";
+import "styles/generic-form-styles.css";
 import { useState, useEffect } from "react";
-import { BASE_URL } from "../../config/apiConfig";
-import Alert from "../../components/Alert";
+import { BASE_URL } from "config/apiConfig";
+import Alert from "components/alert";
 import * as FaIcons from "react-icons/fa";
 
-export default function DirectionForm() {
+export default function ContractTypeForm() {
   const [formData, setFormData] = useState({
-    directionName: "",
-    acronym: "",
+    code: "",
+    label: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  const [returnUrl, setReturnUrl] = useState("");
+  // const [returnUrl, setReturnUrl] = useState("");
 
-  // Parse URL query parameters to set initial value for directionName
+  // Parse URL query parameters to set initial value for code
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const initialValue = params.get("initialValue") || "";
-    const url = params.get("returnUrl") || "";
-    setFormData((prev) => ({ ...prev, directionName: initialValue }));
-    setReturnUrl(url);
+    // const url = params.get("returnUrl") || "";
+    setFormData((prev) => ({ ...prev, code: initialValue }));
+    // setReturnUrl(url);
   }, []);
 
   const showAlert = (type, message) => {
@@ -31,28 +31,28 @@ export default function DirectionForm() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${BASE_URL}/api/Direction`, {
+      const response = await fetch(`${BASE_URL}/api/ContractType`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          directionName: formData.directionName,
-          acronym: formData.acronym,
+          code: formData.code,
+          label: formData.label,
         }),
       });
 
       if (response.ok) {
         await response.json();
-        showAlert("success", "Direction créée avec succès !");
+        showAlert("success", "Type de contrat créé avec succès !");
         event.target.reset();
-        setFormData({ directionName: "", acronym: "" });
+        setFormData({ code: "", label: "" });
         // if (returnUrl) {
         //   window.location.href = returnUrl;
         // }
       } else {
         const errorData = await response.json();
-        const message = errorData.message || `Erreur ${response.status}: Échec de la création de la direction.`;
+        const message = errorData.message || `Erreur ${response.status}: Échec de la création du type de contrat.`;
         showAlert("error", message);
       }
     } catch (error) {
@@ -63,7 +63,7 @@ export default function DirectionForm() {
   };
 
   const handleReset = () => {
-    setFormData({ directionName: "", acronym: "" });
+    setFormData({ code: "", label: "" });
     showAlert("info", "Formulaire réinitialisé.");
   };
 
@@ -76,22 +76,22 @@ export default function DirectionForm() {
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
       <div className="table-header">
-        <h2 className="table-title">Création d'une Direction</h2>
+        <h2 className="table-title">Création d'un Type de Contrat</h2>
       </div>
 
-      <form id="directionForm" className="generic-form" onSubmit={handleSubmit}>
+      <form id="contractTypeForm" className="generic-form" onSubmit={handleSubmit}>
         <div className="form-section">
           <table className="form-table">
             <tbody>
               <tr>
                 <th className="form-label-cell">
-                  <label className="form-label form-label-required">Nom de la Direction</label>
+                  <label className="form-label form-label-required">Code</label>
                 </th>
                 <td className="form-input-cell">
                   <input
                     type="text"
-                    value={formData.directionName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, directionName: e.target.value }))}
+                    value={formData.code}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, code: e.target.value }))}
                     placeholder="Saisir ou sélectionner..."
                     className="form-input"
                     required
@@ -101,14 +101,14 @@ export default function DirectionForm() {
               </tr>
               <tr>
                 <th className="form-label-cell">
-                  <label className="form-label">Acronyme</label>
+                  <label className="form-label">Libellé</label>
                 </th>
                 <td className="form-input-cell">
                   <input
                     type="text"
-                    value={formData.acronym}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, acronym: e.target.value }))}
-                    placeholder="Ex: DG, DT..."
+                    value={formData.label}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, label: e.target.value }))}
+                    placeholder="Ex: Contrat à Durée Déterminée..."
                     className="form-input"
                     disabled={isSubmitting}
                   />
@@ -123,7 +123,7 @@ export default function DirectionForm() {
             type="submit"
             className="submit-btn"
             disabled={isSubmitting}
-            title="Enregistrer la direction"
+            title="Enregistrer le type de contrat"
           >
             {isSubmitting ? "Envoi en cours..." : "Enregistrer"}
             <FaIcons.FaArrowRight className="w-4 h-4" />
