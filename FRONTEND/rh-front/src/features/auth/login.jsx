@@ -3,12 +3,8 @@
 
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Button } from "../../components/Button"
-import { Input } from "../../components/Input"
-import { Label } from "../../components/Label"
-import { Eye, EyeOff } from "../../components/Icons"
 import { BASE_URL } from "../../config/apiConfig"
-import "./Login.css"
+import "styles/login.css"
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -59,10 +55,8 @@ function LoginPage() {
   }
 
   const handlePasswordPaste = (e) => {
-    // Update password state with pasted content
     const pastedText = e.clipboardData.getData('text')
     setPassword(pastedText)
-    // Prevent default to avoid any unexpected behavior
     e.preventDefault()
   }
 
@@ -84,8 +78,8 @@ function LoginPage() {
 
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <Label className="form-label">Email</Label>
-            <Input
+            <label className="form-label">Email</label>
+            <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -96,11 +90,11 @@ function LoginPage() {
 
           <div className="form-group">
             <div className="password-header">
-              <Label className="form-label">Mot de passe</Label>
+              <label className="form-label">Mot de passe</label>
               <a href="#" className="forgot-password">Mot de passe oublié?</a>
             </div>
             <div className="password-input-container">
-              <Input
+              <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -110,21 +104,30 @@ function LoginPage() {
               />
               <button
                 type="button"
-                key="password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
                 className="password-toggle"
                 aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
               >
-                {showPassword ? <EyeOff /> : <Eye />}
+                {showPassword ? (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                ) : (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                )}
               </button>
             </div>
           </div>
 
           {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
 
-          <Button type="submit" className="login-button">
+          <button type="submit" className="login-button">
             Se connecter
-          </Button>
+          </button>
 
           <div className="signup-container">
             Vous n'avez pas encore de compte?{" "}

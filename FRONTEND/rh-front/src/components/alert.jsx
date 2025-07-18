@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react"
-import "../styles/alert.css"
+import "styles/alert.css"
 
 const Alert = ({ type = "info", message, isOpen, onClose }) => {
   const [visible, setVisible] = useState(isOpen)

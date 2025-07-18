@@ -1,9 +1,9 @@
-import "../../styles/generic-form-styles.css";
+import "styles/generic-form-styles.css";
 import { useState, useEffect } from "react";
-import { BASE_URL } from "../../config/apiConfig";
-import Alert from "../../components/Alert";
+import { BASE_URL } from "config/apiConfig";
+import Alert from "components/alert";
 import * as FaIcons from "react-icons/fa";
-import AutoCompleteInput from "../../components/AutoCompleteInput";
+import AutoCompleteInput from "components/auto-complete-input";
 
 export default function DepartmentForm() {
   const [formData, setFormData] = useState({
@@ -12,7 +12,7 @@ export default function DepartmentForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  const [returnUrl, setReturnUrl] = useState("");
+  const [setReturnUrl] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [directionMap, setDirectionMap] = useState({}); // Maps directionName to directionId
 
@@ -54,7 +54,7 @@ export default function DepartmentForm() {
     const url = params.get("returnUrl") || "";
     setFormData((prev) => ({ ...prev, departmentName: initialValue }));
     setReturnUrl(url);
-  }, []);
+  }, [setReturnUrl]);
 
   const showAlert = (type, message) => {
     setAlert({ isOpen: true, type, message });
