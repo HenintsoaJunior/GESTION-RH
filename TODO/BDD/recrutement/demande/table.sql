@@ -336,3 +336,21 @@ CREATE TABLE recruitment_request_replacement_reasons(
    FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
    FOREIGN KEY(replacement_reason_id) REFERENCES replacement_reasons(replacement_reason_id)
 );
+
+
+-- candidatures 
+CREATE TABLE applications(
+   application_id VARCHAR(50),
+   application_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+   cv LONGBINARY NOT NULL,
+   motivation_letter LONGBINARY NOT NULL,
+   matching_score SMALLINT,
+   status VARCHAR(20) DEFAULT 'SOUMIS', --CHECK(status IN('SOUMIS', 'EN_REVUE', 'ACCEPTÉ', 'REJETÉ')),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   offer_id VARCHAR(50),
+   candidate_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(application_id),
+   FOREIGN KEY(offer_id) REFERENCES job_offers(offer_id),
+   FOREIGN KEY(candidate_id) REFERENCES candidates(candidate_id)
+);
