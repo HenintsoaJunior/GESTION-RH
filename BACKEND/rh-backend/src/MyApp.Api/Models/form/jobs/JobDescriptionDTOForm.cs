@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using MyApp.Model.parent.Jobs;
+using MyApp.Api.Models.parent.Jobs;
 
 namespace MyApp.Model.form.Jobs
 {
