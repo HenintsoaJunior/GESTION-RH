@@ -1,26 +1,41 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Models.form.recruitment;
 
 namespace MyApp.Api.Entities.recruitment
 {
     [Table("recruitment_request_replacement_reasons")]
+    [PrimaryKey(nameof(RecruitmentRequestId), nameof(ReplacementReasonId))]
     public class RecruitmentRequestReplacementReason
     {
-        [Column(Order = 0)]
+        [Column("recruitment_request_id")]
         [MaxLength(50)]
         public string RecruitmentRequestId { get; set; } = null!;
 
-        [Column(Order = 1)]
+        [Column("replacement_reason_id")]
         [MaxLength(50)]
         public string ReplacementReasonId { get; set; } = null!;
 
+        [Column("description")]
+        [MaxLength(250)]
         public string? Description { get; set; }
 
-        // Navigation
+        // Navigation properties
         [ForeignKey("RecruitmentRequestId")]
-        public RecruitmentRequest? RecruitmentRequest { get; set; }
+        public virtual RecruitmentRequest RecruitmentRequest { get; set; } = null!;
 
         [ForeignKey("ReplacementReasonId")]
-        public ReplacementReason? ReplacementReason { get; set; }
+        public virtual ReplacementReason ReplacementReason { get; set; } = null!;
+
+        // Méthode statique pour créer une collection depuis le formulaire
+        public static IEnumerable<RecruitmentRequestReplacementReason> FromForm(RecruitmentRequestDTOForm requestForm)
+        {
+            return requestForm.ReplacementReasons?.Select(rr => new RecruitmentRequestReplacementReason
+            {
+                ReplacementReasonId = rr.ReplacementReasonId,
+                Description = rr.Description
+            }) ?? Enumerable.Empty<RecruitmentRequestReplacementReason>();
+        }
     }
 }

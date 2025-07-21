@@ -12,7 +12,7 @@ export default function ServiceForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  const [setReturnUrl] = useState("");
+  const [returnUrl, setReturnUrl] = useState(""); // Fixed: Correct state declaration
   const [suggestions, setSuggestions] = useState([]);
   const [departmentMap, setDepartmentMap] = useState({}); // Maps departmentName to departmentId
 
@@ -51,8 +51,8 @@ export default function ServiceForm() {
     const initialValue = params.get("initialValue") || "";
     const url = params.get("returnUrl") || "";
     setFormData((prev) => ({ ...prev, serviceName: initialValue }));
-    setReturnUrl(url);
-  }, [setReturnUrl]);
+    setReturnUrl(url); // Fixed: Use setReturnUrl to update returnUrl state
+  }, []); // Removed setReturnUrl from dependencies since it’s a stable setter
 
   const showAlert = (type, message) => {
     setAlert({ isOpen: true, type, message });
@@ -79,9 +79,9 @@ export default function ServiceForm() {
         showAlert("success", "Service créé avec succès !");
         event.target.reset();
         setFormData({ serviceName: "", departmentId: "" });
-        // if (returnUrl) {
-        //   window.location.href = returnUrl;
-        // }
+        if (returnUrl) {
+          window.location.href = returnUrl; // Uses correct returnUrl state
+        }
       } else {
         const errorData = await response.json();
         const message = errorData.message || `Erreur ${response.status}: Échec de la création du service.`;

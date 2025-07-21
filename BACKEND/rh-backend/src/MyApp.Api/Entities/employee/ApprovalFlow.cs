@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyApp.Api.Entities.employee
 {
+    [Table("approval_flow")]
     public class ApprovalFlow : BaseEntity
     {
         [Key]

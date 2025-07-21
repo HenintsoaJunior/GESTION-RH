@@ -178,7 +178,7 @@ export default function FirstStepForm({
                       ? "Aucune suggestion disponible"
                       : "Saisir ou sélectionner..."
                   }
-                  disabled={isSubmitting || isLoading.departments}
+                  disabled={isSubmitting || isLoading.departments || !formData.attachment.direction}
                   onAddNew={(value) => handleAddNewSuggestion(value)}
                   fieldType="departement"
                   fieldLabel="département"
@@ -209,7 +209,7 @@ export default function FirstStepForm({
                       ? "Aucune suggestion disponible"
                       : "Saisir ou sélectionner..."
                   }
-                  disabled={isSubmitting || isLoading.services}
+                  disabled={isSubmitting || isLoading.services || !formData.attachment.departement}
                   onAddNew={(value) => handleAddNewSuggestion(value)}
                   fieldType="service"
                   fieldLabel="service"
@@ -235,10 +235,10 @@ export default function FirstStepForm({
                     isLoading.employees
                       ? "Chargement..."
                       : suggestions.superieurHierarchique.length === 0
-                      ? "Aucune suggestion disponible"
+                      ? "Aucun supérieur disponible"
                       : "Saisir ou sélectionner..."
                   }
-                  disabled={isSubmitting || isLoading.employees}
+                  disabled={isSubmitting || isLoading.employees || !formData.attachment.service}
                   showAddOption={false}
                   fieldType="superieurHierarchique"
                   fieldLabel="supérieur hiérarchique"
@@ -251,26 +251,13 @@ export default function FirstStepForm({
                 <label className="form-label form-label-required">Fonction du Supérieur hiérarchique</label>
               </th>
               <td className="form-input-cell" colSpan="3">
-                <AutoCompleteInput
+                <input
+                  type="text"
                   value={formData.attachment.fonctionSuperieur}
-                  onChange={(value) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      attachment: { ...prev.attachment, fonctionSuperieur: value },
-                    }));
-                    setErrors((prev) => ({ ...prev, fonctionSuperieur: false }));
-                  }}
-                  suggestions={suggestions.fonctionSuperieur}
-                  placeholder={
-                    suggestions.fonctionSuperieur.length === 0
-                      ? "Aucune suggestion disponible"
-                      : "Saisir ou sélectionner..."
-                  }
-                  disabled={isSubmitting}
-                  showAddOption={false}
-                  fieldType="fonctionSuperieur"
-                  fieldLabel="fonction"
-                  className={errors.fonctionSuperieur ? "input-error" : ""}
+                  className={`form-input ${errors.fonctionSuperieur ? "input-error" : ""}`}
+                  disabled={true}
+                  readOnly
+                  placeholder="Sélectionnez un supérieur hiérarchique"
                 />
               </td>
             </tr>

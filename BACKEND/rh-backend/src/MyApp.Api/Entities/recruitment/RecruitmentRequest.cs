@@ -11,11 +11,12 @@ namespace MyApp.Api.Entities.recruitment
     [Table("recruitment_requests")]
     public class RecruitmentRequest : BaseEntity
     {
+        [Key]
         [Column("recruitment_request_id")]
         public string? RecruitmentRequestId { get; set; }
 
-        [Column("position_title")]
         [Required]
+        [Column("position_title")]
         [MaxLength(255)]
         public string PositionTitle { get; set; } = default!;
 
@@ -46,23 +47,23 @@ namespace MyApp.Api.Entities.recruitment
         [Column("files")]
         public byte[]? Files { get; set; }
 
-        [Column("requester_id")]
         [Required]
+        [Column("requester_id")]
         public string RequesterId { get; set; } = default!;
 
-        [Column("contract_type_id")]
         [Required]
+        [Column("contract_type_id")]
         public string ContractTypeId { get; set; } = default!;
 
-        [Column("site_id")]
         [Required]
+        [Column("site_id")]
         public string SiteId { get; set; } = default!;
 
-        [Column("recruitment_reason_id")]
         [Required]
+        [Column("recruitment_reason_id")]
         public string RecruitmentReasonId { get; set; } = default!;
 
-        // Navigation Properties (si elles existent dans le modèle)
+        // Navigation Properties
         [ForeignKey("RequesterId")]
         public User? Requester { get; set; }
 
@@ -74,10 +75,8 @@ namespace MyApp.Api.Entities.recruitment
 
         [ForeignKey("RecruitmentReasonId")]
         public RecruitmentReason? RecruitmentReason { get; set; }
-
-        public RecruitmentRequestDetail RecruitmentRequestDetail { get; set; } = null!;
-        public IEnumerable<RecruitmentRequestReplacementReason>? ReplacementReasons { get; set; } = null;
-
+        
+        public ICollection<RecruitmentRequestReplacementReason> RecruitmentRequestReplacementReasons { get; set; } = new List<RecruitmentRequestReplacementReason>();
         public RecruitmentRequest() { }
 
         public RecruitmentRequest(RecruitmentRequestDTOForm requestForm)
@@ -97,16 +96,6 @@ namespace MyApp.Api.Entities.recruitment
             ContractTypeId = requestForm.ContractTypeId;
             SiteId = requestForm.SiteId;
             RecruitmentReasonId = requestForm.RecruitmentReasonId;
-            RecruitmentRequestDetail = new RecruitmentRequestDetail
-            {
-                SupervisorPosition = requestForm.RecruitmentRequestDetail.SupervisorPosition,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                DirectionId = requestForm.RecruitmentRequestDetail.DirectionId,
-                DepartmentId = requestForm.RecruitmentRequestDetail.DepartmentId,
-                ServiceId = requestForm.RecruitmentRequestDetail.ServiceId,
-                DirectSupervisorId = requestForm.RecruitmentRequestDetail.DirectSupervisorId,
-            };
         }
     }
 }

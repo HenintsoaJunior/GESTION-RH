@@ -43,7 +43,6 @@ namespace MyApp.Api.Repositories.recruitment
                 .ToListAsync();
         }
 
-
         public async Task<RecruitmentApproval?> GetAsync(string requestId, string approverId, string flowId)
         {
             return await _context.RecruitmentApprovals.FindAsync(requestId, approverId, flowId);
@@ -51,23 +50,39 @@ namespace MyApp.Api.Repositories.recruitment
 
         public async Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlowEmployee> approvalFlows)
         {
+            if (approvalFlows == null)
+            {
+                throw new ArgumentNullException(nameof(approvalFlows));
+            }
+
             foreach (var flow in approvalFlows)
             {
-                approval.ApproverId = flow.Employee.EmployeeId; 
-                approval.ApprovalOrder = flow.ApprovalFlow.ApprovalOrder;
-                await _context.RecruitmentApprovals.AddAsync(approval);
+                if (flow?.Employee != null && flow?.ApprovalFlow != null)
+                {
+                    approval.ApproverId = flow.Employee.EmployeeId; 
+                    approval.ApprovalOrder = flow.ApprovalFlow.ApprovalOrder;
+                    await _context.RecruitmentApprovals.AddAsync(approval);
+                }
             }
         }
 
         public async Task AddAsync(RecruitmentApproval approval)
         {
+            if (approval == null)
+            {
+                throw new ArgumentNullException(nameof(approval));
+            }
             
             await _context.RecruitmentApprovals.AddAsync(approval);
-           
         }
 
         public Task UpdateAsync(RecruitmentApproval approval)
         {
+            if (approval == null)
+            {
+                throw new ArgumentNullException(nameof(approval));
+            }
+
             _context.RecruitmentApprovals.Update(approval);
             return Task.CompletedTask;
         }
