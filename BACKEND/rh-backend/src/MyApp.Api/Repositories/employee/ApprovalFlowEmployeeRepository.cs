@@ -32,10 +32,9 @@ namespace MyApp.Api.Repositories.recruitment
                 .Include(a => a.ApprovalFlow)
                 .Where(a => a.Employee != null && a.Employee.Status == "active")
                 .GroupBy(a => a.ApprovalFlow!.ApproverRole)
-                .Select(g => g.OrderByDescending(a => a.UpdatedAt).First())
+                .Select(g => g.OrderBy(a => a.EmployeeId).First())
                 .ToListAsync();
         }
-
 
         public async Task<IEnumerable<ApprovalFlowEmployee>> GetAllAsync()
         {

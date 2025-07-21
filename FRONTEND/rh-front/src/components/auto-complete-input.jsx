@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
 
-// Composant d'autocomplétion personnalisé style ERPNext avec redirection
 const AutoCompleteInput = ({
   value,
   onChange,
@@ -11,17 +10,52 @@ const AutoCompleteInput = ({
   disabled,
   onAddNew,
   className = "form-input",
-  fieldType = "", // Type de champ pour la redirection
-  fieldLabel = "", // Label pour la redirection
-  addNewRoute = "", // Route vers laquelle rediriger
-  showAddOption = true, // Contrôle si l'option "Ajouter" doit être affichée
-  maxVisibleItems = 3, // Nombre max d'éléments visibles avant dropdown
+  fieldType = "",
+  fieldLabel = "",
+  addNewRoute = "",
+  showAddOption = true,
+  maxVisibleItems = 3,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Effet pour récupérer la nouvelle valeur depuis l'URL après création
+  useEffect(() => {
+    // Utiliser URLSearchParams de manière sécurisée sans modification
+    const searchParams = new URLSearchParams(location.search);
+    const newValue = searchParams.get("newValue");
+    const urlFieldType = searchParams.get("fieldType");
+    
+    // Si une nouvelle valeur est présente et correspond au type de champ
+    if (newValue && urlFieldType === fieldType && newValue !== value) {
+      onChange(newValue);
+      
+      // Naviguer vers la même page sans les paramètres au lieu de les modifier
+      const cleanPath = location.pathname;
+      const remainingParams = new URLSearchParams(location.search);
+      remainingParams.delete("newValue");
+      remainingParams.delete("fieldType");
+      
+      const cleanUrl = remainingParams.toString() 
+        ? `${cleanPath}?${remainingParams.toString()}`
+        : cleanPath;
+      
+      // Utiliser navigate avec replace pour nettoyer l'URL
+      setTimeout(() => {
+        navigate(cleanUrl, { replace: true });
+      }, 100);
+      
+      // Fermer la dropdown et donner le focus
+      setIsOpen(false);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 200);
+    }
+  }, [location.search, location.pathname, fieldType, onChange, value, navigate]);
 
   useEffect(() => {
     if (value) {
@@ -59,27 +93,21 @@ const AutoCompleteInput = ({
 
   const handleAddNew = () => {
     if (value && !suggestions.includes(value)) {
-      // Rediriger vers la page de création avec les paramètres
-      const queryParams = new URLSearchParams({
-        fieldType: fieldType,
-        fieldLabel: fieldLabel,
-        initialValue: value,
-        returnUrl: window.location.pathname,
-      });
+      // Créer les paramètres pour la navigation
+      const params = new URLSearchParams();
+      params.set("fieldType", fieldType);
+      params.set("fieldLabel", fieldLabel);
+      params.set("initialValue", value);
+      params.set("returnUrl", location.pathname + location.search);
       
       const redirectUrl = addNewRoute || `/add-${fieldType}`;
-      navigate(`${redirectUrl}?${queryParams.toString()}`);
+      navigate(`${redirectUrl}?${params.toString()}`);
       setIsOpen(false);
-      // Call onAddNew if provided to update suggestions
-      if (onAddNew) {
-        onAddNew(value);
-      }
     }
   };
 
   const canAddNew = value && !suggestions.some((s) => s.toLowerCase() === value.toLowerCase());
 
-  // Détermine si on doit afficher le dropdown avec défilement
   const shouldShowScrollable = filteredSuggestions.length > maxVisibleItems;
 
   return (

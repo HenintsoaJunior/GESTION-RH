@@ -8,7 +8,7 @@ namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentRequestService
     {
-        Task<string> CreateRequest(RecruitmentRequest request);
+        Task<string> CreateRequest(RecruitmentRequest request, RecruitmentRequestDetail detail, IEnumerable<RecruitmentRequestReplacementReason> requestReplacementReasons);
         Task<IEnumerable<RecruitmentRequest>> GetAllAsync();
         Task<RecruitmentRequest?> GetByRequestIdAsync(string requestId);
         Task<IEnumerable<RecruitmentRequest>> GetByRequesterIdAsync(string requesterId);
@@ -46,7 +46,7 @@ namespace MyApp.Api.Services.recruitment
             _logger = logger;
         }
 
-        public async Task<string> CreateRequest(RecruitmentRequest request)
+        public async Task<string> CreateRequest(RecruitmentRequest request, RecruitmentRequestDetail detail, IEnumerable<RecruitmentRequestReplacementReason> requestReplacementReasons)
         {
             try
             {
@@ -54,46 +54,38 @@ namespace MyApp.Api.Services.recruitment
                 {
                     request.RecruitmentRequestId = _sequenceGenerator.GenerateSequence("seq_recruitment_request_id", "REQ", 6, "-");
                 }
-                // Ajoutez la demande principale
                 await _requestRepository.AddAsync(request);
                 await _requestRepository.SaveChangesAsync();
                 _logger.LogInformation("Demande de recrutement créée avec l'ID: {RequestId}", request.RecruitmentRequestId);
 
-                // Vérifiez si RecruitmentRequestDetail existe
-                RecruitmentRequestDetail? detail = request.RecruitmentRequestDetail;
                 if (detail != null)
                 {
                     detail.RecruitmentRequestId = request.RecruitmentRequestId;
-                    // Ajoutez le détail via le service dédié
                     await _requestDetailService.AddAsync(detail);
                     _logger.LogInformation("Détail de la demande de recrutement créé avec l'ID: {DetailId}", detail.RecruitmentRequestDetailId);
-                    // Supprimez la référence temporairement pour éviter les problèmes de FK
-                    request.RecruitmentRequestDetail = null!;
                 }
-
-                // Vérifiez si RecruitmentRequestReplacementReason existe
-                IEnumerable<RecruitmentRequestReplacementReason>? requestReplacementReasons = request.ReplacementReasons;
-                if (requestReplacementReasons != null)
+                
+                if (requestReplacementReasons != null && requestReplacementReasons.Any())
                 {
-                    foreach (var reason in requestReplacementReasons)
+                    var reasonsToAdd = requestReplacementReasons.Select(r => new RecruitmentRequestReplacementReason
                     {
-                        reason.RecruitmentRequestId = request.RecruitmentRequestId;
-                    }
-                    // Ajoutez le détail via le service dédié
-                    await _replacementReasonService.AddRangeAsync(requestReplacementReasons);
+                        RecruitmentRequestId = request.RecruitmentRequestId,
+                        ReplacementReasonId = r.ReplacementReasonId,
+                        Description = r.Description,
+                    }).ToList();
+                    
+                    await _replacementReasonService.AddRangeAsync(reasonsToAdd);
                     _logger.LogInformation("Raisons du remplacement de la demande de recrutement créé");
-                    // Supprimez la référence temporairement pour éviter les problèmes de FK
-                    request.ReplacementReasons = null!;
                 }
 
-                IEnumerable <ApprovalFlowEmployee>? approvalFlowEmployee = (IEnumerable<ApprovalFlowEmployee>?)_approvalFlowRepository.GetAllGroupedByApproverRoleWithActiveEmployeesAsync();
-                // insertion dans recruitment_request
-                RecruitmentApproval approval = new RecruitmentApproval();
-                approval.RecruitmentRequestId = request.RecruitmentRequestId;
-                // Ajoutez l'approbation via le service dédié
+                IEnumerable<ApprovalFlowEmployee>? approvalFlowEmployee = await _approvalFlowRepository.GetAllGroupedByApproverRoleWithActiveEmployeesAsync();
+                RecruitmentApproval approval = new RecruitmentApproval
+                {
+                    RecruitmentRequestId = request.RecruitmentRequestId
+                };
                 await _approvalService.AddAsync(approval, approvalFlowEmployee);
                 _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", approval.RecruitmentRequestId);
-
+                
                 return request.RecruitmentRequestId;
             }
             catch (Exception ex)

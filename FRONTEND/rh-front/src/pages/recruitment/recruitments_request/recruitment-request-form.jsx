@@ -84,7 +84,7 @@ export default function RecruitmentRequestForm() {
     departement: [],
     service: [],
     superieurHierarchique: [],
-    fonctionSuperieur: ["Directeur", "Manager", "Chef de Service", "Superviseur", "Responsable"],
+    fonctionSuperieur: [],
     motifRemplacement: [],
     site: [],
   });
@@ -100,6 +100,166 @@ export default function RecruitmentRequestForm() {
     fetchRecruitmentReasons(setRecruitmentReasons, setIsLoading, setAlert);
     fetchReplacementReasons(setReplacementReasons, setIsLoading, setSuggestions, setAlert);
   }, []);
+
+  // Effet pour filtrer les départements quand la direction change
+  useEffect(() => {
+    if (formData.attachment.direction && departments.length > 0 && directions.length > 0) {
+      const selectedDirection = directions.find(dir => dir.directionName === formData.attachment.direction);
+      if (selectedDirection) {
+        const filteredDepartments = departments.filter(
+          dept => dept.directionId === selectedDirection.directionId
+        );
+        setSuggestions(prev => ({
+          ...prev,
+          departement: filteredDepartments.map(dept => dept.departmentName),
+          service: [],
+          superieurHierarchique: [],
+          fonctionSuperieur: []
+        }));
+      }
+    } else {
+      setSuggestions(prev => ({
+        ...prev,
+        departement: [],
+        service: [],
+        superieurHierarchique: [],
+        fonctionSuperieur: []
+      }));
+    }
+
+    if (formData.attachment.departement || formData.attachment.service || formData.attachment.superieurHierarchique) {
+      setFormData(prev => ({
+        ...prev,
+        attachment: {
+          ...prev.attachment,
+          departement: "",
+          service: "",
+          superieurHierarchique: "",
+          fonctionSuperieur: ""
+        }
+      }));
+      setErrors(prev => ({ ...prev, departement: false, service: false, superieurHierarchique: false, fonctionSuperieur: false }));
+    }
+  }, [formData.attachment.direction, departments, directions]);
+
+  // Effet pour filtrer les services quand le département change
+  useEffect(() => {
+    if (formData.attachment.departement && departments.length > 0 && services.length > 0) {
+      const selectedDepartment = departments.find(
+        (dept) => dept.departmentName === formData.attachment.departement
+      );
+      if (selectedDepartment) {
+        const filteredServices = services.filter(
+          (service) => service.departmentId === selectedDepartment.departmentId
+        );
+        setSuggestions((prev) => ({
+          ...prev,
+          service: filteredServices.map((service) => service.serviceName),
+          superieurHierarchique: [],
+          fonctionSuperieur: []
+        }));
+      }
+    } else {
+      setSuggestions((prev) => ({
+        ...prev,
+        service: [],
+        superieurHierarchique: [],
+        fonctionSuperieur: []
+      }));
+    }
+
+    if (formData.attachment.service || formData.attachment.superieurHierarchique) {
+      setFormData((prev) => ({
+        ...prev,
+        attachment: {
+          ...prev.attachment,
+          service: "",
+          superieurHierarchique: "",
+          fonctionSuperieur: ""
+        },
+      }));
+      setErrors((prev) => ({ ...prev, service: false, superieurHierarchique: false, fonctionSuperieur: false }));
+    }
+  }, [formData.attachment.departement, departments, services]);
+
+  // Effet pour filtrer les employés quand le service change
+  useEffect(() => {
+    if (formData.attachment.service && services.length > 0 && employees.length > 0 && departments.length > 0 && directions.length > 0) {
+      const selectedService = services.find(
+        (service) => service.serviceName === formData.attachment.service
+      );
+      const selectedDepartment = departments.find(
+        (dept) => dept.departmentName === formData.attachment.departement
+      );
+      const selectedDirection = directions.find(
+        (dir) => dir.directionName === formData.attachment.direction
+      );
+
+      if (selectedService && selectedDepartment && selectedDirection) {
+        const filteredEmployees = employees.filter(
+          (employee) =>
+            employee.serviceId === selectedService.serviceId &&
+            employee.departmentId === selectedDepartment.departmentId &&
+            employee.directionId === selectedDirection.directionId
+            // Condition isExecutive supprimée temporairement pour tester l'affichage de Dupont Jean
+        );
+        
+        setSuggestions((prev) => ({
+          ...prev,
+          superieurHierarchique: filteredEmployees.map(
+            (employee) => `${employee.lastName} ${employee.firstName}`
+          ),
+          fonctionSuperieur: []
+        }));
+      }
+    } else {
+      setSuggestions((prev) => ({
+        ...prev,
+        superieurHierarchique: [],
+        fonctionSuperieur: []
+      }));
+    }
+
+    if (formData.attachment.superieurHierarchique) {
+      setFormData((prev) => ({
+        ...prev,
+        attachment: {
+          ...prev.attachment,
+          superieurHierarchique: "",
+          fonctionSuperieur: ""
+        },
+      }));
+      setErrors((prev) => ({ ...prev, superieurHierarchique: false, fonctionSuperieur: false }));
+    }
+  }, [formData.attachment.service, services, employees, departments, directions]);
+
+  // Effet pour mettre à jour la fonction du supérieur
+  useEffect(() => {
+    if (formData.attachment.superieurHierarchique && employees.length > 0) {
+      const selectedEmployee = employees.find(
+        (employee) => `${employee.lastName} ${employee.firstName}` === formData.attachment.superieurHierarchique
+      );
+      if (selectedEmployee) {
+        setFormData((prev) => ({
+          ...prev,
+          attachment: {
+            ...prev.attachment,
+            fonctionSuperieur: selectedEmployee.jobTitle
+          },
+        }));
+        setErrors((prev) => ({ ...prev, fonctionSuperieur: false }));
+      }
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        attachment: {
+          ...prev.attachment,
+          fonctionSuperieur: ""
+        },
+      }));
+      setErrors((prev) => ({ ...prev, fonctionSuperieur: false }));
+    }
+  }, [formData.attachment.superieurHierarchique, employees]);
 
   // Handle file change
   const handleFileChange = (e) => {
@@ -180,9 +340,7 @@ export default function RecruitmentRequestForm() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log("handleSubmit called with formData:", formData);
     if (!validateSecondStep(formData, setErrors, showValidationModal)) {
-      console.log("Validation failed, stopping submission");
       return;
     }
     setIsSubmitting(true);
@@ -220,31 +378,13 @@ export default function RecruitmentRequestForm() {
           serviceId: getServiceId(attachment.service, services) || "",
           directSupervisorId: getSupervisorId(attachment.superieurHierarchique, employees) || "",
         },
-        recruitmentApproval: {
-          approverId: "USR_0001",
-          approvalFlowId: "AF_0005",
-          status: "Pending",
-          approvalOrder: 0,
-          approvalDate: new Date().toISOString(),
-          comment: "",
-          signature: "",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
         replacementReasons: replacementDetails.motifs
           .filter((motif) => motif.motifRemplacement && motif.detail)
           .map((motif) => ({
             recruitmentRequestId: "",
             replacementReasonId: getReplacementReasonId(motif.motifRemplacement, replacementReasons) || "",
             description: motif.detail,
-          })),
-        approvalFlows: [
-          {
-            approvalOrder: 1,
-            approverRole: "Chef d'Équipe",
-            approverId: "AF_0005",
-          },
-        ],
+          }))
       };
 
       console.log("Sending request with data:", requestData);
@@ -260,16 +400,13 @@ export default function RecruitmentRequestForm() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Server response:", result);
         setAlert({ isOpen: true, type: "success", message: "Demande de recrutement soumise avec succès !" });
         handleReset();
       } else {
         const errorData = await response.text();
-        console.error("Server error:", errorData);
         setAlert({ isOpen: true, type: "error", message: `Erreur lors de la soumission: ${errorData || response.statusText}` });
       }
     } catch (error) {
-      console.error("Error:", error);
       setAlert({ isOpen: true, type: "error", message: `Erreur de connexion: ${error.message}` });
     } finally {
       setIsSubmitting(false);

@@ -1,5 +1,6 @@
 import "styles/generic-form-styles.css";
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { BASE_URL } from "config/apiConfig";
 import Alert from "components/alert";
 import * as FaIcons from "react-icons/fa";
@@ -11,16 +12,22 @@ export default function DirectionForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  const [setReturnUrl] = useState("");
+  const [returnUrl, setReturnUrl] = useState("");
+  const [fieldType, setFieldType] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Parse URL query parameters to set initial value for directionName
+  // Parse URL query parameters de manière sécurisée
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const initialValue = params.get("initialValue") || "";
-    const url = params.get("returnUrl") || "";
+    const searchParams = new URLSearchParams(location.search);
+    const initialValue = searchParams.get("initialValue") || "";
+    const url = searchParams.get("returnUrl") || "";
+    const type = searchParams.get("fieldType") || "";
+    
     setFormData((prev) => ({ ...prev, directionName: initialValue }));
     setReturnUrl(url);
-  }, [setReturnUrl]);
+    setFieldType(type);
+  }, [location.search]);
 
   const showAlert = (type, message) => {
     setAlert({ isOpen: true, type, message });
@@ -43,13 +50,34 @@ export default function DirectionForm() {
       });
 
       if (response.ok) {
-        await response.json();
+        const result = await response.json();
         showAlert("success", "Direction créée avec succès !");
-        event.target.reset();
-        setFormData({ directionName: "", acronym: "" });
-        // if (returnUrl) {
-        //   window.location.href = returnUrl;
-        // }
+        
+        if (returnUrl && fieldType) {
+          // Si on vient d'un AutoCompleteInput, retourner avec la nouvelle valeur
+          setTimeout(() => {
+            // Construire l'URL de retour de manière sécurisée
+            const returnParams = new URLSearchParams();
+            returnParams.set("newValue", formData.directionName);
+            returnParams.set("fieldType", fieldType);
+            
+            // Séparer l'URL de base des paramètres existants
+            const [basePath, existingParams] = returnUrl.split('?');
+            const finalParams = new URLSearchParams(existingParams || '');
+            
+            // Ajouter les nouveaux paramètres
+            returnParams.forEach((value, key) => {
+              finalParams.set(key, value);
+            });
+            
+            const finalUrl = `${basePath}?${finalParams.toString()}`;
+            navigate(finalUrl);
+          }, 1500);
+        } else {
+          // Sinon, réinitialiser le formulaire
+          event.target.reset();
+          setFormData({ directionName: "", acronym: "" });
+        }
       } else {
         const errorData = await response.json();
         const message = errorData.message || `Erreur ${response.status}: Échec de la création de la direction.`;

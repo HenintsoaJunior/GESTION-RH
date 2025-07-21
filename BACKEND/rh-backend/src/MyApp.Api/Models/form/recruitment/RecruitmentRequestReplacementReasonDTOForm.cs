@@ -6,10 +6,6 @@ namespace MyApp.Api.Models.form.recruitment
     {
         [Required]
         [MaxLength(50)]
-        public string RecruitmentRequestId { get; set; } = null!;
-
-        [Required]
-        [MaxLength(50)]
         public string ReplacementReasonId { get; set; } = null!;
 
         [MaxLength(250)]

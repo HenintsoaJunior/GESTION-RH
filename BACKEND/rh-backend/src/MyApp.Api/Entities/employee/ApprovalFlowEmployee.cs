@@ -1,10 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.employee;
 
 namespace MyApp.Api.Entities.recruitment
 {
     [Table("approval_flow_employee")]
+    [PrimaryKey(nameof(EmployeeId), nameof(ApprovalFlowId))]
     public class ApprovalFlowEmployee
     {
         [Column("employee_id", Order = 0)]
@@ -14,12 +16,6 @@ namespace MyApp.Api.Entities.recruitment
         [Column("approval_flow_id", Order = 1)]
         [MaxLength(50)]
         public string ApprovalFlowId { get; set; } = null!;
-
-        [Column("created_at")]
-        public DateTime? CreatedAt { get; set; }
-
-        [Column("updated_at")]
-        public DateTime? UpdatedAt { get; set; }
 
         [ForeignKey("EmployeeId")]
         public Employee? Employee { get; set; }

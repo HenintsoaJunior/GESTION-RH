@@ -1,4 +1,3 @@
-// ===== REPOSITORY INTERFACE =====
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.recruitment;
@@ -15,10 +14,9 @@ namespace MyApp.Api.Repositories.recruitment
         Task UpdateAsync(RecruitmentRequest request);
         Task DeleteAsync(string id);
         Task SaveChangesAsync();
-        Task ReloadAsync(RecruitmentRequest request); // NOUVELLE MÉTHODE
+        Task ReloadAsync(RecruitmentRequest request);
     }
 
-    // ===== REPOSITORY IMPLEMENTATION =====
     public class RecruitmentRequestRepository : IRecruitmentRequestRepository
     {
         private readonly AppDbContext _context;
@@ -31,6 +29,10 @@ namespace MyApp.Api.Repositories.recruitment
         public async Task<IEnumerable<RecruitmentRequest>> GetAllAsync()
         {
             return await _context.RecruitmentRequests
+                .Include(r => r.Requester)
+                .Include(r => r.ContractType)
+                .Include(r => r.Site)
+                .Include(r => r.RecruitmentReason)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync();
         }
@@ -38,6 +40,10 @@ namespace MyApp.Api.Repositories.recruitment
         public async Task<RecruitmentRequest?> GetByRequestIdAsync(string requestId)
         {
             return await _context.RecruitmentRequests
+                .Include(r => r.Requester)
+                .Include(r => r.ContractType)
+                .Include(r => r.Site)
+                .Include(r => r.RecruitmentReason)
                 .FirstOrDefaultAsync(r => r.RecruitmentRequestId == requestId);
         }
 
@@ -45,6 +51,10 @@ namespace MyApp.Api.Repositories.recruitment
         {
             return await _context.RecruitmentRequests
                 .Where(r => r.RequesterId == requesterId)
+                .Include(r => r.Requester)
+                .Include(r => r.ContractType)
+                .Include(r => r.Site)
+                .Include(r => r.RecruitmentReason)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync();
         }
@@ -53,6 +63,10 @@ namespace MyApp.Api.Repositories.recruitment
         {
             return await _context.RecruitmentRequests
                 .Where(r => r.RequesterId == requesterId && r.Status.ToLower() == "validé")
+                .Include(r => r.Requester)
+                .Include(r => r.ContractType)
+                .Include(r => r.Site)
+                .Include(r => r.RecruitmentReason)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync();
         }
@@ -62,10 +76,10 @@ namespace MyApp.Api.Repositories.recruitment
             await _context.RecruitmentRequests.AddAsync(request);
         }
 
-        public Task UpdateAsync(RecruitmentRequest request)
+        public async Task UpdateAsync(RecruitmentRequest request)
         {
             _context.RecruitmentRequests.Update(request);
-            return Task.CompletedTask;
+            await _context.SaveChangesAsync(); // Ensure changes are saved
         }
 
         public async Task DeleteAsync(string id)
@@ -74,6 +88,7 @@ namespace MyApp.Api.Repositories.recruitment
             if (entity != null)
             {
                 _context.RecruitmentRequests.Remove(entity);
+                await _context.SaveChangesAsync(); // Ensure changes are saved
             }
         }
 
@@ -82,7 +97,6 @@ namespace MyApp.Api.Repositories.recruitment
             await _context.SaveChangesAsync();
         }
 
-        // NOUVELLE MÉTHODE - Recharge l'entité depuis la base de données
         public async Task ReloadAsync(RecruitmentRequest request)
         {
             await _context.Entry(request).ReloadAsync();

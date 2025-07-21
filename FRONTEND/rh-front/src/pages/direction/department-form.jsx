@@ -12,7 +12,7 @@ export default function DepartmentForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  const [setReturnUrl] = useState("");
+  const [returnUrl, setReturnUrl] = useState(""); // Fixed: Correct state declaration
   const [suggestions, setSuggestions] = useState([]);
   const [directionMap, setDirectionMap] = useState({}); // Maps directionName to directionId
 
@@ -53,8 +53,8 @@ export default function DepartmentForm() {
     const initialValue = params.get("initialValue") || "";
     const url = params.get("returnUrl") || "";
     setFormData((prev) => ({ ...prev, departmentName: initialValue }));
-    setReturnUrl(url);
-  }, [setReturnUrl]);
+    setReturnUrl(url); // Fixed: Use setReturnUrl to update returnUrl state
+  }, []); // Removed setReturnUrl from dependencies since it’s a stable setter
 
   const showAlert = (type, message) => {
     setAlert({ isOpen: true, type, message });
@@ -90,9 +90,9 @@ export default function DepartmentForm() {
         showAlert("success", "Département créé avec succès !");
         event.target.reset();
         setFormData({ departmentName: "", directionId: "" });
-        // if (returnUrl) {
-        //   window.location.href = returnUrl;
-        // }
+        if (returnUrl) {
+          window.location.href = returnUrl; // Uses correct returnUrl state
+        }
       } else {
         const errorData = await response.json();
         const message = errorData.message || `Erreur ${response.status}: Échec de la création du département.`;

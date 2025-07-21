@@ -432,6 +432,86 @@ select.form-input-search {
   padding: 0 var(--spacing-sm);
 }
 
+.pagination-options {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  font-family: var(--font-family);
+  background: var(--bg-secondary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  transition: background-color 0.2s ease;
+}
+
+.pagination-options:hover {
+  background: var(--bg-tertiary);
+}
+
+.pagination-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.pagination-select {
+  height: 40px;
+  min-width: 80px;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-input);
+  padding: var(--spacing-sm) var(--spacing-2xl) var(--spacing-sm) var(--spacing-md);
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: var(--bg-primary) url("data:image/svg+xml;utf8,<svg fill='%2369B42E' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>") no-repeat right var(--spacing-md) center;
+  background-size: 18px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pagination-select:hover {
+  border-color: var(--primary-color);
+  background-color: var(--bg-secondary);
+}
+
+.pagination-select:focus {
+  border-color: var(--primary-color);
+  background-color: var(--bg-primary);
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.pagination-select option {
+  background: var(--bg-primary);
+  color: var(--text-input);
+  font-size: var(--font-size-sm);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .pagination-options {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .pagination-label {
+    font-size: var(--font-size-xs);
+  }
+
+  .pagination-select {
+    height: 35px;
+    min-width: 60px;
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs) var(--spacing-xl) var(--spacing-xs) var(--spacing-sm);
+  }
+}
+
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .dashboard-container {
@@ -496,3 +576,5 @@ select.form-input-search {
     gap: var(--spacing-md);
   }
 }
+
+

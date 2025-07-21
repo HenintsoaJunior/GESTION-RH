@@ -19,7 +19,7 @@ export const fetchEmployees = async (setEmployees, setIsLoading, setSuggestions,
     if (setSuggestions) {
       setSuggestions((prev) => ({
         ...prev,
-        superieurHierarchique: data.map((emp) => `${emp.firstName} ${emp.lastName}`),
+        superieurHierarchique: [], // Initialiser à vide, le filtrage est géré dans RecruitmentRequestForm
       }));
     }
   } catch (error) {
@@ -31,4 +31,4 @@ export const fetchEmployees = async (setEmployees, setIsLoading, setSuggestions,
 };
 
 export const getSupervisorId = (supervisorName, employees) =>
-  employees.find((emp) => `${emp.firstName} ${emp.lastName}` === supervisorName)?.employeeId || "";
+  employees.find((emp) => `${emp.lastName} ${emp.firstName}` === supervisorName)?.employeeId || "";

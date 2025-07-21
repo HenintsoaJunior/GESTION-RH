@@ -1,5 +1,4 @@
 "use client";
-
 import { BASE_URL } from "config/apiConfig";
 
 export const fetchDepartments = async (setDepartments, setIsLoading, setSuggestions, onError) => {
@@ -9,17 +8,20 @@ export const fetchDepartments = async (setDepartments, setIsLoading, setSuggesti
       method: "GET",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
     });
-
+    
     if (!response.ok) {
       throw new Error(`Erreur lors du chargement des départements: ${response.statusText}`);
     }
-
+    
     const data = await response.json();
     setDepartments(data);
+    
+    // Ne pas mettre à jour les suggestions ici car elles seront filtrées par direction
+    // dans le useEffect du composant principal
     if (setSuggestions) {
       setSuggestions((prev) => ({
         ...prev,
-        departement: data.map((dep) => dep.departmentName),
+        departement: [], // Initialiser vide, sera mis à jour par le filtre
       }));
     }
   } catch (error) {
