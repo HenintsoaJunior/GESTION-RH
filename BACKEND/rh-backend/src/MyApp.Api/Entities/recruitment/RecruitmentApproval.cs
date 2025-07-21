@@ -1,13 +1,15 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.users;
 
 namespace MyApp.Api.Entities.recruitment
 {
     [Table("recruitment_approval")]
+    [PrimaryKey(nameof(RecruitmentRequestId), nameof(ApproverId))]
     public class RecruitmentApproval : BaseEntity
     {
-        [Key, Column("recruitment_request_id", Order = 0)]
+        [Column("recruitment_request_id", Order = 0)]
         [Required]
         public string RecruitmentRequestId { get; set; } = string.Empty;
 
@@ -38,13 +40,20 @@ namespace MyApp.Api.Entities.recruitment
         [ForeignKey("ApproverId")]
         public User? Approver { get; set; }
 
-        public static IEnumerable<RecruitmentApproval> GetRecruitmentApprovalsFromApprovalFlows(string recruitmentRequestId,IEnumerable<ApprovalFlowEmployee> approvalFlows)
+        public static IEnumerable<RecruitmentApproval> GetRecruitmentApprovalsFromApprovalFlows(string recruitmentRequestId, IEnumerable<ApprovalFlowEmployee> approvalFlows)
         {
             var recruitmentApprovals = new List<RecruitmentApproval>();
+            var seenApprovers = new HashSet<string>();
             bool first = true;
 
             foreach (var flow in approvalFlows)
             {
+                if (flow?.EmployeeId == null || seenApprovers.Contains(flow.EmployeeId))
+                {
+                    Console.WriteLine($"Doublon ou EmployeeId null détecté pour RecruitmentRequestId={recruitmentRequestId}, EmployeeId={flow?.EmployeeId}");
+                    continue;
+                }
+
                 var approval = new RecruitmentApproval
                 {
                     RecruitmentRequestId = recruitmentRequestId,
@@ -56,8 +65,10 @@ namespace MyApp.Api.Entities.recruitment
                     Comment = string.Empty
                 };
                 recruitmentApprovals.Add(approval);
-                first = false; // seul le premier garde le statut
+                seenApprovers.Add(flow.EmployeeId);
+                first = false;
             }
+
             return recruitmentApprovals;
         }
     }
