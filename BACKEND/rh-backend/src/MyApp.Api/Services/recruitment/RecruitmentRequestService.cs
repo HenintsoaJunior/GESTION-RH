@@ -4,6 +4,7 @@ using MyApp.Api.Repositories.employee;
 using MyApp.Api.Repositories.recruitment;
 using MyApp.Api.Services.employee;
 using MyApp.Api.Utils.generator;
+using Newtonsoft.Json;
 
 namespace MyApp.Api.Services.recruitment
 {
@@ -81,8 +82,24 @@ namespace MyApp.Api.Services.recruitment
                     _logger.LogInformation("Raisons du remplacement de la demande de recrutement créées");
                 }
 
-                var approvalFlowEmployee = await _approvalFlowRepository.GetAllGroupedByApproverRoleWithActiveEmployeesAsync();
-                await _approvalService.AddAsync(request.RecruitmentRequestId, approvalFlowEmployee);
+                var approvalFlowEmployees = await _approvalFlowRepository.GetAllGroupedByApproverRoleWithActiveEmployeesAsync();
+                if (approvalFlowEmployees == null || !approvalFlowEmployees.Any())
+                {
+                    _logger.LogInformation("ApprovalFlowEmployees is null or empty");
+                }
+                else
+                {
+                    foreach (var item in approvalFlowEmployees)
+                    {
+                        _logger.LogInformation("ApprovalFlowEmployee: EmployeeId={EmployeeId}, ApprovalFlowId={ApprovalFlowId}, ApproverRole={ApproverRole}, EmployeeStatus={EmployeeStatus}",
+                            item.EmployeeId,
+                            item.ApprovalFlowId,
+                            item.ApprovalFlow?.ApproverRole ?? "N/A",
+                            item.Employee?.Status ?? "N/A");
+                    }
+                }
+
+                await _approvalService.AddAsync(request.RecruitmentRequestId, approvalFlowEmployees);
                 _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", request.RecruitmentRequestId);
 
                 await transaction.CommitAsync(); // Valider les opérations
