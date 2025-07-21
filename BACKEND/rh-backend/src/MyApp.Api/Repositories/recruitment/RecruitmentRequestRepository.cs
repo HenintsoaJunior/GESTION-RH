@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.recruitment;
 
@@ -6,6 +7,7 @@ namespace MyApp.Api.Repositories.recruitment
 {
     public interface IRecruitmentRequestRepository
     {
+        Task<IDbContextTransaction> BeginTransactionAsync();
         Task<IEnumerable<RecruitmentRequest>> GetAllAsync();
         Task<RecruitmentRequest?> GetByRequestIdAsync(string requestId);
         Task<IEnumerable<RecruitmentRequest>> GetByRequesterIdAsync(string requesterId);
@@ -24,6 +26,11 @@ namespace MyApp.Api.Repositories.recruitment
         public RecruitmentRequestRepository(AppDbContext context)
         {
             _context = context;
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
         }
 
         public async Task<IEnumerable<RecruitmentRequest>> GetAllAsync()
