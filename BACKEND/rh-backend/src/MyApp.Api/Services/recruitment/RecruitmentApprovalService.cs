@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Logging; // Ajouter cette directive pour ILogger
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Repositories.recruitment;
+using MyApp.Api.Services.users;
 
 namespace MyApp.Api.Services.recruitment
 {
@@ -18,13 +18,16 @@ namespace MyApp.Api.Services.recruitment
 
     public class RecruitmentApprovalService : IRecruitmentApprovalService
     {
+        private readonly IUserService _userService;
         private readonly IRecruitmentApprovalRepository _repository;
         private readonly ILogger<RecruitmentApprovalService> _logger; // Ajouter le logger
 
         public RecruitmentApprovalService(
+            IUserService userService,
             IRecruitmentApprovalRepository repository,
             ILogger<RecruitmentApprovalService> logger) // Injecter le logger
         {
+            _userService = userService;
             _repository = repository;
             _logger = logger;
         }
@@ -60,7 +63,7 @@ namespace MyApp.Api.Services.recruitment
 
             try
             {
-                IEnumerable<RecruitmentApproval> recruitmentApprovals = RecruitmentApproval.GetRecruitmentApprovalsFromApprovalFlows(recruitmentRequestId, approvalFlows);
+                IEnumerable<RecruitmentApproval> recruitmentApprovals = await RecruitmentApproval.GetRecruitmentApprovalsFromApprovalFlows(recruitmentRequestId, approvalFlows, _userService);
 
                 foreach (var approval in recruitmentApprovals)
                 {
