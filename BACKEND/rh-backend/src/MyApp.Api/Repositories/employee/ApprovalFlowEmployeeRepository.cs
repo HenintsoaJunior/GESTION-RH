@@ -25,14 +25,15 @@ namespace MyApp.Api.Repositories.recruitment
             _context = context;
         }
 
-        public async Task<IEnumerable<ApprovalFlowEmployee>> GetAllGroupedByApproverRoleWithActiveEmployeesAsync()
+       public async Task<IEnumerable<ApprovalFlowEmployee>> GetAllGroupedByApproverRoleWithActiveEmployeesAsync()
         {
             return await _context.ApprovalFlowEmployees
                 .Include(a => a.Employee)
                 .Include(a => a.ApprovalFlow)
                 .Where(a => a.Employee != null && a.Employee.Status == "Actif")
                 .GroupBy(a => a.ApprovalFlow!.ApproverRole)
-                .Select(g => g.OrderBy(a => a.EmployeeId).First())
+                .Select(g => g.OrderBy(a => a.ApprovalFlow!.ApprovalOrder).First()) // Ordre selon ApprovalOrder
+                .OrderBy(a => a.ApprovalFlow!.ApprovalOrder) // Tri final de la liste retournée
                 .ToListAsync();
         }
 
