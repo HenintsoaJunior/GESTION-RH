@@ -29,13 +29,25 @@ namespace MyApp.Api.Entities.recruitment
         public virtual ReplacementReason ReplacementReason { get; set; } = null!;
 
         // Méthode statique pour créer une collection depuis le formulaire
+        // public static IEnumerable<RecruitmentRequestReplacementReason> FromForm(RecruitmentRequestDTOForm requestForm)
+        // {
+        //     return requestForm.ReplacementReasons?.Select(rr => new RecruitmentRequestReplacementReason
+        //     {
+        //         ReplacementReasonId = rr.ReplacementReasonId,
+        //         Description = rr.Description
+        //     }) ?? Enumerable.Empty<RecruitmentRequestReplacementReason>();
+        // }
+
         public static IEnumerable<RecruitmentRequestReplacementReason> FromForm(RecruitmentRequestDTOForm requestForm)
         {
-            return requestForm.ReplacementReasons?.Select(rr => new RecruitmentRequestReplacementReason
-            {
-                ReplacementReasonId = rr.ReplacementReasonId,
-                Description = rr.Description
-            }) ?? Enumerable.Empty<RecruitmentRequestReplacementReason>();
+            return requestForm.ReplacementReasons != null
+                ? requestForm.ReplacementReasons.Select(r => new RecruitmentRequestReplacementReason
+                {
+                    ReplacementReasonId = r.ReplacementReasonId,
+                    Description = r.Description
+                }).ToList()
+                : Enumerable.Empty<RecruitmentRequestReplacementReason>();
         }
+
     }
 }

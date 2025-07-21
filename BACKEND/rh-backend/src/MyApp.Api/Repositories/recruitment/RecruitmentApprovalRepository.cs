@@ -7,9 +7,11 @@ namespace MyApp.Api.Repositories.recruitment
 {
     public interface IRecruitmentApprovalRepository
     {
+        Task ValidateAsync(string requestId, string approverId);
+        Task RecommendAsync(string requestId, string approverId, string comment);
         Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId);
         Task<IEnumerable<RecruitmentApproval>> GetByStatusAndApproverIdAsync(string status, string approverId);
-        Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlowEmployee> approvalFlows);
+        Task AddRangeAsync(IEnumerable<RecruitmentApproval> entities);
         Task AddAsync(RecruitmentApproval approval);
         Task UpdateAsync(RecruitmentApproval approval);
         Task<RecruitmentApproval?> GetAsync(string requestId, string approverId, string flowId);
@@ -24,6 +26,43 @@ namespace MyApp.Api.Repositories.recruitment
         {
             _context = context;
         }
+
+        public async Task ValidateAsync(string requestId, string approverId)
+        {
+            var approval = await _context.RecruitmentApprovals
+                .FirstOrDefaultAsync(a => a.RecruitmentRequestId == requestId && a.ApproverId == approverId);
+
+            if (approval == null)
+            {
+                throw new InvalidOperationException("RecruitmentApproval not found.");
+            }
+
+            approval.Status = "Validé";
+            approval.ApprovalDate = DateTime.UtcNow;
+            approval.UpdatedAt = DateTime.UtcNow;
+
+            _context.RecruitmentApprovals.Update(approval);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task RecommendAsync(string requestId, string approverId, string comment)
+        {
+            var approval = await _context.RecruitmentApprovals
+                .FirstOrDefaultAsync(a => a.RecruitmentRequestId == requestId && a.ApproverId == approverId);
+
+            if (approval == null)
+            {
+                throw new InvalidOperationException("RecruitmentApproval not found.");
+            }
+
+            approval.Status = "Recommandé";
+            approval.Comment = comment;
+            approval.UpdatedAt = DateTime.UtcNow;
+
+            _context.RecruitmentApprovals.Update(approval);
+            await _context.SaveChangesAsync();
+        }
+
 
         public async Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId)
         {
@@ -48,22 +87,27 @@ namespace MyApp.Api.Repositories.recruitment
             return await _context.RecruitmentApprovals.FindAsync(requestId, approverId, flowId);
         }
 
-        public async Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlowEmployee> approvalFlows)
-        {
-            if (approvalFlows == null)
-            {
-                throw new ArgumentNullException(nameof(approvalFlows));
-            }
+        // public async Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlowEmployee> approvalFlows)
+        // {
+        //     if (approvalFlows == null)
+        //     {
+        //         throw new ArgumentNullException(nameof(approvalFlows));
+        //     }
 
-            foreach (var flow in approvalFlows)
-            {
-                if (flow?.Employee != null && flow?.ApprovalFlow != null)
-                {
-                    approval.ApproverId = flow.Employee.EmployeeId; 
-                    approval.ApprovalOrder = flow.ApprovalFlow.ApprovalOrder;
-                    await _context.RecruitmentApprovals.AddAsync(approval);
-                }
-            }
+        //     foreach (var flow in approvalFlows)
+        //     {
+        //         if (flow?.Employee != null && flow?.ApprovalFlow != null)
+        //         {
+        //             approval.ApproverId = flow.Employee.EmployeeId; 
+        //             approval.ApprovalOrder = flow.ApprovalFlow.ApprovalOrder;
+        //             await _context.RecruitmentApprovals.AddAsync(approval);
+        //         }
+        //     }
+        // }
+        
+        public async Task AddRangeAsync(IEnumerable<RecruitmentApproval> entities)
+        {
+            await _context.RecruitmentApprovals.AddRangeAsync(entities);
         }
 
         public async Task AddAsync(RecruitmentApproval approval)
@@ -72,7 +116,7 @@ namespace MyApp.Api.Repositories.recruitment
             {
                 throw new ArgumentNullException(nameof(approval));
             }
-            
+
             await _context.RecruitmentApprovals.AddAsync(approval);
         }
 
