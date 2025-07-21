@@ -141,17 +141,11 @@ INSERT INTO approval_flow (approval_flow_id, approval_order, approver_role, crea
 VALUES
     ('AF_0001', 1, 'Superviseur Direct', GETDATE(), NULL),
     ('AF_0002', 2, 'Manager DSI', GETDATE(), NULL),
-    ('AF_0003', 1, 'Manager Financier', GETDATE(), NULL),
-    ('AF_0004', 2, 'Directeur DAF', GETDATE(), NULL),
-    ('AF_0005', 1, 'Chef d''Équipe', GETDATE(), NULL),
-    ('AF_0006', 2, 'Manager DSI', GETDATE(), NULL),
-    ('AF_0007', 1, 'Directeur RH', GETDATE(), NULL),
-    ('AF_0008', 1, 'Responsable Commercial', GETDATE(), NULL),
-    ('AF_0009', 2, 'Manager DCM', GETDATE(), NULL),
-    ('AF_0010', 1, 'Superviseur Projet', GETDATE(), NULL),
-    ('AF_0011', 2, 'Manager DSI', GETDATE(), NULL),
-    ('AF_0012', 1, 'Superviseur Sécurité', GETDATE(), NULL),
-    ('AF_0013', 2, 'Manager DQRSE', GETDATE(), NULL);
+    ('AF_0003', 3, 'Manager Financier', GETDATE(), NULL);
+
+    
+    
+
 
 -- Insertion des employés
 INSERT INTO employees (
@@ -199,6 +193,15 @@ VALUES
      1, NULL, 'Actif', GETDATE(), NULL,
      'ST_0001', 'MS_0002', 'GEN_0002', 'CT_0003', 'EC_0002', 'WTT_0003',
      'DR_0002', 'DP_0002', 'SR_0002', 'UN_0002');
+
+
+INSERT INTO approval_flow_employee(approval_flow_id,employee_id)
+VALUES
+    ('AF_0001','EMP_0001'),
+    ('AF_0002','EMP_0002'),
+    ('AF_0003','EMP_0003');
+    
+
 
 -- Insertion des utilisateurs
 INSERT INTO users (user_id, email, password, role, created_at, updated_at, function_, employee_id)

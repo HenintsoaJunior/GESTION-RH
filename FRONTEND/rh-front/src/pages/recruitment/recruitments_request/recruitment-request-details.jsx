@@ -1,4 +1,5 @@
 "use client"
+
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import {
@@ -19,7 +20,7 @@ import {
 import { formatDate } from "utils/generalisation"
 import { fetchRecruitmentRequestById } from "services/recruitment/recruitment-request-service/recruitment-request-service"
 import Alert from "components/alert"
-import "styles/recruitment/recruitment-request-details.css";
+import "styles/recruitment/recruitment-request-details.css"
 
 const RecruitmentRequestDetails = () => {
   const { recruitmentRequestId } = useParams()
@@ -95,7 +96,6 @@ const RecruitmentRequestDetails = () => {
         isOpen={alert.isOpen}
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
-
       {/* Header */}
       <div className="en-tete">
         <div className="en-tete-contenu">
@@ -117,7 +117,6 @@ const RecruitmentRequestDetails = () => {
           </div>
         </div>
       </div>
-
       {/* Content */}
       <div className="contenu-principal">
         <div className="grille-principale">
@@ -156,7 +155,6 @@ const RecruitmentRequestDetails = () => {
                 </div>
               </div>
             </div>
-
             {/* Rattachement du Poste */}
             <div className="carte">
               <div className="carte-en-tete">
@@ -208,7 +206,6 @@ const RecruitmentRequestDetails = () => {
                 </div>
               </div>
             </div>
-
             {/* Motif du Recrutement */}
             <div className="carte">
               <div className="carte-en-tete">
@@ -253,7 +250,6 @@ const RecruitmentRequestDetails = () => {
               </div>
             </div>
           </div>
-
           {/* Sidebar */}
           <div className="colonne-secondaire">
             {/* Actions */}
@@ -262,27 +258,49 @@ const RecruitmentRequestDetails = () => {
                 <h3 className="carte-titre-secondaire">Actions</h3>
               </div>
               <div className="carte-contenu">
-                <div className="groupe-boutons">
-                  <button className="bouton bouton--approuver">
-                    <CheckCircle className="bouton-icone" />
-                    Approuver
-                  </button>
-                  <button className="bouton bouton--rejeter">
-                    <XCircle className="bouton-icone" />
-                    Rejeter
-                  </button>
-                  <button className="bouton bouton--telecharger">
-                    <Download className="bouton-icone" />
-                    PDF
-                  </button>
-                  <button className="bouton bouton--telecharger-word">
-                    <Download className="bouton-icone" />
-                    Word
-                  </button>
+                <div className="groupe-boutons-actions">
+                  {/* Actions principales */}
+                  <div className="actions-principales">
+                    <button className="bouton bouton--approuver bouton--action-principale">
+                      <CheckCircle className="bouton-icone" />
+                      <span>Approuver</span>
+                    </button>
+                    <button className="bouton bouton--rejeter bouton--action-principale">
+                      <XCircle className="bouton-icone" />
+                      <span>Rejeter</span>
+                    </button>
+                  </div>
+
+                  {/* Séparateur */}
+                  
+                  {/* Actions de téléchargement */}
+                  <div className="actions-telechargement">
+                    <button
+                      className="bouton bouton--process bouton--action-secondaire"
+                      onClick={() => navigate("/recruitment/process")}
+                    >
+                      <Clock className="bouton-icone" />
+                      <span>Voir le Processus</span>
+                    </button>
+                    
+                    <div className="separateur-actions">
+                      <span className="separateur-texte">Téléchargements</span>
+                    </div>
+
+                    <div className="actions-fichiers">
+                      <button className="bouton bouton--telecharger-pdf bouton--action-fichier">
+                        <FileText className="bouton-icone" />
+                        <span>PDF</span>
+                      </button>
+                      <button className="bouton bouton--telecharger-word bouton--action-fichier">
+                        <Download className="bouton-icone" />
+                        <span>Word</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-
             {/* Informations Administratives */}
             <div className="carte">
               <div className="carte-en-tete">
@@ -310,7 +328,6 @@ const RecruitmentRequestDetails = () => {
                 </div>
               </div>
             </div>
-
             {/* Management Actions */}
             <div className="carte">
               <div className="carte-en-tete">
@@ -345,7 +362,6 @@ const RecruitmentRequestDetails = () => {
                 </div>
               </div>
             </div>
-
             {/* Comments Section */}
             <div className="carte">
               <div className="carte-en-tete">

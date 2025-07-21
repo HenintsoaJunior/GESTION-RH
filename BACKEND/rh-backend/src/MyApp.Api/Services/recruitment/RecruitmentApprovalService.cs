@@ -1,4 +1,4 @@
-
+using Microsoft.Extensions.Logging; // Ajouter cette directive pour ILogger
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Repositories.recruitment;
 
@@ -6,16 +6,12 @@ namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentApprovalService
     {
-        // valider la demande
         Task ValidateAsync(string requestId, string approverId);
-        //  recommander la demande 
         Task RecommendAsync(string requestId, string approverId, string comment);
         Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId);
-        // prendre les demandes en attente et celles validés
         Task<IEnumerable<RecruitmentApproval>> GetByStatusAndApproverIdAsync(string status, string approverId);
         Task AddAsync(string recruitmentRequestId, IEnumerable<ApprovalFlowEmployee> approvalFlows);
         Task AddAsync(RecruitmentApproval approval);
-        
         Task UpdateAsync(RecruitmentApproval approval);
         Task<RecruitmentApproval?> GetAsync(string requestId, string approverId, string flowId);
     }
@@ -23,10 +19,14 @@ namespace MyApp.Api.Services.recruitment
     public class RecruitmentApprovalService : IRecruitmentApprovalService
     {
         private readonly IRecruitmentApprovalRepository _repository;
+        private readonly ILogger<RecruitmentApprovalService> _logger; // Ajouter le logger
 
-        public RecruitmentApprovalService(IRecruitmentApprovalRepository repository)
+        public RecruitmentApprovalService(
+            IRecruitmentApprovalRepository repository,
+            ILogger<RecruitmentApprovalService> logger) // Injecter le logger
         {
             _repository = repository;
+            _logger = logger;
         }
 
         public async Task ValidateAsync(string requestId, string approverId)
@@ -56,21 +56,77 @@ namespace MyApp.Api.Services.recruitment
 
         public async Task AddAsync(string recruitmentRequestId, IEnumerable<ApprovalFlowEmployee> approvalFlows)
         {
-            IEnumerable<RecruitmentApproval> recruitmentApprovals = RecruitmentApproval.GetRecruitmentApprovalsFromApprovalFlows(recruitmentRequestId,approvalFlows);
-            await _repository.AddRangeAsync(recruitmentApprovals);
-            await _repository.SaveChangesAsync();
+            _logger.LogInformation("Début de la création des RecruitmentApprovals pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+
+            try
+            {
+                IEnumerable<RecruitmentApproval> recruitmentApprovals = RecruitmentApproval.GetRecruitmentApprovalsFromApprovalFlows(recruitmentRequestId, approvalFlows);
+
+                foreach (var approval in recruitmentApprovals)
+                {
+                    _logger.LogInformation(
+                        "RecruitmentApproval généré: RecruitmentRequestId={RecruitmentRequestId}, ApproverId={ApproverId}, Status={Status}",
+                        approval.RecruitmentRequestId,
+                        approval.ApproverId,
+                        approval.Status);
+                }
+
+                var duplicateApprovals = recruitmentApprovals
+                    .GroupBy(a => a.RecruitmentRequestId)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key);
+
+                if (duplicateApprovals.Any())
+                {
+                    _logger.LogWarning("Doublons détectés pour RecruitmentRequestId: {DuplicateIds}", string.Join(", ", duplicateApprovals));
+                }
+
+                await _repository.AddRangeAsync(recruitmentApprovals);
+                await _repository.SaveChangesAsync();
+
+                _logger.LogInformation("RecruitmentApprovals ajoutés avec succès pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de l'ajout des RecruitmentApprovals pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                throw; // Relancer l'exception pour que l'appelant puisse la gérer
+            }
         }
 
         public async Task AddAsync(RecruitmentApproval approval)
         {
-            await _repository.AddAsync(approval);
-            await _repository.SaveChangesAsync();
+            _logger.LogInformation("Ajout d'un RecruitmentApproval: RecruitmentRequestId={RecruitmentRequestId}, ApproverId={ApproverId}",
+                approval.RecruitmentRequestId, approval.ApproverId);
+
+            try
+            {
+                await _repository.AddAsync(approval);
+                await _repository.SaveChangesAsync();
+                _logger.LogInformation("RecruitmentApproval ajouté avec succès: RecruitmentRequestId={RecruitmentRequestId}", approval.RecruitmentRequestId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de l'ajout d'un RecruitmentApproval: RecruitmentRequestId={RecruitmentRequestId}", approval.RecruitmentRequestId);
+                throw;
+            }
         }
 
         public async Task UpdateAsync(RecruitmentApproval approval)
         {
-            await _repository.UpdateAsync(approval);
-            await _repository.SaveChangesAsync();
+            _logger.LogInformation("Mise à jour d'un RecruitmentApproval: RecruitmentRequestId={RecruitmentRequestId}, ApproverId={ApproverId}",
+                approval.RecruitmentRequestId, approval.ApproverId);
+
+            try
+            {
+                await _repository.UpdateAsync(approval);
+                await _repository.SaveChangesAsync();
+                _logger.LogInformation("RecruitmentApproval mis à jour avec succès: RecruitmentRequestId={RecruitmentRequestId}", approval.RecruitmentRequestId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour d'un RecruitmentApproval: RecruitmentRequestId={RecruitmentRequestId}", approval.RecruitmentRequestId);
+                throw;
+            }
         }
     }
 }

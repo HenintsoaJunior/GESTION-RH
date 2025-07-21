@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
-using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.recruitment;
 
 namespace MyApp.Api.Repositories.recruitment

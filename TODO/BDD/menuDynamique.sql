@@ -48,3 +48,25 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
 ('h1', NULL, 'menu1', GETDATE(), GETDATE()),
 ('h2', 'menu1', 'menu1_1', GETDATE(), GETDATE());
+
+
+-- Ajouter un nouveau menu "Fiche de Poste"
+INSERT INTO menu (
+    menu_id, menu_key, icon, link, is_enabled, position, module_id, created_at, updated_at
+) VALUES (
+    'menu1_2',                 -- ID unique pour le nouveau menu
+    'fiche-poste',            -- Clé unique du menu
+    'fa-file-alt',            -- Icône (Font Awesome par exemple)
+    '/recruitment/job-profile', -- Lien du menu
+    1,                        -- Activé
+    2,                        -- Position dans le menu (après demande-recrutement)
+    'recruitment',            -- Module parent
+    GETDATE(), GETDATE()
+);
+
+-- Définir la hiérarchie : ce menu est enfant de "menu1"
+INSERT INTO menu_hierarchy (
+    hierarchy_id, parent_menu_id, menu_id, created_at, updated_at
+) VALUES (
+    'h3', 'menu1', 'menu1_2', GETDATE(), GETDATE()
+);
