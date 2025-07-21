@@ -83,22 +83,6 @@ namespace MyApp.Api.Services.recruitment
                 }
 
                 var approvalFlowEmployees = await _approvalFlowRepository.GetAllGroupedByApproverRoleWithActiveEmployeesAsync();
-                if (approvalFlowEmployees == null || !approvalFlowEmployees.Any())
-                {
-                    _logger.LogInformation("ApprovalFlowEmployees is null or empty");
-                }
-                else
-                {
-                    foreach (var item in approvalFlowEmployees)
-                    {
-                        _logger.LogInformation("ApprovalFlowEmployee: EmployeeId={EmployeeId}, ApprovalFlowId={ApprovalFlowId}, ApproverRole={ApproverRole}, EmployeeStatus={EmployeeStatus}",
-                            item.EmployeeId,
-                            item.ApprovalFlowId,
-                            item.ApprovalFlow?.ApproverRole ?? "N/A",
-                            item.Employee?.Status ?? "N/A");
-                    }
-                }
-
                 await _approvalService.AddAsync(request.RecruitmentRequestId, approvalFlowEmployees);
                 _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", request.RecruitmentRequestId);
 
