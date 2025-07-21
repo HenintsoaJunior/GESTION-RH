@@ -6,9 +6,14 @@ namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentApprovalService
     {
+        // valider la demande
+        Task ValidateAsync(string requestId, string approverId);
+        //  recommander la demande 
+        Task RecommendAsync(string requestId, string approverId, string comment);
         Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId);
+        // prendre les demandes en attente et celles validés
         Task<IEnumerable<RecruitmentApproval>> GetByStatusAndApproverIdAsync(string status, string approverId);
-        Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlowEmployee> approvalFlows);
+        Task AddAsync(string recruitmentRequestId, IEnumerable<ApprovalFlowEmployee> approvalFlows);
         Task AddAsync(RecruitmentApproval approval);
         
         Task UpdateAsync(RecruitmentApproval approval);
@@ -22,6 +27,16 @@ namespace MyApp.Api.Services.recruitment
         public RecruitmentApprovalService(IRecruitmentApprovalRepository repository)
         {
             _repository = repository;
+        }
+
+        public async Task ValidateAsync(string requestId, string approverId)
+        {
+            await _repository.ValidateAsync(requestId, approverId);
+        }
+
+        public async Task RecommendAsync(string requestId, string approverId, string comment)
+        {
+            await _repository.RecommendAsync(requestId, approverId, comment);
         }
 
         public async Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId)
@@ -39,9 +54,10 @@ namespace MyApp.Api.Services.recruitment
             return await _repository.GetAsync(requestId, approverId, flowId);
         }
 
-        public async Task AddAsync(RecruitmentApproval approval, IEnumerable<ApprovalFlowEmployee> approvalFlows)
+        public async Task AddAsync(string recruitmentRequestId, IEnumerable<ApprovalFlowEmployee> approvalFlows)
         {
-            await _repository.AddAsync(approval, approvalFlows);
+            IEnumerable<RecruitmentApproval> recruitmentApprovals = RecruitmentApproval.GetRecruitmentApprovalsFromApprovalFlows(recruitmentRequestId,approvalFlows);
+            await _repository.AddRangeAsync(recruitmentApprovals);
             await _repository.SaveChangesAsync();
         }
 

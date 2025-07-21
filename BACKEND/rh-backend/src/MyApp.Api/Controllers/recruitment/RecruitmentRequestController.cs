@@ -1,12 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Models.form.recruitment;
 using MyApp.Api.Services.recruitment;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using MyApp.Api.Models.search;
 
 namespace MyApp.Api.Controllers.recruitment

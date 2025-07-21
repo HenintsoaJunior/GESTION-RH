@@ -38,5 +38,28 @@ namespace MyApp.Api.Entities.recruitment
 
         [ForeignKey("ApproverId")]
         public User? Approver { get; set; }
+
+        public static IEnumerable<RecruitmentApproval> GetRecruitmentApprovalsFromApprovalFlows(string recruitmentRequestId,IEnumerable<ApprovalFlowEmployee> approvalFlows)
+        {
+            var recruitmentApprovals = new List<RecruitmentApproval>();
+            bool first = true;
+
+            foreach (var flow in approvalFlows)
+            {
+                var approval = new RecruitmentApproval
+                {
+                    RecruitmentRequestId = recruitmentRequestId,
+                    ApproverId = flow.EmployeeId,
+                    ApprovalOrder = flow.ApprovalFlow?.ApprovalOrder,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    Status = first ? "En attente" : null,
+                    Comment = string.Empty
+                };
+                recruitmentApprovals.Add(approval);
+                first = false; // seul le premier garde le statut
+            }
+            return recruitmentApprovals;
+        }
     }
 }
