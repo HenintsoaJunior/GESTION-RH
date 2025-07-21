@@ -7,6 +7,7 @@ namespace MyApp.Api.Repositories.users
 {
     public interface IUserRepository
     {
+        Task<User?> GetByEmployeeIdAsync(string employeeId);
         Task<IEnumerable<User>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
         Task<User?> GetByEmailAsync(string email);
@@ -22,6 +23,13 @@ namespace MyApp.Api.Repositories.users
         public UserRepository(AppDbContext context)
         {
             _context = context;
+        }
+
+        public async Task<User?> GetByEmployeeIdAsync(string employeeId)
+        {
+            return await _context.Users
+                .Include(u => u.Employee)
+                .FirstOrDefaultAsync(u => u.EmployeeId == employeeId);
         }
 
         public async Task<IEnumerable<User>> GetAllAsync()
