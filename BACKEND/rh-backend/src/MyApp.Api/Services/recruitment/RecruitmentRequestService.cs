@@ -83,6 +83,8 @@ namespace MyApp.Api.Services.recruitment
                 {
                     RecruitmentRequestId = request.RecruitmentRequestId
                 };
+                
+                
                 await _approvalService.AddAsync(approval, approvalFlowEmployee);
                 _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", approval.RecruitmentRequestId);
                 

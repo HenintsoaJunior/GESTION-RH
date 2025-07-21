@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Users, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Users, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, X } from "lucide-react";
 import { formatDate } from "utils/generalisation";
 import { fetchSites } from "services/site/site";
 import { fetchContractTypes } from "services/contract/contract-type";
@@ -29,7 +29,7 @@ const RecruitmentRequestList = () => {
     serviceId: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10); // Changed default from 5 to 10
+  const [pageSize, setPageSize] = useState(10);
   const [totalEntries, setTotalEntries] = useState(0);
   const [isLoading, setIsLoading] = useState({
     requests: true,
@@ -46,6 +46,10 @@ const RecruitmentRequestList = () => {
   const [allDepartments, setAllDepartments] = useState([]);
   const [allServices, setAllServices] = useState([]);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
+  
+  // États pour contrôler l'affichage des filtres
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
 
   // Fetch additional data for filters and statistics
   useEffect(() => {
@@ -54,12 +58,10 @@ const RecruitmentRequestList = () => {
     fetchDirections(setDirections, setIsLoading, null, setAlert);
     fetchDepartments(setAllDepartments, setIsLoading, null, setAlert);
     fetchServices(setAllServices, setIsLoading, null, setAlert);
-    
-    // Fetch statistics
     fetchRecruitmentRequestStats(setStats, setIsLoading, setAlert);
   }, []);
 
-  // Filtrer les départements et services en fonction de directionId et departmentId (pour l'affichage seulement)
+  // Filtrer les départements et services en fonction de directionId et departmentId
   const filteredDepartments = useMemo(() => {
     if (filters.directionId) {
       return allDepartments.filter((dept) => dept.directionId === filters.directionId);
@@ -69,10 +71,8 @@ const RecruitmentRequestList = () => {
 
   const filteredServices = useMemo(() => {
     if (filters.departmentId) {
-      // Filtrer par département si sélectionné
       return allServices.filter((svc) => svc.departmentId === filters.departmentId);
     } else if (filters.directionId) {
-      // Sinon filtrer par direction si sélectionnée
       return allServices.filter((svc) => svc.directionId === filters.directionId);
     }
     return allServices;
@@ -102,21 +102,17 @@ const RecruitmentRequestList = () => {
     );
   }, [filters, currentPage, pageSize]);
 
-  // Charger les données initiales seulement
   useEffect(() => {
     fetchRequests();
-  }, [currentPage, pageSize]); // Added pageSize to dependencies
+  }, [currentPage, pageSize]);
 
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({
       ...prev,
       [name]: value,
-      // Réinitialiser département et service si direction change
       ...(name === "directionId" && { departmentId: "", serviceId: "" }),
-      // Réinitialiser service si département change
       ...(name === "departmentId" && { serviceId: "" }),
     }));
-    // Ne pas déclencher fetchRequests automatiquement
   };
 
   const handleFilterSubmit = (event) => {
@@ -139,7 +135,6 @@ const RecruitmentRequestList = () => {
     };
     setFilters(resetFilters);
     setCurrentPage(1);
-    // Passer les filtres réinitialisés directement à fetchRequests
     fetchRequests(resetFilters);
   };
 
@@ -149,13 +144,22 @@ const RecruitmentRequestList = () => {
 
   const handlePageSizeChange = (event) => {
     setPageSize(Number(event.target.value));
-    setCurrentPage(1); // Reset to first page when page size changes
+    setCurrentPage(1);
   };
 
   const handleRowClick = (requestId) => {
     if (requestId) {
       navigate(`/recruitment/recruitment-request-details/${requestId}`);
     }
+  };
+
+  // Fonctions pour contrôler l'affichage des filtres
+  const toggleMinimize = () => {
+    setIsMinimized(prev => !prev);
+  };
+
+  const toggleHide = () => {
+    setIsHidden(prev => !prev);
   };
 
   const totalPages = Math.ceil(totalEntries / pageSize);
@@ -176,7 +180,6 @@ const RecruitmentRequestList = () => {
 
   const isDataLoading = Object.values(isLoading).some((loading) => loading);
 
-  // Générer les boutons de pagination
   const renderPagination = () => {
     const maxButtons = 5;
     const half = Math.floor(maxButtons / 2);
@@ -210,241 +213,286 @@ const RecruitmentRequestList = () => {
         isOpen={alert.isOpen}
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
+      
       {/* Cartes statistiques */}
-      <div className="stats-grid">
-        <div className="stat-card stat-card-total">
-          <div className="stat-icon">
-            <Users className="w-6 h-6" />
+      <div className="stats-container">
+        <div className="stats-grid">
+          <div className="stat-card stat-card-total">
+            <div className="stat-icon">
+              <Users className="w-6 h-6" />
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{stats.total}</div>
+              <div className="stat-label">Total des demandes</div>
+            </div>
           </div>
-          <div className="stat-content">
-            <div className="stat-number">{stats.total}</div>
-            <div className="stat-label">Total des demandes</div>
+          <div className="stat-card stat-card-pending">
+            <div className="stat-icon">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{stats.enAttente}</div>
+              <div className="stat-label">Brouillon</div>
+            </div>
           </div>
-        </div>
-        <div className="stat-card stat-card-pending">
-          <div className="stat-icon">
-            <Clock className="w-6 h-6" />
+          <div className="stat-card stat-card-progress">
+            <div className="stat-icon">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{stats.enCours}</div>
+              <div className="stat-label">En Cours</div>
+            </div>
           </div>
-          <div className="stat-content">
-            <div className="stat-number">{stats.enAttente}</div>
-            <div className="stat-label">Brouillon</div>
+          <div className="stat-card stat-card-approved">
+            <div className="stat-icon">
+              <CheckCircle className="w-6 h-6" />
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{stats.approuvees}</div>
+              <div className="stat-label">Approuvées</div>
+            </div>
           </div>
-        </div>
-        <div className="stat-card stat-card-progress">
-          <div className="stat-icon">
-            <Clock className="w-6 h-6" />
-          </div>
-          <div className="stat-content">
-            <div className="stat-number">{stats.enCours}</div>
-            <div className="stat-label">En Cours</div>
-          </div>
-        </div>
-        <div className="stat-card stat-card-approved">
-          <div className="stat-icon">
-            <CheckCircle className="w-6 h-6" />
-          </div>
-          <div className="stat-content">
-            <div className="stat-number">{stats.approuvees}</div>
-            <div className="stat-label">Approuvées</div>
-          </div>
-        </div>
-        <div className="stat-card stat-card-rejected">
-          <div className="stat-icon">
-            <XCircle className="w-6 h-6" />
-          </div>
-          <div className="stat-content">
-            <div className="stat-number">{stats.rejetees}</div>
-            <div className="stat-label">Rejetées</div>
+          <div className="stat-card stat-card-rejected">
+            <div className="stat-icon">
+              <XCircle className="w-6 h-6" />
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{stats.rejetees}</div>
+              <div className="stat-label">Rejetées</div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Section des filtres */}
-      <div className="filters-section">
-        <div className="filters-header">
-          <h2 className="filters-title">Filtres de Recherche</h2>
-          <button
-            onClick={() => navigate("/recruitment/recruitment-request-form")}
-            className="btn-new-request"
+      {!isHidden && (
+        <div className={`filters-container ${isMinimized ? 'minimized' : ''}`}>
+          <div className="filters-header">
+            <h2 className="filters-title">Filtres de Recherche</h2>
+            <div className="filters-controls">
+              <button 
+                type="button" 
+                className="filter-control-btn filter-minimize-btn"
+                onClick={toggleMinimize}
+                title={isMinimized ? "Développer" : "Réduire"}
+              >
+                {isMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </button>
+              <button 
+                type="button" 
+                className="filter-control-btn filter-close-btn"
+                onClick={toggleHide}
+                title="Fermer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          
+          {!isMinimized && (
+            <div className="filters-section">
+              <form onSubmit={handleFilterSubmit}>
+                <table className="form-table-search">
+                  <tbody>
+                    <tr>
+                      <th className="form-label-cell-search">
+                        <label className="form-label-search">Intitulé du Poste</label>
+                      </th>
+                      <td className="form-input-cell-search">
+                        <input
+                          name="jobTitleKeyword"
+                          type="text"
+                          value={filters.jobTitleKeyword}
+                          onChange={(e) => handleFilterChange("jobTitleKeyword", e.target.value)}
+                          className="form-input-search"
+                          placeholder="Recherche par poste"
+                        />
+                      </td>
+                      <th className="form-label-cell-search">
+                        <label className="form-label-search">Direction</label>
+                      </th>
+                      <td className="form-input-cell-search">
+                        <select
+                          name="directionId"
+                          value={filters.directionId}
+                          onChange={(e) => handleFilterChange("directionId", e.target.value)}
+                          className="form-input-search"
+                        >
+                          <option value="">Toutes les directions</option>
+                          {directions.map((dir) => (
+                            <option key={dir.directionId} value={dir.directionId}>
+                              {dir.directionName}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th className="form-label-cell-search">
+                        <label className="form-label-search">Type de Contrat</label>
+                      </th>
+                      <td className="form-input-cell-search">
+                        <select
+                          name="contractTypeId"
+                          value={filters.contractTypeId}
+                          onChange={(e) => handleFilterChange("contractTypeId", e.target.value)}
+                          className="form-input-search"
+                        >
+                          <option value="">Tous les contrats</option>
+                          {contractTypes.map((ct) => (
+                            <option key={ct.contractTypeId} value={ct.contractTypeId}>
+                              {ct.label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <th className="form-label-cell-search">
+                        <label className="form-label-search">Site</label>
+                      </th>
+                      <td className="form-input-cell-search">
+                        <select
+                          name="siteId"
+                          value={filters.siteId}
+                          onChange={(e) => handleFilterChange("siteId", e.target.value)}
+                          className="form-input-search"
+                        >
+                          <option value="">Tous les sites</option>
+                          {sites.map((site) => (
+                            <option key={site.siteId} value={site.siteId}>
+                              {site.siteName}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th className="form-label-cell-search">
+                        <label className="form-label-search">Département</label>
+                      </th>
+                      <td className="form-input-cell-search">
+                        <select
+                          name="departmentId"
+                          value={filters.departmentId}
+                          onChange={(e) => handleFilterChange("departmentId", e.target.value)}
+                          className="form-input-search"
+                          disabled={filters.directionId === ""}
+                        >
+                          <option value="">Tous les départements</option>
+                          {filteredDepartments.map((dept) => (
+                            <option key={dept.departmentId} value={dept.departmentId}>
+                              {dept.departmentName}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <th className="form-label-cell-search">
+                        <label className="form-label-search">Service</label>
+                      </th>
+                      <td className="form-input-cell-search">
+                        <select
+                          name="serviceId"
+                          value={filters.serviceId}
+                          onChange={(e) => handleFilterChange("serviceId", e.target.value)}
+                          className="form-input-search"
+                          disabled={filters.directionId === "" && filters.departmentId === ""}
+                        >
+                          <option value="">Tous les services</option>
+                          {filteredServices.map((svc) => (
+                            <option key={svc.serviceId} value={svc.serviceId}>
+                              {svc.serviceName}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th className="form-label-cell-search">
+                        <label className="form-label-search">Statut</label>
+                      </th>
+                      <td className="form-input-cell-search">
+                        <select
+                          name="status"
+                          value={filters.status}
+                          onChange={(e) => handleFilterChange("status", e.target.value)}
+                          className="form-input-search"
+                        >
+                          <option value="">Tous les statuts</option>
+                          <option value="BROUILLON">Brouillon</option>
+                          <option value="En Cours">En Cours</option>
+                          <option value="Approuvé">Approuvé</option>
+                          <option value="Rejeté">Rejeté</option>
+                        </select>
+                      </td>
+                      <th className="form-label-cell-search">
+                        <label className="form-label-search">Date de début</label>
+                      </th>
+                      <td className="form-input-cell-search">
+                        <input
+                          name="requestDateMin"
+                          type="date"
+                          value={filters.requestDateMin}
+                          onChange={(e) => handleFilterChange("requestDateMin", e.target.value)}
+                          className="form-input-search"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <th className="form-label-cell-search">
+                        <label className="form-label-search">Date de fin</label>
+                      </th>
+                      <td className="form-input-cell-search">
+                        <input
+                          name="requestDateMax"
+                          type="date"
+                          value={filters.requestDateMax}
+                          onChange={(e) => handleFilterChange("requestDateMax", e.target.value)}
+                          className="form-input-search"
+                        />
+                      </td>
+                      <th className="form-label-cell-search"></th>
+                      <td className="form-input-cell-search"></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div className="filters-actions">
+                  <button type="button" className="btn-reset" onClick={handleResetFilters}>
+                    Réinitialiser
+                  </button>
+                  <button type="submit" className="btn-search">
+                    Rechercher
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bouton pour réafficher les filtres si cachés */}
+      {isHidden && (
+        <div className="filters-toggle">
+          <button 
+            type="button" 
+            className="btn-show-filters"
+            onClick={toggleHide}
           >
-            <Plus className="w-4 h-4" />
-            Nouvelle demande
+            Afficher les filtres
           </button>
         </div>
+      )}
 
-        <form onSubmit={handleFilterSubmit}>
-          <table className="form-table-search">
-            <tbody>
-              <tr>
-                <th className="form-label-cell-search">
-                  <label className="form-label-search">Intitulé du Poste</label>
-                </th>
-                <td className="form-input-cell-search">
-                  <input
-                    name="jobTitleKeyword"
-                    type="text"
-                    value={filters.jobTitleKeyword}
-                    onChange={(e) => handleFilterChange("jobTitleKeyword", e.target.value)}
-                    className="form-input-search"
-                    placeholder="Recherche par poste"
-                  />
-                </td>
-                <th className="form-label-cell-search">
-                  <label className="form-label-search">Direction</label>
-                </th>
-                <td className="form-input-cell-search">
-                  <select
-                    name="directionId"
-                    value={filters.directionId}
-                    onChange={(e) => handleFilterChange("directionId", e.target.value)}
-                    className="form-input-search"
-                  >
-                    <option value="">Toutes les directions</option>
-                    {directions.map((dir) => (
-                      <option key={dir.directionId} value={dir.directionId}>
-                        {dir.directionName}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-              <tr>
-                <th className="form-label-cell-search">
-                  <label className="form-label-search">Type de Contrat</label>
-                </th>
-                <td className="form-input-cell-search">
-                  <select
-                    name="contractTypeId"
-                    value={filters.contractTypeId}
-                    onChange={(e) => handleFilterChange("contractTypeId", e.target.value)}
-                    className="form-input-search"
-                  >
-                    <option value="">Tous les contrats</option>
-                    {contractTypes.map((ct) => (
-                      <option key={ct.contractTypeId} value={ct.contractTypeId}>
-                        {ct.label}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <th className="form-label-cell-search">
-                  <label className="form-label-search">Site</label>
-                </th>
-                <td className="form-input-cell-search">
-                  <select
-                    name="siteId"
-                    value={filters.siteId}
-                    onChange={(e) => handleFilterChange("siteId", e.target.value)}
-                    className="form-input-search"
-                  >
-                    <option value="">Tous les sites</option>
-                    {sites.map((site) => (
-                      <option key={site.siteId} value={site.siteId}>
-                        {site.siteName}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-              <tr>
-                <th className="form-label-cell-search">
-                  <label className="form-label-search">Département</label>
-                </th>
-                <td className="form-input-cell-search">
-                  <select
-                    name="departmentId"
-                    value={filters.departmentId}
-                    onChange={(e) => handleFilterChange("departmentId", e.target.value)}
-                    className="form-input-search"
-                    disabled={filters.directionId === ""}
-                  >
-                    <option value="">Tous les départements</option>
-                    {filteredDepartments.map((dept) => (
-                      <option key={dept.departmentId} value={dept.departmentId}>
-                        {dept.departmentName}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <th className="form-label-cell-search">
-                  <label className="form-label-search">Service</label>
-                </th>
-                <td className="form-input-cell-search">
-                  <select
-                    name="serviceId"
-                    value={filters.serviceId}
-                    onChange={(e) => handleFilterChange("serviceId", e.target.value)}
-                    className="form-input-search"
-                    disabled={filters.directionId === "" && filters.departmentId === ""}
-                  >
-                    <option value="">Tous les services</option>
-                    {filteredServices.map((svc) => (
-                      <option key={svc.serviceId} value={svc.serviceId}>
-                        {svc.serviceName}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-              <tr>
-                <th className="form-label-cell-search">
-                  <label className="form-label-search">Statut</label>
-                </th>
-                <td className="form-input-cell-search">
-                  <select
-                    name="status"
-                    value={filters.status}
-                    onChange={(e) => handleFilterChange("status", e.target.value)}
-                    className="form-input-search"
-                  >
-                    <option value="">Tous les statuts</option>
-                    <option value="BROUILLON">Brouillon</option>
-                    <option value="En Cours">En Cours</option>
-                    <option value="Approuvé">Approuvé</option>
-                    <option value="Rejeté">Rejeté</option>
-                  </select>
-                </td>
-                <th className="form-label-cell-search">
-                  <label className="form-label-search">Date de début</label>
-                </th>
-                <td className="form-input-cell-search">
-                  <input
-                    name="requestDateMin"
-                    type="date"
-                    value={filters.requestDateMin}
-                    onChange={(e) => handleFilterChange("requestDateMin", e.target.value)}
-                    className="form-input-search"
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th className="form-label-cell-search">
-                  <label className="form-label-search">Date de fin</label>
-                </th>
-                <td className="form-input-cell-search">
-                  <input
-                    name="requestDateMax"
-                    type="date"
-                    value={filters.requestDateMax}
-                    onChange={(e) => handleFilterChange("requestDateMax", e.target.value)}
-                    className="form-input-search"
-                  />
-                </td>
-                <th className="form-label-cell-search"></th>
-                <td className="form-input-cell-search"></td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div className="filters-actions">
-            <button type="button" className="btn-reset" onClick={handleResetFilters}>
-              Réinitialiser
-            </button>
-            <button type="submit" className="btn-search">
-              Rechercher
-            </button>
-          </div>
-        </form>
+      {/* Section titre et bouton Nouvelle Demande */}
+      <div className="table-header">
+        <h2 className="table-title">Liste</h2>
+        <button
+          onClick={() => navigate("/recruitment/recruitment-request-form")}
+          className="btn-new-request"
+        >
+          <Plus className="w-4 h-4" />
+          Nouvelle demande
+        </button>
       </div>
 
       {/* Tableau de données */}

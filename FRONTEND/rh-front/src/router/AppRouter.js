@@ -9,6 +9,7 @@ import ContractTypeForm from 'pages/recruitment/contract/contract-type-form';
 import DirectionForm from 'pages/direction/direction-form';
 import DepartmentForm from 'pages/direction/department-form';
 import ServiceForm from 'pages/direction/service-form';
+import ProcessWorkflow from 'pages/recruitment/recruitments_request/process';
 
 function AppRouter() {
   return (
@@ -19,6 +20,7 @@ function AppRouter() {
           <Route path="/recruitment/recruitment-request" element={<RecruitmentRequestList />} />
           <Route path="/recruitment/recruitment-request-form" element={<RecruitmentRequestForm />} />
           <Route path="/recruitment/recruitment-request-details/:recruitmentRequestId" element={<RecruitmentRequestDetails />} />
+          <Route path="/recruitment/process" element={<ProcessWorkflow />} />
           <Route path="/recruitment/contract-type-form" element={<ContractTypeForm />} />
           <Route path="/direction/direction-form" element={<DirectionForm />} />
           <Route path="/direction/department-form" element={<DepartmentForm />} />
