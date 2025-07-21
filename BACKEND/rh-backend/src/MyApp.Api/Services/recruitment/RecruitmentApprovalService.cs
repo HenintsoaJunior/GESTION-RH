@@ -64,26 +64,6 @@ namespace MyApp.Api.Services.recruitment
             try
             {
                 IEnumerable<RecruitmentApproval> recruitmentApprovals = await RecruitmentApproval.GetRecruitmentApprovalsFromApprovalFlows(recruitmentRequestId, approvalFlows, _userService);
-
-                foreach (var approval in recruitmentApprovals)
-                {
-                    _logger.LogInformation(
-                        "RecruitmentApproval généré: RecruitmentRequestId={RecruitmentRequestId}, ApproverId={ApproverId}, Status={Status}",
-                        approval.RecruitmentRequestId,
-                        approval.ApproverId,
-                        approval.Status);
-                }
-
-                var duplicateApprovals = recruitmentApprovals
-                    .GroupBy(a => a.RecruitmentRequestId)
-                    .Where(g => g.Count() > 1)
-                    .Select(g => g.Key);
-
-                if (duplicateApprovals.Any())
-                {
-                    _logger.LogWarning("Doublons détectés pour RecruitmentRequestId: {DuplicateIds}", string.Join(", ", duplicateApprovals));
-                }
-
                 await _repository.AddRangeAsync(recruitmentApprovals);
                 await _repository.SaveChangesAsync();
 
