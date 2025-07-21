@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Repositories.employee;
 using MyApp.Api.Repositories.recruitment;
@@ -48,12 +49,14 @@ namespace MyApp.Api.Services.recruitment
 
         public async Task<string> CreateRequest(RecruitmentRequest request, RecruitmentRequestDetail detail, IEnumerable<RecruitmentRequestReplacementReason> requestReplacementReasons)
         {
+            using var transaction = await _requestRepository.BeginTransactionAsync(); // tu dois exposer cette méthode dans ton repository
             try
             {
                 if (string.IsNullOrWhiteSpace(request.RecruitmentRequestId))
                 {
                     request.RecruitmentRequestId = _sequenceGenerator.GenerateSequence("seq_recruitment_request_id", "REQ", 6, "-");
                 }
+
                 await _requestRepository.AddAsync(request);
                 await _requestRepository.SaveChangesAsync();
                 _logger.LogInformation("Demande de recrutement créée avec l'ID: {RequestId}", request.RecruitmentRequestId);
@@ -64,7 +67,7 @@ namespace MyApp.Api.Services.recruitment
                     await _requestDetailService.AddAsync(detail);
                     _logger.LogInformation("Détail de la demande de recrutement créé avec l'ID: {DetailId}", detail.RecruitmentRequestDetailId);
                 }
-                
+
                 if (requestReplacementReasons != null && requestReplacementReasons.Any())
                 {
                     var reasonsToAdd = requestReplacementReasons.Select(r => new RecruitmentRequestReplacementReason
@@ -73,24 +76,22 @@ namespace MyApp.Api.Services.recruitment
                         ReplacementReasonId = r.ReplacementReasonId,
                         Description = r.Description,
                     }).ToList();
-                    
+
                     await _replacementReasonService.AddRangeAsync(reasonsToAdd);
-                    _logger.LogInformation("Raisons du remplacement de la demande de recrutement créé");
+                    _logger.LogInformation("Raisons du remplacement de la demande de recrutement créées");
                 }
 
-                IEnumerable<ApprovalFlowEmployee>? approvalFlowEmployee = await _approvalFlowRepository.GetAllGroupedByApproverRoleWithActiveEmployeesAsync();
-                RecruitmentApproval approval = new RecruitmentApproval
-                {
-                    RecruitmentRequestId = request.RecruitmentRequestId
-                };
+                var approvalFlowEmployee = await _approvalFlowRepository.GetAllGroupedByApproverRoleWithActiveEmployeesAsync();
                 await _approvalService.AddAsync(request.RecruitmentRequestId, approvalFlowEmployee);
-                _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", approval.RecruitmentRequestId);
-                
+                _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", request.RecruitmentRequestId);
+
+                await transaction.CommitAsync(); // Valider les opérations
                 return request.RecruitmentRequestId;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la création de la demande de recrutement");
+                await transaction.RollbackAsync(); // Annuler si erreur
+                _logger.LogError(ex, ex.Message);
                 throw;
             }
         }
