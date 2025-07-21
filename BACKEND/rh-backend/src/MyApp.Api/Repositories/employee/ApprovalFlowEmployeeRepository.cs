@@ -30,7 +30,7 @@ namespace MyApp.Api.Repositories.recruitment
             return await _context.ApprovalFlowEmployees
                 .Include(a => a.Employee)
                 .Include(a => a.ApprovalFlow)
-                .Where(a => a.Employee != null && a.Employee.Status == "active")
+                .Where(a => a.Employee != null && a.Employee.Status == "actif")
                 .GroupBy(a => a.ApprovalFlow!.ApproverRole)
                 .Select(g => g.OrderBy(a => a.EmployeeId).First())
                 .ToListAsync();
