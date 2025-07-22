@@ -277,12 +277,11 @@ const RecruitmentRequestDetails = () => {
                   <div className="actions-telechargement">
                     <button
                       className="bouton bouton--process bouton--action-secondaire"
-                      onClick={() => navigate("/recruitment/process")}
+                      onClick={() => navigate(`/recruitment/process/${request.recruitmentRequest?.recruitmentRequestId}`)}
                     >
                       <Clock className="bouton-icone" />
                       <span>Voir le Processus</span>
                     </button>
-                    
                     <div className="separateur-actions">
                       <span className="separateur-texte">Téléchargements</span>
                     </div>

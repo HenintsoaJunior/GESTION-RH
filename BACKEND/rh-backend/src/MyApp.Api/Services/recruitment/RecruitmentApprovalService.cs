@@ -6,40 +6,41 @@ namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentApprovalService
     {
-        Task ValidateAsync(string requestId, string approverId);
-        Task RecommendAsync(string requestId, string approverId, string comment);
+        Task ValidateAsync(string recruitmentRequestId, string approverId);
+        Task RecommendAsync(string recruitmentRequestId, string approverId, string comment);
         Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId);
         Task<IEnumerable<RecruitmentApproval>> GetByStatusAndApproverIdAsync(string status, string approverId);
+        Task<IEnumerable<RecruitmentApproval>> GetByRecruitmentRequestIdAsync(string recruitmentRequestId);
         Task AddAsync(string recruitmentRequestId, IEnumerable<ApprovalFlowEmployee> approvalFlows);
         Task AddAsync(RecruitmentApproval approval);
         Task UpdateAsync(RecruitmentApproval approval);
-        Task<RecruitmentApproval?> GetAsync(string requestId, string approverId, string flowId);
+        Task<RecruitmentApproval?> GetAsync(string recruitmentRequestId, string approverId, string flowId);
     }
 
     public class RecruitmentApprovalService : IRecruitmentApprovalService
     {
         private readonly IUserService _userService;
         private readonly IRecruitmentApprovalRepository _repository;
-        private readonly ILogger<RecruitmentApprovalService> _logger; // Ajouter le logger
+        private readonly ILogger<RecruitmentApprovalService> _logger;
 
         public RecruitmentApprovalService(
             IUserService userService,
             IRecruitmentApprovalRepository repository,
-            ILogger<RecruitmentApprovalService> logger) // Injecter le logger
+            ILogger<RecruitmentApprovalService> logger)
         {
             _userService = userService;
             _repository = repository;
             _logger = logger;
         }
 
-        public async Task ValidateAsync(string requestId, string approverId)
+        public async Task ValidateAsync(string recruitmentRequestId, string approverId)
         {
-            await _repository.ValidateAsync(requestId, approverId);
+            await _repository.ValidateAsync(recruitmentRequestId, approverId);
         }
 
-        public async Task RecommendAsync(string requestId, string approverId, string comment)
+        public async Task RecommendAsync(string recruitmentRequestId, string approverId, string comment)
         {
-            await _repository.RecommendAsync(requestId, approverId, comment);
+            await _repository.RecommendAsync(recruitmentRequestId, approverId, comment);
         }
 
         public async Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId)
@@ -52,9 +53,21 @@ namespace MyApp.Api.Services.recruitment
             return await _repository.GetByStatusAndApproverIdAsync(status, approverId);
         }
 
-        public async Task<RecruitmentApproval?> GetAsync(string requestId, string approverId, string flowId)
+        public async Task<IEnumerable<RecruitmentApproval>> GetByRecruitmentRequestIdAsync(string recruitmentRequestId)
         {
-            return await _repository.GetAsync(requestId, approverId, flowId);
+            _logger.LogInformation("Récupération des approbations pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+            
+            try
+            {
+                var approvals = await _repository.GetByRecruitmentRequestIdAsync(recruitmentRequestId);
+                _logger.LogInformation("Approbations récupérées avec succès pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                return approvals;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des approbations pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                throw;
+            }
         }
 
         public async Task AddAsync(string recruitmentRequestId, IEnumerable<ApprovalFlowEmployee> approvalFlows)
@@ -72,7 +85,7 @@ namespace MyApp.Api.Services.recruitment
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de l'ajout des RecruitmentApprovals pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
-                throw; // Relancer l'exception pour que l'appelant puisse la gérer
+                throw;
             }
         }
 
@@ -110,6 +123,11 @@ namespace MyApp.Api.Services.recruitment
                 _logger.LogError(ex, "Erreur lors de la mise à jour d'un RecruitmentApproval: RecruitmentRequestId={RecruitmentRequestId}", approval.RecruitmentRequestId);
                 throw;
             }
+        }
+
+        public async Task<RecruitmentApproval?> GetAsync(string recruitmentRequestId, string approverId, string flowId)
+        {
+            return await _repository.GetAsync(recruitmentRequestId, approverId, flowId);
         }
     }
 }

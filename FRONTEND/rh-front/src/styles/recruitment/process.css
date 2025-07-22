@@ -8,7 +8,6 @@
   font-family: "Arial", sans-serif;
   position: relative;
 }
-
 .workflow-background {
   position: absolute;
   top: 0;
@@ -18,7 +17,6 @@
   background: radial-gradient(circle at center, rgba(240, 244, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
   z-index: -1;
 }
-
 .workflow-box {
   display: flex;
   flex-direction: column;
@@ -34,12 +32,10 @@
   transition: all 0.3s ease;
   color: white;
 }
-
 .workflow-box:hover {
   transform: translateY(-4px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
-
 .workflow-box .icon {
   margin-bottom: 8px;
   font-size: 24px;
@@ -48,20 +44,17 @@
   align-items: center;
   justify-content: center;
 }
-
 .workflow-box .title {
   font-weight: bold;
   font-size: 18px;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
 }
-
 .workflow-box .subtitle {
   font-size: 14px;
   opacity: 0.9;
   margin-bottom: 12px;
 }
-
 .workflow-box .status {
   display: flex;
   align-items: center;
@@ -76,31 +69,33 @@
   color: white;
 }
 
-/* Box colors with gradients */
+/* Box colors with gradients - Couleur par défaut (pour la demande initiale et décision finale) */
 .initial {
   background: linear-gradient(135deg, #4568dc, #5b7cfa);
   border-bottom: 4px solid #3451b2;
 }
 
-.drh {
-  background: linear-gradient(135deg, #43a047, #66bb6a);
-  border-bottom: 4px solid #2e7d32;
-}
-
-.daf,
-.dcm {
-  background: linear-gradient(135deg, #f57c00, #ff9800);
-  border-bottom: 4px solid #e65100;
-}
-
-.dg {
-  background: linear-gradient(135deg, #ef6c00, #ff9800);
-  border-bottom: 4px solid #e65100;
-}
-
 .decision {
   background: linear-gradient(135deg, #8e24aa, #9c64e2);
   border-bottom: 4px solid #6a1b9a;
+}
+
+/* Couleurs selon le statut - EN ATTENTE (Orange) */
+.workflow-box.pending {
+  background: linear-gradient(135deg, #f57c00, #ff9800) !important;
+  border-bottom: 4px solid #e65100 !important;
+}
+
+/* Couleurs selon le statut - APPROUVÉ/RECOMMANDÉ (Vert) */
+.workflow-box.approved {
+  background: linear-gradient(135deg, #43a047, #66bb6a) !important;
+  border-bottom: 4px solid #2e7d32 !important;
+}
+
+/* Couleurs selon le statut - REFUSÉ (Rouge) */
+.workflow-box.rejected {
+  background: linear-gradient(135deg, #d32f2f, #f44336) !important;
+  border-bottom: 4px solid #b71c1c !important;
 }
 
 /* Directors row */
@@ -123,7 +118,6 @@
   justify-content: center;
   margin: 8px 0;
 }
-
 .connector-svg {
   position: absolute;
   top: 0;
@@ -134,32 +128,26 @@
   .workflow-container {
     padding: 20px 10px;
   }
-
   .directors-row {
     flex-direction: column;
     align-items: center;
     gap: 40px;
   }
-
   .workflow-box {
     width: 260px;
   }
-
   .connector-svg-container {
     height: 30px;
   }
-
   .connector-svg {
     width: 100px !important;
     height: 30px !important;
   }
-
   /* Hide complex connectors on mobile, show simple vertical lines */
   .directors-row + .connector-svg-container .connector-svg,
   .directors-row ~ .connector-svg-container:first-of-type .connector-svg {
     display: none;
   }
-
   .directors-row + .connector-svg-container::after,
   .directors-row ~ .connector-svg-container:first-of-type::after {
     content: "";
@@ -171,7 +159,6 @@
     height: 24px;
     background-color: #7986cb;
   }
-
   .directors-row + .connector-svg-container::before,
   .directors-row ~ .connector-svg-container:first-of-type::before {
     content: "";
@@ -186,21 +173,17 @@
     border-top: 8px solid #7986cb;
   }
 }
-
 @media (max-width: 480px) {
   .workflow-box {
     width: 240px;
     padding: 12px 16px;
   }
-
   .workflow-box .title {
     font-size: 16px;
   }
-
   .workflow-box .subtitle {
     font-size: 13px;
   }
-
   .workflow-box .status {
     font-size: 11px;
     padding: 4px 8px;

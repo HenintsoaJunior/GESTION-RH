@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Services.recruitment;
 using MyApp.Api.Entities.recruitment;
-using Microsoft.Extensions.Logging;
 
 namespace MyApp.Api.Controllers.recruitment
 {
@@ -19,11 +18,11 @@ namespace MyApp.Api.Controllers.recruitment
         }
 
         [HttpPost("validate")]
-        public async Task<IActionResult> Validate([FromQuery] string requestId, [FromQuery] string approverId)
+        public async Task<IActionResult> Validate([FromQuery] string recruitmentRequestId, [FromQuery] string approverId)
         {
             try
             {
-                await _service.ValidateAsync(requestId, approverId);
+                await _service.ValidateAsync(recruitmentRequestId, approverId);
                 _logger.LogInformation("Demande validée par l'approbateur {ApproverId}", approverId);
                 return Ok("Demande validée avec succès");
             }
@@ -35,12 +34,12 @@ namespace MyApp.Api.Controllers.recruitment
         }
 
         [HttpPost("recommend")]
-        public async Task<IActionResult> Recommend([FromQuery] string requestId, [FromQuery] string approverId, [FromQuery] string comment)
+        public async Task<IActionResult> Recommend([FromQuery] string recruitmentRequestId, [FromQuery] string approverId, [FromQuery] string comment)
         {
             try
             {
-                await _service.RecommendAsync(requestId, approverId, comment);
-                _logger.LogInformation("Recommandation ajoutée pour la demande {RequestId}", requestId);
+                await _service.RecommendAsync(recruitmentRequestId, approverId, comment);
+                _logger.LogInformation("Recommandation ajoutée pour la demande {RecruitmentRequestId}", recruitmentRequestId);
                 return Ok("Recommandation enregistrée avec succès");
             }
             catch (Exception ex)
@@ -64,10 +63,32 @@ namespace MyApp.Api.Controllers.recruitment
             return Ok(approvals);
         }
 
-        [HttpGet("detail")]
-        public async Task<IActionResult> GetDetail([FromQuery] string requestId, [FromQuery] string approverId, [FromQuery] string flowId)
+        [HttpGet("byRecruitmentRequest/{recruitmentRequestId}")]
+        public async Task<IActionResult> GetByRecruitmentRequestId(string recruitmentRequestId)
         {
-            var approval = await _service.GetAsync(requestId, approverId, flowId);
+            try
+            {
+                var approvals = await _service.GetByRecruitmentRequestIdAsync(recruitmentRequestId);
+                if (!approvals.Any())
+                {
+                    _logger.LogInformation("Aucune approbation trouvée pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                    return NotFound("Aucune approbation trouvée");
+                }
+                
+                _logger.LogInformation("Approbations récupérées pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                return Ok(approvals);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des approbations pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                return StatusCode(500, "Erreur lors de la récupération des approbations");
+            }
+        }
+
+        [HttpGet("detail")]
+        public async Task<IActionResult> GetDetail([FromQuery] string recruitmentRequestId, [FromQuery] string approverId, [FromQuery] string flowId)
+        {
+            var approval = await _service.GetAsync(recruitmentRequestId, approverId, flowId);
             if (approval == null)
                 return NotFound("Approbation non trouvée");
 
