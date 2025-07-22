@@ -101,9 +101,8 @@ const RecruitmentRequestDetails = () => {
         <div className="en-tete-contenu">
           <div className="en-tete-navigation">
             <div className="navigation-gauche">
-              <button className="bouton-retour" onClick={() => navigate("/recruitment/recruitment-request")}>
-                <ArrowLeft className="bouton-retour-icone" />
-                <span>Retour</span>
+              <button onClick={() => navigate("/recruitment/recruitment-request/list")} className="btn-back" title="Retour à la liste">
+                <ArrowLeft className="w-5 h-5" />
               </button>
               <div className="separateur-vertical"></div>
               <h1 className="titre-principal">
