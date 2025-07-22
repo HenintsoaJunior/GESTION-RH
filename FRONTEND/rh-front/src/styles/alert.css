@@ -1,13 +1,13 @@
 /* Container principal de l'alert - Style ERP */
 .alert-container {
   position: fixed;
-  bottom: var(--erp-spacing-2xl); /* Changé de top à bottom */
-  right: var(--erp-spacing-2xl);
+  bottom: var(--spacing-2xl);
+  right: var(--spacing-2xl);
   z-index: 9999;
   font-family: var(--erp-font-family);
-  width: 100%;
   max-width: 420px;
   pointer-events: none;
+  transition: bottom 0.3s ease;
 }
 
 /* Alert principale - Design ERP professionnel */
@@ -24,19 +24,21 @@
   transform: translateX(100%);
   opacity: 0;
   animation: slideInRight 0.3s ease-out forwards;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
+/* Animation de fermeture */
 .alert.closing {
   animation: slideOutRight 0.25s ease-in forwards;
 }
 
 /* Contenu de l'alert - Layout ERP */
 .alert-content {
-  padding: var(--erp-spacing-xl);
+  padding: var(--erp-spacing-lg);
   display: flex;
   align-items: flex-start;
-  gap: var(--erp-spacing-lg);
+  gap: var(--erp-spacing-md);
   position: relative;
   z-index: 1;
 }
@@ -44,8 +46,8 @@
 /* Icône - Style ERP minimaliste */
 .alert-icon {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--erp-radius-md);
   display: flex;
   align-items: center;
@@ -53,6 +55,7 @@
   background: var(--alert-icon-bg);
   color: var(--alert-icon-color);
   margin-top: var(--erp-spacing-xs);
+  font-size: var(--erp-font-size-sm);
 }
 
 /* Message - Typographie ERP */
@@ -74,12 +77,12 @@
   border: none;
   color: var(--alert-text-color);
   cursor: pointer;
-  padding: var(--erp-spacing-sm);
+  padding: var(--erp-spacing-xs);
   border-radius: var(--erp-radius-sm);
   transition: all 0.2s ease;
-  opacity: 0.6;
-  width: 28px;
-  height: 28px;
+  opacity: 0.7;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -88,12 +91,12 @@
 
 .alert-close:hover {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.08);
-  transform: scale(1.05);
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
 }
 
 .alert-close:active {
-  transform: scale(0.95);
+  transform: scale(0.9);
 }
 
 /* Barre de progression - Style ERP discret */
@@ -101,11 +104,12 @@
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 2px;
+  height: 3px;
   background: var(--alert-border-color);
-  border-radius: 0;
+  border-radius: 2px;
   animation: progress 5s linear forwards;
-  opacity: 0.3;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
 }
 
 /* Types d'alerts - Couleurs ERP */
@@ -176,20 +180,20 @@
 /* Responsive ERP */
 @media (max-width: 768px) {
   .alert-container {
-    right: var(--erp-spacing-lg);
-    left: var(--erp-spacing-lg);
-    max-width: none;
-    bottom: var(--erp-spacing-lg); /* Changé de top à bottom */
+    right: var(--spacing-lg);
+    bottom: var(--spacing-lg);
+    max-width: calc(100% - 2 * var(--spacing-lg));
   }
 
   .alert-content {
-    padding: var(--erp-spacing-lg);
-    gap: var(--erp-spacing-md);
+    padding: var(--erp-spacing-md);
+    gap: var(--erp-spacing-sm);
   }
 
   .alert-icon {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
+    font-size: var(--erp-font-size-xs);
   }
 
   .alert-message {
@@ -197,8 +201,8 @@
   }
 
   .alert-close {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     padding: var(--erp-spacing-xs);
   }
 }
@@ -206,38 +210,37 @@
 /* Effet hover ERP subtil */
 .alert:hover {
   box-shadow: var(--erp-shadow-xl);
-  transition: box-shadow 0.2s ease;
+  transform: translateY(-2px);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .alert:hover .alert-progress {
   animation-play-state: paused;
+  opacity: 0.7;
 }
-
 
 /* Accessibilité ERP */
 @media (prefers-reduced-motion: reduce) {
   .alert,
-  .alert-close {
-    animation: none;
-    transition: none;
-  }
-  
+  .alert-close,
   .alert-progress {
     animation: none;
+    transition: none;
   }
 }
 
 /* Focus states pour accessibilité */
 .alert-close:focus {
   outline: 2px solid var(--erp-primary);
-  outline-offset: 2px;
+  outline-offset: 3px;
+  opacity: 1;
 }
 
 /* États multiples alerts */
 .alert-container + .alert-container {
-  bottom: calc(var(--erp-spacing-2xl) + 80px); /* Changé de top à bottom */
+  bottom: calc(var(--spacing-2xl) + 90px);
 }
 
 .alert-container + .alert-container + .alert-container {
-  bottom: calc(var(--erp-spacing-2xl) + 160px); /* Changé de top à bottom */
+  bottom: calc(var(--spacing-2xl) + 180px);
 }

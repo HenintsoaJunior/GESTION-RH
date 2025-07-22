@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.mission;
+using MyApp.Api.Models.list.mission;
 using MyApp.Api.Models.search.mission;
 
 namespace MyApp.Api.Repositories.mission
@@ -14,6 +15,7 @@ namespace MyApp.Api.Repositories.mission
         Task UpdateAsync(Mission mission);
         Task DeleteAsync(Mission mission);
         Task SaveChangesAsync();
+        Task<MissionStats> GetStatisticsAsync();
     }
 
     public class MissionRepository : IMissionRepository
@@ -28,8 +30,7 @@ namespace MyApp.Api.Repositories.mission
         public async Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize)
         {
             var query = _context.Missions
-                .Include(m => m.Site)
-                .AsQueryable();
+                .AsQueryable(); // Remove .Include(m => m.Site)
 
             if (!string.IsNullOrWhiteSpace(filters.Name))
             {
@@ -51,6 +52,10 @@ namespace MyApp.Api.Repositories.mission
                 query = query.Where(m => m.Site != null && m.Site.Contains(filters.Site));
             }
 
+            if (!string.IsNullOrWhiteSpace(filters.Status))
+            {
+                query = query.Where(m => m.Status != null && m.Status.Contains(filters.Status));
+            }
 
             var totalCount = await query.CountAsync();
 
@@ -64,11 +69,9 @@ namespace MyApp.Api.Repositories.mission
             return (results, totalCount);
         }
 
-
         public async Task<IEnumerable<Mission>> GetAllAsync()
         {
             return await _context.Missions
-                .Include(m => m.Site)
                 .OrderByDescending(m => m.CreatedAt)
                 .ToListAsync();
         }
@@ -76,7 +79,6 @@ namespace MyApp.Api.Repositories.mission
         public async Task<Mission?> GetByIdAsync(string id)
         {
             return await _context.Missions
-                .Include(m => m.Site)
                 .FirstOrDefaultAsync(m => m.MissionId == id);
         }
 
@@ -101,5 +103,28 @@ namespace MyApp.Api.Repositories.mission
         {
             await _context.SaveChangesAsync();
         }
+
+        public async Task<MissionStats> GetStatisticsAsync()
+        {
+            var total = await _context.Missions.CountAsync();
+            var enCours = await _context.Missions
+                .CountAsync(m => m.Status == "En Cours");
+            var planifiee = await _context.Missions
+                .CountAsync(m => m.Status == "Planifiée"); // Ajout du statut Planifiée
+            var terminee = await _context.Missions
+                .CountAsync(m => m.Status == "Terminée");
+            var annulee = await _context.Missions
+                .CountAsync(m => m.Status == "Annulée");
+
+            return new MissionStats()
+            {
+                Total = total,
+                EnCours = enCours,
+                Planifiee = planifiee, // Correspondance ajoutée
+                Terminee = terminee,
+                Annulee = annulee
+            };
+        }
+
     }
 }
