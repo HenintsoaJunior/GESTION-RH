@@ -149,7 +149,7 @@ const RecruitmentRequestList = () => {
 
   const handleRowClick = (requestId) => {
     if (requestId) {
-      navigate(`/recruitment/recruitment-request-details/${requestId}`);
+      navigate(`/recruitment/recruitment-request/details/${requestId}`);
     }
   };
 
@@ -487,7 +487,7 @@ const RecruitmentRequestList = () => {
       <div className="table-header">
         <h2 className="table-title">Liste</h2>
         <button
-          onClick={() => navigate("/recruitment/recruitment-request-form")}
+          onClick={() => navigate("/recruitment/recruitment-request/create")}
           className="btn-new-request"
         >
           <Plus className="w-4 h-4" />

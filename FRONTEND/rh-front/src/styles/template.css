@@ -1,32 +1,139 @@
 :root {
-  --primary-color: #69B42E; /* Used for buttons and active states */
-  --primary-light: #a3d183;
+  /* === Couleurs principales === */
+  --primary-color: #69b42e;
+  --primary-hover: #5a9625;
+  --primary-light: rgba(105, 180, 46, 0.1);
+  --primary-shadow: rgba(105, 180, 46, 0.2);
+  --primary-shadow-hover: rgba(105, 180, 46, 0.3);
   --primary-dark: #5a8c42;
-  --primary-hover: #8bc76d;
   --primary-transparent: rgba(122, 181, 92, 0.1);
   --primary-gradient: linear-gradient(135deg, #5a8c42 0%, #69B42E 100%);
-  --accent-color: #9d9d9c; /* Used as accent, not for sidebar */
+
+  /* === Couleurs secondaires et accents === */
+  --accent-color: #9d9d9c;
   --accent-hover: #8c8c8b;
+
+  /* === Texte === */
   --text-color: #333;
-  --text-light: #666;
-  --text-muted: #888;
-  --text-sidebar: #000000; /* Sidebar text set to black */
+  --text-primary: #9d9d9c;
+  --text-secondary: #555555;
+  --text-light: #9ca3af;
+  --text-muted: #6b7280;
+  --text-placeholder: #9ca3af;
+  --text-input: #000000;
+  --text-sidebar: #000000;
+
+  /* === Couleurs d’erreur === */
+  --error-color: #e74c3c;
+  --error-hover: #d62c1a;
+
+  /* === Couleurs d’action === */
+  --success-color: #16a34a;
+  --success-hover: #15803d;
+  --danger-color: #dc2626;
+  --danger-hover: #b91c1c;
+  --info-color: #2563eb;
+  --info-hover: #1d4ed8;
+  --purple-color: #7c3aed;
+  --purple-hover: #6d28d9;
+  --pdf-color: #dc2626;
+  --pdf-hover: #b91c1c;
+  --warning-color: #f59e0b;
+  --warning-hover: #d97706;
+  --orange-color: #f97316;
+  --orange-hover: #ea580c;
+
+  /* === Couleurs de fond === */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #fafafa;
   --bg-light: #f5f5f5;
-  --bg-sidebar: #f5f5f5; /* Sidebar background explicitly set to #9D9D9C */
-  --bg-sidebar-hover: #dadada85; /* Slightly darker for hover */
-  --bg-sidebar-active: #69B42E; /* Active state matches button color */
-  --white: #ffffff;
+  --bg-sidebar: #f5f5f5;
+  --bg-sidebar-hover: #dadada85;
+  --bg-sidebar-active: #69B42E;
+
+  /* === Couleurs ERP (thème clair) === */
+  --erp-bg-primary: #ffffff;
+  --erp-bg-secondary: #f8fafc;
+  --erp-bg-tertiary: #f1f5f9;
+  --erp-bg-card: #ffffff;
+  --erp-text-primary: #0f172a;
+  --erp-text-secondary: #475569;
+  --erp-text-muted: #64748b;
+  --erp-border-light: #e2e8f0;
+  --erp-border-medium: #cbd5e1;
+
+  /* === ERP Alerts === */
+  --erp-success-bg: #f0fdf4;
+  --erp-success-border: #16a34a;
+  --erp-success-text: #15803d;
+  --erp-success-icon: #16a34a;
+  --erp-success-icon-bg: #dcfce7;
+
+  --erp-error-bg: #fef2f2;
+  --erp-error-border: #dc2626;
+  --erp-error-text: #b91c1c;
+  --erp-error-icon: #dc2626;
+  --erp-error-icon-bg: #fee2e2;
+
+  --erp-info-bg: #eff6ff;
+  --erp-info-border: #2563eb;
+  --erp-info-text: #1d4ed8;
+  --erp-info-icon: #2563eb;
+  --erp-info-icon-bg: #dbeafe;
+
+  --erp-warning-bg: #fffbeb;
+  --erp-warning-border: #d97706;
+  --erp-warning-text: #b45309;
+  --erp-warning-icon: #d97706;
+  --erp-warning-icon-bg: #fef3c7;
+
+  /* === Bordures === */
   --border-color: #e0e0e0;
-  --sidebar-width: 280px;
-  --sidebar-collapsed-width: 80px;
-  --header-height: 70px;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --transition-speed: 0.3s;
+  --border-light: #ddd;
+  --border-medium: #d1d5db;
+  --border-focus: var(--primary-color);
+
+  /* === Espacements === */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+  --spacing-4xl: 40px;
+
+  /* === Rayons de bordure === */
   --border-radius-sm: 4px;
   --border-radius-md: 8px;
   --border-radius-lg: 12px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 12px;
+
+  /* === Typographie === */
+  --font-family: "Montserrat", sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+
+  /* === Ombres === */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-focus: 0 0 4px var(--primary-shadow);
+
+  /* === Layout === */
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 80px;
+  --header-height: 70px;
+  --transition-speed: 0.3s;
+
+  /* === Badges et statuts === */
   --badge-new: #3498db;
   --badge-count: #e74c3c;
   --badge-hot: #f39c12;
@@ -35,6 +142,7 @@
   --status-away: #f39c12;
   --status-busy: #e74c3c;
 }
+
 
 * {
   margin: 0;
@@ -173,14 +281,14 @@ body {
 }
 
 .nav-icon-wrapper {
-  width: 36px;
-  height: 36px;
+  width: 23px; /* Reduced from 36px */
+  height: 23px; /* Reduced from 36px */
   background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
+  border-radius: 8px; /* Slightly reduced from 10px for proportionality */
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
+  margin-right: 10px; /* Reduced from 12px */
   transition: all 0.2s ease;
 }
 
@@ -200,7 +308,7 @@ body {
 }
 
 .nav-icon {
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .nav-text {

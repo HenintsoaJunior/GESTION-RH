@@ -76,6 +76,63 @@ export default function Template({ children }) {
     return menuItem.label;
   }, []);
 
+  // Recursive function to find menu item by path
+  const findMenuItemByPath = useCallback((items, targetPath) => {
+    for (const item of items) {
+      // Check current item
+      if (item.menu.link === targetPath) {
+        return {
+          item: item.menu,
+          parentKey: null,
+          title: getMenuLabel(item.menu)
+        };
+      }
+
+      // Recursively check children
+      if (item.children && item.children.length > 0) {
+        for (const child of item.children) {
+          if (child.menu.link === targetPath) {
+            return {
+              item: child.menu,
+              parentKey: item.menu.menuKey,
+              title: getMenuLabel(child.menu)
+            };
+          }
+
+          // Check deeper nested children if they exist
+          if (child.children && child.children.length > 0) {
+            const deepResult = findMenuItemByPath([child], targetPath);
+            if (deepResult) {
+              return {
+                ...deepResult,
+                parentKey: item.menu.menuKey // Keep the top-level parent
+              };
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }, [getMenuLabel]);
+
+  // Initialize expanded menus for all menu items with children
+  const initializeExpandedMenus = useCallback((menuItems) => {
+    const expanded = {};
+    
+    const processItems = (items) => {
+      items.forEach(item => {
+        if (item.children && item.children.length > 0) {
+          expanded[item.menu.menuKey] = false;
+          // Recursively process children
+          processItems(item.children);
+        }
+      });
+    };
+
+    processItems(menuItems);
+    return expanded;
+  }, []);
+
   // Fetch languages from JSON file
   useEffect(() => {
     const fetchLanguages = async () => {
@@ -103,7 +160,7 @@ export default function Template({ children }) {
     };
 
     fetchLanguages();
-  }, []);
+  }, [selectedLanguage]);
 
   // Fetch menu data from API
   useEffect(() => {
@@ -125,12 +182,7 @@ export default function Template({ children }) {
         setMenuData(data);
 
         if (!isInitializedRef.current) {
-          const initialExpanded = {};
-          data.forEach((item) => {
-            if (item.children.length > 0) {
-              initialExpanded[item.menu.menuKey] = false;
-            }
-          });
+          const initialExpanded = initializeExpandedMenus(data);
           setExpandedMenus(initialExpanded);
           isInitializedRef.current = true;
         }
@@ -142,7 +194,7 @@ export default function Template({ children }) {
     };
 
     fetchMenuData();
-  }, []);
+  }, [initializeExpandedMenus]);
 
   // Update active item, header title, and expanded menus based on route
   useEffect(() => {
@@ -151,61 +203,29 @@ export default function Template({ children }) {
     const currentPath = location.pathname === "/" ? "/" : location.pathname + location.hash;
 
     if (lastLocationRef.current === currentPath) return;
-
     if (navigationUpdateRef.current) return;
 
     lastLocationRef.current = currentPath;
     navigationUpdateRef.current = true;
 
-    let matchedItem = null;
-    let matchedParentMenu = null;
-    let matchedTitle = "";
+    const matchedResult = findMenuItemByPath(menuData, currentPath);
 
-    const findMenuItem = (items) => {
-      for (const item of items) {
-        if (item.menu.link === currentPath) {
-          matchedItem = item.menu.menuKey;
-          matchedTitle = getMenuLabel(item.menu);
-          return true;
-        }
-        if (item.children.length > 0) {
-          for (const child of item.children) {
-            if (child.menu.link === currentPath) {
-              matchedItem = child.menu.menuKey;
-              matchedParentMenu = item.menu.menuKey;
-              matchedTitle = getMenuLabel(child.menu);
-              return true;
-            }
-          }
-        }
-      }
-      return false;
-    };
+    if (matchedResult) {
+      const { item, parentKey, title } = matchedResult;
 
-    if (findMenuItem(menuData)) {
       // Batch updates
-      const updates = {};
-      let needsUpdate = false;
-
-      if (activeItem !== matchedItem) {
-        updates.activeItem = matchedItem;
-        needsUpdate = true;
+      if (activeItem !== item.menuKey) {
+        setActiveItem(item.menuKey);
       }
-      if (headerTitle !== matchedTitle) {
-        updates.headerTitle = matchedTitle;
-        needsUpdate = true;
+      if (headerTitle !== title) {
+        setHeaderTitle(title);
       }
 
-      if (needsUpdate) {
-        if (updates.activeItem) setActiveItem(updates.activeItem);
-        if (updates.headerTitle) setHeaderTitle(updates.headerTitle);
-      }
-
-      // Close all menus except the matched parent
+      // Update expanded menus - close all except the parent chain
       setExpandedMenus((prev) => {
         const newExpanded = { ...prev };
         Object.keys(newExpanded).forEach((key) => {
-          newExpanded[key] = key === matchedParentMenu;
+          newExpanded[key] = key === parentKey;
         });
         return newExpanded;
       });
@@ -219,7 +239,7 @@ export default function Template({ children }) {
       }
       setExpandedMenus((prev) => {
         const newExpanded = { ...prev };
-        Object.keys(newExpanded).forEach( key => {
+        Object.keys(newExpanded).forEach(key => {
           newExpanded[key] = false;
         });
         return newExpanded;
@@ -229,7 +249,7 @@ export default function Template({ children }) {
     setTimeout(() => {
       navigationUpdateRef.current = false;
     }, 50);
-  }, [location.pathname, location.hash, menuData, getMenuLabel]);
+  }, [location.pathname, location.hash, menuData, findMenuItemByPath, activeItem, headerTitle]);
 
   const toggleMobileSidebar = useCallback(() => {
     setMobileOpen(!mobileOpen);
@@ -281,16 +301,17 @@ export default function Template({ children }) {
     [selectedLanguage]
   );
 
+  // Recursive function to render menu items with support for deeper nesting
   const renderMenuItem = useCallback(
-    (item) => {
+    (item, level = 0) => {
       const IconComponent = getIconComponent(item.menu.icon);
-      const hasChildren = item.children.length > 0;
+      const hasChildren = item.children && item.children.length > 0;
       const isExpanded = expandedMenus[item.menu.menuKey];
       const isActive = activeItem === item.menu.menuKey;
       const menuLabel = getMenuLabel(item.menu);
 
       return (
-        <li className="nav-item" key={item.hierarchyId}>
+        <li className={`nav-item level-${level}`} key={item.hierarchyId}>
           {hasChildren ? (
             <button
               className={`nav-button ${isExpanded ? "expanded" : ""}`}
@@ -310,7 +331,11 @@ export default function Template({ children }) {
             <Link
               to={item.menu.link}
               className={`nav-button ${isActive ? "active" : ""}`}
-              onClick={setActive(item.menu.menuKey, menuLabel, null)}
+              onClick={setActive(
+                item.menu.menuKey, 
+                menuLabel, 
+                level === 0 ? null : findParentKey(menuData, item.menu.menuKey)
+              )}
             >
               <div className="nav-icon-wrapper">
                 <IconComponent className="nav-icon" />
@@ -318,33 +343,36 @@ export default function Template({ children }) {
               <span className="nav-text">{menuLabel}</span>
             </Link>
           )}
+          
           {hasChildren && (
-            <ul className={`submenu ${isExpanded ? "expanded" : ""}`}>
-              {item.children.map((child) => {
-                const ChildIcon = getIconComponent(child.menu.icon);
-                const isChildActive = activeItem === child.menu.menuKey;
-                const childLabel = getMenuLabel(child.menu);
-
-                return (
-                  <li key={child.hierarchyId}>
-                    <Link
-                      to={child.menu.link}
-                      className={isChildActive ? "active" : ""}
-                      onClick={setActive(child.menu.menuKey, childLabel, item.menu.menuKey)}
-                    >
-                      <ChildIcon className="submenu-icon" />
-                      <span>{childLabel}</span>
-                    </Link>
-                  </li>
-                );
-              })}
+            <ul className={`submenu level-${level + 1} ${isExpanded ? "expanded" : ""}`}>
+              {item.children.map((child) => renderMenuItem(child, level + 1))}
             </ul>
           )}
         </li>
       );
     },
-    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel]
+    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel, menuData]
   );
+
+  // Helper function to find parent key
+  const findParentKey = useCallback((items, targetKey) => {
+    for (const item of items) {
+      if (item.children && item.children.length > 0) {
+        for (const child of item.children) {
+          if (child.menu.menuKey === targetKey) {
+            return item.menu.menuKey;
+          }
+          // Check deeper levels
+          if (child.children && child.children.length > 0) {
+            const deepParent = findParentKey([child], targetKey);
+            if (deepParent) return item.menu.menuKey; // Return top-level parent
+          }
+        }
+      }
+    }
+    return null;
+  }, []);
 
   return (
     <div className={`app theme-${theme}`}>
@@ -366,7 +394,7 @@ export default function Template({ children }) {
             <div className="menu-loading-dots">Chargement du menu ...</div>
           ) : (
             <ul>
-              {menuData.map((item) => renderMenuItem(item))}
+              {menuData.map((item) => renderMenuItem(item, 0))}
 
               <div className="sidebar-divider">
                 <span>{!collapsed && "ADMINISTRATION"}</span>
