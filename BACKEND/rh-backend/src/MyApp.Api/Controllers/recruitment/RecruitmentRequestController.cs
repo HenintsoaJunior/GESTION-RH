@@ -3,6 +3,7 @@ using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Models.form.recruitment;
 using MyApp.Api.Services.recruitment;
 using MyApp.Api.Models.search;
+using MyApp.Api.Models.search.recruitment;
 
 namespace MyApp.Api.Controllers.recruitment
 {

@@ -1,4 +1,5 @@
 using MyApp.Api.Entities.mission;
+using MyApp.Api.Models.form.mission;
 using MyApp.Api.Models.search.mission;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Utils.generator;
@@ -10,7 +11,7 @@ namespace MyApp.Api.Services.mission
         Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Mission>> GetAllAsync();
         Task<Mission?> GetByIdAsync(string id);
-        Task<string> CreateAsync(Mission mission);
+        Task<string> CreateAsync(MissionDTOForm mission);
         Task<bool> UpdateAsync(Mission mission);
         Task<bool> DeleteAsync(string id);
     }
@@ -41,17 +42,19 @@ namespace MyApp.Api.Services.mission
             return await _repository.GetByIdAsync(id);
         }
 
-        public async Task<string> CreateAsync(Mission mission)
+        public async Task<string> CreateAsync(MissionDTOForm missionDTO)
         {
-            if (string.IsNullOrWhiteSpace(mission.MissionId))
+            if (string.IsNullOrWhiteSpace(missionDTO.MissionId))
             {
-                mission.MissionId = _sequenceGenerator.GenerateSequence("seq_mission_id", "MIS", 6, "-");
+                missionDTO.MissionId = _sequenceGenerator.GenerateSequence("seq_mission_id", "MIS", 6, "-");
             }
 
+            var mission = new Mission(missionDTO);
+            
             await _repository.AddAsync(mission);
             await _repository.SaveChangesAsync();
-            _logger.LogInformation("Mission créée avec l'ID: {MissionId}", mission.MissionId);
-            return mission.MissionId;
+            _logger.LogInformation("Mission créée avec l'ID: {MissionId}", missionDTO.MissionId);
+            return missionDTO.MissionId;
         }
 
         public async Task<bool> UpdateAsync(Mission mission)

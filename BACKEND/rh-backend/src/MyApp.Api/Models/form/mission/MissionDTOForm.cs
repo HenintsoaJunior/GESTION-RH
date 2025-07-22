@@ -1,6 +1,6 @@
 namespace MyApp.Api.Models.form.mission
 {
-    public class MissionDTO
+    public class MissionDTOForm
     {
         public string? MissionId { get; set; }
         public string Name { get; set; } = string.Empty;
