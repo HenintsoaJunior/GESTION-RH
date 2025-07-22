@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Entities.site;
+using MyApp.Api.Models.form.mission;
 
 namespace MyApp.Api.Entities.mission
 {
@@ -30,5 +31,16 @@ namespace MyApp.Api.Entities.mission
 
         [ForeignKey("SiteId")]
         public Site? Site { get; set; }
+
+        public Mission()
+        {
+        }
+        public Mission(MissionDTOForm  mission)
+        {
+            MissionId = mission.MissionId;
+            Description = mission.Description;
+            StartDate = mission.StartDate;
+            SiteId = mission.SiteId;
+        }
     }
 }
