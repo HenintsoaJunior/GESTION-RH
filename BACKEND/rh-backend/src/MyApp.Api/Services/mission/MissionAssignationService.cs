@@ -43,7 +43,7 @@ namespace MyApp.Api.Services.mission
                 DepartureTime = dto.DepartureTime,
                 ReturnDate = dto.ReturnDate,
                 ReturnTime = dto.ReturnTime,
-                Duration = dto.Duration,
+                Duration = (int)dto.Duration,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
             };
@@ -61,7 +61,7 @@ namespace MyApp.Api.Services.mission
             entity.DepartureTime = dto.DepartureTime;
             entity.ReturnDate = dto.ReturnDate;
             entity.ReturnTime = dto.ReturnTime;
-            entity.Duration = dto.Duration;
+            entity.Duration = (int)dto.Duration;
             entity.UpdatedAt = DateTime.Now;
 
             await _repository.UpdateAsync(entity);

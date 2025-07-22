@@ -33,7 +33,7 @@ namespace MyApp.Api.Entities.mission
         public TimeSpan? ReturnTime { get; set; }
 
         [Column("duration")]
-        public int? Duration { get; set; }
+        public int Duration { get; set; }
 
         [Column("created_at")]
         public DateTime? CreatedAt { get; set; }
