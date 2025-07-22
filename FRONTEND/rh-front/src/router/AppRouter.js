@@ -20,7 +20,7 @@ function AppRouter() {
           <Route path="/recruitment/recruitment-request" element={<RecruitmentRequestList />} />
           <Route path="/recruitment/recruitment-request-form" element={<RecruitmentRequestForm />} />
           <Route path="/recruitment/recruitment-request-details/:recruitmentRequestId" element={<RecruitmentRequestDetails />} />
-          <Route path="/recruitment/process" element={<ProcessWorkflow />} />
+          <Route path="/recruitment/process/:recruitmentRequestId" element={<ProcessWorkflow />} />
           <Route path="/recruitment/contract-type-form" element={<ContractTypeForm />} />
           <Route path="/direction/direction-form" element={<DirectionForm />} />
           <Route path="/direction/department-form" element={<DepartmentForm />} />

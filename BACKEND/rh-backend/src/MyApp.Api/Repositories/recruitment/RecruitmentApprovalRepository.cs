@@ -6,14 +6,15 @@ namespace MyApp.Api.Repositories.recruitment
 {
     public interface IRecruitmentApprovalRepository
     {
-        Task ValidateAsync(string requestId, string approverId);
-        Task RecommendAsync(string requestId, string approverId, string comment);
+        Task ValidateAsync(string recruitmentRequestId, string approverId);
+        Task RecommendAsync(string recruitmentRequestId, string approverId, string comment);
         Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId);
         Task<IEnumerable<RecruitmentApproval>> GetByStatusAndApproverIdAsync(string status, string approverId);
+        Task<IEnumerable<RecruitmentApproval>> GetByRecruitmentRequestIdAsync(string recruitmentRequestId);
         Task AddRangeAsync(IEnumerable<RecruitmentApproval> entities);
         Task AddAsync(RecruitmentApproval approval);
         Task UpdateAsync(RecruitmentApproval approval);
-        Task<RecruitmentApproval?> GetAsync(string requestId, string approverId, string flowId);
+        Task<RecruitmentApproval?> GetAsync(string recruitmentRequestId, string approverId, string flowId);
         Task SaveChangesAsync();
     }
 
@@ -26,10 +27,10 @@ namespace MyApp.Api.Repositories.recruitment
             _context = context;
         }
 
-        public async Task ValidateAsync(string requestId, string approverId)
+        public async Task ValidateAsync(string recruitmentRequestId, string approverId)
         {
             var approval = await _context.RecruitmentApprovals
-                .FirstOrDefaultAsync(a => a.RecruitmentRequestId == requestId && a.ApproverId == approverId);
+                .FirstOrDefaultAsync(a => a.RecruitmentRequestId == recruitmentRequestId && a.ApproverId == approverId);
 
             if (approval == null)
             {
@@ -44,10 +45,10 @@ namespace MyApp.Api.Repositories.recruitment
             await _context.SaveChangesAsync();
         }
 
-        public async Task RecommendAsync(string requestId, string approverId, string comment)
+        public async Task RecommendAsync(string recruitmentRequestId, string approverId, string comment)
         {
             var approval = await _context.RecruitmentApprovals
-                .FirstOrDefaultAsync(a => a.RecruitmentRequestId == requestId && a.ApproverId == approverId);
+                .FirstOrDefaultAsync(a => a.RecruitmentRequestId == recruitmentRequestId && a.ApproverId == approverId);
 
             if (approval == null)
             {
@@ -61,7 +62,6 @@ namespace MyApp.Api.Repositories.recruitment
             _context.RecruitmentApprovals.Update(approval);
             await _context.SaveChangesAsync();
         }
-
 
         public async Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId)
         {
@@ -81,9 +81,24 @@ namespace MyApp.Api.Repositories.recruitment
                 .ToListAsync();
         }
 
-        public async Task<RecruitmentApproval?> GetAsync(string requestId, string approverId, string flowId)
+        public async Task<IEnumerable<RecruitmentApproval>> GetByRecruitmentRequestIdAsync(string recruitmentRequestId)
         {
-            return await _context.RecruitmentApprovals.FindAsync(requestId, approverId, flowId);
+            return await _context.RecruitmentApprovals
+                .Where(a => a.RecruitmentRequestId == recruitmentRequestId)
+                .Select(a => new RecruitmentApproval
+                {
+                    ApproverId = a.ApproverId,
+                    Status = a.Status,
+                    ApprovalOrder = a.ApprovalOrder,
+                    ApprovalDate = a.ApprovalDate
+                })
+                .OrderBy(a => a.ApprovalOrder)
+                .ToListAsync();
+        }
+
+        public async Task<RecruitmentApproval?> GetAsync(string recruitmentRequestId, string approverId, string flowId)
+        {
+            return await _context.RecruitmentApprovals.FindAsync(recruitmentRequestId, approverId, flowId);
         }
         
         public async Task AddRangeAsync(IEnumerable<RecruitmentApproval> entities)
@@ -101,7 +116,7 @@ namespace MyApp.Api.Repositories.recruitment
             await _context.RecruitmentApprovals.AddAsync(approval);
         }
 
-        public Task UpdateAsync(RecruitmentApproval approval)
+        public async Task UpdateAsync(RecruitmentApproval approval)
         {
             if (approval == null)
             {
@@ -109,7 +124,6 @@ namespace MyApp.Api.Repositories.recruitment
             }
 
             _context.RecruitmentApprovals.Update(approval);
-            return Task.CompletedTask;
         }
 
         public async Task SaveChangesAsync()
