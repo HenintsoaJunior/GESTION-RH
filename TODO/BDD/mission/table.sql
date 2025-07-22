@@ -1,8 +1,8 @@
-DROP TABLE IF EXISTS expense_type;
-DROP TABLE IF EXISTS transport;
+DROP TABLE IF EXISTS mission_assignation;
 DROP TABLE IF EXISTS compensation_scale;
 DROP TABLE IF EXISTS mission;
-DROP TABLE IF EXISTS mission_assignation;
+DROP TABLE IF EXISTS transport;
+DROP TABLE IF EXISTS expense_type;
 
 
 CREATE TABLE expense_type(
@@ -42,6 +42,7 @@ CREATE TABLE mission(
    name VARCHAR(255),
    description TEXT,
    start_date DATE,
+   status VARCHAR(20) NOT NULL DEFAULT 'En Cours',
    site VARCHAR(255) NOT NULL,
    created_at DATETIME,
    updated_at DATETIME,

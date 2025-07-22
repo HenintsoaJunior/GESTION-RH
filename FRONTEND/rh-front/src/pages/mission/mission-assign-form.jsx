@@ -1,14 +1,16 @@
-import "styles/generic-form-styles.css";
+"use client";
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { BASE_URL } from "config/apiConfig";
 import Alert from "components/alert";
 import * as FaIcons from "react-icons/fa";
+import "styles/generic-form-styles.css";
 
 export default function AssignMissionForm() {
   const [formData, setFormData] = useState({
-    beneficiary: "",
-    matricule: "",
+    mission: "",
+    beneficiaries: [{ name: "", matricule: "" }],
     function: "",
     base: "",
     direction: "",
@@ -36,7 +38,10 @@ export default function AssignMissionForm() {
     const url = searchParams.get("returnUrl") || "";
     const type = searchParams.get("fieldType") || "";
 
-    setFormData((prev) => ({ ...prev, beneficiary: initialValue }));
+    setFormData((prev) => ({
+      ...prev,
+      beneficiaries: [{ name: initialValue, matricule: "" }],
+    }));
     setReturnUrl(url);
     setFieldType(type);
   }, [location.search]);
@@ -50,17 +55,64 @@ export default function AssignMissionForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleBeneficiaryChange = (index, field, value) => {
+    setFormData((prev) => {
+      const updatedBeneficiaries = [...prev.beneficiaries];
+      updatedBeneficiaries[index] = { ...updatedBeneficiaries[index], [field]: value };
+      return { ...prev, beneficiaries: updatedBeneficiaries };
+    });
+  };
+
+  const handleAddBeneficiary = () => {
+    setFormData((prev) => ({
+      ...prev,
+      beneficiaries: [...prev.beneficiaries, { name: "", matricule: "" }],
+    }));
+  };
+
+  const handleRemoveBeneficiary = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      beneficiaries: prev.beneficiaries.filter((_, i) => i !== index),
+    }));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
 
+    // Validate required fields
+    if (!formData.mission) {
+      showAlert("error", "Le champ Mission est requis.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (formData.beneficiaries.some((b) => !b.name || !b.matricule)) {
+      showAlert("error", "Tous les bénéficiaires doivent avoir un nom et un matricule.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.function || !formData.base || !formData.direction || !formData.departmentService || !formData.departureDate || !formData.departureTime || !formData.missionDuration || !formData.returnDate || !formData.returnTime) {
+      showAlert("error", "Tous les champs requis doivent être remplis.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
+      const requestData = {
+        ...formData,
+        beneficiaries: formData.beneficiaries.map((b) => ({
+          name: b.name,
+          matricule: b.matricule,
+        })),
+      };
+
       const response = await fetch(`${BASE_URL}/api/AssignMission`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(requestData),
       });
 
       if (response.ok) {
@@ -70,7 +122,7 @@ export default function AssignMissionForm() {
         if (returnUrl && fieldType) {
           setTimeout(() => {
             const returnParams = new URLSearchParams();
-            returnParams.set("newValue", formData.beneficiary);
+            returnParams.set("newValue", formData.beneficiaries[0].name);
             returnParams.set("fieldType", fieldType);
 
             const [basePath, existingParams] = returnUrl.split("?");
@@ -100,8 +152,8 @@ export default function AssignMissionForm() {
 
   const handleReset = () => {
     setFormData({
-      beneficiary: "",
-      matricule: "",
+      mission: "",
+      beneficiaries: [{ name: "", matricule: "" }],
       function: "",
       base: "",
       direction: "",
@@ -126,46 +178,101 @@ export default function AssignMissionForm() {
         isOpen={alert.isOpen}
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
-      <div className="table-header">
-        <h2 className="table-title">Assignation d'une Mission</h2>
-      </div>
+      
 
       <form id="assignMissionForm" className="generic-form" onSubmit={handleSubmit}>
         <div className="form-section">
+          <h3>Informations de la Mission</h3>
           <table className="form-table">
             <tbody>
               <tr>
                 <th className="form-label-cell">
-                  <label className="form-label form-label-required">Bénéficiaire</label>
+                  <label className="form-label form-label-required">Mission</label>
                 </th>
-                <td className="form-input-cell">
+                <td className="form-input-cell" colSpan="3">
                   <input
                     type="text"
-                    name="beneficiary"
-                    value={formData.beneficiary}
+                    name="mission"
+                    value={formData.mission}
                     onChange={handleChange}
-                    placeholder="Saisir le nom du bénéficiaire..."
-                    className="form-input"
-                    required
-                    disabled={isSubmitting}
-                  />
-                </td>
-                <th className="form-label-cell">
-                  <label className="form-label form-label-required">Matricule</label>
-                </th>
-                <td className="form-input-cell">
-                  <input
-                    type="text"
-                    name="matricule"
-                    value={formData.matricule}
-                    onChange={handleChange}
-                    placeholder="Saisir le matricule..."
+                    placeholder="Saisir le nom de la mission..."
                     className="form-input"
                     required
                     disabled={isSubmitting}
                   />
                 </td>
               </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="form-section">
+          <h3>Bénéficiaires</h3>
+          {formData.beneficiaries.map((beneficiary, index) => (
+            <table key={index} className="form-table">
+              <tbody>
+                <tr>
+                  <th className="form-label-cell">
+                    <label className="form-label form-label-required">Bénéficiaire {index + 1}</label>
+                  </th>
+                  <td className="form-input-cell">
+                    <input
+                      type="text"
+                      value={beneficiary.name}
+                      onChange={(e) => handleBeneficiaryChange(index, "name", e.target.value)}
+                      placeholder="Saisir le nom du bénéficiaire..."
+                      className="form-input"
+                      required
+                      disabled={isSubmitting}
+                    />
+                  </td>
+                  <th className="form-label-cell">
+                    <label className="form-label form-label-required">Matricule</label>
+                  </th>
+                  <td className="form-input-cell">
+                    <input
+                      type="text"
+                      value={beneficiary.matricule}
+                      onChange={(e) => handleBeneficiaryChange(index, "matricule", e.target.value)}
+                      placeholder="Saisir le matricule..."
+                      className="form-input"
+                      required
+                      disabled={isSubmitting}
+                    />
+                    {formData.beneficiaries.length > 1 && (
+                      <button
+                        type="button"
+                        className="remove-btn"
+                        onClick={() => handleRemoveBeneficiary(index)}
+                        disabled={isSubmitting}
+                        title="Supprimer ce bénéficiaire"
+                      >
+                        <FaIcons.FaTrash className="w-4 h-4" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          ))}
+          <div className="form-actions">
+            <button
+              type="button"
+              className="add-btn"
+              onClick={handleAddBeneficiary}
+              disabled={isSubmitting}
+              title="Ajouter un bénéficiaire"
+            >
+              <FaIcons.FaPlus className="w-4 h-4" />
+              Ajouter un bénéficiaire
+            </button>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h3>Informations Générales</h3>
+          <table className="form-table">
+            <tbody>
               <tr>
                 <th className="form-label-cell">
                   <label className="form-label form-label-required">Fonction</label>

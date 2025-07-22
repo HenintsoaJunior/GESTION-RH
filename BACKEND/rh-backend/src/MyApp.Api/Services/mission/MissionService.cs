@@ -1,5 +1,6 @@
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.form.mission;
+using MyApp.Api.Models.list.mission;
 using MyApp.Api.Models.search.mission;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Utils.generator;
@@ -14,7 +15,9 @@ namespace MyApp.Api.Services.mission
         Task<string> CreateAsync(MissionDTOForm mission);
         Task<bool> UpdateAsync(Mission mission);
         Task<bool> DeleteAsync(string id);
+        Task<MissionStats> GetStatisticsAsync();
     }
+
     public class MissionService : IMissionService
     {
         private readonly IMissionRepository _repository;
@@ -32,6 +35,7 @@ namespace MyApp.Api.Services.mission
         {
             return await _repository.SearchAsync(filters, page, pageSize);
         }
+
         public async Task<IEnumerable<Mission>> GetAllAsync()
         {
             return await _repository.GetAllAsync();
@@ -80,6 +84,11 @@ namespace MyApp.Api.Services.mission
             await _repository.DeleteAsync(entity);
             await _repository.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<MissionStats> GetStatisticsAsync()
+        {
+            return await _repository.GetStatisticsAsync();
         }
     }
 }
