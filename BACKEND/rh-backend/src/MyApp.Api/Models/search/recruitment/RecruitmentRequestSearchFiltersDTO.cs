@@ -1,4 +1,4 @@
-namespace MyApp.Api.Models.search;
+namespace MyApp.Api.Models.search.recruitment;
 
 public class RecruitmentRequestSearchFiltersDTO
 {

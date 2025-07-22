@@ -4,6 +4,7 @@ using MyApp.Api.Entities.direction;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.jobs;
 using MyApp.Api.Entities.menu;
+using MyApp.Api.Entities.mission;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.users;
@@ -12,6 +13,10 @@ namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
+         public DbSet<Mission> Missions { get; set; } 
+        public DbSet<CompensationScale> CompensationScales { get; set; } 
+        public DbSet<Transport> Transports { get; set; } 
+        public DbSet<ExpenseType> ExpenseTypes { get; set; } 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
         public DbSet<ApprovalFlowEmployee> ApprovalFlowEmployees { get; set; } 
         public DbSet<JobOffer> JobOffers { get; set; } 
