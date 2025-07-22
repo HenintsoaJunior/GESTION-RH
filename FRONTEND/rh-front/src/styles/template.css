@@ -1,146 +1,179 @@
 :root {
   /* === Couleurs principales === */
-  --primary-color: #69b42e;
-  --primary-hover: #5a9625;
-  --primary-light: rgba(105, 180, 46, 0.1);
-  --primary-shadow: rgba(105, 180, 46, 0.2);
-  --primary-shadow-hover: rgba(105, 180, 46, 0.3);
-  --primary-dark: #5a8c42;
-  --primary-transparent: rgba(122, 181, 92, 0.1);
-  --primary-gradient: linear-gradient(135deg, #5a8c42 0%, #69B42E 100%);
+  --primary-color: #69b42e; /* Second bloc */
+  --primary-hover: #5a9625; /* Second bloc */
+  --primary-light: rgba(105, 180, 46, 0.1); /* Second bloc */
+  --primary-shadow: rgba(105, 180, 46, 0.2); /* Second bloc */
+  --primary-shadow-hover: rgba(105, 180, 46, 0.3); /* Second bloc */
+  --primary-dark: #5a8c42; /* Second bloc */
+  --primary-transparent: rgba(122, 181, 92, 0.1); /* Second bloc */
+  --primary-gradient: linear-gradient(135deg, #5a8c42 0%, #69B42E 100%); /* Second bloc */
+  --erp-primary: #2563eb; /* Premier bloc */
+  --erp-primary-hover: #1d4ed8; /* Premier bloc */
+  --erp-primary-light: rgba(37, 99, 235, 0.1); /* Premier bloc */
 
   /* === Couleurs secondaires et accents === */
-  --accent-color: #9d9d9c;
-  --accent-hover: #8c8c8b;
-
-  /* === Texte === */
-  --text-color: #333;
-  --text-primary: #9d9d9c;
-  --text-secondary: #555555;
-  --text-light: #9ca3af;
-  --text-muted: #6b7280;
-  --text-placeholder: #9ca3af;
-  --text-input: #000000;
-  --text-sidebar: #000000;
-
-  /* === Couleurs d’erreur === */
-  --error-color: #e74c3c;
-  --error-hover: #d62c1a;
-
-  /* === Couleurs d’action === */
-  --success-color: #16a34a;
-  --success-hover: #15803d;
-  --danger-color: #dc2626;
-  --danger-hover: #b91c1c;
-  --info-color: #2563eb;
-  --info-hover: #1d4ed8;
-  --purple-color: #7c3aed;
-  --purple-hover: #6d28d9;
-  --pdf-color: #dc2626;
-  --pdf-hover: #b91c1c;
-  --warning-color: #f59e0b;
-  --warning-hover: #d97706;
-  --orange-color: #f97316;
-  --orange-hover: #ea580c;
+  --erp-accent: #06b6d4; /* Premier bloc */
+  --erp-accent-hover: #0891b2; /* Premier bloc */
+  --accent-color: #9d9d9c; /* Second bloc */
+  --accent-hover: #8c8c8b; /* Second bloc */
 
   /* === Couleurs de fond === */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #fafafa;
-  --bg-light: #f5f5f5;
-  --bg-sidebar: #f5f5f5;
-  --bg-sidebar-hover: #dadada85;
-  --bg-sidebar-active: #69B42E;
+  --bg-primary: #ffffff; /* Commun, identique */
+  --bg-secondary: #f8f9fa; /* Second bloc, plus spécifique */
+  --bg-tertiary: #fafafa; /* Second bloc */
+  --bg-light: #f5f5f5; /* Second bloc */
+  --bg-sidebar: #f5f5f5; /* Second bloc */
+  --bg-sidebar-hover: #dadada85; /* Second bloc */
+  --bg-sidebar-active: #69B42E; /* Second bloc */
+  --erp-bg-primary: #ffffff; /* Commun, identique */
+  --erp-bg-secondary: #f8fafc; /* Commun, identique */
+  --erp-bg-tertiary: #f1f5f9; /* Commun, identique */
+  --erp-bg-card: #ffffff; /* Commun, identique */
+  --erp-bg-overlay: rgba(15, 23, 42, 0.1); /* Premier bloc */
 
-  /* === Couleurs ERP (thème clair) === */
-  --erp-bg-primary: #ffffff;
-  --erp-bg-secondary: #f8fafc;
-  --erp-bg-tertiary: #f1f5f9;
-  --erp-bg-card: #ffffff;
-  --erp-text-primary: #0f172a;
-  --erp-text-secondary: #475569;
-  --erp-text-muted: #64748b;
-  --erp-border-light: #e2e8f0;
-  --erp-border-medium: #cbd5e1;
+  /* === Couleurs de texte === */
+  --text-color: #333; /* Second bloc */
+  --text-primary: #0f172a; /* Premier bloc, plus spécifique pour ERP */
+  --text-secondary: #475569; /* Premier bloc, plus spécifique pour ERP */
+  --text-muted: #64748b; /* Premier bloc, plus spécifique pour ERP */
+  --text-light: #94a3b8; /* Premier bloc */
+  --text-placeholder: #9ca3af; /* Second bloc */
+  --text-input: #000000; /* Second bloc */
+  --text-sidebar: #000000; /* Second bloc */
+  --text-white: #ffffff; /* Premier bloc */
+  --erp-text-primary: #0f172a; /* Commun, identique */
+  --erp-text-secondary: #475569; /* Commun, identique */
+  --erp-text-muted: #64748b; /* Commun, identique */
 
-  /* === ERP Alerts === */
-  --erp-success-bg: #f0fdf4;
-  --erp-success-border: #16a34a;
-  --erp-success-text: #15803d;
-  --erp-success-icon: #16a34a;
-  --erp-success-icon-bg: #dcfce7;
+  /* === Couleurs d’action === */
+  --success-color: #16a34a; /* Second bloc */
+  --success-hover: #15803d; /* Second bloc */
+  --danger-color: #dc2626; /* Second bloc */
+  --danger-hover: #b91c1c; /* Second bloc */
+  --info-color: #2563eb; /* Second bloc */
+  --info-hover: #1d4ed8; /* Second bloc */
+  --purple-color: #7c3aed; /* Second bloc */
+  --purple-hover: #6d28d9; /* Second bloc */
+  --pdf-color: #dc2626; /* Second bloc */
+  --pdf-hover: #b91c1c; /* Second bloc */
+  --warning-color: #f59e0b; /* Second bloc */
+  --warning-hover: #d97706; /* Second bloc */
+  --orange-color: #f97316; /* Second bloc */
+  --orange-hover: #ea580c; /* Second bloc */
+  --error-color: #e74c3c; /* Second bloc */
+  --error-hover: #d62c1a; /* Second bloc */
 
-  --erp-error-bg: #fef2f2;
-  --erp-error-border: #dc2626;
-  --erp-error-text: #b91c1c;
-  --erp-error-icon: #dc2626;
-  --erp-error-icon-bg: #fee2e2;
+  /* === Couleurs ERP Alerts (thème clair) === */
+  --erp-success-bg: #f0fdf4; /* Commun, identique */
+  --erp-success-border: #16a34a; /* Commun, identique */
+  --erp-success-text: #15803d; /* Commun, identique */
+  --erp-success-icon: #16a34a; /* Commun, identique */
+  --erp-success-icon-bg: #dcfce7; /* Commun, identique */
+  --erp-error-bg: #fef2f2; /* Commun, identique */
+  --erp-error-border: #dc2626; /* Commun, identique */
+  --erp-error-text: #b91c1c; /* Commun, identique */
+  --erp-error-icon: #dc2626; /* Commun, identique */
+  --erp-error-icon-bg: #fee2e2; /* Commun, identique */
+  --erp-info-bg: #eff6ff; /* Commun, identique */
+  --erp-info-border: #2563eb; /* Commun, identique */
+  --erp-info-text: #1d4ed8; /* Commun, identique */
+  --erp-info-icon: #2563eb; /* Commun, identique */
+  --erp-info-icon-bg: #dbeafe; /* Commun, identique */
+  --erp-warning-bg: #fffbeb; /* Commun, identique */
+  --erp-warning-border: #d97706; /* Commun, identique */
+  --erp-warning-text: #b45309; /* Commun, identique */
+  --erp-warning-icon: #d97706; /* Commun, identique */
+  --erp-warning-icon-bg: #fef3c7; /* Commun, identique */
 
-  --erp-info-bg: #eff6ff;
-  --erp-info-border: #2563eb;
-  --erp-info-text: #1d4ed8;
-  --erp-info-icon: #2563eb;
-  --erp-info-icon-bg: #dbeafe;
-
-  --erp-warning-bg: #fffbeb;
-  --erp-warning-border: #d97706;
-  --erp-warning-text: #b45309;
-  --erp-warning-icon: #d97706;
-  --erp-warning-icon-bg: #fef3c7;
-
-  /* === Bordures === */
-  --border-color: #e0e0e0;
-  --border-light: #ddd;
-  --border-medium: #d1d5db;
-  --border-focus: var(--primary-color);
+  /* === Couleurs de bordure === */
+  --border-color: #e0e0e0; /* Second bloc */
+  --border-light: #e2e8f0; /* Premier bloc, plus spécifique pour ERP */
+  --border-medium: #cbd5e1; /* Commun, identique */
+  --border-focus: var(--primary-color); /* Second bloc */
+  --erp-border-light: #e2e8f0; /* Commun, identique */
+  --erp-border-medium: #cbd5e1; /* Commun, identique */
+  --erp-border-focus: var(--erp-primary); /* Premier bloc */
 
   /* === Espacements === */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 20px;
-  --spacing-2xl: 24px;
-  --spacing-3xl: 32px;
-  --spacing-4xl: 40px;
+  --spacing-xs: 4px; /* Second bloc, plus cohérent avec les autres tailles */
+  --spacing-sm: 8px; /* Second bloc */
+  --spacing-md: 12px; /* Second bloc */
+  --spacing-lg: 16px; /* Second bloc */
+  --spacing-xl: 20px; /* Second bloc */
+  --spacing-2xl: 24px; /* Second bloc */
+  --spacing-3xl: 32px; /* Second bloc */
+  --spacing-4xl: 40px; /* Second bloc */
+  --erp-spacing-xs: 2px; /* Premier bloc, plus spécifique */
+  --erp-spacing-sm: 4px; /* Premier bloc */
+  --erp-spacing-md: 8px; /* Premier bloc */
+  --erp-spacing-lg: 12px; /* Premier bloc */
+  --erp-spacing-xl: 16px; /* Premier bloc */
+  --erp-spacing-2xl: 20px; /* Premier bloc */
+  --erp-spacing-3xl: 24px; /* Premier bloc */
+  --erp-spacing-4xl: 32px; /* Premier bloc */
 
   /* === Rayons de bordure === */
-  --border-radius-sm: 4px;
-  --border-radius-md: 8px;
-  --border-radius-lg: 12px;
-  --radius-sm: 3px;
-  --radius-md: 4px;
-  --radius-lg: 12px;
+  --border-radius-sm: 4px; /* Second bloc */
+  --border-radius-md: 8px; /* Second bloc */
+  --border-radius-lg: 12px; /* Second bloc */
+  --radius-sm: 3px; /* Second bloc */
+  --radius-md: 4px; /* Second bloc */
+  --radius-lg: 12px; /* Second bloc */
+  --erp-radius-sm: 2px; /* Premier bloc */
+  --erp-radius-md: 4px; /* Premier bloc */
+  --erp-radius-lg: 6px; /* Premier bloc */
+  --erp-radius-xl: 8px; /* Premier bloc */
 
   /* === Typographie === */
-  --font-family: "Montserrat", sans-serif;
-  --font-size-xs: 12px;
-  --font-size-sm: 14px;
-  --font-size-md: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
+  --font-family: "Montserrat", sans-serif; /* Second bloc */
+  --erp-font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif; /* Premier bloc */
+  --font-size-xs: 12px; /* Second bloc */
+  --font-size-sm: 14px; /* Second bloc */
+  --font-size-md: 16px; /* Second bloc */
+  --font-size-lg: 18px; /* Second bloc */
+  --font-size-xl: 20px; /* Second bloc */
+  --font-size-2xl: 24px; /* Second bloc */
+  --erp-font-size-xs: 11px; /* Premier bloc */
+  --erp-font-size-sm: 12px; /* Premier bloc */
+  --erp-font-size-md: 14px; /* Premier bloc */
+  --erp-font-size-lg: 16px; /* Premier bloc */
+  --erp-font-size-xl: 18px; /* Premier bloc */
+  --erp-font-size-2xl: 20px; /* Premier bloc */
+  --font-weight-normal: 400; /* Premier bloc */
+  --font-weight-medium: 500; /* Commun, identique */
+  --font-weight-semibold: 600; /* Premier bloc */
+  --erp-font-weight-normal: 400; /* Premier bloc */
+  --erp-font-weight-medium: 500; /* Commun, identique */
+  --erp-font-weight-semibold: 600; /* Premier bloc */
 
   /* === Ombres === */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-focus: 0 0 4px var(--primary-shadow);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1); /* Second bloc */
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1); /* Second bloc */
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Commun, identique */
+  --shadow-focus: 0 0 4px var(--primary-shadow); /* Second bloc */
+  --erp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05); /* Premier bloc */
+  --erp-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Premier bloc */
+  --erp-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Premier bloc */
+  --erp-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* Premier bloc, plus spécifique */
 
   /* === Layout === */
-  --sidebar-width: 280px;
-  --sidebar-collapsed-width: 80px;
-  --header-height: 70px;
-  --transition-speed: 0.3s;
+  --sidebar-width: 280px; /* Second bloc */
+  --sidebar-collapsed-width: 80px; /* Second bloc */
+  --header-height: 70px; /* Second bloc */
+  --transition-speed: 0.3s; /* Second bloc */
+
+  /* === Couleurs additionnelles === */
+  --white: #ffffff; /* Second bloc */
 
   /* === Badges et statuts === */
-  --badge-new: #3498db;
-  --badge-count: #e74c3c;
-  --badge-hot: #f39c12;
-  --badge-premium: #9b59b6;
-  --status-online: #2ecc71;
-  --status-away: #f39c12;
-  --status-busy: #e74c3c;
+  --badge-new: #3498db; /* Second bloc */
+  --badge-count: #e74c3c; /* Second bloc */
+  --badge-hot: #f39c12; /* Second bloc */
+  --badge-premium: #9b59b6; /* Second bloc */
+  --status-online: #2ecc71; /* Second bloc */
+  --status-away: #f39c12; /* Second bloc */
+  --status-busy: #e74c3c; /* Second bloc */
 }
 
 

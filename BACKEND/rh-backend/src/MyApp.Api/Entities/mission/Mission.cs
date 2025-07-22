@@ -20,7 +20,11 @@ namespace MyApp.Api.Entities.mission
 
         [Column("description", TypeName = "text")]
         public string? Description { get; set; }
-
+        
+        [Column("status")]
+        [MaxLength(10)]
+        public string Status { get; set; } = "En Cours";
+        
         [Column("start_date")]
         public DateTime? StartDate { get; set; }
 
@@ -34,6 +38,7 @@ namespace MyApp.Api.Entities.mission
         public Mission(MissionDTOForm  mission)
         {
             MissionId = mission.MissionId;
+            Name = mission.Name;
             Description = mission.Description;
             StartDate = mission.StartDate;
             Site = mission.Site;

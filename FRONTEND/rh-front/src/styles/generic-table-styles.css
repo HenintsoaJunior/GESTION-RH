@@ -644,6 +644,71 @@ select.form-input-search {
   font-size: var(--font-size-sm);
 }
 
+.view-toggle {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-view {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  display: inline-block;
+}
+
+.status-progress {
+  background-color: #e1f5fe;
+  color: #0288d1;
+}
+
+.status-pending {
+  background-color: #fff8e1;
+  color: #ff8f00;
+}
+
+.status-approved {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
+.status-cancelled {
+  background-color: #ffebee;
+  color: #d32f2f; /* Rouge plus vif */
+  font-weight: bold; /* Optionnel: pour le rendre plus visible */
+}
+
+.btn-view.active {
+  background-color: var(--primary-color);
+  color: var(--bg-primary);
+  border-color: var(--primary-color);
+}
+
+.btn-view:hover {
+  background-color: #f0f0f0;
+}
+
+.calendar-container {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .dashboard-container {

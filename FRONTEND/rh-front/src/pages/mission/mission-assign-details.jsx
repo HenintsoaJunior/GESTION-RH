@@ -399,8 +399,14 @@ const AssignmentDetails = () => {
         <div className="header-actions">
           <button onClick={handleExportPDF} className="btn-export-pdf" title="Exporter en PDF">
             <Download className="w-4 h-4" />
-            Exporter PDF
+            PDF
           </button>
+
+          <button onClick={() => setAlert({ isOpen: true, type: "info", message: "Exportation Excel en cours de développement." })} className="btn-export-excel" title="Exporter en Excel">
+            <Download className="w-4 h-4" />
+            Excel
+          </button>
+
         </div>
       </div>
 
