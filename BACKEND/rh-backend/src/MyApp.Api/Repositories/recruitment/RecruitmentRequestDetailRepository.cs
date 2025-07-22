@@ -1,9 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.recruitment;
-using MyApp.Api.Controllers.recruitment;
-using MyApp.Api.Models.search;
-using MyApp.Api.Services.recruitment;
+using MyApp.Api.Models.search.recruitment;
 
 namespace MyApp.Api.Repositories.recruitment
 {
