@@ -36,17 +36,18 @@ CREATE TABLE compensation_scale(
 );
 
 
+
 CREATE TABLE mission(
    mission_id VARCHAR(50),
    name VARCHAR(255),
    description TEXT,
    start_date DATE,
-   site_id VARCHAR(50) NOT NULL,
+   site VARCHAR(255) NOT NULL,
    created_at DATETIME,
    updated_at DATETIME,
-   PRIMARY KEY(mission_id),
-   FOREIGN KEY(site_id) REFERENCES site(site_id)
+   PRIMARY KEY(mission_id)
 );
+
 
 
 CREATE TABLE mission_assignation(

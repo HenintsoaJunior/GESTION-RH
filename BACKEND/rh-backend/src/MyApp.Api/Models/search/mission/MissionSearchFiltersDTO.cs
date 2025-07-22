@@ -5,6 +5,6 @@ namespace MyApp.Api.Models.search.mission
         public string? Name { get; set; }
         public DateTime? StartDateMin { get; set; }
         public DateTime? StartDateMax { get; set; }
-        public string? SiteId { get; set; }
+        public string? Site { get; set; }
     }
 }
