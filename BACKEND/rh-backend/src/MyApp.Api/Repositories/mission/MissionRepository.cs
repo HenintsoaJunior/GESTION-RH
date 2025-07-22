@@ -46,10 +46,11 @@ namespace MyApp.Api.Repositories.mission
                 query = query.Where(m => m.StartDate <= filters.StartDateMax.Value);
             }
 
-            if (!string.IsNullOrWhiteSpace(filters.SiteId))
+            if (!string.IsNullOrWhiteSpace(filters.Site))
             {
-                query = query.Where(m => m.SiteId == filters.SiteId);
+                query = query.Where(m => m.Site != null && m.Site.Contains(filters.Site));
             }
+
 
             var totalCount = await query.CountAsync();
 

@@ -65,7 +65,7 @@ namespace MyApp.Api.Services.mission
             entity.Name = mission.Name;
             entity.Description = mission.Description;
             entity.StartDate = mission.StartDate;
-            entity.SiteId = mission.SiteId;
+            entity.Site = mission.Site;
 
             await _repository.UpdateAsync(entity);
             await _repository.SaveChangesAsync();

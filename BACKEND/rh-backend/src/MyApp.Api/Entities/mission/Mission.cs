@@ -24,13 +24,9 @@ namespace MyApp.Api.Entities.mission
         [Column("start_date")]
         public DateTime? StartDate { get; set; }
 
-        [Required]
-        [Column("site_id")]
-        [MaxLength(50)]
-        public string SiteId { get; set; } = null!;
-
-        [ForeignKey("SiteId")]
-        public Site? Site { get; set; }
+        [Column("site")]
+        [MaxLength(255)]
+        public string Site { get; set; } = null!;
 
         public Mission()
         {
@@ -40,7 +36,7 @@ namespace MyApp.Api.Entities.mission
             MissionId = mission.MissionId;
             Description = mission.Description;
             StartDate = mission.StartDate;
-            SiteId = mission.SiteId;
+            Site = mission.Site;
         }
     }
 }
