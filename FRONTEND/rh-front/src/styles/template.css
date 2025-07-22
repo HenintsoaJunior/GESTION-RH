@@ -133,6 +133,9 @@
   --header-height: 70px;
   --transition-speed: 0.3s;
 
+  /* === Couleurs additionnelles === */
+  --white: #ffffff;
+
   /* === Badges et statuts === */
   --badge-new: #3498db;
   --badge-count: #e74c3c;
@@ -142,6 +145,7 @@
   --status-away: #f39c12;
   --status-busy: #e74c3c;
 }
+
 
 
 * {
