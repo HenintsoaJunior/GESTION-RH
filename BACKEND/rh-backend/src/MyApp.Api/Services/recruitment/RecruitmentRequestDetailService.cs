@@ -1,7 +1,5 @@
-using Microsoft.Extensions.Logging;
-using MyApp.Api.Controllers.recruitment;
 using MyApp.Api.Entities.recruitment;
-using MyApp.Api.Models.search;
+using MyApp.Api.Models.search.recruitment;
 using MyApp.Api.Repositories.recruitment;
 using MyApp.Api.Utils.generator;
 
