@@ -1,7 +1,6 @@
 "use client";
 
 import { BASE_URL } from "config/apiConfig";
-
 export const fetchMissionPayment = async (
   missionId,
   employeeId,
@@ -23,7 +22,7 @@ export const fetchMissionPayment = async (
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json", // Changed from "text/plain" to "application/json"
+        Accept: "application/json",
       },
       body: JSON.stringify({
         missionId,
@@ -36,15 +35,12 @@ export const fetchMissionPayment = async (
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       
       try {
-        // Try to get more detailed error information from response body
         const errorText = await response.text();
         if (errorText) {
-          // Try to parse as JSON first
           try {
             const errorData = JSON.parse(errorText);
             errorMessage = errorData.message || errorData.error || errorText;
           } catch {
-            // If not JSON, use the text as is
             errorMessage = errorText;
           }
         }
@@ -67,27 +63,35 @@ export const fetchMissionPayment = async (
 
     // Transformation des données pour correspondre à la structure attendue
     const transformedData = data.map((item) => {
-      // More robust data extraction with fallbacks
       const compensationScales = item.compensationScales || [];
       
+      // Calcul correct des montants par type de dépense pour cette date spécifique
+      const lunchAmount = compensationScales
+        .filter((scale) => scale.expenseType?.type === "Dejeuner")
+        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
+        
+      const dinnerAmount = compensationScales
+        .filter((scale) => scale.expenseType?.type === "Diner")
+        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
+        
+      const breakfastAmount = compensationScales
+        .filter((scale) => scale.expenseType?.type === "PetitDejeuner")
+        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
+        
+      const accommodationAmount = compensationScales
+        .filter((scale) => scale.expenseType?.type === "Hebergement")
+        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
+
+      // Calcul du transport (toutes les dépenses de transport pour cette date)
       const transportAmount = compensationScales
         .filter((scale) => 
           scale.transport?.type === "Voiture" || 
           scale.transport?.type === "Avion"
         )
         .reduce((sum, scale) => sum + (scale.amount || 0), 0);
-        
-      const lunchAmount = compensationScales
-        .find((scale) => scale.expenseType?.type === "Dejeuner")?.amount || 0;
-        
-      const dinnerAmount = compensationScales
-        .find((scale) => scale.expenseType?.type === "Diner")?.amount || 0;
-        
-      const breakfastAmount = compensationScales
-        .find((scale) => scale.expenseType?.type === "PetitDejeuner")?.amount || 0;
-        
-      const accommodationAmount = compensationScales
-        .filter((scale) => scale.expenseType?.type === "Hebergement")
+
+      // Calcul du total pour cette date (somme de tous les compensationScales)
+      const totalAmount = compensationScales
         .reduce((sum, scale) => sum + (scale.amount || 0), 0);
 
       return {
@@ -97,7 +101,7 @@ export const fetchMissionPayment = async (
         lunch: lunchAmount,
         dinner: dinnerAmount,
         accommodation: accommodationAmount,
-        total: item.totalAmount || 0,
+        total: totalAmount, // Utiliser le total calculé plutôt que item.totalAmount
       };
     });
 
@@ -143,7 +147,6 @@ export const fetchMissionPayment = async (
     setIsLoading((prev) => ({ ...prev, missionPayment: false }));
   }
 };
-
 
 export const fetchAssignMission = async (
   setAssignMissions,
