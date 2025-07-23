@@ -146,12 +146,6 @@ namespace MyApp.Api.Entities.employee
         [ForeignKey("WorkingTimeTypeId")]
         public WorkingTimeType? WorkingTimeType { get; set; }
 
-        [Column("employee_category_id")]
-        public string EmployeeCategoryId { get; set; } = default!;
-
-        [ForeignKey("EmployeeCategoryId")]
-        public EmployeeCategory? EmployeeCategory { get; set; }
-
         [Column("contract_type_id")]
         public string ContractTypeId { get; set; } = default!;
 
