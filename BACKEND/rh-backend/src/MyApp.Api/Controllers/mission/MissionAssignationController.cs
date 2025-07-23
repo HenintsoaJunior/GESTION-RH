@@ -50,7 +50,7 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpPost]
-        public async Task<ActionResult> Create([FromBody] MissionAssignationDtoForm dto)
+        public async Task<ActionResult> Create([FromBody] MissionAssignationDTOForm dto)
         {
             try
             {
@@ -68,7 +68,7 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpPut("{employeeId}/{missionId}/{transportId}")]
-        public async Task<ActionResult> Update(string employeeId, string missionId, string transportId, [FromBody] MissionAssignationDtoForm dto)
+        public async Task<ActionResult> Update(string employeeId, string missionId, string transportId, [FromBody] MissionAssignationDTOForm dto)
         {
             try
             {

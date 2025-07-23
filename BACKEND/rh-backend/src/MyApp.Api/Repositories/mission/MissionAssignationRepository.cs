@@ -9,6 +9,9 @@ namespace MyApp.Api.Repositories.mission
     {
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string transportId);
+        
+        Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId);
+
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
         Task AddAsync(MissionAssignation missionAssignation);
         Task UpdateAsync(MissionAssignation missionAssignation);
@@ -45,6 +48,17 @@ namespace MyApp.Api.Repositories.mission
                     ma.EmployeeId == employeeId && 
                     ma.MissionId == missionId && 
                     ma.TransportId == transportId);
+        }
+        
+        public async Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId)
+        {
+            return await _context.MissionAssignations
+                .Include(ma => ma.Employee)
+                .Include(ma => ma.Mission)
+                .Include(ma => ma.Transport)
+                .FirstOrDefaultAsync(ma => 
+                    ma.EmployeeId == employeeId && 
+                    ma.MissionId == missionId);
         }
 
         public async Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize)

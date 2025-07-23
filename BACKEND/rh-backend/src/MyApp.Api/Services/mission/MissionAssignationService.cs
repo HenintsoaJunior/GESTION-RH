@@ -2,6 +2,10 @@ using MyApp.Api.Entities.mission;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Utils.generator;
 using MyApp.Api.Models.search.mission;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace MyApp.Api.Services.mission
 {
@@ -9,15 +13,12 @@ namespace MyApp.Api.Services.mission
     {
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string transportId);
-
-        Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page,
-            int pageSize);
-
-        Task<(string EmployeeId, string MissionId, string TransportId)> CreateAsync(
-            MissionAssignation missionAssignation);
-
+        Task<MissionAssignation?> GetByEmployeeIdMissionIdAsync(string employeeId, string missionId);
+        Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
+        Task<(string EmployeeId, string MissionId, string TransportId)> CreateAsync(MissionAssignation missionAssignation);
         Task<bool> UpdateAsync(MissionAssignation missionAssignation);
         Task<bool> DeleteAsync(string employeeId, string missionId, string transportId);
+        Task<IEnumerable<MissionPaiement>> GeneratePaiementsAsync(string employeeId, string missionId);
     }
 
     public class MissionAssignationService : IMissionAssignationService
@@ -25,19 +26,24 @@ namespace MyApp.Api.Services.mission
         private readonly IMissionAssignationRepository _repository;
         private readonly IMissionService _missionService;
         private readonly ISequenceGenerator _sequenceGenerator;
-        private readonly ILogger<MissionAssignation> _logger;
+        private readonly ICompensationScaleService _compensationScaleService;
+        private readonly ILogger<MissionAssignationService> _logger;
+        private readonly ILoggerFactory _loggerFactory; // Added for creating ILogger<MissionPaiement>
 
         public MissionAssignationService(
             IMissionAssignationRepository repository,
             IMissionService missionService,
             ISequenceGenerator sequenceGenerator,
-            ILogger<MissionAssignation> logger)
+            ICompensationScaleService compensationScaleService,
+            ILogger<MissionAssignationService> logger,
+            ILoggerFactory loggerFactory) // Added ILoggerFactory
         {
-            _repository = repository;
-            _missionService = missionService;
-            _sequenceGenerator = sequenceGenerator;
-            _logger = logger;
-
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _missionService = missionService ?? throw new ArgumentNullException(nameof(missionService));
+            _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
+            _compensationScaleService = compensationScaleService ?? throw new ArgumentNullException(nameof(compensationScaleService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         public async Task<IEnumerable<MissionAssignation>> GetAllAsync()
@@ -102,6 +108,79 @@ namespace MyApp.Api.Services.mission
             }
         }
 
+        public async Task<MissionAssignation?> GetByEmployeeIdMissionIdAsync(string employeeId, string missionId)
+        {
+            try
+            {
+                var missionAssignation = await _repository.GetByIdAsync(employeeId, missionId);
+                if (missionAssignation == null) return null;
+
+                return new MissionAssignation
+                {
+                    EmployeeId = missionAssignation.EmployeeId,
+                    MissionId = missionAssignation.MissionId,
+                    TransportId = missionAssignation.TransportId,
+                    DepartureDate = missionAssignation.DepartureDate,
+                    DepartureTime = missionAssignation.DepartureTime,
+                    ReturnDate = missionAssignation.ReturnDate,
+                    ReturnTime = missionAssignation.ReturnTime,
+                    Duration = missionAssignation.Duration,
+                    CreatedAt = missionAssignation.CreatedAt,
+                    UpdatedAt = missionAssignation.UpdatedAt,
+                    Employee = missionAssignation.Employee,
+                    Mission = missionAssignation.Mission,
+                    Transport = missionAssignation.Transport
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Error retrieving mission assignation with EmployeeId: {EmployeeId}, MissionId: {MissionId}",
+                    employeeId, missionId);
+                throw new Exception($"Error retrieving mission assignation: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<IEnumerable<MissionPaiement>> GeneratePaiementsAsync(string employeeId, string missionId)
+        {
+            try
+            {
+                _logger.LogInformation("Starting GeneratePaiementsAsync for EmployeeId: {EmployeeId}, MissionId: {MissionId}", 
+                    employeeId, missionId);
+
+                // Retrieve the mission assignation
+                var missionAssignation = await GetByEmployeeIdMissionIdAsync(employeeId, missionId);
+                if (missionAssignation == null)
+                {
+                    _logger.LogWarning("Mission assignation not found for EmployeeId: {EmployeeId}, MissionId: {MissionId}", 
+                        employeeId, missionId);
+                    throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
+                }
+
+                // Create MissionPaiement instance with logger created from ILoggerFactory
+                var missionPaiementLogger = _loggerFactory.CreateLogger<MissionPaiement>();
+                var missionPaiement = new MissionPaiement(missionPaiementLogger);
+                var paiements = await missionPaiement.GeneratePaiement(missionAssignation, _compensationScaleService);
+
+                if (paiements == null || !paiements.Any())
+                {
+                    _logger.LogWarning("No payments generated for EmployeeId: {EmployeeId}, MissionId: {MissionId}", 
+                        employeeId, missionId);
+                    return Array.Empty<MissionPaiement>();
+                }
+
+                _logger.LogInformation("Successfully generated {Count} payments for EmployeeId: {EmployeeId}, MissionId: {MissionId}", 
+                    paiements.Count(), employeeId, missionId);
+                return paiements;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating payments for EmployeeId: {EmployeeId}, MissionId: {MissionId}", 
+                    employeeId, missionId);
+                throw new Exception($"Error generating payments: {ex.Message}", ex);
+            }
+        }
+
         public async Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(
             MissionAssignationSearchFiltersDTO filters, int page, int pageSize)
         {
@@ -140,11 +219,9 @@ namespace MyApp.Api.Services.mission
                 missionAssignation.CreatedAt = DateTime.UtcNow;
                 missionAssignation.UpdatedAt = DateTime.UtcNow;
 
-                // Créer l'assignation
                 await _repository.AddAsync(missionAssignation);
                 await _repository.SaveChangesAsync();
 
-                // Mettre à jour le statut de la mission en "Planifié"
                 var mission = await _missionService.GetByIdAsync(missionAssignation.MissionId);
                 if (mission != null)
                 {

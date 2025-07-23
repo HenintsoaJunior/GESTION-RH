@@ -1,54 +1,113 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Services.mission;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace MyApp.Api.Entities.mission
 {
-    [Table("mission")]
     public class MissionPaiement
     {
+        private readonly ILogger<MissionPaiement> _logger;
+
         public DateTime? Date { get; set; }
         public IEnumerable<CompensationScale>? CompensationScales { get; set; }
         public decimal? TotalAmount { get; set; }
 
-        public static IEnumerable<MissionPaiement> GeneratePaiement(MissionAssignation missionAssignation, CompensationScaleService compensationScaleService)
+        public MissionPaiement(ILogger<MissionPaiement> logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public async Task<IEnumerable<MissionPaiement>> GeneratePaiement(
+            MissionAssignation missionAssignation, 
+            ICompensationScaleService compensationScaleService)
         {
             var paiements = new List<MissionPaiement>();
 
-            // 1. Récupération de l'employé
-            Employee employee = missionAssignation.Employee;
+            _logger.LogInformation("Starting GeneratePaiement for mission assignment ID: {MissionId}", 
+                missionAssignation?.MissionId);
 
-            // 2. Récupération des compensation scales liés à la catégorie de l'employé
-            var compensationScalesTask = compensationScaleService.GetByEmployeeCategoryAsync(employee.EmployeeCategory.EmployeeCategoryId);
-            compensationScalesTask.Wait(); // si tu veux le rendre synchrone, sinon utilise async
-            var compensationScales = compensationScalesTask.Result;
+            if (missionAssignation == null)
+            {
+                _logger.LogError("Mission assignment is null");
+                throw new ArgumentNullException(nameof(missionAssignation), "Mission assignment cannot be null.");
+            }
 
-            // 3. Récupération des dates selon la durée
+            if (compensationScaleService == null)
+            {
+                _logger.LogError("Compensation scale service is null");
+                throw new ArgumentNullException(nameof(compensationScaleService), "Compensation scale service cannot be null.");
+            }
+
+            if (missionAssignation.Employee == null)
+            {
+                _logger.LogError("Employee is null for mission assignment ID: {MissionId}", missionAssignation.MissionId);
+                throw new InvalidOperationException("Employee cannot be null in mission assignment.");
+            }
+
+            _logger.LogDebug("Processing mission for employee ID: {EmployeeId}, Category: {CategoryId}", 
+                missionAssignation.Employee.EmployeeId, missionAssignation.Employee.EmployeeCategoryId);
+
+            _logger.LogInformation("Retrieving compensation scales for employee category ID: {CategoryId}", 
+                missionAssignation.Employee.EmployeeCategoryId);
+            var compensationScales = await compensationScaleService.GetByEmployeeCategoryAsync(
+                missionAssignation.Employee.EmployeeCategoryId);
+            
+            if (compensationScales == null || !compensationScales.Any())
+            {
+                _logger.LogWarning("No compensation scales found for employee category ID: {CategoryId}", 
+                    missionAssignation.Employee.EmployeeCategoryId);
+                return paiements;
+            }
+
+            _logger.LogInformation("Found {Count} compensation scales for employee category ID: {CategoryId}", 
+                compensationScales.Count(), missionAssignation.Employee.EmployeeCategoryId);
+
+            _logger.LogDebug("Generating date range from {StartDate} for {Duration} days", 
+                missionAssignation.DepartureDate, missionAssignation.Duration);
             List<DateTime> dates = GenerateDateRange(missionAssignation.DepartureDate, missionAssignation.Duration);
 
-            // 4. Génération des paiements par jour
             foreach (var date in dates)
             {
-                var paiement = new MissionPaiement
+                _logger.LogDebug("Generating payment for date: {Date}", date);
+                var paiement = new MissionPaiement(_logger)
                 {
                     Date = date,
                     CompensationScales = compensationScales,
-                    TotalAmount = compensationScales.Sum(cs => cs.Amount) // ou toute autre logique métier
+                    TotalAmount = compensationScales.Sum(cs => cs?.Amount ?? 0)
                 };
 
                 paiements.Add(paiement);
+                _logger.LogInformation("Generated payment for date {Date} with total amount: {TotalAmount}", 
+                    date, paiement.TotalAmount);
             }
 
+            _logger.LogInformation("Completed GeneratePaiement for mission assignment ID: {MissionId}. Generated {Count} payments", 
+                missionAssignation.MissionId, paiements.Count);
             return paiements;
         }
 
-        public static List<DateTime> GenerateDateRange(DateTime startDate, int durationInDays)
+        public List<DateTime> GenerateDateRange(DateTime startDate, int durationInDays)
         {
             var dates = new List<DateTime>();
+            
+            if (durationInDays < 0)
+            {
+                _logger.LogError("Invalid duration: {Duration}. Duration cannot be negative.", durationInDays);
+                throw new ArgumentException("Duration cannot be negative.", nameof(durationInDays));
+            }
+
+            _logger.LogDebug("Generating date range from {StartDate} for {Duration} days", startDate, durationInDays);
             for (int i = 0; i < durationInDays; i++)
             {
-                dates.Add(startDate.AddDays(i));
+                var date = startDate.AddDays(i);
+                dates.Add(date);
+                _logger.LogDebug("Added date: {Date}", date);
             }
+            
+            _logger.LogInformation("Generated {Count} dates for date range", dates.Count);
             return dates;
         }
     }
