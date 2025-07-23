@@ -47,6 +47,9 @@ namespace MyApp.Api.Repositories.mission
         public async Task<IEnumerable<CompensationScale>> GetByEmployeeCategoryAsync(string employeeCategoryId)
         {
             return await _context.CompensationScales
+                .Include(c => c.Transport)
+                .Include(c => c.ExpenseType)
+                .Include(c => c.EmployeeCategory)
                 .Where(c => c.EmployeeCategoryId == employeeCategoryId)
                 .ToListAsync();
         }

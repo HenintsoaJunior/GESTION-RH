@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom"; // Ajouter useParams
+import { useNavigate, useParams } from "react-router-dom";
 import { Plus, MapPin, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle } from "lucide-react";
 import { formatDate } from "utils/generalisation";
 import Alert from "components/alert";
@@ -10,7 +10,7 @@ import { fetchAssignMission } from "services/mission/mission";
 
 const AssignedPersonsList = () => {
   const navigate = useNavigate();
-  const { missionId } = useParams(); // Récupérer le missionId depuis l'URL
+  const { missionId } = useParams();
   const [assignedPersons, setAssignedPersons] = useState([]);
   const [filters, setFilters] = useState({
     status: "",
@@ -26,7 +26,7 @@ const AssignedPersonsList = () => {
     missionTitleKeyword: "",
     departureDateMin: "",
     departureDateMax: "",
- base: "",
+    base: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -36,7 +36,6 @@ const AssignedPersonsList = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
-  // Fetch data avec missionId inclus
   useEffect(() => {
     const fetchData = async () => {
       await fetchAssignMission(
@@ -44,7 +43,7 @@ const AssignedPersonsList = () => {
         setIsLoading,
         setTotalEntries,
         {
-          missionId: missionId || "", // Inclure missionId dans les filtres
+          missionId: missionId || "",
           status: appliedFilters.status,
           departureDateMin: appliedFilters.departureDateMin,
           departureDateMax: appliedFilters.departureDateMax,
@@ -58,7 +57,6 @@ const AssignedPersonsList = () => {
     fetchData();
   }, [missionId, appliedFilters, currentPage, pageSize]);
 
-  // Client-side filtering pour les champs non pris en charge par l'API
   const filteredAssignedPersons = useMemo(() => {
     let filtered = assignedPersons;
 
@@ -83,7 +81,6 @@ const AssignedPersonsList = () => {
     return filtered;
   }, [assignedPersons, appliedFilters]);
 
-  // Pagination
   const paginatedAssignedPersons = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredAssignedPersons.slice(start, start + pageSize);
@@ -126,9 +123,15 @@ const AssignedPersonsList = () => {
     setCurrentPage(1);
   };
 
-  const handleRowClick = (assignmentId) => {
-    if (assignmentId) {
-      navigate(`/assignments/details/${assignmentId}`);
+  const handleRowClick = (missionId, employeeId) => {
+    if (missionId && employeeId) {
+      navigate(`/assignments/details?missionId=${missionId}&employeeId=${employeeId}`);
+    } else {
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: "Informations manquantes pour accéder aux détails.",
+      });
     }
   };
 
@@ -188,9 +191,6 @@ const AssignedPersonsList = () => {
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
 
-     
-
-      {/* Filter Section */}
       {!isHidden && (
         <div className={`filters-container ${isMinimized ? "minimized" : ""}`}>
           <div className="filters-header">
@@ -333,7 +333,7 @@ const AssignedPersonsList = () => {
       <div className="table-header">
         <h2 className="table-title">Liste des Assignations de Mission</h2>
         <button
-          onClick={() => navigate(`/mission/assign`)} // Passer missionId si disponible
+          onClick={() => navigate(`/mission/assign${missionId ? `?missionId=${missionId}` : ""}`)}
           className="btn-new-request"
         >
           <Plus className="w-4 h-4" />
@@ -363,7 +363,7 @@ const AssignedPersonsList = () => {
               paginatedAssignedPersons.map((assignment, index) => (
                 <tr
                   key={`${assignment.employeeId}-${assignment.missionId}-${assignment.transportId}-${index}`}
-                  onClick={() => handleRowClick(assignment.assignmentId)}
+                  onClick={() => handleRowClick(assignment.missionId, assignment.employeeId)}
                   style={{ cursor: "pointer" }}
                 >
                   <td>{assignment.beneficiary || "Non spécifié"}</td>
