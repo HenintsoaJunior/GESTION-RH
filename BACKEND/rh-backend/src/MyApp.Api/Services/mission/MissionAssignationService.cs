@@ -37,6 +37,7 @@ namespace MyApp.Api.Services.mission
             _missionService = missionService;
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
+
         }
 
         public async Task<IEnumerable<MissionAssignation>> GetAllAsync()
