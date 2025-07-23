@@ -1,21 +1,24 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.form.mission;
 
 namespace MyApp.Api.Entities.mission
 {
     [Table("mission_assignation")]
+    [PrimaryKey(nameof(EmployeeId), nameof(MissionId),nameof(TransportId))]
     public class MissionAssignation
     {
-        [Key, Column("employee_id", Order = 0)]
+        [Column("employee_id", Order = 0)]
         [MaxLength(50)]
         public string EmployeeId { get; set; } = null!;
 
-        [Key, Column("mission_id", Order = 1)]
+        [Column("mission_id", Order = 1)]
         [MaxLength(50)]
         public string MissionId { get; set; } = null!;
 
-        [Key, Column("transport_id", Order = 2)]
+        [Column("transport_id", Order = 2)]
         [MaxLength(50)]
         public string TransportId { get; set; } = null!;
 
@@ -49,5 +52,21 @@ namespace MyApp.Api.Entities.mission
 
         [ForeignKey("TransportId")]
         public Transport? Transport { get; set; }
+
+        public MissionAssignation()
+        {
+            
+        }
+        public MissionAssignation(MissionAssignationDtoForm dto)
+        {
+            EmployeeId = dto.EmployeeId;
+            MissionId = dto.MissionId;
+            TransportId = dto.TransportId;
+            DepartureDate  = dto.DepartureDate;
+            DepartureTime = dto.DepartureTime;
+            ReturnDate = dto.ReturnDate;
+            ReturnTime = dto.ReturnTime;
+            Duration = dto.Duration;;
+        }
     }
 }
