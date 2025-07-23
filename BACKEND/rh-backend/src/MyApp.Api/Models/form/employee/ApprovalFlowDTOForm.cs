@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MyApp.Api.Model.form.employee
+namespace MyApp.Api.Models.form.employee
 {
     public class ApprovalFlowDTOForm
     {

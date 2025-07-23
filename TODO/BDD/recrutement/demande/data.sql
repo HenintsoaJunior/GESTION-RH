@@ -10,6 +10,7 @@ DELETE FROM cv_details;
 DELETE FROM applications;
 DELETE FROM users;
 DELETE FROM candidates;
+DELETE FROM categories_of_employee;
 DELETE FROM employees;
 DELETE FROM job_offers;
 DELETE FROM job_descriptions;
@@ -154,46 +155,54 @@ INSERT INTO employees (
     bank_code, branch_code, account_number, rib_key, hire_date, job_title, grade,
     is_executive, contract_end_date, departure_date, departure_reason_code, departure_reason_title,
     headcount, birth_date_, status, created_at, updated_at,
-    site_id, marital_status_id, gender_id, contract_type_id, employee_category_id, working_time_type_id,
+    site_id, marital_status_id, gender_id, contract_type_id, working_time_type_id,
     direction_id, department_id, service_id, unit_id
 )
 VALUES
-    ('EMP_0001', 'EC_0001', 'Dupont', 'Jean', '1985-03-15', 'Antananarivo', 2,
+    ('EMP_0001', '154', 'Dupont', 'Jean', '1985-03-15', 'Antananarivo', 2,
      'CIN123456789', '2010-06-20', 'Antananarivo', 'CNAPS987654321', 'Lot 123, Analakely', NULL,
      'BOA001', '12345', '12345678901234567890', '01', '2023-01-10', 'Développeur Full Stack', 'Senior',
      0, '2025-01-09', NULL, NULL, NULL,
      1, NULL, 'Actif', GETDATE(), NULL,
-     'ST_0001', 'MS_0002', 'GEN_0001', 'CT_0002', 'EC_0003', 'WTT_0001',
+     'ST_0001', 'MS_0002', 'GEN_0001', 'CT_0002', 'WTT_0001',
      'DR_0001', 'DP_0001', 'SR_0001', 'UN_0001'),
-    ('EMP_0002', 'EC_0002', 'Rakoto', 'Marie', '1990-07-22', 'Nosy Be', 0,
+    ('EMP_0002', '155', 'Rakoto', 'Marie', '1990-07-22', 'Nosy Be', 0,
      'CIN987654321', '2015-09-10', 'Nosy Be', 'CNAPS123456789', 'Lot 456, Hell-Ville', 'Apt 12',
      'BFV002', '67890', '98765432109876543210', '02', '2024-03-01', 'Analyste Financier', 'Junior',
      0, NULL, NULL, NULL, NULL,
      1, NULL, 'Actif', GETDATE(), NULL,
-     'ST_0002', 'MS_0001', 'GEN_0002', 'CT_0001', 'EC_0002', 'WTT_0001',
+     'ST_0002', 'MS_0001', 'GEN_0002', 'CT_0001', 'WTT_0001',
      'DR_0007', 'DP_0007', 'SR_0007', 'UN_0003'),
-    ('EMP_0003', 'EC_0003', 'Lefèvre', 'Sophie', '1978-11-30', 'Antananarivo', 3,
+    ('EMP_0003', '156', 'Lefèvre', 'Sophie', '1978-11-30', 'Antananarivo', 3,
      'CIN456789123', '2000-12-15', 'Antananarivo', 'CNAPS456123789', 'Lot 789, Ankadivato', NULL,
      'SGM003', '54321', '45678912345678912345', '03', '2022-06-15', 'Responsable RH', 'Manager',
      1, NULL, '2025-04-30', 'RPR_0004', 'Retraite',
      1, NULL, 'Inactif', GETDATE(), NULL,
-     'ST_0001', 'MS_0002', 'GEN_0002', 'CT_0001', 'EC_0001', 'WTT_0001',
+     'ST_0001', 'MS_0002', 'GEN_0002', 'CT_0001', 'WTT_0001',
      'DR_0004', 'DP_0004', 'SR_0004', 'UN_0002'),
-    ('EMP_0004', 'EC_0004', 'Bernard', 'Luc', '1995-04-12', 'Tamatave', 1,
+    ('EMP_0004', '157', 'Bernard', 'Luc', '1995-04-12', 'Tamatave', 1,
      'CIN789123456', '2018-03-25', 'Tamatave', 'CNAPS789456123', 'Lot 101, Ambatomanga', NULL,
      'BOA004', '98765', '78912345678912345678', '04', '2024-01-20', 'Technicien de Maintenance', 'Technicien',
      0, '2024-07-19', NULL, NULL, NULL,
      1, NULL, 'Actif', GETDATE(), NULL,
-     'ST_0001', 'MS_0003', 'GEN_0001', 'CT_0002', 'EC_0003', 'WTT_0002',
+     'ST_0001', 'MS_0003', 'GEN_0001', 'CT_0002', 'WTT_0002',
      'DR_0005', 'DP_0005', 'SR_0005', 'UN_0001'),
-    ('EMP_0005', 'EC_0005', 'Rabe', 'Andriana', '1988-09-05', 'Antananarivo', 2,
+    ('EMP_0005', '158', 'Rabe', 'Andriana', '1988-09-05', 'Antananarivo', 2,
      'CIN321654987', '2012-11-11', 'Antananarivo', 'CNAPS321654987', 'Lot 202, Ivandry', NULL,
      'BFV005', '11223', '32165498732165498732', '05', '2023-09-01', 'Assistant Commercial', 'Assistant',
      0, '2024-03-31', NULL, NULL, NULL,
      1, NULL, 'Actif', GETDATE(), NULL,
-     'ST_0001', 'MS_0002', 'GEN_0002', 'CT_0003', 'EC_0002', 'WTT_0003',
+     'ST_0001', 'MS_0002', 'GEN_0002', 'CT_0003', 'WTT_0003',
      'DR_0002', 'DP_0002', 'SR_0002', 'UN_0002');
 
+-- categorie d'employee
+INSERT INTO categories_of_employee (employee_id, employee_category_id, created_at, updated_at)
+VALUES 
+    ('EMP_0001', 'EC_0001', '2023-01-10', NULL), -- Jean Dupont -> Cadre
+    ('EMP_0002', 'EC_0002', '2024-03-01', NULL), -- Marie Rakoto -> Employé
+    ('EMP_0003', 'EC_0001', '2022-06-15', NULL), -- Sophie Lefèvre -> Cadre
+    ('EMP_0004', 'EC_0003', '2024-01-20', NULL), -- Luc Bernard -> Technicien
+    ('EMP_0005', 'EC_0002', '2023-09-01', NULL); -- Andriana Rabe -> Employé
 
 INSERT INTO approval_flow_employee(approval_flow_id,employee_id)
 VALUES

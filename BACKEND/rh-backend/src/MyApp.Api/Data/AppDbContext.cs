@@ -13,6 +13,7 @@ namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
+         public DbSet<CategoriesOfEmployee> CategoriesOfEmployees { get; set; }
         public DbSet<MissionAssignation> MissionAssignations { get; set; }
         public DbSet<Mission> Missions { get; set; } 
         public DbSet<CompensationScale> CompensationScales { get; set; } 

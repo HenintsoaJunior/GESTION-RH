@@ -1,12 +1,10 @@
-
 namespace MyApp.Api.Models.form.employee
 {
-    public class ApprovalFlowEmployeeDTOForm
+    public class CategoriesOfEmployeeDTOForm
     {
         public string EmployeeId { get; set; } = string.Empty;
-        public string ApprovalFlowId { get; set; } = string.Empty;
-        public DateTime? CreatedAt { get; set; }
+        public string EmployeeCategoryId { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-
     }
 }
