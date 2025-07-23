@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS cv_details;
 DROP TABLE IF EXISTS applications;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS candidates;
+DROP TABLE IF EXISTS categories_of_employee;
 DROP TABLE IF EXISTS employees;
 DROP TABLE IF EXISTS job_offers;
 DROP TABLE IF EXISTS job_descriptions;
@@ -246,7 +247,6 @@ CREATE TABLE employees(
    marital_status_id VARCHAR(50) NOT NULL,
    gender_id VARCHAR(50) NOT NULL,
    contract_type_id VARCHAR(50) NOT NULL,
-   employee_category_id VARCHAR(50) NOT NULL,
    working_time_type_id VARCHAR(50) NOT NULL,
    direction_id VARCHAR(50) NOT NULL,
    department_id VARCHAR(50) NOT NULL,
@@ -258,13 +258,24 @@ CREATE TABLE employees(
    FOREIGN KEY(marital_status_id) REFERENCES marital_statuses(marital_status_id),
    FOREIGN KEY(gender_id) REFERENCES genders(gender_id),
    FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id),
-   FOREIGN KEY(employee_category_id) REFERENCES employee_categories(employee_category_id),
    FOREIGN KEY(working_time_type_id) REFERENCES working_time_types(working_time_type_id),
    FOREIGN KEY(direction_id) REFERENCES direction(direction_id),
    FOREIGN KEY(department_id) REFERENCES department(department_id),
    FOREIGN KEY(service_id) REFERENCES service(service_id),
    FOREIGN KEY(unit_id) REFERENCES units(unit_id)
 );
+
+
+CREATE TABLE categories_of_employee(
+   employee_id VARCHAR(50),
+   employee_category_id VARCHAR(50),
+   created_at DATE,
+   updated_at DATE,
+   PRIMARY KEY(employee_id, employee_category_id),
+   FOREIGN KEY(employee_id) REFERENCES employees(employee_id),
+   FOREIGN KEY(employee_category_id) REFERENCES employee_categories(employee_category_id)
+);
+
 
 CREATE TABLE users(
    user_id VARCHAR(50),

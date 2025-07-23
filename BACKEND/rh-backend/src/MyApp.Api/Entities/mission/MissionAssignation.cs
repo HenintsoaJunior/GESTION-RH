@@ -57,7 +57,7 @@ namespace MyApp.Api.Entities.mission
         {
             
         }
-        public MissionAssignation(MissionAssignationDtoForm dto)
+        public MissionAssignation(MissionAssignationDTOForm dto)
         {
             EmployeeId = dto.EmployeeId;
             MissionId = dto.MissionId;
