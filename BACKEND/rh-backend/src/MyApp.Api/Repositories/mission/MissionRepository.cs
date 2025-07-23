@@ -110,11 +110,11 @@ namespace MyApp.Api.Repositories.mission
             var enCours = await _context.Missions
                 .CountAsync(m => m.Status == "En Cours");
             var planifiee = await _context.Missions
-                .CountAsync(m => m.Status == "Planifiée"); // Ajout du statut Planifiée
+                .CountAsync(m => m.Status == "Planifié"); // Ajout du statut Planifiée
             var terminee = await _context.Missions
                 .CountAsync(m => m.Status == "Terminée");
             var annulee = await _context.Missions
-                .CountAsync(m => m.Status == "Annulée");
+                .CountAsync(m => m.Status == "Annulé");
 
             return new MissionStats()
             {

@@ -39,11 +39,19 @@ const MissionList = () => {
     setAlert(error);
   }, []);
 
-  // Charger les missions et les stats au montage
+  // Charger les missions et les stats au montage (sans filtres)
   useEffect(() => {
-    fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, currentPage, pageSize, handleError);
+    // Charger toutes les missions au début (sans filtres appliqués)
+    const initialFilters = {
+      name: "",
+      startDateMin: "",
+      startDateMax: "",
+      site: "",
+      status: "",
+    };
+    fetchMissions(setMissions, setIsLoading, setTotalEntries, initialFilters, currentPage, pageSize, handleError);
     fetchMissionStats(setStats, setIsLoading, handleError);
-  }, [filters, currentPage, pageSize]);
+  }, [currentPage, pageSize]);
 
   const calendarEvents = useMemo(() => {
     return missions.map((mission) => ({
@@ -61,12 +69,13 @@ const MissionList = () => {
       ...prev,
       [name]: value,
     }));
-    setCurrentPage(1); // Réinitialiser à la première page lors du changement de filtre
+    // Ne pas déclencher la recherche automatiquement
   };
 
   const handleFilterSubmit = (event) => {
     event.preventDefault();
     setCurrentPage(1);
+    // Déclencher la recherche avec les filtres actuels
     fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, 1, pageSize, handleError);
   };
 
@@ -80,23 +89,27 @@ const MissionList = () => {
     };
     setFilters(resetFilters);
     setCurrentPage(1);
+    // Rechercher avec les filtres réinitialisés
     fetchMissions(setMissions, setIsLoading, setTotalEntries, resetFilters, 1, pageSize, handleError);
   };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+    // Utiliser les filtres actuels pour la pagination
     fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, page, pageSize, handleError);
   };
 
   const handlePageSizeChange = (event) => {
-    setPageSize(Number(event.target.value));
+    const newPageSize = Number(event.target.value);
+    setPageSize(newPageSize);
     setCurrentPage(1);
-    fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, 1, Number(event.target.value), handleError);
+    // Utiliser les filtres actuels avec la nouvelle taille de page
+    fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, 1, newPageSize, handleError);
   };
 
   const handleRowClick = (missionId) => {
     if (missionId) {
-      navigate(`/missions/details/${missionId}`);
+      navigate(`/mission/assign-mission/${missionId}`);
     }
   };
 
@@ -123,16 +136,15 @@ const MissionList = () => {
     const statusClass =
       status === "En Cours"
         ? "status-progress"
-        : status === "Planifiée"
+        : status === "Planifié"
         ? "status-pending"
-        : status === "Terminée"
+        : status === "Terminé"
         ? "status-approved"
-        : status === "Annulée"
+        : status === "Annulé"
         ? "status-cancelled"
-        : "status-pending"
-
-    return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>
-  }
+        : "status-pending";
+    return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
+  };
 
   const renderPagination = () => {
     const maxButtons = 5;
@@ -193,7 +205,7 @@ const MissionList = () => {
               <Calendar className="w-6 h-6" />
             </div>
             <div className="stat-content">
-              <div className="stat-number">{stats.planifie}</div>
+              <div className="stat-number">{stats.planifiee}</div>
               <div className="stat-label">Planifié</div>
             </div>
           </div>
@@ -202,7 +214,7 @@ const MissionList = () => {
               <CheckCircle className="w-6 h-6" />
             </div>
             <div className="stat-content">
-              <div className="stat-number">{stats.termine}</div>
+              <div className="stat-number">{stats.terminee}</div>
               <div className="stat-label">Terminé</div>
             </div>
           </div>
@@ -211,7 +223,7 @@ const MissionList = () => {
               <XCircle className="w-6 h-6" />
             </div>
             <div className="stat-content">
-              <div className="stat-number">{stats.annule}</div>
+              <div className="stat-number">{stats.annulee}</div>
               <div className="stat-label">Annulé</div>
             </div>
           </div>

@@ -91,6 +91,10 @@
   border-left-color: #dc3545;
 }
 
+.stat-card-cancelled {
+  border-left-color: #dc3545;
+}
+
 .stat-icon {
   color: #666;
 }

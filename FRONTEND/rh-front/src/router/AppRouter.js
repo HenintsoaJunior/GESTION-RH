@@ -22,24 +22,24 @@ function AppRouter() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route element={<Template><Outlet /></Template>}>
-          //Recrutement
+          {/* Recrutement */}
           <Route path="/recruitment/recruitment-request/list" element={<RecruitmentRequestList />} />
           <Route path="/recruitment/recruitment-request/create" element={<RecruitmentRequestForm />} />
           <Route path="/recruitment/recruitment-request/details/:recruitmentRequestId" element={<RecruitmentRequestDetails />} />
           <Route path="/recruitment/process/:recruitmentRequestId" element={<ProcessWorkflow />} />
-          //Entite
+          
+          {/* Entite */}
           <Route path="/recruitment/contract-type-form" element={<ContractTypeForm />} />
           <Route path="/direction/direction-form" element={<DirectionForm />} />
           <Route path="/direction/department-form" element={<DepartmentForm />} />
           <Route path="/direction/service-form" element={<ServiceForm />} />
 
-          //Mission
+          {/* Mission */}
           <Route path="/mission/create" element={<MissionForm />} />
           <Route path="/mission/list" element={<MissionList />} />
           <Route path="/mission/assign" element={<AssignMissionForm />} />
-          <Route path="/mission/payment-status" element={<AssignedPersonsList/>} />
+          <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
           <Route path="/assignments/details/:assignmentId" element={<AssignmentDetails />} />
-          
         </Route>
       </Routes>
     </BrowserRouter>
