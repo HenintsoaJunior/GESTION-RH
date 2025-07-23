@@ -2,6 +2,149 @@
 
 import { BASE_URL } from "config/apiConfig";
 
+export const fetchMissionPayment = async (
+  missionId,
+  employeeId,
+  setMissionPayment,
+  setIsLoading,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, missionPayment: true }));
+
+    // Add validation for required parameters
+    if (!missionId || !employeeId) {
+      throw new Error('Mission ID et Employee ID sont requis');
+    }
+
+    console.log('Sending request with:', { missionId, employeeId });
+
+    const response = await fetch(`${BASE_URL}/api/MissionPaiement/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json", // Changed from "text/plain" to "application/json"
+      },
+      body: JSON.stringify({
+        missionId,
+        employeeId,
+      }),
+    });
+
+    // Enhanced error handling
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      
+      try {
+        // Try to get more detailed error information from response body
+        const errorText = await response.text();
+        if (errorText) {
+          // Try to parse as JSON first
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorText;
+          } catch {
+            // If not JSON, use the text as is
+            errorMessage = errorText;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not read error response body:', e);
+      }
+      
+      throw new Error(`Erreur lors du chargement des données de paiement: ${errorMessage}`);
+    }
+
+    const data = await response.json();
+    console.log("API Response (Mission Payment):", data);
+
+    // Add validation for response data
+    if (!Array.isArray(data) || data.length === 0) {
+      console.warn('API returned empty or invalid data:', data);
+      setMissionPayment({ indemnityDetails: [], assignmentDetails: null });
+      return;
+    }
+
+    // Transformation des données pour correspondre à la structure attendue
+    const transformedData = data.map((item) => {
+      // More robust data extraction with fallbacks
+      const compensationScales = item.compensationScales || [];
+      
+      const transportAmount = compensationScales
+        .filter((scale) => 
+          scale.transport?.type === "Voiture" || 
+          scale.transport?.type === "Avion"
+        )
+        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
+        
+      const lunchAmount = compensationScales
+        .find((scale) => scale.expenseType?.type === "Dejeuner")?.amount || 0;
+        
+      const dinnerAmount = compensationScales
+        .find((scale) => scale.expenseType?.type === "Diner")?.amount || 0;
+        
+      const breakfastAmount = compensationScales
+        .find((scale) => scale.expenseType?.type === "PetitDejeuner")?.amount || 0;
+        
+      const accommodationAmount = compensationScales
+        .filter((scale) => scale.expenseType?.type === "Hebergement")
+        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
+
+      return {
+        date: item.date,
+        transport: transportAmount,
+        breakfast: breakfastAmount,
+        lunch: lunchAmount,
+        dinner: dinnerAmount,
+        accommodation: accommodationAmount,
+        total: item.totalAmount || 0,
+      };
+    });
+
+    // Extraire les informations de missionAssignation (de la première entrée, car elles sont identiques)
+    const missionAssignation = data[0]?.missionAssignation || {};
+    const employee = missionAssignation.employee || {};
+    const mission = missionAssignation.mission || {};
+    const transport = missionAssignation.transport || {};
+
+    const assignmentDetails = {
+      assignmentId: `${missionAssignation.employeeId || ''}-${missionAssignation.missionId || ''}-${missionAssignation.transportId || ''}`,
+      employeeId: missionAssignation.employeeId || '',
+      missionId: missionAssignation.missionId || '',
+      transportId: missionAssignation.transportId || '',
+      departureDate: missionAssignation.departureDate,
+      departureTime: missionAssignation.departureTime,
+      returnDate: missionAssignation.returnDate,
+      returnTime: missionAssignation.returnTime,
+      missionDuration: missionAssignation.duration,
+      createdAt: missionAssignation.createdAt,
+      beneficiary: `${employee.firstName || ""} ${employee.lastName || ""}`.trim() || "Non spécifié",
+      matricule: employee.employeeCode || "Non spécifié",
+      missionTitle: mission.name || "Non spécifié",
+      function: employee.jobTitle || "Non spécifié",
+      base: mission.site || "Non spécifié",
+      status: mission.status || "Non spécifié",
+      meansOfTransport: transport.type || "Non spécifié",
+      direction: employee.direction?.name || "Non spécifié",
+      departmentService: employee.department?.name || employee.service?.name || "Non spécifié",
+      costCenter: employee.costCenter || "Non spécifié",
+    };
+
+    setMissionPayment({ indemnityDetails: transformedData, assignmentDetails });
+  } catch (error) {
+    console.error("Erreur lors du chargement des données de paiement:", error);
+    onError({
+      isOpen: true,
+      type: "error",
+      message: error.message || "Erreur inconnue lors du chargement des données de paiement",
+    });
+    setMissionPayment({ indemnityDetails: [], assignmentDetails: null });
+  } finally {
+    setIsLoading((prev) => ({ ...prev, missionPayment: false }));
+  }
+};
+
+
 export const fetchAssignMission = async (
   setAssignMissions,
   setIsLoading,

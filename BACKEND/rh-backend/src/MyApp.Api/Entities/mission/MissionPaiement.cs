@@ -14,6 +14,7 @@ namespace MyApp.Api.Entities.mission
         public DateTime? Date { get; set; }
         public IEnumerable<CompensationScale>? CompensationScales { get; set; }
         public decimal? TotalAmount { get; set; }
+        public MissionAssignation? MissionAssignation { get; set; } // Added MissionAssignation property
 
         public MissionPaiement(ILogger<MissionPaiement> logger)
         {
@@ -76,12 +77,13 @@ namespace MyApp.Api.Entities.mission
                 {
                     Date = date,
                     CompensationScales = compensationScales,
-                    TotalAmount = compensationScales.Sum(cs => cs?.Amount ?? 0)
+                    TotalAmount = compensationScales.Sum(cs => cs?.Amount ?? 0),
+                    MissionAssignation = missionAssignation // Assign the MissionAssignation
                 };
 
                 paiements.Add(paiement);
-                _logger.LogInformation("Generated payment for date {Date} with total amount: {TotalAmount}", 
-                    date, paiement.TotalAmount);
+                _logger.LogInformation("Generated payment for date {Date} with total amount: {TotalAmount} for mission ID: {MissionId}", 
+                    date, paiement.TotalAmount, missionAssignation.MissionId);
             }
 
             _logger.LogInformation("Completed GeneratePaiement for mission assignment ID: {MissionId}. Generated {Count} payments", 
@@ -89,7 +91,7 @@ namespace MyApp.Api.Entities.mission
             return paiements;
         }
 
-        public List<DateTime> GenerateDateRange(DateTime startDate, int durationInDays)
+        public List<DateTime> GenerateDateRange(DateTime startDate, int? durationInDays)
         {
             var dates = new List<DateTime>();
             

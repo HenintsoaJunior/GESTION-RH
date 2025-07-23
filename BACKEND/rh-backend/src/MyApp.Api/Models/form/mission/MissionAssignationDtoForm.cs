@@ -22,5 +22,5 @@ public class MissionAssignationDTOForm
     public TimeSpan? DepartureTime { get; set; }
     public DateTime? ReturnDate { get; set; }
     public TimeSpan? ReturnTime { get; set; }
-    public int Duration { get; set; }
+    public int? Duration { get; set; }
 }

@@ -39,7 +39,7 @@ function AppRouter() {
           <Route path="/mission/list" element={<MissionList />} />
           <Route path="/mission/assign" element={<AssignMissionForm />} />
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
-          <Route path="/assignments/details/:assignmentId" element={<AssignmentDetails />} />
+          <Route path="/assignments/details" element={<AssignmentDetails />} />
         </Route>
       </Routes>
     </BrowserRouter>
