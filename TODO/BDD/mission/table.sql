@@ -1,13 +1,8 @@
-DROP TABLE IF EXISTS mission_assignation;
-DROP TABLE IF EXISTS compensation_scale;
-DROP TABLE IF EXISTS mission;
-DROP TABLE IF EXISTS transport;
-DROP TABLE IF EXISTS expense_type;
-
-
-CREATE TABLE expense_type(
+CREATE TABLE expense_type (
    expense_type_id VARCHAR(50),
    type VARCHAR(255),
+   time_start TIME,
+   time_end TIME,
    created_at DATETIME,
    updated_at DATETIME,
    PRIMARY KEY(expense_type_id)
@@ -26,8 +21,8 @@ CREATE TABLE compensation_scale(
    amount DECIMAL(15,2),
    created_at DATETIME,
    updated_at DATETIME,
-   transport_id VARCHAR(50) NOT NULL,
-   expense_type_id VARCHAR(50) NOT NULL,
+   transport_id VARCHAR(50),
+   expense_type_id VARCHAR(50),
    employee_category_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(compensation_scale_id),
    FOREIGN KEY(transport_id) REFERENCES transport(transport_id),
@@ -62,7 +57,7 @@ CREATE TABLE mission_assignation(
    duration INT,
    created_at DATETIME,
    updated_at DATETIME,
-   PRIMARY KEY(employee_id, mission_id, transport_id),
+   PRIMARY KEY(employee_id, mission_id),
    FOREIGN KEY(employee_id) REFERENCES employees(employee_id),
    FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
    FOREIGN KEY(transport_id) REFERENCES transport(transport_id)

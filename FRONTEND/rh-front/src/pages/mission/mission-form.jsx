@@ -5,6 +5,7 @@ import { BASE_URL } from "config/apiConfig";
 import Alert from "components/alert";
 import * as FaIcons from "react-icons/fa";
 import { formatDate } from "utils/generalisation";
+import AutoCompleteInput from "components/auto-complete-input";
 
 export default function MissionForm() {
   const [formData, setFormData] = useState({
@@ -17,8 +18,29 @@ export default function MissionForm() {
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [returnUrl, setReturnUrl] = useState("");
   const [fieldType, setFieldType] = useState("");
+  const [regions, setRegions] = useState([]); // State to store region suggestions
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Fetch regions from public/data/madagascar_regions.json
+  useEffect(() => {
+    fetch("/data/madagascar_regions.json")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch regions data");
+        }
+        return response.json();
+      })
+      .then((data) => setRegions(data.regions))
+      .catch((error) => {
+        console.error("Error fetching regions:", error);
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: "Erreur lors du chargement des régions. Veuillez réessayer.",
+        });
+      });
+  }, []);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -40,9 +62,23 @@ export default function MissionForm() {
     setAlert({ isOpen: true, type, message });
   };
 
+  // Handle adding a new region suggestion
+  const handleAddNewSuggestion = (field, value) => {
+    setRegions((prev) => [...prev, value]);
+    setFormData((prev) => ({ ...prev, location: value }));
+    showAlert("success", `"${value}" ajouté aux suggestions pour ${field}`);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
+
+    // Validate location
+    if (formData.location && !regions.includes(formData.location)) {
+      showAlert("error", "Veuillez sélectionner un lieu valide parmi les régions de Madagascar.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const isoStartDate = formData.startDate
@@ -84,7 +120,7 @@ export default function MissionForm() {
             const finalUrl = `${basePath}?${finalParams.toString()}`;
             navigate(finalUrl);
           } else {
-            navigate("/mission/list"); 
+            navigate("/mission/list");
           }
         }, 1500);
       } else {
@@ -169,14 +205,18 @@ export default function MissionForm() {
                   </label>
                 </th>
                 <td className="form-input-cell">
-                  <input
-                    id="location"
-                    type="text"
+                  <AutoCompleteInput
                     value={formData.location}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, location: e.target.value }))}
-                    placeholder="Saisir le lieu de la mission..."
-                    className="form-input"
+                    onChange={(value) => setFormData((prev) => ({ ...prev, location: value }))}
+                    suggestions={regions}
+                    maxVisibleItems={3}
+                    placeholder="Saisir ou sélectionner un lieu..."
                     disabled={isSubmitting}
+                    onAddNew={(value) => handleAddNewSuggestion("location", value)}
+                    showAddOption={false}
+                    fieldType="location"
+                    fieldLabel="lieu"
+                    addNewRoute="/mission/region-form" // Adjust this route as needed
                   />
                 </td>
               </tr>

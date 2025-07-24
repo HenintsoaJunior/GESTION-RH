@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import Modal from "components/modal";
 import Alert from "components/alert";
 import AutoCompleteInput from "components/auto-complete-input";
 import * as FaIcons from "react-icons/fa";
 import { fetchEmployees } from "services/employee/employee";
 import { fetchAllMissions } from "services/mission/mission";
 import { fetchAllTransports } from "services/mission/transport";
+import { BASE_URL } from "config/apiConfig";
 
 // Messages d'erreur pour la validation
 export const errorMessagesMap = {
@@ -15,13 +17,11 @@ export const errorMessagesMap = {
   employeeId: "Veuillez sélectionner un bénéficiaire valide dans la liste.",
   mission: "La mission est requise.",
   missionId: "Veuillez sélectionner une mission valide dans la liste.",
-  transport: "Le moyen de transport est requis.",
-  transportId: "Veuillez sélectionner un moyen de transport valide dans la liste.",
   matricule: "Le matricule est requis.",
   function: "La fonction est requise.",
   base: "La base est requise.",
   direction: "La direction est requise.",
-  department: "Le département est requis.",
+  department: "Le département est requise.",
   service: "Le service est requis.",
   departureDate: "La date de départ est requise.",
   departureTime: "L'heure de départ est requise.",
@@ -53,7 +53,8 @@ export default function AssignMissionForm() {
     missionId: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
+  const [modal, setModal] = useState({ isOpen: false, type: "info", message: "" });
+   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [returnUrl, setReturnUrl] = useState("");
   const [fieldType, setFieldType] = useState("");
   const [suggestions, setSuggestions] = useState({
@@ -88,14 +89,15 @@ export default function AssignMissionForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Charger les suggestions et initialiser les paramètres d'URL
+  // Charger les suggestions et initialiser les paramètres d'URL une seule fois
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const initialValue = searchParams.get("initialValue") || "";
     const url = searchParams.get("returnUrl") || "";
     const type = searchParams.get("fieldType") || "";
+    const missionIdFromUrl = searchParams.get("missionId") || "";
 
-    setFormData((prev) => ({ ...prev, beneficiary: initialValue }));
+    setFormData((prev) => ({ ...prev, beneficiary: initialValue, missionId: missionIdFromUrl }));
     setReturnUrl(url);
     setFieldType(type);
 
@@ -107,16 +109,41 @@ export default function AssignMissionForm() {
           beneficiary: employees.map((emp) => ({
             id: emp.employeeId,
             name: `${emp.lastName} ${emp.firstName}`,
+            employeeCode: emp.employeeCode,
+            jobTitle: emp.jobTitle,
+            site: emp.site?.siteName,
+            direction: emp.direction?.directionName,
+            department: emp.department?.departmentName,
+            service: emp.service?.serviceName,
           })),
         }));
         setIsLoading((prev) => ({ ...prev, employees: false }));
+        // Préremplir les champs si initialValue est fourni
+        if (initialValue) {
+          const selectedEmployee = employees.find(
+            (emp) => `${emp.lastName} ${emp.firstName}` === initialValue
+          );
+          if (selectedEmployee) {
+            setFormData((prev) => ({
+              ...prev,
+              beneficiary: initialValue,
+              employeeId: selectedEmployee.employeeId || "",
+              matricule: selectedEmployee.employeeCode || "",
+              function: selectedEmployee.jobTitle || "",
+              base: selectedEmployee.site?.siteName || "",
+              direction: selectedEmployee.direction?.directionName || "",
+              department: selectedEmployee.department?.departmentName || "",
+              service: selectedEmployee.service?.serviceName || "",
+            }));
+          }
+        }
       },
       setIsLoading,
       setSuggestions,
-      (type, message) => setAlert({ isOpen: true, type, message })
+      (type, message) => setModal({ isOpen: true, type, message })
     );
 
-    // Charger les missions pour les suggestions
+    // Charger les missions pour les suggestions et gérer missionId
     fetchAllMissions(
       (missions) => {
         setSuggestions((prev) => ({
@@ -127,10 +154,23 @@ export default function AssignMissionForm() {
           })),
         }));
         setIsLoading((prev) => ({ ...prev, missions: false }));
+
+        if (missionIdFromUrl) {
+          const selectedMission = missions.find((m) => m.missionId === missionIdFromUrl);
+          if (selectedMission) {
+            setFormData((prev) => ({
+              ...prev,
+              mission: selectedMission.name,
+              missionId: selectedMission.missionId,
+            }));
+          } else {
+            setModal({ isOpen: true, type: "error", message: `Mission avec l'ID ${missionIdFromUrl} non trouvée.` });
+          }
+        }
       },
       setIsLoading,
       () => {},
-      (error) => setAlert({ isOpen: true, type: "error", message: error.message })
+      (error) => setModal({ isOpen: true, type: "error", message: error.message })
     );
 
     // Charger les transports pour les suggestions
@@ -147,66 +187,39 @@ export default function AssignMissionForm() {
       },
       setIsLoading,
       () => {},
-      (error) => setAlert({ isOpen: true, type: "error", message: error.message })
+      (error) => setModal({ isOpen: true, type: "error", message: error.message })
     );
   }, [location.search]);
 
-  // Mettre à jour les champs liés au bénéficiaire
+  // Mettre à jour les champs liés au bénéficiaire en utilisant les suggestions existantes
   useEffect(() => {
     if (formData.beneficiary) {
-      fetchEmployees(
-        (employees) => {
-          const selectedEmployee = employees.find(
-            (emp) => `${emp.lastName} ${emp.firstName}` === formData.beneficiary
-          );
-          if (selectedEmployee) {
-            setFormData((prev) => ({
-              ...prev,
-              employeeId: selectedEmployee.employeeId || "",
-              matricule: selectedEmployee.employeeCode || "",
-              function: selectedEmployee.jobTitle || "",
-              base: selectedEmployee.site?.siteName || "",
-              direction: selectedEmployee.direction?.directionName || "",
-              department: selectedEmployee.department?.departmentName || "",
-              service: selectedEmployee.service?.serviceName || "",
-            }));
-            setErrors((prev) => ({
-              ...prev,
-              employeeId: false,
-              matricule: false,
-              function: false,
-              base: false,
-              direction: false,
-              department: false,
-              service: false,
-            }));
-          } else {
-            setFormData((prev) => ({
-              ...prev,
-              employeeId: "",
-              matricule: "",
-              function: "",
-              base: "",
-              direction: "",
-              department: "",
-              service: "",
-            }));
-            setErrors((prev) => ({
-              ...prev,
-              employeeId: true,
-              matricule: true,
-              function: true,
-              base: true,
-              direction: true,
-              department: true,
-              service: true,
-            }));
-          }
-        },
-        setIsLoading,
-        setSuggestions,
-        (type, message) => setAlert({ isOpen: true, type, message })
+      const selectedEmployee = suggestions.beneficiary.find(
+        (emp) => emp.name === formData.beneficiary
       );
+      if (selectedEmployee) {
+        setFormData((prev) => ({
+          ...prev,
+          employeeId: selectedEmployee.id || "",
+          matricule: selectedEmployee.employeeCode || "",
+          function: selectedEmployee.jobTitle || "",
+          base: selectedEmployee.site || "",
+          direction: selectedEmployee.direction || "",
+          department: selectedEmployee.department || "",
+          service: selectedEmployee.service || "",
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          employeeId: "",
+          matricule: "",
+          function: "",
+          base: "",
+          direction: "",
+          department: "",
+          service: "",
+        }));
+      }
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -218,93 +231,99 @@ export default function AssignMissionForm() {
         department: "",
         service: "",
       }));
-      setErrors((prev) => ({
-        ...prev,
-        employeeId: false,
-        matricule: false,
-        function: false,
-        base: false,
-        direction: false,
-        department: false,
-        service: false,
-      }));
     }
-  }, [formData.beneficiary]);
+  }, [formData.beneficiary, suggestions.beneficiary]);
 
-  // Mettre à jour missionId lorsque la mission change
+  // Mettre à jour missionId en utilisant les suggestions existantes
   useEffect(() => {
     if (formData.mission) {
-      fetchAllMissions(
-        (missions) => {
-          const selectedMission = missions.find((m) => m.name === formData.mission);
-          if (selectedMission) {
-            setFormData((prev) => ({
-              ...prev,
-              missionId: selectedMission.missionId || "",
-            }));
-            setErrors((prev) => ({ ...prev, missionId: false }));
-          } else {
-            setFormData((prev) => ({
-              ...prev,
-              missionId: "",
-            }));
-            setErrors((prev) => ({ ...prev, missionId: true }));
-          }
-        },
-        setIsLoading,
-        () => {},
-        (error) => setAlert({ isOpen: true, type: "error", message: error.message })
-      );
+      const selectedMission = suggestions.mission.find((m) => m.name === formData.mission);
+      if (selectedMission) {
+        setFormData((prev) => ({
+          ...prev,
+          missionId: selectedMission.id || "",
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          missionId: "",
+        }));
+      }
     } else {
       setFormData((prev) => ({
         ...prev,
         missionId: "",
       }));
-      setErrors((prev) => ({ ...prev, missionId: false }));
     }
-  }, [formData.mission]);
+  }, [formData.mission, suggestions.mission]);
 
-  // Mettre à jour transportId lorsque le moyen de transport change
+  // Mettre à jour transportId en utilisant les suggestions existantes
   useEffect(() => {
     if (formData.transport) {
-      fetchAllTransports(
-        (transports) => {
-          const selectedTransport = transports.find((t) => t.type === formData.transport);
-          if (selectedTransport) {
-            setFormData((prev) => ({
-              ...prev,
-              transportId: selectedTransport.transportId || "",
-            }));
-            setErrors((prev) => ({ ...prev, transportId: false }));
-          } else {
-            setFormData((prev) => ({
-              ...prev,
-              transportId: "",
-            }));
-            setErrors((prev) => ({ ...prev, transportId: true }));
-          }
-        },
-        setIsLoading,
-        () => {},
-        (error) => setAlert({ isOpen: true, type: "error", message: error.message })
-      );
+      const selectedTransport = suggestions.transport.find((t) => t.type === formData.transport);
+      if (selectedTransport) {
+        setFormData((prev) => ({
+          ...prev,
+          transportId: selectedTransport.id || "",
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          transportId: "",
+        }));
+      }
     } else {
       setFormData((prev) => ({
         ...prev,
         transportId: "",
       }));
-      setErrors((prev) => ({ ...prev, transportId: false }));
     }
-  }, [formData.transport]);
+  }, [formData.transport, suggestions.transport]);
+
+  // Calculer automatiquement la date de retour
+  useEffect(() => {
+    if (formData.departureDate && formData.missionDuration) {
+      const departure = new Date(formData.departureDate);
+      const duration = parseInt(formData.missionDuration, 10);
+
+      // Vérifier si la date de départ est valide et la durée est positive
+      if (!isNaN(departure.getTime()) && duration > 0) {
+        const returnDate = new Date(departure);
+        returnDate.setDate(departure.getDate() + duration);
+
+        // Formater la date de retour au format YYYY-MM-DD
+        const formattedReturnDate = returnDate.toISOString().split("T")[0];
+
+        setFormData((prev) => ({
+          ...prev,
+          returnDate: formattedReturnDate,
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          returnDate: "",
+        }));
+      }
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        returnDate: "",
+      }));
+    }
+  }, [formData.departureDate, formData.missionDuration]);
+
+  const showModal = (type, message) => {
+    setModal({ isOpen: true, type, message });
+  };
 
   const showAlert = (type, message) => {
     setAlert({ isOpen: true, type, message });
   };
 
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: false }));
   };
 
   const handleAddNewSuggestion = (value, field) => {
@@ -326,8 +345,8 @@ export default function AssignMissionForm() {
       service: !formData.service,
       mission: !formData.mission,
       missionId: !formData.missionId,
-      transport: !formData.transport,
-      transportId: !formData.transportId,
+      transport: false, // Le champ transport n'est plus requis
+      transportId: false, // Le champ transportId n'est plus requis
       departureDate: !formData.departureDate,
       departureTime: !formData.departureTime,
       missionDuration: !formData.missionDuration || formData.missionDuration <= 0,
@@ -342,7 +361,7 @@ export default function AssignMissionForm() {
       .map((key) => errorMessagesMap[key]);
 
     if (errorMessages.length > 0) {
-      showAlert("error", `Veuillez corriger les erreurs suivantes :\n${errorMessages.join("\n")}`);
+      showModal("error", `${errorMessages.join("\n")}`);
       return false;
     }
 
@@ -364,7 +383,7 @@ export default function AssignMissionForm() {
     const payload = {
       employeeId: formData.employeeId,
       missionId: formData.missionId,
-      transportId: formData.transportId,
+      transportId: formData.transportId || null, // Envoyer null si pas de transport sélectionné
       departureDate: departureDateTime,
       departureTime: formData.departureTime,
       returnDate: returnDateTime,
@@ -373,7 +392,7 @@ export default function AssignMissionForm() {
     };
 
     try {
-      const response = await fetch("http://localhost:5183/api/MissionAssignation", {
+      const response = await fetch(`${BASE_URL}/api/MissionAssignation`, {
         method: "POST",
         headers: {
           accept: "*/*",
@@ -408,10 +427,10 @@ export default function AssignMissionForm() {
       } else {
         const errorData = await response.json();
         const message = errorData.message || `Erreur ${response.status}: Échec de l'assignation de la mission.`;
-        showAlert("error", message);
+        showModal("error", message);
       }
     } catch (error) {
-      showAlert("error", "Erreur de connexion. Veuillez vérifier votre connexion et réessayer.");
+      showModal("error", "Erreur de connexion. Veuillez vérifier votre connexion et réessayer.");
     } finally {
       setIsSubmitting(false);
     }
@@ -464,10 +483,16 @@ export default function AssignMissionForm() {
   return (
     <div className="form-container">
       <Alert
-        type={alert.type}
-        message={alert.message}
-        isOpen={alert.isOpen}
-        onClose={() => setAlert({ ...alert, isOpen: false })}
+          type={alert.type}
+          message={alert.message}
+          isOpen={alert.isOpen}
+          onClose={() => setAlert({ ...alert, isOpen: false })}
+        />
+      <Modal
+        type={modal.type}
+        message={modal.message}
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ ...modal, isOpen: false })}
       />
       <div className="table-header">
         <h2 className="table-title">Assignation d'une Mission</h2>
@@ -486,7 +511,6 @@ export default function AssignMissionForm() {
                     value={formData.mission}
                     onChange={(value) => {
                       setFormData((prev) => ({ ...prev, mission: value }));
-                      setErrors((prev) => ({ ...prev, mission: false, missionId: false }));
                     }}
                     suggestions={suggestions.mission.map((m) => m.name)}
                     placeholder={
@@ -514,7 +538,6 @@ export default function AssignMissionForm() {
                     value={formData.beneficiary}
                     onChange={(value) => {
                       setFormData((prev) => ({ ...prev, beneficiary: value }));
-                      setErrors((prev) => ({ ...prev, beneficiary: false, employeeId: false }));
                     }}
                     suggestions={suggestions.beneficiary.map((b) => b.name)}
                     placeholder={
@@ -543,7 +566,6 @@ export default function AssignMissionForm() {
                     onChange={handleChange}
                     placeholder="Saisir le matricule..."
                     className={`form-input ${errors.matricule ? "input-error" : ""}`}
-                    required
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -561,7 +583,6 @@ export default function AssignMissionForm() {
                     onChange={handleChange}
                     placeholder="Saisir la fonction..."
                     className={`form-input ${errors.function ? "input-error" : ""}`}
-                    required
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -579,7 +600,6 @@ export default function AssignMissionForm() {
                     onChange={handleChange}
                     placeholder="Saisir la base..."
                     className={`form-input ${errors.base ? "input-error" : ""}`}
-                    required
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -595,7 +615,6 @@ export default function AssignMissionForm() {
                     onChange={handleChange}
                     placeholder="Saisir la direction..."
                     className={`form-input ${errors.direction ? "input-error" : ""}`}
-                    required
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -613,7 +632,6 @@ export default function AssignMissionForm() {
                     onChange={handleChange}
                     placeholder="Saisir le département..."
                     className={`form-input ${errors.department ? "input-error" : ""}`}
-                    required
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -629,7 +647,6 @@ export default function AssignMissionForm() {
                     onChange={handleChange}
                     placeholder="Saisir le service..."
                     className={`form-input ${errors.service ? "input-error" : ""}`}
-                    required
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -651,14 +668,13 @@ export default function AssignMissionForm() {
                   />
                 </td>
                 <th className="form-label-cell">
-                  <label className="form-label form-label-required">Moyen de transport</label>
+                  <label className="form-label">Moyen de transport</label>
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
                     value={formData.transport}
                     onChange={(value) => {
                       setFormData((prev) => ({ ...prev, transport: value }));
-                      setErrors((prev) => ({ ...prev, transport: false, transportId: false }));
                     }}
                     suggestions={suggestions.transport.map((t) => t.type)}
                     placeholder={
@@ -672,7 +688,7 @@ export default function AssignMissionForm() {
                     onAddNew={(value) => handleAddNewSuggestion(value, "transport")}
                     fieldType="transport"
                     fieldLabel="moyen de transport"
-                    addNewRoute="/transport/create"
+                    addNewRoute="/mission/transport/create"
                     className={errors.transport || errors.transportId ? "input-error" : ""}
                   />
                 </td>
@@ -688,7 +704,6 @@ export default function AssignMissionForm() {
                     value={formData.departureDate}
                     onChange={handleChange}
                     className={`form-input ${errors.departureDate ? "input-error" : ""}`}
-                    required
                     disabled={isSubmitting}
                   />
                 </td>
@@ -702,7 +717,6 @@ export default function AssignMissionForm() {
                     value={formData.departureTime}
                     onChange={handleChange}
                     className={`form-input ${errors.departureTime ? "input-error" : ""}`}
-                    required
                     disabled={isSubmitting}
                   />
                 </td>
@@ -719,7 +733,6 @@ export default function AssignMissionForm() {
                     onChange={handleChange}
                     placeholder="Saisir la durée (jours)..."
                     className={`form-input ${errors.missionDuration ? "input-error" : ""}`}
-                    required
                     disabled={isSubmitting}
                     min="1"
                   />
@@ -738,8 +751,8 @@ export default function AssignMissionForm() {
                     value={formData.returnDate}
                     onChange={handleChange}
                     className={`form-input ${errors.returnDate ? "input-error" : ""}`}
-                    required
                     disabled={isSubmitting}
+                    readOnly
                   />
                 </td>
                 <th className="form-label-cell">
@@ -752,7 +765,6 @@ export default function AssignMissionForm() {
                     value={formData.returnTime}
                     onChange={handleChange}
                     className={`form-input ${errors.returnTime ? "input-error" : ""}`}
-                    required
                     disabled={isSubmitting}
                   />
                 </td>

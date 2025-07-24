@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
+using MyApp.Api.Models.form.mission;
 using MyApp.Api.Services.mission;
 
 namespace MyApp.Api.Controllers.mission
@@ -34,15 +35,19 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpPost]
-        public async Task<ActionResult<string>> Create([FromBody] Transport transport)
+        public async Task<ActionResult<Transport>> Create([FromBody] TransportDTOForm transportDtoForm)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
+            var transport = new Transport
+            {
+                Type = transportDtoForm.Type
+            };
 
-            var transportId = await _transportService.CreateAsync(transport);
-            return CreatedAtAction(nameof(GetById), new { id = transportId }, transportId);
+            await _transportService.CreateAsync(transport);
+            return Ok(transport);
         }
 
         [HttpPut("{id}")]

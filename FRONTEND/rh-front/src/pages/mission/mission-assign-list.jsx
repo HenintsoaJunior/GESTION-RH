@@ -146,15 +146,17 @@ const AssignedPersonsList = () => {
   const totalPages = Math.ceil(filteredAssignedPersons.length / pageSize);
 
   const getStatusBadge = (status) => {
-    const statusClass =
-      status === "En Cours"
-        ? "status-progress"
-        : status === "Planifié"
-        ? "status-pending"
-        : status === "Terminé"
-        ? "status-approved"
-        : "status-pending";
-    return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
+      const statusClass =
+        status === "En Cours"
+          ? "status-progress"
+          : status === "Planifié"
+          ? "status-pending"
+          : status === "Terminé"
+          ? "status-approved"
+          : status === "Annulé"
+          ? "status-cancelled"
+          : "status-pending";
+      return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
   };
 
   const renderPagination = () => {

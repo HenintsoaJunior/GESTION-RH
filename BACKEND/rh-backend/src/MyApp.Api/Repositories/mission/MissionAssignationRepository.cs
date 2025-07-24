@@ -42,6 +42,11 @@ namespace MyApp.Api.Repositories.mission
         {
             return await _context.MissionAssignations
                 .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Direction)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Department)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Service)
                 .Include(ma => ma.Mission)
                 .Include(ma => ma.Transport)
                 .FirstOrDefaultAsync(ma => 
@@ -54,6 +59,11 @@ namespace MyApp.Api.Repositories.mission
         {
             return await _context.MissionAssignations
                 .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Direction)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Department)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Service)
                 .Include(ma => ma.Mission)
                 .Include(ma => ma.Transport)
                 .FirstOrDefaultAsync(ma => 

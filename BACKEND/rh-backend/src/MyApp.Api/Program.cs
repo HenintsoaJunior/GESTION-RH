@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Extensions;
+using MyApp.Api.Services.mission;
 using Utils.pdf;
 using MyApp.Api.Utils.generator;
 
@@ -10,7 +11,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", builder =>
     {
-        builder.WithOrigins("http://localhost:3000")
+        builder.WithOrigins("http://172.20.0.1:3000")
                .AllowAnyHeader()
                .AllowAnyMethod();
     });
@@ -18,7 +19,6 @@ builder.Services.AddCors(options =>
 
 
 builder.Services.AddScoped<ISequenceGenerator, SequenceGenerator>();
-
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 

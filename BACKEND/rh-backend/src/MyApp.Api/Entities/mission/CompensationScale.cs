@@ -14,16 +14,14 @@ namespace MyApp.Api.Entities.mission
 
         [Column("amount", TypeName = "decimal(15,2)")]
         public decimal Amount { get; set; }
-
-        [Required]
+        
         [Column("transport_id")]
         [MaxLength(50)]
-        public string TransportId { get; set; } = null!;
-
-        [Required]
+        public string? TransportId { get; set; }
+        
         [Column("expense_type_id")]
         [MaxLength(50)]
-        public string ExpenseTypeId { get; set; } = null!;
+        public string? ExpenseTypeId { get; set; }
 
         [Required]
         [Column("employee_category_id")]

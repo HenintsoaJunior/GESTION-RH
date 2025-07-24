@@ -16,6 +16,7 @@ namespace MyApp.Api.Repositories.mission
         Task DeleteAsync(Mission mission);
         Task SaveChangesAsync();
         Task<MissionStats> GetStatisticsAsync();
+        Task<bool> CancelAsync(string id);
     }
 
     public class MissionRepository : IMissionRepository
@@ -104,6 +105,18 @@ namespace MyApp.Api.Repositories.mission
             await _context.SaveChangesAsync();
         }
 
+        public async Task<bool> CancelAsync(string id)
+        {
+            var mission = await _context.Missions
+                .FirstOrDefaultAsync(m => m.MissionId == id);
+            if (mission == null) return false;
+
+            mission.Status = "Annulé";
+            _context.Missions.Update(mission);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<MissionStats> GetStatisticsAsync()
         {
             var total = await _context.Missions.CountAsync();
@@ -125,6 +138,5 @@ namespace MyApp.Api.Repositories.mission
                 Annulee = annulee
             };
         }
-
     }
 }

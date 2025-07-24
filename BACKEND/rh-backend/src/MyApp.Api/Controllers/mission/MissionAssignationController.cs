@@ -16,6 +16,36 @@ namespace MyApp.Api.Controllers.mission
         {
             _service = service;
         }
+        
+        [HttpPost("generate-excel")]
+        public async Task<IActionResult> GenerateExcel([FromBody] GeneratePaiementDTO generatePaiementDTO)
+        {
+            if (generatePaiementDTO == null || 
+                string.IsNullOrWhiteSpace(generatePaiementDTO.EmployeeId) || 
+                string.IsNullOrWhiteSpace(generatePaiementDTO.MissionId))
+            {
+                return BadRequest("Valid EmployeeId and MissionId are required.");
+            }
+
+            try
+            {
+                var excelBytes = await _service.GenerateExcelReportAsync(
+                    generatePaiementDTO.EmployeeId,
+                    generatePaiementDTO.MissionId);
+
+                string excelName = $"MissionPaymentReport-{generatePaiementDTO.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                
+                return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while generating the Excel file: {ex.Message}");
+            }
+        }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MissionAssignation>>> GetAll()
@@ -31,42 +61,41 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
-        [HttpGet("{employeeId}/{missionId}/{transportId}")]
-        public async Task<ActionResult<MissionAssignation>> GetById(string employeeId, string missionId, string transportId)
+        [HttpGet("{employeeId}/{missionId}/{transportId?}")]
+        public async Task<ActionResult<MissionAssignation>> GetById(string employeeId, string missionId, string? transportId)
         {
-            try
+            var missionAssignation = await _service.GetByIdAsync(employeeId, missionId, transportId);
+            if (missionAssignation == null)
             {
-                var missionAssignation = await _service.GetByIdAsync(employeeId, missionId, transportId);
-                if (missionAssignation == null)
-                {
-                    return NotFound("Mission assignation not found.");
-                }
-                return Ok(missionAssignation);
+                return NotFound();
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            return Ok(missionAssignation);
         }
 
         [HttpPost]
+        [HttpPost]
         public async Task<ActionResult> Create([FromBody] MissionAssignationDTOForm dto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState); // Return validation errors for debugging
+            }
+
             try
             {
                 var missionAssignation = new MissionAssignation(dto);
-                
                 var (employeeId, missionId, transportId) = await _service.CreateAsync(missionAssignation);
-                return CreatedAtAction(nameof(GetById), 
-                    new { employeeId, missionId, transportId }, 
-                    missionAssignation);
+        
+                // Handle null transportId in route values
+                var routeValues = new { employeeId, missionId, transportId = transportId ?? string.Empty };
+                return CreatedAtAction(nameof(GetById), routeValues, missionAssignation);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
-
+        
         [HttpPut("{employeeId}/{missionId}/{transportId}")]
         public async Task<ActionResult> Update(string employeeId, string missionId, string transportId, [FromBody] MissionAssignationDTOForm dto)
         {

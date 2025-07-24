@@ -8,6 +8,7 @@ import moment from "moment";
 import { formatDate } from "utils/generalisation";
 import { fetchMissions, fetchMissionStats } from "services/mission/mission"; // Importer le service
 import Alert from "components/alert";
+import { BASE_URL } from "config/apiConfig";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "styles/generic-table-styles.css";
 
@@ -33,6 +34,37 @@ const MissionList = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [viewMode, setViewMode] = useState("list");
+
+  // Fonction pour obtenir la couleur selon le statut
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "En Cours":
+        return "#3b82f6"; // Bleu
+      case "Planifié":
+        return "#f59e0b"; // Orange/Amber
+      case "Terminé":
+        return "#10b981"; // Vert
+      case "Annulé":
+        return "#ef4444"; // Rouge
+      default:
+        return "#6b7280"; // Gris par défaut
+    }
+  };
+
+  // Style personnalisé pour les événements du calendrier
+  const eventStyleGetter = (event) => {
+    const backgroundColor = getStatusColor(event.resource.status);
+    return {
+      style: {
+        backgroundColor,
+        borderRadius: '5px',
+        opacity: 0.8,
+        color: 'white',
+        border: '0px',
+        display: 'block'
+      }
+    };
+  };
 
   // Gestion des erreurs
   const handleError = useCallback((error) => {
@@ -113,8 +145,42 @@ const MissionList = () => {
     }
   };
 
+  const handleCancelMission = async (missionId) => {
+    setIsLoading((prev) => ({ ...prev, missions: true }));
+    try {
+      const response = await fetch(`${BASE_URL}/api/Mission/${missionId}/cancel`, {
+        method: "PUT",
+        headers: {
+          accept: "*/*",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP ${response.status}: Impossible d'annuler la mission.`);
+      }
+
+      setAlert({
+        isOpen: true,
+        type: "success",
+        message: `Mission ${missionId} annulée avec succès.`,
+      });
+
+      // Rafraîchir la liste des missions et les statistiques
+      await fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, currentPage, pageSize, handleError);
+      await fetchMissionStats(setStats, setIsLoading, handleError);
+    } catch (error) {
+      handleError({
+        isOpen: true,
+        type: "error",
+        message: error.message || "Une erreur est survenue lors de l'annulation de la mission.",
+      });
+    } finally {
+      setIsLoading((prev) => ({ ...prev, missions: false }));
+    }
+  };
+
   const handleEventClick = (event) => {
-    navigate(`/missions/details/${event.id}`);
+    navigate(`/mission/assign-mission/${event.id}`);
   };
 
   const handleSelectSlot = ({ start }) => {
@@ -384,6 +450,57 @@ const MissionList = () => {
         </div>
       </div>
 
+      {/* Légende des couleurs pour le calendrier */}
+      {viewMode === "calendar" && (
+        <div className="calendar-legend" style={{ 
+          marginBottom: '20px', 
+          padding: '15px', 
+          backgroundColor: '#f8f9fa', 
+          borderRadius: '8px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '15px',
+          justifyContent: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ 
+              width: '20px', 
+              height: '20px', 
+              backgroundColor: '#3b82f6', 
+              borderRadius: '4px' 
+            }}></div>
+            <span>En Cours</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ 
+              width: '20px', 
+              height: '20px', 
+              backgroundColor: '#f59e0b', 
+              borderRadius: '4px' 
+            }}></div>
+            <span>Planifié</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ 
+              width: '20px', 
+              height: '20px', 
+              backgroundColor: '#10b981', 
+              borderRadius: '4px' 
+            }}></div>
+            <span>Terminé</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ 
+              width: '20px', 
+              height: '20px', 
+              backgroundColor: '#ef4444', 
+              borderRadius: '4px' 
+            }}></div>
+            <span>Annulé</span>
+          </div>
+        </div>
+      )}
+
       {viewMode === "list" ? (
         <>
           <div className="table-container">
@@ -396,12 +513,13 @@ const MissionList = () => {
                   <th>Date de début</th>
                   <th>Statut</th>
                   <th>Date de création</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading.missions ? (
                   <tr>
-                    <td colSpan={6}>Chargement...</td>
+                    <td colSpan={7}>Chargement...</td>
                   </tr>
                 ) : missions.length > 0 ? (
                   missions.map((mission) => (
@@ -416,11 +534,23 @@ const MissionList = () => {
                       <td>{formatDate(mission.startDate) || "Non spécifié"}</td>
                       <td>{getStatusBadge(mission.status)}</td>
                       <td>{formatDate(mission.createdAt) || "Non spécifié"}</td>
+                      <td>
+                        <button
+                          className="btn-cancel"
+                          onClick={(e) => {
+                            e.stopPropagation(); // Empêche le clic sur la ligne
+                            handleCancelMission(mission.missionId);
+                          }}
+                          disabled={mission.status === "Annulé" || mission.status === "Terminé"}
+                        >
+                          Annuler
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6}>Aucune donnée trouvée.</td>
+                    <td colSpan={7}>Aucune donnée trouvée.</td>
                   </tr>
                 )}
               </tbody>
@@ -462,6 +592,7 @@ const MissionList = () => {
             views={["month", "week", "day"]}
             defaultView="month"
             style={{ height: "100%" }}
+            eventPropGetter={eventStyleGetter}
           />
         </div>
       )}

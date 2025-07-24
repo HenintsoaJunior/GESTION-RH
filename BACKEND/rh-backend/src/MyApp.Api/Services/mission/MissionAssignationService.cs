@@ -2,10 +2,14 @@ using MyApp.Api.Entities.mission;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Utils.generator;
 using MyApp.Api.Models.search.mission;
+using MyApp.Api.Services.employee;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using ClosedXML.Excel;
+using System.IO;
+using System.Linq;
 
 namespace MyApp.Api.Services.mission
 {
@@ -19,6 +23,7 @@ namespace MyApp.Api.Services.mission
         Task<bool> UpdateAsync(MissionAssignation missionAssignation);
         Task<bool> DeleteAsync(string employeeId, string missionId, string transportId);
         Task<IEnumerable<MissionPaiement>> GeneratePaiementsAsync(string employeeId, string missionId);
+        Task<byte[]> GenerateExcelReportAsync(string employeeId, string missionId);
     }
 
     public class MissionAssignationService : IMissionAssignationService
@@ -27,21 +32,24 @@ namespace MyApp.Api.Services.mission
         private readonly IMissionService _missionService;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ICompensationScaleService _compensationScaleService;
+        private readonly ICategoriesOfEmployeeService _categoriesOfEmployeeService;
         private readonly ILogger<MissionAssignationService> _logger;
-        private readonly ILoggerFactory _loggerFactory; // Added for creating ILogger<MissionPaiement>
+        private readonly ILoggerFactory _loggerFactory;
 
         public MissionAssignationService(
             IMissionAssignationRepository repository,
             IMissionService missionService,
             ISequenceGenerator sequenceGenerator,
             ICompensationScaleService compensationScaleService,
+            ICategoriesOfEmployeeService categoriesOfEmployeeService,
             ILogger<MissionAssignationService> logger,
-            ILoggerFactory loggerFactory) // Added ILoggerFactory
+            ILoggerFactory loggerFactory)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _missionService = missionService ?? throw new ArgumentNullException(nameof(missionService));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
             _compensationScaleService = compensationScaleService ?? throw new ArgumentNullException(nameof(compensationScaleService));
+            _categoriesOfEmployeeService = categoriesOfEmployeeService ?? throw new ArgumentNullException(nameof(categoriesOfEmployeeService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
@@ -157,9 +165,9 @@ namespace MyApp.Api.Services.mission
                     throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
                 }
 
-                // Create MissionPaiement instance with logger created from ILoggerFactory
+                // Create MissionPaiement instance with logger and ICategoriesOfEmployeeService
                 var missionPaiementLogger = _loggerFactory.CreateLogger<MissionPaiement>();
-                var missionPaiement = new MissionPaiement(missionPaiementLogger);
+                var missionPaiement = new MissionPaiement(missionPaiementLogger, _categoriesOfEmployeeService);
                 var paiements = await missionPaiement.GeneratePaiement(missionAssignation, _compensationScaleService);
 
                 if (paiements == null || !paiements.Any())
@@ -179,6 +187,161 @@ namespace MyApp.Api.Services.mission
                     employeeId, missionId);
                 throw new Exception($"Error generating payments: {ex.Message}", ex);
             }
+        }
+
+        public async Task<byte[]> GenerateExcelReportAsync(string employeeId, string missionId)
+        {
+            try
+            {
+                _logger.LogInformation("Starting Excel report generation for EmployeeId: {EmployeeId}, MissionId: {MissionId}", 
+                    employeeId, missionId);
+
+                var missionPayments = await GeneratePaiementsAsync(employeeId, missionId);
+
+                if (missionPayments == null || !missionPayments.Any())
+                {
+                    _logger.LogWarning("No payment data found for Excel generation - EmployeeId: {EmployeeId}, MissionId: {MissionId}", 
+                        employeeId, missionId);
+                    throw new InvalidOperationException("No payment data found for the specified mission and employee.");
+                }
+
+                using var workbook = new XLWorkbook();
+                var worksheet = workbook.Worksheets.Add("Mission Payment Report");
+
+                // Headers for the table
+                int tableStartRow = 1;
+                worksheet.Cell(tableStartRow, 1).Value = "Bénéficiaire";
+                worksheet.Cell(tableStartRow, 2).Value = "Matricule";
+                worksheet.Cell(tableStartRow, 3).Value = "Date";
+                worksheet.Cell(tableStartRow, 4).Value = "Transport";
+                worksheet.Cell(tableStartRow, 5).Value = "Petit Déjeuner";
+                worksheet.Cell(tableStartRow, 6).Value = "Déjeuner";
+                worksheet.Cell(tableStartRow, 7).Value = "Dîner";
+                worksheet.Cell(tableStartRow, 8).Value = "Hébergement";
+                worksheet.Cell(tableStartRow, 9).Value = "Montant Total";
+
+                // Style headers
+                var headerRange = worksheet.Range($"A{tableStartRow}:I{tableStartRow}");
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+                headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                // Transform data to match the required structure
+                var transformedData = TransformPaymentDataForExcel(missionPayments);
+
+                // Write data to worksheet
+                WriteDataToWorksheet(worksheet, transformedData, tableStartRow);
+
+                // Add cumulative total row
+                AddTotalRow(worksheet, transformedData, tableStartRow);
+
+                // Auto-fit columns
+                worksheet.Columns().AdjustToContents();
+
+                // Save to stream and return bytes
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+                
+                _logger.LogInformation("Excel report successfully generated for EmployeeId: {EmployeeId}, MissionId: {MissionId}", 
+                    employeeId, missionId);
+                
+                return stream.ToArray();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating Excel report for EmployeeId: {EmployeeId}, MissionId: {MissionId}", 
+                    employeeId, missionId);
+                throw new Exception($"Error generating Excel report: {ex.Message}", ex);
+            }
+        }
+
+        private List<dynamic> TransformPaymentDataForExcel(IEnumerable<MissionPaiement> missionPayments)
+        {
+            return missionPayments.Select(item =>
+            {
+                var compensationScales = item.CompensationScales ?? new List<CompensationScale>();
+                var assignment = item.MissionAssignation;
+                var employee = assignment.Employee;
+
+                var lunchAmount = compensationScales
+                    .Where(scale => scale.ExpenseType?.Type == "Déjeuner")
+                    .Sum(scale => scale.Amount);
+
+                var dinnerAmount = compensationScales
+                    .Where(scale => scale.ExpenseType?.Type == "Diner")
+                    .Sum(scale => scale.Amount);
+
+                var breakfastAmount = compensationScales
+                    .Where(scale => scale.ExpenseType?.Type == "Petit Déjeuner")
+                    .Sum(scale => scale.Amount);
+
+                var accommodationAmount = compensationScales
+                    .Where(scale => scale.ExpenseType?.Type == "Hébergement")
+                    .Sum(scale => scale.Amount);
+
+                var transportAmount = compensationScales
+                    .Where(scale => scale.TransportId == assignment.TransportId && scale.TransportId != null)
+                    .Sum(scale => scale.Amount);
+
+                var totalAmount = compensationScales.Sum(scale => scale.Amount);
+
+                return new
+                {
+                    Beneficiary = $"{employee.FirstName} {employee.LastName}",
+                    EmployeeCode = employee.EmployeeCode,
+                    Date = item.Date,
+                    Transport = transportAmount,
+                    Breakfast = breakfastAmount,
+                    Lunch = lunchAmount,
+                    Dinner = dinnerAmount,
+                    Accommodation = accommodationAmount,
+                    Total = totalAmount
+                };
+            }).ToList<dynamic>();
+        }
+
+        private void WriteDataToWorksheet(IXLWorksheet worksheet, List<dynamic> transformedData, int tableStartRow)
+        {
+            for (int i = 0; i < transformedData.Count; i++)
+            {
+                var row = tableStartRow + i + 1;
+                var data = transformedData[i];
+                
+                worksheet.Cell(row, 1).Value = data.Beneficiary;
+                worksheet.Cell(row, 2).Value = data.EmployeeCode;
+                
+                try
+                {
+                    worksheet.Cell(row, 3).Value = data.Date?.ToString("dd/MM/yyyy") ?? "Non spécifié";
+                }
+                catch
+                {
+                    worksheet.Cell(row, 3).Value = "Date invalide";
+                }
+                
+                worksheet.Cell(row, 4).Value = data.Transport;
+                worksheet.Cell(row, 5).Value = data.Breakfast;
+                worksheet.Cell(row, 6).Value = data.Lunch;
+                worksheet.Cell(row, 7).Value = data.Dinner;
+                worksheet.Cell(row, 8).Value = data.Accommodation;
+                worksheet.Cell(row, 9).Value = data.Total;
+
+                // Apply number format for monetary columns
+                worksheet.Range($"D{row}:I{row}").Style.NumberFormat.Format = "#,##0";
+            }
+        }
+
+        private void AddTotalRow(IXLWorksheet worksheet, List<dynamic> transformedData, int tableStartRow)
+        {
+            var totalRow = tableStartRow + transformedData.Count + 1;
+            worksheet.Cell(totalRow, 1).Value = "Total Cumulé";
+            worksheet.Cell(totalRow, 9).Value = transformedData.Sum(x => (decimal)x.Total);
+            worksheet.Cell(totalRow, 9).Style.NumberFormat.Format = "#,##0";
+
+            // Style total row
+            var totalRange = worksheet.Range($"A{totalRow}:I{totalRow}");
+            totalRange.Style.Font.Bold = true;
+            totalRange.FirstCell().Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
         }
 
         public async Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(
