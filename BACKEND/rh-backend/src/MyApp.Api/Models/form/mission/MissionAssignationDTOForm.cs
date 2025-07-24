@@ -11,10 +11,9 @@ public class MissionAssignationDTOForm
     [Required]
     [MaxLength(50)]
     public string MissionId { get; set; } = null!;
-
-    [Required]
+    
     [MaxLength(50)]
-    public string TransportId { get; set; } = null!;
+    public string? TransportId { get; set; }
 
     [Required]
     public DateTime DepartureDate { get; set; }
@@ -22,5 +21,5 @@ public class MissionAssignationDTOForm
     public TimeSpan? DepartureTime { get; set; }
     public DateTime? ReturnDate { get; set; }
     public TimeSpan? ReturnTime { get; set; }
-    public int Duration { get; set; }
+    public int? Duration { get; set; }
 }
