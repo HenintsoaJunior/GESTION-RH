@@ -7,7 +7,7 @@ using MyApp.Api.Models.form.mission;
 namespace MyApp.Api.Entities.mission
 {
     [Table("mission_assignation")]
-    [PrimaryKey(nameof(EmployeeId), nameof(MissionId),nameof(TransportId))]
+    [PrimaryKey(nameof(EmployeeId), nameof(MissionId))]
     public class MissionAssignation
     {
         [Column("employee_id", Order = 0)]
@@ -20,7 +20,7 @@ namespace MyApp.Api.Entities.mission
 
         [Column("transport_id", Order = 2)]
         [MaxLength(50)]
-        public string TransportId { get; set; } = null!;
+        public string? TransportId { get; set; }
 
         [Required]
         [Column("departure_date")]

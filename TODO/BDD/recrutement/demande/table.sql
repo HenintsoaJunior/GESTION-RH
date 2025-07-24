@@ -1,4 +1,10 @@
--- Tables sans dépendants ou en bout de chaîne de dépendances
+-- Tables les plus dépendantes (feuilles de dépendance)
+DROP TABLE IF EXISTS mission_assignation;
+DROP TABLE IF EXISTS compensation_scale;
+DROP TABLE IF EXISTS mission;
+DROP TABLE IF EXISTS transport;
+DROP TABLE IF EXISTS expense_type;
+
 DROP TABLE IF EXISTS approval_flow_employee;
 DROP TABLE IF EXISTS recruitment_approval;
 DROP TABLE IF EXISTS employee_nationalities;
@@ -9,7 +15,6 @@ DROP TABLE IF EXISTS application_comments;
 DROP TABLE IF EXISTS cv_details;
 DROP TABLE IF EXISTS applications;
 DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS candidates;
 DROP TABLE IF EXISTS categories_of_employee;
 DROP TABLE IF EXISTS employees;
 DROP TABLE IF EXISTS job_offers;
@@ -27,6 +32,7 @@ DROP TABLE IF EXISTS employee_categories;
 DROP TABLE IF EXISTS working_time_types;
 DROP TABLE IF EXISTS recruitment_reasons;
 DROP TABLE IF EXISTS replacement_reasons;
+DROP TABLE IF EXISTS candidates;
 DROP TABLE IF EXISTS approval_flow;
 
 

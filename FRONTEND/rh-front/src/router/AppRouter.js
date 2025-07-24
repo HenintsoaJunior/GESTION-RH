@@ -15,6 +15,8 @@ import MissionList from 'pages/mission/mission-list';
 import AssignMissionForm from 'pages/mission/mission-assign-form';
 import AssignedPersonsList from 'pages/mission/mission-assign-list';
 import AssignmentDetails from 'pages/mission/mission-assign-details';
+import TransportForm from 'pages/mission/transport';
+import DashboardHome from 'pages/dashboard';
 
 function AppRouter() {
   return (
@@ -22,6 +24,8 @@ function AppRouter() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route element={<Template><Outlet /></Template>}>
+          <Route path="/dashboard" element={<DashboardHome />} />
+          
           {/* Recrutement */}
           <Route path="/recruitment/recruitment-request/list" element={<RecruitmentRequestList />} />
           <Route path="/recruitment/recruitment-request/create" element={<RecruitmentRequestForm />} />
@@ -38,8 +42,10 @@ function AppRouter() {
           <Route path="/mission/create" element={<MissionForm />} />
           <Route path="/mission/list" element={<MissionList />} />
           <Route path="/mission/assign" element={<AssignMissionForm />} />
+          <Route path="/mission/transport/create" element={<TransportForm />} />
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
           <Route path="/assignments/details" element={<AssignmentDetails />} />
+          
         </Route>
       </Routes>
     </BrowserRouter>

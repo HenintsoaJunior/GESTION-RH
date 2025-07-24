@@ -33,6 +33,7 @@ export default function Template({ children }) {
 
   // Retrieve user data from localStorage
   const user = JSON.parse(localStorage.getItem("user")) || {
+    userId: "USER DEFAULT",
     firstName: "John",
     lastName: "Doe",
     role: "Administrateur",
@@ -484,7 +485,7 @@ export default function Template({ children }) {
                 <div className="user-profile">
                   <div className="user-avatar">{getInitials(user.firstName, user.lastName)}</div>
                   <div className="user-info">
-                    <span className="user-name">{`${user.firstName} ${user.lastName}`}</span>
+                    <span className="user-name">{`${user.userId}`}</span>
                     <span className="user-role">{user.role}</span>
                   </div>
                   <FaIcons.FaChevronDown className="dropdown-arrow" />

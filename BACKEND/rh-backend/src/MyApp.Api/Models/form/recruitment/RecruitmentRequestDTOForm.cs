@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using MyApp.Api.Model.form.employee;
 namespace MyApp.Api.Models.form.recruitment
 {
     public class RecruitmentRequestDTOForm

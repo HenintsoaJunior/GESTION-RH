@@ -1,6 +1,7 @@
 "use client";
 
 import { BASE_URL } from "config/apiConfig";
+
 export const fetchMissionPayment = async (
   missionId,
   employeeId,
@@ -11,13 +12,14 @@ export const fetchMissionPayment = async (
   try {
     setIsLoading((prev) => ({ ...prev, missionPayment: true }));
 
-    // Add validation for required parameters
+    // Validation des paramètres requis
     if (!missionId || !employeeId) {
       throw new Error('Mission ID et Employee ID sont requis');
     }
 
     console.log('Sending request with:', { missionId, employeeId });
 
+    // Appel API pour récupérer les données de paiement
     const response = await fetch(`${BASE_URL}/api/MissionPaiement/generate`, {
       method: "POST",
       headers: {
@@ -30,10 +32,9 @@ export const fetchMissionPayment = async (
       }),
     });
 
-    // Enhanced error handling
+    // Gestion des erreurs HTTP
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
       try {
         const errorText = await response.text();
         if (errorText) {
@@ -47,65 +48,67 @@ export const fetchMissionPayment = async (
       } catch (e) {
         console.warn('Could not read error response body:', e);
       }
-      
       throw new Error(`Erreur lors du chargement des données de paiement: ${errorMessage}`);
     }
 
     const data = await response.json();
     console.log("API Response (Mission Payment):", data);
 
-    // Add validation for response data
+    // Validation des données de réponse
     if (!Array.isArray(data) || data.length === 0) {
       console.warn('API returned empty or invalid data:', data);
       setMissionPayment({ indemnityDetails: [], assignmentDetails: null });
       return;
     }
 
-    // Transformation des données pour correspondre à la structure attendue
+    // Récupérer le transportId utilisé dans la mission
+    const assignedTransportId = data[0]?.missionAssignation?.transportId;
+    if (!assignedTransportId) {
+      console.warn('Aucun transport assigné trouvé pour cette mission.');
+    }
+
+    // Transformation des données
     const transformedData = data.map((item) => {
       const compensationScales = item.compensationScales || [];
-      
-      // Calcul correct des montants par type de dépense pour cette date spécifique
-      const lunchAmount = compensationScales
-        .filter((scale) => scale.expenseType?.type === "Dejeuner")
-        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
-        
-      const dinnerAmount = compensationScales
-        .filter((scale) => scale.expenseType?.type === "Diner")
-        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
-        
-      const breakfastAmount = compensationScales
-        .filter((scale) => scale.expenseType?.type === "PetitDejeuner")
-        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
-        
-      const accommodationAmount = compensationScales
-        .filter((scale) => scale.expenseType?.type === "Hebergement")
-        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
 
-      // Calcul du transport (toutes les dépenses de transport pour cette date)
-      const transportAmount = compensationScales
-        .filter((scale) => 
-          scale.transport?.type === "Voiture" || 
-          scale.transport?.type === "Avion"
-        )
-        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
+      // Calcul consolidé des montants par type de dépense
+      const amounts = {
+        lunch: 0,
+        dinner: 0,
+        breakfast: 0,
+        accommodation: 0,
+        transport: 0,
+      };
 
-      // Calcul du total pour cette date (somme de tous les compensationScales)
-      const totalAmount = compensationScales
-        .reduce((sum, scale) => sum + (scale.amount || 0), 0);
+      compensationScales.forEach((scale) => {
+        const amount = scale.amount || 0;
+        if (scale.expenseType?.type === "Déjeuner") amounts.lunch += amount;
+        else if (scale.expenseType?.type === "Diner") amounts.dinner += amount;
+        else if (scale.expenseType?.type === "Petit Déjeuner") amounts.breakfast += amount;
+        else if (scale.expenseType?.type === "Hébergement") amounts.accommodation += amount;
+        else if (scale.transportId === assignedTransportId && scale.transportId !== null) amounts.transport += amount;
+      });
+
+      // Calcul du total strict (somme des catégories filtrées)
+      const totalAmount = amounts.lunch + amounts.dinner + amounts.breakfast + amounts.accommodation + amounts.transport;
 
       return {
         date: item.date,
-        transport: transportAmount,
-        breakfast: breakfastAmount,
-        lunch: lunchAmount,
-        dinner: dinnerAmount,
-        accommodation: accommodationAmount,
-        total: totalAmount, // Utiliser le total calculé plutôt que item.totalAmount
+        transport: amounts.transport,
+        breakfast: amounts.breakfast,
+        lunch: amounts.lunch,
+        dinner: amounts.dinner,
+        accommodation: amounts.accommodation,
+        total: totalAmount,
       };
     });
 
-    // Extraire les informations de missionAssignation (de la première entrée, car elles sont identiques)
+    // Vérification des informations de missionAssignation
+    if (!data[0]?.missionAssignation) {
+      console.warn('Aucune information de missionAssignation trouvée dans la réponse API.');
+    }
+
+    // Extraction des détails de missionAssignation
     const missionAssignation = data[0]?.missionAssignation || {};
     const employee = missionAssignation.employee || {};
     const mission = missionAssignation.mission || {};
@@ -129,11 +132,12 @@ export const fetchMissionPayment = async (
       base: mission.site || "Non spécifié",
       status: mission.status || "Non spécifié",
       meansOfTransport: transport.type || "Non spécifié",
-      direction: employee.direction?.name || "Non spécifié",
-      departmentService: employee.department?.name || employee.service?.name || "Non spécifié",
+      direction: employee.direction?.directionName || "Non spécifié",
+      departmentService: employee.service?.serviceName || employee.department?.departmentName || "Non spécifié",
       costCenter: employee.costCenter || "Non spécifié",
     };
 
+    // Mise à jour de l'état avec les données transformées
     setMissionPayment({ indemnityDetails: transformedData, assignmentDetails });
   } catch (error) {
     console.error("Erreur lors du chargement des données de paiement:", error);

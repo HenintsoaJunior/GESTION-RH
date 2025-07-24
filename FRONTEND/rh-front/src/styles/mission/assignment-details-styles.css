@@ -72,17 +72,37 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background-color: #3b82f6;
+  background-color: #dc2626; /* Rouge */
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  transition: background-color 0.2s ease-in-out;
 }
 
 .btn-export-pdf:hover {
-  background-color: #2563eb;
+  background-color: #b91c1c;
+}
+
+.btn-export-excel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #16a34a; /* Vert */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.btn-export-excel:hover {
+  background-color: #15803d;
 }
 
 /* États de chargement */
@@ -280,13 +300,23 @@
 }
 
 .indemnity-table tbody tr.total-row {
-  background-color: #1f2937;
-  color: #ffffff;
+  background-color: #ffffff; /* White background */
+  color: #1f2937; /* Dark text */
   font-weight: 700;
 }
 
 .indemnity-table tbody tr.total-row:hover {
-  background-color: #374151;
+  background-color: #f9fafb; /* Same hover as other rows */
+}
+
+.indemnity-table tbody tr.total-cumulative-row {
+  background-color: #1f2937; /* Dark background */
+  color: #ffffff; /* White text */
+  font-weight: 700;
+}
+
+.indemnity-table tbody tr.total-cumulative-row:hover {
+  background-color: #374151; /* Same hover effect as previous total-row */
 }
 
 .indemnity-table td {
@@ -308,8 +338,23 @@
 }
 
 .indemnity-table .total-row td:first-child {
-  background-color: #1f2937;
+  background-color: #f8fafc; /* Same as other first cells */
+  color: #1f2937;
+}
+
+.indemnity-table .total-cumulative-row td:first-child {
+  background-color: #1f2937; /* Dark background for first cell */
   color: #ffffff;
+}
+
+.indemnity-table .total-row .total-cell {
+  background-color: #fef2f2; /* Same as other total cells */
+  color: #dc2626;
+}
+
+.indemnity-table .total-cumulative-row .total-cell {
+  background-color: #1f2937; /* Dark background */
+  color: #fbbf24; /* Yellow text for total */
 }
 
 /* Colonnes spécifiques */
@@ -331,11 +376,6 @@
   color: #dc2626;
   font-weight: 700;
   background-color: #fef2f2;
-}
-
-.total-row .total-cell {
-  background-color: #1f2937;
-  color: #fbbf24;
 }
 
 /* Ajout d'en-têtes de colonnes avec icônes visuelles */
@@ -462,47 +502,6 @@
     display: none;
   }
 }
-
-/* Bouton Export PDF (rouge) */
-.btn-export-pdf {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background-color: #dc2626; /* Rouge */
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s ease-in-out;
-}
-
-.btn-export-pdf:hover {
-  background-color: #b91c1c;
-}
-
-/* Bouton Export Excel (vert) */
-.btn-export-excel {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background-color: #16a34a; /* Vert */
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s ease-in-out;
-}
-
-.btn-export-excel:hover {
-  background-color: #15803d;
-}
-
 
 @media (max-width: 480px) {
   .page-header {

@@ -39,19 +39,25 @@ namespace MyApp.Api.Repositories.users
                 .OrderByDescending(u => u.CreatedAt)
                 .ToListAsync();
         }
+        
+        public async Task<User?> GetByEmailAsync(string email)
+        {
+            try
+            {
+                return await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email == email);
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to retrieve user by email.");
+            }
+        }
 
         public async Task<User?> GetByIdAsync(string id)
         {
             return await _context.Users
                 .Include(u => u.Employee)
                 .FirstOrDefaultAsync(u => u.UserId == id);
-        }
-
-        public async Task<User?> GetByEmailAsync(string email)
-        {
-            return await _context.Users
-                .Include(u => u.Employee)
-                .FirstOrDefaultAsync(u => u.Email == email);
         }
 
         public async Task AddAsync(User user)

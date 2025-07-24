@@ -1,10 +1,12 @@
 using MyApp.Api.Entities.users;
+using MyApp.Api.Models.form.users;
 using MyApp.Api.Repositories.users;
 
 namespace MyApp.Api.Services.users
 {
     public interface IUserService
     {
+        Task<UserDto?> LoginAsync(string email, string password);
         Task<User?> GetByEmployeeIdAsync(string employeeId);
         Task<IEnumerable<User>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
@@ -58,6 +60,39 @@ namespace MyApp.Api.Services.users
         {
             await _repository.DeleteAsync(user);
             await _repository.SaveChangesAsync();
+        }
+        
+        public async Task<UserDto?> LoginAsync(string email, string password)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+                    throw new Exception("Email and password are required.");
+
+                var user = await _repository.GetByEmailAsync(email);
+
+                if (user == null)
+                    return null;
+
+                // if (!BCrypt.Net.BCrypt.Verify(password, user.Password))
+                //     return null;
+
+                return MapToDto(user);
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to authenticate user.");
+            }
+        }
+
+        private static UserDto MapToDto(User user)
+        {
+            return new UserDto()
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                Role = user.Role
+            };
         }
     }
 }

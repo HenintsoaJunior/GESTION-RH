@@ -1,10 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.employee;
 
 namespace MyApp.Api.Entities.employee
 {
     [Table("categories_of_employee")]
+    [PrimaryKey(nameof(EmployeeId), nameof(EmployeeCategoryId))]
     public class CategoriesOfEmployee : BaseEntity
     {
         [Key, Column("employee_id", Order = 0)]

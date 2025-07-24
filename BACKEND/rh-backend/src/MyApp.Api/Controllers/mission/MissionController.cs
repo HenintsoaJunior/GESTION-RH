@@ -81,5 +81,14 @@ namespace MyApp.Api.Controllers
             var stats = await _missionService.GetStatisticsAsync();
             return Ok(stats);
         }
+
+        [HttpPut("{id}/cancel")]
+        public async Task<IActionResult> CancelMission(string id)
+        {
+            var cancelled = await _missionService.CancelAsync(id);
+            if (!cancelled) return NotFound();
+            _logger.LogInformation("Mission {MissionId} cancelled via controller", id);
+            return NoContent();
+        }
     }
 }

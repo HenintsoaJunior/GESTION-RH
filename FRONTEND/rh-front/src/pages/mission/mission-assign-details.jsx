@@ -6,6 +6,7 @@ import { formatDate } from "utils/generalisation";
 import Alert from "components/alert";
 import { fetchMissionPayment } from "services/mission/mission";
 import "styles/mission/assignment-details-styles.css";
+import { BASE_URL } from "config/apiConfig";
 
 const AssignmentDetails = () => {
   const [searchParams] = useSearchParams();
@@ -22,7 +23,7 @@ const AssignmentDetails = () => {
   const employeeId = searchParams.get("employeeId");
   const assignmentId = `${employeeId}-${missionId}`; // Construct assignmentId for display
 
-  // Charger les détails de l'assignation et les indemnités
+  // Load assignment details and indemnity details
   useEffect(() => {
     const loadAssignmentDetails = async () => {
       if (!missionId || !employeeId) {
@@ -63,8 +64,56 @@ const AssignmentDetails = () => {
     return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") : "0";
   };
 
+  // Calculate cumulative total
+  const totalCumulativeAmount = indemnityDetails.reduce((sum, item) => sum + (item.total || 0), 0);
+
+  // Handle PDF export (placeholder)
   const handleExportPDF = () => {
     setAlert({ isOpen: true, type: "info", message: "Exportation PDF en cours de développement." });
+  };
+
+  // Handle Excel export
+  const handleExportExcel = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/MissionAssignation/generate-excel`, {
+        method: "POST",
+        headers: {
+          accept: "*/*",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          missionId: missionId,
+          employeeId: employeeId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de l'exportation Excel");
+      }
+
+      // Convert response to a blob for downloading
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Mission_${assignmentId}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setAlert({
+        isOpen: true,
+        type: "success",
+        message: "Fichier Excel exporté avec succès !",
+      });
+    } catch (error) {
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: `Erreur lors de l'exportation Excel: ${error.message}`,
+      });
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -72,10 +121,10 @@ const AssignmentDetails = () => {
       status === "En Cours"
         ? "status-progress"
         : status === "Planifié"
-          ? "status-pending"
-          : status === "Terminé"
-            ? "status-approved"
-            : "status-pending";
+        ? "status-pending"
+        : status === "Terminé"
+        ? "status-approved"
+        : "status-pending";
     return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
   };
 
@@ -115,7 +164,7 @@ const AssignmentDetails = () => {
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
 
-      {/* Header avec bouton retour à gauche */}
+      {/* Header with back button on the left */}
       <div className="page-header">
         <div className="header-left">
           <button onClick={() => navigate("/mission/list")} className="btn-back" title="Retour à la liste">
@@ -131,11 +180,7 @@ const AssignmentDetails = () => {
             <Download className="w-4 h-4" />
             PDF
           </button>
-          <button
-            onClick={() => setAlert({ isOpen: true, type: "info", message: "Exportation Excel en cours de développement." })}
-            className="btn-export-excel"
-            title="Exporter en Excel"
-          >
+          <button onClick={handleExportExcel} className="btn-export-excel" title="Exporter en Excel">
             <Download className="w-4 h-4" />
             Excel
           </button>
@@ -149,7 +194,7 @@ const AssignmentDetails = () => {
         </div>
       ) : assignment ? (
         <>
-          {/* Informations générales */}
+          {/* General Information */}
           <div className="info-section">
             <div className="section-header">
               <h2 className="section-title">Informations Générales</h2>
@@ -185,7 +230,7 @@ const AssignmentDetails = () => {
             </div>
           </div>
 
-          {/* Tableau des indemnités */}
+          {/* Indemnity Table */}
           <div className="indemnity-section">
             <div className="section-header">
               <h2 className="section-title">Régularisation des Indemnités de Mission</h2>
@@ -227,6 +272,18 @@ const AssignmentDetails = () => {
                         <td className="total-cell">{item.total ? `${formatNumber(item.total)},00` : ""}</td>
                       </tr>
                     ))}
+                    {/* Cumulative total row */}
+                    <tr className="total-cumulative-row">
+                      <td className="date-cell"><strong>Total Cumulé</strong></td>
+                      <td className="amount-cell"></td>
+                      <td className="amount-cell"></td>
+                      <td className="amount-cell"></td>
+                      <td className="amount-cell"></td>
+                      <td className="amount-cell"></td>
+                      <td className="total-cell">
+                        <strong>{formatNumber(totalCumulativeAmount)},00</strong>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>

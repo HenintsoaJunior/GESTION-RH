@@ -16,6 +16,7 @@ namespace MyApp.Api.Services.mission
         Task<bool> UpdateAsync(Mission mission);
         Task<bool> DeleteAsync(string id);
         Task<MissionStats> GetStatisticsAsync();
+        Task<bool> CancelAsync(string id);
     }
 
     public class MissionService : IMissionService
@@ -83,6 +84,18 @@ namespace MyApp.Api.Services.mission
 
             await _repository.DeleteAsync(entity);
             await _repository.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> CancelAsync(string id)
+        {
+            var entity = await _repository.GetByIdAsync(id);
+            if (entity == null) return false;
+
+            entity.Status = "Annulé";
+            await _repository.UpdateAsync(entity);
+            await _repository.SaveChangesAsync();
+            _logger.LogInformation("Mission {MissionId} annulée", id);
             return true;
         }
 
