@@ -1,19 +1,10 @@
 "use client";
-import { BASE_URL } from "config/apiConfig";
+import { apiGet } from "utils/apiUtils";
 
 export const fetchDepartments = async (setDepartments, setIsLoading, setSuggestions, onError) => {
   try {
     setIsLoading((prev) => ({ ...prev, departments: true }));
-    const response = await fetch(`${BASE_URL}/api/Department`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Erreur lors du chargement des départements: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
+    const data = await apiGet("/api/Department");
     setDepartments(data);
     
     // Ne pas mettre à jour les suggestions ici car elles seront filtrées par direction
@@ -26,7 +17,11 @@ export const fetchDepartments = async (setDepartments, setIsLoading, setSuggesti
     }
   } catch (error) {
     console.error("Erreur lors du chargement des départements:", error);
-    onError({ isOpen: true, type: "error", message: `Erreur lors du chargement des départements: ${error.message}` });
+    onError({ 
+      isOpen: true, 
+      type: "error", 
+      message: `Erreur lors du chargement des départements: ${error.message}` 
+    });
   } finally {
     setIsLoading((prev) => ({ ...prev, departments: false }));
   }

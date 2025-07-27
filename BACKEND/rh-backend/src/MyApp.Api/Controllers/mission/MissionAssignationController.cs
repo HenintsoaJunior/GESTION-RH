@@ -47,18 +47,14 @@ namespace MyApp.Api.Controllers.mission
         [HttpPost("generate-excel")]
         public async Task<IActionResult> GenerateExcel([FromBody] GeneratePaiementDTO generatePaiementDTO)
         {
-            // Vérifie seulement les propriétés string
-            if (string.IsNullOrWhiteSpace(generatePaiementDTO.EmployeeId) || 
-                string.IsNullOrWhiteSpace(generatePaiementDTO.MissionId))
-            {
-                return BadRequest("Valid EmployeeId and MissionId are required.");
-            }
-
             try
             {
                 var excelBytes = await _service.GenerateExcelReportAsync(
                     generatePaiementDTO.EmployeeId,
-                    generatePaiementDTO.MissionId);
+                    generatePaiementDTO.MissionId,
+                    generatePaiementDTO.DirectionId,
+                    generatePaiementDTO.StartDate,
+                    generatePaiementDTO.EndDate);
 
                 string excelName = $"MissionPaymentReport-{generatePaiementDTO.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.xlsx";
         

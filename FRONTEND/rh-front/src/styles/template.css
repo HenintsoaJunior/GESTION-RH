@@ -296,6 +296,7 @@ body {
   position: relative;
   border-radius: 0;
   font-weight: 500;
+  text-decoration: none !important;
 }
 
 .nav-button:hover {
@@ -338,6 +339,7 @@ body {
 .nav-icon-wrapper.premium {
   background: linear-gradient(135deg, #9b59b6, #8e44ad);
   color: var(--white);
+  text-decoration: none;
 }
 
 .nav-icon {

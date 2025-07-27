@@ -1,15 +1,14 @@
-import { BASE_URL } from "config/apiConfig";
+// apiUtils.js
+import { BASE_URL } from 'config/apiConfig';
 
 // Default headers
 const defaultHeaders = {
-  "Content-Type": "application/json",
-  Accept: "application/json",
-  // Add Authorization header here when needed, e.g.:
-  // Authorization: `Bearer ${getAuthToken()}`,
+  'Content-Type': 'application/json',
+  Accept: 'application/json',
 };
 
 // Centralized error handling
-const handleResponse = async (response) => {
+const handleResponse = async (response, responseType = 'json') => {
   if (!response.ok) {
     let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
     let errorData = null;
@@ -25,23 +24,27 @@ const handleResponse = async (response) => {
         }
       }
     } catch (e) {
-      console.warn("Could not read error response body:", e);
+      console.warn('Could not read error response body:', e);
     }
 
-    // Create a new Error with the response attached
     const error = new Error(errorMessage);
     error.response = {
       status: response.status,
       statusText: response.statusText,
-      data: errorData || { message: errorMessage }, // Attach parsed data or fallback
+      data: errorData || { message: errorMessage },
     };
     throw error;
+  }
+
+  // Return response based on responseType
+  if (responseType === 'blob') {
+    return response.blob();
   }
   return response.json();
 };
 
 // Generic HTTP request function
-const apiRequest = async ({ endpoint, method = "GET", body = null, headers = {}, queryParams = {} }) => {
+const apiRequest = async ({ endpoint, method = 'GET', body = null, headers = {}, queryParams = {}, responseType = 'json' }) => {
   try {
     // Construct URL with query parameters
     const url = new URL(`${BASE_URL}${endpoint}`);
@@ -65,19 +68,20 @@ const apiRequest = async ({ endpoint, method = "GET", body = null, headers = {},
     }
 
     const response = await fetch(url.toString(), options);
-    return await handleResponse(response);
+    return await handleResponse(response, responseType);
   } catch (error) {
-    throw error; // Rethrow for specific handling in calling functions
+    error.response = error.response || {};
+    error.response.rawResponse = error.response.rawResponse || error;
+    throw error;
   }
 };
 
 // HTTP method wrappers
 export const apiGet = (endpoint, queryParams = {}, headers = {}) =>
-  apiRequest({ endpoint, method: "GET", queryParams, headers });
+  apiRequest({ endpoint, method: 'GET', queryParams, headers });
 
-export const apiPost = (endpoint, body = null, queryParams = {}, headers = {}) =>
-  apiRequest({ endpoint, method: "POST", body, queryParams, headers });
+export const apiPost = (endpoint, body = null, queryParams = {}, headers = {}, responseType = 'json') =>
+  apiRequest({ endpoint, method: 'POST', body, queryParams, headers, responseType });
 
-// Add this to the existing apiUtils.js file, after apiPost
-export const apiPut = (endpoint, body = null, queryParams = {}, headers = {}) =>
-  apiRequest({ endpoint, method: "PUT", body, queryParams, headers });
+export const apiPut = (endpoint, body = null, queryParams = {}, headers = {}, responseType = 'json') =>
+  apiRequest({ endpoint, method: 'PUT', body, queryParams, headers, responseType });
