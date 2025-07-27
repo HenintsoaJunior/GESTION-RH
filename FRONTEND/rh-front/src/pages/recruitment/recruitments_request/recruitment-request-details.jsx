@@ -17,7 +17,7 @@ import {
   Edit,
   Trash2,
 } from "lucide-react"
-import { formatDate } from "utils/generalisation"
+import { formatDate } from "utils/dateConverter"
 import { fetchRecruitmentRequestById } from "services/recruitment/recruitment-request-service/recruitment-request-service"
 import Alert from "components/alert"
 import "styles/recruitment/recruitment-request-details.css"

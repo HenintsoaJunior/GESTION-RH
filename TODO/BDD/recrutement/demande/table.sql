@@ -1,6 +1,7 @@
 -- Tables les plus dépendantes (feuilles de dépendance)
 DROP TABLE IF EXISTS mission_assignation;
 DROP TABLE IF EXISTS compensation_scale;
+DROP TABLE IF EXISTS lieu;
 DROP TABLE IF EXISTS mission;
 DROP TABLE IF EXISTS transport;
 DROP TABLE IF EXISTS expense_type;

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Download, ArrowLeft, Calendar, MapPin, Clock, User, Building, CreditCard } from "lucide-react";
-import { formatDate } from "utils/generalisation";
+import { formatDate } from "utils/dateConverter";
 import Alert from "components/alert";
 import { fetchMissionPayment } from "services/mission/mission";
 import "styles/mission/assignment-details-styles.css";

@@ -3,6 +3,7 @@ using MyApp.Api.Entities.mission;
 using MyApp.Api.Services.mission;
 using MyApp.Api.Models.form.mission;
 using MyApp.Api.Models.search.mission;
+using MyApp.Api.Entities.employee;
 
 namespace MyApp.Api.Controllers.mission
 {
@@ -10,18 +11,44 @@ namespace MyApp.Api.Controllers.mission
     [Route("api/[controller]")]
     public class MissionAssignationController : ControllerBase
     {
+        // Service injecté pour la gestion des assignations de mission
         private readonly IMissionAssignationService _service;
 
         public MissionAssignationController(IMissionAssignationService service)
         {
             _service = service;
         }
-        
+
+        // Récupère les employés non assignés à une mission spécifique
+        [HttpGet("not-assigned/{missionId}")]
+        public async Task<ActionResult<IEnumerable<Employee>>> GetEmployeesNotAssignedToMission(string missionId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(missionId))
+                {
+                    return BadRequest("Valid MissionId is required.");
+                }
+
+                var employees = await _service.GetEmployeesNotAssignedToMissionAsync(missionId);
+                return Ok(employees);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        // Génère et télécharge un rapport Excel des paiements de mission
         [HttpPost("generate-excel")]
         public async Task<IActionResult> GenerateExcel([FromBody] GeneratePaiementDTO generatePaiementDTO)
         {
-            if (generatePaiementDTO == null || 
-                string.IsNullOrWhiteSpace(generatePaiementDTO.EmployeeId) || 
+            // Vérifie seulement les propriétés string
+            if (string.IsNullOrWhiteSpace(generatePaiementDTO.EmployeeId) || 
                 string.IsNullOrWhiteSpace(generatePaiementDTO.MissionId))
             {
                 return BadRequest("Valid EmployeeId and MissionId are required.");
@@ -34,7 +61,8 @@ namespace MyApp.Api.Controllers.mission
                     generatePaiementDTO.MissionId);
 
                 string excelName = $"MissionPaymentReport-{generatePaiementDTO.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.xlsx";
-                
+        
+                // Retourne le fichier Excel généré
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
             }
             catch (InvalidOperationException ex)
@@ -46,7 +74,7 @@ namespace MyApp.Api.Controllers.mission
                 return StatusCode(500, $"An error occurred while generating the Excel file: {ex.Message}");
             }
         }
-
+        // Récupère toutes les assignations de mission
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MissionAssignation>>> GetAll()
         {
@@ -61,6 +89,7 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
+        // Récupère une assignation par identifiants (employé, mission, transport)
         [HttpGet("{employeeId}/{missionId}/{transportId?}")]
         public async Task<ActionResult<MissionAssignation>> GetById(string employeeId, string missionId, string? transportId)
         {
@@ -72,13 +101,14 @@ namespace MyApp.Api.Controllers.mission
             return Ok(missionAssignation);
         }
 
-        [HttpPost]
+        // Crée une nouvelle assignation de mission
         [HttpPost]
         public async Task<ActionResult> Create([FromBody] MissionAssignationDTOForm dto)
         {
+            // Vérifie la validité du modèle reçu
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState); // Return validation errors for debugging
+                return BadRequest(ModelState); // Retourne les erreurs de validation
             }
 
             try
@@ -86,7 +116,7 @@ namespace MyApp.Api.Controllers.mission
                 var missionAssignation = new MissionAssignation(dto);
                 var (employeeId, missionId, transportId) = await _service.CreateAsync(missionAssignation);
         
-                // Handle null transportId in route values
+                // Retourne l'URL de la ressource créée
                 var routeValues = new { employeeId, missionId, transportId = transportId ?? string.Empty };
                 return CreatedAtAction(nameof(GetById), routeValues, missionAssignation);
             }
@@ -96,6 +126,7 @@ namespace MyApp.Api.Controllers.mission
             }
         }
         
+        // Met à jour une assignation existante
         [HttpPut("{employeeId}/{missionId}/{transportId}")]
         public async Task<ActionResult> Update(string employeeId, string missionId, string transportId, [FromBody] MissionAssignationDTOForm dto)
         {
@@ -117,6 +148,7 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
+        // Supprime une assignation de mission
         [HttpDelete("{employeeId}/{missionId}/{transportId}")]
         public async Task<ActionResult> Delete(string employeeId, string missionId, string transportId)
         {
@@ -136,12 +168,14 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
+        // Recherche paginée avec filtres dynamiques
         [HttpPost("search")]
         public async Task<ActionResult<object>> Search([FromBody] MissionAssignationSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
                 var (results, totalCount) = await _service.SearchAsync(filters, page, pageSize);
+                // Retourne les résultats paginés et le nombre total
                 return Ok(new
                 {
                     data = results,

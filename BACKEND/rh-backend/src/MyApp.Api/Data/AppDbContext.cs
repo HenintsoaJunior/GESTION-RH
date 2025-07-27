@@ -15,6 +15,8 @@ namespace MyApp.Api.Data
     {
          public DbSet<CategoriesOfEmployee> CategoriesOfEmployees { get; set; }
         public DbSet<MissionAssignation> MissionAssignations { get; set; }
+        
+        public DbSet<Lieu> Lieux { get; set; }
         public DbSet<Mission> Missions { get; set; } 
         public DbSet<CompensationScale> CompensationScales { get; set; } 
         public DbSet<Transport> Transports { get; set; } 
