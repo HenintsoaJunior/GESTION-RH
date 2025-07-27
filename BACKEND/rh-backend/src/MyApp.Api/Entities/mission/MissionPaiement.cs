@@ -4,21 +4,41 @@ using MyApp.Api.Services.mission;
 
 namespace MyApp.Api.Entities.mission
 {
+    // Classe pour représenter le résultat avec missionAssignation une seule fois
+    public class MissionPaiementResult
+    {
+        public MissionAssignation? MissionAssignation { get; set; }
+        public IEnumerable<DailyPaiement> DailyPaiements { get; set; } = new List<DailyPaiement>();
+        public decimal TotalAmount => DailyPaiements?.Sum(dp => dp.TotalAmount) ?? 0;
+    }
+
+    // Classe pour représenter le paiement d'une journée
+    public class DailyPaiement
+    {
+        public DateTime? Date { get; set; }
+        public IEnumerable<CompensationScale>? CompensationScales { get; set; }
+        public decimal TotalAmount { get; set; }
+        public MissionAssignation? MissionAssignation { get; set; } // Nouvelle propriété
+    }
+
     public class MissionPaiement
     {
-        private readonly ICategoriesOfEmployeeService _categoriesOfEmployeeService;
+        private ICategoriesOfEmployeeService _categoriesOfEmployeeService = null!;
 
         public DateTime? Date { get; set; }
         public IEnumerable<CompensationScale>? CompensationScales { get; set; }
-        public decimal? TotalAmount { get; set; }
+        public decimal TotalAmount { get; set; }
         public MissionAssignation? MissionAssignation { get; set; }
 
+        public MissionPaiement()
+        {
+        }
         public MissionPaiement(ICategoriesOfEmployeeService categoriesOfEmployeeService)
         {
             _categoriesOfEmployeeService = categoriesOfEmployeeService ?? throw new ArgumentNullException(nameof(categoriesOfEmployeeService));
         }
 
-        public async Task<IEnumerable<MissionPaiement>> GeneratePaiement(
+        public async Task<MissionPaiementResult> GeneratePaiement(
             MissionAssignation? missionAssignation, 
             ICompensationScaleService compensationScaleService)
         {
@@ -33,7 +53,11 @@ namespace MyApp.Api.Entities.mission
             var latestCategory = await GetLatestEmployeeCategory(missionAssignation);
             if (latestCategory?.EmployeeCategory == null)
             {
-                return new List<MissionPaiement>();
+                return new MissionPaiementResult
+                {
+                    MissionAssignation = missionAssignation,
+                    DailyPaiements = new List<DailyPaiement>()
+                };
             }
     
             var compensationScales = await GetCompensationScales(compensationScaleService, latestCategory);
@@ -43,10 +67,20 @@ namespace MyApp.Api.Entities.mission
     
             if (!compensationScalesList.Any())
             {
-                return new List<MissionPaiement>();
+                return new MissionPaiementResult
+                {
+                    MissionAssignation = missionAssignation,
+                    DailyPaiements = new List<DailyPaiement>()
+                };
             }
     
-            return GeneratePaymentsForDates(missionAssignation, compensationScalesList);
+            var dailyPaiements = GeneratePaymentsForDates(missionAssignation, compensationScalesList);
+            
+            return new MissionPaiementResult
+            {
+                MissionAssignation = missionAssignation,
+                DailyPaiements = dailyPaiements
+            };
         }
 
         private void ValidateInputs(MissionAssignation missionAssignation, ICompensationScaleService compensationScaleService)
@@ -96,26 +130,26 @@ namespace MyApp.Api.Entities.mission
             return compensationScales ?? Enumerable.Empty<CompensationScale>();
         }
 
-        private List<MissionPaiement> GeneratePaymentsForDates(
+        private List<DailyPaiement> GeneratePaymentsForDates(
             MissionAssignation missionAssignation, 
             IEnumerable<CompensationScale> compensationScales)
         {
             if (!IsValidDuration(missionAssignation))
             {
-                return new List<MissionPaiement>();
+                return new List<DailyPaiement>();
             }
 
             var scales = compensationScales.ToList();
             var dates = GenerateDateRangeWithTime(missionAssignation);
-            var paiements = new List<MissionPaiement>();
+            var dailyPaiements = new List<DailyPaiement>();
 
             foreach (var date in dates)
             {
-                var paiement = CreatePaymentForDate(missionAssignation, scales, date);
-                paiements.Add(paiement);
+                var dailyPaiement = CreateDailyPaymentForDate(missionAssignation, scales, date);
+                dailyPaiements.Add(dailyPaiement);
             }
 
-            return paiements;
+            return dailyPaiements;
         }
 
         private bool IsValidDuration(MissionAssignation missionAssignation)
@@ -123,7 +157,7 @@ namespace MyApp.Api.Entities.mission
             return missionAssignation.Duration.HasValue && missionAssignation.Duration > 0;
         }
 
-        private MissionPaiement CreatePaymentForDate(
+        private DailyPaiement CreateDailyPaymentForDate(
             MissionAssignation missionAssignation, 
             IEnumerable<CompensationScale> compensationScales, 
             DateTime date)
@@ -131,12 +165,11 @@ namespace MyApp.Api.Entities.mission
             var filteredCompensationScales = FilterCompensationScalesByTime(
                 compensationScales, missionAssignation, date).ToList();
 
-            return new MissionPaiement(_categoriesOfEmployeeService)
+            return new DailyPaiement
             {
                 Date = date,
                 CompensationScales = filteredCompensationScales,
-                TotalAmount = filteredCompensationScales.Sum(cs => cs?.Amount ?? 0),
-                MissionAssignation = missionAssignation
+                TotalAmount = filteredCompensationScales.Sum(cs => cs?.Amount ?? 0)
             };
         }
 
@@ -163,8 +196,12 @@ namespace MyApp.Api.Entities.mission
             MissionAssignation missionAssignation, 
             DateTime currentDate)
         {
+            // NOUVELLE CONDITION: Filtrer par TransportId
             if (scale.TransportId != null)
-                return true;
+            {
+                // Inclure seulement si le TransportId du scale correspond à celui de la mission
+                return scale.TransportId == missionAssignation.TransportId;
+            }
 
             if (scale.ExpenseType != null)
             {

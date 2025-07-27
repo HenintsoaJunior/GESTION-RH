@@ -18,6 +18,8 @@ import AssignmentDetails from 'pages/mission/mission-assign-details';
 import TransportForm from 'pages/transport/transport-form';
 import DashboardHome from 'pages/dashboard';
 import LieuForm from 'pages/lieu/lieu-form';
+import MissionAssignationFormExcel from 'pages/mission/mission-assign-form-excel';
+import ShortcutsDashboard from 'pages/system/entite/shortcuts';
 
 function AppRouter() {
   return (
@@ -32,7 +34,7 @@ function AppRouter() {
           <Route path="/recruitment/recruitment-request/create" element={<RecruitmentRequestForm />} />
           <Route path="/recruitment/recruitment-request/details/:recruitmentRequestId" element={<RecruitmentRequestDetails />} />
           <Route path="/recruitment/process/:recruitmentRequestId" element={<ProcessWorkflow />} />
-          
+
           {/* Entite */}
           <Route path="/recruitment/contract-type-form" element={<ContractTypeForm />} />
           <Route path="/direction/direction-form" element={<DirectionForm />} />
@@ -45,6 +47,7 @@ function AppRouter() {
           <Route path="/mission/assign" element={<AssignMissionForm />} />
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
           <Route path="/assignments/details" element={<AssignmentDetails />} />
+          <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />
           
           {/* Transport */}
           <Route path="/transport/create" element={<TransportForm />} />
@@ -52,6 +55,8 @@ function AppRouter() {
           {/* Lieu */}
           <Route path="/lieu/create" element={<LieuForm />} />
           
+          {/* ShortCuts */}
+          <Route path="/entite" element={<ShortcutsDashboard />} />
           
         </Route>
       </Routes>

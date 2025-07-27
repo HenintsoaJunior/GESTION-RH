@@ -30,7 +30,10 @@ namespace MyApp.Api.Controllers.mission
             {
                 var missionAssignation =
                     await _missionAssignationService.GeneratePaiementsAsync(generatePaiementDTO.EmployeeId,
-                        generatePaiementDTO.MissionId);
+                        generatePaiementDTO.MissionId,
+                        generatePaiementDTO.DirectionId,
+                        generatePaiementDTO.StartDate,
+                        generatePaiementDTO.EndDate);
 
                 return Ok(missionAssignation);
             }
