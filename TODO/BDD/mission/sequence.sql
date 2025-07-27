@@ -1,3 +1,7 @@
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_lieu_id')
+    DROP SEQUENCE seq_lieu_id;
+GO
+
 IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_mission_id')
     DROP SEQUENCE seq_mission_id;
 GO
@@ -15,6 +19,16 @@ IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_transport_id')
 GO
 
 
+CREATE SEQUENCE seq_lieu_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
 CREATE SEQUENCE seq_mission_id
     AS INT
     START WITH 1
@@ -23,6 +37,8 @@ CREATE SEQUENCE seq_mission_id
     NO CYCLE
     CACHE 50;
 GO
+
+
 
 CREATE SEQUENCE seq_expense_type_id
     AS INT

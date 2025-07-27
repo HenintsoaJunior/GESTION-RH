@@ -1,7 +1,143 @@
 "use client";
 
-import { BASE_URL } from "config/apiConfig";
+import { apiGet, apiPost,apiPut } from "utils/apiUtils";
+import { handleValidationError } from "utils/validation";
 
+
+
+export const fetchNotAssignedEmployees = async (
+  missionId,
+  setEmployees,
+  setIsLoading,
+  setSuggestions,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, employees: true }));
+    
+    // Appel API pour récupérer les employés non assignés
+    const data = await apiGet(`/api/MissionAssignation/not-assigned/${missionId}`);
+    
+    // S'assure que les données sont un tableau
+    const employeesData = Array.isArray(data) ? data : [];
+    
+    // Mise à jour des suggestions pour l'autocomplétion
+    setSuggestions((prev) => ({
+      ...prev,
+      beneficiary: employeesData.map((emp) => ({
+        id: emp.employeeId,
+        name: `${emp.lastName} ${emp.firstName}`,
+        employeeCode: emp.employeeCode,
+        jobTitle: emp.jobTitle,
+        site: emp.site?.siteName,
+        direction: emp.direction?.directionName,
+        department: emp.department?.departmentName,
+        service: emp.service?.serviceName,
+        costCenter: emp.costCenter,
+      })),
+    }));
+    
+    setEmployees(employeesData);
+  } catch (error) {
+    console.error("Erreur lors du chargement des employés non assignés:", error);
+    onError({
+      isOpen: true,
+      type: "error",
+      message: `Erreur lors du chargement des employés non assignés: ${error.message}`,
+    });
+    setEmployees([]);
+    setSuggestions((prev) => ({ ...prev, beneficiary: [] }));
+  } finally {
+    setIsLoading((prev) => ({ ...prev, employees: false }));
+  }
+};
+
+
+// Fonction pour créer une assignation de mission
+export const createMissionAssignation = async (
+  assignationData,
+  setIsLoading,
+  onSuccess,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, missionAssignation: true })); // Indique le chargement
+
+    // Préparation du corps de la requête
+    const requestBody = {
+      employeeId: assignationData.employeeId.trim(),
+      missionId: assignationData.missionId.trim(),
+      transportId: assignationData.transportId ? assignationData.transportId.trim() : null,
+      departureDate: assignationData.departureDate ? new Date(assignationData.departureDate).toISOString() : null,
+      departureTime: assignationData.departureTime || null,
+      returnDate: assignationData.returnDate ? new Date(assignationData.returnDate).toISOString() : null,
+      returnTime: assignationData.returnTime || null,
+      duration: parseInt(assignationData.duration, 10) || null,
+    };
+
+    // Appel API pour créer l'assignation de mission
+    const newAssignation = await apiPost("/api/MissionAssignation", requestBody);
+
+    // Affiche un message de succès
+    onSuccess({
+      isOpen: true,
+      type: "success",
+      message: `Mission assignée avec succès à l'employé ${assignationData.employeeId}!`,
+    });
+
+    return newAssignation;
+  } catch (error) {
+    // Gestion des erreurs
+    console.error("Erreur lors de la création de l'assignation de mission:", error);
+    onError(handleValidationError(error, "MESSGA"));
+    throw error;
+  } finally {
+    setIsLoading((prev) => ({ ...prev, missionAssignation: false })); // Fin du chargement
+  }
+};
+
+
+// Fonction pour créer une mission
+export const createMission = async (
+  missionData,
+  setIsLoading,
+  onSuccess,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, mission: true })); // Indique le chargement
+
+    // Préparation du corps de la requête
+    const requestBody = {
+      missionId: missionData.missionId || "",
+      name: missionData.name.trim(),
+      description: missionData.description || "",
+      startDate: new Date(missionData.startDate).toISOString() || null,
+      lieuId: missionData.lieuId || "",
+    };
+
+    // Appel API pour créer la mission
+    const newMission = await apiPost("/api/Mission", requestBody);
+    
+    // Affiche un message de succès
+    onSuccess({
+      isOpen: true,
+      type: "success",
+      message: `Mission "${newMission.name}" créée avec succès !`,
+    });
+
+    return newMission;
+  } catch (error) {
+    // Gestion des erreurs
+    console.error("Erreur lors de la création de la mission:", error);
+    onError(handleValidationError(error,"MESSGA"));
+    throw error;
+  } finally {
+    setIsLoading((prev) => ({ ...prev, mission: false })); // Fin du chargement
+  }
+};
+
+// Fonction pour récupérer les paiements liés à une mission
 export const fetchMissionPayment = async (
   missionId,
   employeeId,
@@ -12,66 +148,39 @@ export const fetchMissionPayment = async (
   try {
     setIsLoading((prev) => ({ ...prev, missionPayment: true }));
 
-    // Validation des paramètres requis
+    // Vérifie que les paramètres sont présents
     if (!missionId || !employeeId) {
-      throw new Error('Mission ID et Employee ID sont requis');
+      throw new Error("Mission ID et Employee ID sont requis");
     }
 
-    console.log('Sending request with:', { missionId, employeeId });
+    console.log("Sending request with:", { missionId, employeeId });
 
     // Appel API pour récupérer les données de paiement
-    const response = await fetch(`${BASE_URL}/api/MissionPaiement/generate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        missionId,
-        employeeId,
-      }),
+    const data = await apiPost("/api/MissionPaiement/generate", {
+      missionId,
+      employeeId,
     });
 
-    // Gestion des erreurs HTTP
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      try {
-        const errorText = await response.text();
-        if (errorText) {
-          try {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.message || errorData.error || errorText;
-          } catch {
-            errorMessage = errorText;
-          }
-        }
-      } catch (e) {
-        console.warn('Could not read error response body:', e);
-      }
-      throw new Error(`Erreur lors du chargement des données de paiement: ${errorMessage}`);
-    }
-
-    const data = await response.json();
     console.log("API Response (Mission Payment):", data);
 
-    // Validation des données de réponse
+    // Vérifie la validité des données reçues
     if (!Array.isArray(data) || data.length === 0) {
-      console.warn('API returned empty or invalid data:', data);
+      console.warn("API returned empty or invalid data:", data);
       setMissionPayment({ indemnityDetails: [], assignmentDetails: null });
       return;
     }
 
-    // Récupérer le transportId utilisé dans la mission
+    // Récupère l'ID du transport assigné
     const assignedTransportId = data[0]?.missionAssignation?.transportId;
     if (!assignedTransportId) {
-      console.warn('Aucun transport assigné trouvé pour cette mission.');
+      console.warn("Aucun transport assigné trouvé pour cette mission.");
     }
 
-    // Transformation des données
+    // Transforme les données pour l'affichage
     const transformedData = data.map((item) => {
       const compensationScales = item.compensationScales || [];
 
-      // Calcul consolidé des montants par type de dépense
+      // Initialisation des montants par type de dépense
       const amounts = {
         lunch: 0,
         dinner: 0,
@@ -80,6 +189,7 @@ export const fetchMissionPayment = async (
         transport: 0,
       };
 
+      // Calcul des montants par catégorie
       compensationScales.forEach((scale) => {
         const amount = scale.amount || 0;
         if (scale.expenseType?.type === "Déjeuner") amounts.lunch += amount;
@@ -89,7 +199,7 @@ export const fetchMissionPayment = async (
         else if (scale.transportId === assignedTransportId && scale.transportId !== null) amounts.transport += amount;
       });
 
-      // Calcul du total strict (somme des catégories filtrées)
+      // Calcul du total
       const totalAmount = amounts.lunch + amounts.dinner + amounts.breakfast + amounts.accommodation + amounts.transport;
 
       return {
@@ -103,22 +213,22 @@ export const fetchMissionPayment = async (
       };
     });
 
-    // Vérification des informations de missionAssignation
+    // Vérifie la présence des infos d'assignation
     if (!data[0]?.missionAssignation) {
-      console.warn('Aucune information de missionAssignation trouvée dans la réponse API.');
+      console.warn("Aucune information de missionAssignation trouvée dans la réponse API.");
     }
 
-    // Extraction des détails de missionAssignation
+    // Extraction des détails d'assignation
     const missionAssignation = data[0]?.missionAssignation || {};
     const employee = missionAssignation.employee || {};
     const mission = missionAssignation.mission || {};
     const transport = missionAssignation.transport || {};
 
     const assignmentDetails = {
-      assignmentId: `${missionAssignation.employeeId || ''}-${missionAssignation.missionId || ''}-${missionAssignation.transportId || ''}`,
-      employeeId: missionAssignation.employeeId || '',
-      missionId: missionAssignation.missionId || '',
-      transportId: missionAssignation.transportId || '',
+      assignmentId: `${missionAssignation.employeeId || ""}-${missionAssignation.missionId || ""}-${missionAssignation.transportId || ""}`,
+      employeeId: missionAssignation.employeeId || "",
+      missionId: missionAssignation.missionId || "",
+      transportId: missionAssignation.transportId || "",
       departureDate: missionAssignation.departureDate,
       departureTime: missionAssignation.departureTime,
       returnDate: missionAssignation.returnDate,
@@ -129,7 +239,7 @@ export const fetchMissionPayment = async (
       matricule: employee.employeeCode || "Non spécifié",
       missionTitle: mission.name || "Non spécifié",
       function: employee.jobTitle || "Non spécifié",
-      base: mission.site || "Non spécifié",
+      base: `${employee.site.siteName} (${employee.site.code}) ` || "Non spécifié",
       status: mission.status || "Non spécifié",
       meansOfTransport: transport.type || "Non spécifié",
       direction: employee.direction?.directionName || "Non spécifié",
@@ -140,6 +250,7 @@ export const fetchMissionPayment = async (
     // Mise à jour de l'état avec les données transformées
     setMissionPayment({ indemnityDetails: transformedData, assignmentDetails });
   } catch (error) {
+    // Gestion des erreurs
     console.error("Erreur lors du chargement des données de paiement:", error);
     onError({
       isOpen: true,
@@ -152,6 +263,7 @@ export const fetchMissionPayment = async (
   }
 };
 
+// Fonction pour récupérer les assignations de mission avec filtres et pagination
 export const fetchAssignMission = async (
   setAssignMissions,
   setIsLoading,
@@ -167,39 +279,27 @@ export const fetchAssignMission = async (
       page,
       pageSize,
     }).toString();
+    // Préparation du corps de la requête avec gestion des dates
     const requestBody = {
-      ...filters,
+      employeeId: filters.employeeId || "",
+      missionId: filters.missionId || "",
+      transportId: filters.transportId || "",
       departureDateMin: filters.departureDateMin && !isNaN(new Date(filters.departureDateMin).getTime())
         ? new Date(filters.departureDateMin).toISOString()
         : null,
       departureDateMax: filters.departureDateMax && !isNaN(new Date(filters.departureDateMax).getTime())
         ? new Date(filters.departureDateMax).toISOString()
         : null,
-      employeeId: filters.employeeId || null,
-      missionId: filters.missionId || null,
-      transportId: filters.transportId || null,
-      status: filters.status || null,
+      status: filters.status || "",
     };
     console.log("Request Body:", requestBody);
-    const response = await fetch(`${BASE_URL}/api/MissionAssignation/search?${queryParams}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error("Error response:", errorData);
-      throw new Error(`Erreur lors du chargement des assignations de mission: ${response.statusText}`);
-    }
-    const data = await response.json();
+    // Appel API pour récupérer les assignations
+    const data = await apiPost(`/api/MissionAssignation/search?${queryParams}`, requestBody);
     console.log("API Response (Mission Assignations):", data);
-    // Transform the response data to match the UI's expected structure
+
+    // Transformation des données pour l'UI
     const assignMissionsData = Array.isArray(data.data)
       ? data.data.map((item) => ({
-          // Ajout de l'assignmentId généré ou récupéré depuis l'API
           assignmentId: item.id || item.assignmentId || `${item.employeeId}-${item.missionId}-${item.transportId}`,
           employeeId: item.employeeId,
           missionId: item.missionId,
@@ -209,13 +309,14 @@ export const fetchAssignMission = async (
           matricule: item.employee?.employeeCode || "Non spécifié",
           missionTitle: item.mission?.name || "Non spécifié",
           function: item.employee?.jobTitle || "Non spécifié",
-          base: item.mission?.site || "Non spécifié",
+          base: item.employee?.site.siteName || "Non spécifié",
           status: item.mission?.status || "Non spécifié",
         }))
       : [];
     setAssignMissions(assignMissionsData);
     setTotalEntries(data.totalCount || assignMissionsData.length || 0);
   } catch (error) {
+    // Gestion des erreurs
     console.error("Erreur lors du chargement des assignations de mission:", error);
     onError({
       isOpen: true,
@@ -228,6 +329,7 @@ export const fetchAssignMission = async (
   }
 };
 
+// Fonction pour récupérer toutes les missions
 export const fetchAllMissions = async (
   setMissions,
   setIsLoading,
@@ -236,38 +338,28 @@ export const fetchAllMissions = async (
 ) => {
   try {
     setIsLoading((prev) => ({ ...prev, missions: true }));
+    const data = await apiGet("/api/Mission");
+    console.log("API Response (All Missions):", data);
 
-    const response = await fetch(`${BASE_URL}/api/Mission`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erreur lors du chargement des missions: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log("API Response (All Missions):", data); // Debug: Log the API response
-    // Ensure missions is always an array
+    // S'assure que missions est toujours un tableau
     const missionsData = Array.isArray(data) ? data : [];
     setMissions(missionsData);
-    setTotalEntries(missionsData.length || 0); // Use array length since no totalCount in GET all
+    setTotalEntries(missionsData.length || 0);
   } catch (error) {
+    // Gestion des erreurs
     console.error("Erreur lors du chargement des missions:", error);
     onError({
       isOpen: true,
       type: "error",
       message: `Erreur lors du chargement des missions: ${error.message}`,
     });
-    setMissions([]); // Fallback to empty array on error
+    setMissions([]);
   } finally {
     setIsLoading((prev) => ({ ...prev, missions: false }));
   }
 };
 
+// Fonction pour récupérer les missions avec filtres et pagination
 export const fetchMissions = async (
   setMissions,
   setIsLoading,
@@ -279,54 +371,46 @@ export const fetchMissions = async (
 ) => {
   try {
     setIsLoading((prev) => ({ ...prev, missions: true }));
-
-    // Prepare the request body
+    
     const requestBody = {
       name: filters.name || "",
       startDateMin: filters.startDateMin || null,
       startDateMax: filters.startDateMax || null,
-      site: filters.site || "",
+      lieuId: filters.lieuId || "",
       status: filters.status || "",
     };
-
-    // Add page and pageSize as query parameters
+    
+    console.log("API SEND:", requestBody);
+    
     const queryParams = new URLSearchParams({
       page,
       pageSize,
     }).toString();
-
-    const response = await fetch(`${BASE_URL}/api/Mission/search?${queryParams}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erreur lors du chargement des missions: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log("API Response:", data); // Debug: Log the API response
-    // Ensure missions is always an array
+    
+    // Appel API pour récupérer les missions filtrées
+    const data = await apiPost(`/api/Mission/search?${queryParams}`, requestBody);
+    console.log("API Response:", data);
+    
+    // S'assure que missions est toujours un tableau
     const missionsData = Array.isArray(data.data) ? data.data : [];
     setMissions(missionsData);
-    setTotalEntries(data.totalCount || missionsData.length || 0); // Use totalCount from API
+    setTotalEntries(data.totalCount || missionsData.length || 0);
+    
   } catch (error) {
+    // Gestion des erreurs
     console.error("Erreur lors du chargement des missions:", error);
     onError({
       isOpen: true,
       type: "error",
       message: `Erreur lors du chargement des missions: ${error.message}`,
     });
-    setMissions([]); // Fallback to empty array on error
+    setMissions([]);
   } finally {
     setIsLoading((prev) => ({ ...prev, missions: false }));
   }
 };
 
+// Fonction pour récupérer une mission par son ID
 export const fetchMissionById = async (
   missionId,
   setMission,
@@ -337,22 +421,11 @@ export const fetchMissionById = async (
     if (typeof setIsLoading === "function") {
       setIsLoading(true);
     }
-
-    const response = await fetch(`${BASE_URL}/api/Mission/${missionId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erreur lors du chargement de la mission: ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    // Appel API pour récupérer la mission
+    const data = await apiGet(`/api/Mission/${missionId}`);
     setMission(data);
   } catch (error) {
+    // Gestion des erreurs
     console.error("Erreur lors du chargement de la mission:", error);
     onError({
       isOpen: true,
@@ -366,25 +439,14 @@ export const fetchMissionById = async (
   }
 };
 
+// Fonction pour récupérer les statistiques des missions
 export const fetchMissionStats = async (setStats, setIsLoading, onError) => {
   try {
     setIsLoading((prev) => ({ ...prev, stats: true }));
-
-    const response = await fetch(`${BASE_URL}/api/Mission/stats`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erreur lors du chargement des statistiques: ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const data = await apiGet("/api/Mission/stats");
     setStats(data);
   } catch (error) {
+    // Gestion des erreurs
     console.error("Erreur lors du chargement des statistiques:", error);
     onError({
       isOpen: true,
@@ -397,5 +459,38 @@ export const fetchMissionStats = async (setStats, setIsLoading, onError) => {
   }
 };
 
+export const cancelMission = async (
+  missionId,
+  setIsLoading,
+  onSuccess,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, missions: true }));
+    
+    // Appel API pour annuler la mission
+    await apiPut(`/api/Mission/${missionId}/cancel`, null);
+
+    // Affiche un message de succès
+    onSuccess({
+      isOpen: true,
+      type: "success",
+      message: `Mission ${missionId} annulée avec succès.`,
+    });
+  } catch (error) {
+    // Gestion des erreurs
+    console.error("Erreur lors de l'annulation de la mission:", error);
+    onError({
+      isOpen: true,
+      type: "error",
+      message: error.message || "Une erreur est survenue lors de l'annulation de la mission.",
+    });
+    throw error;
+  } finally {
+    setIsLoading((prev) => ({ ...prev, missions: false }));
+  }
+};
+
+// Fonction utilitaire pour récupérer l'ID d'une mission à partir de son nom
 export const getMissionId = (name, missions) =>
   missions.find((mission) => mission.name === name)?.missionId || "";

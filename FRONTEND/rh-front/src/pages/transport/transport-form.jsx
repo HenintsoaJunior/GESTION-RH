@@ -1,9 +1,10 @@
 import "styles/generic-form-styles.css";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { BASE_URL } from "config/apiConfig";
 import Alert from "components/alert";
+import Modal from "components/modal";
 import * as FaIcons from "react-icons/fa";
+import { createTransport } from "services/transport/transport";
 
 export default function TransportForm() {
   const [formData, setFormData] = useState({
@@ -11,6 +12,8 @@ export default function TransportForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
+  const [modal, setModal] = useState({ isOpen: false, type: "info", message: "" });
+  const [fieldErrors, setFieldErrors] = useState({});
   const [returnUrl, setReturnUrl] = useState("");
   const [fieldType, setFieldType] = useState("");
   const navigate = useNavigate();
@@ -32,55 +35,60 @@ export default function TransportForm() {
     setAlert({ isOpen: true, type, message });
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Mapper les noms des champs vers les noms des propriétés DTO
+    const fieldMapping = {
+      type: 'Type'
+    };
+    
+    const dtoFieldName = fieldMapping[name];
+    if (dtoFieldName) {
+      setFieldErrors((prev) => ({ ...prev, [dtoFieldName]: undefined }));
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
+    setFieldErrors({});
 
     try {
-      const response = await fetch(`${BASE_URL}/api/Transport`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "accept": "text/plain"
-        },
-        body: JSON.stringify({
-          type: formData.type
-        }),
-      });
+      await createTransport(
+        { type: formData.type },
+        setIsSubmitting,
+        (alert) => {
+          setAlert(alert);
+          if (returnUrl && fieldType) {
+            setTimeout(() => {
+              const returnParams = new URLSearchParams();
+              returnParams.set("newValue", formData.type);
+              returnParams.set("fieldType", fieldType);
 
-      if (response.ok) {
-        const result = await response.json();
-        showAlert("success", "Transport créé avec succès !");
-        
-        if (returnUrl && fieldType) {
-          // Handle return to AutoCompleteInput
-          setTimeout(() => {
-            const returnParams = new URLSearchParams();
-            returnParams.set("newValue", formData.type);
-            returnParams.set("fieldType", fieldType);
-            
-            const [basePath, existingParams] = returnUrl.split('?');
-            const finalParams = new URLSearchParams(existingParams || '');
-            
-            returnParams.forEach((value, key) => {
-              finalParams.set(key, value);
-            });
-            
-            const finalUrl = `${basePath}?${finalParams.toString()}`;
-            navigate(finalUrl);
-          }, 1500);
-        } else {
-          // Reset form
-          event.target.reset();
-          setFormData({ type: "" });
+              const [basePath, existingParams] = returnUrl.split("?");
+              const finalParams = new URLSearchParams(existingParams || "");
+
+              returnParams.forEach((value, key) => {
+                finalParams.set(key, value);
+              });
+
+              const finalUrl = `${basePath}?${finalParams.toString()}`;
+              navigate(finalUrl);
+            }, 1500);
+          } else {
+            setFormData({ type: "" });
+          }
+        },
+        (error) => {
+          console.log("Erreurs par champ (fieldErrors) :", error.fieldErrors);
+          setModal(error);
+          setFieldErrors(error.fieldErrors || {});
         }
-      } else {
-        const errorData = await response.json();
-        const message = errorData.message || `Erreur ${response.status}: Échec de la création du transport.`;
-        showAlert("error", message);
-      }
+      );
     } catch (error) {
-      showAlert("error", "Erreur de connexion. Veuillez vérifier votre connexion et réessayer.");
+      console.error("Erreur dans handleSubmit :", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -88,11 +96,18 @@ export default function TransportForm() {
 
   const handleReset = () => {
     setFormData({ type: "" });
+    setFieldErrors({});
     showAlert("info", "Formulaire réinitialisé.");
   };
 
   return (
     <div className="form-container">
+      <Modal
+        type={modal.type}
+        message={modal.message}
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ ...modal, isOpen: false })}
+      />
       <Alert
         type={alert.type}
         message={alert.message}
@@ -109,18 +124,24 @@ export default function TransportForm() {
             <tbody>
               <tr>
                 <th className="form-label-cell">
-                  <label className="form-label form-label-required">Type de Transport</label>
+                  <label htmlFor="type" className="form-label form-label-required">
+                    Type de Transport
+                  </label>
                 </th>
                 <td className="form-input-cell">
                   <input
+                    id="type"
                     type="text"
+                    name="type"
                     value={formData.type}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, type: e.target.value }))}
+                    onChange={handleInputChange}
                     placeholder="Ex: Bateau, Bus, Train..."
-                    className="form-input"
-                    required
+                    className={`form-input ${fieldErrors.Type ? "error" : ""}`}
                     disabled={isSubmitting}
                   />
+                  {fieldErrors.Type && (
+                    <span className="error-message">{fieldErrors.Type.join(", ")}</span>
+                  )}
                 </td>
               </tr>
             </tbody>

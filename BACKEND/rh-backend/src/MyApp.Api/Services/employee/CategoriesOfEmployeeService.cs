@@ -9,6 +9,7 @@ namespace MyApp.Api.Services.employee
         Task AddAsync(CategoriesOfEmployee entity);
         Task UpdateAsync(CategoriesOfEmployee entity);
         Task DeleteAsync(CategoriesOfEmployee entity);
+        Task<IEnumerable<CategoriesOfEmployee>> GetAllAsync();
     }
 
     public class CategoriesOfEmployeeService : ICategoriesOfEmployeeService
@@ -23,6 +24,11 @@ namespace MyApp.Api.Services.employee
         public async Task<IEnumerable<CategoriesOfEmployee>> GetCategoriesByEmployeeIdAsync(string employeeId, DateTime date)
         {
             return await _repository.GetByEmployeeIdBeforeDateAsync(employeeId, date);
+        }
+
+        public async Task<IEnumerable<CategoriesOfEmployee>> GetAllAsync()
+        {
+            return await _repository.GetAllAsync();
         }
 
         public async Task AddAsync(CategoriesOfEmployee entity)

@@ -521,3 +521,16 @@
 .autocomplete-add-item.enabled:hover {
   background-color: #e7f3ff;
 }
+
+.form-input.error {
+  border: 2px solid red;
+}
+
+.error-message {
+  font-family: var(--font-family);
+  color: red;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: block;
+  text-align: left;
+}

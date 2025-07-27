@@ -9,21 +9,19 @@ namespace MyApp.Api.Controllers.mission
     [Route("api/[controller]")]
     public class MissionPaiementController : ControllerBase
     {
-        private readonly ICompensationScaleService _compensationScaleService;
         private readonly IMissionAssignationService _missionAssignationService;
 
         public MissionPaiementController(
             ICompensationScaleService compensationScaleService,
             IMissionAssignationService missionAssignationService)
         {
-            _compensationScaleService = compensationScaleService ?? throw new ArgumentNullException(nameof(compensationScaleService));
             _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
         }
 
         [HttpPost("generate")]
         public async Task<ActionResult<IEnumerable<MissionPaiement>>> GeneratePaiements([FromBody] GeneratePaiementDTO generatePaiementDTO)
         {
-            if (generatePaiementDTO == null || string.IsNullOrWhiteSpace(generatePaiementDTO.EmployeeId) || string.IsNullOrWhiteSpace(generatePaiementDTO.MissionId))
+            if (string.IsNullOrWhiteSpace(generatePaiementDTO.EmployeeId) || string.IsNullOrWhiteSpace(generatePaiementDTO.MissionId))
             {
                 return BadRequest("Valid EmployeeId and MissionId are required.");
             }
