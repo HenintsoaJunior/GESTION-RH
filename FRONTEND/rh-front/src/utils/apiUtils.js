@@ -1,4 +1,5 @@
-// apiUtils.js
+"use client";
+
 import { BASE_URL } from 'config/apiConfig';
 
 // Default headers
@@ -85,3 +86,6 @@ export const apiPost = (endpoint, body = null, queryParams = {}, headers = {}, r
 
 export const apiPut = (endpoint, body = null, queryParams = {}, headers = {}, responseType = 'json') =>
   apiRequest({ endpoint, method: 'PUT', body, queryParams, headers, responseType });
+
+export const apiDelete = (endpoint, queryParams = {}, headers = {}, responseType = 'json') =>
+  apiRequest({ endpoint, method: 'DELETE', queryParams, headers, responseType });

@@ -223,5 +223,21 @@ namespace MyApp.Api.Controllers.employee
                 return StatusCode(500, "Une erreur est survenue lors de la suppression de l'employé.");
             }
         }
+        
+        [HttpGet("stats")]
+        public async Task<ActionResult<EmployeeStats>> GetStatistics()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération des statistiques des employés");
+                var stats = await _employeeService.GetStatisticsAsync();
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des statistiques des employés");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des statistiques des employés.");
+            }
+        }
     }
 }

@@ -7,7 +7,7 @@ export default function ShortcutsDashboard() {
     {
       id: 1,
       title: "Employee",
-      link: "/employee",
+      link: "/employee/list",
     },
     {
       id: 2,
