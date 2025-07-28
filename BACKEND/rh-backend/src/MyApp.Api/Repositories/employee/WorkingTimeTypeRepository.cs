@@ -8,8 +8,8 @@ namespace MyApp.Api.Repositories.employee
     {
         Task<IEnumerable<WorkingTimeType>> GetAllAsync();
         Task<WorkingTimeType?> GetByIdAsync(string id);
-        Task AddAsync(WorkingTimeType type);
-        Task UpdateAsync(WorkingTimeType type);
+        Task AddAsync(WorkingTimeType workingTimeType);
+        Task UpdateAsync(WorkingTimeType workingTimeType);
         Task DeleteAsync(string id);
         Task SaveChangesAsync();
     }
@@ -26,31 +26,31 @@ namespace MyApp.Api.Repositories.employee
         public async Task<IEnumerable<WorkingTimeType>> GetAllAsync()
         {
             return await _context.WorkingTimeTypes
-                .OrderBy(w => w.Label)
                 .ToListAsync();
         }
 
         public async Task<WorkingTimeType?> GetByIdAsync(string id)
         {
-            return await _context.WorkingTimeTypes.FindAsync(id);
+            return await _context.WorkingTimeTypes
+                .FirstOrDefaultAsync(w => w.WorkingTimeTypeId == id);
         }
 
-        public async Task AddAsync(WorkingTimeType type)
+        public async Task AddAsync(WorkingTimeType workingTimeType)
         {
-            await _context.WorkingTimeTypes.AddAsync(type);
+            await _context.WorkingTimeTypes.AddAsync(workingTimeType);
         }
 
-        public Task UpdateAsync(WorkingTimeType type)
+        public Task UpdateAsync(WorkingTimeType workingTimeType)
         {
-            _context.WorkingTimeTypes.Update(type);
+            _context.WorkingTimeTypes.Update(workingTimeType);
             return Task.CompletedTask;
         }
 
         public async Task DeleteAsync(string id)
         {
-            var entity = await GetByIdAsync(id);
-            if (entity != null)
-                _context.WorkingTimeTypes.Remove(entity);
+            var workingTimeType = await GetByIdAsync(id);
+            if (workingTimeType != null)
+                _context.WorkingTimeTypes.Remove(workingTimeType);
         }
 
         public async Task SaveChangesAsync()
