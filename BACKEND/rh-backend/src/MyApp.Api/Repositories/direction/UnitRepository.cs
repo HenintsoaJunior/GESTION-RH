@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
-using MyApp.Api.Entities;
 using MyApp.Api.Entities.direction;
 
 namespace MyApp.Api.Repositories.direction
@@ -9,6 +8,7 @@ namespace MyApp.Api.Repositories.direction
     {
         Task<IEnumerable<Unit>> GetAllAsync();
         Task<Unit?> GetByIdAsync(string id);
+        Task<IEnumerable<Unit>> GetByServiceAsync(string serviceId);
         Task AddAsync(Unit unit);
         Task UpdateAsync(Unit unit);
         Task DeleteAsync(string id);
@@ -28,7 +28,6 @@ namespace MyApp.Api.Repositories.direction
         {
             return await _context.Units
                 .Include(u => u.Service)
-                .OrderByDescending(u => u.CreatedAt)
                 .ToListAsync();
         }
 
@@ -39,15 +38,20 @@ namespace MyApp.Api.Repositories.direction
                 .FirstOrDefaultAsync(u => u.UnitId == id);
         }
 
+        public async Task<IEnumerable<Unit>> GetByServiceAsync(string serviceId)
+        {
+            return await _context.Units
+                .Where(u => u.ServiceId == serviceId)
+                .ToListAsync();
+        }
+
         public async Task AddAsync(Unit unit)
         {
-            unit.CreatedAt = DateTime.Now;
             await _context.Units.AddAsync(unit);
         }
 
         public Task UpdateAsync(Unit unit)
         {
-            unit.UpdatedAt = DateTime.Now;
             _context.Units.Update(unit);
             return Task.CompletedTask;
         }
