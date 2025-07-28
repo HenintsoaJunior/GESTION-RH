@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.direction;
 using MyApp.Api.Entities.site;
+using MyApp.Api.Models.form.employee;
 
 namespace MyApp.Api.Entities.employee
 {
@@ -170,5 +171,42 @@ namespace MyApp.Api.Entities.employee
         [ForeignKey("SiteId")]
         public Site? Site { get; set; }
         public ICollection<EmployeeNationality>? EmployeeNationalities { get; set; }
+
+        
+        public Employee(EmployeeFormDTO form)
+        {
+            EmployeeCode = form.EmployeeCode;
+            LastName = form.LastName;
+            FirstName = form.FirstName;
+            BirthDate = form.BirthDate;
+            BirthPlace = form.BirthPlace;
+            ChildrenCount = form.ChildrenCount;
+            CINNumber = form.CINNumber;
+            CINDate = form.CINDate;
+            CINPlace = form.CINPlace;
+            CNAPSNumber = form.CNAPSNumber;
+            Address = form.Address;
+            AddressComplement = form.AddressComplement;
+            BankCode = form.BankCode;
+            BranchCode = form.BranchCode;
+            AccountNumber = form.AccountNumber;
+            RibKey = form.RibKey;
+            HireDate = form.HireDate;
+            JobTitle = form.JobTitle;
+            Grade = form.Grade;
+            IsExecutive = form.IsExecutive;
+            ContractEndDate = form.ContractEndDate;
+            Status = form.Status ?? "Actif"; // Valeur par défaut si null
+            UnitId = form.UnitId;
+            ServiceId = form.ServiceId;
+            DepartmentId = form.DepartmentId;
+            DirectionId = form.DirectionId;
+            WorkingTimeTypeId = form.WorkingTimeTypeId;
+            ContractTypeId = form.ContractTypeId;
+            GenderId = form.GenderId;
+            MaritalStatusId = form.MaritalStatusId;
+            SiteId = form.SiteId;
+            Headcount = 1; // Valeur par défaut
+        }
     }
 }

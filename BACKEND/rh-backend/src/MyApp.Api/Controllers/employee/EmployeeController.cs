@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.form.employee;
 using MyApp.Api.Models.search.employee;
-using MyApp.Api.Services.employe;
+using MyApp.Api.Services.employee;
+
 
 namespace MyApp.Api.Controllers.employee
 {
@@ -19,7 +21,7 @@ namespace MyApp.Api.Controllers.employee
             _employeeService = employeeService;
             _logger = logger;
         }
-        
+
         [HttpPost("search")]
         public async Task<ActionResult<object>> Search([FromBody] EmployeeSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
@@ -131,7 +133,7 @@ namespace MyApp.Api.Controllers.employee
         }
 
         [HttpPost]
-        public async Task<ActionResult<Employee>> Create([FromBody] Employee employee)
+        public async Task<ActionResult<Employee>> Create([FromBody] EmployeeFormDTO employeeForm)
         {
             try
             {
@@ -142,27 +144,36 @@ namespace MyApp.Api.Controllers.employee
                 }
 
                 _logger.LogInformation("Création d'un nouvel employé");
-                await _employeeService.AddAsync(employee);
+                await _employeeService.AddAsync(employeeForm);
 
-                _logger.LogInformation("Employé créé avec succès avec l'ID: {EmployeeId}", employee.EmployeeId);
-                return CreatedAtAction(nameof(GetById), new { id = employee.EmployeeId }, employee);
+                // Récupérer l'employé créé (l'ID est généré dans le service)
+                var employee = await _employeeService.GetAllAsync();
+                var createdEmployee = employee.OrderByDescending(e => e.EmployeeId).FirstOrDefault();
+                if (createdEmployee == null)
+                {
+                    _logger.LogWarning("Employé non trouvé après création");
+                    return StatusCode(500, "L'employé n'a pas été trouvé après création.");
+                }
+
+                _logger.LogInformation("Employé créé avec succès avec l'ID: {EmployeeId}", createdEmployee.EmployeeId);
+                return Ok(createdEmployee);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la création de l'employé avec l'ID: {EmployeeId}", employee?.EmployeeId);
+                _logger.LogError(ex, "Erreur lors de la création de l'employé");
                 return StatusCode(500, "Une erreur est survenue lors de la création de l'employé.");
             }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, Employee employee)
+        public async Task<IActionResult> Update(string id, [FromBody] EmployeeFormDTO employeeForm)
         {
             try
             {
-                if (id != employee.EmployeeId)
+                if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning("L'ID dans l'URL ({Id}) ne correspond pas à l'ID de l'employé ({EmployeeId})", id, employee.EmployeeId);
-                    return BadRequest("L'ID dans l'URL ne correspond pas à l'ID de l'employé.");
+                    _logger.LogWarning("Données invalides lors de la mise à jour d'un employé: {ModelStateErrors}", ModelState);
+                    return BadRequest(ModelState);
                 }
 
                 if (string.IsNullOrWhiteSpace(id))
@@ -180,7 +191,7 @@ namespace MyApp.Api.Controllers.employee
                 }
 
                 _logger.LogInformation("Mise à jour de l'employé avec l'ID: {EmployeeId}", id);
-                await _employeeService.UpdateAsync(employee);
+                await _employeeService.UpdateAsync(id, employeeForm);
 
                 _logger.LogInformation("Employé mis à jour avec succès pour l'ID: {EmployeeId}", id);
                 return NoContent();
@@ -223,7 +234,7 @@ namespace MyApp.Api.Controllers.employee
                 return StatusCode(500, "Une erreur est survenue lors de la suppression de l'employé.");
             }
         }
-        
+
         [HttpGet("stats")]
         public async Task<ActionResult<EmployeeStats>> GetStatistics()
         {

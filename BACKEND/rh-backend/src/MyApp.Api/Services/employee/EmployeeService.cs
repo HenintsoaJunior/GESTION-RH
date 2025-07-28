@@ -1,10 +1,11 @@
 using Microsoft.Extensions.Logging;
 using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.form.employee;
 using MyApp.Api.Models.search.employee;
 using MyApp.Api.Repositories.employee;
 using MyApp.Api.Utils.generator;
 
-namespace MyApp.Api.Services.employe
+namespace MyApp.Api.Services.employee
 {
     public interface IEmployeeService
     {
@@ -13,8 +14,8 @@ namespace MyApp.Api.Services.employe
         Task<Employee?> GetByIdAsync(string id);
         Task<IEnumerable<Employee>> GetByGenderAsync(string genderId);
         Task<IEnumerable<Employee>> GetByStatusAsync(string status);
-        Task AddAsync(Employee employee);
-        Task UpdateAsync(Employee employee);
+        Task AddAsync(EmployeeFormDTO employeeForm);
+        Task UpdateAsync(string id, EmployeeFormDTO employeeForm);
         Task DeleteAsync(string id);
         Task<EmployeeStats> GetStatisticsAsync();
     }
@@ -34,7 +35,7 @@ namespace MyApp.Api.Services.employe
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
         }
-        
+
         public async Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize)
         {
             try
@@ -123,20 +124,18 @@ namespace MyApp.Api.Services.employe
             }
         }
 
-        public async Task AddAsync(Employee employee)
+        public async Task AddAsync(EmployeeFormDTO employeeForm)
         {
             try
             {
-                if (employee == null)
+                if (employeeForm == null)
                 {
-                    throw new ArgumentNullException(nameof(employee), "L'employé ne peut pas être null");
+                    throw new ArgumentNullException(nameof(employeeForm), "Le formulaire employé ne peut pas être null");
                 }
 
-                if (string.IsNullOrWhiteSpace(employee.EmployeeId))
-                {
-                    employee.EmployeeId = _sequenceGenerator.GenerateSequence("seq_employee_id", "EMP", 6, "-");
-                    _logger.LogInformation("ID généré pour l'employé: {EmployeeId}", employee.EmployeeId);
-                }
+                var employee = new Employee(employeeForm);
+                employee.EmployeeId = _sequenceGenerator.GenerateSequence("seq_employee_id", "EMP", 6, "-");
+                _logger.LogInformation("ID généré pour l'employé: {EmployeeId}", employee.EmployeeId);
 
                 await _repository.AddAsync(employee);
                 await _repository.SaveChangesAsync();
@@ -145,33 +144,46 @@ namespace MyApp.Api.Services.employe
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de l'ajout de l'employé avec l'ID: {EmployeeId}", employee?.EmployeeId);
+                _logger.LogError(ex, "Erreur lors de l'ajout de l'employé");
                 throw;
             }
         }
 
-        public async Task UpdateAsync(Employee employee)
+        public async Task UpdateAsync(string id, EmployeeFormDTO employeeForm)
         {
             try
             {
-                if (employee == null)
+                if (employeeForm == null)
                 {
-                    throw new ArgumentNullException(nameof(employee), "L'employé ne peut pas être null");
+                    throw new ArgumentNullException(nameof(employeeForm), "Le formulaire employé ne peut pas être null");
                 }
 
-                if (string.IsNullOrWhiteSpace(employee.EmployeeId))
+                if (string.IsNullOrWhiteSpace(id))
                 {
-                    throw new ArgumentException("L'ID de l'employé ne peut pas être null ou vide", nameof(employee.EmployeeId));
+                    throw new ArgumentException("L'ID de l'employé ne peut pas être null ou vide", nameof(id));
                 }
+
+                var existingEmployee = await _repository.GetByIdAsync(id);
+                if (existingEmployee == null)
+                {
+                    throw new ArgumentException("L'employé n'existe pas", nameof(id));
+                }
+
+                var employee = new Employee(employeeForm);
+                employee.EmployeeId = id; // Conserver l'ID existant
+                employee.DepartureDate = existingEmployee.DepartureDate; // Conserver les champs non présents dans la DTO
+                employee.DepartureReasonCode = existingEmployee.DepartureReasonCode;
+                employee.DepartureReasonTitle = existingEmployee.DepartureReasonTitle;
+                employee.BirthDate_ = existingEmployee.BirthDate_;
 
                 await _repository.UpdateAsync(employee);
                 await _repository.SaveChangesAsync();
 
-                _logger.LogInformation("Employé mis à jour avec succès pour l'ID: {EmployeeId}", employee.EmployeeId);
+                _logger.LogInformation("Employé mis à jour avec succès pour l'ID: {EmployeeId}", id);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour de l'employé avec l'ID: {EmployeeId}", employee?.EmployeeId);
+                _logger.LogError(ex, "Erreur lors de la mise à jour de l'employé avec l'ID: {EmployeeId}", id);
                 throw;
             }
         }
@@ -196,7 +208,7 @@ namespace MyApp.Api.Services.employe
                 throw;
             }
         }
-        
+
         public async Task<EmployeeStats> GetStatisticsAsync()
         {
             try
