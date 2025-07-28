@@ -8,8 +8,8 @@ namespace MyApp.Api.Repositories.employee
     {
         Task<IEnumerable<MaritalStatus>> GetAllAsync();
         Task<MaritalStatus?> GetByIdAsync(string id);
-        Task AddAsync(MaritalStatus status);
-        Task UpdateAsync(MaritalStatus status);
+        Task AddAsync(MaritalStatus maritalStatus);
+        Task UpdateAsync(MaritalStatus maritalStatus);
         Task DeleteAsync(string id);
         Task SaveChangesAsync();
     }
@@ -26,31 +26,31 @@ namespace MyApp.Api.Repositories.employee
         public async Task<IEnumerable<MaritalStatus>> GetAllAsync()
         {
             return await _context.MaritalStatuses
-                .OrderBy(m => m.Label)
                 .ToListAsync();
         }
 
         public async Task<MaritalStatus?> GetByIdAsync(string id)
         {
-            return await _context.MaritalStatuses.FindAsync(id);
+            return await _context.MaritalStatuses
+                .FirstOrDefaultAsync(m => m.MaritalStatusId == id);
         }
 
-        public async Task AddAsync(MaritalStatus status)
+        public async Task AddAsync(MaritalStatus maritalStatus)
         {
-            await _context.MaritalStatuses.AddAsync(status);
+            await _context.MaritalStatuses.AddAsync(maritalStatus);
         }
 
-        public Task UpdateAsync(MaritalStatus status)
+        public Task UpdateAsync(MaritalStatus maritalStatus)
         {
-            _context.MaritalStatuses.Update(status);
+            _context.MaritalStatuses.Update(maritalStatus);
             return Task.CompletedTask;
         }
 
         public async Task DeleteAsync(string id)
         {
-            var entity = await GetByIdAsync(id);
-            if (entity != null)
-                _context.MaritalStatuses.Remove(entity);
+            var maritalStatus = await GetByIdAsync(id);
+            if (maritalStatus != null)
+                _context.MaritalStatuses.Remove(maritalStatus);
         }
 
         public async Task SaveChangesAsync()

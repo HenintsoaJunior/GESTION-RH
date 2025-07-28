@@ -1,0 +1,955 @@
+Voici l'example de creation du CRUD pour code voici mon :
+-> Entite:
+using Microsoft.AspNetCore.Mvc;
+using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.form.employee;
+using MyApp.Api.Models.search.employee;
+using MyApp.Api.Services.employee;
+
+
+namespace MyApp.Api.Controllers.employee
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class EmployeeController : ControllerBase
+    {
+        private readonly IEmployeeService _employeeService;
+        private readonly ILogger<EmployeeController> _logger;
+
+        public EmployeeController(
+            IEmployeeService employeeService,
+            ILogger<EmployeeController> logger)
+        {
+            _employeeService = employeeService;
+            _logger = logger;
+        }
+
+        [HttpPost("search")]
+        public async Task<ActionResult<object>> Search([FromBody] EmployeeSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                _logger.LogInformation("Recherche paginée des employés avec filtres, page: {Page}, pageSize: {PageSize}", page, pageSize);
+                var (results, totalCount) = await _employeeService.SearchAsync(filters, page, pageSize);
+                return Ok(new
+                {
+                    data = results,
+                    totalCount,
+                    page,
+                    pageSize
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la recherche paginée des employés");
+                return StatusCode(500, "Une erreur est survenue lors de la recherche des employés.");
+            }
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Employee>>> GetAll()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération de tous les employés");
+                var employees = await _employeeService.GetAllAsync();
+                return Ok(employees);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de tous les employés");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des employés.");
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Employee>> GetById(string id)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de récupération d'un employé avec un ID null ou vide");
+                    return BadRequest("L'ID de l'employé ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Récupération de l'employé avec l'ID: {EmployeeId}", id);
+                var employee = await _employeeService.GetByIdAsync(id);
+                if (employee == null)
+                {
+                    _logger.LogWarning("Employé non trouvé pour l'ID: {EmployeeId}", id);
+                    return NotFound();
+                }
+
+                return Ok(employee);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de l'employé avec l'ID: {EmployeeId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération de l'employé.");
+            }
+        }
+
+        [HttpGet("gender/{genderId}")]
+        public async Task<ActionResult<IEnumerable<Employee>>> GetByGender(string genderId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(genderId))
+                {
+                    _logger.LogWarning("Tentative de récupération des employés avec un ID de genre null ou vide");
+                    return BadRequest("L'ID du genre ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Récupération des employés par genre: {GenderId}", genderId);
+                var employees = await _employeeService.GetByGenderAsync(genderId);
+                return Ok(employees);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des employés par genre: {GenderId}", genderId);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des employés par genre.");
+            }
+        }
+
+        [HttpGet("status/{status}")]
+        public async Task<ActionResult<IEnumerable<Employee>>> GetByStatus(string status)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(status))
+                {
+                    _logger.LogWarning("Tentative de récupération des employés avec un statut null ou vide");
+                    return BadRequest("Le statut ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Récupération des employés par statut: {Status}", status);
+                var employees = await _employeeService.GetByStatusAsync(status);
+                return Ok(employees);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des employés par statut: {Status}", status);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des employés par statut.");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<Employee>> Create([FromBody] EmployeeFormDTO employeeForm)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Données invalides lors de la création d'un employé: {ModelStateErrors}", ModelState);
+                    return BadRequest(ModelState);
+                }
+
+                _logger.LogInformation("Création d'un nouvel employé");
+                await _employeeService.AddAsync(employeeForm);
+
+                // Récupérer l'employé créé (l'ID est généré dans le service)
+                var employee = await _employeeService.GetAllAsync();
+                var createdEmployee = employee.OrderByDescending(e => e.EmployeeId).FirstOrDefault();
+                if (createdEmployee == null)
+                {
+                    _logger.LogWarning("Employé non trouvé après création");
+                    return StatusCode(500, "L'employé n'a pas été trouvé après création.");
+                }
+
+                _logger.LogInformation("Employé créé avec succès avec l'ID: {EmployeeId}", createdEmployee.EmployeeId);
+                return Ok(createdEmployee);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création de l'employé");
+                return StatusCode(500, "Une erreur est survenue lors de la création de l'employé.");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(string id, [FromBody] EmployeeFormDTO employeeForm)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Données invalides lors de la mise à jour d'un employé: {ModelStateErrors}", ModelState);
+                    return BadRequest(ModelState);
+                }
+
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de mise à jour d'un employé avec un ID null ou vide");
+                    return BadRequest("L'ID de l'employé ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Vérification de l'existence de l'employé avec l'ID: {EmployeeId}", id);
+                var existingEmployee = await _employeeService.GetByIdAsync(id);
+                if (existingEmployee == null)
+                {
+                    _logger.LogWarning("Employé non trouvé pour l'ID: {EmployeeId}", id);
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Mise à jour de l'employé avec l'ID: {EmployeeId}", id);
+                await _employeeService.UpdateAsync(id, employeeForm);
+
+                _logger.LogInformation("Employé mis à jour avec succès pour l'ID: {EmployeeId}", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour de l'employé avec l'ID: {EmployeeId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la mise à jour de l'employé.");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(string id)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de suppression d'un employé avec un ID null ou vide");
+                    return BadRequest("L'ID de l'employé ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Vérification de l'existence de l'employé avec l'ID: {EmployeeId}", id);
+                var employee = await _employeeService.GetByIdAsync(id);
+                if (employee == null)
+                {
+                    _logger.LogWarning("Employé non trouvé pour l'ID: {EmployeeId}", id);
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Suppression de l'employé avec l'ID: {EmployeeId}", id);
+                await _employeeService.DeleteAsync(id);
+
+                _logger.LogInformation("Employé supprimé avec succès pour l'ID: {EmployeeId}", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de l'employé avec l'ID: {EmployeeId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la suppression de l'employé.");
+            }
+        }
+
+        [HttpGet("stats")]
+        public async Task<ActionResult<EmployeeStats>> GetStatistics()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération des statistiques des employés");
+                var stats = await _employeeService.GetStatisticsAsync();
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des statistiques des employés");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des statistiques des employés.");
+            }
+        }
+    }
+}
+
+-> Repository
+using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Data;
+using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.search.employee;
+
+namespace MyApp.Api.Repositories.employee
+{
+    public interface IEmployeeRepository
+    {
+        Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
+        Task<IEnumerable<Employee>> GetAllAsync();
+        Task<Employee?> GetByIdAsync(string id);
+        Task<IEnumerable<Employee>> GetByGenderAsync(string genderId);
+        Task<IEnumerable<Employee>> GetByStatusAsync(string status);
+        Task AddAsync(Employee employee);
+        Task UpdateAsync(Employee employee);
+        Task DeleteAsync(string id);
+        Task SaveChangesAsync();
+        Task<EmployeeStats> GetStatisticsAsync();
+    }
+
+    public class EmployeeRepository : IEmployeeRepository
+    {
+        private readonly AppDbContext _context;
+
+        public EmployeeRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+        
+        public async Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize)
+        {
+            var query = _context.Employees
+                .Include(e => e.Unit)
+                .Include(e => e.Service)
+                .Include(e => e.Department)
+                .Include(e => e.Direction)
+                .Include(e => e.WorkingTimeType)
+                .Include(e => e.ContractType)
+                .Include(e => e.Gender)
+                .Include(e => e.MaritalStatus)
+                .Include(e => e.Site)
+                .AsQueryable();
+
+            // Filtre par titre (JobTitle)
+            if (!string.IsNullOrWhiteSpace(filters.JobTitle))
+            {
+                query = query.Where(e => e.JobTitle != null && e.JobTitle.Contains(filters.JobTitle));
+            }
+
+            // Filtre par nom (LastName)
+            if (!string.IsNullOrWhiteSpace(filters.LastName))
+            {
+                query = query.Where(e => e.LastName.Contains(filters.LastName));
+            }
+
+            // Filtre par prénom (FirstName)
+            if (!string.IsNullOrWhiteSpace(filters.FirstName))
+            {
+                query = query.Where(e => e.FirstName.Contains(filters.FirstName));
+            }
+
+            // Filtre par direction (DirectionId)
+            if (!string.IsNullOrWhiteSpace(filters.DirectionId))
+            {
+                query = query.Where(e => e.DirectionId == filters.DirectionId);
+            }
+
+            // Filtre par type de contrat (ContractTypeId)
+            if (!string.IsNullOrWhiteSpace(filters.ContractTypeId))
+            {
+                query = query.Where(e => e.ContractTypeId == filters.ContractTypeId);
+            }
+
+            // Filtre par code employé (EmployeeCode)
+            if (!string.IsNullOrWhiteSpace(filters.EmployeeCode))
+            {
+                query = query.Where(e => e.EmployeeCode != null && e.EmployeeCode.Contains(filters.EmployeeCode));
+            }
+
+            // Filtre par site (SiteId)
+            if (!string.IsNullOrWhiteSpace(filters.SiteId))
+            {
+                query = query.Where(e => e.SiteId == filters.SiteId);
+            }
+
+            // Filtre par statut (Status)
+            if (!string.IsNullOrWhiteSpace(filters.Status))
+            {
+                query = query.Where(e => e.Status != null && e.Status.Contains(filters.Status));
+            }
+
+            // Filtre par genre (GenderId)
+            if (!string.IsNullOrWhiteSpace(filters.GenderId))
+            {
+                query = query.Where(e => e.GenderId == filters.GenderId);
+            }
+
+            // Filtre par date de départ minimum
+            if (filters.DepartureDateMin.HasValue)
+            {
+                query = query.Where(e => e.DepartureDate != null && e.DepartureDate >= filters.DepartureDateMin.Value);
+            }
+
+            // Filtre par date de départ maximum
+            if (filters.DepartureDateMax.HasValue)
+            {
+                query = query.Where(e => e.DepartureDate != null && e.DepartureDate <= filters.DepartureDateMax.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var results = await query
+                .OrderBy(e => e.LastName)
+                .ThenBy(e => e.FirstName)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (results, totalCount);
+        }
+
+        public async Task<IEnumerable<Employee>> GetAllAsync()
+        {
+            return await _context.Employees
+                .Include(e => e.Unit)
+                .Include(e => e.Service)
+                .Include(e => e.Department)
+                .Include(e => e.Direction)
+                .Include(e => e.WorkingTimeType)
+                .Include(e => e.ContractType)
+                .Include(e => e.Gender)
+                .Include(e => e.MaritalStatus)
+                .Include(e => e.Site)
+                .ToListAsync();
+        }
+
+        public async Task<Employee?> GetByIdAsync(string id)
+        {
+            return await _context.Employees
+                .Include(e => e.Unit)
+                .Include(e => e.Service)
+                .Include(e => e.Department)
+                .Include(e => e.Direction)
+                .Include(e => e.WorkingTimeType)
+                .Include(e => e.ContractType)
+                .Include(e => e.Gender)
+                .Include(e => e.MaritalStatus)
+                .Include(e => e.Site)
+                .FirstOrDefaultAsync(e => e.EmployeeId == id);
+        }
+
+        public async Task<IEnumerable<Employee>> GetByGenderAsync(string genderId)
+        {
+            return await _context.Employees
+                .Where(e => e.GenderId == genderId)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Employee>> GetByStatusAsync(string status)
+        {
+            return await _context.Employees
+                .Where(e => e.Status == status)
+                .ToListAsync();
+        }
+
+        public async Task AddAsync(Employee employee)
+        {
+            await _context.Employees.AddAsync(employee);
+        }
+
+        public Task UpdateAsync(Employee employee)
+        {
+            _context.Employees.Update(employee);
+            return Task.CompletedTask;
+        }
+
+        public async Task DeleteAsync(string id)
+        {
+            var employee = await GetByIdAsync(id);
+            if (employee != null)
+                _context.Employees.Remove(employee);
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
+        }
+        
+        public async Task<EmployeeStats> GetStatisticsAsync()
+        {
+            var total = await _context.Employees.CountAsync();
+            var actif = await _context.Employees
+                .CountAsync(e => e.Status == "Actif");
+            var inactif = await _context.Employees
+                .CountAsync(e => e.Status == "Inactif");
+            var departed = await _context.Employees
+                .CountAsync(e => e.DepartureDate != null);
+
+            return new EmployeeStats
+            {
+                Total = total,
+                Actif = actif,
+                Inactif = inactif,
+                Departed = departed
+            };
+        }
+    }
+}
+-> Service 
+using Microsoft.Extensions.Logging;
+using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.form.employee;
+using MyApp.Api.Models.search.employee;
+using MyApp.Api.Repositories.employee;
+using MyApp.Api.Utils.generator;
+
+namespace MyApp.Api.Services.employee
+{
+    public interface IEmployeeService
+    {
+        Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
+        Task<IEnumerable<Employee>> GetAllAsync();
+        Task<Employee?> GetByIdAsync(string id);
+        Task<IEnumerable<Employee>> GetByGenderAsync(string genderId);
+        Task<IEnumerable<Employee>> GetByStatusAsync(string status);
+        Task AddAsync(EmployeeFormDTO employeeForm);
+        Task UpdateAsync(string id, EmployeeFormDTO employeeForm);
+        Task DeleteAsync(string id);
+        Task<EmployeeStats> GetStatisticsAsync();
+    }
+
+    public class EmployeeService : IEmployeeService
+    {
+        private readonly IEmployeeRepository _repository;
+        private readonly ISequenceGenerator _sequenceGenerator;
+        private readonly ILogger<EmployeeService> _logger;
+
+        public EmployeeService(
+            IEmployeeRepository repository,
+            ISequenceGenerator sequenceGenerator,
+            ILogger<EmployeeService> logger)
+        {
+            _repository = repository;
+            _sequenceGenerator = sequenceGenerator;
+            _logger = logger;
+        }
+
+        public async Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize)
+        {
+            try
+            {
+                _logger.LogInformation("Recherche paginée des employés avec filtres");
+                return await _repository.SearchAsync(filters, page, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la recherche paginée des employés");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<Employee>> GetAllAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération de tous les employés");
+                return await _repository.GetAllAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des employés");
+                throw;
+            }
+        }
+
+        public async Task<Employee?> GetByIdAsync(string id)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de récupération d'un employé avec un ID null ou vide");
+                    return null;
+                }
+
+                _logger.LogInformation("Récupération de l'employé avec l'ID: {EmployeeId}", id);
+                return await _repository.GetByIdAsync(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de l'employé avec l'ID: {EmployeeId}", id);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<Employee>> GetByGenderAsync(string genderId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(genderId))
+                {
+                    _logger.LogWarning("Tentative de récupération des employés avec un ID de genre null ou vide");
+                    return Enumerable.Empty<Employee>();
+                }
+
+                _logger.LogInformation("Récupération des employés par genre: {GenderId}", genderId);
+                return await _repository.GetByGenderAsync(genderId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des employés par genre: {GenderId}", genderId);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<Employee>> GetByStatusAsync(string status)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(status))
+                {
+                    _logger.LogWarning("Tentative de récupération des employés avec un statut null ou vide");
+                    return Enumerable.Empty<Employee>();
+                }
+
+                _logger.LogInformation("Récupération des employés par statut: {Status}", status);
+                return await _repository.GetByStatusAsync(status);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des employés par statut: {Status}", status);
+                throw;
+            }
+        }
+
+        public async Task AddAsync(EmployeeFormDTO employeeForm)
+        {
+            try
+            {
+                if (employeeForm == null)
+                {
+                    throw new ArgumentNullException(nameof(employeeForm), "Le formulaire employé ne peut pas être null");
+                }
+
+                var employee = new Employee(employeeForm);
+                employee.EmployeeId = _sequenceGenerator.GenerateSequence("seq_employee_id", "EMP", 6, "-");
+                _logger.LogInformation("ID généré pour l'employé: {EmployeeId}", employee.EmployeeId);
+
+                await _repository.AddAsync(employee);
+                await _repository.SaveChangesAsync();
+
+                _logger.LogInformation("Employé ajouté avec succès avec l'ID: {EmployeeId}", employee.EmployeeId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de l'ajout de l'employé");
+                throw;
+            }
+        }
+
+        public async Task UpdateAsync(string id, EmployeeFormDTO employeeForm)
+        {
+            try
+            {
+                if (employeeForm == null)
+                {
+                    throw new ArgumentNullException(nameof(employeeForm), "Le formulaire employé ne peut pas être null");
+                }
+
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    throw new ArgumentException("L'ID de l'employé ne peut pas être null ou vide", nameof(id));
+                }
+
+                var existingEmployee = await _repository.GetByIdAsync(id);
+                if (existingEmployee == null)
+                {
+                    throw new ArgumentException("L'employé n'existe pas", nameof(id));
+                }
+
+                var employee = new Employee(employeeForm);
+                employee.EmployeeId = id; // Conserver l'ID existant
+                employee.DepartureDate = existingEmployee.DepartureDate; // Conserver les champs non présents dans la DTO
+                employee.DepartureReasonCode = existingEmployee.DepartureReasonCode;
+                employee.DepartureReasonTitle = existingEmployee.DepartureReasonTitle;
+                employee.BirthDate_ = existingEmployee.BirthDate_;
+
+                await _repository.UpdateAsync(employee);
+                await _repository.SaveChangesAsync();
+
+                _logger.LogInformation("Employé mis à jour avec succès pour l'ID: {EmployeeId}", id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour de l'employé avec l'ID: {EmployeeId}", id);
+                throw;
+            }
+        }
+
+        public async Task DeleteAsync(string id)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    throw new ArgumentException("L'ID de l'employé ne peut pas être null ou vide", nameof(id));
+                }
+
+                await _repository.DeleteAsync(id);
+                await _repository.SaveChangesAsync();
+
+                _logger.LogInformation("Employé supprimé avec succès pour l'ID: {EmployeeId}", id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de l'employé avec l'ID: {EmployeeId}", id);
+                throw;
+            }
+        }
+
+        public async Task<EmployeeStats> GetStatisticsAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération des statistiques des employés");
+                return await _repository.GetStatisticsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des statistiques des employés");
+                throw;
+            }
+        }
+    }
+}
+-> Controller 
+using Microsoft.AspNetCore.Mvc;
+using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.form.employee;
+using MyApp.Api.Models.search.employee;
+using MyApp.Api.Services.employee;
+
+
+namespace MyApp.Api.Controllers.employee
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class EmployeeController : ControllerBase
+    {
+        private readonly IEmployeeService _employeeService;
+        private readonly ILogger<EmployeeController> _logger;
+
+        public EmployeeController(
+            IEmployeeService employeeService,
+            ILogger<EmployeeController> logger)
+        {
+            _employeeService = employeeService;
+            _logger = logger;
+        }
+
+        [HttpPost("search")]
+        public async Task<ActionResult<object>> Search([FromBody] EmployeeSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                _logger.LogInformation("Recherche paginée des employés avec filtres, page: {Page}, pageSize: {PageSize}", page, pageSize);
+                var (results, totalCount) = await _employeeService.SearchAsync(filters, page, pageSize);
+                return Ok(new
+                {
+                    data = results,
+                    totalCount,
+                    page,
+                    pageSize
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la recherche paginée des employés");
+                return StatusCode(500, "Une erreur est survenue lors de la recherche des employés.");
+            }
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Employee>>> GetAll()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération de tous les employés");
+                var employees = await _employeeService.GetAllAsync();
+                return Ok(employees);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de tous les employés");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des employés.");
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Employee>> GetById(string id)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de récupération d'un employé avec un ID null ou vide");
+                    return BadRequest("L'ID de l'employé ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Récupération de l'employé avec l'ID: {EmployeeId}", id);
+                var employee = await _employeeService.GetByIdAsync(id);
+                if (employee == null)
+                {
+                    _logger.LogWarning("Employé non trouvé pour l'ID: {EmployeeId}", id);
+                    return NotFound();
+                }
+
+                return Ok(employee);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de l'employé avec l'ID: {EmployeeId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération de l'employé.");
+            }
+        }
+
+        [HttpGet("gender/{genderId}")]
+        public async Task<ActionResult<IEnumerable<Employee>>> GetByGender(string genderId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(genderId))
+                {
+                    _logger.LogWarning("Tentative de récupération des employés avec un ID de genre null ou vide");
+                    return BadRequest("L'ID du genre ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Récupération des employés par genre: {GenderId}", genderId);
+                var employees = await _employeeService.GetByGenderAsync(genderId);
+                return Ok(employees);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des employés par genre: {GenderId}", genderId);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des employés par genre.");
+            }
+        }
+
+        [HttpGet("status/{status}")]
+        public async Task<ActionResult<IEnumerable<Employee>>> GetByStatus(string status)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(status))
+                {
+                    _logger.LogWarning("Tentative de récupération des employés avec un statut null ou vide");
+                    return BadRequest("Le statut ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Récupération des employés par statut: {Status}", status);
+                var employees = await _employeeService.GetByStatusAsync(status);
+                return Ok(employees);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des employés par statut: {Status}", status);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des employés par statut.");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<Employee>> Create([FromBody] EmployeeFormDTO employeeForm)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Données invalides lors de la création d'un employé: {ModelStateErrors}", ModelState);
+                    return BadRequest(ModelState);
+                }
+
+                _logger.LogInformation("Création d'un nouvel employé");
+                await _employeeService.AddAsync(employeeForm);
+
+                // Récupérer l'employé créé (l'ID est généré dans le service)
+                var employee = await _employeeService.GetAllAsync();
+                var createdEmployee = employee.OrderByDescending(e => e.EmployeeId).FirstOrDefault();
+                if (createdEmployee == null)
+                {
+                    _logger.LogWarning("Employé non trouvé après création");
+                    return StatusCode(500, "L'employé n'a pas été trouvé après création.");
+                }
+
+                _logger.LogInformation("Employé créé avec succès avec l'ID: {EmployeeId}", createdEmployee.EmployeeId);
+                return Ok(createdEmployee);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création de l'employé");
+                return StatusCode(500, "Une erreur est survenue lors de la création de l'employé.");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(string id, [FromBody] EmployeeFormDTO employeeForm)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Données invalides lors de la mise à jour d'un employé: {ModelStateErrors}", ModelState);
+                    return BadRequest(ModelState);
+                }
+
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de mise à jour d'un employé avec un ID null ou vide");
+                    return BadRequest("L'ID de l'employé ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Vérification de l'existence de l'employé avec l'ID: {EmployeeId}", id);
+                var existingEmployee = await _employeeService.GetByIdAsync(id);
+                if (existingEmployee == null)
+                {
+                    _logger.LogWarning("Employé non trouvé pour l'ID: {EmployeeId}", id);
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Mise à jour de l'employé avec l'ID: {EmployeeId}", id);
+                await _employeeService.UpdateAsync(id, employeeForm);
+
+                _logger.LogInformation("Employé mis à jour avec succès pour l'ID: {EmployeeId}", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour de l'employé avec l'ID: {EmployeeId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la mise à jour de l'employé.");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(string id)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de suppression d'un employé avec un ID null ou vide");
+                    return BadRequest("L'ID de l'employé ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Vérification de l'existence de l'employé avec l'ID: {EmployeeId}", id);
+                var employee = await _employeeService.GetByIdAsync(id);
+                if (employee == null)
+                {
+                    _logger.LogWarning("Employé non trouvé pour l'ID: {EmployeeId}", id);
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Suppression de l'employé avec l'ID: {EmployeeId}", id);
+                await _employeeService.DeleteAsync(id);
+
+                _logger.LogInformation("Employé supprimé avec succès pour l'ID: {EmployeeId}", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de l'employé avec l'ID: {EmployeeId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la suppression de l'employé.");
+            }
+        }
+
+        [HttpGet("stats")]
+        public async Task<ActionResult<EmployeeStats>> GetStatistics()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération des statistiques des employés");
+                var stats = await _employeeService.GetStatisticsAsync();
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des statistiques des employés");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des statistiques des employés.");
+            }
+        }
+    }
+}
+
+
+
+Creer moi ses Repository , Service ,Controller 
+
+voici l'entite :
