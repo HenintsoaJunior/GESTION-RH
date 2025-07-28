@@ -21,6 +21,7 @@ import LieuForm from 'pages/lieu/lieu-form';
 import MissionAssignationFormExcel from 'pages/mission/mission-assign-form-excel';
 import ShortcutsDashboard from 'pages/system/entite/shortcuts';
 import EmployeeList from 'pages/employee/employee-list';
+import EmployeeForm from 'pages/employee/employee-fom';
 
 function AppRouter() {
   return (
@@ -32,6 +33,8 @@ function AppRouter() {
           
           {/* Employee */}
           <Route path="/employee/list" element={<EmployeeList />} />
+          <Route path="/employee/create" element={<EmployeeForm />} />
+          
 
           {/* Recrutement */}
           <Route path="/recruitment/recruitment-request/list" element={<RecruitmentRequestList />} />

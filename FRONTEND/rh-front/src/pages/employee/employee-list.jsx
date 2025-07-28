@@ -447,7 +447,7 @@ const EmployeeList = () => {
               <th>Site</th>
               <th>Statut</th>
               <th>Date d'embauche</th>
-              <th>Actions</th>
+              {/* <th>Actions</th> */}
             </tr>
           </thead>
           <tbody>
@@ -469,7 +469,7 @@ const EmployeeList = () => {
                   <td>{employee.site?.siteName || "Non spécifié"}</td>
                   <td>{getStatusBadge(employee.status)}</td>
                   <td>{formatDate(employee.hireDate) || "Non spécifié"}</td>
-                  <td>
+                  {/* <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button
                         className="btn-edit"
@@ -487,7 +487,7 @@ const EmployeeList = () => {
                         Supprimer
                       </button>
                     </div>
-                  </td>
+                  </td> */}
                 </tr>
               ))
             ) : (
