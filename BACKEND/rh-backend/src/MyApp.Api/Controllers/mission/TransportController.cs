@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
-using MyApp.Api.Models.form.mission;
+using MyApp.Api.Models.form.transport;
 using MyApp.Api.Services.mission;
 
 namespace MyApp.Api.Controllers.mission
@@ -9,6 +9,7 @@ namespace MyApp.Api.Controllers.mission
     [Route("api/[controller]")]
     public class TransportController : ControllerBase
     {
+        // Service injecté pour la gestion des transports
         private readonly ITransportService _transportService;
 
         public TransportController(ITransportService transportService)
@@ -16,6 +17,7 @@ namespace MyApp.Api.Controllers.mission
             _transportService = transportService;
         }
 
+        // Récupère la liste de tous les moyens de transport
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Transport>>> GetAll()
         {
@@ -23,6 +25,7 @@ namespace MyApp.Api.Controllers.mission
             return Ok(transports);
         }
 
+        // Récupère un moyen de transport par son identifiant
         [HttpGet("{id}")]
         public async Task<ActionResult<Transport>> GetById(string id)
         {
@@ -34,6 +37,7 @@ namespace MyApp.Api.Controllers.mission
             return Ok(transport);
         }
 
+        // Crée un nouveau moyen de transport
         [HttpPost]
         public async Task<ActionResult<Transport>> Create([FromBody] TransportDTOForm transportDtoForm)
         {
@@ -50,6 +54,7 @@ namespace MyApp.Api.Controllers.mission
             return Ok(transport);
         }
 
+        // Met à jour un moyen de transport existant
         [HttpPut("{id}")]
         public async Task<ActionResult> Update(string id, [FromBody] Transport transport)
         {
@@ -66,6 +71,7 @@ namespace MyApp.Api.Controllers.mission
             return NoContent();
         }
 
+        // Supprime un moyen de transport par son identifiant
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(string id)
         {

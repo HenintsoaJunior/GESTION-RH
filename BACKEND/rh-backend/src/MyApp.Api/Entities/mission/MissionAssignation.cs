@@ -45,7 +45,7 @@ namespace MyApp.Api.Entities.mission
         public DateTime? UpdatedAt { get; set; }
 
         [ForeignKey("EmployeeId")]
-        public Employee? Employee { get; set; }
+        public Employee Employee { get; set; }= null!;
 
         [ForeignKey("MissionId")]
         public Mission? Mission { get; set; }

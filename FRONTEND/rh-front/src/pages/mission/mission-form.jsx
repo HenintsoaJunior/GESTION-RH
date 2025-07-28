@@ -1,11 +1,12 @@
 import "styles/generic-form-styles.css";
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { BASE_URL } from "config/apiConfig";
+import { useNavigate } from "react-router-dom";
 import Alert from "components/alert";
+import Modal from "components/modal";
 import * as FaIcons from "react-icons/fa";
-import { formatDate } from "utils/generalisation";
 import AutoCompleteInput from "components/auto-complete-input";
+import { fetchAllRegions } from "services/lieu/lieu";
+import { createMission } from "services/mission/mission";
 
 export default function MissionForm() {
   const [formData, setFormData] = useState({
@@ -16,125 +17,84 @@ export default function MissionForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  const [returnUrl, setReturnUrl] = useState("");
-  const [fieldType, setFieldType] = useState("");
-  const [regions, setRegions] = useState([]); // State to store region suggestions
+  const [modal, setModal] = useState({ isOpen: false, type: "info", message: "" });
+  const [regions, setRegions] = useState([]);
+  const [regionNames, setRegionNames] = useState([]);
+  const [regionDisplayNames, setRegionDisplayNames] = useState([]);
+  const [isLoading, setIsLoading] = useState({ regions: false });
+  const [fieldErrors, setFieldErrors] = useState({});
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // Fetch regions from public/data/madagascar_regions.json
+  // Fetch regions from API
   useEffect(() => {
-    fetch("/data/madagascar_regions.json")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch regions data");
-        }
-        return response.json();
-      })
-      .then((data) => setRegions(data.regions))
-      .catch((error) => {
-        console.error("Error fetching regions:", error);
-        setAlert({
-          isOpen: true,
-          type: "error",
-          message: "Erreur lors du chargement des régions. Veuillez réessayer.",
-        });
-      });
+    fetchAllRegions(
+      (data) => {
+        setRegions(data);
+        setRegionNames(data.map((lieu) => lieu.nom));
+        // Créer les noms d'affichage avec format nom/pays
+        setRegionDisplayNames(data.map((lieu) => `${lieu.nom}${lieu.pays ? `/${lieu.pays}` : ''}`));
+      },
+      setIsLoading,
+      (alert) => setAlert(alert)
+    );
   }, []);
-
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const initialValue = searchParams.get("initialValue") || "";
-    const url = searchParams.get("returnUrl") || "";
-    const type = searchParams.get("fieldType") || "";
-    const startDate = searchParams.get("startDate") || "";
-
-    setFormData((prev) => ({
-      ...prev,
-      missionTitle: initialValue,
-      startDate: startDate,
-    }));
-    setReturnUrl(url);
-    setFieldType(type);
-  }, [location.search]);
 
   const showAlert = (type, message) => {
     setAlert({ isOpen: true, type, message });
   };
 
-  // Handle adding a new region suggestion
   const handleAddNewSuggestion = (field, value) => {
-    setRegions((prev) => [...prev, value]);
+    const newRegion = { nom: value };
+    setRegions((prev) => [...prev, newRegion]);
+    setRegionNames((prev) => [...prev, value]);
+    setRegionDisplayNames((prev) => [...prev, value]);
     setFormData((prev) => ({ ...prev, location: value }));
     showAlert("success", `"${value}" ajouté aux suggestions pour ${field}`);
+    setFieldErrors((prev) => ({ ...prev, LieuId: undefined })); // Effacer l'erreur pour location
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFieldErrors((prev) => ({ ...prev, [name === "missionTitle" ? "Name" : "LieuId"]: undefined })); // Effacer l'erreur
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
+    setFieldErrors({}); // Réinitialiser les erreurs avant soumission
 
-    // Validate location
-    if (formData.location && !regions.includes(formData.location)) {
-      showAlert("error", "Veuillez sélectionner un lieu valide parmi les régions de Madagascar.");
+    const selectedRegion = regions.find((region) => region.nom === formData.location);
+    if (formData.location && !selectedRegion) {
+      setModal({
+        isOpen: true,
+        type: "error",
+        message: "Veuillez sélectionner un lieu valide parmi les régions de Madagascar.",
+      });
       setIsSubmitting(false);
       return;
     }
 
     try {
-      const isoStartDate = formData.startDate
-        ? new Date(formData.startDate).toISOString()
-        : "";
-
-      const response = await fetch(`${BASE_URL}/api/Mission`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "text/plain",
-        },
-        body: JSON.stringify({
-          missionId: "",
+      await createMission(
+        {
+          missionId: formData.missionId || "",
           name: formData.missionTitle,
           description: formData.description,
-          startDate: isoStartDate,
-          site: formData.location,
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        showAlert("success", "Mission créée avec succès !");
-
-        setTimeout(() => {
-          if (returnUrl && fieldType) {
-            const returnParams = new URLSearchParams();
-            returnParams.set("newValue", formData.missionTitle);
-            returnParams.set("fieldType", fieldType);
-
-            const [basePath, existingParams] = returnUrl.split("?");
-            const finalParams = new URLSearchParams(existingParams || "");
-
-            returnParams.forEach((value, key) => {
-              finalParams.set(key, value);
-            });
-
-            const finalUrl = `${basePath}?${finalParams.toString()}`;
-            navigate(finalUrl);
-          } else {
-            navigate("/mission/list");
-          }
-        }, 1500);
-      } else {
-        let message = `Erreur ${response.status}: Échec de la création de la mission.`;
-        try {
-          const errorData = await response.json();
-          message = errorData.message || message;
-        } catch {
-          // Handle non-JSON responses
+          startDate: formData.startDate,
+          lieuId: selectedRegion ? selectedRegion.lieuId : "",
+        },
+        (loading) => setIsSubmitting(loading.mission),
+        (alert) => setAlert(alert),
+        (error) => {
+          console.log("Erreurs par champ (fieldErrors) :", error.fieldErrors);
+          setModal(error); // Afficher le message global
+          setFieldErrors(error.fieldErrors || {}); // Stocker les erreurs par champ
         }
-        showAlert("error", message);
-      }
+      );
+      navigate("/mission/list");
     } catch (error) {
-      showAlert("error", "Erreur de connexion. Veuillez vérifier votre connexion et réessayer.");
+      console.error("Erreur dans handleSubmit :", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -142,11 +102,18 @@ export default function MissionForm() {
 
   const handleReset = () => {
     setFormData({ missionTitle: "", description: "", location: "", startDate: "" });
+    setFieldErrors({}); // Réinitialiser les erreurs
     showAlert("info", "Formulaire réinitialisé.");
   };
 
   return (
     <div className="form-container">
+      <Modal
+        type={modal.type}
+        message={modal.message}
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ ...modal, isOpen: false })}
+      />
       <Alert
         type={alert.type}
         message={alert.message}
@@ -171,13 +138,16 @@ export default function MissionForm() {
                   <input
                     id="missionTitle"
                     type="text"
+                    name="missionTitle"
                     value={formData.missionTitle}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, missionTitle: e.target.value }))}
+                    onChange={handleInputChange}
                     placeholder="Saisir le titre de la mission..."
-                    className="form-input"
-                    required
-                    disabled={isSubmitting}
+                    className={`form-input ${fieldErrors.Name ? "error" : ""}`}
+                    disabled={isSubmitting || isLoading.regions}
                   />
+                  {fieldErrors.Name && (
+                    <span className="error-message">{fieldErrors.Name.join(", ")}</span>
+                  )}
                 </td>
               </tr>
               <tr>
@@ -189,12 +159,13 @@ export default function MissionForm() {
                 <td className="form-input-cell">
                   <textarea
                     id="description"
+                    name="description"
                     value={formData.description}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                    onChange={handleInputChange}
                     placeholder="Saisir une description..."
                     className="form-input"
                     rows="4"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isLoading.regions}
                   />
                 </td>
               </tr>
@@ -207,17 +178,26 @@ export default function MissionForm() {
                 <td className="form-input-cell">
                   <AutoCompleteInput
                     value={formData.location}
-                    onChange={(value) => setFormData((prev) => ({ ...prev, location: value }))}
-                    suggestions={regions}
+                    onChange={(value) => {
+                      // Extraire le nom du lieu depuis l'affichage "nom/pays"  
+                      const realValue = value.includes('/') ? value.split('/')[0] : value;
+                      setFormData((prev) => ({ ...prev, location: realValue }));
+                      setFieldErrors((prev) => ({ ...prev, LieuId: undefined }));
+                    }}
+                    suggestions={regionDisplayNames}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner un lieu..."
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isLoading.regions}
                     onAddNew={(value) => handleAddNewSuggestion("location", value)}
-                    showAddOption={false}
+                    showAddOption={true}
                     fieldType="location"
                     fieldLabel="lieu"
-                    addNewRoute="/mission/region-form" // Adjust this route as needed
+                    addNewRoute="/lieu/create"
+                    className={`form-input ${fieldErrors.LieuId ? "error" : ""}`}
                   />
+                  {fieldErrors.LieuId && (
+                    <span className="error-message">{fieldErrors.LieuId.join(", ")}</span>
+                  )}
                 </td>
               </tr>
               <tr>
@@ -230,11 +210,12 @@ export default function MissionForm() {
                   <input
                     id="startDate"
                     type="date"
+                    name="startDate"
                     value={formData.startDate}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, startDate: e.target.value }))}
+                    onChange={handleInputChange}
                     className="form-input"
                     required
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isLoading.regions}
                   />
                 </td>
               </tr>
@@ -246,7 +227,7 @@ export default function MissionForm() {
           <button
             type="submit"
             className="submit-btn"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading.regions}
             title="Enregistrer la mission"
           >
             {isSubmitting ? "Envoi en cours..." : "Enregistrer"}
@@ -256,7 +237,7 @@ export default function MissionForm() {
             type="button"
             className="reset-btn"
             onClick={handleReset}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading.regions}
             title="Réinitialiser le formulaire"
           >
             <FaIcons.FaTrash className="w-4 h-4" />

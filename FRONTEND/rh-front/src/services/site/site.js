@@ -1,20 +1,14 @@
 "use client";
 
-import { BASE_URL } from "config/apiConfig";
+import { apiGet } from "utils/apiUtils";
+import { handleValidationError } from "utils/validation";
 
 export const fetchSites = async (setSites, setIsLoading, setSuggestions, onError) => {
   try {
     setIsLoading((prev) => ({ ...prev, sites: true }));
-    const response = await fetch(`${BASE_URL}/api/Site`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-    });
 
-    if (!response.ok) {
-      throw new Error(`Erreur lors du chargement des sites: ${response.statusText}`);
-    }
+    const data = await apiGet("/api/Site");
 
-    const data = await response.json();
     setSites(data);
     if (setSuggestions) {
       setSuggestions((prev) => ({
@@ -24,7 +18,7 @@ export const fetchSites = async (setSites, setIsLoading, setSuggestions, onError
     }
   } catch (error) {
     console.error("Erreur lors du chargement des sites:", error);
-    onError({ isOpen: true, type: "error", message: `Erreur lors du chargement des sites: ${error.message}` });
+    onError(handleValidationError(error, "Erreur lors du chargement des sites"));
   } finally {
     setIsLoading((prev) => ({ ...prev, sites: false }));
   }

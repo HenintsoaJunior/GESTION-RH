@@ -211,6 +211,14 @@ export default function Template({ children }) {
 
     const matchedResult = findMenuItemByPath(menuData, currentPath);
 
+    // Check for static routes (System and Entite)
+    let staticRouteMatch = null;
+    if (currentPath === "/system") {
+      staticRouteMatch = { key: "system", title: "System" };
+    } else if (currentPath === "/entite") {
+      staticRouteMatch = { key: "entite", title: "Entite" };
+    }
+
     if (matchedResult) {
       const { item, parentKey, title } = matchedResult;
 
@@ -227,6 +235,23 @@ export default function Template({ children }) {
         const newExpanded = { ...prev };
         Object.keys(newExpanded).forEach((key) => {
           newExpanded[key] = key === parentKey;
+        });
+        return newExpanded;
+      });
+    } else if (staticRouteMatch) {
+      // Handle static routes
+      if (activeItem !== staticRouteMatch.key) {
+        setActiveItem(staticRouteMatch.key);
+      }
+      if (headerTitle !== staticRouteMatch.title) {
+        setHeaderTitle(staticRouteMatch.title);
+      }
+      
+      // Close all expanded menus for static routes
+      setExpandedMenus((prev) => {
+        const newExpanded = { ...prev };
+        Object.keys(newExpanded).forEach(key => {
+          newExpanded[key] = false;
         });
         return newExpanded;
       });
@@ -401,15 +426,32 @@ export default function Template({ children }) {
                 <span>{!collapsed && "ADMINISTRATION"}</span>
               </div>
 
-              <li className="nav-item premium-feature">
-                <button className="nav-button">
-                  <div className="nav-icon-wrapper premium">
-                    <FaIcons.FaAward className="nav-icon" />
+              <li className="nav-item">
+                <Link 
+                  to="/system" 
+                  className={`nav-button ${activeItem === "system" ? "active" : ""}`}
+                  onClick={setActive("system", "System", null)}
+                >
+                  <div className="nav-icon-wrapper">
+                    <FaIcons.FaCogs className="nav-icon" />
                   </div>
-                  <span className="nav-text">Fonctionnalités Premium</span>
-                  {!collapsed && <span className="nav-badge premium">PRO</span>}
-                </button>
+                  <span className="nav-text">System</span>
+                </Link>
               </li>
+
+              <li className="nav-item">
+                <Link 
+                  to="/entite" 
+                  className={`nav-button ${activeItem === "entite" ? "active" : ""}`}
+                  onClick={setActive("entite", "Entite", null)}
+                >
+                  <div className="nav-icon-wrapper">
+                    <FaIcons.FaBuilding className="nav-icon" />
+                  </div>
+                  <span className="nav-text">Entite</span>
+                </Link>
+              </li>
+
             </ul>
           )}
         </nav>

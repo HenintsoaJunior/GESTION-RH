@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Plus, MapPin, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle } from "lucide-react";
-import { formatDate } from "utils/generalisation";
+import { Plus, ChevronDown, ChevronUp, X } from "lucide-react";
+import { formatDate } from "utils/dateConverter";
 import Alert from "components/alert";
+import Pagination from "components/pagination";
+import AutoCompleteInput from "components/auto-complete-input";
 import "styles/generic-table-styles.css";
 import { fetchAssignMission } from "services/mission/mission";
+import { fetchEmployees } from "services/employee/employee";
 
 const AssignedPersonsList = () => {
   const navigate = useNavigate();
@@ -14,39 +17,70 @@ const AssignedPersonsList = () => {
   const [assignedPersons, setAssignedPersons] = useState([]);
   const [filters, setFilters] = useState({
     status: "",
-    beneficiaryKeyword: "",
-    missionTitleKeyword: "",
+    employeeId: "",
     departureDateMin: "",
     departureDateMax: "",
-    base: "",
+    transportId: "",
   });
   const [appliedFilters, setAppliedFilters] = useState({
     status: "",
-    beneficiaryKeyword: "",
-    missionTitleKeyword: "",
+    employeeId: "",
     departureDateMin: "",
     departureDateMax: "",
-    base: "",
+    transportId: "",
+  });
+  const [suggestions, setSuggestions] = useState({
+    beneficiary: [],
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalEntries, setTotalEntries] = useState(0);
-  const [isLoading, setIsLoading] = useState({ assignMissions: false });
+  const [isLoading, setIsLoading] = useState({ assignMissions: false, employees: false });
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
+  // Fetch employees for autocomplete suggestions
+  useEffect(() => {
+    fetchEmployees(
+      (data) => {
+        setSuggestions((prev) => ({
+          ...prev,
+          beneficiary: data.map((emp) => ({
+            id: emp.employeeId,
+            name: `${emp.lastName} ${emp.firstName}`,
+            displayName: `${emp.lastName} ${emp.firstName} (${emp.direction?.acronym || "N/A"})`,
+            acronym: emp.direction?.acronym || "N/A",
+          })),
+        }));
+      },
+      setIsLoading,
+      (error) => setAlert(error)
+    );
+  }, []);
+
+  // Fetch assigned missions with applied filters and missionId from URL
   useEffect(() => {
     const fetchData = async () => {
+      if (!missionId) {
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: "Aucun ID de mission fourni dans l'URL.",
+        });
+        return;
+      }
       await fetchAssignMission(
         setAssignedPersons,
         setIsLoading,
         setTotalEntries,
         {
-          missionId: missionId || "",
-          status: appliedFilters.status,
+          missionId,
+          employeeId: appliedFilters.employeeId,
+          transportId: appliedFilters.transportId,
           departureDateMin: appliedFilters.departureDateMin,
           departureDateMax: appliedFilters.departureDateMax,
+          status: appliedFilters.status,
         },
         currentPage,
         pageSize,
@@ -57,35 +91,6 @@ const AssignedPersonsList = () => {
     fetchData();
   }, [missionId, appliedFilters, currentPage, pageSize]);
 
-  const filteredAssignedPersons = useMemo(() => {
-    let filtered = assignedPersons;
-
-    if (appliedFilters.beneficiaryKeyword) {
-      filtered = filtered.filter((assignment) =>
-        assignment.beneficiary.toLowerCase().includes(appliedFilters.beneficiaryKeyword.toLowerCase())
-      );
-    }
-
-    if (appliedFilters.missionTitleKeyword) {
-      filtered = filtered.filter((assignment) =>
-        assignment.missionTitle.toLowerCase().includes(appliedFilters.missionTitleKeyword.toLowerCase())
-      );
-    }
-
-    if (appliedFilters.base) {
-      filtered = filtered.filter((assignment) =>
-        assignment.base.toLowerCase().includes(appliedFilters.base.toLowerCase())
-      );
-    }
-
-    return filtered;
-  }, [assignedPersons, appliedFilters]);
-
-  const paginatedAssignedPersons = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredAssignedPersons.slice(start, start + pageSize);
-  }, [filteredAssignedPersons, currentPage, pageSize]);
-
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({
       ...prev,
@@ -95,18 +100,17 @@ const AssignedPersonsList = () => {
 
   const handleFilterSubmit = (event) => {
     event.preventDefault();
-    setAppliedFilters(filters);
+    setAppliedFilters({ ...filters });
     setCurrentPage(1);
   };
 
   const handleResetFilters = () => {
     const resetFilters = {
       status: "",
-      beneficiaryKeyword: "",
-      missionTitleKeyword: "",
+      employeeId: "",
       departureDateMin: "",
       departureDateMax: "",
-      base: "",
+      transportId: "",
     };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
@@ -143,45 +147,18 @@ const AssignedPersonsList = () => {
     setIsHidden((prev) => !prev);
   };
 
-  const totalPages = Math.ceil(filteredAssignedPersons.length / pageSize);
-
   const getStatusBadge = (status) => {
-      const statusClass =
-        status === "En Cours"
-          ? "status-progress"
-          : status === "Planifié"
-          ? "status-pending"
-          : status === "Terminé"
-          ? "status-approved"
-          : status === "Annulé"
-          ? "status-cancelled"
-          : "status-pending";
-      return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
-  };
-
-  const renderPagination = () => {
-    const maxButtons = 5;
-    const half = Math.floor(maxButtons / 2);
-    let start = Math.max(1, currentPage - half);
-    let end = Math.min(totalPages, start + maxButtons - 1);
-
-    if (end - start + 1 < maxButtons) {
-      start = Math.max(1, end - maxButtons + 1);
-    }
-
-    const pages = [];
-    for (let i = start; i <= end; i++) {
-      pages.push(
-        <button
-          key={i}
-          className={`pagination-btn ${currentPage === i ? "active" : ""}`}
-          onClick={() => handlePageChange(i)}
-        >
-          {i}
-        </button>
-      );
-    }
-    return pages;
+    const statusClass =
+      status === "En Cours"
+        ? "status-progress"
+        : status === "Planifié"
+        ? "status-pending"
+        : status === "Terminé"
+        ? "status-approved"
+        : status === "Annulé"
+        ? "status-cancelled"
+        : "status-pending";
+    return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
   };
 
   return (
@@ -227,41 +204,19 @@ const AssignedPersonsList = () => {
                         <label className="form-label-search">Bénéficiaire</label>
                       </th>
                       <td className="form-input-cell-search">
-                        <input
-                          name="beneficiaryKeyword"
-                          type="text"
-                          value={filters.beneficiaryKeyword}
-                          onChange={(e) => handleFilterChange("beneficiaryKeyword", e.target.value)}
+                        <AutoCompleteInput
+                          value={suggestions.beneficiary.find((emp) => emp.id === filters.employeeId)?.displayName || ""}
+                          onChange={(value) => {
+                            const selectedEmployee = suggestions.beneficiary.find((emp) => emp.displayName === value);
+                            handleFilterChange("employeeId", selectedEmployee ? selectedEmployee.id : "");
+                          }}
+                          suggestions={suggestions.beneficiary.map((emp) => emp.displayName)}
+                          maxVisibleItems={5}
+                          placeholder="Rechercher par bénéficiaire..."
+                          disabled={isLoading.employees || isLoading.assignMissions}
+                          fieldType="beneficiary"
+                          fieldLabel="bénéficiaire"
                           className="form-input-search"
-                          placeholder="Recherche par bénéficiaire"
-                        />
-                      </td>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Intitulé de la Mission</label>
-                      </th>
-                      <td className="form-input-cell-search">
-                        <input
-                          name="missionTitleKeyword"
-                          type="text"
-                          value={filters.missionTitleKeyword}
-                          onChange={(e) => handleFilterChange("missionTitleKeyword", e.target.value)}
-                          className="form-input-search"
-                          placeholder="Recherche par titre de mission"
-                        />
-                      </td>
-                    </tr>
-                    <tr>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Base</label>
-                      </th>
-                      <td className="form-input-cell-search">
-                        <input
-                          name="base"
-                          type="text"
-                          value={filters.base}
-                          onChange={(e) => handleFilterChange("base", e.target.value)}
-                          className="form-input-search"
-                          placeholder="Recherche par base"
                         />
                       </td>
                       <th className="form-label-cell-search">
@@ -361,14 +316,18 @@ const AssignedPersonsList = () => {
               <tr>
                 <td colSpan={7}>Chargement...</td>
               </tr>
-            ) : paginatedAssignedPersons.length > 0 ? (
-              paginatedAssignedPersons.map((assignment, index) => (
+            ) : assignedPersons.length > 0 ? (
+              assignedPersons.map((assignment, index) => (
                 <tr
                   key={`${assignment.employeeId}-${assignment.missionId}-${assignment.transportId}-${index}`}
                   onClick={() => handleRowClick(assignment.missionId, assignment.employeeId)}
                   style={{ cursor: "pointer" }}
                 >
-                  <td>{assignment.beneficiary || "Non spécifié"}</td>
+                  <td>
+                    {(assignment.beneficiary && assignment.directionAcronym)
+                      ? `${assignment.beneficiary} (${assignment.directionAcronym})`
+                      : assignment.beneficiary || "Non spécifié"}
+                  </td>
                   <td>{assignment.matricule || "Non spécifié"}</td>
                   <td>{assignment.missionTitle || "Non spécifié"}</td>
                   <td>{assignment.function || "Non spécifié"}</td>
@@ -386,27 +345,13 @@ const AssignedPersonsList = () => {
         </table>
       </div>
 
-      <div className="pagination-container">
-        <div className="pagination-options">
-          <label htmlFor="pageSize" className="pagination-label">Afficher par page :</label>
-          <select
-            id="pageSize"
-            value={pageSize}
-            onChange={handlePageSizeChange}
-            className="pagination-select"
-          >
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-        </div>
-        <div className="pagination-info">
-          Affichage des données {Math.min((currentPage - 1) * pageSize + 1, filteredAssignedPersons.length)} à{" "}
-          {Math.min(currentPage * pageSize, filteredAssignedPersons.length)} sur {filteredAssignedPersons.length} entrées
-        </div>
-        <div className="pagination-controls">{renderPagination()}</div>
-      </div>
+      <Pagination
+        currentPage={currentPage}
+        pageSize={pageSize}
+        totalEntries={totalEntries}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+      />
     </div>
   );
 };

@@ -14,54 +14,99 @@ namespace MyApp.Api.Controllers
         private readonly IMissionService _missionService;
         private readonly ILogger<MissionController> _logger;
 
+        // Constructeur avec injection du service mission et du logger
         public MissionController(IMissionService missionService, ILogger<MissionController> logger)
         {
             _missionService = missionService;
             _logger = logger;
         }
 
+        // Récupère toutes les missions
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Mission>>> GetAll()
         {
-            var missions = await _missionService.GetAllAsync();
-            return Ok(missions);
+            try
+            {
+                var missions = await _missionService.GetAllAsync();
+                return Ok(missions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de toutes les missions");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des missions");
+            }
         }
 
+        // Récupère une mission par son identifiant
         [HttpGet("{id}")]
         public async Task<ActionResult<Mission>> GetById(string id)
         {
-            var mission = await _missionService.GetByIdAsync(id);
-            if (mission == null) return NotFound();
-            return Ok(mission);
+            try
+            {
+                var mission = await _missionService.GetByIdAsync(id);
+                if (mission == null) return NotFound();
+                return Ok(mission);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de la mission {MissionId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération de la mission");
+            }
         }
 
+        // Crée une nouvelle mission à partir d'un formulaire
         [HttpPost]
         public async Task<ActionResult<object>> Create([FromBody] MissionDTOForm mission)
         {
-            var id = await _missionService.CreateAsync(mission);
-            return Ok(new { id, mission });
+            try
+            {
+                var id = await _missionService.CreateAsync(mission);
+                return Ok(new { id, mission });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création de la mission");
+                return StatusCode(500, "Une erreur est survenue lors de la création de la mission");
+            }
         }
 
+        // Met à jour une mission existante
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] Mission mission)
         {
             if (id != mission.MissionId) return BadRequest("ID mismatch");
 
-            var updated = await _missionService.UpdateAsync(mission);
-            if (!updated) return NotFound();
-
-            return NoContent();
+            try
+            {
+                var updated = await _missionService.UpdateAsync(mission);
+                if (!updated) return NotFound();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour de la mission {MissionId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la mise à jour de la mission");
+            }
         }
 
+        // Supprime une mission par son identifiant
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var deleted = await _missionService.DeleteAsync(id);
-            if (!deleted) return NotFound();
-
-            return NoContent();
+            try
+            {
+                var deleted = await _missionService.DeleteAsync(id);
+                if (!deleted) return NotFound();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de la mission {MissionId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la suppression de la mission");
+            }
         }
 
+        // Recherche paginée de missions avec filtres
         [HttpPost("search")]
         public async Task<ActionResult<object>> Search([FromBody] MissionSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
@@ -75,6 +120,7 @@ namespace MyApp.Api.Controllers
             });
         }
 
+        // Récupère des statistiques sur les missions
         [HttpGet("stats")]
         public async Task<ActionResult<MissionStats>> GetStatistics()
         {
@@ -82,13 +128,17 @@ namespace MyApp.Api.Controllers
             return Ok(stats);
         }
 
+        // Annule une mission (change son statut à "Annulé")
         [HttpPut("{id}/cancel")]
         public async Task<IActionResult> CancelMission(string id)
         {
             var cancelled = await _missionService.CancelAsync(id);
-            if (!cancelled) return NotFound();
+            if (!cancelled) 
+            {
+                return NotFound(new { error = $"Mission with ID {id} not found" });
+            }
             _logger.LogInformation("Mission {MissionId} cancelled via controller", id);
-            return NoContent();
+            return Ok(new { message = $"Mission with ID {id} successfully cancelled" });
         }
     }
 }

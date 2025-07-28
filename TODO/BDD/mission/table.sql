@@ -31,17 +31,29 @@ CREATE TABLE compensation_scale(
 );
 
 
+CREATE TABLE lieu (
+   lieu_id VARCHAR(50) PRIMARY KEY,
+   nom VARCHAR(255) NOT NULL,
+   adresse VARCHAR(500),
+   ville VARCHAR(255),
+   code_postal VARCHAR(20),
+   pays VARCHAR(255) NOT NULL,
+   created_at DATETIME,
+   updated_at DATETIME
+);
 
-CREATE TABLE mission(
+
+CREATE TABLE mission (
    mission_id VARCHAR(50),
    name VARCHAR(255),
    description TEXT,
    start_date DATE,
    status VARCHAR(20) NOT NULL DEFAULT 'En Cours',
-   site VARCHAR(255) NOT NULL,
+   lieu_id VARCHAR(50) NOT NULL,
    created_at DATETIME,
    updated_at DATETIME,
-   PRIMARY KEY(mission_id)
+   PRIMARY KEY(mission_id),
+   FOREIGN KEY(lieu_id) REFERENCES lieu(lieu_id)
 );
 
 
