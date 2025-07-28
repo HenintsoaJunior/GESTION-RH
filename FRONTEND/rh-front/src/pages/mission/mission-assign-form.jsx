@@ -6,29 +6,8 @@ import Modal from "components/modal";
 import Alert from "components/alert";
 import AutoCompleteInput from "components/auto-complete-input";
 import * as FaIcons from "react-icons/fa";
-import { fetchEmployees } from "services/employee/employee";
-import { fetchAllMissions } from "services/mission/mission";
-import { fetchAllTransports } from "services/mission/transport";
-import { BASE_URL } from "config/apiConfig";
-
-// Messages d'erreur pour la validation
-export const errorMessagesMap = {
-  beneficiary: "Le bénéficiaire est requis.",
-  employeeId: "Veuillez sélectionner un bénéficiaire valide dans la liste.",
-  mission: "La mission est requise.",
-  missionId: "Veuillez sélectionner une mission valide dans la liste.",
-  matricule: "Le matricule est requis.",
-  function: "La fonction est requise.",
-  base: "La base est requise.",
-  direction: "La direction est requise.",
-  department: "Le département est requise.",
-  service: "Le service est requis.",
-  departureDate: "La date de départ est requise.",
-  departureTime: "L'heure de départ est requise.",
-  missionDuration: "La durée de la mission est requise.",
-  returnDate: "La date de retour est requise.",
-  returnTime: "L'heure de retour est requise.",
-};
+import { fetchNotAssignedEmployees, fetchAllMissions, createMissionAssignation } from "services/mission/mission";
+import { fetchAllTransports } from "services/transport/transport";
 
 export default function AssignMissionForm() {
   const [formData, setFormData] = useState({
@@ -43,7 +22,6 @@ export default function AssignMissionForm() {
     costCenter: "",
     transport: "",
     transportId: "",
-    whoWillGo: "",
     departureDate: "",
     departureTime: "",
     missionDuration: "",
@@ -51,45 +29,28 @@ export default function AssignMissionForm() {
     returnTime: "",
     mission: "",
     missionId: "",
+    missionStartDate: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modal, setModal] = useState({ isOpen: false, type: "info", message: "" });
-   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
+  const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [returnUrl, setReturnUrl] = useState("");
   const [fieldType, setFieldType] = useState("");
   const [suggestions, setSuggestions] = useState({
-    beneficiary: [], // Array of { id, name }
-    mission: [], // Array of { id, name }
-    transport: [], // Array of { id, type }
+    beneficiary: [],
+    mission: [],
+    transport: [],
   });
   const [isLoading, setIsLoading] = useState({
     employees: true,
     missions: true,
     transports: true,
   });
-  const [errors, setErrors] = useState({
-    beneficiary: false,
-    employeeId: false,
-    matricule: false,
-    function: false,
-    base: false,
-    direction: false,
-    department: false,
-    service: false,
-    departureDate: false,
-    departureTime: false,
-    missionDuration: false,
-    returnDate: false,
-    returnTime: false,
-    mission: false,
-    missionId: false,
-    transport: false,
-    transportId: false,
-  });
+  const [fieldErrors, setFieldErrors] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Charger les suggestions et initialiser les paramètres d'URL une seule fois
+  // Load suggestions and initialize URL parameters
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const initialValue = searchParams.get("initialValue") || "";
@@ -101,49 +62,58 @@ export default function AssignMissionForm() {
     setReturnUrl(url);
     setFieldType(type);
 
-    // Charger les employés pour les suggestions de bénéficiaires
-    fetchEmployees(
-      (employees) => {
-        setSuggestions((prev) => ({
-          ...prev,
-          beneficiary: employees.map((emp) => ({
-            id: emp.employeeId,
-            name: `${emp.lastName} ${emp.firstName}`,
-            employeeCode: emp.employeeCode,
-            jobTitle: emp.jobTitle,
-            site: emp.site?.siteName,
-            direction: emp.direction?.directionName,
-            department: emp.department?.departmentName,
-            service: emp.service?.serviceName,
-          })),
-        }));
-        setIsLoading((prev) => ({ ...prev, employees: false }));
-        // Préremplir les champs si initialValue est fourni
-        if (initialValue) {
-          const selectedEmployee = employees.find(
-            (emp) => `${emp.lastName} ${emp.firstName}` === initialValue
-          );
-          if (selectedEmployee) {
-            setFormData((prev) => ({
-              ...prev,
-              beneficiary: initialValue,
-              employeeId: selectedEmployee.employeeId || "",
-              matricule: selectedEmployee.employeeCode || "",
-              function: selectedEmployee.jobTitle || "",
-              base: selectedEmployee.site?.siteName || "",
-              direction: selectedEmployee.direction?.directionName || "",
-              department: selectedEmployee.department?.departmentName || "",
-              service: selectedEmployee.service?.serviceName || "",
-            }));
+    // Fetch non-assigned employees for the specific mission
+    if (missionIdFromUrl) {
+      fetchNotAssignedEmployees(
+        missionIdFromUrl,
+        (employees) => {
+          setSuggestions((prev) => ({
+            ...prev,
+            beneficiary: employees.map((emp) => ({
+              id: emp.employeeId,
+              name: `${emp.lastName} ${emp.firstName}`,
+              displayName: `${emp.lastName} ${emp.firstName} (${emp.direction?.acronym || "N/A"})`,
+              employeeCode: emp.employeeCode,
+              jobTitle: emp.jobTitle,
+              site: emp.site?.siteName,
+              direction: emp.direction?.directionName,
+              department: emp.department?.departmentName,
+              service: emp.service?.serviceName,
+              costCenter: emp.costCenter,
+              acronym: emp.direction?.acronym || "N/A",
+            })),
+          }));
+          setIsLoading((prev) => ({ ...prev, employees: false }));
+          if (initialValue) {
+            const selectedEmployee = employees.find(
+              (emp) => `${emp.lastName} ${emp.firstName} (${emp.direction?.acronym || "N/A"})` === initialValue
+            );
+            if (selectedEmployee) {
+              setFormData((prev) => ({
+                ...prev,
+                beneficiary: `${selectedEmployee.lastName} ${selectedEmployee.firstName} (${selectedEmployee.direction?.acronym || "N/A"})`,
+                employeeId: selectedEmployee.employeeId || "",
+                matricule: selectedEmployee.employeeCode || "",
+                function: selectedEmployee.jobTitle || "",
+                base: selectedEmployee.site?.siteName || "",
+                direction: selectedEmployee.direction?.directionName || "",
+                department: selectedEmployee.department?.departmentName || "",
+                service: selectedEmployee.service?.serviceName || "",
+                costCenter: selectedEmployee.costCenter || "",
+              }));
+            }
           }
-        }
-      },
-      setIsLoading,
-      setSuggestions,
-      (type, message) => setModal({ isOpen: true, type, message })
-    );
+        },
+        setIsLoading,
+        setSuggestions,
+        (error) => setModal({ isOpen: true, type: "error", message: error.message })
+      );
+    } else {
+      setIsLoading((prev) => ({ ...prev, employees: false }));
+      setSuggestions((prev) => ({ ...prev, beneficiary: [] }));
+    }
 
-    // Charger les missions pour les suggestions et gérer missionId
+    // Fetch missions
     fetchAllMissions(
       (missions) => {
         setSuggestions((prev) => ({
@@ -151,10 +121,10 @@ export default function AssignMissionForm() {
           mission: missions.map((mission) => ({
             id: mission.missionId,
             name: mission.name,
+            startDate: mission.startDate,
           })),
         }));
         setIsLoading((prev) => ({ ...prev, missions: false }));
-
         if (missionIdFromUrl) {
           const selectedMission = missions.find((m) => m.missionId === missionIdFromUrl);
           if (selectedMission) {
@@ -162,6 +132,7 @@ export default function AssignMissionForm() {
               ...prev,
               mission: selectedMission.name,
               missionId: selectedMission.missionId,
+              missionStartDate: selectedMission.startDate.split("T")[0],
             }));
           } else {
             setModal({ isOpen: true, type: "error", message: `Mission avec l'ID ${missionIdFromUrl} non trouvée.` });
@@ -173,7 +144,7 @@ export default function AssignMissionForm() {
       (error) => setModal({ isOpen: true, type: "error", message: error.message })
     );
 
-    // Charger les transports pour les suggestions
+    // Fetch transports
     fetchAllTransports(
       (transports) => {
         setSuggestions((prev) => ({
@@ -191,11 +162,11 @@ export default function AssignMissionForm() {
     );
   }, [location.search]);
 
-  // Mettre à jour les champs liés au bénéficiaire en utilisant les suggestions existantes
+  // Update fields related to beneficiary
   useEffect(() => {
     if (formData.beneficiary) {
       const selectedEmployee = suggestions.beneficiary.find(
-        (emp) => emp.name === formData.beneficiary
+        (emp) => emp.displayName === formData.beneficiary
       );
       if (selectedEmployee) {
         setFormData((prev) => ({
@@ -207,6 +178,7 @@ export default function AssignMissionForm() {
           direction: selectedEmployee.direction || "",
           department: selectedEmployee.department || "",
           service: selectedEmployee.service || "",
+          costCenter: selectedEmployee.costCenter || "",
         }));
       } else {
         setFormData((prev) => ({
@@ -218,23 +190,13 @@ export default function AssignMissionForm() {
           direction: "",
           department: "",
           service: "",
+          costCenter: "",
         }));
       }
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        employeeId: "",
-        matricule: "",
-        function: "",
-        base: "",
-        direction: "",
-        department: "",
-        service: "",
-      }));
     }
   }, [formData.beneficiary, suggestions.beneficiary]);
 
-  // Mettre à jour missionId en utilisant les suggestions existantes
+  // Update missionId and missionStartDate
   useEffect(() => {
     if (formData.mission) {
       const selectedMission = suggestions.mission.find((m) => m.name === formData.mission);
@@ -242,22 +204,16 @@ export default function AssignMissionForm() {
         setFormData((prev) => ({
           ...prev,
           missionId: selectedMission.id || "",
+          missionStartDate: selectedMission.startDate.split("T")[0] || "",
         }));
+        setFieldErrors((prev) => ({ ...prev, MissionId: undefined }));
       } else {
-        setFormData((prev) => ({
-          ...prev,
-          missionId: "",
-        }));
+        setFormData((prev) => ({ ...prev, missionId: "", missionStartDate: "" }));
       }
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        missionId: "",
-      }));
     }
   }, [formData.mission, suggestions.mission]);
 
-  // Mettre à jour transportId en utilisant les suggestions existantes
+  // Update transportId
   useEffect(() => {
     if (formData.transport) {
       const selectedTransport = suggestions.transport.find((t) => t.type === formData.transport);
@@ -266,51 +222,47 @@ export default function AssignMissionForm() {
           ...prev,
           transportId: selectedTransport.id || "",
         }));
+        setFieldErrors((prev) => ({ ...prev, TransportId: undefined }));
       } else {
-        setFormData((prev) => ({
-          ...prev,
-          transportId: "",
-        }));
+        setFormData((prev) => ({ ...prev, transportId: "" }));
       }
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        transportId: "",
-      }));
     }
   }, [formData.transport, suggestions.transport]);
 
-  // Calculer automatiquement la date de retour
+  // Calculate return date and validate departure date
   useEffect(() => {
     if (formData.departureDate && formData.missionDuration) {
       const departure = new Date(formData.departureDate);
       const duration = parseInt(formData.missionDuration, 10);
+      const missionStart = formData.missionStartDate ? new Date(formData.missionStartDate) : null;
 
-      // Vérifier si la date de départ est valide et la durée est positive
+      // Validate departure date against mission start date
+      if (missionStart && departure < missionStart) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          departureDate: ["La date de départ doit être supérieure ou égale à la date de début de la mission"],
+        }));
+        setFormData((prev) => ({ ...prev, returnDate: "" }));
+        return;
+      } else {
+        setFieldErrors((prev) => ({ ...prev, departureDate: undefined }));
+      }
+
       if (!isNaN(departure.getTime()) && duration > 0) {
         const returnDate = new Date(departure);
         returnDate.setDate(departure.getDate() + duration);
-
-        // Formater la date de retour au format YYYY-MM-DD
         const formattedReturnDate = returnDate.toISOString().split("T")[0];
-
         setFormData((prev) => ({
           ...prev,
           returnDate: formattedReturnDate,
         }));
       } else {
-        setFormData((prev) => ({
-          ...prev,
-          returnDate: "",
-        }));
+        setFormData((prev) => ({ ...prev, returnDate: "" }));
       }
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        returnDate: "",
-      }));
+      setFormData((prev) => ({ ...prev, returnDate: "" }));
     }
-  }, [formData.departureDate, formData.missionDuration]);
+  }, [formData.departureDate, formData.missionDuration, formData.missionStartDate]);
 
   const showModal = (type, message) => {
     setModal({ isOpen: true, type, message });
@@ -320,117 +272,103 @@ export default function AssignMissionForm() {
     setAlert({ isOpen: true, type, message });
   };
 
+  const handleAddNewSuggestion = (field, value) => {
+    setSuggestions((prev) => ({
+      ...prev,
+      [field]: [...prev[field], { id: value, name: value, type: value, startDate: field === "mission" ? new Date().toISOString() : undefined }],
+    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    showAlert("success", `"${value}" ajouté aux suggestions pour ${field}`);
+    setFieldErrors((prev) => ({ ...prev, [field === "mission" ? "MissionId" : "TransportId"]: undefined }));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddNewSuggestion = (value, field) => {
-    setSuggestions((prev) => ({
-      ...prev,
-      [field]: [...new Set([...prev[field], { id: value, name: value, type: value }])],
-    }));
-  };
-
-  const validateForm = () => {
-    const newErrors = {
-      beneficiary: !formData.beneficiary,
-      employeeId: !formData.employeeId,
-      matricule: !formData.matricule,
-      function: !formData.function,
-      base: !formData.base,
-      direction: !formData.direction,
-      department: !formData.department,
-      service: !formData.service,
-      mission: !formData.mission,
-      missionId: !formData.missionId,
-      transport: false, // Le champ transport n'est plus requis
-      transportId: false, // Le champ transportId n'est plus requis
-      departureDate: !formData.departureDate,
-      departureTime: !formData.departureTime,
-      missionDuration: !formData.missionDuration || formData.missionDuration <= 0,
-      returnDate: !formData.returnDate,
-      returnTime: !formData.returnTime,
-    };
-
-    setErrors(newErrors);
-
-    const errorMessages = Object.keys(newErrors)
-      .filter((key) => newErrors[key])
-      .map((key) => errorMessagesMap[key]);
-
-    if (errorMessages.length > 0) {
-      showModal("error", `${errorMessages.join("\n")}`);
-      return false;
-    }
-
-    return true;
+    setFieldErrors((prev) => ({ ...prev, [name === "mission" ? "MissionId" : name]: undefined }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setIsSubmitting(true);
+    setFieldErrors({});
 
-    if (!validateForm()) {
+    const selectedEmployee = suggestions.beneficiary.find((emp) => emp.displayName === formData.beneficiary);
+    const selectedMission = suggestions.mission.find((m) => m.name === formData.mission);
+    const selectedTransport = formData.transport ? suggestions.transport.find((t) => t.type === formData.transport) : null;
+
+    if (!selectedEmployee) {
+      setModal({
+        isOpen: true,
+        type: "error",
+        message: "Veuillez sélectionner un employé valide.",
+      });
+      setIsSubmitting(false);
       return;
     }
 
-    setIsSubmitting(true);
+    if (!selectedMission) {
+      setModal({
+        isOpen: true,
+        type: "error",
+        message: "Veuillez sélectionner une mission valide.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
 
-    const departureDateTime = new Date(`${formData.departureDate}T${formData.departureTime}:00Z`).toISOString();
-    const returnDateTime = new Date(`${formData.returnDate}T${formData.returnTime}:00Z`).toISOString();
-
-    const payload = {
-      employeeId: formData.employeeId,
-      missionId: formData.missionId,
-      transportId: formData.transportId || null, // Envoyer null si pas de transport sélectionné
-      departureDate: departureDateTime,
-      departureTime: formData.departureTime,
-      returnDate: returnDateTime,
-      returnTime: formData.returnTime,
-      duration: parseInt(formData.missionDuration, 10),
-    };
+    // Additional validation for departure date
+    if (formData.departureDate && formData.missionStartDate) {
+      const departure = new Date(formData.departureDate);
+      const missionStart = new Date(formData.missionStartDate);
+      if (departure < missionStart) {
+        setModal({
+          isOpen: true,
+          type: "error",
+          message: "La date de départ doit être supérieure ou égale à la date de début de la mission.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/MissionAssignation`, {
-        method: "POST",
-        headers: {
-          accept: "*/*",
-          "Content-Type": "application/json",
+      await createMissionAssignation(
+        {
+          employeeId: formData.employeeId,
+          missionId: formData.missionId,
+          transportId: selectedTransport ? selectedTransport.id : null,
+          departureDate: `${formData.departureDate}T${formData.departureTime}:00Z`,
+          departureTime: formData.departureTime,
+          returnDate: `${formData.returnDate}T${formData.returnTime}:00Z`,
+          returnTime: formData.returnTime,
+          duration: formData.missionDuration,
         },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        showAlert("success", "Mission assignée avec succès !");
-
-        if (returnUrl && fieldType) {
-          setTimeout(() => {
-            const returnParams = new URLSearchParams();
-            returnParams.set("newValue", formData.beneficiary);
-            returnParams.set("fieldType", fieldType);
-
-            const [basePath, existingParams] = returnUrl.split("?");
-            const finalParams = new URLSearchParams(existingParams || "");
-
-            returnParams.forEach((value, key) => {
-              finalParams.set(key, value);
-            });
-
-            const finalUrl = `${basePath}?${finalParams.toString()}`;
-            navigate(finalUrl);
-          }, 1500);
-        } else {
-          navigate("/mission/list");
+        setIsLoading,
+        (alert) => setAlert(alert),
+        (error) => {
+          console.log("Erreurs par champ (fieldErrors) :", error.fieldErrors);
+          setModal(error);
+          setFieldErrors(error.fieldErrors || {});
         }
+      );
+
+      if (returnUrl && fieldType) {
+        const returnParams = new URLSearchParams();
+        returnParams.set("newValue", formData.beneficiary);
+        returnParams.set("fieldType", fieldType);
+        const [basePath, existingParams] = returnUrl.split("?");
+        const finalParams = new URLSearchParams(existingParams || "");
+        returnParams.forEach((value, key) => {
+          finalParams.set(key, value);
+        });
+        const finalUrl = `${basePath}?${finalParams.toString()}`;
+        navigate(finalUrl);
       } else {
-        const errorData = await response.json();
-        const message = errorData.message || `Erreur ${response.status}: Échec de l'assignation de la mission.`;
-        showModal("error", message);
+        navigate("/mission/list");
       }
     } catch (error) {
-      showModal("error", "Erreur de connexion. Veuillez vérifier votre connexion et réessayer.");
+      console.error("Erreur dans handleSubmit :", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -449,7 +387,6 @@ export default function AssignMissionForm() {
       costCenter: "",
       transport: "",
       transportId: "",
-      whoWillGo: "",
       departureDate: "",
       departureTime: "",
       missionDuration: "",
@@ -457,37 +394,20 @@ export default function AssignMissionForm() {
       returnTime: "",
       mission: "",
       missionId: "",
+      missionStartDate: "",
     });
-    setErrors({
-      beneficiary: false,
-      employeeId: false,
-      matricule: false,
-      function: false,
-      base: false,
-      direction: false,
-      department: false,
-      service: false,
-      departureDate: false,
-      departureTime: false,
-      missionDuration: false,
-      returnDate: false,
-      returnTime: false,
-      mission: false,
-      missionId: false,
-      transport: false,
-      transportId: false,
-    });
+    setFieldErrors({});
     showAlert("info", "Formulaire réinitialisé.");
   };
 
   return (
     <div className="form-container">
       <Alert
-          type={alert.type}
-          message={alert.message}
-          isOpen={alert.isOpen}
-          onClose={() => setAlert({ ...alert, isOpen: false })}
-        />
+        type={alert.type}
+        message={alert.message}
+        isOpen={alert.isOpen}
+        onClose={() => setAlert({ ...alert, isOpen: false })}
+      />
       <Modal
         type={modal.type}
         message={modal.message}
@@ -511,6 +431,7 @@ export default function AssignMissionForm() {
                     value={formData.mission}
                     onChange={(value) => {
                       setFormData((prev) => ({ ...prev, mission: value }));
+                      setFieldErrors((prev) => ({ ...prev, MissionId: undefined }));
                     }}
                     suggestions={suggestions.mission.map((m) => m.name)}
                     placeholder={
@@ -521,11 +442,29 @@ export default function AssignMissionForm() {
                         : "Saisir ou sélectionner une mission..."
                     }
                     disabled={isSubmitting || isLoading.missions}
-                    onAddNew={(value) => handleAddNewSuggestion(value, "mission")}
+                    onAddNew={(value) => handleAddNewSuggestion("mission", value)}
                     fieldType="mission"
                     fieldLabel="mission"
                     addNewRoute="/mission/create"
-                    className={errors.mission || errors.missionId ? "input-error" : ""}
+                    className={`form-input ${fieldErrors.MissionId ? "error" : ""}`}
+                  />
+                  {fieldErrors.MissionId && (
+                    <span className="error-message">{fieldErrors.MissionId.join(", ")}</span>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <th className="form-label-cell">
+                  <label className="form-label form-label-required">Date de début de la mission</label>
+                </th>
+                <td className="form-input-cell" colSpan="3">
+                  <input
+                    type="date"
+                    name="missionStartDate"
+                    value={formData.missionStartDate}
+                    className="form-input"
+                    disabled={true}
+                    readOnly
                   />
                 </td>
               </tr>
@@ -538,22 +477,26 @@ export default function AssignMissionForm() {
                     value={formData.beneficiary}
                     onChange={(value) => {
                       setFormData((prev) => ({ ...prev, beneficiary: value }));
+                      setFieldErrors((prev) => ({ ...prev, EmployeeId: undefined }));
                     }}
-                    suggestions={suggestions.beneficiary.map((b) => b.name)}
+                    suggestions={suggestions.beneficiary.map((b) => b.displayName)}
                     placeholder={
                       isLoading.employees
                         ? "Chargement..."
                         : suggestions.beneficiary.length === 0
-                        ? "Aucun bénéficiaire disponible"
+                        ? "Aucun bénéficiaire disponible pour cette mission"
                         : "Saisir ou sélectionner..."
                     }
-                    disabled={isSubmitting || isLoading.employees}
+                    disabled={isSubmitting || isLoading.employees || !formData.missionId}
                     showAddOption={false}
                     fieldType="beneficiary"
                     fieldLabel="bénéficiaire"
                     addNewRoute="/employee/employee-form"
-                    className={errors.beneficiary || errors.employeeId ? "input-error" : ""}
+                    className={`form-input ${fieldErrors.EmployeeId ? "error" : ""}`}
                   />
+                  {fieldErrors.EmployeeId && (
+                    <span className="error-message">{fieldErrors.EmployeeId.join(", ")}</span>
+                  )}
                 </td>
                 <th className="form-label-cell">
                   <label className="form-label form-label-required">Matricule</label>
@@ -565,7 +508,7 @@ export default function AssignMissionForm() {
                     value={formData.matricule}
                     onChange={handleChange}
                     placeholder="Saisir le matricule..."
-                    className={`form-input ${errors.matricule ? "input-error" : ""}`}
+                    className="form-input"
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -582,7 +525,7 @@ export default function AssignMissionForm() {
                     value={formData.function}
                     onChange={handleChange}
                     placeholder="Saisir la fonction..."
-                    className={`form-input ${errors.function ? "input-error" : ""}`}
+                    className="form-input"
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -599,7 +542,7 @@ export default function AssignMissionForm() {
                     value={formData.base}
                     onChange={handleChange}
                     placeholder="Saisir la base..."
-                    className={`form-input ${errors.base ? "input-error" : ""}`}
+                    className="form-input"
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -614,7 +557,7 @@ export default function AssignMissionForm() {
                     value={formData.direction}
                     onChange={handleChange}
                     placeholder="Saisir la direction..."
-                    className={`form-input ${errors.direction ? "input-error" : ""}`}
+                    className="form-input"
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -631,7 +574,7 @@ export default function AssignMissionForm() {
                     value={formData.department}
                     onChange={handleChange}
                     placeholder="Saisir le département..."
-                    className={`form-input ${errors.department ? "input-error" : ""}`}
+                    className="form-input"
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -646,7 +589,7 @@ export default function AssignMissionForm() {
                     value={formData.service}
                     onChange={handleChange}
                     placeholder="Saisir le service..."
-                    className={`form-input ${errors.service ? "input-error" : ""}`}
+                    className="form-input"
                     disabled={isSubmitting || formData.beneficiary}
                     readOnly={formData.beneficiary}
                   />
@@ -675,6 +618,7 @@ export default function AssignMissionForm() {
                     value={formData.transport}
                     onChange={(value) => {
                       setFormData((prev) => ({ ...prev, transport: value }));
+                      setFieldErrors((prev) => ({ ...prev, TransportId: undefined }));
                     }}
                     suggestions={suggestions.transport.map((t) => t.type)}
                     placeholder={
@@ -685,12 +629,15 @@ export default function AssignMissionForm() {
                         : "Saisir ou sélectionner un moyen de transport..."
                     }
                     disabled={isSubmitting || isLoading.transports}
-                    onAddNew={(value) => handleAddNewSuggestion(value, "transport")}
+                    onAddNew={(value) => handleAddNewSuggestion("transport", value)}
                     fieldType="transport"
                     fieldLabel="moyen de transport"
-                    addNewRoute="/mission/transport/create"
-                    className={errors.transport || errors.transportId ? "input-error" : ""}
+                    addNewRoute="/transport/create"
+                    className={`form-input ${fieldErrors.TransportId ? "error" : ""}`}
                   />
+                  {fieldErrors.TransportId && (
+                    <span className="error-message">{fieldErrors.TransportId.join(", ")}</span>
+                  )}
                 </td>
               </tr>
               <tr>
@@ -703,9 +650,12 @@ export default function AssignMissionForm() {
                     name="departureDate"
                     value={formData.departureDate}
                     onChange={handleChange}
-                    className={`form-input ${errors.departureDate ? "input-error" : ""}`}
+                    className={`form-input ${fieldErrors.departureDate ? "error" : ""}`}
                     disabled={isSubmitting}
                   />
+                  {fieldErrors.departureDate && (
+                    <span className="error-message">{fieldErrors.departureDate.join(", ")}</span>
+                  )}
                 </td>
                 <th className="form-label-cell">
                   <label className="form-label form-label-required">Heure de départ</label>
@@ -716,7 +666,7 @@ export default function AssignMissionForm() {
                     name="departureTime"
                     value={formData.departureTime}
                     onChange={handleChange}
-                    className={`form-input ${errors.departureTime ? "input-error" : ""}`}
+                    className="form-input"
                     disabled={isSubmitting}
                   />
                 </td>
@@ -732,7 +682,7 @@ export default function AssignMissionForm() {
                     value={formData.missionDuration}
                     onChange={handleChange}
                     placeholder="Saisir la durée (jours)..."
-                    className={`form-input ${errors.missionDuration ? "input-error" : ""}`}
+                    className="form-input"
                     disabled={isSubmitting}
                     min="1"
                   />
@@ -750,7 +700,7 @@ export default function AssignMissionForm() {
                     name="returnDate"
                     value={formData.returnDate}
                     onChange={handleChange}
-                    className={`form-input ${errors.returnDate ? "input-error" : ""}`}
+                    className="form-input"
                     disabled={isSubmitting}
                     readOnly
                   />
@@ -764,7 +714,7 @@ export default function AssignMissionForm() {
                     name="returnTime"
                     value={formData.returnTime}
                     onChange={handleChange}
-                    className={`form-input ${errors.returnTime ? "input-error" : ""}`}
+                    className="form-input"
                     disabled={isSubmitting}
                   />
                 </td>
@@ -777,7 +727,7 @@ export default function AssignMissionForm() {
           <button
             type="submit"
             className="submit-btn"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading.employees || isLoading.missions || isLoading.transports}
             title="Assigner la mission"
           >
             {isSubmitting ? "Envoi en cours..." : "Assigner"}
@@ -787,7 +737,7 @@ export default function AssignMissionForm() {
             type="button"
             className="reset-btn"
             onClick={handleReset}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading.employees || isLoading.missions || isLoading.transports}
             title="Réinitialiser le formulaire"
           >
             <FaIcons.FaTrash className="w-4 h-4" />

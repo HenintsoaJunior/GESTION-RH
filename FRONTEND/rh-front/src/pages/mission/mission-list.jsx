@@ -2,15 +2,17 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, MapPin, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle, List, XCircle } from "lucide-react";
+import { Plus, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle, List, XCircle } from "lucide-react";
 import { Calendar as BigCalendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
-import { formatDate } from "utils/generalisation";
-import { fetchMissions, fetchMissionStats } from "services/mission/mission"; // Importer le service
+import { formatDate } from "utils/dateConverter";
+import { fetchMissions, fetchMissionStats, cancelMission } from "services/mission/mission";
 import Alert from "components/alert";
-import { BASE_URL } from "config/apiConfig";
+import Pagination from "components/pagination";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "styles/generic-table-styles.css";
+import AutoCompleteInput from "components/auto-complete-input";
+import { fetchAllRegions } from "services/lieu/lieu";
 
 // Configuration du localizer pour react-big-calendar
 const localizer = momentLocalizer(moment);
@@ -18,40 +20,42 @@ const localizer = momentLocalizer(moment);
 const MissionList = () => {
   const navigate = useNavigate();
   const [missions, setMissions] = useState([]);
-  const [stats, setStats] = useState({ total: 0, enCours: 0, planifie: 0, termine: 0, annule: 0 });
+  const [stats, setStats] = useState({ total: 0, enCours: 0, planifiee: 0, terminee: 0, annulee: 0 });
   const [filters, setFilters] = useState({
     name: "",
     startDateMin: "",
     startDateMax: "",
-    site: "",
+    lieuId: "",
+    location: "", // Added to store the display name for AutoCompleteInput
     status: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalEntries, setTotalEntries] = useState(0);
-  const [isLoading, setIsLoading] = useState({ missions: false, stats: false });
+  const [isLoading, setIsLoading] = useState({ missions: false, stats: false, regions: false });
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [viewMode, setViewMode] = useState("list");
+  const [regions, setRegions] = useState([]);
+  const [regionNames, setRegionNames] = useState([]);
+  const [regionDisplayNames, setRegionDisplayNames] = useState([]);
 
-  // Fonction pour obtenir la couleur selon le statut
   const getStatusColor = (status) => {
     switch (status) {
       case "En Cours":
-        return "#3b82f6"; // Bleu
+        return "#3b82f6";
       case "Planifié":
-        return "#f59e0b"; // Orange/Amber
+        return "#f59e0b";
       case "Terminé":
-        return "#10b981"; // Vert
+        return "#10b981";
       case "Annulé":
-        return "#ef4444"; // Rouge
+        return "#ef4444";
       default:
-        return "#6b7280"; // Gris par défaut
+        return "#6b7280";
     }
   };
 
-  // Style personnalisé pour les événements du calendrier
   const eventStyleGetter = (event) => {
     const backgroundColor = getStatusColor(event.resource.status);
     return {
@@ -66,29 +70,40 @@ const MissionList = () => {
     };
   };
 
-  // Gestion des erreurs
   const handleError = useCallback((error) => {
     setAlert(error);
   }, []);
 
-  // Charger les missions et les stats au montage (sans filtres)
   useEffect(() => {
-    // Charger toutes les missions au début (sans filtres appliqués)
+    fetchAllRegions(
+      (data) => {
+        setRegions(data);
+        setRegionNames(data.map((lieu) => lieu.nom));
+        setRegionDisplayNames(data.map((lieu) => `${lieu.nom}${lieu.pays ? `/${lieu.pays}` : ''}`));
+      },
+      setIsLoading,
+      (alert) => setAlert(alert),
+      () => setTotalEntries(0)
+    );
+  }, []);
+
+  useEffect(() => {
     const initialFilters = {
       name: "",
       startDateMin: "",
       startDateMax: "",
-      site: "",
+      lieuId: "",
+      location: "",
       status: "",
     };
     fetchMissions(setMissions, setIsLoading, setTotalEntries, initialFilters, currentPage, pageSize, handleError);
     fetchMissionStats(setStats, setIsLoading, handleError);
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, handleError]);
 
   const calendarEvents = useMemo(() => {
     return missions.map((mission) => ({
       id: mission.missionId,
-      title: mission.name, // Utiliser 'name' au lieu de 'missionTitle'
+      title: mission.name,
       start: new Date(mission.startDate),
       end: new Date(mission.startDate),
       allDay: true,
@@ -101,13 +116,11 @@ const MissionList = () => {
       ...prev,
       [name]: value,
     }));
-    // Ne pas déclencher la recherche automatiquement
   };
 
   const handleFilterSubmit = (event) => {
     event.preventDefault();
     setCurrentPage(1);
-    // Déclencher la recherche avec les filtres actuels
     fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, 1, pageSize, handleError);
   };
 
@@ -116,18 +129,17 @@ const MissionList = () => {
       name: "",
       startDateMin: "",
       startDateMax: "",
-      site: "",
+      lieuId: "",
+      location: "",
       status: "",
     };
     setFilters(resetFilters);
     setCurrentPage(1);
-    // Rechercher avec les filtres réinitialisés
     fetchMissions(setMissions, setIsLoading, setTotalEntries, resetFilters, 1, pageSize, handleError);
   };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    // Utiliser les filtres actuels pour la pagination
     fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, page, pageSize, handleError);
   };
 
@@ -135,7 +147,6 @@ const MissionList = () => {
     const newPageSize = Number(event.target.value);
     setPageSize(newPageSize);
     setCurrentPage(1);
-    // Utiliser les filtres actuels avec la nouvelle taille de page
     fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, 1, newPageSize, handleError);
   };
 
@@ -146,36 +157,19 @@ const MissionList = () => {
   };
 
   const handleCancelMission = async (missionId) => {
-    setIsLoading((prev) => ({ ...prev, missions: true }));
     try {
-      const response = await fetch(`${BASE_URL}/api/Mission/${missionId}/cancel`, {
-        method: "PUT",
-        headers: {
-          accept: "*/*",
+      await cancelMission(
+        missionId,
+        setIsLoading,
+        (successAlert) => {
+          setAlert(successAlert);
+          fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, currentPage, pageSize, handleError);
+          fetchMissionStats(setStats, setIsLoading, handleError);
         },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP ${response.status}: Impossible d'annuler la mission.`);
-      }
-
-      setAlert({
-        isOpen: true,
-        type: "success",
-        message: `Mission ${missionId} annulée avec succès.`,
-      });
-
-      // Rafraîchir la liste des missions et les statistiques
-      await fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, currentPage, pageSize, handleError);
-      await fetchMissionStats(setStats, setIsLoading, handleError);
+        handleError
+      );
     } catch (error) {
-      handleError({
-        isOpen: true,
-        type: "error",
-        message: error.message || "Une erreur est survenue lors de l'annulation de la mission.",
-      });
-    } finally {
-      setIsLoading((prev) => ({ ...prev, missions: false }));
+      // Erreur déjà gérée dans le service
     }
   };
 
@@ -196,8 +190,6 @@ const MissionList = () => {
     setIsHidden((prev) => !prev);
   };
 
-  const totalPages = Math.ceil(totalEntries / pageSize);
-
   const getStatusBadge = (status) => {
     const statusClass =
       status === "En Cours"
@@ -210,31 +202,6 @@ const MissionList = () => {
         ? "status-cancelled"
         : "status-pending";
     return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
-  };
-
-  const renderPagination = () => {
-    const maxButtons = 5;
-    const half = Math.floor(maxButtons / 2);
-    let start = Math.max(1, currentPage - half);
-    let end = Math.min(totalPages, start + maxButtons - 1);
-
-    if (end - start + 1 < maxButtons) {
-      start = Math.max(1, end - maxButtons + 1);
-    }
-
-    const pages = [];
-    for (let i = start; i <= end; i++) {
-      pages.push(
-        <button
-          key={i}
-          className={`pagination-btn ${currentPage === i ? "active" : ""}`}
-          onClick={() => handlePageChange(i)}
-        >
-          {i}
-        </button>
-      );
-    }
-    return pages;
   };
 
   return (
@@ -343,13 +310,25 @@ const MissionList = () => {
                         <label className="form-label-search">Lieu</label>
                       </th>
                       <td className="form-input-cell-search">
-                        <input
-                          name="site"
-                          type="text"
-                          value={filters.site}
-                          onChange={(e) => handleFilterChange("site", e.target.value)}
+                        <AutoCompleteInput
+                          value={filters.location}
+                          onChange={(value) => {
+                            const regionName = value.includes('/') ? value.split('/')[0] : value;
+                            const selectedRegion = regions.find((r) => r.nom === regionName);
+                            setFilters((prev) => ({
+                              ...prev,
+                              location: value,
+                              lieuId: selectedRegion ? selectedRegion.lieuId : "",
+                            }));
+                          }}
+                          suggestions={regionDisplayNames}
+                          maxVisibleItems={3}
+                          placeholder="Saisir ou sélectionner un lieu..."
+                          disabled={isLoading.regions}
+                          showAddOption={false}
+                          fieldType="lieuId"
+                          fieldLabel="lieu"
                           className="form-input-search"
-                          placeholder="Recherche par lieu"
                         />
                       </td>
                     </tr>
@@ -450,7 +429,6 @@ const MissionList = () => {
         </div>
       </div>
 
-      {/* Légende des couleurs pour le calendrier */}
       {viewMode === "calendar" && (
         <div className="calendar-legend" style={{ 
           marginBottom: '20px', 
@@ -516,7 +494,7 @@ const MissionList = () => {
                   <th>Action</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody> 
                 {isLoading.missions ? (
                   <tr>
                     <td colSpan={7}>Chargement...</td>
@@ -530,7 +508,7 @@ const MissionList = () => {
                     >
                       <td>{mission.name || "Non spécifié"}</td>
                       <td>{mission.description || "Non spécifié"}</td>
-                      <td>{mission.site || "Non spécifié"}</td>
+                      <td>{`${mission.lieu.nom}/${mission.lieu.pays}` || "Non spécifié"}</td>
                       <td>{formatDate(mission.startDate) || "Non spécifié"}</td>
                       <td>{getStatusBadge(mission.status)}</td>
                       <td>{formatDate(mission.createdAt) || "Non spécifié"}</td>
@@ -538,7 +516,7 @@ const MissionList = () => {
                         <button
                           className="btn-cancel"
                           onClick={(e) => {
-                            e.stopPropagation(); // Empêche le clic sur la ligne
+                            e.stopPropagation();
                             handleCancelMission(mission.missionId);
                           }}
                           disabled={mission.status === "Annulé" || mission.status === "Terminé"}
@@ -557,27 +535,13 @@ const MissionList = () => {
             </table>
           </div>
 
-          <div className="pagination-container">
-            <div className="pagination-options">
-              <label htmlFor="pageSize" className="pagination-label">Afficher par page :</label>
-              <select
-                id="pageSize"
-                value={pageSize}
-                onChange={handlePageSizeChange}
-                className="pagination-select"
-              >
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </div>
-            <div className="pagination-info">
-              Affichage des données {Math.min((currentPage - 1) * pageSize + 1, totalEntries)} à{" "}
-              {Math.min(currentPage * pageSize, totalEntries)} sur {totalEntries} entrées
-            </div>
-            <div className="pagination-controls">{renderPagination()}</div>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            pageSize={pageSize}
+            totalEntries={totalEntries}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </>
       ) : (
         <div className="calendar-container" style={{ height: "600px" }}>

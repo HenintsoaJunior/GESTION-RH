@@ -2,19 +2,20 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Download, ArrowLeft, Calendar, MapPin, Clock, User, Building, CreditCard } from "lucide-react";
-import { formatDate } from "utils/generalisation";
+import { formatDate } from "utils/dateConverter";
 import Alert from "components/alert";
-import { fetchMissionPayment } from "services/mission/mission";
+import { fetchMissionPayment, exportMissionAssignationExcel } from "services/mission/mission";
 import "styles/mission/assignment-details-styles.css";
-import { BASE_URL } from "config/apiConfig";
 
 const AssignmentDetails = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [assignment, setAssignment] = useState(null);
-  const [indemnityDetails, setIndemnityDetails] = useState([]);
+  const [assignmentDetails, setAssignmentDetails] = useState(null);
+  const [dailyPaiements, setDailyPaiements] = useState([]);
+  const [totalAmount, setTotalAmount] = useState(0);
   const [isLoading, setIsLoading] = useState({
     missionPayment: true,
+    exportExcel: false,
   });
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
 
@@ -23,7 +24,7 @@ const AssignmentDetails = () => {
   const employeeId = searchParams.get("employeeId");
   const assignmentId = `${employeeId}-${missionId}`; // Construct assignmentId for display
 
-  // Load assignment details and indemnity details
+  // Load assignment details and payment details
   useEffect(() => {
     const loadAssignmentDetails = async () => {
       if (!missionId || !employeeId) {
@@ -42,8 +43,9 @@ const AssignmentDetails = () => {
           missionId,
           employeeId,
           (data) => {
-            setAssignment(data.assignmentDetails);
-            setIndemnityDetails(data.indemnityDetails);
+            setAssignmentDetails(data.assignmentDetails);
+            setDailyPaiements(data.dailyPaiements);
+            setTotalAmount(data.totalAmount);
           },
           setIsLoading,
           setAlert
@@ -64,8 +66,35 @@ const AssignmentDetails = () => {
     return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") : "0";
   };
 
-  // Calculate cumulative total
-  const totalCumulativeAmount = indemnityDetails.reduce((sum, item) => sum + (item.total || 0), 0);
+  // Transform dailyPaiements for display
+  const indemnityDetails = dailyPaiements.map((item) => {
+    const amounts = {
+      breakfast: 0,
+      lunch: 0,
+      dinner: 0,
+      accommodation: 0,
+      transport: 0,
+    };
+
+    item.compensationScales.forEach((scale) => {
+      const amount = scale.amount || 0;
+      if (scale.expenseType?.type === "Petit Déjeuner") amounts.breakfast += amount;
+      else if (scale.expenseType?.type === "Déjeuner") amounts.lunch += amount;
+      else if (scale.expenseType?.type === "Dinner") amounts.dinner += amount;
+      else if (scale.expenseType?.type === "Hébergement") amounts.accommodation += amount;
+      else if (scale.transportId) amounts.transport += amount;
+    });
+
+    return {
+      date: item.date,
+      breakfast: amounts.breakfast,
+      lunch: amounts.lunch,
+      dinner: amounts.dinner,
+      accommodation: amounts.accommodation,
+      transport: amounts.transport,
+      total: item.totalAmount,
+    };
+  });
 
   // Handle PDF export (placeholder)
   const handleExportPDF = () => {
@@ -74,48 +103,19 @@ const AssignmentDetails = () => {
 
   // Handle Excel export
   const handleExportExcel = async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/api/MissionAssignation/generate-excel`, {
-        method: "POST",
-        headers: {
-          accept: "*/*",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          missionId: missionId,
-          employeeId: employeeId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Erreur lors de l'exportation Excel");
-      }
-
-      // Convert response to a blob for downloading
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `Mission_${assignmentId}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      setAlert({
-        isOpen: true,
-        type: "success",
-        message: "Fichier Excel exporté avec succès !",
-      });
-    } catch (error) {
-      setAlert({
-        isOpen: true,
-        type: "error",
-        message: `Erreur lors de l'exportation Excel: ${error.message}`,
-      });
-    }
+    await exportMissionAssignationExcel(
+      {
+        missionId: missionId || null,
+        employeeId: employeeId || null,
+        directionId: null,
+        startDate: null,
+        endDate: null,
+      },
+      setIsLoading,
+      (success) => setAlert(success),
+      (error) => setAlert(error)
+    );
   };
-
   const getStatusBadge = (status) => {
     const statusClass =
       status === "En Cours"
@@ -180,9 +180,14 @@ const AssignmentDetails = () => {
             <Download className="w-4 h-4" />
             PDF
           </button>
-          <button onClick={handleExportExcel} className="btn-export-excel" title="Exporter en Excel">
+          <button
+            onClick={handleExportExcel}
+            className="btn-export-excel"
+            title="Exporter en Excel"
+            disabled={isLoading.exportExcel}
+          >
             <Download className="w-4 h-4" />
-            Excel
+            {isLoading.exportExcel ? "Exportation..." : "Excel"}
           </button>
         </div>
       </div>
@@ -192,32 +197,32 @@ const AssignmentDetails = () => {
           <div className="loading-spinner"></div>
           <p className="loading-text">Chargement des détails...</p>
         </div>
-      ) : assignment ? (
+      ) : assignmentDetails ? (
         <>
           {/* General Information */}
           <div className="info-section">
             <div className="section-header">
               <h2 className="section-title">Informations Générales</h2>
-              <div className="status-container">{getStatusBadge(assignment.status)}</div>
+              <div className="status-container">{getStatusBadge(assignmentDetails.status)}</div>
             </div>
 
             <div className="details-grid">
               {[
-                { label: "Bénéficiaire", value: assignment.beneficiary },
-                { label: "Matricule", value: assignment.matricule },
-                { label: "Mission", value: assignment.missionTitle },
-                { label: "Fonction", value: assignment.function },
-                { label: "Base", value: assignment.base },
-                { label: "Moyen de transport", value: assignment.meansOfTransport },
-                { label: "Direction", value: assignment.direction },
-                { label: "Département/Service", value: assignment.departmentService },
-                { label: "Centre de coût", value: assignment.costCenter },
-                { label: "Date de départ", value: formatDate(assignment.departureDate) },
-                { label: "Heure de départ", value: assignment.departureTime || "Non spécifié" },
-                { label: "Durée de la mission", value: `${assignment.missionDuration || "N/A"} jours` },
-                { label: "Date de retour", value: formatDate(assignment.returnDate) || "Non spécifié" },
-                { label: "Heure de retour", value: assignment.returnTime || "Non spécifié" },
-                { label: "Date de création", value: formatDate(assignment.createdAt) || "Non spécifié" },
+                { label: "Bénéficiaire", value: assignmentDetails.beneficiary },
+                { label: "Matricule", value: assignmentDetails.matricule },
+                { label: "Mission", value: assignmentDetails.missionTitle },
+                { label: "Fonction", value: assignmentDetails.function },
+                { label: "Base", value: assignmentDetails.base },
+                { label: "Moyen de transport", value: assignmentDetails.meansOfTransport },
+                { label: "Direction", value: assignmentDetails.direction },
+                { label: "Département/Service", value: assignmentDetails.departmentService },
+                { label: "Centre de coût", value: assignmentDetails.costCenter },
+                { label: "Date de départ", value: formatDate(assignmentDetails.departureDate) },
+                { label: "Heure de départ", value: assignmentDetails.departureTime },
+                { label: "Durée de la mission", value: `${assignmentDetails.missionDuration} jours` },
+                { label: "Date de retour", value: formatDate(assignmentDetails.returnDate) },
+                { label: "Heure de retour", value: assignmentDetails.returnTime },
+                { label: "Date debut mission", value: formatDate(assignmentDetails.startDate) },
               ].map((item, index) => (
                 <div key={index} className="detail-card">
                   <div className="detail-header">
@@ -266,9 +271,7 @@ const AssignmentDetails = () => {
                         <td className="amount-cell">{item.breakfast ? `${formatNumber(item.breakfast)},00` : ""}</td>
                         <td className="amount-cell">{item.lunch ? `${formatNumber(item.lunch)},00` : ""}</td>
                         <td className="amount-cell">{item.dinner ? `${formatNumber(item.dinner)},00` : ""}</td>
-                        <td className="amount-cell">
-                          {item.accommodation ? `${formatNumber(item.accommodation)},00` : ""}
-                        </td>
+                        <td className="amount-cell">{item.accommodation ? `${formatNumber(item.accommodation)},00` : ""}</td>
                         <td className="total-cell">{item.total ? `${formatNumber(item.total)},00` : ""}</td>
                       </tr>
                     ))}
@@ -281,7 +284,7 @@ const AssignmentDetails = () => {
                       <td className="amount-cell"></td>
                       <td className="amount-cell"></td>
                       <td className="total-cell">
-                        <strong>{formatNumber(totalCumulativeAmount)},00</strong>
+                        <strong>{formatNumber(totalAmount)},00</strong>
                       </td>
                     </tr>
                   </tbody>

@@ -6,6 +6,7 @@ using MyApp.Api.Models.search.mission;
 
 namespace MyApp.Api.Repositories.mission
 {
+    // Interface du repository pour la gestion des missions
     public interface IMissionRepository
     {
         Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize);
@@ -19,47 +20,57 @@ namespace MyApp.Api.Repositories.mission
         Task<bool> CancelAsync(string id);
     }
 
+    // Implémentation du repository des missions
     public class MissionRepository : IMissionRepository
     {
         private readonly AppDbContext _context;
 
+        // Constructeur avec injection du contexte de base de données
         public MissionRepository(AppDbContext context)
         {
             _context = context;
         }
 
+        // Recherche paginée de missions avec filtres
         public async Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize)
         {
             var query = _context.Missions
-                .AsQueryable(); // Remove .Include(m => m.Site)
+                .Include(m => m.Lieu)
+                .AsQueryable();
 
+            // Filtre par nom de mission
             if (!string.IsNullOrWhiteSpace(filters.Name))
             {
-                query = query.Where(m => m.Name != null && m.Name.Contains(filters.Name));
+                query = query.Where(m => m.Name.Contains(filters.Name));
             }
 
+            // Filtre par date de début minimale
             if (filters.StartDateMin.HasValue)
             {
                 query = query.Where(m => m.StartDate >= filters.StartDateMin.Value);
             }
 
+            // Filtre par date de début maximale
             if (filters.StartDateMax.HasValue)
             {
                 query = query.Where(m => m.StartDate <= filters.StartDateMax.Value);
             }
 
-            if (!string.IsNullOrWhiteSpace(filters.Site))
+            // Filtre par LieuId
+            if (!string.IsNullOrWhiteSpace(filters.LieuId))
             {
-                query = query.Where(m => m.Site != null && m.Site.Contains(filters.Site));
+                query = query.Where(m => m.LieuId.Contains(filters.LieuId));
             }
 
+            // Filtre par statut
             if (!string.IsNullOrWhiteSpace(filters.Status))
             {
-                query = query.Where(m => m.Status != null && m.Status.Contains(filters.Status));
+                query = query.Where(m => m.Status.Contains(filters.Status));
             }
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await query.CountAsync(); // Nombre total de résultats
 
+            // Récupération des résultats paginés
             var results = await query
                 .OrderByDescending(m => m.StartDate)
                 .ThenBy(m => m.Name)
@@ -70,41 +81,50 @@ namespace MyApp.Api.Repositories.mission
             return (results, totalCount);
         }
 
+        // Récupère toutes les missions triées par date de création décroissante
         public async Task<IEnumerable<Mission>> GetAllAsync()
         {
             return await _context.Missions
+                .Include(m => m.Lieu)
                 .OrderByDescending(m => m.CreatedAt)
                 .ToListAsync();
         }
 
+        // Récupère une mission par son identifiant
         public async Task<Mission?> GetByIdAsync(string id)
         {
             return await _context.Missions
+                .Include(m => m.Lieu)
                 .FirstOrDefaultAsync(m => m.MissionId == id);
         }
 
+        // Ajoute une nouvelle mission à la base
         public async Task AddAsync(Mission mission)
         {
             await _context.Missions.AddAsync(mission);
         }
 
+        // Met à jour une mission existante
         public Task UpdateAsync(Mission mission)
         {
             _context.Missions.Update(mission);
             return Task.CompletedTask;
         }
 
+        // Supprime une mission existante
         public Task DeleteAsync(Mission mission)
         {
             _context.Missions.Remove(mission);
             return Task.CompletedTask;
         }
 
+        // Sauvegarde les changements dans la base de données
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
         }
 
+        // Annule une mission (change son statut à "Annulé")
         public async Task<bool> CancelAsync(string id)
         {
             var mission = await _context.Missions
@@ -117,15 +137,16 @@ namespace MyApp.Api.Repositories.mission
             return true;
         }
 
+        // Récupère des statistiques sur les missions (total, par statut)
         public async Task<MissionStats> GetStatisticsAsync()
         {
             var total = await _context.Missions.CountAsync();
             var enCours = await _context.Missions
                 .CountAsync(m => m.Status == "En Cours");
             var planifiee = await _context.Missions
-                .CountAsync(m => m.Status == "Planifié"); // Ajout du statut Planifiée
+                .CountAsync(m => m.Status == "Planifié");
             var terminee = await _context.Missions
-                .CountAsync(m => m.Status == "Terminée");
+                .CountAsync(m => m.Status == "Terminé");
             var annulee = await _context.Missions
                 .CountAsync(m => m.Status == "Annulé");
 
@@ -133,7 +154,7 @@ namespace MyApp.Api.Repositories.mission
             {
                 Total = total,
                 EnCours = enCours,
-                Planifiee = planifiee, // Correspondance ajoutée
+                Planifiee = planifiee,
                 Terminee = terminee,
                 Annulee = annulee
             };
