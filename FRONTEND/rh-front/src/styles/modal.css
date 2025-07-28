@@ -106,6 +106,49 @@
   background: rgba(0, 0, 0, 0.05);
 }
 
+/* Modal Actions (Buttons Container) */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Cancel Button */
+.btn-cancel {
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #e5e7eb;
+  border: 1px solid #9ca3af;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-cancel:hover {
+  background-color: #d1d5db;
+}
+
+/* Confirm Button */
+.btn-confirm {
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #ef4444;
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-confirm:hover {
+  background-color: #dc2626;
+}
+
 /* Responsive Design */
 @media (max-width: 640px) {
   .modal-backdrop {
@@ -135,6 +178,16 @@
   .modal-message {
     font-size: 13px;
   }
+
+  .modal-actions {
+    padding: 10px 20px;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
 }
 
 /* Dark Mode */
@@ -142,6 +195,7 @@
   .modal {
     background: #1e293b;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    background-color: #2f3b54; /* Adjusted for dark mode */
   }
 
   .modal-title {
@@ -158,5 +212,27 @@
 
   .modal-close-btn:hover {
     background: rgba(255, 255, 255, 0.1);
+  }
+
+  .modal-actions {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-cancel {
+    background-color: #4b5563;
+    border: 1px solid #6b7280;
+    color: #e5e7eb;
+  }
+
+  .btn-cancel:hover {
+    background-color: #374151;
+  }
+
+  .btn-confirm {
+    background-color: #ef4444;
+  }
+
+  .btn-confirm:hover {
+    background-color: #dc2626;
   }
 }
