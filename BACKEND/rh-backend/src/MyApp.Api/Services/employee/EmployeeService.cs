@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.search.employee;
 using MyApp.Api.Repositories.employee;
 using MyApp.Api.Utils.generator;
 
@@ -7,6 +8,7 @@ namespace MyApp.Api.Services.employe
 {
     public interface IEmployeeService
     {
+        Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Employee>> GetAllAsync();
         Task<Employee?> GetByIdAsync(string id);
         Task<IEnumerable<Employee>> GetByGenderAsync(string genderId);
@@ -14,6 +16,7 @@ namespace MyApp.Api.Services.employe
         Task AddAsync(Employee employee);
         Task UpdateAsync(Employee employee);
         Task DeleteAsync(string id);
+        Task<EmployeeStats> GetStatisticsAsync();
     }
 
     public class EmployeeService : IEmployeeService
@@ -30,6 +33,20 @@ namespace MyApp.Api.Services.employe
             _repository = repository;
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
+        }
+        
+        public async Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize)
+        {
+            try
+            {
+                _logger.LogInformation("Recherche paginée des employés avec filtres");
+                return await _repository.SearchAsync(filters, page, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la recherche paginée des employés");
+                throw;
+            }
         }
 
         public async Task<IEnumerable<Employee>> GetAllAsync()
@@ -176,6 +193,20 @@ namespace MyApp.Api.Services.employe
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la suppression de l'employé avec l'ID: {EmployeeId}", id);
+                throw;
+            }
+        }
+        
+        public async Task<EmployeeStats> GetStatisticsAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération des statistiques des employés");
+                return await _repository.GetStatisticsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des statistiques des employés");
                 throw;
             }
         }

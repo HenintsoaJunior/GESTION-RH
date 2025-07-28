@@ -1,12 +1,13 @@
-"use client"
-import "styles/shortcuts.css"
+"use client";
+import { Link } from "react-router-dom";
+import "styles/shortcuts.css";
 
 export default function ShortcutsDashboard() {
   const shortcuts = [
     {
       id: 1,
       title: "Employee",
-      link: "/employee",
+      link: "/employee/list",
     },
     {
       id: 2,
@@ -23,7 +24,7 @@ export default function ShortcutsDashboard() {
       title: "Service",
       link: "/direction/service-form",
     },
-  ]
+  ];
 
   return (
     <div className="dashboard-container-shortcut">
@@ -34,11 +35,11 @@ export default function ShortcutsDashboard() {
             <tr>
               {shortcuts.map((shortcut) => (
                 <td key={shortcut.id} className="shortcut-cell-shortcut">
-                  <a href={shortcut.link} className="shortcut-card-shortcut">
+                  <Link to={shortcut.link} className="shortcut-card-shortcut">
                     <div className="shortcut-content-shortcut">
                       <h3 className="shortcut-title-shortcut">{shortcut.title}</h3>
                     </div>
-                  </a>
+                  </Link>
                 </td>
               ))}
             </tr>
@@ -46,5 +47,5 @@ export default function ShortcutsDashboard() {
         </table>
       </div>
     </div>
-  )
+  );
 }
