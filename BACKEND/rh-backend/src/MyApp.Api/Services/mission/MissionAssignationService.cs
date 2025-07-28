@@ -634,7 +634,7 @@ namespace MyApp.Api.Services.mission
         {
             public string? Beneficiary { get; set; }
             public string? EmployeeCode { get; set; }
-            public string? MissionName { get; set; }
+            public string? MissionName { get; set; }    
             public string? MissionLocation { get; set; }
             public DateTime? StartDate { get; set; }
             public DateTime? Date { get; set; }

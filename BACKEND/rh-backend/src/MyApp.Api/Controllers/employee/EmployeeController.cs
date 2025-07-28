@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.search.employee;
 using MyApp.Api.Services.employe;
-using System;
-using System.Threading.Tasks;
 
 namespace MyApp.Api.Controllers.employee
 {
@@ -20,6 +18,28 @@ namespace MyApp.Api.Controllers.employee
         {
             _employeeService = employeeService;
             _logger = logger;
+        }
+        
+        [HttpPost("search")]
+        public async Task<ActionResult<object>> Search([FromBody] EmployeeSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                _logger.LogInformation("Recherche paginée des employés avec filtres, page: {Page}, pageSize: {PageSize}", page, pageSize);
+                var (results, totalCount) = await _employeeService.SearchAsync(filters, page, pageSize);
+                return Ok(new
+                {
+                    data = results,
+                    totalCount,
+                    page,
+                    pageSize
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la recherche paginée des employés");
+                return StatusCode(500, "Une erreur est survenue lors de la recherche des employés.");
+            }
         }
 
         [HttpGet]
