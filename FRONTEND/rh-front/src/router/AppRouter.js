@@ -20,6 +20,7 @@ import DashboardHome from 'pages/dashboard';
 import LieuForm from 'pages/lieu/lieu-form';
 import MissionAssignationFormExcel from 'pages/mission/mission-assign-form-excel';
 import ShortcutsDashboard from 'pages/system/entite/shortcuts';
+import EmployeeList from 'pages/employee/employee-list';
 
 function AppRouter() {
   return (
@@ -29,6 +30,9 @@ function AppRouter() {
         <Route element={<Template><Outlet /></Template>}>
           <Route path="/dashboard" element={<DashboardHome />} />
           
+          {/* Employee */}
+          <Route path="/employee/list" element={<EmployeeList />} />
+
           {/* Recrutement */}
           <Route path="/recruitment/recruitment-request/list" element={<RecruitmentRequestList />} />
           <Route path="/recruitment/recruitment-request/create" element={<RecruitmentRequestForm />} />
