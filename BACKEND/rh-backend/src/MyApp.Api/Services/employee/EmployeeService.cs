@@ -168,14 +168,11 @@ namespace MyApp.Api.Services.employee
                 {
                     throw new ArgumentException("L'employé n'existe pas", nameof(id));
                 }
-
+                _repository.Detach(existingEmployee);
+                
                 var employee = new Employee(employeeForm);
-                employee.EmployeeId = id; // Conserver l'ID existant
-                employee.DepartureDate = existingEmployee.DepartureDate; // Conserver les champs non présents dans la DTO
-                employee.DepartureReasonCode = existingEmployee.DepartureReasonCode;
-                employee.DepartureReasonTitle = existingEmployee.DepartureReasonTitle;
-                employee.BirthDate_ = existingEmployee.BirthDate_;
-
+                employee.EmployeeId = id;
+                
                 await _repository.UpdateAsync(employee);
                 await _repository.SaveChangesAsync();
 

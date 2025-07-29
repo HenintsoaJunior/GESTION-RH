@@ -199,6 +199,10 @@ namespace MyApp.Api.Entities.employee
             Grade = form.Grade;
             IsExecutive = form.IsExecutive;
             ContractEndDate = form.ContractEndDate;
+            DepartureDate = form.DepartureDate; // Added
+            DepartureReasonCode = form.DepartureReasonCode; // Added
+            DepartureReasonTitle = form.DepartureReasonTitle; // Added
+            BirthDate_ = form.BirthDate_; // Added
             Status = form.Status ?? "Actif"; // Valeur par défaut si null
             UnitId = form.UnitId;
             ServiceId = form.ServiceId;
