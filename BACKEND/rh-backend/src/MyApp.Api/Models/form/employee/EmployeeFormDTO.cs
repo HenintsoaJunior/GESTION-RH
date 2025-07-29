@@ -64,6 +64,16 @@ namespace MyApp.Api.Models.form.employee
 
         public DateTime? ContractEndDate { get; set; }
 
+        public DateTime? DepartureDate { get; set; } // Added for DepartureDate
+
+        [MaxLength(50, ErrorMessage = "Le code de raison de départ ne peut pas dépasser 50 caractères.")]
+        public string? DepartureReasonCode { get; set; } // Added for DepartureReasonCode
+
+        [MaxLength(100, ErrorMessage = "Le titre de raison de départ ne peut pas dépasser 100 caractères.")]
+        public string? DepartureReasonTitle { get; set; } // Added for DepartureReasonTitle
+
+        public DateTime? BirthDate_ { get; set; } // Added for BirthDate_
+
         [MaxLength(10, ErrorMessage = "Le statut ne peut pas dépasser 10 caractères.")]
         public string? Status { get; set; } = "Actif";
 

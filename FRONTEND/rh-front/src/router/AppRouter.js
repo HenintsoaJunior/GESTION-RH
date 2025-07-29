@@ -32,6 +32,7 @@ function AppRouter() {
           <Route path="/dashboard" element={<DashboardHome />} />
           
           {/* Employee */}
+          <Route path="/employee/edit/:employeeId" element={<EmployeeForm />} />
           <Route path="/employee/list" element={<EmployeeList />} />
           <Route path="/employee/create" element={<EmployeeForm />} />
           

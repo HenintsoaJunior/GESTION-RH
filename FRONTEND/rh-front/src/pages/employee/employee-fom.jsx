@@ -1,11 +1,11 @@
 import "styles/generic-form-styles.css";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Alert from "components/alert";
 import Modal from "components/modal";
 import * as FaIcons from "react-icons/fa";
 import AutoCompleteInput from "components/auto-complete-input";
-import { createEmployee } from "services/employee/employee";
+import { createEmployee, updateEmployee, fetchEmployeeById } from "services/employee/employee";
 import { fetchUnits } from "services/direction/unit";
 import { fetchServices } from "services/direction/service";
 import { fetchDepartments } from "services/direction/department";
@@ -17,7 +17,10 @@ import { fetchMaritalStatuses } from "services/employee/marital-status";
 import { fetchSites } from "services/site/site";
 
 export default function EmployeeForm() {
-  // Initialize form data with default values
+  const { employeeId } = useParams(); // Get employeeId from URL
+  const isEditMode = !!employeeId;
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     lastName: "",
     firstName: "",
@@ -41,6 +44,15 @@ export default function EmployeeForm() {
     isExecutive: false,
     contractEndDate: "",
     status: "Actif",
+    unit: "",
+    service: "",
+    department: "",
+    direction: "",
+    workingTimeType: "",
+    contractType: "",
+    gender: "",
+    maritalStatus: "",
+    site: "",
     unitId: "",
     serviceId: "",
     departmentId: "",
@@ -64,7 +76,8 @@ export default function EmployeeForm() {
     contractTypes: false,
     genders: false,
     maritalStatuses: false,
-    sites: false
+    sites: false,
+    employee: false
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [references, setReferences] = useState({
@@ -89,21 +102,75 @@ export default function EmployeeForm() {
     maritalStatus: [],
     site: []
   });
-  const navigate = useNavigate();
+
+  // Fetch employee data if in edit mode
+  useEffect(() => {
+    if (isEditMode) {
+      fetchEmployeeById(
+        employeeId,
+        (data) => {
+          setFormData({
+            lastName: data.lastName || "",
+            firstName: data.firstName || "",
+            employeeCode: data.employeeCode || "",
+            birthDate: data.birthDate ? data.birthDate.split("T")[0] : "",
+            birthPlace: data.birthPlace || "",
+            childrenCount: data.childrenCount || 0,
+            cinNumber: data.cinNumber || "",
+            cinDate: data.cinDate ? data.cinDate.split("T")[0] : "",
+            cinPlace: data.cinPlace || "",
+            cnapsNumber: data.cnapsNumber || "",
+            address: data.address || "",
+            addressComplement: data.addressComplement || "",
+            bankCode: data.bankCode || "",
+            branchCode: data.branchCode || "",
+            accountNumber: data.accountNumber || "",
+            ribKey: data.ribKey || "",
+            hireDate: data.hireDate ? data.hireDate.split("T")[0] : "",
+            jobTitle: data.jobTitle || "",
+            grade: data.grade || "",
+            isExecutive: data.isExecutive || false,
+            contractEndDate: data.contractEndDate ? data.contractEndDate.split("T")[0] : "",
+            status: data.status || "Actif",
+            unit: data.unit?.unitName || "",
+            service: data.service?.serviceName || "",
+            department: data.department?.departmentName || "",
+            direction: data.direction?.directionName || "",
+            workingTimeType: data.workingTimeType?.label || "",
+            contractType: data.contractType?.label || "",
+            gender: data.gender?.label || "",
+            maritalStatus: data.maritalStatus?.label || "",
+            site: data.site?.siteName || "",
+            unitId: data.unitId || "",
+            serviceId: data.serviceId || "",
+            departmentId: data.departmentId || "",
+            directionId: data.directionId || "",
+            workingTimeTypeId: data.workingTimeTypeId || "",
+            contractTypeId: data.contractTypeId || "",
+            genderId: data.genderId || "",
+            maritalStatusId: data.maritalStatusId || "",
+            siteId: data.siteId || ""
+          });
+        },
+        setIsLoading,
+        (error) => setAlert({ isOpen: true, type: "error", message: error.message })
+      );
+    }
+  }, [employeeId, isEditMode]);
 
   // Fetch reference data for autocomplete fields
   useEffect(() => {
     const fetchAllReferences = async () => {
       const fetchConfig = [
-        { fetchFn: fetchUnits, key: "units", suggestionKey: "unit", mapFn: (item) => item.unitName, idField: "unitId" },
-        { fetchFn: fetchServices, key: "services", suggestionKey: "service", mapFn: (item) => item.serviceName, idField: "serviceId" },
-        { fetchFn: fetchDepartments, key: "departments", suggestionKey: "department", mapFn: (item) => item.departmentName, idField: "departmentId" },
-        { fetchFn: fetchDirections, key: "directions", suggestionKey: "direction", mapFn: (item) => item.directionName, idField: "directionId" },
-        { fetchFn: fetchWorkingTimeTypes, key: "workingTimeTypes", suggestionKey: "workingTimeType", mapFn: (item) => item.label, idField: "workingTimeTypeId" },
-        { fetchFn: fetchContractTypes, key: "contractTypes", suggestionKey: "contractType", mapFn: (item) => item.label, idField: "contractTypeId" },
-        { fetchFn: fetchGenders, key: "genders", suggestionKey: "gender", mapFn: (item) => item.label, idField: "genderId" },
-        { fetchFn: fetchMaritalStatuses, key: "maritalStatuses", suggestionKey: "maritalStatus", mapFn: (item) => item.label, idField: "maritalStatusId" },
-        { fetchFn: fetchSites, key: "sites", suggestionKey: "site", mapFn: (item) => item.siteName, idField: "siteId" }
+        { fetchFn: fetchUnits, key: "units", suggestionKey: "unit", mapFn: (item) => `${item.unitName}${item.description ? `/${item.description}` : ''}`, idField: "unitId", nameField: "unitName" },
+        { fetchFn: fetchServices, key: "services", suggestionKey: "service", mapFn: (item) => `${item.serviceName}${item.description ? `/${item.description}` : ''}`, idField: "serviceId", nameField: "serviceName" },
+        { fetchFn: fetchDepartments, key: "departments", suggestionKey: "department", mapFn: (item) => `${item.departmentName}${item.description ? `/${item.description}` : ''}`, idField: "departmentId", nameField: "departmentName" },
+        { fetchFn: fetchDirections, key: "directions", suggestionKey: "direction", mapFn: (item) => `${item.directionName}${item.description ? `/${item.description}` : ''}`, idField: "directionId", nameField: "directionName" },
+        { fetchFn: fetchWorkingTimeTypes, key: "workingTimeTypes", suggestionKey: "workingTimeType", mapFn: (item) => item.label, idField: "workingTimeTypeId", nameField: "label" },
+        { fetchFn: fetchContractTypes, key: "contractTypes", suggestionKey: "contractType", mapFn: (item) => item.label, idField: "contractTypeId", nameField: "label" },
+        { fetchFn: fetchGenders, key: "genders", suggestionKey: "gender", mapFn: (item) => item.label, idField: "genderId", nameField: "label" },
+        { fetchFn: fetchMaritalStatuses, key: "maritalStatuses", suggestionKey: "maritalStatus", mapFn: (item) => item.label, idField: "maritalStatusId", nameField: "label" },
+        { fetchFn: fetchSites, key: "sites", suggestionKey: "site", mapFn: (item) => `${item.siteName}${item.location ? `/${item.location}` : ''}`, idField: "siteId", nameField: "siteName" }
       ];
 
       for (const config of fetchConfig) {
@@ -128,6 +195,34 @@ export default function EmployeeForm() {
     setAlert({ isOpen: true, type, message });
   };
 
+  // Handle adding new suggestions for autocomplete fields
+  const handleAddNewSuggestion = (field, value) => {
+    const config = {
+      unit: { key: "units", idField: "unitId", nameField: "unitName", suggestionKey: "unit" },
+      service: { key: "services", idField: "serviceId", nameField: "serviceName", suggestionKey: "service" },
+      department: { key: "departments", idField: "departmentId", nameField: "departmentName", suggestionKey: "department" },
+      direction: { key: "directions", idField: "directionId", nameField: "directionName", suggestionKey: "direction" },
+      workingTimeType: { key: "workingTimeTypes", idField: "workingTimeTypeId", nameField: "label", suggestionKey: "workingTimeType" },
+      contractType: { key: "contractTypes", idField: "contractTypeId", nameField: "label", suggestionKey: "contractType" },
+      gender: { key: "genders", idField: "genderId", nameField: "label", suggestionKey: "gender" },
+      maritalStatus: { key: "maritalStatuses", idField: "maritalStatusId", nameField: "label", suggestionKey: "maritalStatus" },
+      site: { key: "sites", idField: "siteId", nameField: "siteName", suggestionKey: "site" }
+    }[field];
+
+    const newItem = { [config.nameField]: value, [config.idField]: `temp-${Date.now()}` };
+    setReferences((prev) => ({
+      ...prev,
+      [config.key]: [...prev[config.key], newItem]
+    }));
+    setSuggestions((prev) => ({
+      ...prev,
+      [config.suggestionKey]: [...prev[config.suggestionKey], value]
+    }));
+    setFormData((prev) => ({ ...prev, [field]: value, [config.idField]: newItem[config.idField] }));
+    setFieldErrors((prev) => ({ ...prev, [config.idField]: undefined }));
+    showAlert("success", `"${value}" ajouté aux suggestions pour ${field}`);
+  };
+
   // Handle input changes for text, number, date, and checkbox fields
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -138,10 +233,28 @@ export default function EmployeeForm() {
     setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  // Handle autocomplete field changes, storing IDs
+  // Handle autocomplete field changes, storing display names and extracting IDs
   const handleAutoCompleteChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
+    const config = {
+      unit: { key: "units", idField: "unitId", nameField: "unitName" },
+      service: { key: "services", idField: "serviceId", nameField: "serviceName" },
+      department: { key: "departments", idField: "departmentId", nameField: "departmentName" },
+      direction: { key: "directions", idField: "directionId", nameField: "directionName" },
+      workingTimeType: { key: "workingTimeTypes", idField: "workingTimeTypeId", nameField: "label" },
+      contractType: { key: "contractTypes", idField: "contractTypeId", nameField: "label" },
+      gender: { key: "genders", idField: "genderId", nameField: "label" },
+      maritalStatus: { key: "maritalStatuses", idField: "maritalStatusId", nameField: "label" },
+      site: { key: "sites", idField: "siteId", nameField: "siteName" }
+    }[field];
+
+    const realValue = value.includes('/') ? value.split('/')[0] : value;
+    const selectedItem = references[config.key].find((item) => item[config.nameField] === realValue);
+    setFormData((prev) => ({
+      ...prev,
+      [field]: realValue,
+      [config.idField]: selectedItem ? selectedItem[config.idField] : ""
+    }));
+    setFieldErrors((prev) => ({ ...prev, [config.idField]: undefined }));
   };
 
   // Handle form submission
@@ -152,40 +265,41 @@ export default function EmployeeForm() {
 
     // Validate required autocomplete fields
     const validations = [
-      { field: "unitId", data: references.units, idField: "unitId", errorKey: "UnitId" },
-      { field: "serviceId", data: references.services, idField: "serviceId", errorKey: "ServiceId" },
-      { field: "departmentId", data: references.departments, idField: "departmentId", errorKey: "DepartmentId" },
-      { field: "directionId", data: references.directions, idField: "directionId", errorKey: "DirectionId" },
-      { field: "workingTimeTypeId", data: references.workingTimeTypes, idField: "workingTimeTypeId", errorKey: "WorkingTimeTypeId" },
-      { field: "contractTypeId", data: references.contractTypes, idField: "contractTypeId", errorKey: "ContractTypeId" },
-      { field: "genderId", data: references.genders, idField: "genderId", errorKey: "GenderId" },
-      { field: "maritalStatusId", data: references.maritalStatuses, idField: "maritalStatusId", errorKey: "MaritalStatusId" },
-      { field: "siteId", data: references.sites, idField: "siteId", errorKey: "SiteId" }
+      { field: "unit", data: references.units, idField: "unitId", nameField: "unitName", errorKey: "UnitId" },
+      { field: "service", data: references.services, idField: "serviceId", nameField: "serviceName", errorKey: "ServiceId" },
+      { field: "department", data: references.departments, idField: "departmentId", nameField: "departmentName", errorKey: "DepartmentId" },
+      { field: "direction", data: references.directions, idField: "directionId", nameField: "directionName", errorKey: "DirectionId" },
+      { field: "workingTimeType", data: references.workingTimeTypes, idField: "workingTimeTypeId", nameField: "label", errorKey: "WorkingTimeTypeId" },
+      { field: "contractType", data: references.contractTypes, idField: "contractTypeId", nameField: "label", errorKey: "ContractTypeId" },
+      { field: "gender", data: references.genders, idField: "genderId", nameField: "label", errorKey: "GenderId" },
+      { field: "maritalStatus", data: references.maritalStatuses, idField: "maritalStatusId", nameField: "label", errorKey: "MaritalStatusId" },
+      { field: "site", data: references.sites, idField: "siteId", nameField: "siteName", errorKey: "SiteId" }
     ];
 
-    for (const { field, data, idField, errorKey } of validations) {
+    for (const { field, data, idField, nameField, errorKey } of validations) {
       if (!formData[field]) {
         setModal({
           isOpen: true,
           type: "error",
-          message: `Veuillez sélectionner un ${field.replace("Id", "").toLowerCase()} valide.`,
+          message: `Veuillez sélectionner un ${field} valide.`,
         });
         setIsSubmitting(false);
         return;
       }
-      if (!data.find((item) => item[idField] === formData[field])) {
+      const selectedItem = data.find((item) => item[nameField] === formData[field]);
+      if (!selectedItem) {
         setModal({
           isOpen: true,
           type: "error",
-          message: `L'identifiant ${field.replace("Id", "").toLowerCase()} est invalide.`,
+          message: `La valeur ${formData[field]} pour ${field} est invalide.`,
         });
         setIsSubmitting(false);
         return;
       }
+      formData[idField] = selectedItem[idField];
     }
 
     try {
-      // Prepare employee data for submission
       const employeeData = {
         lastName: formData.lastName,
         firstName: formData.firstName,
@@ -220,18 +334,34 @@ export default function EmployeeForm() {
         siteId: formData.siteId
       };
 
-      await createEmployee(
-        employeeData,
-        setIsLoading,
-        (success) => {
-          setAlert(success);
-          navigate("/employee/list");
-        },
-        (error) => {
-          setModal({ isOpen: true, type: "error", message: error.message });
-          setFieldErrors(error.fieldErrors || {});
-        }
-      );
+      if (isEditMode) {
+        await updateEmployee(
+          employeeId,
+          employeeData,
+          setIsLoading,
+          (success) => {
+            setAlert(success);
+            navigate("/employee/list");
+          },
+          (error) => {
+            setModal({ isOpen: true, type: "error", message: error.message });
+            setFieldErrors(error.fieldErrors || {});
+          }
+        );
+      } else {
+        await createEmployee(
+          employeeData,
+          setIsLoading,
+          (success) => {
+            setAlert(success);
+            navigate("/employee/list");
+          },
+          (error) => {
+            setModal({ isOpen: true, type: "error", message: error.message });
+            setFieldErrors(error.fieldErrors || {});
+          }
+        );
+      }
     } catch (error) {
       console.error("Erreur dans handleSubmit :", error);
       setModal({ isOpen: true, type: "error", message: "Une erreur inattendue s'est produite." });
@@ -265,6 +395,15 @@ export default function EmployeeForm() {
       isExecutive: false,
       contractEndDate: "",
       status: "Actif",
+      unit: "",
+      service: "",
+      department: "",
+      direction: "",
+      workingTimeType: "",
+      contractType: "",
+      gender: "",
+      maritalStatus: "",
+      site: "",
       unitId: "",
       serviceId: "",
       departmentId: "",
@@ -296,14 +435,13 @@ export default function EmployeeForm() {
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
       <div className="table-header">
-        <h2 className="table-title">Création d'un Employé</h2>
+        <h2 className="table-title">{isEditMode ? "Modification d'un Employé" : "Création d'un Employé"}</h2>
       </div>
 
       <form id="employeeForm" className="generic-form" onSubmit={handleSubmit}>
         <div className="form-section">
           <table className="form-table">
             <tbody>
-              {/* Row 1: Last Name, First Name, Employee Code */}
               <tr>
                 <th className="form-label-cell">
                   <label htmlFor="lastName" className="form-label form-label-required">
@@ -368,7 +506,6 @@ export default function EmployeeForm() {
                   )}
                 </td>
               </tr>
-              {/* Row 2: Birth Date, Birth Place, Children Count */}
               <tr>
                 <th className="form-label-cell">
                   <label htmlFor="birthDate" className="form-label">
@@ -431,7 +568,6 @@ export default function EmployeeForm() {
                   )}
                 </td>
               </tr>
-              {/* Row 3: CIN Number, CIN Date, CIN Place */}
               <tr>
                 <th className="form-label-cell">
                   <label htmlFor="cinNumber" className="form-label">
@@ -493,7 +629,6 @@ export default function EmployeeForm() {
                   )}
                 </td>
               </tr>
-              {/* Row 4: CNAPS Number, Address, Address Complement */}
               <tr>
                 <th className="form-label-cell">
                   <label htmlFor="cnapsNumber" className="form-label">
@@ -556,7 +691,6 @@ export default function EmployeeForm() {
                   )}
                 </td>
               </tr>
-              {/* Row 5: Bank Code, Branch Code, Account Number */}
               <tr>
                 <th className="form-label-cell">
                   <label htmlFor="bankCode" className="form-label">
@@ -619,7 +753,6 @@ export default function EmployeeForm() {
                   )}
                 </td>
               </tr>
-              {/* Row 6: RIB Key, Hire Date, Job Title */}
               <tr>
                 <th className="form-label-cell">
                   <label htmlFor="ribKey" className="form-label">
@@ -682,7 +815,6 @@ export default function EmployeeForm() {
                   )}
                 </td>
               </tr>
-              {/* Row 7: Grade, Is Executive, Contract End Date */}
               <tr>
                 <th className="form-label-cell">
                   <label htmlFor="grade" className="form-label">
@@ -740,7 +872,6 @@ export default function EmployeeForm() {
                   )}
                 </td>
               </tr>
-              {/* Row 8: Status, Unit, Service */}
               <tr>
                 <th className="form-label-cell">
                   <label htmlFor="status" className="form-label">
@@ -765,216 +896,222 @@ export default function EmployeeForm() {
                   )}
                 </td>
                 <th className="form-label-cell">
-                  <label htmlFor="unitId" className="form-label form-label-required">
+                  <label htmlFor="unit" className="form-label form-label-required">
                     Unité
                   </label>
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
-                    value={formData.unitId}
-                    onChange={(value) => handleAutoCompleteChange("unitId", value)}
+                    value={formData.unit}
+                    onChange={(value) => handleAutoCompleteChange("unit", value)}
                     suggestions={suggestions.unit}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner une unité..."
                     disabled={isSubmitting || isAnyLoading}
+                    onAddNew={(value) => handleAddNewSuggestion("unit", value)}
+                    showAddOption={true}
                     fieldType="unit"
                     fieldLabel="unité"
                     addNewRoute="/unit/create"
                     className={`form-input ${fieldErrors.UnitId ? "error" : ""}`}
-                    references={references}
                   />
                   {fieldErrors.UnitId && (
                     <span className="error-message">{fieldErrors.UnitId.join(", ")}</span>
                   )}
                 </td>
                 <th className="form-label-cell">
-                  <label htmlFor="serviceId" className="form-label form-label-required">
+                  <label htmlFor="service" className="form-label form-label-required">
                     Service
                   </label>
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
-                    value={formData.serviceId}
-                    onChange={(value) => handleAutoCompleteChange("serviceId", value)}
+                    value={formData.service}
+                    onChange={(value) => handleAutoCompleteChange("service", value)}
                     suggestions={suggestions.service}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner un service..."
                     disabled={isSubmitting || isAnyLoading}
+                    onAddNew={(value) => handleAddNewSuggestion("service", value)}
+                    showAddOption={true}
                     fieldType="service"
                     fieldLabel="service"
                     addNewRoute="/service/create"
                     className={`form-input ${fieldErrors.ServiceId ? "error" : ""}`}
-                    references={references}
                   />
                   {fieldErrors.ServiceId && (
                     <span className="error-message">{fieldErrors.ServiceId.join(", ")}</span>
                   )}
                 </td>
               </tr>
-              {/* Row 9: Department, Direction, Working Time Type */}
               <tr>
                 <th className="form-label-cell">
-                  <label htmlFor="departmentId" className="form-label form-label-required">
+                  <label htmlFor="department" className="form-label form-label-required">
                     Département
                   </label>
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
-                    value={formData.departmentId}
-                    onChange={(value) => handleAutoCompleteChange("departmentId", value)}
+                    value={formData.department}
+                    onChange={(value) => handleAutoCompleteChange("department", value)}
                     suggestions={suggestions.department}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner un département..."
                     disabled={isSubmitting || isAnyLoading}
+                    onAddNew={(value) => handleAddNewSuggestion("department", value)}
+                    showAddOption={true}
                     fieldType="department"
                     fieldLabel="département"
                     addNewRoute="/department/create"
                     className={`form-input ${fieldErrors.DepartmentId ? "error" : ""}`}
-                    references={references}
                   />
                   {fieldErrors.DepartmentId && (
                     <span className="error-message">{fieldErrors.DepartmentId.join(", ")}</span>
                   )}
                 </td>
                 <th className="form-label-cell">
-                  <label htmlFor="directionId" className="form-label form-label-required">
+                  <label htmlFor="direction" className="form-label form-label-required">
                     Direction
                   </label>
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
-                    value={formData.directionId}
-                    onChange={(value) => handleAutoCompleteChange("directionId", value)}
+                    value={formData.direction}
+                    onChange={(value) => handleAutoCompleteChange("direction", value)}
                     suggestions={suggestions.direction}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner une direction..."
                     disabled={isSubmitting || isAnyLoading}
+                    onAddNew={(value) => handleAddNewSuggestion("direction", value)}
+                    showAddOption={true}
                     fieldType="direction"
                     fieldLabel="direction"
                     addNewRoute="/direction/create"
                     className={`form-input ${fieldErrors.DirectionId ? "error" : ""}`}
-                    references={references}
                   />
                   {fieldErrors.DirectionId && (
                     <span className="error-message">{fieldErrors.DirectionId.join(", ")}</span>
                   )}
                 </td>
                 <th className="form-label-cell">
-                  <label htmlFor="workingTimeTypeId" className="form-label form-label-required">
+                  <label htmlFor="workingTimeType" className="form-label form-label-required">
                     Type de Temps de Travail
                   </label>
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
-                    value={formData.workingTimeTypeId}
-                    onChange={(value) => handleAutoCompleteChange("workingTimeTypeId", value)}
+                    value={formData.workingTimeType}
+                    onChange={(value) => handleAutoCompleteChange("workingTimeType", value)}
                     suggestions={suggestions.workingTimeType}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner un type de temps de travail..."
                     disabled={isSubmitting || isAnyLoading}
+                    onAddNew={(value) => handleAddNewSuggestion("workingTimeType", value)}
+                    showAddOption={true}
                     fieldType="workingTimeType"
                     fieldLabel="type de temps de travail"
                     addNewRoute="/workingTimeType/create"
                     className={`form-input ${fieldErrors.WorkingTimeTypeId ? "error" : ""}`}
-                    references={references}
                   />
                   {fieldErrors.WorkingTimeTypeId && (
                     <span className="error-message">{fieldErrors.WorkingTimeTypeId.join(", ")}</span>
                   )}
                 </td>
               </tr>
-              {/* Row 10: Contract Type, Gender, Marital Status */}
               <tr>
                 <th className="form-label-cell">
-                  <label htmlFor="contractTypeId" className="form-label form-label-required">
+                  <label htmlFor="contractType" className="form-label form-label-required">
                     Type de Contrat
                   </label>
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
-                    value={formData.contractTypeId}
-                    onChange={(value) => handleAutoCompleteChange("contractTypeId", value)}
+                    value={formData.contractType}
+                    onChange={(value) => handleAutoCompleteChange("contractType", value)}
                     suggestions={suggestions.contractType}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner un type de contrat..."
                     disabled={isSubmitting || isAnyLoading}
+                    onAddNew={(value) => handleAddNewSuggestion("contractType", value)}
+                    showAddOption={true}
                     fieldType="contractType"
                     fieldLabel="type de contrat"
                     addNewRoute="/contractType/create"
                     className={`form-input ${fieldErrors.ContractTypeId ? "error" : ""}`}
-                    references={references}
                   />
                   {fieldErrors.ContractTypeId && (
                     <span className="error-message">{fieldErrors.ContractTypeId.join(", ")}</span>
                   )}
                 </td>
                 <th className="form-label-cell">
-                  <label htmlFor="genderId" className="form-label form-label-required">
+                  <label htmlFor="gender" className="form-label form-label-required">
                     Genre
                   </label>
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
-                    value={formData.genderId}
-                    onChange={(value) => handleAutoCompleteChange("genderId", value)}
+                    value={formData.gender}
+                    onChange={(value) => handleAutoCompleteChange("gender", value)}
                     suggestions={suggestions.gender}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner un genre..."
                     disabled={isSubmitting || isAnyLoading}
+                    onAddNew={(value) => handleAddNewSuggestion("gender", value)}
+                    showAddOption={true}
                     fieldType="gender"
                     fieldLabel="genre"
                     addNewRoute="/gender/create"
                     className={`form-input ${fieldErrors.GenderId ? "error" : ""}`}
-                    references={references}
                   />
                   {fieldErrors.GenderId && (
                     <span className="error-message">{fieldErrors.GenderId.join(", ")}</span>
                   )}
                 </td>
                 <th className="form-label-cell">
-                  <label htmlFor="maritalStatusId" className="form-label form-label-required">
+                  <label htmlFor="maritalStatus" className="form-label form-label-required">
                     Statut Marital
                   </label>
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
-                    value={formData.maritalStatusId}
-                    onChange={(value) => handleAutoCompleteChange("maritalStatusId", value)}
+                    value={formData.maritalStatus}
+                    onChange={(value) => handleAutoCompleteChange("maritalStatus", value)}
                     suggestions={suggestions.maritalStatus}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner un statut marital..."
                     disabled={isSubmitting || isAnyLoading}
+                    onAddNew={(value) => handleAddNewSuggestion("maritalStatus", value)}
+                    showAddOption={true}
                     fieldType="maritalStatus"
                     fieldLabel="statut marital"
                     addNewRoute="/maritalStatus/create"
                     className={`form-input ${fieldErrors.MaritalStatusId ? "error" : ""}`}
-                    references={references}
                   />
                   {fieldErrors.MaritalStatusId && (
                     <span className="error-message">{fieldErrors.MaritalStatusId.join(", ")}</span>
                   )}
                 </td>
               </tr>
-              {/* Row 11: Site */}
               <tr>
                 <th className="form-label-cell">
-                  <label htmlFor="siteId" className="form-label form-label-required">
+                  <label htmlFor="site" className="form-label form-label-required">
                     Site
                   </label>
                 </th>
                 <td className="form-input-cell">
                   <AutoCompleteInput
-                    value={formData.siteId}
-                    onChange={(value) => handleAutoCompleteChange("siteId", value)}
+                    value={formData.site}
+                    onChange={(value) => handleAutoCompleteChange("site", value)}
                     suggestions={suggestions.site}
                     maxVisibleItems={3}
                     placeholder="Saisir ou sélectionner un site..."
                     disabled={isSubmitting || isAnyLoading}
+                    onAddNew={(value) => handleAddNewSuggestion("site", value)}
+                    showAddOption={true}
                     fieldType="site"
                     fieldLabel="site"
                     addNewRoute="/site/create"
                     className={`form-input ${fieldErrors.SiteId ? "error" : ""}`}
-                    references={references}
                   />
                   {fieldErrors.SiteId && (
                     <span className="error-message">{fieldErrors.SiteId.join(", ")}</span>
@@ -994,9 +1131,9 @@ export default function EmployeeForm() {
             type="submit"
             className="submit-btn"
             disabled={isSubmitting || isAnyLoading}
-            title="Enregistrer l'employé"
+            title={isEditMode ? "Mettre à jour l'employé" : "Enregistrer l'employé"}
           >
-            {isSubmitting ? "Envoi en cours..." : "Enregistrer"}
+            {isSubmitting ? "Envoi en cours..." : isEditMode ? "Mettre à jour" : "Enregistrer"}
             <FaIcons.FaArrowRight className="w-4 h-4" />
           </button>
           <button
