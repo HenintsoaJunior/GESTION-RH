@@ -172,6 +172,9 @@ namespace MyApp.Api.Entities.employee
         public Site? Site { get; set; }
         public ICollection<EmployeeNationality>? EmployeeNationalities { get; set; }
 
+        public Employee()
+        {
+        }
         
         public Employee(EmployeeFormDTO form)
         {

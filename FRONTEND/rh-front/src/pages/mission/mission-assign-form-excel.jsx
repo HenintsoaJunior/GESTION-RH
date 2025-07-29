@@ -439,7 +439,7 @@ export default function MissionAssignationFormExcel() {
             disabled={isFormDisabled}
             title="Générer"
           >
-            {isSubmitting ? "Application en cours..." : "Appliquer le filtre"}
+            {isSubmitting ? "génération en cours..." : "Générer"}
             <FaIcons.FaArrowRight className="w-4 h-4" />
           </button>
           <button

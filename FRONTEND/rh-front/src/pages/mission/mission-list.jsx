@@ -5,17 +5,38 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle, List, XCircle } from "lucide-react";
 import { Calendar as BigCalendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
+import "moment/locale/fr"; // Import de la locale française
 import { formatDate } from "utils/dateConverter";
 import { fetchMissions, fetchMissionStats, cancelMission } from "services/mission/mission";
-import Alert from "components/alert";
+import Modal from "components/modal"; // Updated to use new Modal component
 import Pagination from "components/pagination";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "styles/generic-table-styles.css";
 import AutoCompleteInput from "components/auto-complete-input";
 import { fetchAllRegions } from "services/lieu/lieu";
 
-// Configuration du localizer pour react-big-calendar
+// Configuration de moment en français
+moment.locale('fr');
+
+// Configuration du localizer pour react-big-calendar avec les messages en français
 const localizer = momentLocalizer(moment);
+
+// Messages en français pour react-big-calendar
+const messages = {
+  allDay: 'Toute la journée',
+  previous: 'Précédent',
+  next: 'Suivant',
+  today: "Aujourd'hui",
+  month: 'Mois',
+  week: 'Semaine',
+  day: 'Jour',
+  agenda: 'Agenda',
+  date: 'Date',
+  time: 'Heure',
+  event: 'Événement',
+  noEventsInRange: 'Aucun événement dans cette période.',
+  showMore: total => `+ ${total} événement(s) supplémentaire(s)`
+};
 
 const MissionList = () => {
   const navigate = useNavigate();
@@ -26,7 +47,7 @@ const MissionList = () => {
     startDateMin: "",
     startDateMax: "",
     lieuId: "",
-    location: "", // Added to store the display name for AutoCompleteInput
+    location: "",
     status: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,6 +61,8 @@ const MissionList = () => {
   const [regions, setRegions] = useState([]);
   const [regionNames, setRegionNames] = useState([]);
   const [regionDisplayNames, setRegionDisplayNames] = useState([]);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [missionToCancel, setMissionToCancel] = useState(null);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -173,6 +196,19 @@ const MissionList = () => {
     }
   };
 
+  const handleShowCancelModal = (missionId) => {
+    setMissionToCancel(missionId);
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancel = () => {
+    if (missionToCancel) {
+      handleCancelMission(missionToCancel);
+    }
+    setShowCancelModal(false);
+    setMissionToCancel(null);
+  };
+
   const handleEventClick = (event) => {
     navigate(`/mission/assign-mission/${event.id}`);
   };
@@ -206,12 +242,36 @@ const MissionList = () => {
 
   return (
     <div className="dashboard-container">
-      <Alert
+      <Modal
         type={alert.type}
         message={alert.message}
         isOpen={alert.isOpen}
         onClose={() => setAlert({ ...alert, isOpen: false })}
+        title="Notification"
       />
+
+      <Modal
+        type="warning"
+        message="Êtes-vous sûr de vouloir annuler cette mission ? Cette action est irréversible."
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title="Confirmer l'annulation"
+      >
+        <div className="modal-actions">
+          <button
+            className="btn-cancel"
+            onClick={() => setShowCancelModal(false)}
+          >
+            Annuler
+          </button>
+          <button
+            className="btn-confirm"
+            onClick={handleConfirmCancel}
+          >
+            Confirmer
+          </button>
+        </div>
+      </Modal>
 
       <div className="stats-container">
         <div className="stats-grid">
@@ -517,7 +577,7 @@ const MissionList = () => {
                           className="btn-cancel"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleCancelMission(mission.missionId);
+                            handleShowCancelModal(mission.missionId);
                           }}
                           disabled={mission.status === "Annulé" || mission.status === "Terminé"}
                         >
@@ -553,10 +613,11 @@ const MissionList = () => {
             onSelectEvent={handleEventClick}
             onSelectSlot={handleSelectSlot}
             selectable
-            views={["month", "week", "day"]}
+            views={["month", "week"]}
             defaultView="month"
             style={{ height: "100%" }}
             eventPropGetter={eventStyleGetter}
+            messages={messages}
           />
         </div>
       )}
