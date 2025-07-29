@@ -18,6 +18,25 @@ namespace MyApp.Api.Controllers.mission
             _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
         }
 
+        [HttpPost("generate-pdf")]
+        public async Task<IActionResult> GeneratePdf([FromBody] GeneratePaiementDTO generatePaiementDTO)
+        {
+            try
+            {
+                var pdfBytes = await _missionAssignationService.GeneratePdfReportAsync(generatePaiementDTO);
+                string pdfName = $"MissionPaymentReport-{generatePaiementDTO.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                return File(pdfBytes, "application/pdf", pdfName);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while generating the PDF file: {ex.Message}");
+            }
+        }
+
         [HttpPost("generate")]
         public async Task<ActionResult<IEnumerable<MissionPaiement>>> GeneratePaiements([FromBody] GeneratePaiementDTO generatePaiementDTO)
         {

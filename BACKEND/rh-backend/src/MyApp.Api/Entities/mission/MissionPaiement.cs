@@ -1,3 +1,4 @@
+using DocumentFormat.OpenXml.Bibliography;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Services.employee;
 using MyApp.Api.Services.mission;
@@ -10,6 +11,96 @@ namespace MyApp.Api.Entities.mission
         public MissionAssignation? MissionAssignation { get; set; }
         public IEnumerable<DailyPaiement> DailyPaiements { get; set; } = new List<DailyPaiement>();
         public decimal TotalAmount => DailyPaiements?.Sum(dp => dp.TotalAmount) ?? 0;
+
+        // Utilisé pour générer la section de description du PDF
+        // Utilisé pour générer le résumé de la mission dans le PDF
+        public object GetDescriptionForPDF()
+        {
+            try
+            {
+                if (MissionAssignation == null)
+                    return new { };
+
+                return new
+                {
+                    Mission = MissionAssignation.Mission?.Name ?? "N/A",
+                    Nom = (MissionAssignation.Employee != null
+                        ? $"{MissionAssignation.Employee.FirstName} {MissionAssignation.Employee.LastName} {MissionAssignation.Employee.EmployeeCode}"
+                        : "N/A"),
+                    Matricule = (MissionAssignation.Employee != null
+                        ? $" {MissionAssignation.Employee.EmployeeCode}"
+                        : "N/A"),
+                    Direction = (MissionAssignation.Employee != null
+                        ? $" {(MissionAssignation.Employee.Direction != null ? MissionAssignation.Employee.Direction.DirectionName : "N/A")}"
+                        : "N/A"),
+                    Department = (MissionAssignation.Employee != null
+                    ? $" {(MissionAssignation.Employee.Department != null ? MissionAssignation.Employee.Department.DepartmentName : "N/A")}"
+                    : "N/A"),
+                    Service = (MissionAssignation.Employee != null
+                    ? $" {(MissionAssignation.Employee.Service != null ? MissionAssignation.Employee.Service.ServiceName : "N/A")}"
+                    : "N/A"),
+                    Transport = MissionAssignation.Transport?.Type ?? "N/A",
+                    Départ = MissionAssignation.DepartureDate.ToString("dd/MM/yyyy"),
+                    Retour = MissionAssignation.ReturnDate?.ToString("dd/MM/yyyy") ?? "N/A",
+                    Durée = MissionAssignation.Duration
+                };
+            }
+            catch (Exception ex)
+            {
+               throw new Exception($"Erreur lors de la recuperation de la description: {ex.Message}", ex);
+            }
+        }
+
+        // Utilisé pour générer les tableaux du PDF
+        public List<object> GetTablesForPDF()
+        {
+            var tables = new List<object>();
+            try{
+
+                // Créer la ligne des titres : "Date", <types...>, "Total"
+                var headers = new List<string> { "Date" };
+                headers.Add("Transport");
+                headers.Add("Petit Déjeuner");
+                headers.Add("Déjeuner");
+                headers.Add("Diner");
+                headers.Add("Hebergement");
+                headers.Add("Total");
+
+                tables.Add(headers);
+
+                // Générer les lignes des données
+                foreach (var daily in DailyPaiements)
+                {
+                    var row = new List<string>
+                    {
+                        // Date
+                        daily.Date?.ToString("dd/MM/yyyy") ?? "N/A"
+                    };
+
+                    // Remplir les montants pour ce jour
+                    
+                    if (daily.CompensationScales != null)
+                    {
+                        foreach (var scale in daily.CompensationScales)
+                        {
+                            row.Add(scale.Amount.ToString("N2"));
+                        }
+                    }
+
+                    // Total
+                    row.Add(daily.TotalAmount.ToString("N2"));
+                    tables.Add(row);
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Erreur lors de la recuperation du tableau: {ex.Message}", ex);
+            }
+
+            return tables;
+        }
+
     }
 
     // Classe pour représenter le paiement d'une journée
