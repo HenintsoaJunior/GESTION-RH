@@ -8,6 +8,7 @@
 *.DS_Store
 Thumbs.db
 ehthumbs.db
+*.zip
 ~$*.xlsx
 
 # --- Node (React FRONTEND) ---
