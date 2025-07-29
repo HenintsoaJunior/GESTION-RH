@@ -17,6 +17,7 @@ import { fetchMaritalStatuses } from "services/employee/marital-status";
 import { fetchSites } from "services/site/site";
 
 export default function EmployeeForm() {
+  // Initialize form data with default values
   const [formData, setFormData] = useState({
     lastName: "",
     firstName: "",
@@ -50,6 +51,7 @@ export default function EmployeeForm() {
     maritalStatusId: "",
     siteId: ""
   });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [modal, setModal] = useState({ isOpen: false, type: "info", message: "" });
@@ -93,15 +95,15 @@ export default function EmployeeForm() {
   useEffect(() => {
     const fetchAllReferences = async () => {
       const fetchConfig = [
-        { fetchFn: fetchUnits, key: "units", suggestionKey: "unit", mapFn: (item) => item.unitName },
-        { fetchFn: fetchServices, key: "services", suggestionKey: "service", mapFn: (item) => item.serviceName },
-        { fetchFn: fetchDepartments, key: "departments", suggestionKey: "department", mapFn: (item) => item.departmentName },
-        { fetchFn: fetchDirections, key: "directions", suggestionKey: "direction", mapFn: (item) => item.directionName },
-        { fetchFn: fetchWorkingTimeTypes, key: "workingTimeTypes", suggestionKey: "workingTimeType", mapFn: (item) => item.label },
-        { fetchFn: fetchContractTypes, key: "contractTypes", suggestionKey: "contractType", mapFn: (item) => item.contractTypeName },
-        { fetchFn: fetchGenders, key: "genders", suggestionKey: "gender", mapFn: (item) => item.label },
-        { fetchFn: fetchMaritalStatuses, key: "maritalStatuses", suggestionKey: "maritalStatus", mapFn: (item) => item.label },
-        { fetchFn: fetchSites, key: "sites", suggestionKey: "site", mapFn: (item) => item.siteName }
+        { fetchFn: fetchUnits, key: "units", suggestionKey: "unit", mapFn: (item) => item.unitName, idField: "unitId" },
+        { fetchFn: fetchServices, key: "services", suggestionKey: "service", mapFn: (item) => item.serviceName, idField: "serviceId" },
+        { fetchFn: fetchDepartments, key: "departments", suggestionKey: "department", mapFn: (item) => item.departmentName, idField: "departmentId" },
+        { fetchFn: fetchDirections, key: "directions", suggestionKey: "direction", mapFn: (item) => item.directionName, idField: "directionId" },
+        { fetchFn: fetchWorkingTimeTypes, key: "workingTimeTypes", suggestionKey: "workingTimeType", mapFn: (item) => item.label, idField: "workingTimeTypeId" },
+        { fetchFn: fetchContractTypes, key: "contractTypes", suggestionKey: "contractType", mapFn: (item) => item.label, idField: "contractTypeId" },
+        { fetchFn: fetchGenders, key: "genders", suggestionKey: "gender", mapFn: (item) => item.label, idField: "genderId" },
+        { fetchFn: fetchMaritalStatuses, key: "maritalStatuses", suggestionKey: "maritalStatus", mapFn: (item) => item.label, idField: "maritalStatusId" },
+        { fetchFn: fetchSites, key: "sites", suggestionKey: "site", mapFn: (item) => item.siteName, idField: "siteId" }
       ];
 
       for (const config of fetchConfig) {
@@ -126,6 +128,7 @@ export default function EmployeeForm() {
     setAlert({ isOpen: true, type, message });
   };
 
+  // Handle input changes for text, number, date, and checkbox fields
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -135,31 +138,33 @@ export default function EmployeeForm() {
     setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
+  // Handle autocomplete field changes, storing IDs
   const handleAutoCompleteChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
+  // Handle form submission
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
     setFieldErrors({});
 
-    // Validate autocomplete fields
+    // Validate required autocomplete fields
     const validations = [
-      { field: "unitId", data: references.units, nameField: "unitName", errorKey: "UnitId" },
-      { field: "serviceId", data: references.services, nameField: "serviceName", errorKey: "ServiceId" },
-      { field: "departmentId", data: references.departments, nameField: "departmentName", errorKey: "DepartmentId" },
-      { field: "directionId", data: references.directions, nameField: "directionName", errorKey: "DirectionId" },
-      { field: "workingTimeTypeId", data: references.workingTimeTypes, nameField: "workingTimeTypeName", errorKey: "WorkingTimeTypeId" },
-      { field: "contractTypeId", data: references.contractTypes, nameField: "contractTypeName", errorKey: "ContractTypeId" },
-      { field: "genderId", data: references.genders, nameField: "genderName", errorKey: "GenderId" },
-      { field: "maritalStatusId", data: references.maritalStatuses, nameField: "maritalStatusName", errorKey: "MaritalStatusId" },
-      { field: "siteId", data: references.sites, nameField: "siteName", errorKey: "SiteId" }
+      { field: "unitId", data: references.units, idField: "unitId", errorKey: "UnitId" },
+      { field: "serviceId", data: references.services, idField: "serviceId", errorKey: "ServiceId" },
+      { field: "departmentId", data: references.departments, idField: "departmentId", errorKey: "DepartmentId" },
+      { field: "directionId", data: references.directions, idField: "directionId", errorKey: "DirectionId" },
+      { field: "workingTimeTypeId", data: references.workingTimeTypes, idField: "workingTimeTypeId", errorKey: "WorkingTimeTypeId" },
+      { field: "contractTypeId", data: references.contractTypes, idField: "contractTypeId", errorKey: "ContractTypeId" },
+      { field: "genderId", data: references.genders, idField: "genderId", errorKey: "GenderId" },
+      { field: "maritalStatusId", data: references.maritalStatuses, idField: "maritalStatusId", errorKey: "MaritalStatusId" },
+      { field: "siteId", data: references.sites, idField: "siteId", errorKey: "SiteId" }
     ];
 
-    for (const { field, data, nameField, errorKey } of validations) {
-      if (formData[field] && !data.find((item) => item[nameField] === formData[field])) {
+    for (const { field, data, idField, errorKey } of validations) {
+      if (!formData[field]) {
         setModal({
           isOpen: true,
           type: "error",
@@ -168,9 +173,19 @@ export default function EmployeeForm() {
         setIsSubmitting(false);
         return;
       }
+      if (!data.find((item) => item[idField] === formData[field])) {
+        setModal({
+          isOpen: true,
+          type: "error",
+          message: `L'identifiant ${field.replace("Id", "").toLowerCase()} est invalide.`,
+        });
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     try {
+      // Prepare employee data for submission
       const employeeData = {
         lastName: formData.lastName,
         firstName: formData.firstName,
@@ -194,15 +209,15 @@ export default function EmployeeForm() {
         isExecutive: formData.isExecutive,
         contractEndDate: formData.contractEndDate || null,
         status: formData.status,
-        unitId: references.units.find((u) => u.unitName === formData.unitId)?.unitId || "",
-        serviceId: references.services.find((s) => s.serviceName === formData.serviceId)?.serviceId || "",
-        departmentId: references.departments.find((d) => d.departmentName === formData.departmentId)?.departmentId || "",
-        directionId: references.directions.find((d) => d.directionName === formData.directionId)?.directionId || "",
-        workingTimeTypeId: references.workingTimeTypes.find((w) => w.workingTimeTypeName === formData.workingTimeTypeId)?.workingTimeTypeId || "",
-        contractTypeId: references.contractTypes.find((c) => c.contractTypeName === formData.contractTypeId)?.contractTypeId || "",
-        genderId: references.genders.find((g) => g.genderName === formData.genderId)?.genderId || "",
-        maritalStatusId: references.maritalStatuses.find((m) => m.maritalStatusName === formData.maritalStatusId)?.maritalStatusId || "",
-        siteId: references.sites.find((s) => s.siteName === formData.siteId)?.siteId || ""
+        unitId: formData.unitId,
+        serviceId: formData.serviceId,
+        departmentId: formData.departmentId,
+        directionId: formData.directionId,
+        workingTimeTypeId: formData.workingTimeTypeId,
+        contractTypeId: formData.contractTypeId,
+        genderId: formData.genderId,
+        maritalStatusId: formData.maritalStatusId,
+        siteId: formData.siteId
       };
 
       await createEmployee(
@@ -219,11 +234,13 @@ export default function EmployeeForm() {
       );
     } catch (error) {
       console.error("Erreur dans handleSubmit :", error);
+      setModal({ isOpen: true, type: "error", message: "Une erreur inattendue s'est produite." });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Reset form to initial state
   const handleReset = () => {
     setFormData({
       lastName: "",
@@ -764,6 +781,7 @@ export default function EmployeeForm() {
                     fieldLabel="unité"
                     addNewRoute="/unit/create"
                     className={`form-input ${fieldErrors.UnitId ? "error" : ""}`}
+                    references={references}
                   />
                   {fieldErrors.UnitId && (
                     <span className="error-message">{fieldErrors.UnitId.join(", ")}</span>
@@ -786,6 +804,7 @@ export default function EmployeeForm() {
                     fieldLabel="service"
                     addNewRoute="/service/create"
                     className={`form-input ${fieldErrors.ServiceId ? "error" : ""}`}
+                    references={references}
                   />
                   {fieldErrors.ServiceId && (
                     <span className="error-message">{fieldErrors.ServiceId.join(", ")}</span>
@@ -811,6 +830,7 @@ export default function EmployeeForm() {
                     fieldLabel="département"
                     addNewRoute="/department/create"
                     className={`form-input ${fieldErrors.DepartmentId ? "error" : ""}`}
+                    references={references}
                   />
                   {fieldErrors.DepartmentId && (
                     <span className="error-message">{fieldErrors.DepartmentId.join(", ")}</span>
@@ -833,6 +853,7 @@ export default function EmployeeForm() {
                     fieldLabel="direction"
                     addNewRoute="/direction/create"
                     className={`form-input ${fieldErrors.DirectionId ? "error" : ""}`}
+                    references={references}
                   />
                   {fieldErrors.DirectionId && (
                     <span className="error-message">{fieldErrors.DirectionId.join(", ")}</span>
@@ -855,6 +876,7 @@ export default function EmployeeForm() {
                     fieldLabel="type de temps de travail"
                     addNewRoute="/workingTimeType/create"
                     className={`form-input ${fieldErrors.WorkingTimeTypeId ? "error" : ""}`}
+                    references={references}
                   />
                   {fieldErrors.WorkingTimeTypeId && (
                     <span className="error-message">{fieldErrors.WorkingTimeTypeId.join(", ")}</span>
@@ -880,6 +902,7 @@ export default function EmployeeForm() {
                     fieldLabel="type de contrat"
                     addNewRoute="/contractType/create"
                     className={`form-input ${fieldErrors.ContractTypeId ? "error" : ""}`}
+                    references={references}
                   />
                   {fieldErrors.ContractTypeId && (
                     <span className="error-message">{fieldErrors.ContractTypeId.join(", ")}</span>
@@ -902,6 +925,7 @@ export default function EmployeeForm() {
                     fieldLabel="genre"
                     addNewRoute="/gender/create"
                     className={`form-input ${fieldErrors.GenderId ? "error" : ""}`}
+                    references={references}
                   />
                   {fieldErrors.GenderId && (
                     <span className="error-message">{fieldErrors.GenderId.join(", ")}</span>
@@ -924,13 +948,14 @@ export default function EmployeeForm() {
                     fieldLabel="statut marital"
                     addNewRoute="/maritalStatus/create"
                     className={`form-input ${fieldErrors.MaritalStatusId ? "error" : ""}`}
+                    references={references}
                   />
                   {fieldErrors.MaritalStatusId && (
                     <span className="error-message">{fieldErrors.MaritalStatusId.join(", ")}</span>
                   )}
                 </td>
               </tr>
-              {/* Row 11: Site (Single field row for alignment) */}
+              {/* Row 11: Site */}
               <tr>
                 <th className="form-label-cell">
                   <label htmlFor="siteId" className="form-label form-label-required">
@@ -949,6 +974,7 @@ export default function EmployeeForm() {
                     fieldLabel="site"
                     addNewRoute="/site/create"
                     className={`form-input ${fieldErrors.SiteId ? "error" : ""}`}
+                    references={references}
                   />
                   {fieldErrors.SiteId && (
                     <span className="error-message">{fieldErrors.SiteId.join(", ")}</span>
