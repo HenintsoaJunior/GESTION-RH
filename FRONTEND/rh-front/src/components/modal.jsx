@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react"
-import "styles/modal.css";
+import "styles/modal.css"
 
-const Modal = ({ type = "info", message, isOpen, onClose, title }) => {
+const Modal = ({ type = "info", message, isOpen, onClose, title, children }) => {
   const [visible, setVisible] = useState(isOpen)
 
   // Fonction pour jouer le son de notification
@@ -85,6 +85,7 @@ const Modal = ({ type = "info", message, isOpen, onClose, title }) => {
             <X size={20} strokeWidth={2} />
           </button>
         </div>
+        {children} {/* Add this to render the buttons */}
       </div>
     </div>
   )

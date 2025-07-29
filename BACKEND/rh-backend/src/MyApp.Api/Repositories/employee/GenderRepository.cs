@@ -26,13 +26,13 @@ namespace MyApp.Api.Repositories.employee
         public async Task<IEnumerable<Gender>> GetAllAsync()
         {
             return await _context.Genders
-                .OrderBy(g => g.Label)
                 .ToListAsync();
         }
 
         public async Task<Gender?> GetByIdAsync(string id)
         {
-            return await _context.Genders.FindAsync(id);
+            return await _context.Genders
+                .FirstOrDefaultAsync(g => g.GenderId == id);
         }
 
         public async Task AddAsync(Gender gender)
