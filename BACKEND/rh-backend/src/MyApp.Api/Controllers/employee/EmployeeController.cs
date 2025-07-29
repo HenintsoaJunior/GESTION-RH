@@ -179,7 +179,7 @@ namespace MyApp.Api.Controllers.employee
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     _logger.LogWarning("Tentative de mise à jour d'un employé avec un ID null ou vide");
-                    return BadRequest("L'ID de l'employé ne peut pas être null ou vide.");
+                    return BadRequest(new { message = "L'ID de l'employé ne peut pas être null ou vide." });
                 }
 
                 _logger.LogInformation("Vérification de l'existence de l'employé avec l'ID: {EmployeeId}", id);
@@ -187,19 +187,28 @@ namespace MyApp.Api.Controllers.employee
                 if (existingEmployee == null)
                 {
                     _logger.LogWarning("Employé non trouvé pour l'ID: {EmployeeId}", id);
-                    return NotFound();
+                    return NotFound(new { message = $"Aucun employé trouvé avec l'ID {id}." });
                 }
 
                 _logger.LogInformation("Mise à jour de l'employé avec l'ID: {EmployeeId}", id);
                 await _employeeService.UpdateAsync(id, employeeForm);
 
                 _logger.LogInformation("Employé mis à jour avec succès pour l'ID: {EmployeeId}", id);
-                return NoContent();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Employé mis à jour avec succès.",
+                    employeeId = id
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la mise à jour de l'employé avec l'ID: {EmployeeId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la mise à jour de l'employé.");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Une erreur est survenue lors de la mise à jour de l'employé."
+                });
             }
         }
 
@@ -211,7 +220,7 @@ namespace MyApp.Api.Controllers.employee
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     _logger.LogWarning("Tentative de suppression d'un employé avec un ID null ou vide");
-                    return BadRequest("L'ID de l'employé ne peut pas être null ou vide.");
+                    return BadRequest(new { message = "L'ID de l'employé ne peut pas être null ou vide." });
                 }
 
                 _logger.LogInformation("Vérification de l'existence de l'employé avec l'ID: {EmployeeId}", id);
@@ -219,21 +228,31 @@ namespace MyApp.Api.Controllers.employee
                 if (employee == null)
                 {
                     _logger.LogWarning("Employé non trouvé pour l'ID: {EmployeeId}", id);
-                    return NotFound();
+                    return NotFound(new { message = $"Aucun employé trouvé avec l'ID {id}." });
                 }
 
                 _logger.LogInformation("Suppression de l'employé avec l'ID: {EmployeeId}", id);
                 await _employeeService.DeleteAsync(id);
 
                 _logger.LogInformation("Employé supprimé avec succès pour l'ID: {EmployeeId}", id);
-                return NoContent();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Employé supprimé avec succès.",
+                    employeeId = id
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la suppression de l'employé avec l'ID: {EmployeeId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la suppression de l'employé.");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Une erreur est survenue lors de la suppression de l'employé."
+                });
             }
         }
+
 
         [HttpGet("stats")]
         public async Task<ActionResult<EmployeeStats>> GetStatistics()

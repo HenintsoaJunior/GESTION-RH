@@ -7,6 +7,7 @@ namespace MyApp.Api.Repositories.employee
 {
     public interface IEmployeeRepository
     {
+        public void Detach(Employee employee);
         Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Employee>> GetAllAsync();
         Task<Employee?> GetByIdAsync(string id);
@@ -26,6 +27,10 @@ namespace MyApp.Api.Repositories.employee
         public EmployeeRepository(AppDbContext context)
         {
             _context = context;
+        }
+        public void Detach(Employee employee)
+        {
+            _context.Entry(employee).State = EntityState.Detached;
         }
         
         public async Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize)

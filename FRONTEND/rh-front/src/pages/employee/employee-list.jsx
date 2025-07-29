@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle, List, XCircle, Edit2 } from "lucide-react";
+import { Plus, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle, List, XCircle, Edit2, Trash2 } from "lucide-react";
 import { formatDate } from "utils/dateConverter";
 import {
   searchEmployees,
@@ -10,6 +10,7 @@ import {
   fetchEmployeeStats,
 } from "services/employee/employee";
 import Alert from "components/alert";
+import Modal from "components/modal";
 import Pagination from "components/pagination";
 import AutoCompleteInput from "components/auto-complete-input";
 import { fetchSites } from "services/site/site";
@@ -46,6 +47,8 @@ const EmployeeList = () => {
   const [isHidden, setIsHidden] = useState(false);
   const [sites, setSites] = useState([]);
   const [siteNames, setSiteNames] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState(null);
 
   const handleError = useCallback((error) => {
     console.error('Error details:', error);
@@ -87,7 +90,6 @@ const EmployeeList = () => {
       departureDateMax: "",
     };
     
-    // Charger les employés et les statistiques
     searchEmployees(
       initialFilters, 
       currentPage, 
@@ -147,7 +149,7 @@ const EmployeeList = () => {
 
   const handleRowClick = (employeeId) => {
     if (employeeId) {
-      navigate(`/employee/edit/${employeeId}`);
+      navigate(`/employee/details/${employeeId}`);
     }
   };
 
@@ -158,23 +160,31 @@ const EmployeeList = () => {
     }
   };
 
-  const handleDeleteEmployee = async (employeeId, e) => {
+  const handleDeleteClick = (employeeId, e) => {
     e.stopPropagation();
-    try {
-      await deleteEmployee(
-        employeeId,
-        setIsLoading,
-        (successAlert) => {
-          setAlert(successAlert);
-          // Recharger les données après suppression
-          searchEmployees(filters, currentPage, pageSize, setEmployees, setTotalEntries, setIsLoading, handleError);
-          fetchEmployeeStats(setStats, setIsLoading, handleError);
-        },
-        handleError
-      );
-    } catch (error) {
-      // Error already handled in service
+    setEmployeeToDelete(employeeId);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (employeeToDelete) {
+      try {
+        await deleteEmployee(
+          employeeToDelete,
+          setIsLoading,
+          (successAlert) => {
+            setAlert(successAlert);
+            searchEmployees(filters, currentPage, pageSize, setEmployees, setTotalEntries, setIsLoading, handleError);
+            fetchEmployeeStats(setStats, setIsLoading, handleError);
+          },
+          handleError
+        );
+      } catch (error) {
+        // Error already handled in service
+      }
     }
+    setShowDeleteModal(false);
+    setEmployeeToDelete(null);
   };
 
   const toggleMinimize = () => {
@@ -203,6 +213,35 @@ const EmployeeList = () => {
         isOpen={alert.isOpen}
         onClose={() => setAlert({ ...alert, isOpen: false, fieldErrors: {} })}
       />
+
+      <Modal
+        type="warning"
+        message="Êtes-vous sûr de vouloir supprimer cet employé ? Cette action est irréversible."
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setEmployeeToDelete(null);
+        }}
+        title="Confirmer la suppression"
+      >
+        <div className="modal-actions">
+          <button
+            className="btn-cancel"
+            onClick={() => {
+              setShowDeleteModal(false);
+              setEmployeeToDelete(null);
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            className="btn-confirm"
+            onClick={handleConfirmDelete}
+          >
+            Confirmer
+          </button>
+        </div>
+      </Modal>
 
       <div className="stats-container">
         <div className="stats-grid">
@@ -339,7 +378,6 @@ const EmployeeList = () => {
                           value={filters.site}
                           onChange={(value) => {
                             const selectedSite = sites.find((s) => s.siteName === value);
-                            console.log('Site selected:', value, 'Found:', selectedSite);
                             setFilters((prev) => ({
                               ...prev,
                               site: value,
@@ -447,7 +485,7 @@ const EmployeeList = () => {
               <th>Site</th>
               <th>Statut</th>
               <th>Date d'embauche</th>
-              {/* <th>Actions</th> */}
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -469,25 +507,25 @@ const EmployeeList = () => {
                   <td>{employee.site?.siteName || "Non spécifié"}</td>
                   <td>{getStatusBadge(employee.status)}</td>
                   <td>{formatDate(employee.hireDate) || "Non spécifié"}</td>
-                  {/* <td>
+                  <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button
                         className="btn-edit"
                         onClick={(e) => handleEditEmployee(employee.employeeId, e)}
                         title="Modifier"
                       >
-                        <Edit2 className="w-4 h-4" /> Modifier
+                        <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         className="btn-cancel"
-                        onClick={(e) => handleDeleteEmployee(employee.employeeId, e)}
+                        onClick={(e) => handleDeleteClick(employee.employeeId, e)}
                         disabled={employee.status === "Inactif"}
                         title="Supprimer"
                       >
-                        Supprimer
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  </td> */}
+                  </td>
                 </tr>
               ))
             ) : (
