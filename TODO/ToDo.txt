@@ -62,7 +62,7 @@ Permettre une gestion complète et structurée des recrutements, incluant le dé
                     Liste des candidatures par fiche de poste
                     Statistiques :
                         Nombre total de candidatures
-                        Conversion par étape (% passés à l’étape suivante)
+                        Conversion par étape (% passés à l’étape suivante)dd
                         Durée moyenne par étape
         5.Test et évaluation des candidats
         6. Demande de recrutement
