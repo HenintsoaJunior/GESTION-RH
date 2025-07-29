@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle, List, XCircle } from "lucide-react";
 import { Calendar as BigCalendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
+import "moment/locale/fr"; // Import de la locale française
 import { formatDate } from "utils/dateConverter";
 import { fetchMissions, fetchMissionStats, cancelMission } from "services/mission/mission";
 import Modal from "components/modal"; // Updated to use new Modal component
@@ -14,8 +15,28 @@ import "styles/generic-table-styles.css";
 import AutoCompleteInput from "components/auto-complete-input";
 import { fetchAllRegions } from "services/lieu/lieu";
 
-// Configuration du localizer pour react-big-calendar
+// Configuration de moment en français
+moment.locale('fr');
+
+// Configuration du localizer pour react-big-calendar avec les messages en français
 const localizer = momentLocalizer(moment);
+
+// Messages en français pour react-big-calendar
+const messages = {
+  allDay: 'Toute la journée',
+  previous: 'Précédent',
+  next: 'Suivant',
+  today: "Aujourd'hui",
+  month: 'Mois',
+  week: 'Semaine',
+  day: 'Jour',
+  agenda: 'Agenda',
+  date: 'Date',
+  time: 'Heure',
+  event: 'Événement',
+  noEventsInRange: 'Aucun événement dans cette période.',
+  showMore: total => `+ ${total} événement(s) supplémentaire(s)`
+};
 
 const MissionList = () => {
   const navigate = useNavigate();
@@ -592,10 +613,11 @@ const MissionList = () => {
             onSelectEvent={handleEventClick}
             onSelectSlot={handleSelectSlot}
             selectable
-            views={["month", "week", "day"]}
+            views={["month", "week"]}
             defaultView="month"
             style={{ height: "100%" }}
             eventPropGetter={eventStyleGetter}
+            messages={messages}
           />
         </div>
       )}
