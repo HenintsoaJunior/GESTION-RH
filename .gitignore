@@ -6,9 +6,9 @@
 *.suo
 *.user
 *.DS_Store
+*.zip
 Thumbs.db
 ehthumbs.db
-*.zip
 ~$*.xlsx
 
 # --- Node (React FRONTEND) ---
