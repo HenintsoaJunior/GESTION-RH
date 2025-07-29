@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Extensions;
-using MyApp.Api.Services.mission;
-using Utils.pdf;
 using MyApp.Api.Utils.generator;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,7 +24,6 @@ builder.Services.AddScoped<ISequenceGenerator, SequenceGenerator>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<RecruitmentApprovalPDF>();
 builder.Services.RegisterServicesAndRepositories();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
