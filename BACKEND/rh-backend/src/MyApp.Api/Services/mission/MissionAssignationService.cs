@@ -70,7 +70,7 @@ namespace MyApp.Api.Services.mission
                 );
 
                 PDFGenerator pdf = new PDFGenerator(paiements.GetDescriptionForPDF(), paiements.GetTablesForPDF());
-                return pdf.GeneratePdf(); // <<== Appel correct à la méthode qui retourne le byte[]
+                return pdf.GeneratePdf("Mission"); // <<== Appel correct à la méthode qui retourne le byte[]
             }
             catch (Exception ex)
             {
@@ -432,14 +432,14 @@ namespace MyApp.Api.Services.mission
             headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         }
 
-        private static decimal CalculateExpenseAmount(List<CompensationScale> compensationScales, string expenseType)
+        public static decimal CalculateExpenseAmount(List<CompensationScale> compensationScales, string expenseType)
         {
             return compensationScales
                 .Where(scale => scale.ExpenseType?.Type == expenseType)
                 .Sum(scale => scale.Amount);
         }
 
-        private static decimal CalculateTransportAmount(List<CompensationScale> compensationScales, string? transportId)
+        public static decimal CalculateTransportAmount(List<CompensationScale> compensationScales, string? transportId)
         {
             return compensationScales
                 .Where(scale => scale.TransportId == transportId && scale.TransportId != null)
