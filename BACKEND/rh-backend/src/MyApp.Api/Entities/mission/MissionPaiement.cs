@@ -42,7 +42,7 @@ namespace MyApp.Api.Entities.mission
                     Transport = MissionAssignation.Transport?.Type ?? "N/A",
                     Départ = MissionAssignation.DepartureDate.ToString("dd/MM/yyyy"),
                     Retour = MissionAssignation.ReturnDate?.ToString("dd/MM/yyyy") ?? "N/A",
-                    Durée = MissionAssignation.Duration
+                    Durée = MissionAssignation.Duration + " jours"
                 };
             }
             catch (Exception ex)
@@ -78,14 +78,16 @@ namespace MyApp.Api.Entities.mission
                     };
 
                     // Remplir les montants pour ce jour
-                    
                     if (daily.CompensationScales != null)
                     {
-                        foreach (var scale in daily.CompensationScales)
-                        {
-                            row.Add(scale.Amount.ToString("N2"));
-                        }
+                        var scales = daily.CompensationScales.ToList();
+                        row.Add(MissionAssignationService.CalculateTransportAmount(scales, MissionAssignation.TransportId).ToString("N2"));
+                        row.Add(MissionAssignationService.CalculateExpenseAmount(scales, "Petit Déjeuner").ToString("N2"));
+                        row.Add(MissionAssignationService.CalculateExpenseAmount(scales, "Déjeuner").ToString("N2"));
+                        row.Add(MissionAssignationService.CalculateExpenseAmount(scales, "Dinner").ToString("N2"));
+                        row.Add(MissionAssignationService.CalculateExpenseAmount(scales, "Hébergement").ToString("N2"));
                     }
+
 
                     // Total
                     row.Add(daily.TotalAmount.ToString("N2"));
