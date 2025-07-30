@@ -4,7 +4,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Download, ArrowLeft, Calendar, MapPin, Clock, User, Building, CreditCard } from "lucide-react";
 import { formatDate } from "utils/dateConverter";
 import Alert from "components/alert";
-import { fetchMissionPayment, exportMissionAssignationExcel } from "services/mission/mission";
+import { fetchMissionPayment, exportMissionAssignationExcel, exportMissionAssignationPDF } from "services/mission/mission";
 import "styles/mission/assignment-details-styles.css";
 
 const AssignmentDetails = () => {
@@ -16,6 +16,7 @@ const AssignmentDetails = () => {
   const [isLoading, setIsLoading] = useState({
     missionPayment: true,
     exportExcel: false,
+    exportPDF: false, // Added for PDF export
   });
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
 
@@ -96,9 +97,20 @@ const AssignmentDetails = () => {
     };
   });
 
-  // Handle PDF export (placeholder)
-  const handleExportPDF = () => {
-    setAlert({ isOpen: true, type: "info", message: "Exportation PDF en cours de développement." });
+  // Handle PDF export
+  const handleExportPDF = async () => {
+    await exportMissionAssignationPDF(
+      {
+        missionId: missionId || null,
+        employeeId: employeeId || null,
+        directionId: null,
+        startDate: null,
+        endDate: null,
+      },
+      setIsLoading,
+      (success) => setAlert(success),
+      (error) => setAlert(error)
+    );
   };
 
   // Handle Excel export
@@ -116,6 +128,7 @@ const AssignmentDetails = () => {
       (error) => setAlert(error)
     );
   };
+
   const getStatusBadge = (status) => {
     const statusClass =
       status === "En Cours"
@@ -176,9 +189,14 @@ const AssignmentDetails = () => {
           </div>
         </div>
         <div className="header-actions">
-          <button onClick={handleExportPDF} className="btn-export-pdf" title="Exporter en PDF">
+          <button
+            onClick={handleExportPDF}
+            className="btn-export-pdf"
+            title="Exporter en PDF"
+            disabled={isLoading.exportPDF}
+          >
             <Download className="w-4 h-4" />
-            PDF
+            {isLoading.exportPDF ? "Exportation..." : "PDF"}
           </button>
           <button
             onClick={handleExportExcel}

@@ -3,6 +3,88 @@
 import { apiGet, apiPost, apiPut } from "utils/apiUtils";
 import { handleValidationError } from "utils/validation";
 
+export const exportMissionAssignationPDF = async (
+  filters,
+  setIsLoading,
+  onSuccess,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, exportPDF: true }));
+
+    // Call API to generate PDF
+    const blob = await apiPost(
+      '/api/MissionPaiement/generate-pdf',
+      {
+        missionId: filters.missionId || null,
+        employeeId: filters.employeeId || null,
+        directionId: filters.directionId || null,
+        startDate: filters.startDate || null,
+        endDate: filters.endDate || null,
+      },
+      {},
+      {
+        Accept: 'application/pdf',
+      },
+      'blob'
+    );
+
+    if (blob.size === 0) {
+      throw new Error('Le fichier PDF généré est vide');
+    }
+
+    // Create download URL
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    // File name with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = `Mission_Assignation_${timestamp}.pdf`;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    // Success
+    onSuccess({
+      isOpen: true,
+      type: 'success',
+      message: `Fichier PDF "${filename}" exporté avec succès !`,
+    });
+  } catch (error) {
+    // Error handling
+    let userMessage = 'Erreur lors de l’exportation PDF';
+    if (error.message.includes('404')) {
+      userMessage = 'Service d’exportation non trouvé. Contactez l’administrateur.';
+    } else if (error.message.includes('500')) {
+      userMessage = 'Erreur interne du serveur. Réessayez plus tard.';
+    } else if (error.message.includes('403') || error.message.includes('401')) {
+      userMessage = 'Accès non autorisé. Vérifiez vos permissions.';
+    } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+      userMessage = 'Erreur de connexion. Vérifiez votre connexion internet.';
+    } else if (error.message.includes('requis')) {
+      userMessage = error.message;
+    } else if (error.message.includes('JSON.parse')) {
+      userMessage = 'Réponse du serveur invalide. Le fichier PDF n’a pas pu être généré.';
+    }
+
+    onError({
+      isOpen: true,
+      type: 'error',
+      message: `${userMessage}: ${error.message}`,
+      details: {
+        ...filters,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } finally {
+    setIsLoading((prev) => ({ ...prev, exportPDF: false }));
+  }
+};
 
 export const exportMissionAssignationExcel = async (
   filters,
