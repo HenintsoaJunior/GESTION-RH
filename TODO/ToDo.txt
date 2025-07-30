@@ -340,13 +340,16 @@ Suivi du budget
 
 --------------------------------------------------------------------------------------------------------------------------------
 Gestion de mission
-    Etat de paiement des indemnités de mission
-        régularisation des indemnités de mission
-            mi génerer indemnité par jour pour transport, petite dej, dej, hebergement (en fonction de la catégorie du salarié) 
-    Liste missions 
-        actuels
-        historiques
-    Créer etat de paiement (créer une mission => input)
+    Creation et assignation mission a un employe
+        date depart
+        duree ou date arrivee
+        moyen de transport
+    Liste de tous les missions (vu par la RH)
+    Liste de mes missions et de mes collaborateurs
+    Clic sur un employe en mission  
+        => generation de l'etat de paiement des indemnités par jour (pour transport, petite dej, dej, hebergement (en fonction de la catégorie du salarié))
+    Import de mission(csv)
+    Export en excel(avec filtre employee) et pdf de l'etat de paiement
 --------------------------------------------------------------------------------------------------------------------------------
 Fonctionnalités transversales – exigences générales de l’application
         1. Import / Export CSV des données
