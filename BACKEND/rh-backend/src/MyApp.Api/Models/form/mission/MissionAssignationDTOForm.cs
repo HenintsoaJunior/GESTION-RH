@@ -12,7 +12,6 @@ public class MissionAssignationDTOForm
     [MaxLength(50, ErrorMessage = "L'identifiant de la mission ne peut pas dépasser 50 caractères.")]
     public string MissionId { get; set; } = null!;
     
-    [Required]
     [MaxLength(50, ErrorMessage = "L'identifiant du transport ne peut pas dépasser 50 caractères.")]
     public string? TransportId { get; set; }
 
