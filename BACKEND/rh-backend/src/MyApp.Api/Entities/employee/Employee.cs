@@ -118,19 +118,19 @@ namespace MyApp.Api.Entities.employee
 
         // Foreign Keys + Navigations
         [Column("unit_id")]
-        public string UnitId { get; set; } = default!;
+        public string? UnitId { get; set; }
 
         [ForeignKey("UnitId")]
         public Unit? Unit { get; set; }
 
         [Column("service_id")]
-        public string ServiceId { get; set; } = default!;
+        public string? ServiceId { get; set; }
 
         [ForeignKey("ServiceId")]
         public Service? Service { get; set; }
 
         [Column("department_id")]
-        public string DepartmentId { get; set; } = default!;
+        public string? DepartmentId { get; set; }
 
         [ForeignKey("DepartmentId")]
         public Department? Department { get; set; }

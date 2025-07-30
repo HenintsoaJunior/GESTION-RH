@@ -125,9 +125,8 @@ export const searchEmployees = async (
 export const createEmployee = async (employeeData, setIsLoading, onSuccess, onError) => {
   try {
     setIsLoading((prev) => ({ ...prev, createEmployee: true }));
-
+    console.log("Payload sent to /api/Employee:", JSON.stringify(employeeData, null, 2));
     const data = await apiPost("/api/Employee", employeeData);
-
     onSuccess({
       isOpen: true,
       type: "success",
@@ -136,6 +135,7 @@ export const createEmployee = async (employeeData, setIsLoading, onSuccess, onEr
     return data;
   } catch (error) {
     console.error("Erreur lors de la création de l'employé:", error);
+    console.log("Server response error:", error.response?.data);
     onError(handleValidationError(error, "Erreur lors de la création de l'employé"));
     throw error;
   } finally {

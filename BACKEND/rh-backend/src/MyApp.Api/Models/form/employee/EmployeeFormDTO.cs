@@ -76,18 +76,10 @@ namespace MyApp.Api.Models.form.employee
 
         [MaxLength(10, ErrorMessage = "Le statut ne peut pas dépasser 10 caractères.")]
         public string? Status { get; set; } = "Actif";
-
-        [Required(ErrorMessage = "L'identifiant de l'unité est requis.")]
-        public string UnitId { get; set; } = default!;
-
-        [Required(ErrorMessage = "L'identifiant du service est requis.")]
-        public string ServiceId { get; set; } = default!;
-
-        [Required(ErrorMessage = "L'identifiant du département est requis.")]
-        public string DepartmentId { get; set; } = default!;
-
-        [Required(ErrorMessage = "L'identifiant de la direction est requis.")]
-        public string DirectionId { get; set; } = default!;
+        public string? UnitId { get; set; }
+        public string? ServiceId { get; set; }
+        public string? DepartmentId { get; set; }
+        public string? DirectionId { get; set; }
 
         [Required(ErrorMessage = "L'identifiant du type de temps de travail est requis.")]
         public string WorkingTimeTypeId { get; set; } = default!;
