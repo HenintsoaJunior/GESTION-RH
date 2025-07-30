@@ -352,7 +352,7 @@ namespace MyApp.Utils.pdf
 
             document.Add(signatureTable);
 
-            // Notes importantes avec encadré
+            // Notes importantes avec encadré // a revoir
             var notesTitle = new Paragraph("NOTES IMPORTANTES")
                 .SetFont(PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD))
                 .SetFontSize(12)
