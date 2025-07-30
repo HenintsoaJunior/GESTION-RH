@@ -70,6 +70,7 @@ namespace MyApp.Utils.pdf
 
             // Cellule pour le logo avec fond coloré
             var logoCell = new Cell()
+                // .SetBackgroundColor(PrimaryColor)
                 .SetBorder(Border.NO_BORDER)
                 .SetPadding(15)
                 .SetVerticalAlignment(VerticalAlignment.MIDDLE);
@@ -88,7 +89,7 @@ namespace MyApp.Utils.pdf
                 var placeholder = new Paragraph("LOGO")
                     .SetFont(boldFont)
                     .SetFontSize(14)
-                    .SetFontColor(ColorConstants.WHITE)
+                    .SetFontColor(ColorConstants.BLACK)
                     .SetTextAlignment(TextAlignment.CENTER);
                 logoCell.Add(placeholder);
             }
@@ -242,9 +243,142 @@ namespace MyApp.Utils.pdf
 
         private void GenerateFooter(Document document, PdfFont font)
         {
-            // Espace avant le pied de page
+            // Espace avant les signatures
             document.Add(new Paragraph("\n"));
             
+            // Section signatures
+            var signatureTitle = new Paragraph("SIGNATURES")
+                .SetFont(PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD))
+                .SetFontSize(14)
+                .SetFontColor(SecondaryColor)
+                .SetMarginBottom(15);
+            document.Add(signatureTitle);
+
+            // Tableau des signatures
+            var signatureTable = new Table(UnitValue.CreatePercentArray(new float[] { 1, 1, 1 }))
+                .UseAllAvailableWidth()
+                .SetMarginBottom(20);
+
+            // Première ligne - Titres
+            var requrantCell = new Cell()
+                .Add(new Paragraph("Le Requérant")
+                    .SetFont(font)
+                    .SetFontSize(11)
+                    .SetBold()
+                    .SetTextAlignment(TextAlignment.CENTER))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(5);
+
+            var directeurCell = new Cell()
+                .Add(new Paragraph("Le Directeur de tutelle")
+                    .SetFont(font)
+                    .SetFontSize(11)
+                    .SetBold()
+                    .SetTextAlignment(TextAlignment.CENTER))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(5);
+
+            var chefCell = new Cell()
+                .Add(new Paragraph("Le Chef de Département/Service")
+                    .SetFont(font)
+                    .SetFontSize(11)
+                    .SetBold()
+                    .SetTextAlignment(TextAlignment.CENTER))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(5);
+
+            signatureTable.AddCell(requrantCell);
+            signatureTable.AddCell(directeurCell);
+            signatureTable.AddCell(chefCell);
+
+            // Deuxième ligne - Précisions
+            var employeCell = new Cell()
+                .Add(new Paragraph("(employé envoyé en mission)")
+                    .SetFont(font)
+                    .SetFontSize(9)
+                    .SetFontColor(DarkGray)
+                    .SetTextAlignment(TextAlignment.CENTER))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(5);
+
+            var emptyCell1 = new Cell()
+                .Add(new Paragraph(""))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(5);
+
+            var emptyCell2 = new Cell()
+                .Add(new Paragraph(""))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(5);
+
+            signatureTable.AddCell(employeCell);
+            signatureTable.AddCell(emptyCell1);
+            signatureTable.AddCell(emptyCell2);
+
+            // Troisième ligne - Espaces pour signatures
+            var signatureSpace1 = new Cell()
+                .Add(new Paragraph("(signature)")
+                    .SetFont(font)
+                    .SetFontSize(9)
+                    .SetFontColor(DarkGray)
+                    .SetTextAlignment(TextAlignment.CENTER))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(20)
+                .SetMinHeight(40);
+
+            var signatureSpace2 = new Cell()
+                .Add(new Paragraph("(signature)")
+                    .SetFont(font)
+                    .SetFontSize(9)
+                    .SetFontColor(DarkGray)
+                    .SetTextAlignment(TextAlignment.CENTER))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(20)
+                .SetMinHeight(40);
+
+            var signatureSpace3 = new Cell()
+                .Add(new Paragraph("(signature)")
+                    .SetFont(font)
+                    .SetFontSize(9)
+                    .SetFontColor(DarkGray)
+                    .SetTextAlignment(TextAlignment.CENTER))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(20)
+                .SetMinHeight(40);
+
+            signatureTable.AddCell(signatureSpace1);
+            signatureTable.AddCell(signatureSpace2);
+            signatureTable.AddCell(signatureSpace3);
+
+            document.Add(signatureTable);
+
+            // Notes importantes avec encadré
+            var notesTitle = new Paragraph("NOTES IMPORTANTES")
+                .SetFont(PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD))
+                .SetFontSize(12)
+                .SetFontColor(AccentColor)
+                .SetMarginBottom(10);
+            document.Add(notesTitle);
+
+            var notesTable = new Table(1)
+                .UseAllAvailableWidth()
+                .SetMarginBottom(15);
+
+            var notesText = "• L'ordre de mission dûment visé et signé doit être remis au Département Finances et Comptabilité dans les 3 jours ouvrables suivant le retour de mission faute de quoi les indemnités seront déduites sur le prochain salaire car non justifiées.\n\n" +
+                           "• Au cas où la mission est annulée ou reportée à plus d'une semaine, les sommes avancées doivent être remises au Département Finances et Comptabilité.";
+
+            var notesCell = new Cell()
+                .Add(new Paragraph(notesText)
+                    .SetFont(font)
+                    .SetFontSize(10)
+                    .SetTextAlignment(TextAlignment.JUSTIFIED))
+                .SetBackgroundColor(new DeviceRgb(255, 248, 248))
+                .SetBorder(new SolidBorder(AccentColor, 1))
+                .SetPadding(15);
+
+            notesTable.AddCell(notesCell);
+            document.Add(notesTable);
+
             // Ligne de séparation
             var separator = new Table(1)
                 .UseAllAvailableWidth()
@@ -264,7 +398,7 @@ namespace MyApp.Utils.pdf
                 .SetFontColor(DarkGray)
                 .SetTextAlignment(TextAlignment.LEFT);
 
-            var companyText = new Paragraph("©Ravinala Airport - Etat de paiement de mission")
+            var companyText = new Paragraph("© Ravinala Airport - Document")
                 .SetFont(font)
                 .SetFontSize(9)
                 .SetFontColor(DarkGray)

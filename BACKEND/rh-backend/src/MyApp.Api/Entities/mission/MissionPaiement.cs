@@ -40,8 +40,8 @@ namespace MyApp.Api.Entities.mission
                     ? $" {(MissionAssignation.Employee.Service != null ? MissionAssignation.Employee.Service.ServiceName : "N/A")}"
                     : "N/A"),
                     Transport = MissionAssignation.Transport?.Type ?? "N/A",
-                    Départ = MissionAssignation.DepartureDate.ToString("dd/MM/yyyy"),
-                    Retour = MissionAssignation.ReturnDate?.ToString("dd/MM/yyyy") ?? "N/A",
+                    Départ = MissionAssignation.DepartureDate.ToString("dd/MM/yyyy")+" "+ MissionAssignation.DepartureTime, 
+                    Retour = MissionAssignation.ReturnDate?.ToString("dd/MM/yyyy") +" "+ MissionAssignation.ReturnTime ?? "N/A",
                     Durée = MissionAssignation.Duration + " jours"
                 };
             }
@@ -55,7 +55,8 @@ namespace MyApp.Api.Entities.mission
         public List<object> GetTablesForPDF()
         {
             var tables = new List<object>();
-            try{
+            try
+            {
 
                 // Créer la ligne des titres : "Date", <types...>, "Total"
                 var headers = new List<string> { "Date" };
@@ -93,7 +94,14 @@ namespace MyApp.Api.Entities.mission
                     row.Add(daily.TotalAmount.ToString("N2"));
                     tables.Add(row);
                 }
-                
+                var final_row = new List<string>();
+                final_row.Add("Total");
+                for (int i = 0; i < 5; i++)
+                {
+                    final_row.Add(" ");
+                }
+                final_row.Add(TotalAmount.ToString());
+                tables.Add(final_row);
             }
             catch (Exception ex)
             {
