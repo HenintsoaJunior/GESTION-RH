@@ -25,7 +25,7 @@ namespace MyApp.Api.Entities.mission
                 {
                     Mission = MissionAssignation.Mission?.Name ?? "N/A",
                     Nom = (MissionAssignation.Employee != null
-                        ? $"{MissionAssignation.Employee.FirstName} {MissionAssignation.Employee.LastName} {MissionAssignation.Employee.EmployeeCode}"
+                        ? $"{MissionAssignation.Employee.FirstName} {MissionAssignation.Employee.LastName}"
                         : "N/A"),
                     Matricule = (MissionAssignation.Employee != null
                         ? $" {MissionAssignation.Employee.EmployeeCode}"
