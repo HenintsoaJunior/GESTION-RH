@@ -17,7 +17,7 @@ import { fetchMaritalStatuses } from "services/employee/marital-status";
 import { fetchSites } from "services/site/site";
 
 export default function EmployeeForm() {
-  const { employeeId } = useParams(); // Get employeeId from URL
+  const { employeeId } = useParams();
   const isEditMode = !!employeeId;
   const navigate = useNavigate();
 
@@ -61,7 +61,7 @@ export default function EmployeeForm() {
     contractTypeId: "",
     genderId: "",
     maritalStatusId: "",
-    siteId: ""
+    siteId: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,7 +77,7 @@ export default function EmployeeForm() {
     genders: false,
     maritalStatuses: false,
     sites: false,
-    employee: false
+    employee: false,
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [references, setReferences] = useState({
@@ -89,7 +89,7 @@ export default function EmployeeForm() {
     contractTypes: [],
     genders: [],
     maritalStatuses: [],
-    sites: []
+    sites: [],
   });
   const [suggestions, setSuggestions] = useState({
     unit: [],
@@ -100,7 +100,7 @@ export default function EmployeeForm() {
     contractType: [],
     gender: [],
     maritalStatus: [],
-    site: []
+    site: [],
   });
 
   // Fetch employee data if in edit mode
@@ -149,7 +149,7 @@ export default function EmployeeForm() {
             contractTypeId: data.contractTypeId || "",
             genderId: data.genderId || "",
             maritalStatusId: data.maritalStatusId || "",
-            siteId: data.siteId || ""
+            siteId: data.siteId || "",
           });
         },
         setIsLoading,
@@ -170,7 +170,7 @@ export default function EmployeeForm() {
         { fetchFn: fetchContractTypes, key: "contractTypes", suggestionKey: "contractType", mapFn: (item) => item.label, idField: "contractTypeId", nameField: "label" },
         { fetchFn: fetchGenders, key: "genders", suggestionKey: "gender", mapFn: (item) => item.label, idField: "genderId", nameField: "label" },
         { fetchFn: fetchMaritalStatuses, key: "maritalStatuses", suggestionKey: "maritalStatus", mapFn: (item) => item.label, idField: "maritalStatusId", nameField: "label" },
-        { fetchFn: fetchSites, key: "sites", suggestionKey: "site", mapFn: (item) => `${item.siteName}${item.location ? `/${item.location}` : ''}`, idField: "siteId", nameField: "siteName" }
+        { fetchFn: fetchSites, key: "sites", suggestionKey: "site", mapFn: (item) => `${item.siteName}${item.location ? `/${item.location}` : ''}`, idField: "siteId", nameField: "siteName" },
       ];
 
       for (const config of fetchConfig) {
@@ -179,7 +179,7 @@ export default function EmployeeForm() {
             setReferences((prev) => ({ ...prev, [config.key]: data }));
             setSuggestions((prev) => ({
               ...prev,
-              [config.suggestionKey]: data.map(config.mapFn)
+              [config.suggestionKey]: data.map(config.mapFn),
             }));
           },
           setIsLoading,
@@ -190,6 +190,43 @@ export default function EmployeeForm() {
 
     fetchAllReferences();
   }, []);
+
+  // Update suggestions for cascading dropdowns
+  useEffect(() => {
+    const updateCascadingSuggestions = () => {
+      // Filter departments based on selected direction
+      const selectedDirection = references.directions.find((dir) => dir.directionName === formData.direction);
+      const filteredDepartments = selectedDirection
+        ? references.departments.filter((dep) => dep.directionId === selectedDirection.directionId)
+        : references.departments;
+      setSuggestions((prev) => ({
+        ...prev,
+        department: filteredDepartments.map((item) => `${item.departmentName}${item.description ? `/${item.description}` : ''}`),
+      }));
+
+      // Filter services based on selected department
+      const selectedDepartment = filteredDepartments.find((dep) => dep.departmentName === formData.department);
+      const filteredServices = selectedDepartment
+        ? references.services.filter((serv) => serv.departmentId === selectedDepartment.departmentId)
+        : references.services;
+      setSuggestions((prev) => ({
+        ...prev,
+        service: filteredServices.map((item) => `${item.serviceName}${item.description ? `/${item.description}` : ''}`),
+      }));
+
+      // Filter units based on selected service
+      const selectedService = filteredServices.find((serv) => serv.serviceName === formData.service);
+      const filteredUnits = selectedService
+        ? references.units.filter((unit) => unit.serviceId === selectedService.serviceId)
+        : references.units;
+      setSuggestions((prev) => ({
+        ...prev,
+        unit: filteredUnits.map((item) => `${item.unitName}${item.description ? `/${item.description}` : ''}`),
+      }));
+    };
+
+    updateCascadingSuggestions();
+  }, [formData.direction, formData.department, formData.service, references]);
 
   const showAlert = (type, message) => {
     setAlert({ isOpen: true, type, message });
@@ -206,17 +243,17 @@ export default function EmployeeForm() {
       contractType: { key: "contractTypes", idField: "contractTypeId", nameField: "label", suggestionKey: "contractType" },
       gender: { key: "genders", idField: "genderId", nameField: "label", suggestionKey: "gender" },
       maritalStatus: { key: "maritalStatuses", idField: "maritalStatusId", nameField: "label", suggestionKey: "maritalStatus" },
-      site: { key: "sites", idField: "siteId", nameField: "siteName", suggestionKey: "site" }
+      site: { key: "sites", idField: "siteId", nameField: "siteName", suggestionKey: "site" },
     }[field];
 
     const newItem = { [config.nameField]: value, [config.idField]: `temp-${Date.now()}` };
     setReferences((prev) => ({
       ...prev,
-      [config.key]: [...prev[config.key], newItem]
+      [config.key]: [...prev[config.key], newItem],
     }));
     setSuggestions((prev) => ({
       ...prev,
-      [config.suggestionKey]: [...prev[config.suggestionKey], value]
+      [config.suggestionKey]: [...prev[config.suggestionKey], value],
     }));
     setFormData((prev) => ({ ...prev, [field]: value, [config.idField]: newItem[config.idField] }));
     setFieldErrors((prev) => ({ ...prev, [config.idField]: undefined }));
@@ -228,12 +265,16 @@ export default function EmployeeForm() {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: type === "checkbox" ? checked : value,
+      // Reset dependent fields when a parent field changes
+      ...(name === "direction" ? { department: "", service: "", unit: "", departmentId: "", serviceId: "", unitId: "" } : {}),
+      ...(name === "department" ? { service: "", unit: "", serviceId: "", unitId: "" } : {}),
+      ...(name === "service" ? { unit: "", unitId: "" } : {}),
     }));
     setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  // Handle autocomplete field changes, storing display names and extracting IDs
+  // Handle autocomplete field changes
   const handleAutoCompleteChange = (field, value) => {
     const config = {
       unit: { key: "units", idField: "unitId", nameField: "unitName" },
@@ -244,7 +285,7 @@ export default function EmployeeForm() {
       contractType: { key: "contractTypes", idField: "contractTypeId", nameField: "label" },
       gender: { key: "genders", idField: "genderId", nameField: "label" },
       maritalStatus: { key: "maritalStatuses", idField: "maritalStatusId", nameField: "label" },
-      site: { key: "sites", idField: "siteId", nameField: "siteName" }
+      site: { key: "sites", idField: "siteId", nameField: "siteName" },
     }[field];
 
     const realValue = value.includes('/') ? value.split('/')[0] : value;
@@ -252,7 +293,11 @@ export default function EmployeeForm() {
     setFormData((prev) => ({
       ...prev,
       [field]: realValue,
-      [config.idField]: selectedItem ? selectedItem[config.idField] : ""
+      [config.idField]: selectedItem ? selectedItem[config.idField] : "",
+      // Reset dependent fields
+      ...(field === "direction" ? { department: "", service: "", unit: "", departmentId: "", serviceId: "", unitId: "" } : {}),
+      ...(field === "department" ? { service: "", unit: "", serviceId: "", unitId: "" } : {}),
+      ...(field === "service" ? { unit: "", unitId: "" } : {}),
     }));
     setFieldErrors((prev) => ({ ...prev, [config.idField]: undefined }));
   };
@@ -262,42 +307,6 @@ export default function EmployeeForm() {
     event.preventDefault();
     setIsSubmitting(true);
     setFieldErrors({});
-
-    // Validate required autocomplete fields
-    const validations = [
-      { field: "unit", data: references.units, idField: "unitId", nameField: "unitName", errorKey: "UnitId" },
-      { field: "service", data: references.services, idField: "serviceId", nameField: "serviceName", errorKey: "ServiceId" },
-      { field: "department", data: references.departments, idField: "departmentId", nameField: "departmentName", errorKey: "DepartmentId" },
-      { field: "direction", data: references.directions, idField: "directionId", nameField: "directionName", errorKey: "DirectionId" },
-      { field: "workingTimeType", data: references.workingTimeTypes, idField: "workingTimeTypeId", nameField: "label", errorKey: "WorkingTimeTypeId" },
-      { field: "contractType", data: references.contractTypes, idField: "contractTypeId", nameField: "label", errorKey: "ContractTypeId" },
-      { field: "gender", data: references.genders, idField: "genderId", nameField: "label", errorKey: "GenderId" },
-      { field: "maritalStatus", data: references.maritalStatuses, idField: "maritalStatusId", nameField: "label", errorKey: "MaritalStatusId" },
-      { field: "site", data: references.sites, idField: "siteId", nameField: "siteName", errorKey: "SiteId" }
-    ];
-
-    for (const { field, data, idField, nameField, errorKey } of validations) {
-      if (!formData[field]) {
-        setModal({
-          isOpen: true,
-          type: "error",
-          message: `Veuillez sélectionner un ${field} valide.`,
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      const selectedItem = data.find((item) => item[nameField] === formData[field]);
-      if (!selectedItem) {
-        setModal({
-          isOpen: true,
-          type: "error",
-          message: `La valeur ${formData[field]} pour ${field} est invalide.`,
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      formData[idField] = selectedItem[idField];
-    }
 
     try {
       const employeeData = {
@@ -317,7 +326,7 @@ export default function EmployeeForm() {
         branchCode: formData.branchCode,
         accountNumber: formData.accountNumber,
         ribKey: formData.ribKey,
-        hireDate: formData.hireDate,
+        hireDate: formData.hireDate || null,
         jobTitle: formData.jobTitle,
         grade: formData.grade,
         isExecutive: formData.isExecutive,
@@ -331,7 +340,7 @@ export default function EmployeeForm() {
         contractTypeId: formData.contractTypeId,
         genderId: formData.genderId,
         maritalStatusId: formData.maritalStatusId,
-        siteId: formData.siteId
+        siteId: formData.siteId,
       };
 
       if (isEditMode) {
@@ -412,7 +421,7 @@ export default function EmployeeForm() {
       contractTypeId: "",
       genderId: "",
       maritalStatusId: "",
-      siteId: ""
+      siteId: "",
     });
     setFieldErrors({});
     showAlert("info", "Formulaire réinitialisé.");
@@ -458,7 +467,6 @@ export default function EmployeeForm() {
                     placeholder="Saisir le nom..."
                     className={`form-input ${fieldErrors.LastName ? "error" : ""}`}
                     disabled={isSubmitting || isAnyLoading}
-                    required
                   />
                   {fieldErrors.LastName && (
                     <span className="error-message">{fieldErrors.LastName.join(", ")}</span>
@@ -479,7 +487,6 @@ export default function EmployeeForm() {
                     placeholder="Saisir le prénom..."
                     className={`form-input ${fieldErrors.FirstName ? "error" : ""}`}
                     disabled={isSubmitting || isAnyLoading}
-                    required
                   />
                   {fieldErrors.FirstName && (
                     <span className="error-message">{fieldErrors.FirstName.join(", ")}</span>
@@ -788,7 +795,6 @@ export default function EmployeeForm() {
                     onChange={handleInputChange}
                     className={`form-input ${fieldErrors.HireDate ? "error" : ""}`}
                     disabled={isSubmitting || isAnyLoading}
-                    required
                   />
                   {fieldErrors.HireDate && (
                     <span className="error-message">{fieldErrors.HireDate.join(", ")}</span>
@@ -896,80 +902,6 @@ export default function EmployeeForm() {
                   )}
                 </td>
                 <th className="form-label-cell">
-                  <label htmlFor="unit" className="form-label form-label-required">
-                    Unité
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <AutoCompleteInput
-                    value={formData.unit}
-                    onChange={(value) => handleAutoCompleteChange("unit", value)}
-                    suggestions={suggestions.unit}
-                    maxVisibleItems={3}
-                    placeholder="Saisir ou sélectionner une unité..."
-                    disabled={isSubmitting || isAnyLoading}
-                    onAddNew={(value) => handleAddNewSuggestion("unit", value)}
-                    showAddOption={true}
-                    fieldType="unit"
-                    fieldLabel="unité"
-                    addNewRoute="/unit/create"
-                    className={`form-input ${fieldErrors.UnitId ? "error" : ""}`}
-                  />
-                  {fieldErrors.UnitId && (
-                    <span className="error-message">{fieldErrors.UnitId.join(", ")}</span>
-                  )}
-                </td>
-                <th className="form-label-cell">
-                  <label htmlFor="service" className="form-label form-label-required">
-                    Service
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <AutoCompleteInput
-                    value={formData.service}
-                    onChange={(value) => handleAutoCompleteChange("service", value)}
-                    suggestions={suggestions.service}
-                    maxVisibleItems={3}
-                    placeholder="Saisir ou sélectionner un service..."
-                    disabled={isSubmitting || isAnyLoading}
-                    onAddNew={(value) => handleAddNewSuggestion("service", value)}
-                    showAddOption={true}
-                    fieldType="service"
-                    fieldLabel="service"
-                    addNewRoute="/service/create"
-                    className={`form-input ${fieldErrors.ServiceId ? "error" : ""}`}
-                  />
-                  {fieldErrors.ServiceId && (
-                    <span className="error-message">{fieldErrors.ServiceId.join(", ")}</span>
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <th className="form-label-cell">
-                  <label htmlFor="department" className="form-label form-label-required">
-                    Département
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <AutoCompleteInput
-                    value={formData.department}
-                    onChange={(value) => handleAutoCompleteChange("department", value)}
-                    suggestions={suggestions.department}
-                    maxVisibleItems={3}
-                    placeholder="Saisir ou sélectionner un département..."
-                    disabled={isSubmitting || isAnyLoading}
-                    onAddNew={(value) => handleAddNewSuggestion("department", value)}
-                    showAddOption={true}
-                    fieldType="department"
-                    fieldLabel="département"
-                    addNewRoute="/department/create"
-                    className={`form-input ${fieldErrors.DepartmentId ? "error" : ""}`}
-                  />
-                  {fieldErrors.DepartmentId && (
-                    <span className="error-message">{fieldErrors.DepartmentId.join(", ")}</span>
-                  )}
-                </td>
-                <th className="form-label-cell">
                   <label htmlFor="direction" className="form-label form-label-required">
                     Direction
                   </label>
@@ -991,6 +923,80 @@ export default function EmployeeForm() {
                   />
                   {fieldErrors.DirectionId && (
                     <span className="error-message">{fieldErrors.DirectionId.join(", ")}</span>
+                  )}
+                </td>
+                <th className="form-label-cell">
+                  <label htmlFor="department" className="form-label">
+                    Département
+                  </label>
+                </th>
+                <td className="form-input-cell">
+                  <AutoCompleteInput
+                    value={formData.department}
+                    onChange={(value) => handleAutoCompleteChange("department", value)}
+                    suggestions={suggestions.department}
+                    maxVisibleItems={3}
+                    placeholder="Saisir ou sélectionner un département..."
+                    disabled={isSubmitting || isAnyLoading || !formData.direction}
+                    onAddNew={(value) => handleAddNewSuggestion("department", value)}
+                    showAddOption={true}
+                    fieldType="department"
+                    fieldLabel="département"
+                    addNewRoute="/department/create"
+                    className={`form-input ${fieldErrors.DepartmentId ? "error" : ""}`}
+                  />
+                  {fieldErrors.DepartmentId && (
+                    <span className="error-message">{fieldErrors.DepartmentId.join(", ")}</span>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <th className="form-label-cell">
+                  <label htmlFor="service" className="form-label">
+                    Service
+                  </label>
+                </th>
+                <td className="form-input-cell">
+                  <AutoCompleteInput
+                    value={formData.service}
+                    onChange={(value) => handleAutoCompleteChange("service", value)}
+                    suggestions={suggestions.service}
+                    maxVisibleItems={3}
+                    placeholder="Saisir ou sélectionner un service..."
+                    disabled={isSubmitting || isAnyLoading || !formData.department}
+                    onAddNew={(value) => handleAddNewSuggestion("service", value)}
+                    showAddOption={true}
+                    fieldType="service"
+                    fieldLabel="service"
+                    addNewRoute="/service/create"
+                    className={`form-input ${fieldErrors.ServiceId ? "error" : ""}`}
+                  />
+                  {fieldErrors.ServiceId && (
+                    <span className="error-message">{fieldErrors.ServiceId.join(", ")}</span>
+                  )}
+                </td>
+                <th className="form-label-cell">
+                  <label htmlFor="unit" className="form-label">
+                    Unité
+                  </label>
+                </th>
+                <td className="form-input-cell">
+                  <AutoCompleteInput
+                    value={formData.unit}
+                    onChange={(value) => handleAutoCompleteChange("unit", value)}
+                    suggestions={suggestions.unit}
+                    maxVisibleItems={3}
+                    placeholder="Saisir ou sélectionner une unité..."
+                    disabled={isSubmitting || isAnyLoading || !formData.service}
+                    onAddNew={(value) => handleAddNewSuggestion("unit", value)}
+                    showAddOption={true}
+                    fieldType="unit"
+                    fieldLabel="unité"
+                    addNewRoute="/unit/create"
+                    className={`form-input ${fieldErrors.UnitId ? "error" : ""}`}
+                  />
+                  {fieldErrors.UnitId && (
+                    <span className="error-message">{fieldErrors.UnitId.join(", ")}</span>
                   )}
                 </td>
                 <th className="form-label-cell">
