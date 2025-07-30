@@ -6,11 +6,14 @@ using MyApp.Api.Services.employee;
 using ClosedXML.Excel;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Services.employe;
+using MyApp.Api.Models.form.mission;
+using MyApp.Utils.pdf;
 
 namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
     {
+        Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
@@ -53,6 +56,28 @@ namespace MyApp.Api.Services.mission
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
+
+        public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO)
+        {
+            try
+            {
+                MissionPaiementResult paiements = await GeneratePaiementsAsync(
+                    generatePaiementDTO.EmployeeId,
+                    generatePaiementDTO.MissionId,
+                    generatePaiementDTO.DirectionId,
+                    generatePaiementDTO.StartDate,
+                    generatePaiementDTO.EndDate
+                );
+
+                PDFGenerator pdf = new PDFGenerator(paiements.GetDescriptionForPDF(), paiements.GetTablesForPDF());
+                return pdf.GeneratePdf(); // <<== Appel correct à la méthode qui retourne le byte[]
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Erreur lors de la génération du PDF: {ex.Message}", ex);
+            }
+        }
+
 
         public async Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId)
         {
