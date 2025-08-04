@@ -1,5 +1,3 @@
-"use client";
-
 import { apiGet, apiPost, apiPut } from "utils/apiUtils";
 import { handleValidationError } from "utils/validation";
 
@@ -18,9 +16,11 @@ export const exportMissionAssignationPDF = async (
       {
         missionId: filters.missionId || null,
         employeeId: filters.employeeId || null,
-        directionId: filters.directionId || null,
-        startDate: filters.startDate || null,
-        endDate: filters.endDate || null,
+        transportId: filters.transportId || null,
+        lieuId: filters.lieuId || null,
+        departureDate: filters.departureDate || null,
+        departureArrive: filters.departureArrive || null,
+        status: filters.status || null,
       },
       {},
       {
@@ -99,11 +99,13 @@ export const exportMissionAssignationExcel = async (
     const blob = await apiPost(
       '/api/MissionAssignation/generate-excel',
       {
-        MissionId: filters.missionId || null,
-        EmployeeId: filters.employeeId || null,
-        DirectionId: filters.directionId || null,
-        StartDate: filters.startDate || null,
-        EndDate: filters.endDate || null,
+        missionId: filters.missionId || null,
+        employeeId: filters.employeeId || null,
+        transportId: filters.transportId || null,
+        lieuId: filters.lieuId || null,
+        departureDate: filters.departureDate || null,
+        departureArrive: filters.departureArrive || null,
+        status: filters.status || null,
       },
       {},
       {
@@ -168,7 +170,6 @@ export const exportMissionAssignationExcel = async (
     setIsLoading((prev) => ({ ...prev, exportExcel: false }));
   }
 };
-
 
 // Fonction pour récupérer les employés non assignés
 export const fetchNotAssignedEmployees = async (
@@ -278,18 +279,8 @@ export const createMission = async (
 ) => {
   try {
     setIsLoading((prev) => ({ ...prev, mission: true })); // Indique le chargement
-
-    // Préparation du corps de la requête
-    const requestBody = {
-      missionId: missionData.missionId || "",
-      name: missionData.name.trim(),
-      description: missionData.description || "",
-      startDate: new Date(missionData.startDate).toISOString() || null,
-      lieuId: missionData.lieuId || "",
-    };
-
-    // Appel API pour créer la mission
-    const newMission = await apiPost("/api/Mission", requestBody);
+    
+    const newMission = await apiPost("/api/Mission", missionData);
 
     // Affiche un message de succès
     onSuccess({
@@ -404,25 +395,29 @@ export const fetchAssignMission = async (
       page,
       pageSize,
     }).toString();
-    // Préparation du corps de la requête avec gestion des dates
+    
+    // ✅ Préparation du corps de la requête avec gestion des dates CORRIGÉE
     const requestBody = {
       employeeId: filters.employeeId || "",
       missionId: filters.missionId || "",
       transportId: filters.transportId || "",
-      departureDateMin: filters.departureDateMin && !isNaN(new Date(filters.departureDateMin).getTime())
-        ? new Date(filters.departureDateMin).toISOString()
+      lieuId: filters.lieuId || "",
+      departureDate: filters.departureDate && !isNaN(new Date(filters.departureDate).getTime())
+        ? new Date(filters.departureDate).toISOString()
         : null,
-      departureDateMax: filters.departureDateMax && !isNaN(new Date(filters.departureDateMax).getTime())
-        ? new Date(filters.departureDateMax).toISOString()
+      returnDate: filters.returnDate && !isNaN(new Date(filters.returnDate).getTime()) // ✅ CORRIGÉ : returnDate au lieu de departureArrive
+        ? new Date(filters.returnDate).toISOString()
         : null,
       status: filters.status || "",
     };
+    
     console.log("Request Body:", requestBody);
+    
     // Appel API pour récupérer les assignations
     const data = await apiPost(`/api/MissionAssignation/search?${queryParams}`, requestBody);
     console.log("API Response (Mission Assignations):", data);
 
-    // Transformation des données pour l'UI
+    // ✅ Transformation des données pour l'UI CORRIGÉE
     const assignMissionsData = Array.isArray(data.data)
       ? data.data.map((item) => ({
           assignmentId: item.id || item.assignmentId || `${item.employeeId}-${item.missionId}-${item.transportId}`,
@@ -430,14 +425,23 @@ export const fetchAssignMission = async (
           missionId: item.missionId,
           transportId: item.transportId,
           departureDate: item.departureDate,
+          returnDate: item.returnDate, // ✅ AJOUTÉ : returnDate mappé
+          departureTime: item.departureTime, // ✅ AJOUTÉ : pour les heures si nécessaire
+          returnTime: item.returnTime, // ✅ AJOUTÉ : pour les heures si nécessaire
+          duration: item.duration, // ✅ AJOUTÉ : durée de la mission
           beneficiary: `${item.employee?.firstName || ""} ${item.employee?.lastName || ""}`.trim() || "Non spécifié",
           matricule: item.employee?.employeeCode || "Non spécifié",
           missionTitle: item.mission?.name || "Non spécifié",
           function: item.employee?.jobTitle || "Non spécifié",
-          base: item.employee?.site.siteName || "Non spécifié",
+          base: item.employee?.site?.siteName || "Non spécifié", // ✅ CORRIGÉ : ajout du ? pour éviter les erreurs
           status: item.mission?.status || "Non spécifié",
+          directionAcronym: item.employee?.direction?.acronym || "N/A",
+          employee: item.employee,
+          mission: item.mission,
+          transport: item.transport,
         }))
       : [];
+      
     setAssignMissions(assignMissionsData);
     setTotalEntries(data.totalCount || assignMissionsData.length || 0);
   } catch (error) {
@@ -483,6 +487,7 @@ export const fetchAllMissions = async (
     setIsLoading((prev) => ({ ...prev, missions: false }));
   }
 };
+
 // Fonction pour récupérer les missions avec filtres et pagination
 export const fetchMissions = async (
   setMissions,
