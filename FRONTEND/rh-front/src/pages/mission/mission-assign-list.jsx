@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Plus, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, X, List } from "lucide-react";
 import { formatDate } from "utils/dateConverter";
 import Alert from "components/alert";
 import Pagination from "components/pagination";
 import AutoCompleteInput from "components/auto-complete-input";
 import "styles/generic-table-styles.css";
 import { fetchAssignMission } from "services/mission/mission";
-import { fetchEmployees } from "services/employee/employee";
+import { fetchAllEmployees } from "services/employee/employee";
 
 const AssignedPersonsList = () => {
   const navigate = useNavigate();
@@ -18,20 +18,13 @@ const AssignedPersonsList = () => {
   const [filters, setFilters] = useState({
     status: "",
     employeeId: "",
+    employeeName: "",
     departureDateMin: "",
     departureDateMax: "",
     transportId: "",
   });
-  const [appliedFilters, setAppliedFilters] = useState({
-    status: "",
-    employeeId: "",
-    departureDateMin: "",
-    departureDateMax: "",
-    transportId: "",
-  });
-  const [suggestions, setSuggestions] = useState({
-    beneficiary: [],
-  });
+  const [appliedFilters, setAppliedFilters] = useState({ ...filters });
+  const [suggestions, setSuggestions] = useState({ beneficiary: [] });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalEntries, setTotalEntries] = useState(0);
@@ -40,9 +33,8 @@ const AssignedPersonsList = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
-  // Fetch employees for autocomplete suggestions
   useEffect(() => {
-    fetchEmployees(
+    fetchAllEmployees(
       (data) => {
         setSuggestions((prev) => ({
           ...prev,
@@ -59,43 +51,36 @@ const AssignedPersonsList = () => {
     );
   }, []);
 
-  // Fetch assigned missions with applied filters and missionId from URL
   useEffect(() => {
-    const fetchData = async () => {
-      if (!missionId) {
-        setAlert({
-          isOpen: true,
-          type: "error",
-          message: "Aucun ID de mission fourni dans l'URL.",
-        });
-        return;
-      }
-      await fetchAssignMission(
-        setAssignedPersons,
-        setIsLoading,
-        setTotalEntries,
-        {
-          missionId,
-          employeeId: appliedFilters.employeeId,
-          transportId: appliedFilters.transportId,
-          departureDateMin: appliedFilters.departureDateMin,
-          departureDateMax: appliedFilters.departureDateMax,
-          status: appliedFilters.status,
-        },
-        currentPage,
-        pageSize,
-        (error) => setAlert(error)
-      );
-    };
+    if (!missionId) {
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: "Aucun ID de mission fourni dans l'URL.",
+      });
+      return;
+    }
 
-    fetchData();
+    fetchAssignMission(
+      setAssignedPersons,
+      setIsLoading,
+      setTotalEntries,
+      {
+        missionId,
+        employeeId: appliedFilters.employeeId || undefined,
+        transportId: appliedFilters.transportId || undefined,
+        departureDateMin: appliedFilters.departureDateMin || undefined,
+        departureDateMax: appliedFilters.departureDateMax || undefined,
+        status: appliedFilters.status || undefined,
+      },
+      currentPage,
+      pageSize,
+      (error) => setAlert(error)
+    );
   }, [missionId, appliedFilters, currentPage, pageSize]);
 
   const handleFilterChange = (name, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFilterSubmit = (event) => {
@@ -108,6 +93,7 @@ const AssignedPersonsList = () => {
     const resetFilters = {
       status: "",
       employeeId: "",
+      employeeName: "",
       departureDateMin: "",
       departureDateMax: "",
       transportId: "",
@@ -139,13 +125,8 @@ const AssignedPersonsList = () => {
     }
   };
 
-  const toggleMinimize = () => {
-    setIsMinimized((prev) => !prev);
-  };
-
-  const toggleHide = () => {
-    setIsHidden((prev) => !prev);
-  };
+  const toggleMinimize = () => setIsMinimized((prev) => !prev);
+  const toggleHide = () => setIsHidden((prev) => !prev);
 
   const getStatusBadge = (status) => {
     const statusClass =
@@ -197,37 +178,50 @@ const AssignedPersonsList = () => {
           {!isMinimized && (
             <div className="filters-section">
               <form onSubmit={handleFilterSubmit}>
-                <table className="form-table-search">
+                <table className="form-table-search w-full border-collapse">
                   <tbody>
-                    <tr>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Bénéficiaire</label>
-                      </th>
-                      <td className="form-input-cell-search">
+                    <tr className="form-row">
+                      <td className="form-field-cell p-2 align-top">
+                        <label className="form-label-search block mb-2">Bénéficiaire</label>
                         <AutoCompleteInput
-                          value={suggestions.beneficiary.find((emp) => emp.id === filters.employeeId)?.displayName || ""}
+                          value={filters.employeeName || ""}
                           onChange={(value) => {
-                            const selectedEmployee = suggestions.beneficiary.find((emp) => emp.displayName === value);
-                            handleFilterChange("employeeId", selectedEmployee ? selectedEmployee.id : "");
+                            setFilters((prev) => ({
+                              ...prev,
+                              employeeName: value,
+                              employeeId: "",
+                            }));
                           }}
-                          suggestions={suggestions.beneficiary.map((emp) => emp.displayName)}
+                          onSelect={(value) => {
+                            const selectedEmployee = suggestions.beneficiary.find(
+                              (emp) => emp.displayName === value
+                            );
+                            setFilters((prev) => ({
+                              ...prev,
+                              employeeId: selectedEmployee ? selectedEmployee.id : "",
+                              employeeName: selectedEmployee ? selectedEmployee.displayName : value,
+                            }));
+                          }}
+                          suggestions={suggestions.beneficiary
+                            .filter((emp) =>
+                              emp.displayName.toLowerCase().includes(filters.employeeName?.toLowerCase() || "")
+                            )
+                            .map((emp) => emp.displayName)}
                           maxVisibleItems={5}
                           placeholder="Rechercher par bénéficiaire..."
                           disabled={isLoading.employees || isLoading.assignMissions}
                           fieldType="beneficiary"
                           fieldLabel="bénéficiaire"
-                          className="form-input-search"
+                          className="form-input-search w-full"
                         />
                       </td>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Statut</label>
-                      </th>
-                      <td className="form-input-cell-search">
+                      <td className="form-field-cell p-2 align-top">
+                        <label className="form-label-search block mb-2">Statut</label>
                         <select
                           name="status"
                           value={filters.status}
                           onChange={(e) => handleFilterChange("status", e.target.value)}
-                          className="form-input-search"
+                          className="form-input-search w-full"
                         >
                           <option value="">Tous les statuts</option>
                           <option value="En Cours">En Cours</option>
@@ -235,30 +229,24 @@ const AssignedPersonsList = () => {
                           <option value="Terminé">Terminé</option>
                         </select>
                       </td>
-                    </tr>
-                    <tr>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Date de départ min</label>
-                      </th>
-                      <td className="form-input-cell-search">
+                      <td className="form-field-cell p-2 align-top">
+                        <label className="form-label-search block mb-2">Date début</label>
                         <input
                           name="departureDateMin"
                           type="date"
                           value={filters.departureDateMin}
                           onChange={(e) => handleFilterChange("departureDateMin", e.target.value)}
-                          className="form-input-search"
+                          className="form-input-search w-full"
                         />
                       </td>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Date de départ max</label>
-                      </th>
-                      <td className="form-input-cell-search">
+                      <td className="form-field-cell p-2 align-top">
+                        <label className="form-label-search block mb-2">Date retour</label>
                         <input
                           name="departureDateMax"
                           type="date"
                           value={filters.departureDateMax}
                           onChange={(e) => handleFilterChange("departureDateMax", e.target.value)}
-                          className="form-input-search"
+                          className="form-input-search w-full"
                         />
                       </td>
                     </tr>
@@ -289,13 +277,18 @@ const AssignedPersonsList = () => {
 
       <div className="table-header">
         <h2 className="table-title">Liste des Assignations de Mission</h2>
-        <button
-          onClick={() => navigate(`/mission/assign${missionId ? `?missionId=${missionId}` : ""}`)}
-          className="btn-new-request"
-        >
-          <Plus className="w-4 h-4" />
-          Nouvelle assignation
-        </button>
+        <div className="view-toggle">
+          <button className="btn-view active">
+            <List className="w-4 h-4" /> Liste
+          </button>
+          <button
+            onClick={() => navigate(`/mission/assign${missionId ? `?missionId=${missionId}` : ""}`)}
+            className="btn-new-request"
+          >
+            <Plus className="w-4 h-4" />
+            Nouvelle assignation
+          </button>
+        </div>
       </div>
 
       <div className="table-container">
@@ -308,13 +301,14 @@ const AssignedPersonsList = () => {
               <th>Fonction</th>
               <th>Base</th>
               <th>Date de départ</th>
+              <th>Date de retour</th>
               <th>Statut</th>
             </tr>
           </thead>
           <tbody>
             {isLoading.assignMissions ? (
               <tr>
-                <td colSpan={7}>Chargement...</td>
+                <td colSpan={8}>Chargement...</td>
               </tr>
             ) : assignedPersons.length > 0 ? (
               assignedPersons.map((assignment, index) => (
@@ -333,12 +327,13 @@ const AssignedPersonsList = () => {
                   <td>{assignment.function || "Non spécifié"}</td>
                   <td>{assignment.base || "Non spécifié"}</td>
                   <td>{formatDate(assignment.departureDate) || "Non spécifié"}</td>
+                  <td>{formatDate(assignment.returnDate) || "Non spécifié"}</td>
                   <td>{getStatusBadge(assignment.status)}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={7}>Aucune donnée trouvée.</td>
+                <td colSpan={8}>Aucune donnée trouvée.</td>
               </tr>
             )}
           </tbody>

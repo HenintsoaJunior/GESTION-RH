@@ -7,41 +7,42 @@ using MyApp.Api.Utils.generator;
 
 namespace MyApp.Api.Services.mission
 {
-    // Interface du service mission, définit les opérations disponibles
     public interface IMissionService
     {
-        Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize); // Recherche paginée avec filtres
-        Task<IEnumerable<Mission>> GetAllAsync(); // Récupère toutes les missions
-        Task<Mission?> GetByIdAsync(string id); // Récupère une mission par son ID
-        Task<string> CreateAsync(MissionDTOForm mission); // Crée une nouvelle mission
-        Task<bool> UpdateAsync(Mission mission); // Met à jour une mission existante
-        Task<bool> DeleteAsync(string id); // Supprime une mission par son ID
-        Task<MissionStats> GetStatisticsAsync(); // Statistiques sur les missions
-        Task<bool> CancelAsync(string id); // Annule une mission
+        Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize);
+        Task<IEnumerable<Mission>> GetAllAsync();
+        Task<Mission?> GetByIdAsync(string id);
+        Task<string> CreateAsync(MissionDTOForm mission);
+        Task<bool> UpdateAsync(Mission mission);
+        Task<bool> DeleteAsync(string id);
+        Task<MissionStats> GetStatisticsAsync();
+        Task<bool> CancelAsync(string id);
     }
 
-    // Implémentation du service mission
     public class MissionService : IMissionService
     {
         private readonly IMissionRepository _repository;
         private readonly ISequenceGenerator _sequenceGenerator;
+        private readonly IMissionAssignationService _missionAssignationService;
         private readonly ILogger<Mission> _logger;
 
-        // Constructeur avec injection des dépendances
-        public MissionService(IMissionRepository repository, ISequenceGenerator sequenceGenerator, ILogger<Mission> logger)
+        public MissionService(
+            IMissionRepository repository,
+            ISequenceGenerator sequenceGenerator,
+            IMissionAssignationService missionAssignationService,
+            ILogger<Mission> logger)
         {
-            _repository = repository;
-            _sequenceGenerator = sequenceGenerator;
-            _logger = logger;
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
+            _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        // Recherche paginée de missions avec filtres
         public async Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize)
         {
             return await _repository.SearchAsync(filters, page, pageSize);
         }
 
-        // Récupère toutes les missions
         public async Task<IEnumerable<Mission>> GetAllAsync()
         {
             try
@@ -55,7 +56,6 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        // Récupère une mission par son identifiant
         public async Task<Mission?> GetByIdAsync(string id)
         {
             try
@@ -69,7 +69,6 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        // Crée une nouvelle mission à partir d'un formulaire
         public async Task<string> CreateAsync(MissionDTOForm missionDTO)
         {
             try
@@ -79,6 +78,28 @@ namespace MyApp.Api.Services.mission
 
                 await _repository.AddAsync(mission);
                 await _repository.SaveChangesAsync();
+
+                if (missionDTO.Assignations != null && missionDTO.Assignations.Any())
+                {
+                    foreach (var assignationDTO in missionDTO.Assignations)
+                    {
+                        var missionAssignation = new MissionAssignation
+                        {
+                            EmployeeId = assignationDTO.EmployeeId,
+                            MissionId = missionId,
+                            TransportId = assignationDTO.TransportId,
+                            DepartureDate = assignationDTO.DepartureDate ?? DateTime.Now,
+                            DepartureTime = assignationDTO.DepartureTime,
+                            ReturnDate = assignationDTO.ReturnDate,
+                            ReturnTime = assignationDTO.ReturnTime,
+                            Duration = assignationDTO.Duration
+                        };
+
+                        await _missionAssignationService.CreateAsync(missionAssignation);
+                    }
+                    _logger.LogInformation("Created {Count} mission assignations for mission {MissionId}", missionDTO.Assignations.Count, missionId);
+                }
+
                 _logger.LogInformation("Mission créée avec l'ID: {MissionId}", missionId);
                 return missionId;
             }
@@ -89,7 +110,6 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        // Met à jour une mission existante
         public async Task<bool> UpdateAsync(Mission mission)
         {
             try
@@ -97,7 +117,6 @@ namespace MyApp.Api.Services.mission
                 var entity = await _repository.GetByIdAsync(mission.MissionId);
                 if (entity == null) return false;
 
-                // Mise à jour des champs principaux
                 entity.Name = mission.Name;
                 entity.Description = mission.Description;
                 entity.StartDate = mission.StartDate;
@@ -114,7 +133,6 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        // Supprime une mission par son identifiant
         public async Task<bool> DeleteAsync(string id)
         {
             var entity = await _repository.GetByIdAsync(id);
@@ -125,7 +143,6 @@ namespace MyApp.Api.Services.mission
             return true;
         }
 
-        // Annule une mission (change son statut à "Annulé")
         public async Task<bool> CancelAsync(string id)
         {
             var entity = await _repository.GetByIdAsync(id);
@@ -138,7 +155,6 @@ namespace MyApp.Api.Services.mission
             return true;
         }
 
-        // Récupère des statistiques sur les missions
         public async Task<MissionStats> GetStatisticsAsync()
         {
             return await _repository.GetStatisticsAsync();

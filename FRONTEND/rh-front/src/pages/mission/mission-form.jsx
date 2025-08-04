@@ -1,312 +1,27 @@
-import "styles/generic-form-styles.css";
-import "styles/popup-styles.css";
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Alert from "components/alert";
 import Modal from "components/modal";
 import * as FaIcons from "react-icons/fa";
-import AutoCompleteInput from "components/auto-complete-input";
+import NewMissionForm from "./new-mission";
+import ExistingMissionForm from "./existing-mission";
+import BeneficiaryPopup from "./benificiary-mission";
 import { fetchAllRegions } from "services/lieu/lieu";
 import { createMission, fetchAllMissions, createMissionAssignation } from "services/mission/mission";
 import { fetchAllTransports } from "services/transport/transport";
 import { fetchEmployees } from "services/employee/employee";
+import "styles/generic-form-styles.css";
+import "styles/mission/beneficiary-details-popup.css"
 
-const Popup = ({ isOpen, onClose, onSubmit, beneficiary, suggestions, isSubmitting, fieldErrors, handleInputChange, index, handleAddNewSuggestion }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="popup-overlay">
-      <div className="popup-content">
-        <h3>Ajouter un Bénéficiaire</h3>
-        <table className="form-table">
-          <tbody>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Bénéficiaire</label>
-              </th>
-              <td className="form-input-cell">
-                <AutoCompleteInput
-                  value={beneficiary.beneficiary}
-                  onChange={(value) => handleInputChange({ target: { name: 'beneficiary', value } }, index)}
-                  suggestions={suggestions.beneficiary.map((b) => b.displayName)}
-                  placeholder={
-                    suggestions.beneficiary.length === 0
-                      ? "Aucun employé disponible"
-                      : "Saisir ou sélectionner..."
-                  }
-                  disabled={isSubmitting}
-                  showAddOption={false}
-                  fieldType="beneficiary"
-                  fieldLabel="bénéficiaire"
-                  addNewRoute="/employee/employee-form"
-                  className={`form-input ${fieldErrors[`beneficiaries[${index}].EmployeeId`] ? "error" : ""}`}
-                />
-                {fieldErrors[`beneficiaries[${index}].EmployeeId`] && (
-                  <span className="error-message">{fieldErrors[`beneficiaries[${index}].EmployeeId`].join(", ")}</span>
-                )}
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Matricule</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="text"
-                  name="matricule"
-                  value={beneficiary.matricule}
-                  onChange={(e) => handleInputChange(e, index)}
-                  placeholder="Saisir le matricule..."
-                  className="form-input"
-                  disabled={isSubmitting || beneficiary.beneficiary}
-                  readOnly={beneficiary.beneficiary}
-                />
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Fonction</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="text"
-                  name="function"
-                  value={beneficiary.function}
-                  onChange={(e) => handleInputChange(e, index)}
-                  placeholder="Saisir la fonction..."
-                  className="form-input"
-                  disabled={isSubmitting || beneficiary.beneficiary}
-                  readOnly={beneficiary.beneficiary}
-                />
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Base à</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="text"
-                  name="base"
-                  value={beneficiary.base}
-                  onChange={(e) => handleInputChange(e, index)}
-                  placeholder="Saisir la base..."
-                  className="form-input"
-                  disabled={isSubmitting || beneficiary.beneficiary}
-                  readOnly={beneficiary.beneficiary}
-                />
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Direction</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="text"
-                  name="direction"
-                  value={beneficiary.direction}
-                  onChange={(e) => handleInputChange(e, index)}
-                  placeholder="Saisir la direction..."
-                  className="form-input"
-                  disabled={isSubmitting || beneficiary.beneficiary}
-                  readOnly={beneficiary.beneficiary}
-                />
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Département</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="text"
-                  name="department"
-                  value={beneficiary.department}
-                  onChange={(e) => handleInputChange(e, index)}
-                  placeholder="Saisir le département..."
-                  className="form-input"
-                  disabled={isSubmitting || beneficiary.beneficiary}
-                  readOnly={beneficiary.beneficiary}
-                />
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Service</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="text"
-                  name="service"
-                  value={beneficiary.service}
-                  onChange={(e) => handleInputChange(e, index)}
-                  placeholder="Saisir le service..."
-                  className="form-input"
-                  disabled={isSubmitting || beneficiary.beneficiary}
-                  readOnly={beneficiary.beneficiary}
-                />
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label">Centre de coût</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="text"
-                  name="costCenter"
-                  value={beneficiary.costCenter}
-                  onChange={(e) => handleInputChange(e, index)}
-                  placeholder="Saisir le centre de coût..."
-                  className="form-input"
-                  disabled={isSubmitting}
-                />
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label">Moyen de transport</label>
-              </th>
-              <td className="form-input-cell">
-                <AutoCompleteInput
-                  value={beneficiary.transport}
-                  onChange={(value) => handleInputChange({ target: { name: 'transport', value } }, index)}
-                  suggestions={suggestions.transport.map((t) => t.type)}
-                  placeholder={
-                    suggestions.transport.length === 0
-                      ? "Aucun moyen de transport disponible"
-                      : "Saisir ou sélectionner un moyen de transport..."
-                  }
-                  disabled={isSubmitting}
-                  onAddNew={(value) => handleAddNewSuggestion("transport", value)}
-                  fieldType="transport"
-                  fieldLabel="moyen de transport"
-                  addNewRoute="/transport/create"
-                  className={`form-input ${fieldErrors[`beneficiaries[${index}].TransportId`] ? "error" : ""}`}
-                />
-                {fieldErrors[`beneficiaries[${index}].TransportId`] && (
-                  <span className="error-message">{fieldErrors[`beneficiaries[${index}].TransportId`].join(", ")}</span>
-                )}
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Date de départ</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="date"
-                  name="departureDate"
-                  value={beneficiary.departureDate}
-                  onChange={(e) => handleInputChange(e, index)}
-                  className={`form-input ${fieldErrors[`beneficiaries[${index}].departureDate`] ? "error" : ""}`}
-                  disabled={isSubmitting}
-                />
-                {fieldErrors[`beneficiaries[${index}].departureDate`] && (
-                  <span className="error-message">{fieldErrors[`beneficiaries[${index}].departureDate`].join(", ")}</span>
-                )}
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Heure de départ</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="time"
-                  name="departureTime"
-                  value={beneficiary.departureTime}
-                  onChange={(e) => handleInputChange(e, index)}
-                  className="form-input"
-                  disabled={isSubmitting}
-                />
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Durée prévue de la mission</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="number"
-                  name="missionDuration"
-                  value={beneficiary.missionDuration}
-                  onChange={(e) => handleInputChange(e, index)}
-                  placeholder="Saisir la durée (jours)..."
-                  className="form-input"
-                  disabled={isSubmitting}
-                  min="1"
-                />
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Date de retour</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="date"
-                  name="returnDate"
-                  value={beneficiary.returnDate}
-                  onChange={(e) => handleInputChange(e, index)}
-                  className="form-input"
-                  disabled={isSubmitting}
-                  readOnly
-                />
-              </td>
-            </tr>
-            <tr>
-              <th className="form-label-cell">
-                <label className="form-label form-label-required">Heure de retour</label>
-              </th>
-              <td className="form-input-cell">
-                <input
-                  type="time"
-                  name="returnTime"
-                  value={beneficiary.returnTime}
-                  onChange={(e) => handleInputChange(e, index)}
-                  className="form-input"
-                  disabled={isSubmitting}
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div className="popup-actions">
-          <button
-            type="button"
-            className="submit-btn"
-            onClick={() => onSubmit(beneficiary)}
-            disabled={isSubmitting}
-          >
-            Ajouter
-          </button>
-          <button
-            type="button"
-            className="cancel-btn"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            Annuler
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default function MissionForm() {
+const MissionForm = () => {
   const [formData, setFormData] = useState({
     missionTitle: "",
     description: "",
     location: "",
-    startDate: "",
-    endDate: "",
-    beneficiaries: [],
-    mission: "",
+    startDate: null,
+    endDate: null,
     missionId: "",
-    missionStartDate: "",
+    beneficiaries: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
@@ -314,19 +29,23 @@ export default function MissionForm() {
   const [regions, setRegions] = useState([]);
   const [regionNames, setRegionNames] = useState([]);
   const [regionDisplayNames, setRegionDisplayNames] = useState([]);
+  const [missions, setMissions] = useState([]);
   const [suggestions, setSuggestions] = useState({
     beneficiary: [],
-    mission: [],
     transport: [],
+    mission: [],
   });
   const [isLoading, setIsLoading] = useState({
     regions: false,
     employees: true,
-    missions: true,
     transports: true,
+    missions: true,
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [missionMode, setMissionMode] = useState("new");
+  const [editingBeneficiary, setEditingBeneficiary] = useState(null);
+  const [editingIndex, setEditingIndex] = useState(null);
   const [newBeneficiary, setNewBeneficiary] = useState({
     beneficiary: "",
     employeeId: "",
@@ -338,7 +57,7 @@ export default function MissionForm() {
     service: "",
     costCenter: "",
     transport: "",
-    transportId: "",
+    transportId: null,
     departureDate: "",
     departureTime: "",
     missionDuration: "",
@@ -346,78 +65,42 @@ export default function MissionForm() {
     returnTime: "",
   });
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // Fonctions utilitaires pour éviter les boucles
-  const updateBeneficiaryWithEmployee = useCallback((beneficiary, employeeDisplayName, employeesList) => {
-    if (!employeeDisplayName) {
-      return {
-        ...beneficiary,
-        employeeId: "",
-        matricule: "",
-        function: "",
-        base: "",
-        direction: "",
-        department: "",
-        service: "",
-        costCenter: "",
-      };
+  const calculateMissionDuration = useCallback((departureDate, returnDate, missionStartDate) => {
+    if (!departureDate || !returnDate) {
+      return { missionDuration: "", error: "La date de départ et la date de retour doivent être fournies." };
     }
 
-    const selectedEmployee = employeesList.find(emp => emp.displayName === employeeDisplayName);
-    if (selectedEmployee) {
-      return {
-        ...beneficiary,
-        employeeId: selectedEmployee.id || "",
-        matricule: selectedEmployee.employeeCode || "",
-        function: selectedEmployee.jobTitle || "",
-        base: selectedEmployee.site || "",
-        direction: selectedEmployee.direction || "",
-        department: selectedEmployee.department || "",
-        service: selectedEmployee.service || "",
-        costCenter: selectedEmployee.costCenter || "",
-      };
-    }
-    return beneficiary;
-  }, []);
-
-  const updateBeneficiaryWithTransport = useCallback((beneficiary, transportType, transportsList) => {
-    if (!transportType) {
-      return { ...beneficiary, transportId: "" };
-    }
-    const selectedTransport = transportsList.find(t => t.type === transportType);
-    return {
-      ...beneficiary,
-      transportId: selectedTransport ? selectedTransport.id || "" : "",
-    };
-  }, []);
-
-  const calculateReturnDate = useCallback((departureDate, duration, missionStartDate) => {
-    if (!departureDate || !duration) return "";
-    
     const departure = new Date(departureDate);
-    const durationNum = parseInt(duration, 10);
+    const returnD = new Date(returnDate);
     const missionStart = missionStartDate ? new Date(missionStartDate) : null;
 
-    // Validation de la date de départ
-    if (missionStart && departure < missionStart) {
-      return { returnDate: "", error: "La date de départ doit être supérieure ou égale à la date de début de la mission" };
+    if (isNaN(departure.getTime()) || isNaN(returnD.getTime())) {
+      return { missionDuration: "", error: "Les dates de départ ou de retour sont invalides." };
     }
 
-    if (!isNaN(departure.getTime()) && durationNum > 0) {
-      const returnDate = new Date(departure);
-      returnDate.setDate(departure.getDate() + durationNum);
-      return { returnDate: returnDate.toISOString().split("T")[0], error: null };
+    if (returnD < departure) {
+      return { missionDuration: "", error: "La date de retour doit être postérieure ou égale à la date de départ." };
     }
-    
-    return { returnDate: "", error: null };
+
+    if (missionStart && departure < missionStart) {
+      return {
+        missionDuration: "",
+        error: "La date de départ doit être supérieure ou égale à la date de début de la mission.",
+      };
+    }
+
+    const durationMs = returnD - departure;
+    const durationDays = Math.ceil(durationMs / (1000 * 60 * 60 * 24));
+
+    if (durationDays <= 0) {
+      return { missionDuration: "", error: "La durée doit être un nombre positif." };
+    }
+
+    return { missionDuration: durationDays.toString(), error: null };
   }, []);
 
-  // Fetch initial data
   useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const missionIdFromUrl = searchParams.get("missionId") || "";
-
     fetchAllRegions(
       (data) => {
         setRegions(data);
@@ -427,36 +110,6 @@ export default function MissionForm() {
       },
       setIsLoading,
       (alert) => setAlert(alert)
-    );
-
-    fetchAllMissions(
-      (missions) => {
-        setSuggestions((prev) => ({
-          ...prev,
-          mission: missions.map((mission) => ({
-            id: mission.missionId,
-            name: mission.name,
-            startDate: mission.startDate,
-          })),
-        }));
-        setIsLoading((prev) => ({ ...prev, missions: false }));
-        if (missionIdFromUrl) {
-          const selectedMission = missions.find((m) => m.missionId === missionIdFromUrl);
-          if (selectedMission) {
-            setFormData((prev) => ({
-              ...prev,
-              mission: selectedMission.name,
-              missionId: selectedMission.missionId,
-              missionStartDate: selectedMission.startDate.split("T")[0],
-            }));
-          } else {
-            setModal({ isOpen: true, type: "error", message: `Mission avec l'ID ${missionIdFromUrl} non trouvée.` });
-          }
-        }
-      },
-      setIsLoading,
-      () => {},
-      (error) => setModal({ isOpen: true, type: "error", message: error.message })
     );
 
     fetchAllTransports(
@@ -501,101 +154,162 @@ export default function MissionForm() {
       setSuggestions,
       (error) => setModal({ isOpen: true, type: "error", message: error.message })
     );
-  }, [location.search]);
 
-  // Mise à jour des bénéficiaires avec les données employé (OPTIMISÉ)
+    fetchAllMissions(
+      (missions) => {
+        setMissions(missions);
+        setSuggestions((prev) => ({
+          ...prev,
+          mission: missions.map((mission) => ({
+            id: mission.missionId,
+            name: mission.name,
+            displayName: `${mission.name} (${mission.lieu.nom}, ${new Date(mission.startDate).toLocaleDateString('fr-FR')} - ${mission.endDate ? new Date(mission.endDate).toLocaleDateString('fr-FR') : 'N/A'})`,
+            startDate: mission.startDate,
+            endDate: mission.endDate,
+            lieuId: mission.lieuId,
+            location: mission.lieu.nom,
+            description: mission.description,
+          })),
+        }));
+        setIsLoading((prev) => ({ ...prev, missions: false }));
+      },
+      setIsLoading,
+      () => {},
+      (error) => setModal({ isOpen: true, type: "error", message: error.message })
+    );
+  }, []);
+
   useEffect(() => {
     if (suggestions.beneficiary.length === 0) return;
 
-    setFormData(prev => ({
-      ...prev,
-      beneficiaries: prev.beneficiaries.map(beneficiary => 
-        updateBeneficiaryWithEmployee(beneficiary, beneficiary.beneficiary, suggestions.beneficiary)
-      )
-    }));
+    setFormData((prev) => {
+      const newBeneficiaries = prev.beneficiaries.map((beneficiary) => {
+        if (beneficiary.beneficiary) {
+          const selectedEmployee = suggestions.beneficiary.find(
+            (emp) => emp.displayName === beneficiary.beneficiary
+          );
+          if (selectedEmployee) {
+            return {
+              ...beneficiary,
+              employeeId: selectedEmployee.id || "",
+              matricule: selectedEmployee.employeeCode || "",
+              function: selectedEmployee.jobTitle || "",
+              base: selectedEmployee.site || "",
+              direction: selectedEmployee.direction || "",
+              department: selectedEmployee.department || "",
+              service: selectedEmployee.service || "",
+              costCenter: selectedEmployee.costCenter || "",
+            };
+          }
+        }
+        return {
+          ...beneficiary,
+          employeeId: "",
+          matricule: "",
+          function: "",
+          base: "",
+          direction: "",
+          department: "",
+          service: "",
+          costCenter: "",
+        };
+      });
 
-    // Mise à jour du nouveau bénéficiaire
-    setNewBeneficiary(prev => 
-      updateBeneficiaryWithEmployee(prev, prev.beneficiary, suggestions.beneficiary)
-    );
-  }, [suggestions.beneficiary, updateBeneficiaryWithEmployee]);
+      return prev.beneficiaries !== newBeneficiaries ? { ...prev, beneficiaries: newBeneficiaries } : prev;
+    });
+  }, [suggestions.beneficiary]);
 
-  // Mise à jour des transports (OPTIMISÉ)
+  useEffect(() => {
+    if (newBeneficiary.beneficiary && suggestions.beneficiary.length > 0) {
+      const selectedEmployee = suggestions.beneficiary.find(
+        (emp) => emp.displayName === newBeneficiary.beneficiary
+      );
+      if (selectedEmployee) {
+        setNewBeneficiary((prev) => ({
+          ...prev,
+          employeeId: selectedEmployee.id || "",
+          matricule: selectedEmployee.employeeCode || "",
+          function: selectedEmployee.jobTitle || "",
+          base: selectedEmployee.site || "",
+          direction: selectedEmployee.direction || "",
+          department: selectedEmployee.department || "",
+          service: selectedEmployee.service || "",
+          costCenter: selectedEmployee.costCenter || "",
+        }));
+      }
+    } else if (!newBeneficiary.beneficiary) {
+      setNewBeneficiary((prev) => ({
+        ...prev,
+        employeeId: "",
+        matricule: "",
+        function: "",
+        base: "",
+        direction: "",
+        department: "",
+        service: "",
+        costCenter: "",
+      }));
+    }
+  }, [newBeneficiary.beneficiary, suggestions.beneficiary]);
+
   useEffect(() => {
     if (suggestions.transport.length === 0) return;
 
-    setFormData(prev => ({
-      ...prev,
-      beneficiaries: prev.beneficiaries.map(beneficiary => 
-        updateBeneficiaryWithTransport(beneficiary, beneficiary.transport, suggestions.transport)
-      )
-    }));
-
-    // Mise à jour du transport pour newBeneficiary
-    setNewBeneficiary(prev => 
-      updateBeneficiaryWithTransport(prev, prev.transport, suggestions.transport)
-    );
-  }, [suggestions.transport, updateBeneficiaryWithTransport]);
-
-  // Calcul des dates de retour (OPTIMISÉ)
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      beneficiaries: prev.beneficiaries.map((beneficiary, index) => {
-        const result = calculateReturnDate(beneficiary.departureDate, beneficiary.missionDuration, prev.startDate);
-        
-        if (result.error) {
-          setFieldErrors(prevErrors => ({
-            ...prevErrors,
-            [`beneficiaries[${index}].departureDate`]: [result.error],
-          }));
-        } else {
-          setFieldErrors(prevErrors => ({
-            ...prevErrors,
-            [`beneficiaries[${index}].departureDate`]: undefined,
-          }));
+    setFormData((prev) => {
+      const newBeneficiaries = prev.beneficiaries.map((beneficiary) => {
+        if (beneficiary.transport) {
+          const selectedTransport = suggestions.transport.find((t) => t.type === beneficiary.transport);
+          return {
+            ...beneficiary,
+            transportId: selectedTransport ? selectedTransport.id : null,
+          };
         }
-        
-        return { ...beneficiary, returnDate: result.returnDate };
-      })
-    }));
+        return { ...beneficiary, transportId: null };
+      });
 
-    // Calcul pour newBeneficiary
-    const newBenResult = calculateReturnDate(newBeneficiary.departureDate, newBeneficiary.missionDuration, formData.startDate);
-    if (newBenResult.error) {
-      setFieldErrors(prevErrors => ({
-        ...prevErrors,
-        [`beneficiaries[${formData.beneficiaries.length}].departureDate`]: [newBenResult.error],
-      }));
-    } else {
-      setFieldErrors(prevErrors => ({
-        ...prevErrors,
-        [`beneficiaries[${formData.beneficiaries.length}].departureDate`]: undefined,
-      }));
-    }
-    setNewBeneficiary(prev => ({ ...prev, returnDate: newBenResult.returnDate }));
-  }, [
-    formData.beneficiaries.map(b => `${b.departureDate}-${b.missionDuration}`).join(','),
-    formData.startDate,
-    newBeneficiary.departureDate,
-    newBeneficiary.missionDuration,
-    calculateReturnDate
-  ]);
+      return prev.beneficiaries !== newBeneficiaries ? { ...prev, beneficiaries: newBeneficiaries } : prev;
+    });
+  }, [suggestions.transport]);
 
-  // Mise à jour des informations de mission (OPTIMISÉ)
   useEffect(() => {
-    if (!formData.mission || suggestions.mission.length === 0) return;
+    if (newBeneficiary.transport && suggestions.transport.length > 0) {
+      const selectedTransport = suggestions.transport.find((t) => t.type === newBeneficiary.transport);
+      setNewBeneficiary((prev) => ({
+        ...prev,
+        transportId: selectedTransport ? selectedTransport.id : null,
+      }));
+    } else if (!newBeneficiary.transport) {
+      setNewBeneficiary((prev) => ({ ...prev, transportId: null }));
+    }
+  }, [newBeneficiary.transport, suggestions.transport]);
 
-    const selectedMission = suggestions.mission.find((m) => m.name === formData.mission);
-    if (selectedMission) {
+  useEffect(() => {
+    if (missionMode === "existing" && formData.missionId) {
+      const selectedMission = suggestions.mission.find((m) => m.id === formData.missionId);
+      if (selectedMission) {
+        setFormData((prev) => ({
+          ...prev,
+          missionTitle: selectedMission.name || "",
+          description: selectedMission.description || "",
+          location: selectedMission.location || "",
+          startDate: selectedMission.startDate ? new Date(selectedMission.startDate).toISOString().split('T')[0] : null,
+          endDate: selectedMission.endDate ? new Date(selectedMission.endDate).toISOString().split('T')[0] : null,
+          lieuId: selectedMission.lieuId || "",
+        }));
+      }
+    } else {
       setFormData((prev) => ({
         ...prev,
-        missionId: selectedMission.id || "",
-        missionStartDate: selectedMission.startDate.split("T")[0] || "",
+        missionTitle: "",
+        description: "",
+        location: "",
+        startDate: null,
+        endDate: null,
+        missionId: "",
+        lieuId: "",
       }));
-      setFieldErrors((prev) => ({ ...prev, MissionId: undefined }));
     }
-  }, [formData.mission, suggestions.mission]);
+  }, [formData.missionId, missionMode, suggestions.mission]);
 
   const showAlert = (type, message) => {
     setAlert({ isOpen: true, type, message });
@@ -613,51 +327,89 @@ export default function MissionForm() {
       setRegionDisplayNames((prev) => [...prev, value]);
       setFormData((prev) => ({ ...prev, location: value }));
       showAlert("success", `"${value}" ajouté aux suggestions pour ${field}`);
-      setFieldErrors((prev) => ({ ...prev, LieuId: undefined }));
-    } else {
+      setFieldErrors((prev) => ({ ...prev, lieuId: undefined }));
+    } else if (field === "transport") {
       setSuggestions((prev) => ({
         ...prev,
-        [field]: [...prev[field], { id: value, name: value, type: value, startDate: field === "mission" ? new Date().toISOString() : undefined }],
+        transport: [...prev.transport, { id: value, type: value }],
       }));
-      if (field === "transport") {
-        setNewBeneficiary((prev) => ({ ...prev, transport: value }));
-      } else {
-        setFormData((prev) => ({ ...prev, [field]: value }));
-      }
+      setNewBeneficiary((prev) => ({ ...prev, transport: value }));
       showAlert("success", `"${value}" ajouté aux suggestions pour ${field}`);
-      setFieldErrors((prev) => ({ ...prev, [field === "mission" ? "MissionId" : "TransportId"]: undefined }));
+      setFieldErrors((prev) => ({ ...prev, transportId: undefined }));
     }
   };
 
   const handleInputChange = (e, index) => {
     const { name, value } = e.target;
+
     if (index !== undefined) {
-      setNewBeneficiary((prev) => ({
-        ...prev,
-        [name]: value
-      }));
+      setNewBeneficiary((prev) => {
+        const updatedBeneficiary = { ...prev, [name]: value || "" };
+
+        if (name === "departureDate" || name === "returnDate") {
+          const missionStart =
+            missionMode === "existing" && formData.missionId
+              ? suggestions.mission.find((m) => m.id === formData.missionId)?.startDate
+              : formData.startDate;
+          const { missionDuration, error } = calculateMissionDuration(
+            updatedBeneficiary.departureDate,
+            updatedBeneficiary.returnDate,
+            missionStart
+          );
+
+          setFieldErrors((prevErrors) => ({
+            ...prevErrors,
+            [`beneficiaries[${formData.beneficiaries.length}].departureDate`]: error ? [error] : undefined,
+            [`beneficiaries[${formData.beneficiaries.length}].returnDate`]: error ? [error] : undefined,
+          }));
+
+          return { ...updatedBeneficiary, missionDuration };
+        }
+
+        return updatedBeneficiary;
+      });
+
       setFieldErrors((prev) => ({
         ...prev,
         [`beneficiaries[${index}].${name}`]: undefined,
       }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData((prev) => {
+        const updatedFormData = {
+          ...prev,
+          [name]: name === "startDate" || name === "endDate" || name === "missionId" ? (value || null) : value,
+        };
+
+        if (name === "startDate") {
+          const newBeneficiaries = prev.beneficiaries.map((beneficiary, idx) => {
+            const { missionDuration, error } = calculateMissionDuration(
+              beneficiary.departureDate,
+              beneficiary.returnDate,
+              value
+            );
+            setFieldErrors((prevErrors) => ({
+              ...prevErrors,
+              [`beneficiaries[${idx}].departureDate`]: error ? [error] : undefined,
+              [`beneficiaries[${idx}].returnDate`]: error ? [error] : undefined,
+            }));
+            return { ...beneficiary, missionDuration };
+          });
+          return { ...updatedFormData, beneficiaries: newBeneficiaries };
+        }
+
+        return updatedFormData;
+      });
+
       setFieldErrors((prev) => ({
         ...prev,
-        [name === "missionTitle" ? "Name" : name === "location" ? "LieuId" : name]: undefined,
+        [name === "missionTitle" ? "name" : name === "location" ? "lieuId" : name]: undefined,
       }));
     }
   };
 
   const addBeneficiary = () => {
-    setIsPopupOpen(true);
-  };
-
-  const handlePopupSubmit = (beneficiary) => {
-    setFormData((prev) => ({
-      ...prev,
-      beneficiaries: [...prev.beneficiaries, beneficiary],
-    }));
+    setEditingBeneficiary(null);
+    setEditingIndex(null);
     setNewBeneficiary({
       beneficiary: "",
       employeeId: "",
@@ -669,13 +421,63 @@ export default function MissionForm() {
       service: "",
       costCenter: "",
       transport: "",
-      transportId: "",
+      transportId: null,
       departureDate: "",
       departureTime: "",
       missionDuration: "",
       returnDate: "",
       returnTime: "",
     });
+    setIsPopupOpen(true);
+  };
+
+  const editBeneficiary = (index) => {
+    const beneficiary = formData.beneficiaries[index];
+    setEditingBeneficiary(beneficiary);
+    setEditingIndex(index);
+    setNewBeneficiary(beneficiary);
+    setIsPopupOpen(true);
+  };
+
+  const handlePopupSubmit = (beneficiary) => {
+    if (editingIndex !== null) {
+      // Mode édition
+      setFormData((prev) => ({
+        ...prev,
+        beneficiaries: prev.beneficiaries.map((item, index) => 
+          index === editingIndex ? beneficiary : item
+        ),
+      }));
+      showAlert("success", "Bénéficiaire modifié avec succès.");
+    } else {
+      // Mode ajout
+      setFormData((prev) => ({
+        ...prev,
+        beneficiaries: [...prev.beneficiaries, beneficiary],
+      }));
+      showAlert("success", "Bénéficiaire ajouté avec succès.");
+    }
+    
+    setNewBeneficiary({
+      beneficiary: "",
+      employeeId: "",
+      matricule: "",
+      function: "",
+      base: "",
+      direction: "",
+      department: "",
+      service: "",
+      costCenter: "",
+      transport: "",
+      transportId: null,
+      departureDate: "",
+      departureTime: "",
+      missionDuration: "",
+      returnDate: "",
+      returnTime: "",
+    });
+    setEditingBeneficiary(null);
+    setEditingIndex(null);
     setIsPopupOpen(false);
   };
 
@@ -693,6 +495,17 @@ export default function MissionForm() {
       });
       return newErrors;
     });
+    showAlert("success", "Bénéficiaire supprimé avec succès.");
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleDateString('fr-FR');
+  };
+
+  const formatTime = (timeStr) => {
+    if (!timeStr) return "-";
+    return timeStr;
   };
 
   const handleSubmit = async (event) => {
@@ -701,16 +514,21 @@ export default function MissionForm() {
     setFieldErrors({});
 
     const selectedRegion = regions.find((region) => region.nom === formData.location);
-    if (formData.location && !selectedRegion) {
-      showModal("error", "Veuillez sélectionner un lieu valide parmi les régions de Madagascar.");
-      setIsSubmitting(false);
-      return;
+    const selectedMission = missionMode === "existing" ? suggestions.mission.find((m) => m.id === formData.missionId) : null;
+
+    if (missionMode === "new") {
+      if (formData.location && !selectedRegion) {
+        showModal("error", "Veuillez sélectionner un lieu valide parmi les régions de Madagascar.");
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     const selectedEmployeeIds = new Set();
     for (let i = 0; i < formData.beneficiaries.length; i++) {
       const beneficiary = formData.beneficiaries[i];
       const selectedEmployee = suggestions.beneficiary.find((emp) => emp.displayName === beneficiary.beneficiary);
+      
       if (!selectedEmployee && beneficiary.beneficiary) {
         showModal("error", `Veuillez sélectionner un employé valide pour le bénéficiaire ${i + 1}.`);
         setIsSubmitting(false);
@@ -724,15 +542,36 @@ export default function MissionForm() {
         }
         selectedEmployeeIds.add(selectedEmployee.id);
       }
-    }
 
-    for (let i = 0; i < formData.beneficiaries.length; i++) {
-      const beneficiary = formData.beneficiaries[i];
-      if (beneficiary.departureDate && formData.startDate) {
+      if (!beneficiary.departureDate) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          [`beneficiaries[${i}].departureDate`]: ["La date de départ est requise."],
+        }));
+        setIsSubmitting(false);
+        return;
+      }
+      if (!beneficiary.returnDate) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          [`beneficiaries[${i}].returnDate`]: ["La date de retour est requise."],
+        }));
+        setIsSubmitting(false);
+        return;
+      }
+
+      const missionStart = missionMode === "existing" && selectedMission ? selectedMission.startDate : formData.startDate;
+      if (beneficiary.departureDate && missionStart) {
         const departure = new Date(beneficiary.departureDate);
-        const missionStart = new Date(formData.startDate);
-        if (departure < missionStart) {
+        const returnD = new Date(beneficiary.returnDate);
+        const missionStartDate = new Date(missionStart);
+        if (departure < missionStartDate) {
           showModal("error", `La date de départ du bénéficiaire ${i + 1} doit être supérieure ou égale à la date de début de la mission.`);
+          setIsSubmitting(false);
+          return;
+        }
+        if (returnD < departure) {
+          showModal("error", `La date de retour du bénéficiaire ${i + 1} doit être postérieure ou égale à la date de départ.`);
           setIsSubmitting(false);
           return;
         }
@@ -740,66 +579,75 @@ export default function MissionForm() {
     }
 
     try {
-      const missionResponse = await createMission(
-        {
-          missionId: formData.missionId || "",
-          name: formData.missionTitle,
-          description: formData.description,
-          startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
-          endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-          lieuId: selectedRegion ? selectedRegion.lieuId : "",
-        },
-        (loading) => setIsSubmitting(loading.mission),
-        (alert) => setAlert(alert),
-        (error) => {
-          console.log("Erreurs par champ (fieldErrors) :", error.fieldErrors);
-          setModal(error);
-          setFieldErrors(error.fieldErrors || {});
-          throw error;
-        }
-      );
-
-      const newMissionId = missionResponse?.missionId || formData.missionId;
-
-      setFormData((prev) => ({
-        ...prev,
-        mission: formData.missionTitle,
-        missionId: newMissionId,
-        missionStartDate: formData.startDate,
-      }));
-
-      for (let i = 0; i < formData.beneficiaries.length; i++) {
-        const beneficiary = formData.beneficiaries[i];
-        if (beneficiary.beneficiary) {
+      if (missionMode === "existing") {
+        for (const beneficiary of formData.beneficiaries) {
           const selectedEmployee = suggestions.beneficiary.find((emp) => emp.displayName === beneficiary.beneficiary);
           const selectedTransport = beneficiary.transport
             ? suggestions.transport.find((t) => t.type === beneficiary.transport)
             : null;
+
+          const assignationData = {
+            employeeId: selectedEmployee?.id || "",
+            missionId: formData.missionId,
+            transportId: selectedTransport ? selectedTransport.id : null,
+            departureDate: beneficiary.departureDate ? new Date(beneficiary.departureDate).toISOString() : null,
+            departureTime: beneficiary.departureTime || null,
+            returnDate: beneficiary.returnDate ? new Date(beneficiary.returnDate).toISOString() : null,
+            returnTime: beneficiary.returnTime || null,
+            duration: parseInt(beneficiary.missionDuration, 10) || null,
+          };
+
           await createMissionAssignation(
-            {
-              employeeId: selectedEmployee?.id || "",
-              missionId: newMissionId,
-              transportId: selectedTransport ? selectedTransport.id : null,
-              departureDate: beneficiary.departureDate ? `${beneficiary.departureDate}T${beneficiary.departureTime}:00Z` : null,
-              departureTime: beneficiary.departureTime,
-              returnDate: beneficiary.returnDate ? `${beneficiary.returnDate}T${beneficiary.returnTime}:00Z` : null,
-              returnTime: beneficiary.returnTime,
-              duration: beneficiary.missionDuration,
-            },
-            setIsLoading,
+            assignationData,
+            (loading) => setIsSubmitting(loading.missionAssignation),
             (alert) => setAlert(alert),
             (error) => {
-              console.log("Erreurs par champ (fieldErrors) :", error.fieldErrors);
-              setModal({ isOpen: true, type: "error", message: `Erreur lors de l'assignation du bénéficiaire ${i + 1}: ${error.message}` });
+              setModal(error);
               setFieldErrors(error.fieldErrors || {});
               throw error;
             }
           );
         }
-      }
+        showAlert("success", "Bénéficiaires assignés à la mission avec succès.");
+        navigate("/mission/list");
+      } else {
+        const missionData = {
+          name: formData.missionTitle,
+          description: formData.description,
+          startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+          endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
+          lieuId: selectedRegion ? selectedRegion.lieuId : formData.lieuId,
+          assignations: formData.beneficiaries.map((beneficiary) => {
+            const selectedEmployee = suggestions.beneficiary.find((emp) => emp.displayName === beneficiary.beneficiary);
+            const selectedTransport = beneficiary.transport
+              ? suggestions.transport.find((t) => t.type === beneficiary.transport)
+              : null;
+            return {
+              employeeId: selectedEmployee?.id || "",
+              missionId: formData.missionId,
+              transportId: selectedTransport ? selectedTransport.id : null,
+              departureDate: beneficiary.departureDate ? new Date(beneficiary.departureDate).toISOString() : null,
+              departureTime: beneficiary.departureTime || null,
+              returnDate: beneficiary.returnDate ? new Date(beneficiary.returnDate).toISOString() : null,
+              returnTime: beneficiary.returnTime || null,
+              duration: parseInt(beneficiary.missionDuration, 10) || null,
+            };
+          }),
+        };
 
-      showAlert("success", "Mission créée et assignée avec succès.");
-      navigate("/mission/list");
+        await createMission(
+          missionData,
+          (loading) => setIsSubmitting(loading.mission),
+          (alert) => setAlert(alert),
+          (error) => {
+            setModal(error);
+            setFieldErrors(error.fieldErrors || {});
+            throw error;
+          }
+        );
+        showAlert("success", "Mission créée et assignée avec succès.");
+        navigate("/mission/list");
+      }
     } catch (error) {
       console.error("Erreur dans handleSubmit :", error);
     } finally {
@@ -812,19 +660,18 @@ export default function MissionForm() {
       missionTitle: "",
       description: "",
       location: "",
-      startDate: "",
-      endDate: "",
-      beneficiaries: [],
-      mission: "",
+      startDate: null,
+      endDate: null,
       missionId: "",
-      missionStartDate: "",
+      beneficiaries: [],
     });
+    setMissionMode("new");
     setFieldErrors({});
     showAlert("info", "Formulaire réinitialisé.");
   };
 
   return (
-    <div className="form-container">
+    <div className="form-container max-w-5xl mx-auto p-6">
       <Modal
         type={modal.type}
         message={modal.message}
@@ -837,9 +684,31 @@ export default function MissionForm() {
         isOpen={alert.isOpen}
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
-      <Popup
+      <BeneficiaryPopup
         isOpen={isPopupOpen}
-        onClose={() => setIsPopupOpen(false)}
+        onClose={() => {
+          setIsPopupOpen(false);
+          setEditingBeneficiary(null);
+          setEditingIndex(null);
+          setNewBeneficiary({
+            beneficiary: "",
+            employeeId: "",
+            matricule: "",
+            function: "",
+            base: "",
+            direction: "",
+            department: "",
+            service: "",
+            costCenter: "",
+            transport: "",
+            transportId: null,
+            departureDate: "",
+            departureTime: "",
+            missionDuration: "",
+            returnDate: "",
+            returnTime: "",
+          });
+        }}
         onSubmit={handlePopupSubmit}
         beneficiary={newBeneficiary}
         suggestions={suggestions}
@@ -847,349 +716,152 @@ export default function MissionForm() {
         fieldErrors={fieldErrors}
         handleInputChange={handleInputChange}
         handleAddNewSuggestion={handleAddNewSuggestion}
-        index={formData.beneficiaries.length}
+        index={editingIndex !== null ? editingIndex : formData.beneficiaries.length}
+        isEditing={editingIndex !== null}
       />
-      <div className="table-header">
-        <h2 className="table-title">Création et Assignation d'une Mission</h2>
+      <div className="table-header mb-6">
+        <h2 className="table-title text-2xl font-bold">Création et Assignation d'une Mission</h2>
       </div>
 
       <form id="combinedMissionForm" className="generic-form" onSubmit={handleSubmit}>
-        <div className="form-section">
-          <h3 className="form-section-title">Détails de la Mission</h3>
-          <table className="form-table">
+        <div className="form-section mb-6">
+          <h3 className="form-section-title text-lg font-semibold mb-4">Type de Mission</h3>
+          <table className="form-table w-full border-collapse">
             <tbody>
-              <tr>
-                <th className="form-label-cell">
-                  <label htmlFor="missionTitle" className="form-label form-label-required">
-                    Intitulé de la Mission
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <input
-                    id="missionTitle"
-                    type="text"
-                    name="missionTitle"
-                    value={formData.missionTitle}
-                    onChange={handleInputChange}
-                    placeholder="Saisir le titre de la mission..."
-                    className={`form-input ${fieldErrors.Name ? "error" : ""}`}
-                    disabled={isSubmitting || isLoading.regions}
-                  />
-                  {fieldErrors.Name && (
-                    <span className="error-message">{fieldErrors.Name.join(", ")}</span>
-                  )}
+              <tr className="form-row">
+                <td className="form-field-cell p-2 align-top w-1/4">
+                  <label className="form-label form-label-required">Mode</label>
                 </td>
-              </tr>
-              <tr>
-                <th className="form-label-cell">
-                  <label htmlFor="description" className="form-label">
-                    Description
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Saisir une description..."
-                    className="form-input"
-                    rows="4"
-                    disabled={isSubmitting || isLoading.regions}
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th className="form-label-cell">
-                  <label htmlFor="location" className="form-label">
-                    Lieu
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <AutoCompleteInput
-                    value={formData.location}
-                    onChange={(value) => {
-                      const realValue = value.includes('/') ? value.split('/')[0] : value;
-                      setFormData((prev) => ({ ...prev, location: realValue }));
-                      setFieldErrors((prev) => ({ ...prev, LieuId: undefined }));
-                    }}
-                    suggestions={regionDisplayNames}
-                    maxVisibleItems={3}
-                    placeholder="Saisir ou sélectionner un lieu..."
-                    disabled={isSubmitting || isLoading.regions}
-                    onAddNew={(value) => handleAddNewSuggestion("location", value)}
-                    showAddOption={true}
-                    fieldType="location"
-                    fieldLabel="lieu"
-                    addNewRoute="/lieu/create"
-                    className={`form-input ${fieldErrors.LieuId ? "error" : ""}`}
-                  />
-                  {fieldErrors.LieuId && (
-                    <span className="error-message">{fieldErrors.LieuId.join(", ")}</span>
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <th className="form-label-cell">
-                  <label htmlFor="startDate" className="form-label form-label-required">
-                    Date de début
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <input
-                    id="startDate"
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    className={`form-input ${fieldErrors.startDate ? "error" : ""}`}
-                    disabled={isSubmitting || isLoading.regions}
-                  />
-                  {fieldErrors.StartDate && (
-                    <span className="error-message">{fieldErrors.StartDate.join(", ")}</span>
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <th className="form-label-cell">
-                  <label htmlFor="endDate" className="form-label form-label-required">
-                    Date de fin
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <input
-                    id="endDate"
-                    type="date"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    className={`form-input ${fieldErrors.endDate ? "error" : ""}`}
-                    disabled={isSubmitting || isLoading.regions}
-                  />
-                  {fieldErrors.EndDate && (
-                    <span className="error-message">{fieldErrors.EndDate.join(", ")}</span>
-                  )}
+                <td className="form-field-cell p-2 align-top">
+                  <select
+                    name="missionMode"
+                    value={missionMode}
+                    onChange={(e) => setMissionMode(e.target.value)}
+                    className="form-table w-full"
+                    disabled={isSubmitting || isLoading.missions}
+                  >
+                    <option value="new">Nouvelle Mission</option>
+                    <option value="existing">Mission Existante</option>
+                  </select>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div className="form-section">
-          <h3 className="form-section-title">Détails des Assignations</h3>
-          {formData.beneficiaries.map((beneficiary, index) => (
-            <div key={index} className="beneficiary-section">
-              <h4>Bénéficiaire {index + 1}</h4>
-              <button
-                type="button"
-                className="remove-btn"
-                onClick={() => removeBeneficiary(index)}
-                disabled={isSubmitting}
-                title="Supprimer ce bénéficiaire"
-              >
-                <FaIcons.FaTrash className="w-4 h-4" />
-              </button>
-              <table className="form-table">
+        {missionMode === "existing" ? (
+          <ExistingMissionForm
+            formData={formData}
+            fieldErrors={fieldErrors}
+            isSubmitting={isSubmitting}
+            isLoading={isLoading}
+            suggestions={suggestions}
+            handleInputChange={handleInputChange}
+          />
+        ) : (
+          <NewMissionForm
+            formData={formData}
+            fieldErrors={fieldErrors}
+            isSubmitting={isSubmitting}
+            isLoading={isLoading}
+            regionDisplayNames={regionDisplayNames}
+            handleInputChange={handleInputChange}
+            handleAddNewSuggestion={handleAddNewSuggestion}
+          />
+        )}
+
+        <div className="form-section mb-6">
+          <h3 className="form-section-title text-lg font-semibold mb-4">Détails des Assignations</h3>
+          
+          {formData.beneficiaries.length > 0 ? (
+            <div className="beneficiaries-table-container">
+              <table className="beneficiaries-table">
+                <thead>
+                  <tr>
+                    <th className="col-id">ID</th>
+                    <th className="col-beneficiary">Bénéficiaire</th>
+                    <th className="col-matricule">Matricule</th>
+                    <th className="col-fonction">Fonction</th>
+                    <th className="col-direction">Direction</th>
+                    <th className="col-transport">Transport</th>
+                    <th className="col-dates">Départ</th>
+                    <th className="col-dates">Retour</th>
+                    <th className="col-duree">Durée</th>
+                    <th className="col-actions">Actions</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  <tr>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Bénéficiaire</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="text"
-                        value={beneficiary.beneficiary}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Matricule</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="text"
-                        value={beneficiary.matricule}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Fonction</label>
-                    </th>
-                    <td className="form-input-cell" colSpan="3">
-                      <input
-                        type="text"
-                        value={beneficiary.function}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Base à</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="text"
-                        value={beneficiary.base}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Direction</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="text"
-                        value={beneficiary.direction}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Département</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="text"
-                        value={beneficiary.department}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Service</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="text"
-                        value={beneficiary.service}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <th className="form-label-cell">
-                      <label className="form-label">Centre de coût</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="text"
-                        value={beneficiary.costCenter}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                    <th className="form-label-cell">
-                      <label className="form-label">Moyen de transport</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="text"
-                        value={beneficiary.transport}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Date de départ</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="date"
-                        value={beneficiary.departureDate}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Heure de départ</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="time"
-                        value={beneficiary.departureTime}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Durée prévue de la mission</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="number"
-                        value={beneficiary.missionDuration}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                    <th className="form-label-cell"></th>
-                    <td className="form-input-cell"></td>
-                  </tr>
-                  <tr>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Date de retour</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="date"
-                        value={beneficiary.returnDate}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                    <th className="form-label-cell">
-                      <label className="form-label form-label-required">Heure de retour</label>
-                    </th>
-                    <td className="form-input-cell">
-                      <input
-                        type="time"
-                        value={beneficiary.returnTime}
-                        className="form-input"
-                        disabled
-                        readOnly
-                      />
-                    </td>
-                  </tr>
+                  {formData.beneficiaries.map((beneficiary, index) => (
+                    <tr key={index}>
+                      <td className="col-id">{index + 1}</td>
+                      <td className="col-beneficiary" title={beneficiary.beneficiary}>
+                        {beneficiary.beneficiary}
+                      </td>
+                      <td className="col-matricule" title={beneficiary.matricule}>
+                        {beneficiary.matricule || "-"}
+                      </td>
+                      <td className="col-fonction" title={beneficiary.function}>
+                        {beneficiary.function || "-"}
+                      </td>
+                      <td className="col-direction" title={beneficiary.direction}>
+                        {beneficiary.direction || "-"}
+                      </td>
+                      <td className="col-transport" title={beneficiary.transport}>
+                        {beneficiary.transport || "-"}
+                      </td>
+                      <td className="col-dates">
+                        <div className="date-info">{formatDate(beneficiary.departureDate)}</div>
+                        <div className="date-info">{formatTime(beneficiary.departureTime)}</div>
+                      </td>
+                      <td className="col-dates">
+                        <div className="date-info">{formatDate(beneficiary.returnDate)}</div>
+                        <div className="date-info">{formatTime(beneficiary.returnTime)}</div>
+                      </td>
+                      <td className="col-duree">
+                        {beneficiary.missionDuration ? (
+                          <span className="duration-badge">{beneficiary.missionDuration}j</span>
+                        ) : "-"}
+                      </td>
+                      <td className="col-actions">
+                        <button
+                          type="button"
+                          className="table-action-btn edit-btn"
+                          onClick={() => editBeneficiary(index)}
+                          disabled={isSubmitting}
+                          title="Modifier ce bénéficiaire"
+                        >
+                          <FaIcons.FaEdit />
+                        </button>
+                        <button
+                          type="button"
+                          className="table-action-btn delete-btn"
+                          onClick={() => removeBeneficiary(index)}
+                          disabled={isSubmitting}
+                          title="Supprimer ce bénéficiaire"
+                        >
+                          <FaIcons.FaTrash />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
-          ))}
+          ) : (
+            <div className="no-beneficiaries">
+              <p>Aucun bénéficiaire ajouté. Cliquez sur "Ajouter un Bénéficiaire" pour commencer.</p>
+            </div>
+          )}
+
           <button
             type="button"
             className="add-btn"
             onClick={addBeneficiary}
             disabled={isSubmitting}
-            title="Ajouter un autre bénéficiaire"
+            title="Ajouter un nouveau bénéficiaire"
           >
             <FaIcons.FaPlus className="w-4 h-4" />
-            Ajouter un Bénéficiaire
+            <span>Ajouter un Bénéficiaire</span>
           </button>
         </div>
 
@@ -1197,24 +869,26 @@ export default function MissionForm() {
           <button
             type="submit"
             className="submit-btn"
-            disabled={isSubmitting || isLoading.regions || isLoading.employees || isLoading.missions || isLoading.transports}
-            title="Créer et assigner la mission"
+            disabled={isSubmitting || isLoading.regions || isLoading.employees || isLoading.transports || isLoading.missions}
+            title={missionMode === "existing" ? "Assigner à la mission" : "Créer et assigner la mission"}
           >
-            {isSubmitting ? "Envoi en cours..." : "Créer et Assigner"}
+            <span>{isSubmitting ? "Envoi en cours..." : missionMode === "existing" ? "Assigner" : "Créer et Assigner"}</span>
             <FaIcons.FaArrowRight className="w-4 h-4" />
           </button>
           <button
             type="button"
             className="reset-btn"
             onClick={handleReset}
-            disabled={isSubmitting || isLoading.regions || isLoading.employees || isLoading.missions || isLoading.transports}
+            disabled={isSubmitting || isLoading.regions || isLoading.employees || isLoading.transports || isLoading.missions}
             title="Réinitialiser le formulaire"
           >
             <FaIcons.FaTrash className="w-4 h-4" />
-            Réinitialiser
+            <span>Réinitialiser</span>
           </button>
         </div>
       </form>
     </div>
   );
-}
+};
+
+export default MissionForm;

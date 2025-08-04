@@ -1,0 +1,240 @@
+/* ===== STYLES POUR LE TABLEAU DES BÉNÉFICIAIRES ===== */
+.beneficiaries-table-container {
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto; /* Active le défilement horizontal */
+  overflow-y: auto; /* Active le défilement vertical */
+  max-height: 400px; /* Limite la hauteur pour activer le scroll vertical si trop de lignes */
+  margin-bottom: var(--spacing-lg);
+  position: relative; /* Pour un meilleur contrôle des éléments internes */
+}
+
+/* Personnalisation des barres de défilement */
+.beneficiaries-table-container::-webkit-scrollbar {
+  width: 6px; /* Réduit la largeur du scroll vertical */
+  height: 6px; /* Réduit la hauteur du scroll horizontal */
+}
+
+.beneficiaries-table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: var(--radius-sm);
+}
+
+.beneficiaries-table-container::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: var(--radius-sm);
+}
+
+.beneficiaries-table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
+}
+
+.beneficiaries-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+  background-color: #ffffff;
+  min-width: 1000px; /* Maintient une largeur minimale pour forcer le scroll si nécessaire */
+}
+
+.beneficiaries-table th {
+  background-color: #f8f9fa;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-md);
+  text-align: left;
+  border-bottom: 2px solid var(--border-light);
+  white-space: nowrap;
+  position: sticky; /* Fixe les en-têtes en haut lors du défilement */
+  top: 0;
+  z-index: 10;
+}
+
+.beneficiaries-table td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-input);
+  font-size: var(--font-size-xs);
+  vertical-align: middle;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.beneficiaries-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.beneficiaries-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Colonnes spécifiques */
+.beneficiaries-table .col-id {
+  width: 60px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.beneficiaries-table .col-beneficiary {
+  min-width: 200px;
+  max-width: 250px;
+}
+
+.beneficiaries-table .col-matricule {
+  width: 100px;
+}
+
+.beneficiaries-table .col-fonction {
+  min-width: 150px;
+  max-width: 200px;
+}
+
+.beneficiaries-table .col-direction {
+  min-width: 120px;
+  max-width: 180px;
+}
+
+.beneficiaries-table .col-transport {
+  width: 120px;
+}
+
+.beneficiaries-table .col-dates {
+  width: 110px;
+}
+
+.beneficiaries-table .col-duree {
+  width: 80px;
+  text-align: center;
+}
+
+.beneficiaries-table .col-actions {
+  width: 120px;
+  text-align: center;
+}
+
+/* Boutons d'action dans le tableau */
+.table-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin: 0 2px;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 32px;
+  height: 32px;
+}
+
+.table-action-btn.edit-btn {
+  background-color: #17a2b8;
+  color: #ffffff;
+}
+
+.table-action-btn.edit-btn:hover {
+  background-color: #138496;
+}
+
+.table-action-btn.delete-btn {
+  background-color: var(--error-color);
+  color: #ffffff;
+}
+
+.table-action-btn.delete-btn:hover {
+  background-color: var(--error-hover);
+}
+
+.table-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.table-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Message quand aucun bénéficiaire */
+.no-beneficiaries {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--text-secondary);
+  font-style: italic;
+  background-color: #f8f9fa;
+  border: 1px dashed var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+/* Responsive pour le tableau */
+@media (max-width: 768px) {
+  .beneficiaries-table th,
+  .beneficiaries-table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 11px;
+  }
+  
+  .beneficiaries-table .col-beneficiary {
+    min-width: 150px;
+    max-width: 180px;
+  }
+  
+  .beneficiaries-table .col-fonction {
+    min-width: 120px;
+    max-width: 150px;
+  }
+  
+  .table-action-btn {
+    min-width: 28px;
+    height: 28px;
+    padding: var(--spacing-xs);
+  }
+  
+  .table-action-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* Tooltip pour les cellules tronquées */
+.beneficiaries-table td[title] {
+  cursor: help;
+}
+
+/* Style pour les dates */
+.date-info {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.date-info + .date-info {
+  margin-top: 2px;
+}
+
+/* Style pour la durée */
+.duration-badge {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* Animation pour les actions */
+.table-action-btn {
+  transform: scale(1);
+  transition: transform 0.1s ease;
+}
+
+.table-action-btn:active {
+  transform: scale(0.95);
+}
