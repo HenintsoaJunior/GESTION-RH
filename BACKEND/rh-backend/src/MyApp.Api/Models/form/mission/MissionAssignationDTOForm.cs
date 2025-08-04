@@ -8,15 +8,13 @@ public class MissionAssignationDTOForm
     [MaxLength(50, ErrorMessage = "L'identifiant de l'employé ne peut pas dépasser 50 caractères.")]
     public string EmployeeId { get; set; } = null!;
 
-    [Required(ErrorMessage = "L'identifiant de la mission est requis.")]
-    [MaxLength(50, ErrorMessage = "L'identifiant de la mission ne peut pas dépasser 50 caractères.")]
     public string MissionId { get; set; } = null!;
     
     [MaxLength(50, ErrorMessage = "L'identifiant du transport ne peut pas dépasser 50 caractères.")]
     public string? TransportId { get; set; }
 
     [Required(ErrorMessage = "La date de départ est requise.")]
-    public DateTime DepartureDate { get; set; }
+    public DateTime? DepartureDate { get; set; }
 
     // Optional fields – no validation attributes required unless needed
     public TimeSpan? DepartureTime { get; set; }
