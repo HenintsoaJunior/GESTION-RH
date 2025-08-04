@@ -8,11 +8,13 @@ using MyApp.Api.Entities.employee;
 using MyApp.Api.Services.employe;
 using MyApp.Api.Models.form.mission;
 using MyApp.Utils.pdf;
+using MyApp.Utils.csv;
 
 namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
     {
+        Task<string> ImportMissionFromCsv(Stream fileStream, char separator);
         Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
@@ -57,6 +59,23 @@ namespace MyApp.Api.Services.mission
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
+        public async Task<string> ImportMissionFromCsv(Stream fileStream, char separator)
+        {
+            // lire le csv
+            var tempFilePath = Path.GetTempFileName();
+            using (var fileStreamOutput = File.Create(tempFilePath))
+            {
+                fileStream.CopyTo(fileStreamOutput);
+            }
+                // Lecture via la méthode statique
+                List<List<string>> data = CSVReader.ReadCsv(tempFilePath, separator);
+                // Suppression du fichier temporaire
+                File.Delete(tempFilePath);
+
+            // checking
+            // inserer dans la base
+            return "";
+        }
         public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO)
         {
             try

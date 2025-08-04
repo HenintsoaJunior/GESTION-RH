@@ -9,31 +9,22 @@ namespace MyApp.Utils.csv
         /// <param name="filePath">Chemin vers le fichier CSV</param>
         /// <param name="dataSeparator">Caractère séparateur de colonnes (ex: ',' ou ';')</param>
         /// <returns>Liste de lignes, chaque ligne étant une liste de champs</returns>
-        public static List<List<string>> ReadCsv(string filePath, char dataSeparator)
+        public static List<List<string>> ReadCsv(Stream fileStream, char separator)
         {   
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException("Fichier CSV introuvable", filePath);
-
             var result = new List<List<string>>();
 
-            foreach (var rawLine in File.ReadLines(filePath))
+            using (var reader = new StreamReader(fileStream))
             {
-                string line = rawLine.Trim();
+                string? line;
+                while ((line = await reader.ReadLineAsync()) != null)
+                {
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
 
-                // Ignore les lignes vides
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
-
-                var values = line.Split(dataSeparator);
-                var row = new List<string>(values);
-
-                // Affichage de la ligne dans la console
-                Console.WriteLine($"Ligne lue : {string.Join(" | ", row)}");
-
-                result.Add(row);
-            }
-
-            return result;
+                    var values = line.Split(separator).Select(v => v.Trim()).ToList();
+                    Console.WriteLine($"Ligne : {string.Join(" | ", values)}"); // Print
+                    result.Add(values);
+                }
         }
     }
 }
