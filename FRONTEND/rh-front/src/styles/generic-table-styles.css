@@ -1,4 +1,10 @@
 /* ===== CONTENEUR PRINCIPAL ===== */
+.generic-search-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
 .dashboard-container {
   font-family: var(--font-family);
   background: var(--bg-primary);
@@ -75,19 +81,27 @@
   position: relative;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  background-color: #fff;
+  background-color: transparent;
   margin-bottom: 1.5rem;
+  width: 100%;
 }
 
 /* Header des filtres avec titre et boutons de contrôle */
 .filters-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  background-color: transparent;
   border-radius: 8px 8px 0 0;
+}
+
+.filters-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .filters-title {
@@ -216,6 +230,7 @@
   font-weight: 600;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--spacing-sm);
   cursor: pointer;
   transition: background-color 0.2s;
@@ -229,38 +244,43 @@
 
 /* ===== TABLE DE FORMULAIRE ===== */
 .form-table-search {
-  width: 100%;
-  border-collapse: collapse;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 250px));
+  gap: var(--spacing-md);
+  background-color: #fff;
   margin-bottom: var(--spacing-xl);
 }
 
 .form-label-cell-search {
-  width: 20%;
+  width: 250px;
   padding: var(--spacing-md);
   vertical-align: middle;
   text-align: left;
-  background: var(--bg-secondary);
+  background: transparent;
   border: 1px solid var(--border-light);
+  box-sizing: border-box;
 }
 
 .form-input-cell-search {
-  width: 30%;
+  width: 250px;
   padding: var(--spacing-md);
   vertical-align: middle;
   border: 1px solid var(--border-light);
+  box-sizing: border-box;
 }
 
 .form-label-search {
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--text-secondary);
-  margin: 0;
+  margin: 0 0 var(--spacing-xs) 0;
+  display: block;
 }
 
 .form-input-search {
-  width: 100%;
+  width: 200px;
   height: 35px;
-  border: 3px solid transparent;
+  border: 1px solid #e5e7eb;
   border-radius: 0;
   font-size: var(--font-size-xs);
   font-family: var(--font-family);
@@ -313,6 +333,10 @@ select.form-input-search {
   transition: background-color 0.2s;
   height: 40px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
 }
 
 .btn-search:hover {
@@ -378,9 +402,9 @@ select.form-input-search {
 /* ===== CHAMPS DE SAISIE (CONSERVÉS POUR COMPATIBILITÉ) ===== */
 .ascii-input,
 .ascii-select {
-  width: 100%;
+  width: 200px;
   height: 35px;
-  border: 3px solid transparent;
+  border: 1px solid #e5e7eb;
   border-radius: 0;
   font-size: var(--font-size-xs);
   font-family: var(--font-family);
@@ -524,7 +548,7 @@ select.form-input-search {
   transition: background-color 0.2s ease, transform 0.2s ease;
   height: 40px;
   line-height: 1;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
 }
@@ -539,9 +563,57 @@ select.form-input-search {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .btn-show-filters {
+  .dashboard-container {
+    padding: var(--spacing-md);
+  }
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .table-header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: stretch;
+  }
+  .btn-new-request {
     width: 100%;
     justify-content: center;
+  }
+  .filters-actions {
+    justify-content: stretch;
+  }
+  .btn-search,
+  .btn-reset {
+    flex: 1;
+    justify-content: center;
+  }
+  .form-table-search {
+    font-size: var(--font-size-xs);
+    grid-template-columns: repeat(auto-fit, minmax(250px, 250px));
+    margin-bottom: var(--spacing-xl);
+  }
+  .form-label-cell-search,
+  .form-input-cell-search {
+    display: block;
+    width: 250px;
+  }
+  .data-table {
+    font-size: var(--font-size-xs);
+  }
+  .pagination-container {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  .pagination-options {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+  .pagination-label {
+    font-size: var(--font-size-xs);
+  }
+  .pagination-select {
+    height: 35px;
+    min-width: 60px;
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs) var(--spacing-xl) var(--spacing-xs) var(--spacing-sm);
   }
 }
 
@@ -707,80 +779,5 @@ select.form-input-search {
   background-color: #f0f0f0;
 }
 
-.calendar-container {
-  margin-top: 20px;
-  padding: 20px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .dashboard-container {
-    padding: var(--spacing-md);
-  }
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  .table-header {
-    flex-direction: column;
-    gap: var(--spacing-md);
-    align-items: stretch;
-  }
-  .btn-new-request {
-    width: 100%;
-    justify-content: center;
-  }
-  .filters-actions {
-    justify-content: stretch;
-  }
-  .btn-search,
-  .btn-reset {
-    flex: 1;
-  }
-  .form-table-search {
-    font-size: var(--font-size-xs);
-  }
-  .form-label-cell-search,
-  .form-input-cell-search {
-    display: block;
-    width: 100%;
-  }
-  .form-table-search tr {
-    display: block;
-    margin-bottom: var(--spacing-lg);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
-  }
-  .form-table-search th,
-  .form-table-search td {
-    display: block;
-    width: 100%;
-    border: none;
-    border-bottom: 1px solid var(--border-light);
-  }
-  .form-table-search th:last-child,
-  .form-table-search td:last-child {
-    border-bottom: none;
-  }
-  .data-table {
-    font-size: var(--font-size-xs);
-  }
-  .pagination-container {
-    flex-direction: column;
-    gap: var(--spacing-md);
-  }
-  .pagination-options {
-    padding: var(--spacing-xs) var(--spacing-sm);
-  }
-  .pagination-label {
-    font-size: var(--font-size-xs);
-  }
-  .pagination-select {
-    height: 35px;
-    min-width: 60px;
-    font-size: var(--font-size-xs);
-    padding: var(--spacing-xs) var(--spacing-xl) var(--spacing-xs) var(--spacing-sm);
-  }
-}
+

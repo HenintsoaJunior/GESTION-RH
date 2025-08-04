@@ -48,6 +48,7 @@ CREATE TABLE mission (
    name VARCHAR(255),
    description TEXT,
    start_date DATE,
+   end_date DATE,
    status VARCHAR(20) NOT NULL DEFAULT 'En Cours',
    lieu_id VARCHAR(50) NOT NULL,
    created_at DATETIME,
