@@ -432,6 +432,9 @@ export const fetchAssignMission = async (
           beneficiary: `${item.employee?.firstName || ""} ${item.employee?.lastName || ""}`.trim() || "Non spécifié",
           matricule: item.employee?.employeeCode || "Non spécifié",
           missionTitle: item.mission?.name || "Non spécifié",
+          startDate: item.mission?.startDate || "Non spécifié",
+          endDate: item.mission?.endDate || "Non spécifié",
+          lieu : item.mission?.lieu.nom || "Non spécifié",
           function: item.employee?.jobTitle || "Non spécifié",
           base: item.employee?.site?.siteName || "Non spécifié", // ✅ CORRIGÉ : ajout du ? pour éviter les erreurs
           status: item.mission?.status || "Non spécifié",

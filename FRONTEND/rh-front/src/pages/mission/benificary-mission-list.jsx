@@ -1,20 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, ChevronDown, ChevronUp, X, List } from "lucide-react";
 import { formatDate } from "utils/dateConverter";
 import Alert from "components/alert";
 import Pagination from "components/pagination";
 import AutoCompleteInput from "components/auto-complete-input";
 import "styles/generic-table-styles.css";
+import { fetchAssignMission, fetchAllMissions } from "services/mission/mission";
 import { fetchAllEmployees } from "services/employee/employee";
-import { fetchAssignMission } from "services/mission/mission";
-import { fetchAllRegions } from "services/lieu/lieu";
+import { fetchAllRegions } from "services/lieu/lieu"; // Import the service for fetching regions
 
-const AssignedPersonsList = () => {
+const BeneficiaryMissionList = () => {
   const navigate = useNavigate();
-  const { missionId } = useParams(); // Extraire missionId de l'URL (ex: MIS-000397)
   const [assignedPersons, setAssignedPersons] = useState([]);
   const [filters, setFilters] = useState({
     status: "",
@@ -22,13 +21,17 @@ const AssignedPersonsList = () => {
     employeeName: "",
     startDate: "",
     endDate: "",
-    lieuId: "",
-    location: "",
+    transportId: "",
+    missionId: "",
+    missionName: "",
+    lieuId: "", // Added for location filter
+    location: "", // Added for location filter
   });
   const [appliedFilters, setAppliedFilters] = useState({ ...filters });
   const [suggestions, setSuggestions] = useState({
     beneficiary: [],
-    regions: [],
+    missions: [],
+    regions: [], // Added for location suggestions
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -36,7 +39,8 @@ const AssignedPersonsList = () => {
   const [isLoading, setIsLoading] = useState({
     assignMissions: false,
     employees: false,
-    regions: false,
+    missions: false,
+    regions: false, // Added for loading state of regions
   });
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [isMinimized, setIsMinimized] = useState(false);
@@ -60,6 +64,27 @@ const AssignedPersonsList = () => {
       (error) => setAlert(error)
     );
 
+    // Fetch missions
+    fetchAllMissions(
+      (data) => {
+        setSuggestions((prev) => ({
+          ...prev,
+          missions: data.map((mission) => ({
+            id: mission.missionId,
+            name: mission.name,
+            displayName: `${mission.name || "Non spécifié"} (${
+              formatDate(mission.startDate) || "Non spécifié"
+            } - ${formatDate(mission.endDate) || "Non spécifié"}, ${
+              mission.lieu?.nom || "Non spécifié"
+            })`,
+          })),
+        }));
+      },
+      setIsLoading,
+      setTotalEntries,
+      (error) => setAlert(error)
+    );
+
     // Fetch regions
     fetchAllRegions(
       (data) => {
@@ -78,31 +103,24 @@ const AssignedPersonsList = () => {
   }, []);
 
   useEffect(() => {
-    if (missionId) {
-      fetchAssignMission(
-        setAssignedPersons,
-        setIsLoading,
-        setTotalEntries,
-        {
-          employeeId: appliedFilters.employeeId || undefined,
-          startDate: appliedFilters.startDate || undefined,
-          endDate: appliedFilters.endDate || undefined,
-          status: appliedFilters.status || undefined,
-          missionId: missionId || undefined,
-          lieuId: appliedFilters.lieuId || undefined,
-        },
-        currentPage,
-        pageSize,
-        (error) => setAlert(error)
-      );
-    } else {
-      setAlert({
-        isOpen: true,
-        type: "error",
-        message: "Aucun ID de mission fourni dans l'URL.",
-      });
-    }
-  }, [appliedFilters, currentPage, pageSize, missionId]);
+    fetchAssignMission(
+      setAssignedPersons,
+      setIsLoading,
+      setTotalEntries,
+      {
+        employeeId: appliedFilters.employeeId || undefined,
+        transportId: appliedFilters.transportId || undefined,
+        startDate: appliedFilters.startDate || undefined,
+        endDate: appliedFilters.endDate || undefined,
+        status: appliedFilters.status || undefined,
+        missionId: appliedFilters.missionId || undefined,
+        lieuId: appliedFilters.lieuId || undefined, // Added for location filter
+      },
+      currentPage,
+      pageSize,
+      (error) => setAlert(error)
+    );
+  }, [appliedFilters, currentPage, pageSize]);
 
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
@@ -121,8 +139,11 @@ const AssignedPersonsList = () => {
       employeeName: "",
       startDate: "",
       endDate: "",
-      lieuId: "",
-      location: "",
+      transportId: "",
+      missionId: "",
+      missionName: "",
+      lieuId: "", // Added
+      location: "", // Added
     };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
@@ -139,7 +160,7 @@ const AssignedPersonsList = () => {
     setCurrentPage(1);
   };
 
-  const handleRowClick = (employeeId) => {
+  const handleRowClick = (missionId, employeeId) => {
     if (missionId && employeeId) {
       navigate(`/assignments/details?missionId=${missionId}&employeeId=${employeeId}`);
     } else {
@@ -243,6 +264,41 @@ const AssignedPersonsList = () => {
                       </td>
 
                       <td className="form-field-cell p-2 align-top">
+                        <label className="form-label-search block mb-2">Mission</label>
+                        <AutoCompleteInput
+                          value={filters.missionName || ""}
+                          onChange={(value) => {
+                            setFilters((prev) => ({
+                              ...prev,
+                              missionName: value,
+                              missionId: "",
+                            }));
+                          }}
+                          onSelect={(value) => {
+                            const selectedMission = suggestions.missions.find(
+                              (mission) => mission.displayName === value
+                            );
+                            setFilters((prev) => ({
+                              ...prev,
+                              missionId: selectedMission ? selectedMission.id : "",
+                              missionName: selectedMission ? selectedMission.displayName : value,
+                            }));
+                          }}
+                          suggestions={suggestions.missions
+                            .filter((mission) =>
+                              mission.displayName.toLowerCase().includes(filters.missionName?.toLowerCase() || "")
+                            )
+                            .map((mission) => mission.displayName)}
+                          maxVisibleItems={5}
+                          placeholder="Rechercher par mission..."
+                          disabled={isLoading.missions || isLoading.assignMissions}
+                          fieldType="mission"
+                          fieldLabel="mission"
+                          className="form-input-search w-full"
+                        />
+                      </td>
+
+                      <td className="form-field-cell p-2 align-top">
                         <label className="form-label-search block mb-2">Lieu</label>
                         <AutoCompleteInput
                           value={filters.location || ""}
@@ -328,7 +384,7 @@ const AssignedPersonsList = () => {
       )}
 
       <div className="table-header">
-        <h2 className="table-title">Liste des Personnes Assignées à la Mission {missionId}</h2>
+        <h2 className="table-title">Liste des Mission des Colaborateur</h2>
       </div>
 
       <div className="table-container">
@@ -338,6 +394,7 @@ const AssignedPersonsList = () => {
               <th>ID Mission</th>
               <th>Bénéficiaire</th>
               <th>Matricule</th>
+              <th>Mission</th>
               <th>Fonction</th>
               <th>Lieu</th>
               <th>Date début</th>
@@ -348,22 +405,23 @@ const AssignedPersonsList = () => {
           <tbody>
             {isLoading.assignMissions ? (
               <tr>
-                <td colSpan={8}>Chargement...</td>
+                <td colSpan={9}>Chargement...</td>
               </tr>
             ) : assignedPersons.length > 0 ? (
               assignedPersons.map((assignment, index) => (
                 <tr
-                  key={`${assignment.employeeId}-${missionId}-${index}`}
-                  onClick={() => handleRowClick(assignment.employeeId)}
+                  key={`${assignment.employeeId}-${assignment.missionId}-${assignment.transportId}-${index}`}
+                  onClick={() => handleRowClick(assignment.missionId, assignment.employeeId)}
                   style={{ cursor: "pointer" }}
                 >
-                  <td>{missionId || "Non spécifié"}</td>
+                  <td>{assignment.missionId || "Non spécifié"}</td>
                   <td>
                     {(assignment.beneficiary && assignment.directionAcronym)
                       ? `${assignment.beneficiary} (${assignment.directionAcronym})`
                       : assignment.beneficiary || "Non spécifié"}
                   </td>
                   <td>{assignment.matricule || "Non spécifié"}</td>
+                  <td>{assignment.missionTitle || "Non spécifié"}</td>
                   <td>{assignment.function || "Non spécifié"}</td>
                   <td>{assignment.lieu || "Non spécifié"}</td>
                   <td>{formatDate(assignment.startDate) || "Non spécifié"}</td>
@@ -373,7 +431,7 @@ const AssignedPersonsList = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={8}>Aucune donnée trouvée pour la mission {missionId}.</td>
+                <td colSpan={9}>Aucune donnée trouvée.</td>
               </tr>
             )}
           </tbody>
@@ -391,4 +449,4 @@ const AssignedPersonsList = () => {
   );
 };
 
-export default AssignedPersonsList;
+export default BeneficiaryMissionList;
