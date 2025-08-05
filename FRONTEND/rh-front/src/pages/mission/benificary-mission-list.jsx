@@ -2,15 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, ChevronDown, ChevronUp, X, List } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, X, List, FileText, Download } from "lucide-react";
 import { formatDate } from "utils/dateConverter";
 import Alert from "components/alert";
 import Pagination from "components/pagination";
 import AutoCompleteInput from "components/auto-complete-input";
 import "styles/generic-table-styles.css";
-import { fetchAssignMission, fetchAllMissions } from "services/mission/mission";
+import { 
+  fetchAssignMission, 
+  fetchAllMissions,
+  exportMissionAssignationPDF,
+  exportMissionAssignationExcel
+} from "services/mission/mission";
 import { fetchAllEmployees } from "services/employee/employee";
-import { fetchAllRegions } from "services/lieu/lieu"; // Import the service for fetching regions
+import { fetchAllRegions } from "services/lieu/lieu";
 
 const BeneficiaryMissionList = () => {
   const navigate = useNavigate();
@@ -24,14 +29,14 @@ const BeneficiaryMissionList = () => {
     transportId: "",
     missionId: "",
     missionName: "",
-    lieuId: "", // Added for location filter
-    location: "", // Added for location filter
+    lieuId: "",
+    location: "",
   });
   const [appliedFilters, setAppliedFilters] = useState({ ...filters });
   const [suggestions, setSuggestions] = useState({
     beneficiary: [],
     missions: [],
-    regions: [], // Added for location suggestions
+    regions: [],
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -40,12 +45,15 @@ const BeneficiaryMissionList = () => {
     assignMissions: false,
     employees: false,
     missions: false,
-    regions: false, // Added for loading state of regions
+    regions: false,
+    exportPDF: false,
+    exportExcel: false,
   });
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
+  // Chargement initial des données
   useEffect(() => {
     // Fetch employees
     fetchAllEmployees(
@@ -81,7 +89,7 @@ const BeneficiaryMissionList = () => {
         }));
       },
       setIsLoading,
-      setTotalEntries,
+      () => {}, // setTotalEntries pour les missions
       (error) => setAlert(error)
     );
 
@@ -102,19 +110,22 @@ const BeneficiaryMissionList = () => {
     );
   }, []);
 
+  // Chargement des assignations de mission avec filtres
   useEffect(() => {
+    console.log("Applied Filters:", appliedFilters);
+    
     fetchAssignMission(
       setAssignedPersons,
       setIsLoading,
       setTotalEntries,
       {
-        employeeId: appliedFilters.employeeId || undefined,
-        transportId: appliedFilters.transportId || undefined,
-        startDate: appliedFilters.startDate || undefined,
-        endDate: appliedFilters.endDate || undefined,
-        status: appliedFilters.status || undefined,
-        missionId: appliedFilters.missionId || undefined,
-        lieuId: appliedFilters.lieuId || undefined, // Added for location filter
+        employeeId: appliedFilters.employeeId || "",
+        transportId: appliedFilters.transportId || "",
+        startDate: appliedFilters.startDate || "",
+        endDate: appliedFilters.endDate || "",
+        status: appliedFilters.status || "",
+        missionId: appliedFilters.missionId || "",
+        lieuId: appliedFilters.lieuId || "",
       },
       currentPage,
       pageSize,
@@ -122,16 +133,76 @@ const BeneficiaryMissionList = () => {
     );
   }, [appliedFilters, currentPage, pageSize]);
 
+  // Gestion des changements de filtres
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Validation et soumission des filtres
   const handleFilterSubmit = (event) => {
     event.preventDefault();
-    setAppliedFilters({ ...filters });
+    
+    let updatedFilters = { ...filters };
+
+    // Validation de l'employé sélectionné
+    if (filters.employeeName && !filters.employeeId) {
+      const selectedEmployee = suggestions.beneficiary.find(
+        (emp) => emp.displayName === filters.employeeName
+      );
+      if (!selectedEmployee) {
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: "Veuillez sélectionner un bénéficiaire valide dans la liste des suggestions.",
+        });
+        return;
+      }
+      updatedFilters.employeeId = selectedEmployee.id;
+      updatedFilters.employeeName = selectedEmployee.displayName;
+    }
+
+    // Validation de la mission sélectionnée
+    if (filters.missionName && !filters.missionId) {
+      const selectedMission = suggestions.missions.find(
+        (mission) => mission.displayName === filters.missionName
+      );
+      if (!selectedMission) {
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: "Veuillez sélectionner une mission valide dans la liste des suggestions.",
+        });
+        return;
+      }
+      updatedFilters.missionId = selectedMission.id;
+      updatedFilters.missionName = selectedMission.displayName;
+    }
+
+    // Validation du lieu sélectionné
+    if (filters.location && !filters.lieuId) {
+      const selectedRegion = suggestions.regions.find(
+        (region) => region.displayName === filters.location
+      );
+      if (!selectedRegion) {
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: "Veuillez sélectionner un lieu valide dans la liste des suggestions.",
+        });
+        return;
+      }
+      updatedFilters.lieuId = selectedRegion.id;
+      updatedFilters.location = selectedRegion.displayName;
+    }
+
+    setFilters(updatedFilters);
+    setAppliedFilters(updatedFilters);
     setCurrentPage(1);
+    
+    console.log("Filters applied:", updatedFilters);
   };
 
+  // Réinitialisation des filtres
   const handleResetFilters = () => {
     const resetFilters = {
       status: "",
@@ -142,8 +213,8 @@ const BeneficiaryMissionList = () => {
       transportId: "",
       missionId: "",
       missionName: "",
-      lieuId: "", // Added
-      location: "", // Added
+      lieuId: "",
+      location: "",
     };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
@@ -151,6 +222,7 @@ const BeneficiaryMissionList = () => {
     setAlert({ isOpen: true, type: "info", message: "Filtres réinitialisés." });
   };
 
+  // Gestion de la pagination
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
@@ -160,6 +232,7 @@ const BeneficiaryMissionList = () => {
     setCurrentPage(1);
   };
 
+  // Navigation vers les détails
   const handleRowClick = (missionId, employeeId) => {
     if (missionId && employeeId) {
       navigate(`/assignments/details?missionId=${missionId}&employeeId=${employeeId}`);
@@ -172,9 +245,51 @@ const BeneficiaryMissionList = () => {
     }
   };
 
+  // Export PDF
+  const handleExportPDF = () => {
+    const exportFilters = {
+      missionId: appliedFilters.missionId || null,
+      employeeId: appliedFilters.employeeId || null,
+      transportId: appliedFilters.transportId || null,
+      lieuId: appliedFilters.lieuId || null,
+      departureDate: appliedFilters.startDate || null,
+      departureArrive: appliedFilters.endDate || null,
+      status: appliedFilters.status || null,
+    };
+
+    exportMissionAssignationPDF(
+      exportFilters,
+      setIsLoading,
+      (success) => setAlert(success),
+      (error) => setAlert(error)
+    );
+  };
+
+  // Export Excel
+  const handleExportExcel = () => {
+    const exportFilters = {
+      missionId: appliedFilters.missionId || null,
+      employeeId: appliedFilters.employeeId || null,
+      transportId: appliedFilters.transportId || null,
+      lieuId: appliedFilters.lieuId || null,
+      departureDate: appliedFilters.startDate || null,
+      departureArrive: appliedFilters.endDate || null,
+      status: appliedFilters.status || null,
+    };
+
+    exportMissionAssignationExcel(
+      exportFilters,
+      setIsLoading,
+      (success) => setAlert(success),
+      (error) => setAlert(error)
+    );
+  };
+
+  // Contrôles d'affichage des filtres
   const toggleMinimize = () => setIsMinimized((prev) => !prev);
   const toggleHide = () => setIsHidden((prev) => !prev);
 
+  // Badge de statut
   const getStatusBadge = (status) => {
     const statusClass =
       status === "En Cours"
@@ -198,6 +313,7 @@ const BeneficiaryMissionList = () => {
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
 
+      {/* Section des filtres */}
       {!isHidden && (
         <div className={`filters-container ${isMinimized ? "minimized" : ""}`}>
           <div className="filters-header">
@@ -236,13 +352,14 @@ const BeneficiaryMissionList = () => {
                             setFilters((prev) => ({
                               ...prev,
                               employeeName: value,
-                              employeeId: "",
+                              employeeId: value ? prev.employeeId : "", // Garde l'ID si la valeur existe
                             }));
                           }}
                           onSelect={(value) => {
                             const selectedEmployee = suggestions.beneficiary.find(
                               (emp) => emp.displayName === value
                             );
+                            console.log("Selected Employee:", selectedEmployee);
                             setFilters((prev) => ({
                               ...prev,
                               employeeId: selectedEmployee ? selectedEmployee.id : "",
@@ -271,13 +388,14 @@ const BeneficiaryMissionList = () => {
                             setFilters((prev) => ({
                               ...prev,
                               missionName: value,
-                              missionId: "",
+                              missionId: value ? prev.missionId : "",
                             }));
                           }}
                           onSelect={(value) => {
                             const selectedMission = suggestions.missions.find(
                               (mission) => mission.displayName === value
                             );
+                            console.log("Selected Mission:", selectedMission);
                             setFilters((prev) => ({
                               ...prev,
                               missionId: selectedMission ? selectedMission.id : "",
@@ -303,15 +421,28 @@ const BeneficiaryMissionList = () => {
                         <AutoCompleteInput
                           value={filters.location || ""}
                           onChange={(value) => {
-                            const regionName = value.includes("/") ? value.split("/")[0] : value;
-                            const selectedRegion = suggestions.regions.find((r) => r.name === regionName);
                             setFilters((prev) => ({
                               ...prev,
                               location: value,
-                              lieuId: selectedRegion ? selectedRegion.id : "",
+                              lieuId: value ? prev.lieuId : "",
                             }));
                           }}
-                          suggestions={suggestions.regions.map((region) => region.displayName)}
+                          onSelect={(value) => {
+                            const selectedRegion = suggestions.regions.find(
+                              (region) => region.displayName === value
+                            );
+                            console.log("Selected Region:", selectedRegion);
+                            setFilters((prev) => ({
+                              ...prev,
+                              lieuId: selectedRegion ? selectedRegion.id : "",
+                              location: selectedRegion ? selectedRegion.displayName : value,
+                            }));
+                          }}
+                          suggestions={suggestions.regions
+                            .filter((region) =>
+                              region.displayName.toLowerCase().includes(filters.location?.toLowerCase() || "")
+                            )
+                            .map((region) => region.displayName)}
                           maxVisibleItems={5}
                           placeholder="Saisir ou sélectionner un lieu..."
                           disabled={isLoading.regions || isLoading.assignMissions}
@@ -333,6 +464,7 @@ const BeneficiaryMissionList = () => {
                           <option value="En Cours">En Cours</option>
                           <option value="Planifié">Planifié</option>
                           <option value="Terminé">Terminé</option>
+                          <option value="Annulé">Annulé</option>
                         </select>
                       </td>
 
@@ -362,11 +494,20 @@ const BeneficiaryMissionList = () => {
                 </table>
 
                 <div className="filters-actions">
-                  <button type="button" className="btn-reset" onClick={handleResetFilters}>
+                  <button 
+                    type="button" 
+                    className="btn-reset" 
+                    onClick={handleResetFilters}
+                    disabled={isLoading.assignMissions}
+                  >
                     Réinitialiser
                   </button>
-                  <button type="submit" className="btn-search">
-                    Rechercher
+                  <button 
+                    type="submit" 
+                    className="btn-search"
+                    disabled={isLoading.assignMissions}
+                  >
+                    {isLoading.assignMissions ? "Recherche..." : "Rechercher"}
                   </button>
                 </div>
               </form>
@@ -375,18 +516,23 @@ const BeneficiaryMissionList = () => {
         </div>
       )}
 
+      {/* Bouton pour afficher les filtres cachés */}
       {isHidden && (
         <div className="filters-toggle">
           <button type="button" className="btn-show-filters" onClick={toggleHide}>
+            <List className="w-4 h-4 mr-2" />
             Afficher les filtres
           </button>
         </div>
       )}
 
+      {/* En-tête du tableau avec actions */}
       <div className="table-header">
-        <h2 className="table-title">Liste des Mission des Colaborateur</h2>
+        <h2 className="table-title">Liste des Missions des Collaborateurs</h2>
+
       </div>
 
+      {/* Tableau des données */}
       <div className="table-container">
         <table className="data-table">
           <thead>
@@ -405,13 +551,16 @@ const BeneficiaryMissionList = () => {
           <tbody>
             {isLoading.assignMissions ? (
               <tr>
-                <td colSpan={9}>Chargement...</td>
+                <td colSpan={9} className="text-center py-4">
+                  <div className="loading-spinner">Chargement des données...</div>
+                </td>
               </tr>
             ) : assignedPersons.length > 0 ? (
               assignedPersons.map((assignment, index) => (
                 <tr
                   key={`${assignment.employeeId}-${assignment.missionId}-${assignment.transportId}-${index}`}
                   onClick={() => handleRowClick(assignment.missionId, assignment.employeeId)}
+                  className="table-row-clickable"
                   style={{ cursor: "pointer" }}
                 >
                   <td>{assignment.missionId || "Non spécifié"}</td>
@@ -421,7 +570,7 @@ const BeneficiaryMissionList = () => {
                       : assignment.beneficiary || "Non spécifié"}
                   </td>
                   <td>{assignment.matricule || "Non spécifié"}</td>
-                  <td>{assignment.missionTitle || "Non spécifié"}</td>
+                  <td className="mission-title">{assignment.missionTitle || "Non spécifié"}</td>
                   <td>{assignment.function || "Non spécifié"}</td>
                   <td>{assignment.lieu || "Non spécifié"}</td>
                   <td>{formatDate(assignment.startDate) || "Non spécifié"}</td>
@@ -431,19 +580,27 @@ const BeneficiaryMissionList = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={9}>Aucune donnée trouvée.</td>
+                <td colSpan={9} className="text-center py-4">
+                  <div className="no-data-message">
+                    {appliedFilters.employeeId || appliedFilters.missionId || appliedFilters.status || appliedFilters.startDate || appliedFilters.endDate
+                      ? "Aucune assignation de mission ne correspond aux critères de recherche."
+                      : "Aucune assignation de mission trouvée."}
+                  </div>
+                </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
 
+      {/* Pagination */}
       <Pagination
         currentPage={currentPage}
         pageSize={pageSize}
         totalEntries={totalEntries}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        disabled={isLoading.assignMissions}
       />
     </div>
   );

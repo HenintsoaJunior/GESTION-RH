@@ -44,8 +44,8 @@ const MissionList = () => {
   const [stats, setStats] = useState({ total: 0, enCours: 0, planifiee: 0, terminee: 0, annulee: 0 });
   const [filters, setFilters] = useState({
     name: "",
-    dateDebut: "",
-    dateFin: "",
+    startDate: "", // Changé de dateDebut à startDate
+    endDate: "",   // Changé de dateFin à endDate
     lieuId: "",
     location: "",
     status: "",
@@ -113,8 +113,8 @@ const MissionList = () => {
   useEffect(() => {
     const initialFilters = {
       name: "",
-      dateDebut: "",
-      dateFin: "",
+      startDate: "", // Changé de dateDebut à startDate
+      endDate: "",   // Changé de dateFin à endDate
       lieuId: "",
       location: "",
       status: "",
@@ -150,8 +150,8 @@ const MissionList = () => {
   const handleResetFilters = () => {
     const resetFilters = {
       name: "",
-      dateDebut: "",
-      dateFin: "",
+      startDate: "", // Changé de dateDebut à startDate
+      endDate: "",   // Changé de dateFin à endDate
       lieuId: "",
       location: "",
       status: "",
@@ -408,10 +408,10 @@ const MissionList = () => {
                       <td className="form-field-cell p-2 align-top">
                         <label className="form-label-search block mb-2">Date de début</label>
                         <input
-                          name="dateDebut"
+                          name="startDate" // Changé de dateDebut à startDate
                           type="date"
-                          value={filters.dateDebut}
-                          onChange={(e) => handleFilterChange("dateDebut", e.target.value)}
+                          value={filters.startDate}
+                          onChange={(e) => handleFilterChange("startDate", e.target.value)}
                           className="form-input-search w-full"
                         />
                       </td>
@@ -419,10 +419,10 @@ const MissionList = () => {
                       <td className="form-field-cell p-2 align-top">
                         <label className="form-label-search block mb-2">Date de fin</label>
                         <input
-                          name="dateFin"
+                          name="endDate" // Changé de dateFin à endDate
                           type="date"
-                          value={filters.dateFin}
-                          onChange={(e) => handleFilterChange("dateFin", e.target.value)}
+                          value={filters.endDate}
+                          onChange={(e) => handleFilterChange("endDate", e.target.value)}
                           className="form-input-search w-full"
                         />
                       </td>
