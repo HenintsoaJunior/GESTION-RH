@@ -9,7 +9,7 @@ import * as FaIcons from "react-icons/fa";
 import { fetchNotAssignedEmployees, fetchAllMissions, createMissionAssignation } from "services/mission/mission";
 import { fetchAllTransports } from "services/transport/transport";
 
-export default function AssignMissionForm() {
+export default function AssignMissionForm({ missionId, onSuccess }) {
   const [formData, setFormData] = useState({
     beneficiary: "",
     employeeId: "",
@@ -28,7 +28,7 @@ export default function AssignMissionForm() {
     returnDate: "",
     returnTime: "",
     mission: "",
-    missionId: "",
+    missionId: missionId || "",
     missionStartDate: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,7 +56,7 @@ export default function AssignMissionForm() {
     const initialValue = searchParams.get("initialValue") || "";
     const url = searchParams.get("returnUrl") || "";
     const type = searchParams.get("fieldType") || "";
-    const missionIdFromUrl = searchParams.get("missionId") || "";
+    const missionIdFromUrl = searchParams.get("missionId") || missionId;
 
     setFormData((prev) => ({ ...prev, beneficiary: initialValue, missionId: missionIdFromUrl }));
     setReturnUrl(url);
@@ -160,7 +160,7 @@ export default function AssignMissionForm() {
       () => {},
       (error) => setModal({ isOpen: true, type: "error", message: error.message })
     );
-  }, [location.search]);
+  }, [location.search, missionId]);
 
   // Update fields related to beneficiary
   useEffect(() => {
@@ -353,20 +353,10 @@ export default function AssignMissionForm() {
         }
       );
 
-      if (returnUrl && fieldType) {
-        const returnParams = new URLSearchParams();
-        returnParams.set("newValue", formData.beneficiary);
-        returnParams.set("fieldType", fieldType);
-        const [basePath, existingParams] = returnUrl.split("?");
-        const finalParams = new URLSearchParams(existingParams || "");
-        returnParams.forEach((value, key) => {
-          finalParams.set(key, value);
-        });
-        const finalUrl = `${basePath}?${finalParams.toString()}`;
-        navigate(finalUrl);
-      } else {
-        navigate("/mission/list");
-      }
+      showAlert("success", "Mission assignée avec succès.");
+      onSuccess(); // Call the onSuccess callback to notify parent
+      handleReset(); // Reset the form for another assignment
+
     } catch (error) {
       console.error("Erreur dans handleSubmit :", error);
     } finally {
@@ -393,7 +383,7 @@ export default function AssignMissionForm() {
       returnDate: "",
       returnTime: "",
       mission: "",
-      missionId: "",
+      missionId: missionId || "",
       missionStartDate: "",
     });
     setFieldErrors({});
@@ -441,7 +431,7 @@ export default function AssignMissionForm() {
                         ? "Aucune mission disponible"
                         : "Saisir ou sélectionner une mission..."
                     }
-                    disabled={isSubmitting || isLoading.missions}
+                    disabled={isSubmitting || isLoading.missions || missionId}
                     onAddNew={(value) => handleAddNewSuggestion("mission", value)}
                     fieldType="mission"
                     fieldLabel="mission"

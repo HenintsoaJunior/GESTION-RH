@@ -2,21 +2,30 @@
 
 import { apiGet, apiPost, apiPut, apiDelete } from "utils/apiUtils";
 import { handleValidationError } from "utils/validation";
-
-export const fetchEmployees = async (setEmployees, setIsLoading, setSuggestions, onError) => {
+export const fetchEmployees = async (missionId, onSuccess, setIsLoading, setSuggestions, onError) => {
   try {
     setIsLoading((prev) => ({ ...prev, employees: true }));
 
-    const data = await apiGet("/api/Employee");
+    const response = await apiGet("/api/Employee");
+    const employees = Array.isArray(response.data) ? response.data : (Array.isArray(response) ? response : []);
 
-    setEmployees(data);
+    onSuccess(employees);
 
     if (setSuggestions) {
       setSuggestions((prev) => ({
         ...prev,
-        superieurHierarchique: data.map((emp) => ({
-          value: emp.employeeId,
-          label: `${emp.lastName} ${emp.firstName}`,
+        beneficiary: employees.map((emp) => ({
+          id: emp.employeeId,
+          name: `${emp.lastName} ${emp.firstName}`,
+          displayName: `${emp.lastName} ${emp.firstName} (${emp.direction?.acronym || "N/A"})`,
+          employeeCode: emp.employeeCode,
+          jobTitle: emp.jobTitle,
+          site: emp.site?.siteName,
+          direction: emp.direction?.directionName,
+          department: emp.department?.departmentName,
+          service: emp.service?.serviceName,
+          costCenter: emp.costCenter,
+          acronym: emp.direction?.acronym || "N/A",
         })),
       }));
     }
@@ -24,7 +33,7 @@ export const fetchEmployees = async (setEmployees, setIsLoading, setSuggestions,
     console.error("Erreur lors du chargement des employés:", error);
     onError({
       message: "Erreur lors du chargement des employés",
-      type: "error"
+      type: "error",
     });
   } finally {
     setIsLoading((prev) => ({ ...prev, employees: false }));

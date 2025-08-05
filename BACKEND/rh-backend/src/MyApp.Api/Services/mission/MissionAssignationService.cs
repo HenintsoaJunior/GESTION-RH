@@ -8,11 +8,13 @@ using MyApp.Api.Entities.employee;
 using MyApp.Api.Services.employe;
 using MyApp.Api.Models.form.mission;
 using MyApp.Utils.pdf;
+using MyApp.Utils.csv;
 
 namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
     {
+        Task<string> ImportMissionFromCsv(Stream fileStream, char separator);
         Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
@@ -22,8 +24,8 @@ namespace MyApp.Api.Services.mission
         Task<(string EmployeeId, string MissionId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation);
         Task<bool> UpdateAsync(MissionAssignation missionAssignation);
         Task<bool> DeleteAsync(string employeeId, string missionId, string transportId);
-        Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? directionId = null, DateTime? startDate = null, DateTime? endDate = null);
-        Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? directionId = null, DateTime? startDate = null, DateTime? endDate = null);
+        Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
+        Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
     }
 
     public class MissionAssignationService : IMissionAssignationService
@@ -57,6 +59,23 @@ namespace MyApp.Api.Services.mission
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
+        public async Task<string> ImportMissionFromCsv(Stream fileStream, char separator)
+        {
+            // lire le csv
+            var tempFilePath = Path.GetTempFileName();
+            using (var fileStreamOutput = File.Create(tempFilePath))
+            {
+                fileStream.CopyTo(fileStreamOutput);
+            }
+                // Lecture via la méthode statique
+                List<List<string>> data = CSVReader.ReadCsv(tempFilePath, separator);
+                // Suppression du fichier temporaire
+                File.Delete(tempFilePath);
+
+            // checking
+            // inserer dans la base
+            return "";
+        }
         public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO)
         {
             try
@@ -64,20 +83,20 @@ namespace MyApp.Api.Services.mission
                 MissionPaiementResult paiements = await GeneratePaiementsAsync(
                     generatePaiementDTO.EmployeeId,
                     generatePaiementDTO.MissionId,
-                    generatePaiementDTO.DirectionId,
+                    generatePaiementDTO.LieuId,
                     generatePaiementDTO.StartDate,
-                    generatePaiementDTO.EndDate
+                    generatePaiementDTO.EndDate,
+                    generatePaiementDTO.Status
                 );
 
                 PDFGenerator pdf = new PDFGenerator(paiements.GetDescriptionForPDF(), paiements.GetTablesForPDF());
-                return pdf.GeneratePdf("Mission"); // <<== Appel correct à la méthode qui retourne le byte[]
+                return pdf.GeneratePdf("Mission");
             }
             catch (Exception ex)
             {
                 throw new Exception($"Erreur lors de la génération du PDF: {ex.Message}", ex);
             }
         }
-
 
         public async Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId)
         {
@@ -169,18 +188,16 @@ namespace MyApp.Api.Services.mission
             };
         }
 
-        public async Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? directionId = null, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null)
         {
             try
             {
-                // Récupérer les affectations filtrées (ou toutes si aucun filtre)
-                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, directionId, startDate, endDate);
+                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, departureArrive, status);
                 
-                // Vérifier si des affectations existent
                 if (!missionAssignations.Any())
                 {
-                    _logger.LogWarning("Aucune affectation de mission trouvée pour les filtres fournis : employeeId={EmployeeId}, missionId={MissionId}, directionId={DirectionId}, startDate={StartDate}, endDate={EndDate}",
-                        employeeId ?? "null", missionId ?? "null", directionId ?? "null", startDate?.ToString("yyyy-MM-dd") ?? "null", endDate?.ToString("yyyy-MM-dd") ?? "null");
+                    _logger.LogWarning("Aucune affectation de mission trouvée pour les filtres fournis : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, departureArrive={DepartureArrive}, status={Status}",
+                        employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", departureArrive?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
                     return new MissionPaiementResult
                     {
                         DailyPaiements = new List<DailyPaiement>(),
@@ -191,19 +208,17 @@ namespace MyApp.Api.Services.mission
                 var paiementResults = new List<MissionPaiementResult>();
                 foreach (var missionAssignation in missionAssignations)
                 {
-                    // Générer les paiements pour chaque affectation
                     var paiementResult = await GeneratePaymentsForAssignation(missionAssignation);
                     paiementResults.Add(paiementResult);
                     LogPaymentGenerationResult(paiementResult, missionAssignation.EmployeeId, missionAssignation.MissionId);
                 }
 
-                // Combiner les résultats
                 return CombinePaiementResults(paiementResults);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la génération des paiements pour employeeId={EmployeeId}, missionId={MissionId}, directionId={DirectionId}", 
-                    employeeId ?? "null", missionId ?? "null", directionId ?? "null");
+                _logger.LogError(ex, "Erreur lors de la génération des paiements pour employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}", 
+                    employeeId ?? "null", missionId ?? "null", lieuId ?? "null");
                 throw new Exception($"Erreur lors de la génération des paiements : {ex.Message}", ex);
             }
         }
@@ -240,22 +255,20 @@ namespace MyApp.Api.Services.mission
             return new MissionPaiementResult
             {
                 DailyPaiements = combinedDailyPaiements,
-                MissionAssignation = firstAssignation // Note: This assumes a single assignation context; adjust if needed
+                MissionAssignation = firstAssignation
             };
         }
 
-        // NOUVELLE VERSION CORRIGÉE - Génération Excel sans problème de répétition
-        public async Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? directionId = null, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null)
         {
             try
             {
-                // Récupérer directement les affectations filtrées
-                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, directionId, startDate, endDate);
+                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, departureArrive, status);
                 
                 if (!missionAssignations.Any())
                 {
-                    _logger.LogWarning("Aucune affectation trouvée pour la génération du rapport Excel avec les filtres : employeeId={EmployeeId}, missionId={MissionId}, directionId={DirectionId}", 
-                        employeeId ?? "null", missionId ?? "null", directionId ?? "null");
+                    _logger.LogWarning("Aucune affectation trouvée pour la génération du rapport Excel avec les filtres : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, departureArrive={DepartureArrive}, status={Status}", 
+                        employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", departureArrive?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
                     return CreateEmptyExcelReport();
                 }
 
@@ -263,7 +276,7 @@ namespace MyApp.Api.Services.mission
                 var worksheet = workbook.Worksheets.Add("Mission Payment Report");
                 CreateExcelHeaders(worksheet);
 
-                var currentRow = 2; // Commencer après les en-têtes
+                var currentRow = 2;
                 
                 foreach (var assignment in missionAssignations)
                 {
@@ -282,12 +295,10 @@ namespace MyApp.Api.Services.mission
                     {
                         _logger.LogError(ex, "Erreur lors du traitement de l'affectation EmployeeId={EmployeeId}, MissionId={MissionId}", 
                             assignment.EmployeeId, assignment.MissionId);
-                        // Continuer avec les autres affectations
                         continue;
                     }
                 }
 
-                // Si aucune ligne n'a été ajoutée après les en-têtes
                 if (currentRow == 2)
                 {
                     worksheet.Cell(2, 1).Value = "Aucune donnée de paiement générée pour les affectations trouvées";
@@ -307,7 +318,6 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        // Nouvelle méthode pour écrire une ligne de paiement avec la bonne affectation
         private static void WritePaymentRowToWorksheet(IXLWorksheet worksheet, MissionPaiement payment, MissionAssignation assignment, int row)
         {
             var employee = assignment.Employee;
@@ -326,11 +336,9 @@ namespace MyApp.Api.Services.mission
             worksheet.Cell(row, 10).Value = CalculateExpenseAmount(compensationScales, "Dinner");
             worksheet.Cell(row, 11).Value = CalculateExpenseAmount(compensationScales, "Hébergement");
 
-            // Appliquer le format numérique aux colonnes de montants
             worksheet.Range($"G{row}:K{row}").Style.NumberFormat.Format = "#,##0";
         }
 
-        // Méthode pour créer un rapport Excel vide
         private byte[] CreateEmptyExcelReport()
         {
             using var workbook = new XLWorkbook();
@@ -338,7 +346,6 @@ namespace MyApp.Api.Services.mission
             
             CreateExcelHeaders(worksheet);
             
-            // Ajouter une ligne indiquant qu'aucune donnée n'a été trouvée
             worksheet.Cell(2, 1).Value = "Aucune affectation trouvée pour les critères spécifiés";
             worksheet.Range("A2:K2").Merge();
             worksheet.Cell(2, 1).Style.Font.Italic = true;
@@ -571,7 +578,6 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        // Méthodes obsolètes gardées pour compatibilité mais non utilisées dans la nouvelle version
         private async Task<IEnumerable<MissionPaiement>> GetValidatedPaymentData(string employeeId, string missionId)
         {
             var missionPaymentResult = await GeneratePaiementsAsync(employeeId, missionId);

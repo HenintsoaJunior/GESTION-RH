@@ -16,7 +16,7 @@ namespace MyApp.Api.Repositories.mission
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId);
-        Task<IEnumerable<MissionAssignation>> GetFilteredAssignationsAsync(string? employeeId, string? missionId, string? directionId, DateTime? startDate, DateTime? endDate);
+        Task<IEnumerable<MissionAssignation>> GetFilteredAssignationsAsync(string? employeeId, string? missionId, string? lieuId, DateTime? departureDate, DateTime? departureArrive, string? status);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
         Task AddAsync(MissionAssignation missionAssignation);
         Task UpdateAsync(MissionAssignation missionAssignation);
@@ -91,9 +91,8 @@ namespace MyApp.Api.Repositories.mission
                     ma.MissionId == missionId);
         }
 
-        public async Task<IEnumerable<MissionAssignation>> GetFilteredAssignationsAsync(string? employeeId, string? missionId, string? directionId, DateTime? startDate, DateTime? endDate)
+        public async Task<IEnumerable<MissionAssignation>> GetFilteredAssignationsAsync(string? employeeId, string? missionId, string? lieuId, DateTime? departureDate, DateTime? departureArrive, string? status)
         {
-            
             var query = _context.MissionAssignations
                 .Include(ma => ma.Employee)
                     .ThenInclude(e => e.Direction)
@@ -108,7 +107,7 @@ namespace MyApp.Api.Repositories.mission
                 .Include(ma => ma.Transport)
                 .AsQueryable();
 
-            // Appliquer les filtres uniquement si fournis
+            // Apply filters only if provided
             if (!string.IsNullOrWhiteSpace(employeeId))
             {
                 query = query.Where(ma => ma.EmployeeId == employeeId);
@@ -119,26 +118,30 @@ namespace MyApp.Api.Repositories.mission
                 query = query.Where(ma => ma.MissionId == missionId);
             }
 
-            if (!string.IsNullOrWhiteSpace(directionId))
+            if (!string.IsNullOrWhiteSpace(lieuId))
             {
-                query = query.Where(ma => ma.Employee.DirectionId == directionId);
+                query = query.Where(ma => ma.Mission != null && ma.Mission.LieuId == lieuId);
             }
 
-            if (startDate.HasValue)
+            if (departureDate.HasValue)
             {
-                query = query.Where(ma => ma.Mission != null && ma.Mission.StartDate >= startDate.Value);
+                query = query.Where(ma => ma.DepartureDate >= departureDate.Value);
             }
 
-            if (endDate.HasValue)
+            if (departureArrive.HasValue)
             {
-                query = query.Where(ma => ma.Mission != null && ma.Mission.StartDate <= endDate.Value);
+                query = query.Where(ma => ma.DepartureDate <= departureArrive.Value);
             }
 
-            // Trier par date de départ ou date de début de mission
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = query.Where(ma => ma.Mission != null && ma.Mission.Status == status);
+            }
+
+            // Sort by departure date
             return await query
-                .OrderBy(ma => ma.Mission != null ? ma.Mission.StartDate : ma.DepartureDate)
+                .OrderBy(ma => ma.DepartureDate)
                 .ToListAsync();
-        
         }
 
         public async Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize)
@@ -153,6 +156,7 @@ namespace MyApp.Api.Repositories.mission
                 .Include(ma => ma.Employee)
                 .ThenInclude(e => e.Site)
                 .Include(ma => ma.Mission)
+                .ThenInclude(m => m.Lieu)
                 .Include(ma => ma.Transport)
                 .AsQueryable();
 
@@ -171,14 +175,19 @@ namespace MyApp.Api.Repositories.mission
                 query = query.Where(ma => ma.TransportId != null && ma.TransportId.Contains(filters.TransportId));
             }
 
-            if (filters.DepartureDateMin.HasValue)
+            if (!string.IsNullOrWhiteSpace(filters.LieuId))
             {
-                query = query.Where(ma => ma.DepartureDate >= filters.DepartureDateMin.Value);
+                query = query.Where(ma => ma.Mission != null && ma.Mission.LieuId.Contains(filters.LieuId));
             }
 
-            if (filters.DepartureDateMax.HasValue)
+            if (filters.DepartureDate.HasValue)
             {
-                query = query.Where(ma => ma.DepartureDate <= filters.DepartureDateMax.Value);
+                query = query.Where(ma => ma.DepartureDate >= filters.DepartureDate.Value);
+            }
+
+            if (filters.DepartureArrive.HasValue)
+            {
+                query = query.Where(ma => ma.DepartureDate <= filters.DepartureArrive.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(filters.Status))

@@ -28,6 +28,9 @@ namespace MyApp.Api.Entities.mission
         [Column("start_date")]
         public DateTime? StartDate { get; set; }
         
+        [Column("end_date")]
+        public DateTime? EndtDate { get; set; }
+        
         [Column("lieu_id", Order = 0)]
         [MaxLength(50)]
         public string LieuId { get; set; } = null!;
@@ -43,6 +46,7 @@ namespace MyApp.Api.Entities.mission
             Name = mission.Name;
             Description = mission.Description;
             StartDate = mission.StartDate;
+            EndtDate = mission.EndDate;
             LieuId = mission.LieuId;
         }
     }
