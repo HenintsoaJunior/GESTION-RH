@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
 namespace MyApp.Api.Models.form.mission
 {
@@ -19,5 +20,7 @@ namespace MyApp.Api.Models.form.mission
         [Required(ErrorMessage = "Le lieu est requis")]
         [StringLength(50, ErrorMessage = "L'identifiant du lieu ne peut pas dépasser 50 caractères.")]
         public string LieuId { get; set; } = null!;
+
+        public List<MissionAssignationDTOForm> Assignations { get; set; } = new List<MissionAssignationDTOForm>();
     }
 }

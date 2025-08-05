@@ -4,9 +4,12 @@ using MyApp.Api.Utils.generator;
 using MyApp.Api.Models.search.mission;
 using MyApp.Api.Services.employee;
 using ClosedXML.Excel;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Services.employe;
 using MyApp.Api.Models.form.mission;
+using MyApp.Api.Utils.exception;
 using MyApp.Utils.pdf;
 using MyApp.Utils.csv;
 
@@ -31,7 +34,7 @@ namespace MyApp.Api.Services.mission
     public class MissionAssignationService : IMissionAssignationService
     {
         private readonly IMissionAssignationRepository _repository;
-        private readonly IMissionService _missionService;
+        private readonly IMissionRepository _missionRepository; // Replaced IMissionService
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ICompensationScaleService _compensationScaleService;
         private readonly ICategoriesOfEmployeeService _categoriesOfEmployeeService;
@@ -41,7 +44,7 @@ namespace MyApp.Api.Services.mission
 
         public MissionAssignationService(
             IMissionAssignationRepository repository,
-            IMissionService missionService,
+            IMissionRepository missionRepository, // Replaced IMissionService
             ISequenceGenerator sequenceGenerator,
             ICompensationScaleService compensationScaleService,
             ICategoriesOfEmployeeService categoriesOfEmployeeService,
@@ -50,7 +53,7 @@ namespace MyApp.Api.Services.mission
             ILoggerFactory loggerFactory)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-            _missionService = missionService ?? throw new ArgumentNullException(nameof(missionService));
+            _missionRepository = missionRepository ?? throw new ArgumentNullException(nameof(missionRepository));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
             _compensationScaleService = compensationScaleService ?? throw new ArgumentNullException(nameof(compensationScaleService));
             _categoriesOfEmployeeService = categoriesOfEmployeeService ?? throw new ArgumentNullException(nameof(categoriesOfEmployeeService));
@@ -115,7 +118,7 @@ namespace MyApp.Api.Services.mission
 
         private async Task ValidateMissionExistsAsync(string missionId)
         {
-            var mission = await _missionService.GetByIdAsync(missionId);
+            var mission = await _missionRepository.GetByIdAsync(missionId); // Use repository
             if (mission == null)
             {
                 throw new InvalidOperationException($"Mission with ID {missionId} not found.");
@@ -483,15 +486,39 @@ namespace MyApp.Api.Services.mission
         {
             try
             {
+                // Vérifier si l'assignation existe déjà
+                var existingAssignation = await _repository.GetByIdAsync(
+                    missionAssignation.EmployeeId,
+                    missionAssignation.MissionId,
+                    missionAssignation.TransportId);
+
+                if (existingAssignation != null)
+                {
+                    throw new CustomException(
+                        $"Une assignation existe déjà pour l'employé {missionAssignation.EmployeeId} et la mission {missionAssignation.MissionId}.");
+                }
+
                 SetCreationTimestamps(missionAssignation);
                 await SaveMissionAssignationAsync(missionAssignation);
                 await UpdateMissionStatusAsync(missionAssignation.MissionId);
 
                 return (missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.TransportId);
             }
+            catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx && (sqlEx.Number == 2601 || sqlEx.Number == 2627))
+            {
+                _logger.LogError(ex, "Erreur de duplication lors de la création de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}, TransportId={TransportId}",
+                    missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.TransportId ?? "null");
+                throw new CustomException(
+                    $"Erreur : Une assignation avec l'employé {missionAssignation.EmployeeId} et la mission {missionAssignation.MissionId} existe déjà. Veuillez vérifier les données saisies.",
+                    ex);
+            }
             catch (Exception ex)
             {
-                throw new Exception($"Error creating mission assignation: {ex.Message}", ex);
+                _logger.LogError(ex, "Erreur lors de la création de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}",
+                    missionAssignation.EmployeeId, missionAssignation.MissionId);
+                throw new CustomException(
+                    "Une erreur s'est produite lors de la création de l'assignation de mission. Veuillez réessayer ou contacter le support.",
+                    ex);
             }
         }
 
@@ -509,12 +536,13 @@ namespace MyApp.Api.Services.mission
 
         private async Task UpdateMissionStatusAsync(string missionId)
         {
-            var mission = await _missionService.GetByIdAsync(missionId);
+            var mission = await _missionRepository.GetByIdAsync(missionId); // Use repository
             if (mission != null)
             {
                 mission.Status = "Planifié";
                 mission.UpdatedAt = DateTime.UtcNow;
-                await _missionService.UpdateAsync(mission);
+                await _missionRepository.UpdateAsync(mission);
+                await _missionRepository.SaveChangesAsync();
             }
         }
 

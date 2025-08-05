@@ -44,23 +44,24 @@ namespace MyApp.Api.Repositories.mission
                 query = query.Where(m => m.Name.Contains(filters.Name));
             }
 
-            // Filtre par date de début minimale
-            if (filters.StartDateMin.HasValue)
+            // Filtre par date de début
+            if (filters.StartDate.HasValue)
             {
-                query = query.Where(m => m.StartDate >= filters.StartDateMin.Value);
+                query = query.Where(m => m.StartDate >= filters.StartDate.Value);
             }
 
-            // Filtre par date de début maximale
-            if (filters.StartDateMax.HasValue)
+            // Filtre par date de fin
+            if (filters.EndDate.HasValue)
             {
-                query = query.Where(m => m.StartDate <= filters.StartDateMax.Value);
+                query = query.Where(m => m.EndDate <= filters.EndDate.Value);
             }
 
             // Filtre par LieuId
             if (!string.IsNullOrWhiteSpace(filters.LieuId))
             {
-                query = query.Where(m => m.LieuId.Contains(filters.LieuId));
+                query = query.Where(m => m.LieuId == filters.LieuId);
             }
+
 
             // Filtre par statut
             if (!string.IsNullOrWhiteSpace(filters.Status))

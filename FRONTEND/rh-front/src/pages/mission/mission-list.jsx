@@ -8,7 +8,7 @@ import moment from "moment";
 import "moment/locale/fr"; // Import de la locale française
 import { formatDate } from "utils/dateConverter";
 import { fetchMissions, fetchMissionStats, cancelMission } from "services/mission/mission";
-import Modal from "components/modal"; // Updated to use new Modal component
+import Modal from "components/modal";
 import Pagination from "components/pagination";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "styles/generic-table-styles.css";
@@ -44,8 +44,8 @@ const MissionList = () => {
   const [stats, setStats] = useState({ total: 0, enCours: 0, planifiee: 0, terminee: 0, annulee: 0 });
   const [filters, setFilters] = useState({
     name: "",
-    startDateMin: "",
-    startDateMax: "",
+    startDate: "", // Changé de dateDebut à startDate
+    endDate: "",   // Changé de dateFin à endDate
     lieuId: "",
     location: "",
     status: "",
@@ -113,8 +113,8 @@ const MissionList = () => {
   useEffect(() => {
     const initialFilters = {
       name: "",
-      startDateMin: "",
-      startDateMax: "",
+      startDate: "", // Changé de dateDebut à startDate
+      endDate: "",   // Changé de dateFin à endDate
       lieuId: "",
       location: "",
       status: "",
@@ -128,7 +128,7 @@ const MissionList = () => {
       id: mission.missionId,
       title: mission.name,
       start: new Date(mission.startDate),
-      end: new Date(mission.startDate),
+      end: new Date(mission.endDate),
       allDay: true,
       resource: mission,
     }));
@@ -150,8 +150,8 @@ const MissionList = () => {
   const handleResetFilters = () => {
     const resetFilters = {
       name: "",
-      startDateMin: "",
-      startDateMax: "",
+      startDate: "", // Changé de dateDebut à startDate
+      endDate: "",   // Changé de dateFin à endDate
       lieuId: "",
       location: "",
       status: "",
@@ -350,26 +350,23 @@ const MissionList = () => {
           {!isMinimized && (
             <div className="filters-section">
               <form onSubmit={handleFilterSubmit}>
-                <table className="form-table-search">
+                <table className="form-table-search w-full border-collapse">
                   <tbody>
-                    <tr>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Intitulé de la Mission</label>
-                      </th>
-                      <td className="form-input-cell-search">
+                    <tr className="form-row">
+                      <td className="form-field-cell p-2 align-top">
+                        <label className="form-label-search block mb-2">Intitulé de la Mission</label>
                         <input
                           name="name"
                           type="text"
                           value={filters.name}
                           onChange={(e) => handleFilterChange("name", e.target.value)}
-                          className="form-input-search"
+                          className="form-input-search w-full"
                           placeholder="Recherche par titre"
                         />
                       </td>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Lieu</label>
-                      </th>
-                      <td className="form-input-cell-search">
+
+                      <td className="form-field-cell p-2 align-top">
+                        <label className="form-label-search block mb-2">Lieu</label>
                         <AutoCompleteInput
                           value={filters.location}
                           onChange={(value) => {
@@ -388,20 +385,17 @@ const MissionList = () => {
                           showAddOption={false}
                           fieldType="lieuId"
                           fieldLabel="lieu"
-                          className="form-input-search"
+                          className="form-input-search w-full"
                         />
                       </td>
-                    </tr>
-                    <tr>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Statut</label>
-                      </th>
-                      <td className="form-input-cell-search">
+                      
+                      <td className="form-field-cell p-2 align-top">
+                        <label className="form-label-search block mb-2">Statut</label>
                         <select
                           name="status"
                           value={filters.status}
                           onChange={(e) => handleFilterChange("status", e.target.value)}
-                          className="form-input-search"
+                          className="form-input-search w-full"
                         >
                           <option value="">Tous les statuts</option>
                           <option value="En Cours">En Cours</option>
@@ -410,35 +404,31 @@ const MissionList = () => {
                           <option value="Annulé">Annulé</option>
                         </select>
                       </td>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Date de début min</label>
-                      </th>
-                      <td className="form-input-cell-search">
+                      
+                      <td className="form-field-cell p-2 align-top">
+                        <label className="form-label-search block mb-2">Date de début</label>
                         <input
-                          name="startDateMin"
+                          name="startDate" // Changé de dateDebut à startDate
                           type="date"
-                          value={filters.startDateMin}
-                          onChange={(e) => handleFilterChange("startDateMin", e.target.value)}
-                          className="form-input-search"
+                          value={filters.startDate}
+                          onChange={(e) => handleFilterChange("startDate", e.target.value)}
+                          className="form-input-search w-full"
                         />
                       </td>
-                    </tr>
-                    <tr>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Date de début max</label>
-                      </th>
-                      <td className="form-input-cell-search">
+                      
+                      <td className="form-field-cell p-2 align-top">
+                        <label className="form-label-search block mb-2">Date de fin</label>
                         <input
-                          name="startDateMax"
+                          name="endDate" // Changé de dateFin à endDate
                           type="date"
-                          value={filters.startDateMax}
-                          onChange={(e) => handleFilterChange("startDateMax", e.target.value)}
-                          className="form-input-search"
+                          value={filters.endDate}
+                          onChange={(e) => handleFilterChange("endDate", e.target.value)}
+                          className="form-input-search w-full"
                         />
                       </td>
-                      <th className="form-label-cell-search"></th>
-                      <td className="form-input-cell-search"></td>
+
                     </tr>
+            
                   </tbody>
                 </table>
 
@@ -549,6 +539,7 @@ const MissionList = () => {
                   <th>Description</th>
                   <th>Lieu</th>
                   <th>Date de début</th>
+                  <th>Date de fin</th>
                   <th>Statut</th>
                   <th>Date de création</th>
                   <th>Action</th>
@@ -557,7 +548,7 @@ const MissionList = () => {
               <tbody> 
                 {isLoading.missions ? (
                   <tr>
-                    <td colSpan={7}>Chargement...</td>
+                    <td colSpan={8}>Chargement...</td>
                   </tr>
                 ) : missions.length > 0 ? (
                   missions.map((mission) => (
@@ -570,6 +561,7 @@ const MissionList = () => {
                       <td>{mission.description || "Non spécifié"}</td>
                       <td>{`${mission.lieu.nom}/${mission.lieu.pays}` || "Non spécifié"}</td>
                       <td>{formatDate(mission.startDate) || "Non spécifié"}</td>
+                      <td>{formatDate(mission.endDate) || "Non spécifié"}</td>
                       <td>{getStatusBadge(mission.status)}</td>
                       <td>{formatDate(mission.createdAt) || "Non spécifié"}</td>
                       <td>
@@ -588,7 +580,7 @@ const MissionList = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7}>Aucune donnée trouvée.</td>
+                    <td colSpan={8}>Aucune donnée trouvée.</td>
                   </tr>
                 )}
               </tbody>

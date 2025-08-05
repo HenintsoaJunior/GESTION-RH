@@ -40,6 +40,53 @@ export const fetchEmployees = async (missionId, onSuccess, setIsLoading, setSugg
   }
 };
 
+
+export const fetchAllEmployees = async (onSuccess, setIsLoading, setSuggestions, onError) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, employees: true }));
+
+    const response = await apiGet("/api/Employee");
+    const employees = Array.isArray(response.data) ? response.data : (Array.isArray(response) ? response : []);
+
+    console.log("Employees fetched:", employees);
+    console.log("Suggestions to be set:", employees.map((emp) => ({
+      id: emp.employeeId,
+      name: `${emp.lastName} ${emp.firstName}`,
+      displayName: `${emp.lastName} ${emp.firstName} (${emp.direction?.acronym || "N/A"})`,
+    })));
+
+    onSuccess(employees);
+
+    if (setSuggestions) {
+      setSuggestions((prev) => ({
+        ...prev,
+        beneficiary: employees.map((emp) => ({
+          id: emp.employeeId,
+          name: `${emp.lastName} ${emp.firstName}`,
+          displayName: `${emp.lastName} ${emp.firstName} (${emp.direction?.acronym || "N/A"})`,
+          employeeCode: emp.employeeCode,
+          jobTitle: emp.jobTitle,
+          site: emp.site?.siteName,
+          direction: emp.direction?.directionName,
+          department: emp.department?.departmentName,
+          service: emp.service?.serviceName,
+          costCenter: emp.costCenter,
+          acronym: emp.direction?.acronym || "N/A",
+        })),
+      }));
+    }
+  } catch (error) {
+    console.error("Erreur lors du chargement des employés:", error);
+    onError({
+      message: "Erreur lors du chargement des employés",
+      type: "error",
+    });
+  } finally {
+    console.log("isLoading.employees set to false");
+    setIsLoading((prev) => ({ ...prev, employees: false }));
+  }
+};
+
 export const fetchEmployeeById = async (id, setEmployee, setIsLoading, onError) => {
   try {
     setIsLoading((prev) => ({ ...prev, employee: true }));

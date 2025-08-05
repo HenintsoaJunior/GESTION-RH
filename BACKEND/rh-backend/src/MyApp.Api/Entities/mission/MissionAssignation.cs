@@ -62,7 +62,7 @@ namespace MyApp.Api.Entities.mission
             EmployeeId = dto.EmployeeId;
             MissionId = dto.MissionId;
             TransportId = dto.TransportId;
-            DepartureDate  = dto.DepartureDate;
+            DepartureDate = dto.DepartureDate ?? DateTime.Now;
             DepartureTime = dto.DepartureTime;
             ReturnDate = dto.ReturnDate;
             ReturnTime = dto.ReturnTime;

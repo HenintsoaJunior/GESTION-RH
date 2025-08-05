@@ -162,7 +162,7 @@ namespace MyApp.Api.Repositories.mission
 
             if (!string.IsNullOrWhiteSpace(filters.EmployeeId))
             {
-                query = query.Where(ma => ma.EmployeeId.Contains(filters.EmployeeId));
+                query = query.Where(ma => ma.EmployeeId == filters.EmployeeId);
             }
 
             if (!string.IsNullOrWhiteSpace(filters.MissionId))

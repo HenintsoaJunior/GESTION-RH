@@ -37,70 +37,72 @@
 
 .form-table {
   width: 100%;
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-md);
+  border-collapse: separate;
+  border-spacing: 0 4px;
 }
 
 .form-row {
-  display: grid;
-  grid-template-columns: repeat(var(--fields-per-row, 1), minmax(0, 1fr));
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Specific styling for the dual-field row */
+.form-row.dual-field-row td {
+  width: 50%;
+  padding: var(--spacing-sm);
 }
 
 .form-field-cell {
-  display: flex;
-  flex-direction: column;
   text-align: left;
   font-weight: 600;
   color: var(--text-secondary);
   font-size: var(--font-size-md);
-  margin: 2px; /* Ajout de 2px de marge autour des conteneurs de champs */
+  padding: var(--spacing-xs);
+  vertical-align: top;
 }
 
+/* Style pour les labels des champs requis */
 .form-label {
   margin-bottom: var(--spacing-xs);
 }
 
-/* Style pour les labels des champs requis */
 .form-label-required::after {
   content: " *";
   color: var(--error-color);
   margin-left: var(--spacing-xs);
 }
 
+/* Styles pour inputs, selects, textareas, and AutoCompleteInput */
 .form-table input,
 .form-table select,
 .form-table textarea,
-.autocomplete-input,
-.rich-text-editor {
+.form-table .autocomplete-container input {
   width: 100%;
-  height: 35px;
-  border: 2px solid var(--border-light);
-  border-radius: var(--radius-sm);
+  height: 32px;
+  border: 1px solid var(--border-light);
+  border-radius: 0;
   font-size: var(--font-size-xs);
   font-family: var(--font-family);
   background-color: #f5f5f5;
   color: var(--text-input);
   box-sizing: border-box;
   line-height: 1.2;
-  padding: var(--spacing-sm);
-  margin: 2px; /* Ajout de 2px de marge autour des champs */
+  padding: var(--spacing-xs);
+  padding-right: var(--spacing-xl); /* Reserve space for autocomplete icon */
 }
 
 .form-table input:hover,
 .form-table select:hover,
 .form-table textarea:hover,
-.autocomplete-input:hover,
-.rich-text-editor:hover {
-  border: 2px solid var(--primary-color);
+.form-table .autocomplete-container input:hover {
+  border: 1px solid var(--primary-color);
 }
 
 .form-table input:focus,
 .form-table select:focus,
 .form-table textarea:focus,
-.autocomplete-input:focus,
-.rich-text-editor:focus {
-  border: 2px solid var(--primary-color);
+.form-table .autocomplete-container input:focus {
+  border: 1px solid var(--primary-color);
   background-color: #ffffff;
   outline: none;
   box-shadow: inset 0 0 2px var(--primary-shadow);
@@ -110,8 +112,7 @@
 .form-table input.input-error,
 .form-table select.input-error,
 .form-table textarea.input-error,
-.autocomplete-input.input-error,
-.rich-text-editor.input-error {
+.form-table .autocomplete-container input.input-error {
   border: 2px solid var(--error-color) !important;
 }
 
@@ -121,7 +122,10 @@
 
 /* ===== STYLES POUR H3 DANS FORM-SECTION ===== */
 .form-section h3 {
-  margin-top: 10px;
+  margin-top: 8px;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 /* ===== STYLES POUR RADIO BUTTONS ===== */
@@ -136,7 +140,6 @@
   background-color: #f5f5f5;
   cursor: pointer;
   vertical-align: middle;
-  margin: 2px; /* Ajout de 2px de marge autour des radio buttons */
 }
 
 .form-table input[type="radio"]:checked {
@@ -167,7 +170,7 @@
   box-shadow: 0 0 4px var(--primary-shadow);
 }
 
-.form-table input[type="radio"]:disabled {
+.form-table弄input[type="radio"]:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   border-color: var(--border-light);
@@ -187,8 +190,8 @@
 }
 
 .form-table select option {
-  padding: var(--spacing-lg) var(--spacing-md);
-  line-height: 1.6;
+  padding: var(--spacing-md);
+  line-height: 1.4;
   font-size: var(--font-size-xs);
   background: #ffffff;
   color: var(--text-input);
@@ -199,19 +202,16 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs);
   cursor: pointer;
-  margin: 2px; /* Ajout de 2px de marge autour des champs file */
 }
 
 /* ===== STYLES POUR TEXTAREA ===== */
 .form-table textarea {
   resize: vertical;
-  min-height: 120px;
+  min-height: 100px;
   height: auto;
-  display: block;
-  align-items: flex-start;
-  padding-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
 }
 
 /* ===== TABLEAU DES POSTES ===== */
@@ -220,28 +220,29 @@
   font-weight: 600;
   color: var(--text-secondary);
   font-size: var(--font-size-md);
+  padding: var(--spacing-xs);
 }
 
 #positionsTable td {
   vertical-align: middle;
   font-size: var(--font-size-xs);
+  padding: var(--spacing-xs);
 }
 
 #positionsTable td input,
 #positionsTable td select,
 #positionsTable td textarea {
   color: var(--text-input);
-  margin: 2px; /* Ajout de 2px de marge pour les champs dans le tableau */
 }
 
 /* ===== BOUTONS D'ACTION ===== */
 .form-actions {
   text-align: center;
-  padding-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .submit-btn,
@@ -251,15 +252,14 @@
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-2xl);
+  padding: var(--spacing-sm) var(--spacing-xl);
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-weight: 600;
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   box-shadow: var(--shadow-sm);
-  margin: 2px; /* Ajout de 2px de marge autour des boutons */
 }
 
 .submit-btn {
@@ -283,7 +283,7 @@
 .add-btn {
   background-color: var(--primary-color);
   color: #ffffff;
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-md);
 }
 
 .add-btn:hover {
@@ -301,10 +301,9 @@
   background-color: var(--error-color);
   color: #ffffff;
   border: none;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs);
   border-radius: var(--radius-md);
   cursor: pointer;
-  margin: 2px; /* Ajout de 2px de marge autour des boutons de suppression */
 }
 
 .remove-item:hover {
@@ -314,13 +313,12 @@
 /* ===== ÉDITEUR DE TEXTE RICHE ===== */
 .rich-editor-container {
   width: 100%;
-  margin: 2px; /* Ajout de 2px de marge autour de l'éditeur riche */
 }
 
 .ql-toolbar {
   border-bottom: 1px solid var(--border-light) !important;
   background-color: var(--bg-secondary);
-  padding: var(--spacing-md) !important;
+  padding: var(--spacing-sm) !important;
 }
 
 .ql-container {
@@ -331,8 +329,8 @@
 }
 
 .ql-editor {
-  min-height: 200px;
-  padding: var(--spacing-md);
+  min-height: 180px;
+  padding: var(--spacing-sm);
   font-family: var(--font-family);
   font-size: var(--font-size-xs);
   color: var(--text-input);
@@ -343,66 +341,46 @@
   font-style: normal !important;
 }
 
-/* ===== RESPONSIVE DESIGN ===== */
-@media (max-width: 768px) {
-  .form-container {
-    margin: var(--spacing-lg);
-    padding: var(--spacing-md);
-  }
-
-  .form-row {
-    grid-template-columns: 1fr; /* Single column on smaller screens */
-  }
-
-  .form-field-cell {
-    font-size: var(--font-size-sm);
-    margin: 2px; /* Maintien de la marge pour les petits écrans */
-  }
-
-  .form-actions {
-    display: flex;
-    justify-content: center;
-    gap: var(--spacing-md);
-  }
-
-  .submit-btn,
-  .reset-btn,
-  .add-btn {
-    width: auto;
-    margin: 2px; /* Maintien de la marge pour les petits écrans */
-  }
-}
-
-@media (max-width: 480px) {
-  .form-table {
-    display: block;
-  }
-
-  .ql-editor {
-    min-height: 150px !important;
-  }
-
-  .submit-btn,
-  .reset-btn,
-  .add-btn {
-    width: 100%;
-    margin: 2px; /* Maintien de la marge pour les très petits écrans */
-  }
-}
-
-/* Styles pour AutoCompleteInput */
+/* ===== STYLES POUR AUTOCOMPLETEINPUT ===== */
 .autocomplete-container {
   position: relative;
-  margin: 2px; /* Ajout de 2px de marge autour du conteneur autocomplete */
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.autocomplete-container input {
+  width: 100%;
+  height: 32px;
+  border: 1px solid var(--border-light);
+  border-radius: 0;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family);
+  background-color: #f5f5f5;
+  color: var(--text-input);
+  box-sizing: border-box;
+  line-height: 1.2;
+  padding: var(--spacing-xs);
+  padding-right: var(--spacing-xl); /* Reserve space for icon */
 }
 
 .autocomplete-icon {
   position: absolute;
   right: var(--spacing-sm);
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(calc(-50% + 5px)); /* Shift 5px down */
   font-size: var(--font-size-xs);
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%; /* Match input height for perfect centering */
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.autocomplete-icon:hover {
+  color: var(--primary-color); /* Hover effect for better UX */
 }
 
 .autocomplete-dropdown {
@@ -411,7 +389,9 @@
   background: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: absolute;
-  width: 100%;
+  top: 100%;
+  left: 0;
+  right: 0;
   z-index: 1000;
   font-size: 12px;
 }
@@ -426,7 +406,7 @@
 }
 
 .autocomplete-suggestion {
-  padding: 8px 12px;
+  padding: 6px 10px;
   cursor: pointer;
   border-bottom: 1px solid #eee;
   font-size: 12px;
@@ -447,11 +427,11 @@
 }
 
 .autocomplete-add-item {
-  padding: 8px 12px;
+  padding: 6px 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 12px;
 }
 
@@ -468,16 +448,73 @@
   background-color: #e7f3ff;
 }
 
-.form-input.error {
-  border: 2px solid red;
-}
-
+/* ===== MESSAGES D'ERREUR ===== */
+.form-input.error,
 .error-message {
   font-family: var(--font-family);
-  color: red;
+  color: var(--error-color);
   font-size: 0.875rem;
   font-weight: normal;
   margin-top: 0.25rem;
   display: block;
   text-align: left;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .form-container {
+    margin: var(--spacing-md);
+    padding: var(--spacing-sm);
+  }
+
+  .form-table {
+    width: 100%;
+  }
+
+  .form-row.dual-field-row td {
+    width: 100%;
+    display: block;
+  }
+
+  .form-field-cell {
+    font-size: var(--font-size-sm);
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-sm);
+  }
+
+  .submit-btn,
+  .reset-btn,
+  .add-btn {
+    width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-table {
+    display: block;
+  }
+
+  .form-table tr {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .form-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .ql-editor {
+    min-height: 120px !important;
+  }
+
+  .submit-btn,
+  .reset-btn,
+  .add-btn {
+    width: 100%;
+  }
 }
