@@ -1,39 +1,41 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ChevronDown, ChevronUp, X, List, FileText, Download, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, ChevronDown, ChevronUp, X, List, FileText, Download } from "lucide-react";
 import { formatDate } from "utils/dateConverter";
 import Alert from "components/alert";
 import Pagination from "components/pagination";
 import AutoCompleteInput from "components/auto-complete-input";
 import "styles/generic-table-styles.css";
-import { fetchAllEmployees } from "services/employee/employee";
 import { 
   fetchAssignMission, 
-  fetchMissionById,
+  fetchAllMissions,
   exportMissionAssignationPDF,
   exportMissionAssignationExcel
 } from "services/mission/mission";
+import { fetchAllEmployees } from "services/employee/employee";
 import { fetchAllRegions } from "services/lieu/lieu";
 
-const AssignedPersonsList = () => {
+const BeneficiaryMissionList = () => {
   const navigate = useNavigate();
-  const { missionId } = useParams(); // Extraire missionId de l'URL (ex: MIS-000397)
   const [assignedPersons, setAssignedPersons] = useState([]);
-  const [missionDetails, setMissionDetails] = useState(null);
   const [filters, setFilters] = useState({
     status: "",
     employeeId: "",
     employeeName: "",
     startDate: "",
     endDate: "",
+    transportId: "",
+    missionId: "",
+    missionName: "",
     lieuId: "",
     location: "",
   });
   const [appliedFilters, setAppliedFilters] = useState({ ...filters });
   const [suggestions, setSuggestions] = useState({
     beneficiary: [],
+    missions: [],
     regions: [],
   });
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,8 +44,8 @@ const AssignedPersonsList = () => {
   const [isLoading, setIsLoading] = useState({
     assignMissions: false,
     employees: false,
+    missions: false,
     regions: false,
-    mission: false,
     exportPDF: false,
     exportExcel: false,
   });
@@ -53,23 +55,6 @@ const AssignedPersonsList = () => {
 
   // Chargement initial des données
   useEffect(() => {
-    if (!missionId) {
-      setAlert({
-        isOpen: true,
-        type: "error",
-        message: "Aucun ID de mission fourni dans l'URL.",
-      });
-      return;
-    }
-
-    // Fetch mission details
-    fetchMissionById(
-      missionId,
-      setMissionDetails,
-      setIsLoading,
-      (error) => setAlert(error)
-    );
-
     // Fetch employees
     fetchAllEmployees(
       (data) => {
@@ -84,6 +69,27 @@ const AssignedPersonsList = () => {
         }));
       },
       setIsLoading,
+      (error) => setAlert(error)
+    );
+
+    // Fetch missions
+    fetchAllMissions(
+      (data) => {
+        setSuggestions((prev) => ({
+          ...prev,
+          missions: data.map((mission) => ({
+            id: mission.missionId,
+            name: mission.name,
+            displayName: `${mission.name || "Non spécifié"} (${
+              formatDate(mission.startDate) || "Non spécifié"
+            } - ${formatDate(mission.endDate) || "Non spécifié"}, ${
+              mission.lieu?.nom || "Non spécifié"
+            })`,
+          })),
+        }));
+      },
+      setIsLoading,
+      () => {}, // setTotalEntries pour les missions
       (error) => setAlert(error)
     );
 
@@ -102,32 +108,30 @@ const AssignedPersonsList = () => {
       setIsLoading,
       (error) => setAlert(error)
     );
-  }, [missionId]);
+  }, []);
 
-  // Chargement des assignations avec filtres
+  // Chargement des assignations de mission avec filtres
   useEffect(() => {
-    if (missionId) {
-      console.log("Applied Filters for Mission:", appliedFilters);
-      
-      fetchAssignMission(
-        setAssignedPersons,
-        setIsLoading,
-        setTotalEntries,
-        {
-          employeeId: appliedFilters.employeeId || "",
-          startDate: appliedFilters.startDate || "",
-          endDate: appliedFilters.endDate || "",
-          status: appliedFilters.status || "",
-          missionId: missionId, // Toujours inclure missionId
-          lieuId: appliedFilters.lieuId || "",
-          transportId: "", // Pas de filtre transport sur cette page
-        },
-        currentPage,
-        pageSize,
-        (error) => setAlert(error)
-      );
-    }
-  }, [appliedFilters, currentPage, pageSize, missionId]);
+    console.log("Applied Filters:", appliedFilters);
+    
+    fetchAssignMission(
+      setAssignedPersons,
+      setIsLoading,
+      setTotalEntries,
+      {
+        employeeId: appliedFilters.employeeId || "",
+        transportId: appliedFilters.transportId || "",
+        startDate: appliedFilters.startDate || "",
+        endDate: appliedFilters.endDate || "",
+        status: appliedFilters.status || "",
+        missionId: appliedFilters.missionId || "",
+        lieuId: appliedFilters.lieuId || "",
+      },
+      currentPage,
+      pageSize,
+      (error) => setAlert(error)
+    );
+  }, [appliedFilters, currentPage, pageSize]);
 
   // Gestion des changements de filtres
   const handleFilterChange = (name, value) => {
@@ -157,6 +161,23 @@ const AssignedPersonsList = () => {
       updatedFilters.employeeName = selectedEmployee.displayName;
     }
 
+    // Validation de la mission sélectionnée
+    if (filters.missionName && !filters.missionId) {
+      const selectedMission = suggestions.missions.find(
+        (mission) => mission.displayName === filters.missionName
+      );
+      if (!selectedMission) {
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: "Veuillez sélectionner une mission valide dans la liste des suggestions.",
+        });
+        return;
+      }
+      updatedFilters.missionId = selectedMission.id;
+      updatedFilters.missionName = selectedMission.displayName;
+    }
+
     // Validation du lieu sélectionné
     if (filters.location && !filters.lieuId) {
       const selectedRegion = suggestions.regions.find(
@@ -178,7 +199,7 @@ const AssignedPersonsList = () => {
     setAppliedFilters(updatedFilters);
     setCurrentPage(1);
     
-    console.log("Mission Filters applied:", updatedFilters);
+    console.log("Filters applied:", updatedFilters);
   };
 
   // Réinitialisation des filtres
@@ -189,6 +210,9 @@ const AssignedPersonsList = () => {
       employeeName: "",
       startDate: "",
       endDate: "",
+      transportId: "",
+      missionId: "",
+      missionName: "",
       lieuId: "",
       location: "",
     };
@@ -209,7 +233,7 @@ const AssignedPersonsList = () => {
   };
 
   // Navigation vers les détails
-  const handleRowClick = (employeeId) => {
+  const handleRowClick = (missionId, employeeId) => {
     if (missionId && employeeId) {
       navigate(`/assignments/details?missionId=${missionId}&employeeId=${employeeId}`);
     } else {
@@ -221,17 +245,12 @@ const AssignedPersonsList = () => {
     }
   };
 
-  // Retour à la liste des missions
-  const handleGoBack = () => {
-    navigate(-1); // Retour à la page précédente
-  };
-
   // Export PDF
   const handleExportPDF = () => {
     const exportFilters = {
-      missionId: missionId,
+      missionId: appliedFilters.missionId || null,
       employeeId: appliedFilters.employeeId || null,
-      transportId: null,
+      transportId: appliedFilters.transportId || null,
       lieuId: appliedFilters.lieuId || null,
       departureDate: appliedFilters.startDate || null,
       departureArrive: appliedFilters.endDate || null,
@@ -249,9 +268,9 @@ const AssignedPersonsList = () => {
   // Export Excel
   const handleExportExcel = () => {
     const exportFilters = {
-      missionId: missionId,
+      missionId: appliedFilters.missionId || null,
       employeeId: appliedFilters.employeeId || null,
-      transportId: null,
+      transportId: appliedFilters.transportId || null,
       lieuId: appliedFilters.lieuId || null,
       departureDate: appliedFilters.startDate || null,
       departureArrive: appliedFilters.endDate || null,
@@ -333,7 +352,7 @@ const AssignedPersonsList = () => {
                             setFilters((prev) => ({
                               ...prev,
                               employeeName: value,
-                              employeeId: value ? prev.employeeId : "",
+                              employeeId: value ? prev.employeeId : "", // Garde l'ID si la valeur existe
                             }));
                           }}
                           onSelect={(value) => {
@@ -357,6 +376,42 @@ const AssignedPersonsList = () => {
                           disabled={isLoading.employees || isLoading.assignMissions}
                           fieldType="beneficiary"
                           fieldLabel="bénéficiaire"
+                          className="form-input-search w-full"
+                        />
+                      </td>
+
+                      <td className="form-field-cell p-2 align-top">
+                        <label className="form-label-search block mb-2">Mission</label>
+                        <AutoCompleteInput
+                          value={filters.missionName || ""}
+                          onChange={(value) => {
+                            setFilters((prev) => ({
+                              ...prev,
+                              missionName: value,
+                              missionId: value ? prev.missionId : "",
+                            }));
+                          }}
+                          onSelect={(value) => {
+                            const selectedMission = suggestions.missions.find(
+                              (mission) => mission.displayName === value
+                            );
+                            console.log("Selected Mission:", selectedMission);
+                            setFilters((prev) => ({
+                              ...prev,
+                              missionId: selectedMission ? selectedMission.id : "",
+                              missionName: selectedMission ? selectedMission.displayName : value,
+                            }));
+                          }}
+                          suggestions={suggestions.missions
+                            .filter((mission) =>
+                              mission.displayName.toLowerCase().includes(filters.missionName?.toLowerCase() || "")
+                            )
+                            .map((mission) => mission.displayName)}
+                          maxVisibleItems={5}
+                          placeholder="Rechercher par mission..."
+                          disabled={isLoading.missions || isLoading.assignMissions}
+                          fieldType="mission"
+                          fieldLabel="mission"
                           className="form-input-search w-full"
                         />
                       </td>
@@ -473,12 +528,8 @@ const AssignedPersonsList = () => {
 
       {/* En-tête du tableau avec actions */}
       <div className="table-header">
-        <h2 className="table-title">
-          Personnes Assignées à la Mission {missionId}
-          {assignedPersons.length > 0 && (
-            <span className="assignments-count">({assignedPersons.length} assignation{assignedPersons.length > 1 ? 's' : ''})</span>
-          )}
-        </h2>
+        <h2 className="table-title">Liste des Missions des Collaborateurs</h2>
+
       </div>
 
       {/* Tableau des données */}
@@ -486,11 +537,11 @@ const AssignedPersonsList = () => {
         <table className="data-table">
           <thead>
             <tr>
-              <th>N°</th>
+              <th>ID Mission</th>
               <th>Bénéficiaire</th>
               <th>Matricule</th>
+              <th>Mission</th>
               <th>Fonction</th>
-              <th>Base</th>
               <th>Lieu</th>
               <th>Date début</th>
               <th>Date fin</th>
@@ -501,26 +552,26 @@ const AssignedPersonsList = () => {
             {isLoading.assignMissions ? (
               <tr>
                 <td colSpan={9} className="text-center py-4">
-                  <div className="loading-spinner">Chargement des assignations...</div>
+                  <div className="loading-spinner">Chargement des données...</div>
                 </td>
               </tr>
             ) : assignedPersons.length > 0 ? (
               assignedPersons.map((assignment, index) => (
                 <tr
-                  key={`${assignment.employeeId}-${missionId}-${index}`}
-                  onClick={() => handleRowClick(assignment.employeeId)}
+                  key={`${assignment.employeeId}-${assignment.missionId}-${assignment.transportId}-${index}`}
+                  onClick={() => handleRowClick(assignment.missionId, assignment.employeeId)}
                   className="table-row-clickable"
                   style={{ cursor: "pointer" }}
                 >
-                  <td>{assignment.assignmentId || "Non spécifié"}</td>
+                  <td>{assignment.missionId || "Non spécifié"}</td>
                   <td>
                     {(assignment.beneficiary && assignment.directionAcronym)
                       ? `${assignment.beneficiary} (${assignment.directionAcronym})`
                       : assignment.beneficiary || "Non spécifié"}
                   </td>
                   <td>{assignment.matricule || "Non spécifié"}</td>
+                  <td className="mission-title">{assignment.missionTitle || "Non spécifié"}</td>
                   <td>{assignment.function || "Non spécifié"}</td>
-                  <td>{assignment.base || "Non spécifié"}</td>
                   <td>{assignment.lieu || "Non spécifié"}</td>
                   <td>{formatDate(assignment.startDate) || "Non spécifié"}</td>
                   <td>{formatDate(assignment.endDate) || "Non spécifié"}</td>
@@ -531,9 +582,9 @@ const AssignedPersonsList = () => {
               <tr>
                 <td colSpan={9} className="text-center py-4">
                   <div className="no-data-message">
-                    {appliedFilters.employeeId || appliedFilters.status || appliedFilters.startDate || appliedFilters.endDate
-                      ? "Aucune assignation ne correspond aux critères de recherche pour cette mission."
-                      : `Aucune personne assignée à la mission ${missionId}.`}
+                    {appliedFilters.employeeId || appliedFilters.missionId || appliedFilters.status || appliedFilters.startDate || appliedFilters.endDate
+                      ? "Aucune assignation de mission ne correspond aux critères de recherche."
+                      : "Aucune assignation de mission trouvée."}
                   </div>
                 </td>
               </tr>
@@ -555,4 +606,4 @@ const AssignedPersonsList = () => {
   );
 };
 
-export default AssignedPersonsList;
+export default BeneficiaryMissionList;
