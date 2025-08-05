@@ -4,11 +4,13 @@ using MyApp.Api.Models.form.employee;
 using MyApp.Api.Models.search.employee;
 using MyApp.Api.Repositories.employee;
 using MyApp.Api.Utils.generator;
+using MyApp.Utils.csv;
 
 namespace MyApp.Api.Services.employee
 {
     public interface IEmployeeService
     {
+        Task<List<string>> CheckNameAndCode(List<List<string>> DataExcel);
         Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Employee>> GetAllAsync();
         Task<Employee?> GetByIdAsync(string id);
@@ -35,6 +37,66 @@ namespace MyApp.Api.Services.employee
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
         }
+  
+        // check si le matricule se trouve dans la base
+        private async Task<bool> VerifyEmployeeExistsAsync(string code)
+        {
+            var filters = new EmployeeSearchFiltersDTO
+            {
+                EmployeeCode = code
+            };
+            var (result, total) = await _repository.SearchAsync(filters, 1, 1);
+            if (result == null)
+            {
+                throw new Exception("Employee inexistant");
+            }
+            return result != null && result.Any();
+        }
+
+        // check si le nom et le matricule sont tous les meme pour chaque ligne
+        public async Task<List<string>?> CheckNameAndCode(List<List<string>> dataExcel)
+        {
+            var errors = new List<string>();
+
+            if (!CSVReader.HasMinimumRows(dataExcel))
+            {
+                errors.Add("1:1 => Le fichier est vide ou ne contient pas assez de lignes.");
+                return errors;
+            }
+
+            var header = dataExcel[0];
+            int nameIndex = CSVReader.GetColumnIndex(header, "nom");
+            int codeIndex = CSVReader.GetColumnIndex(header, "matricule", "code");
+
+            if (nameIndex == -1 || codeIndex == -1)
+            {
+                errors.Add("1:1 => Colonnes 'Nom' et/ou 'Matricule' introuvables.");
+                return errors;
+            }
+
+            var codeNameMap = new Dictionary<string, string>();
+
+            for (int i = 1; i < dataExcel.Count; i++)
+            {
+                var row = dataExcel[i];
+
+                if (!CSVReader.HasSufficientColumns(row, nameIndex, codeIndex))
+                {
+                    errors.Add($"{i + 1}:1 => Ligne incomplète (manque nom ou matricule).");
+                    continue;
+                }
+
+                string code = row[codeIndex].Trim();
+                string name = row[nameIndex].Trim();
+
+                CSVReader.ValidatePresence(code, "Matricule/code", i + 1, codeIndex + 1, errors);
+                CSVReader.ValidatePresence(name, "Nom", i + 1, nameIndex + 1, errors);
+                CSVReader.CheckDuplicate(codeNameMap, code, name, i + 1, codeIndex + 1, errors);
+            }
+
+            return await Task.FromResult(errors.Count > 0 ? errors : null);
+        }
+
 
         public async Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize)
         {
