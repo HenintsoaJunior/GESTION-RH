@@ -22,6 +22,7 @@ import MissionAssignationFormExcel from 'pages/mission/mission-assign-form-excel
 import ShortcutsDashboard from 'pages/system/entite/shortcuts';
 import EmployeeList from 'pages/employee/employee-list';
 import EmployeeForm from 'pages/employee/employee-fom';
+import BeneficiaryMissionList from 'pages/mission/benificary-mission-list';
 
 function AppRouter() {
   return (
@@ -56,6 +57,8 @@ function AppRouter() {
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
           <Route path="/assignments/details" element={<AssignmentDetails />} />
           <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />
+          <Route path="/mission/beneficiary" element={<BeneficiaryMissionList />} />
+
           
           {/* Transport */}
           <Route path="/transport/create" element={<TransportForm />} />
