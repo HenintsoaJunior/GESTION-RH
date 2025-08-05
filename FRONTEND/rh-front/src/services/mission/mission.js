@@ -396,17 +396,16 @@ export const fetchAssignMission = async (
       pageSize,
     }).toString();
     
-    // ✅ Préparation du corps de la requête avec gestion des dates CORRIGÉE
     const requestBody = {
       employeeId: filters.employeeId || "",
       missionId: filters.missionId || "",
       transportId: filters.transportId || "",
       lieuId: filters.lieuId || "",
-      departureDate: filters.departureDate && !isNaN(new Date(filters.departureDate).getTime())
-        ? new Date(filters.departureDate).toISOString()
+      departureDate: filters.startDate && !isNaN(new Date(filters.startDate).getTime())
+        ? new Date(filters.startDate).toISOString()
         : null,
-      returnDate: filters.returnDate && !isNaN(new Date(filters.returnDate).getTime()) // ✅ CORRIGÉ : returnDate au lieu de departureArrive
-        ? new Date(filters.returnDate).toISOString()
+      returnDate: filters.endDate && !isNaN(new Date(filters.endDate).getTime())
+        ? new Date(filters.endDate).toISOString()
         : null,
       status: filters.status || "",
     };
@@ -417,26 +416,25 @@ export const fetchAssignMission = async (
     const data = await apiPost(`/api/MissionAssignation/search?${queryParams}`, requestBody);
     console.log("API Response (Mission Assignations):", data);
 
-    // ✅ Transformation des données pour l'UI CORRIGÉE
     const assignMissionsData = Array.isArray(data.data)
       ? data.data.map((item) => ({
-          assignmentId: item.id || item.assignmentId || `${item.employeeId}-${item.missionId}-${item.transportId}`,
+          assignmentId: item.assignmentId || `${item.employeeId}-${item.missionId}-${item.transportId}`,
           employeeId: item.employeeId,
           missionId: item.missionId,
           transportId: item.transportId,
           departureDate: item.departureDate,
-          returnDate: item.returnDate, // ✅ AJOUTÉ : returnDate mappé
-          departureTime: item.departureTime, // ✅ AJOUTÉ : pour les heures si nécessaire
-          returnTime: item.returnTime, // ✅ AJOUTÉ : pour les heures si nécessaire
-          duration: item.duration, // ✅ AJOUTÉ : durée de la mission
+          returnDate: item.returnDate,
+          departureTime: item.departureTime,
+          returnTime: item.returnTime,
+          duration: item.duration,
           beneficiary: `${item.employee?.firstName || ""} ${item.employee?.lastName || ""}`.trim() || "Non spécifié",
           matricule: item.employee?.employeeCode || "Non spécifié",
           missionTitle: item.mission?.name || "Non spécifié",
           startDate: item.mission?.startDate || "Non spécifié",
           endDate: item.mission?.endDate || "Non spécifié",
-          lieu : item.mission?.lieu.nom || "Non spécifié",
+          lieu: item.mission?.lieu?.nom || "Non spécifié", // ✅ CORRIGÉ: ajout du ? pour lieu
           function: item.employee?.jobTitle || "Non spécifié",
-          base: item.employee?.site?.siteName || "Non spécifié", // ✅ CORRIGÉ : ajout du ? pour éviter les erreurs
+          base: item.employee?.site?.siteName || "Non spécifié",
           status: item.mission?.status || "Non spécifié",
           directionAcronym: item.employee?.direction?.acronym || "N/A",
           employee: item.employee,
@@ -491,14 +489,13 @@ export const fetchAllMissions = async (
   }
 };
 
-// Fonction pour récupérer les missions avec filtres et pagination
 export const fetchMissions = async (
   setMissions,
   setIsLoading,
   setTotalEntries,
   filters = {},
   page = 1,
-  pageSize = 5,
+  pageSize = 10,
   onError
 ) => {
   try {
@@ -506,8 +503,8 @@ export const fetchMissions = async (
 
     const requestBody = {
       name: filters.name || "",
-      startDateMin: filters.startDateMin || null,
-      startDateMax: filters.startDateMax || null,
+      startDate: filters.startDate || null,
+      endDate: filters.endDate || null,
       lieuId: filters.lieuId || "",
       status: filters.status || "",
     };
@@ -519,16 +516,13 @@ export const fetchMissions = async (
       pageSize,
     }).toString();
 
-    // Appel API pour récupérer les missions filtrées
     const data = await apiPost(`/api/Mission/search?${queryParams}`, requestBody);
     console.log("API Response:", data);
 
-    // S'assure que missions est toujours un tableau
     const missionsData = Array.isArray(data.data) ? data.data : [];
     setMissions(missionsData);
     setTotalEntries(data.totalCount || missionsData.length || 0);
   } catch (error) {
-    // Gestion des erreurs
     console.error("Erreur lors du chargement des missions:", error);
     onError({
       isOpen: true,
@@ -540,6 +534,7 @@ export const fetchMissions = async (
     setIsLoading((prev) => ({ ...prev, missions: false }));
   }
 };
+
 
 // Fonction pour récupérer une mission par son ID
 export const fetchMissionById = async (
