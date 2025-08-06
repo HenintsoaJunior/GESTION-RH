@@ -17,7 +17,7 @@ namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
     {
-        Task<string> ImportMissionFromCsv(Stream fileStream, char separator);
+        Task<List<string>> ImportMissionFromCsv(Stream fileStream, char separator);
         Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
@@ -62,7 +62,7 @@ namespace MyApp.Api.Services.mission
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
-        public async Task<string> ImportMissionFromCsv(Stream fileStream, char separator)
+        public async Task<List<string>> ImportMissionFromCsv(Stream fileStream, char separator)
         {
             // lire le csv
             var tempFilePath = Path.GetTempFileName();
@@ -75,9 +75,11 @@ namespace MyApp.Api.Services.mission
                 // Suppression du fichier temporaire
                 File.Delete(tempFilePath);
 
+            List<string> errors = new List<string>();
             // checking
-            // inserer dans la base
-            return "";
+            // si employee n'existe pas => throws
+            // si mission existe pas => insertion mission + assignation mission
+            return null;
         }
         public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO)
         {

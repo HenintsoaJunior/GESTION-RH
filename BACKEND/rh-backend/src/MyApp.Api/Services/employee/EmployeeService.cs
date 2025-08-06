@@ -10,6 +10,7 @@ namespace MyApp.Api.Services.employee
 {
     public interface IEmployeeService
     {
+        Task<bool> VerifyEmployeeExistsAsync(string code);
         Task<List<string>> CheckNameAndCode(List<List<string>> DataExcel);
         Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Employee>> GetAllAsync();
@@ -39,7 +40,7 @@ namespace MyApp.Api.Services.employee
         }
   
         // check si le matricule se trouve dans la base
-        private async Task<bool> VerifyEmployeeExistsAsync(string code)
+        public async Task<bool> VerifyEmployeeExistsAsync(string code)
         {
             var filters = new EmployeeSearchFiltersDTO
             {

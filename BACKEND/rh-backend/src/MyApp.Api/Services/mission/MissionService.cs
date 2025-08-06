@@ -43,6 +43,8 @@ namespace MyApp.Api.Services.mission
             return await _repository.SearchAsync(filters, page, pageSize);
         }
 
+        // check si la mission existe deja => check matricule + nom mission + date
+
         public async Task<IEnumerable<Mission>> GetAllAsync()
         {
             try
