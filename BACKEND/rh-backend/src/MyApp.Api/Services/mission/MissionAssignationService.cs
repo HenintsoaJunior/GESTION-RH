@@ -26,7 +26,7 @@ namespace MyApp.Api.Services.mission
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
         Task<(string EmployeeId, string MissionId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation);
         Task<bool> UpdateAsync(MissionAssignation missionAssignation);
-        Task<bool> DeleteAsync(string employeeId, string missionId, string transportId);
+        Task<bool> DeleteAsync(string employeeId, string missionId);
         Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
         Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
     }
@@ -588,11 +588,11 @@ namespace MyApp.Api.Services.mission
             await _repository.SaveChangesAsync();
         }
 
-        public async Task<bool> DeleteAsync(string employeeId, string missionId, string transportId)
+        public async Task<bool> DeleteAsync(string employeeId, string missionId)
         {
             try
             {
-                var existing = await _repository.GetByIdAsync(employeeId, missionId, transportId);
+                var existing = await _repository.GetByIdAsync(employeeId, missionId);
                 if (existing == null)
                 {
                     return false;

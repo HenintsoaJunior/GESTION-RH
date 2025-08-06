@@ -44,8 +44,8 @@ const MissionList = () => {
   const [stats, setStats] = useState({ total: 0, enCours: 0, planifiee: 0, terminee: 0, annulee: 0 });
   const [filters, setFilters] = useState({
     name: "",
-    startDate: "", // Changé de dateDebut à startDate
-    endDate: "",   // Changé de dateFin à endDate
+    startDate: "",
+    endDate: "",
     lieuId: "",
     location: "",
     status: "",
@@ -113,8 +113,8 @@ const MissionList = () => {
   useEffect(() => {
     const initialFilters = {
       name: "",
-      startDate: "", // Changé de dateDebut à startDate
-      endDate: "",   // Changé de dateFin à endDate
+      startDate: "",
+      endDate: "",
       lieuId: "",
       location: "",
       status: "",
@@ -124,14 +124,34 @@ const MissionList = () => {
   }, [currentPage, pageSize, handleError]);
 
   const calendarEvents = useMemo(() => {
-    return missions.map((mission) => ({
-      id: mission.missionId,
-      title: mission.name,
-      start: new Date(mission.startDate),
-      end: new Date(mission.endDate),
-      allDay: true,
-      resource: mission,
-    }));
+    const events = [];
+    
+    missions.forEach((mission) => {
+      const startDate = new Date(mission.startDate);
+      const endDate = new Date(mission.endDate);
+      
+      events.push({
+        id: `${mission.missionId}-start`,
+        title: `🚀 ${mission.name} (Début)`,
+        start: startDate,
+        end: startDate,
+        allDay: true,
+        resource: { ...mission, eventType: 'start' },
+      });
+      
+      if (startDate.getTime() !== endDate.getTime()) {
+        events.push({
+          id: `${mission.missionId}-end`,
+          title: `🏁 ${mission.name} (Fin)`,
+          start: endDate,
+          end: endDate,
+          allDay: true,
+          resource: { ...mission, eventType: 'end' },
+        });
+      }
+    });
+    
+    return events;
   }, [missions]);
 
   const handleFilterChange = (name, value) => {
@@ -150,8 +170,8 @@ const MissionList = () => {
   const handleResetFilters = () => {
     const resetFilters = {
       name: "",
-      startDate: "", // Changé de dateDebut à startDate
-      endDate: "",   // Changé de dateFin à endDate
+      startDate: "",
+      endDate: "",
       lieuId: "",
       location: "",
       status: "",
@@ -210,7 +230,8 @@ const MissionList = () => {
   };
 
   const handleEventClick = (event) => {
-    navigate(`/mission/assign-mission/${event.id}`);
+    const missionId = event.id.replace(/-(start|end)$/, '');
+    navigate(`/mission/assign-mission/${missionId}`);
   };
 
   const handleSelectSlot = ({ start }) => {
@@ -408,7 +429,7 @@ const MissionList = () => {
                       <td className="form-field-cell p-2 align-top">
                         <label className="form-label-search block mb-2">Date de début</label>
                         <input
-                          name="startDate" // Changé de dateDebut à startDate
+                          name="startDate"
                           type="date"
                           value={filters.startDate}
                           onChange={(e) => handleFilterChange("startDate", e.target.value)}
@@ -419,16 +440,14 @@ const MissionList = () => {
                       <td className="form-field-cell p-2 align-top">
                         <label className="form-label-search block mb-2">Date de fin</label>
                         <input
-                          name="endDate" // Changé de dateFin à endDate
+                          name="endDate"
                           type="date"
                           value={filters.endDate}
                           onChange={(e) => handleFilterChange("endDate", e.target.value)}
                           className="form-input-search w-full"
                         />
                       </td>
-
                     </tr>
-            
                   </tbody>
                 </table>
 
@@ -470,7 +489,7 @@ const MissionList = () => {
             <Calendar className="w-4 h-4" /> Calendrier
           </button>
           <button
-            onClick={() => navigate("/mission/create")}
+            onClick={() => navigate("/mission/form")}
             className="btn-new-request"
           >
             <Plus className="w-4 h-4" />
@@ -526,6 +545,16 @@ const MissionList = () => {
             }}></div>
             <span>Annulé</span>
           </div>
+          <div style={{ 
+            marginLeft: '20px', 
+            padding: '8px 12px', 
+            backgroundColor: '#e9ecef', 
+            borderRadius: '4px',
+            fontSize: '12px',
+            color: '#6c757d'
+          }}>
+            🚀 = Début de mission | 🏁 = Fin de mission
+          </div>
         </div>
       )}
 
@@ -565,16 +594,28 @@ const MissionList = () => {
                       <td>{getStatusBadge(mission.status)}</td>
                       <td>{formatDate(mission.createdAt) || "Non spécifié"}</td>
                       <td>
-                        <button
-                          className="btn-cancel"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShowCancelModal(mission.missionId);
-                          }}
-                          disabled={mission.status === "Annulé" || mission.status === "Terminé"}
-                        >
-                          Annuler
-                        </button>
+                        <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            className="btn-update"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/mission/form/${mission.missionId}`);
+                            }}
+                            disabled={mission.status === "Annulé" || mission.status === "Terminé"}
+                          >
+                            Modifier
+                          </button>
+                          <button
+                            className="btn-cancel"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShowCancelModal(mission.missionId);
+                            }}
+                            disabled={mission.status === "Annulé" || mission.status === "Terminé"}
+                          >
+                            Annuler
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

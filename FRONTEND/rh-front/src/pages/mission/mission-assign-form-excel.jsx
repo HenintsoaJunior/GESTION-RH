@@ -8,7 +8,7 @@ import * as FaIcons from "react-icons/fa";
 import AutoCompleteInput from "components/auto-complete-input";
 import { fetchAllMissions } from "services/mission/mission";
 import { fetchDirections } from "services/direction/direction";
-import { fetchEmployees } from "services/employee/employee";
+import { fetchAllEmployees } from "services/employee/employee";
 import { exportMissionAssignationExcel } from "services/mission/mission";
 
 export default function MissionAssignationFormExcel() {
@@ -54,14 +54,14 @@ export default function MissionAssignationFormExcel() {
             setIsLoading(prev => ({ ...prev, missions: false }));
           },
           (loadingState) => setIsLoading(prev => ({ ...prev, missions: loadingState.missions || false })),
-          () => {}, // Fonction vide pour setTotalEntries
+          () => {},
           (alert) => {
             setAlert(alert);
             setIsLoading(prev => ({ ...prev, missions: false }));
           }
         );
 
-        // Fetch directions - CORRECTION ICI
+        // Fetch directions
         setIsLoading(prev => ({ ...prev, directions: true }));
         fetchDirections(
           (data) => {
@@ -73,7 +73,7 @@ export default function MissionAssignationFormExcel() {
             setIsLoading(prev => ({ ...prev, directions: false }));
           },
           (loadingState) => setIsLoading(prev => ({ ...prev, directions: loadingState.directions || false })),
-          () => {}, // Fonction vide pour setTotalEntries (au lieu de setSuggestions)
+          () => {},
           (alert) => {
             setAlert(alert);
             setIsLoading(prev => ({ ...prev, directions: false }));
@@ -82,7 +82,7 @@ export default function MissionAssignationFormExcel() {
 
         // Fetch ALL employees
         setIsLoading(prev => ({ ...prev, employees: true }));
-        fetchEmployees(
+        fetchAllEmployees(
           (data) => {
             setEmployees(data);
             setSuggestions((prev) => ({
@@ -102,7 +102,7 @@ export default function MissionAssignationFormExcel() {
             setIsLoading(prev => ({ ...prev, employees: false }));
           },
           (loadingState) => setIsLoading(prev => ({ ...prev, employees: loadingState.employees || false })),
-          () => {}, // Fonction vide pour setTotalEntries
+          () => {},
           (alert) => {
             setAlert(alert);
             setIsLoading(prev => ({ ...prev, employees: false }));
@@ -186,12 +186,10 @@ export default function MissionAssignationFormExcel() {
       );
     } catch (error) {
       console.error("Erreur lors de la soumission:", error);
-      // Ne pas afficher d'erreur si tous les champs sont vides (cas normal)
       const hasAnyValue = formData.mission || formData.direction || formData.employee || formData.startDate || formData.endDate;
       if (hasAnyValue) {
         showAlert("error", error.message || "Une erreur est survenue lors de la soumission");
       } else {
-        // Si aucune valeur n'est saisie, c'est normal, on affiche juste un message informatif
         showAlert("info", "Aucun filtre appliqué - affichage de toutes les données");
       }
     } finally {
@@ -231,7 +229,6 @@ export default function MissionAssignationFormExcel() {
         <h2 className="table-title">Generation Excel Mission</h2>
       </div>
 
-      {/* AJOUT : Affichage des valeurs actuelles du filtre */}
       {(formData.mission || formData.direction || formData.employee || formData.startDate || formData.endDate) && (
         <div className="filter-summary" style={{ 
           backgroundColor: '#f8f9fa', 
@@ -301,159 +298,151 @@ export default function MissionAssignationFormExcel() {
         </div>
       )}
 
-      <form id="missionAssignationForm" className="generic-form" onSubmit={handleSubmit}>
-        <div className="form-section">
-          <table className="form-table">
-            <tbody>
-              {/* Première ligne : Mission et Direction */}
-              <tr>
-                <th className="form-label-cell">
-                  <label htmlFor="mission" className="form-label">
-                    Mission
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <AutoCompleteInput
-                    value={formData.mission}
-                    onChange={(value) => {
-                      setFormData((prev) => ({ ...prev, mission: value }));
-                      setFieldErrors((prev) => ({ ...prev, mission: undefined }));
-                    }}
-                    suggestions={suggestions.mission}
-                    maxVisibleItems={3}
-                    placeholder="Saisir ou sélectionner une mission..."
-                    disabled={isFormDisabled}
-                    fieldType="mission"
-                    fieldLabel="mission"
-                    showAddOption={false}
-                    className={`form-input ${fieldErrors.mission ? "error" : ""}`}
-                  />
-                  {fieldErrors.mission && (
-                    <span className="error-message">{fieldErrors.mission.join(", ")}</span>
-                  )}
-                </td>
-                <th className="form-label-cell">
-                  <label htmlFor="direction" className="form-label">
-                    Direction
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <AutoCompleteInput
-                    value={formData.direction}
-                    onChange={(value) => {
-                      setFormData((prev) => ({ ...prev, direction: value }));
-                      setFieldErrors((prev) => ({ ...prev, direction: undefined }));
-                    }}
-                    suggestions={suggestions.direction}
-                    maxVisibleItems={3}
-                    placeholder="Saisir ou sélectionner une direction..."
-                    disabled={isFormDisabled}
-                    fieldType="direction"
-                    fieldLabel="direction"
-                    showAddOption={false}
-                    className={`form-input ${fieldErrors.direction ? "error" : ""}`}
-                  />
-                  {fieldErrors.direction && (
-                    <span className="error-message">{fieldErrors.direction.join(", ")}</span>
-                  )}
-                </td>
-              </tr>
-              
-              {/* Deuxième ligne : Employé (sur toute la largeur) */}
-              <tr>
-                <th className="form-label-cell">
-                  <label htmlFor="employee" className="form-label">
-                    Employé
-                  </label>
-                </th>
-                <td className="form-input-cell" colSpan="3">
-                  <AutoCompleteInput
-                    value={formData.employee}
-                    onChange={(value) => {
-                      setFormData((prev) => ({ ...prev, employee: value }));
-                      setFieldErrors((prev) => ({ ...prev, employee: undefined }));
-                    }}
-                    suggestions={suggestions.employee.map((emp) => emp.name)}
-                    maxVisibleItems={3}
-                    placeholder="Saisir ou sélectionner un employé..."
-                    disabled={isFormDisabled}
-                    fieldType="employee"
-                    fieldLabel="employé"
-                    className={`form-input ${fieldErrors.employee ? "error" : ""}`}
-                  />
-                  {fieldErrors.employee && (
-                    <span className="error-message">{fieldErrors.employee.join(", ")}</span>
-                  )}
-                </td>
-              </tr>
-              
-              {/* Troisième ligne : Date de début et Date de fin */}
-              <tr>
-                <th className="form-label-cell">
-                  <label htmlFor="startDate" className="form-label">
-                    Date de début
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <input
-                    id="startDate"
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    className={`form-input ${fieldErrors.startDate ? "error" : ""}`}
-                    disabled={isFormDisabled}
-                  />
-                  {fieldErrors.startDate && (
-                    <span className="error-message">{fieldErrors.startDate.join(", ")}</span>
-                  )}
-                </td>
-                <th className="form-label-cell">
-                  <label htmlFor="endDate" className="form-label">
-                    Date de fin
-                  </label>
-                </th>
-                <td className="form-input-cell">
-                  <input
-                    id="endDate"
-                    type="date"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    className={`form-input ${fieldErrors.endDate ? "error" : ""}`}
-                    disabled={isFormDisabled}
-                  />
-                  {fieldErrors.endDate && (
-                    <span className="error-message">{fieldErrors.endDate.join(", ")}</span>
-                  )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div className="form-actions">
-          <button
-            type="submit"
-            className="submit-btn"
-            disabled={isFormDisabled}
-            title="Générer"
-          >
-            {isSubmitting ? "génération en cours..." : "Générer"}
-            <FaIcons.FaArrowRight className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            className="reset-btn"
-            onClick={handleReset}
-            disabled={isFormDisabled}
-            title="Réinitialiser le formulaire"
-          >
-            <FaIcons.FaTrash className="w-4 h-4" />
-            Réinitialiser
-          </button>
-        </div>
-      </form>
+      <div className="form-section">
+        <h3 className="form-section-title text-lg font-semibold mb-4">Filtres d'Assignation de Mission</h3>
+        <table className="form-table w-full border-collapse">
+          <tbody>
+            <tr className="form-row">
+              <td className="form-field-cell p-2 align-top">
+                <label htmlFor="mission" className="form-label block mb-2">
+                  Mission
+                </label>
+                <AutoCompleteInput
+                  id="mission"
+                  value={formData.mission}
+                  onChange={(value) => {
+                    setFormData((prev) => ({ ...prev, mission: value }));
+                    setFieldErrors((prev) => ({ ...prev, mission: undefined }));
+                  }}
+                  suggestions={suggestions.mission}
+                  maxVisibleItems={3}
+                  placeholder="Saisir ou sélectionner une mission..."
+                  disabled={isFormDisabled}
+                  fieldType="mission"
+                  fieldLabel="mission"
+                  showAddOption={false}
+                  className={`form-table w-full ${fieldErrors.mission ? "input-error" : ""}`}
+                />
+                {fieldErrors.mission && (
+                  <span className="error-message block mt-1">{fieldErrors.mission.join(", ")}</span>
+                )}
+              </td>
+            </tr>
+            <tr className="form-row">
+              <td className="form-field-cell p-2 align-top">
+                <label htmlFor="direction" className="form-label block mb-2">
+                  Direction
+                </label>
+                <AutoCompleteInput
+                  id="direction"
+                  value={formData.direction}
+                  onChange={(value) => {
+                    setFormData((prev) => ({ ...prev, direction: value }));
+                    setFieldErrors((prev) => ({ ...prev, direction: undefined }));
+                  }}
+                  suggestions={suggestions.direction}
+                  maxVisibleItems={3}
+                  placeholder="Saisir ou sélectionner une direction..."
+                  disabled={isFormDisabled}
+                  fieldType="direction"
+                  fieldLabel="direction"
+                  showAddOption={false}
+                  className={`form-table w-full ${fieldErrors.direction ? "input-error" : ""}`}
+                />
+                {fieldErrors.direction && (
+                  <span className="error-message block mt-1">{fieldErrors.direction.join(", ")}</span>
+                )}
+              </td>
+            </tr>
+            <tr className="form-row">
+              <td className="form-field-cell p-2 align-top">
+                <label htmlFor="employee" className="form-label block mb-2">
+                  Collaborateur
+                </label>
+                <AutoCompleteInput
+                  id="employee"
+                  value={formData.employee}
+                  onChange={(value) => {
+                    setFormData((prev) => ({ ...prev, employee: value }));
+                    setFieldErrors((prev) => ({ ...prev, employee: undefined }));
+                  }}
+                  suggestions={suggestions.employee.map((emp) => emp.name)}
+                  maxVisibleItems={3}
+                  placeholder="Saisir ou sélectionner un Collaborateur..."
+                  disabled={isFormDisabled}
+                  fieldType="employee"
+                  fieldLabel="Collaborateur"
+                  className={`form-table w-full ${fieldErrors.employee ? "input-error" : ""}`}
+                />
+                {fieldErrors.employee && (
+                  <span className="error-message block mt-1">{fieldErrors.employee.join(", ")}</span>
+                )}
+              </td>
+            </tr>
+            <tr className="form-row">
+              <td className="form-field-cell p-2 align-top">
+                <label htmlFor="startDate" className="form-label block mb-2">
+                  Date de début
+                </label>
+                <input
+                  id="startDate"
+                  type="date"
+                  name="startDate"
+                  value={formData.startDate}
+                  onChange={handleInputChange}
+                  className={`form-table w-full ${fieldErrors.startDate ? "input-error" : ""}`}
+                  disabled={isFormDisabled}
+                />
+                {fieldErrors.startDate && (
+                  <span className="error-message block mt-1">{fieldErrors.startDate.join(", ")}</span>
+                )}
+              </td>
+            </tr>
+            <tr className="form-row">
+              <td className="form-field-cell p-2 align-top">
+                <label htmlFor="endDate" className="form-label block mb-2">
+                  Date de fin
+                </label>
+                <input
+                  id="endDate"
+                  type="date"
+                  name="endDate"
+                  value={formData.endDate}
+                  onChange={handleInputChange}
+                  className={`form-table w-full ${fieldErrors.endDate ? "input-error" : ""}`}
+                  disabled={isFormDisabled}
+                />
+                {fieldErrors.endDate && (
+                  <span className="error-message block mt-1">{fieldErrors.endDate.join(", ")}</span>
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="form-actions">
+        <button
+          type="submit"
+          className="submit-btn"
+          disabled={isFormDisabled}
+          title="Générer"
+          onClick={handleSubmit}
+        >
+          {isSubmitting ? "Génération en cours..." : "Générer"}
+          <FaIcons.FaArrowRight className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          className="reset-btn"
+          onClick={handleReset}
+          disabled={isFormDisabled}
+          title="Réinitialiser le formulaire"
+        >
+          <FaIcons.FaTrash className="w-4 h-4" />
+          Réinitialiser
+        </button>
+      </div>
     </div>
   );
 }
