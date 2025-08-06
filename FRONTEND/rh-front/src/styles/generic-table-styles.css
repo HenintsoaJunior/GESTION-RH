@@ -332,7 +332,8 @@ select.form-input-search {
 .btn-cancel,
 .btn-show-filters,
 .btn-confirm,
-.btn-view {
+.btn-view,
+.btn-update {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -347,6 +348,7 @@ select.form-input-search {
   box-shadow: var(--shadow-sm);
   height: 40px; /* Consistent height with btn-search, btn-reset */
   line-height: 1;
+  transition: all 0.2s ease;
 }
 
 .btn-search {
@@ -419,15 +421,58 @@ select.form-input-search {
   border-color: var(--primary-color);
 }
 
+/* ===== BOUTON UPDATE ===== */
+.btn-update {
+  background-color: #3b82f6;
+  color: #ffffff;
+  padding: var(--spacing-xs) var(--spacing-md);
+  height: 32px;
+  font-size: var(--font-size-xs);
+  min-width: 70px;
+}
+
+.btn-update:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-update:active {
+  transform: translateY(0);
+}
+
 .btn-search:disabled,
 .btn-reset:disabled,
 .btn-new-request:disabled,
 .btn-cancel:disabled,
 .btn-confirm:disabled,
 .btn-show-filters:disabled,
-.btn-view:disabled {
+.btn-view:disabled,
+.btn-update:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-update:disabled:hover {
+  background-color: #3b82f6;
+  transform: none;
+}
+
+/* ===== BOUTONS D'ACTION DANS LE TABLEAU ===== */
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-xs);
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.action-buttons .btn-update,
+.action-buttons .btn-cancel {
+  height: 32px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-xs);
+  min-width: 70px;
+  white-space: nowrap;
 }
 
 /* ===== TABLEAU EN-TÊTE ===== */
@@ -663,6 +708,17 @@ select.form-input-search {
     width: 100%;
     justify-content: center;
   }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .action-buttons .btn-update,
+  .action-buttons .btn-cancel {
+    width: 100%;
+    min-width: unset;
+  }
 }
 
 @media (max-width: 480px) {
@@ -686,7 +742,8 @@ select.form-input-search {
   .btn-cancel,
   .btn-show-filters,
   .btn-confirm,
-  .btn-view {
+  .btn-view,
+  .btn-update {
     width: 100%;
   }
 }

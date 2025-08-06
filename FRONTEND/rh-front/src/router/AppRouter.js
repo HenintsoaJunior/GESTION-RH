@@ -51,7 +51,8 @@ function AppRouter() {
           <Route path="/direction/service-form" element={<ServiceForm />} />
 
           {/* Mission */}
-          <Route path="/mission/create" element={<MissionForm />} />
+          <Route path="/mission/form/:missionId" element={<MissionForm />} />
+          <Route path="/mission/form" element={<MissionForm />} />
           <Route path="/mission/list" element={<MissionList />} />
           <Route path="/mission/assign" element={<AssignMissionForm />} />
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
