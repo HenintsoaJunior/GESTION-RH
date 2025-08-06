@@ -47,11 +47,12 @@ namespace MyApp.Api.Services.employee
                 EmployeeCode = code
             };
             var (result, total) = await _repository.SearchAsync(filters, 1, 1);
-            if (result == null)
+            var employee = result?.FirstOrDefault();
+            if (employee == null)
             {
                 throw new Exception("Employee inexistant");
             }
-            return (Employee)result;
+            return employee;
         }
 
         // check si le nom et le matricule sont tous les meme pour chaque ligne
@@ -66,8 +67,8 @@ namespace MyApp.Api.Services.employee
             }
 
             var header = dataExcel[0];
-            int nameIndex = CSVReader.GetColumnIndex(header, "Bénéficiaire");
-            int codeIndex = CSVReader.GetColumnIndex(header, "matricule", "code");
+            int nameIndex = CSVReader.GetColumnIndex(header, "nom");
+            int codeIndex = CSVReader.GetColumnIndex(header, "matricule");
 
             if (nameIndex == -1 || codeIndex == -1)
             {

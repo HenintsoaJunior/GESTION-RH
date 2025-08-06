@@ -9,6 +9,7 @@ namespace MyApp.Api.Services.mission
 {
     public interface IMissionService
     {
+        Task<Mission?> VerifyMissionByNameAsync(string name);
         Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Mission>> GetAllAsync();
         Task<Mission?> GetByIdAsync(string id);

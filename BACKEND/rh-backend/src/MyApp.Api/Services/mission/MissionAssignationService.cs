@@ -17,7 +17,8 @@ namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
     {
-        Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator);
+        Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator, MissionService missionService);
+        Task<int> calculateDuration(DateTime Start, DateTime End);
         Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
@@ -40,6 +41,7 @@ namespace MyApp.Api.Services.mission
         private readonly ICategoriesOfEmployeeService _categoriesOfEmployeeService;
         private readonly IEmployeeService _employeeService;
         private readonly ILieuService _lieuService;
+        private readonly ITransportService _transportService;
         private readonly ILogger<MissionAssignationService> _logger;
         private readonly ILoggerFactory _loggerFactory;
 
@@ -51,6 +53,7 @@ namespace MyApp.Api.Services.mission
             ICategoriesOfEmployeeService categoriesOfEmployeeService,
             IEmployeeService employeeService,
             ILieuService lieuService,
+            ITransportService transportService,
             ILogger<MissionAssignationService> logger,
             ILoggerFactory loggerFactory)
         {
@@ -61,87 +64,143 @@ namespace MyApp.Api.Services.mission
             _categoriesOfEmployeeService = categoriesOfEmployeeService ?? throw new ArgumentNullException(nameof(categoriesOfEmployeeService));
             _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
             _lieuService = lieuService ?? throw new ArgumentNullException(nameof(lieuService));
+            _transportService = transportService ?? throw new ArgumentNullException(nameof(transportService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
-        public async Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator)
+        public async Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator, MissionService missionService)
         {
+            var errors = new List<string>();
+
+            await using var transaction = await _repository.BeginTransactionAsync();
             try
             {
-                // lire le csv
-                var tempFilePath = Path.GetTempFileName();
-                using (var fileStreamOutput = File.Create(tempFilePath))
-                {
-                    fileStream.CopyTo(fileStreamOutput);
-                }
-                    // Lecture via la méthode statique
-                    List<List<string>> data = CSVReader.ReadCsv(tempFilePath, separator);
-                    // Suppression du fichier temporaire
-                    File.Delete(tempFilePath);
-
-                List<string> errors = [];
-                // checking
-                // employe
-                var employeeErrors = await _employeeService.CheckNameAndCode(data);
-                if (employeeErrors != null)
-                {
-                    errors.AddRange(employeeErrors);
-                }
-                // date
-                var dateError = CSVReader.CheckDate(data);
-                if (dateError != null)
-                {
-                    errors.AddRange(dateError);
-                }
-                // heure
-                var hourError = CSVReader.CheckHour(data);
-                if (hourError != null)
-                {
-                    errors.AddRange(hourError);
-                }
+                var data = CSVReader.ReadCsv(fileStream, separator);
+                // check les erreurs
+                errors.AddRange(await ValidateDataAsync(data));
 
                 // si employee n'existe pas => throws
-                var matricule = data[1][0];
-                Employee employee = await _employeeService.VerifyEmployeeExistsAsync(matricule);
+                var employee = await _employeeService.VerifyEmployeeExistsAsync(data[1][0]);
+                // si lieu n'existe pas => insertion lieu
+                var lieu = await GetOrCreateLieuAsync(data[1][7]);
+                // si mission n'existe pas => insertion mission
+                var mission = await GetOrCreateMissionAsync(data, lieu.LieuId, missionService);
+                // si transport n'existe pas => throws
+                var transport = await _transportService.VerifyTransportByTypeAsync(data[1][10]);
+                // si mission assignation n'existe pas => insetion
+                if(transport != null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, transport.TransportId);
+                if(transport == null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, null);
 
-                // si lieu de mission n'existe pas => insertion lieu de mission
-                var lieu_name = data[1][7].Split("/");
-                var nom = lieu_name[0];
-                string? pays = null;
-                if (lieu_name.Length == 2)
-                {
-                    pays = lieu_name[1];
-                }
-                Lieu? lieu = await _lieuService.VerifyLieuExistsAsync(nom, pays);
-                if (lieu == null)
-                {
-                    var lieuId = await _lieuService.CreateAsync(new LieuDTOForm
-                    {
-                        Nom = nom,
-                        Pays = pays
-                    });
-                    lieu = new Lieu
-                    {
-                        LieuId = lieuId,
-                        Nom = nom,
-                        Pays = pays
-                    };
-                }
-
-                // si mission existe pas => insertion mission
-                
-                // si mission assignation n'existe pas => insertion assignation mission : prendre la durée, date début, date fin
-
+                await transaction.CommitAsync();
                 return errors;
             }
-             catch (Exception ex)
+            catch (Exception ex)
             {
-                throw new Exception($"Erreur durant l'import: {ex.Message}", ex);
+                await transaction.RollbackAsync();
+                throw new Exception($"Exception durant l'import: {ex.Message}", ex);
             }
         }
 
+        private async Task CreateMissionAssignationIfNotExists( List<List<string>> data, string employeeId, Mission mission, string transportId)
+        {
+            var existing = await VerifyMissionAssignationByNameAsync(employeeId, mission.MissionId);
+            if (existing != null) throw new Exception($"Mission déjà importé");
+
+            var assignation = new MissionAssignation(new MissionAssignationDTOForm
+            {
+                EmployeeId = employeeId,
+                MissionId = mission.MissionId,
+                TransportId = transportId,
+                DepartureDate = mission.StartDate,
+                DepartureTime = TimeSpan.TryParse(data[1][6], out var depTime) ? depTime : (TimeSpan?)null,
+                ReturnDate = mission.EndDate,
+                ReturnTime = TimeSpan.TryParse(data[1][8], out var retTime) ? retTime : (TimeSpan?)null,
+                Duration = (mission.StartDate.HasValue && mission.EndDate.HasValue)
+                    ? await calculateDuration(mission.StartDate.Value, mission.EndDate.Value)
+                    : 0
+            });
+
+            await CreateAsync(assignation);
+        }
+
+        private async Task<Mission> GetOrCreateMissionAsync(List<List<string>> data, string lieuId, MissionService missionService)
+        {
+            var missionName = data[1][4];
+            var startDate = DateTime.Parse(data[1][9]);
+            var endDate = DateTime.Parse(data.Last()[9]);
+
+            var mission = await missionService.VerifyMissionByNameAsync(missionName);
+            if (mission != null) return mission;
+
+            var missionId = await missionService.CreateAsync(new MissionDTOForm
+            {
+                Name = missionName,
+                StartDate = startDate,
+                EndDate = endDate,
+                LieuId = lieuId
+            });
+
+            return new Mission
+            {
+                MissionId = missionId,
+                StartDate = startDate,
+                EndDate = endDate,
+                LieuId = lieuId
+            };
+        }
+
+        private async Task<Lieu> GetOrCreateLieuAsync(string lieuData)
+        {
+            var parts = lieuData.Split("/");
+            var nom = parts[0];
+            string? pays = parts.Length == 2 ? parts[1] : null;
+
+            var lieu = await _lieuService.VerifyLieuExistsAsync(nom, pays);
+            if (lieu != null) return lieu;
+
+            var lieuId = await _lieuService.CreateAsync(new LieuDTOForm { Nom = nom, Pays = pays });
+            return new Lieu { LieuId = lieuId };
+        }
+
+        private async Task<List<string>> ValidateDataAsync(List<List<string>> data)
+        {
+            var errors = new List<string>();
+
+            var employeeErrors = await _employeeService.CheckNameAndCode(data);
+            if (employeeErrors != null) errors.AddRange(employeeErrors);
+
+            var dateErrors = CSVReader.CheckDate(data);
+            if (dateErrors != null) errors.AddRange(dateErrors);
+
+            var hourErrors = CSVReader.CheckHour(data);
+            if (hourErrors != null) errors.AddRange(hourErrors);
+
+            return errors;
+        }
+
+        public async Task<MissionAssignation?> VerifyMissionAssignationByNameAsync(string employeeId, string missionId)
+        {
+            var filters = new MissionAssignationSearchFiltersDTO
+            {
+                EmployeeId = employeeId,
+                MissionId = missionId
+            };
+            var (result, total) = await _repository.SearchAsync(filters, 1, 1);
+            var assignation = result.FirstOrDefault();
+            return assignation;
+        }
+
+        public Task<int> calculateDuration(DateTime Start, DateTime End)
+        {
+            if (End < Start)
+                throw new ArgumentException("La date de fin ne peut pas être antérieure à la date de début.");
+
+            TimeSpan duration = End.Date - Start.Date;
+            return Task.FromResult(duration.Days);
+        }
         
+
         public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO)
         {
             try
