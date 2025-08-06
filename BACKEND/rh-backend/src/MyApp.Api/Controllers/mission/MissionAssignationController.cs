@@ -18,6 +18,17 @@ namespace MyApp.Api.Controllers.mission
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
+        [HttpPost("import-csv")]
+        public async Task<IActionResult> ImportCsv(IFormFile file, [FromQuery] char separator = ',')
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Fichier non valide.");
+
+            using var stream = file.OpenReadStream();
+            var result = await _service.ImportMissionFromCsv(stream, separator);
+            return Ok(result);
+        }
+
         // Récupère les employés non assignés à une mission spécifique
         [HttpGet("not-assigned/{missionId}")]
         public async Task<ActionResult<IEnumerable<Employee>>> GetEmployeesNotAssignedToMission(string missionId)
