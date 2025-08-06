@@ -551,8 +551,8 @@ const BeneficiaryMissionList = () => {
           <tbody>
             {isLoading.assignMissions ? (
               <tr>
-                <td colSpan={9} className="text-center py-4">
-                  <div className="loading-spinner">Chargement des données...</div>
+                <td colSpan={2} className="text-center py-4">
+                  <div className="loading">Chargement des données...</div>
                 </td>
               </tr>
             ) : assignedPersons.length > 0 ? (
