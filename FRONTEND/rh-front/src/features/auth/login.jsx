@@ -3,13 +3,13 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "services/auth/user"; // Adjust the import path as needed
+import { loginUser } from "services/auth/user";
 import "styles/login.css";
 
 function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState({ login: false });
@@ -19,7 +19,7 @@ function LoginPage() {
     setError(null);
 
     await loginUser(
-      email,
+      username,
       password,
       setIsLoading,
       (successData) => {
@@ -57,11 +57,11 @@ function LoginPage() {
 
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Email</label>
+            <label className="form-label">Nom d'utilisateur</label>
             <input
               type="text"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               className="form-input"
               disabled={isLoading.login}
