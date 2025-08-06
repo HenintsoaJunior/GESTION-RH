@@ -3,7 +3,7 @@
 import { BASE_URL_LDAP } from "config/apiConfig";
 
 // Fonction pour gérer la connexion d'un utilisateur
-export const loginUser = async (email, password, setIsLoading, onSuccess, onError) => {
+export const loginUser = async (username, password, setIsLoading, onSuccess, onError) => {
   try {
     setIsLoading((prev) => ({ ...prev, login: true }));
 
@@ -14,7 +14,7 @@ export const loginUser = async (email, password, setIsLoading, onSuccess, onErro
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email,
+        username,
         password,
       }),
     });
@@ -67,7 +67,7 @@ export const loginUser = async (email, password, setIsLoading, onSuccess, onErro
   } catch (error) {
     console.error("Erreur lors de la connexion:", error);
     onError({
-      message: "Email ou mot de passe incorrect",
+      message: "Nom d'utilisateur ou mot de passe incorrect",
       type: "error",
       details: error.message || "Erreur inconnue",
     });
