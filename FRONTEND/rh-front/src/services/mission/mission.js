@@ -1,5 +1,118 @@
-import { apiGet, apiPost, apiPut } from "utils/apiUtils";
+import { apiGet, apiPost, apiPut,apiDelete } from "utils/apiUtils";
 import { handleValidationError } from "utils/validation";
+
+
+export const updateMission = async (
+  missionId,
+  missionData,
+  setIsLoading,
+  onSuccess,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, mission: true }));
+    const updatedMission = await apiPut(`/api/Mission/${missionId}`, missionData);
+    onSuccess({
+      isOpen: true,
+      type: "success",
+      message: `Mission "${updatedMission.name}" mise à jour avec succès !`,
+    });
+    return updatedMission;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la mission:", error);
+    onError({
+      isOpen: true,
+      type: "error",
+      message: error.message || "Erreur lors de la mise à jour de la mission.",
+      fieldErrors: error.fieldErrors || {},
+    });
+    throw error;
+  } finally {
+    setIsLoading((prev) => ({ ...prev, mission: false }));
+  }
+};
+
+
+export const deleteMissionAssignation = async (
+  employeeId,
+  missionId,
+  setIsLoading,
+  onSuccess,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, missionAssignation: true }));
+    await apiDelete(`/api/MissionAssignation/${employeeId}/${missionId}`);
+    onSuccess({
+      isOpen: true,
+      type: "success",
+      message: "Assignation supprimée avec succès !",
+    });
+  } catch (error) {
+    console.error("Erreur lors de la suppression de l'assignation:", error);
+    const errorMessage = error.response?.data?.message || error.message || "Erreur lors de la suppression de l'assignation.";
+    const fieldErrors = error.response?.data?.errors || {};
+    onError({
+      isOpen: true,
+      type: "error",
+      message: errorMessage,
+      fieldErrors,
+    });
+    throw error;
+  } finally {
+    setIsLoading((prev) => ({ ...prev, missionAssignation: false }));
+  }
+};
+
+
+export const updateMissionAssignation = async (
+  employeeId,
+  missionId,
+  assignationData,
+  setIsLoading,
+  onSuccess,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, missionAssignation: true }));
+
+    // Vérifie que employeeId et missionId sont fournis et cohérents avec assignationData
+    if (!employeeId || !missionId) {
+      throw new Error("Les identifiants de l'employé et de la mission sont requis.");
+    }
+    if (assignationData.employeeId !== employeeId || assignationData.missionId !== missionId) {
+      throw new Error("Les identifiants dans les paramètres doivent correspondre à ceux des données d'assignation.");
+    }
+
+    const updatedAssignation = await apiPut(`/api/MissionAssignation/${employeeId}/${missionId}`, assignationData);
+    
+    onSuccess({
+      isOpen: true,
+      type: "success",
+      message: "Assignation mise à jour avec succès !",
+    });
+    
+    return updatedAssignation;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de l'assignation:", error);
+    
+    // Gestion des erreurs spécifiques de l'API
+    const errorMessage = error.response?.data?.message || error.message || "Erreur lors de la mise à jour de l'assignation.";
+    const fieldErrors = error.response?.data?.errors || {};
+
+    onError({
+      isOpen: true,
+      type: "error",
+      message: errorMessage,
+      fieldErrors,
+    });
+    
+    throw error;
+  } finally {
+    setIsLoading((prev) => ({ ...prev, missionAssignation: false }));
+  }
+};
+
 
 export const exportMissionAssignationPDF = async (
   filters,
