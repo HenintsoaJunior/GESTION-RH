@@ -38,12 +38,23 @@ namespace MyApp.Api.Services.mission
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        // check si la mission existe deja
+        public async Task<Mission?> VerifyMissionByNameAsync(string name)
+        {
+            var filters = new MissionSearchFiltersDTO
+            {
+                Name = name
+            };
+            var (result, total) = await _repository.SearchAsync(filters, 1, 1);
+            var mission = result.FirstOrDefault();
+            return mission;
+        }
+
         public async Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize)
         {
             return await _repository.SearchAsync(filters, page, pageSize);
         }
 
-        // check si la mission existe deja => check matricule + nom mission + date
 
         public async Task<IEnumerable<Mission>> GetAllAsync()
         {

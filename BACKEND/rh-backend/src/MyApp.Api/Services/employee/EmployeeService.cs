@@ -10,8 +10,8 @@ namespace MyApp.Api.Services.employee
 {
     public interface IEmployeeService
     {
-        Task<bool> VerifyEmployeeExistsAsync(string code);
-        Task<List<string>> CheckNameAndCode(List<List<string>> DataExcel);
+        Task<Employee> VerifyEmployeeExistsAsync(string code);
+        Task<List<string>?> CheckNameAndCode(List<List<string>> DataExcel);
         Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Employee>> GetAllAsync();
         Task<Employee?> GetByIdAsync(string id);
@@ -40,7 +40,7 @@ namespace MyApp.Api.Services.employee
         }
   
         // check si le matricule se trouve dans la base
-        public async Task<bool> VerifyEmployeeExistsAsync(string code)
+        public async Task<Employee> VerifyEmployeeExistsAsync(string code)
         {
             var filters = new EmployeeSearchFiltersDTO
             {
@@ -51,7 +51,7 @@ namespace MyApp.Api.Services.employee
             {
                 throw new Exception("Employee inexistant");
             }
-            return result != null && result.Any();
+            return (Employee)result;
         }
 
         // check si le nom et le matricule sont tous les meme pour chaque ligne
@@ -66,7 +66,7 @@ namespace MyApp.Api.Services.employee
             }
 
             var header = dataExcel[0];
-            int nameIndex = CSVReader.GetColumnIndex(header, "nom");
+            int nameIndex = CSVReader.GetColumnIndex(header, "Bénéficiaire");
             int codeIndex = CSVReader.GetColumnIndex(header, "matricule", "code");
 
             if (nameIndex == -1 || codeIndex == -1)
@@ -95,7 +95,7 @@ namespace MyApp.Api.Services.employee
                 CSVReader.CheckDuplicate(codeNameMap, code, name, i + 1, codeIndex + 1, errors);
             }
 
-            return await Task.FromResult(errors.Count > 0 ? errors : null);
+            return await Task.FromResult(errors);
         }
 
 

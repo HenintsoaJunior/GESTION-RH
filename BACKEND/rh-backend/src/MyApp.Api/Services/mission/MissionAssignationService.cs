@@ -7,17 +7,17 @@ using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.employee;
-using MyApp.Api.Services.employe;
 using MyApp.Api.Models.form.mission;
 using MyApp.Api.Utils.exception;
 using MyApp.Utils.pdf;
 using MyApp.Utils.csv;
+using MyApp.Api.Models.form.lieu;
 
 namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
     {
-        Task<List<string>> ImportMissionFromCsv(Stream fileStream, char separator);
+        Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator);
         Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
@@ -39,6 +39,7 @@ namespace MyApp.Api.Services.mission
         private readonly ICompensationScaleService _compensationScaleService;
         private readonly ICategoriesOfEmployeeService _categoriesOfEmployeeService;
         private readonly IEmployeeService _employeeService;
+        private readonly ILieuService _lieuService;
         private readonly ILogger<MissionAssignationService> _logger;
         private readonly ILoggerFactory _loggerFactory;
 
@@ -49,6 +50,7 @@ namespace MyApp.Api.Services.mission
             ICompensationScaleService compensationScaleService,
             ICategoriesOfEmployeeService categoriesOfEmployeeService,
             IEmployeeService employeeService,
+            ILieuService lieuService,
             ILogger<MissionAssignationService> logger,
             ILoggerFactory loggerFactory)
         {
@@ -58,29 +60,88 @@ namespace MyApp.Api.Services.mission
             _compensationScaleService = compensationScaleService ?? throw new ArgumentNullException(nameof(compensationScaleService));
             _categoriesOfEmployeeService = categoriesOfEmployeeService ?? throw new ArgumentNullException(nameof(categoriesOfEmployeeService));
             _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
+            _lieuService = lieuService ?? throw new ArgumentNullException(nameof(lieuService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
-        public async Task<List<string>> ImportMissionFromCsv(Stream fileStream, char separator)
+        public async Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator)
         {
-            // lire le csv
-            var tempFilePath = Path.GetTempFileName();
-            using (var fileStreamOutput = File.Create(tempFilePath))
+            try
             {
-                fileStream.CopyTo(fileStreamOutput);
-            }
-                // Lecture via la méthode statique
-                List<List<string>> data = CSVReader.ReadCsv(tempFilePath, separator);
-                // Suppression du fichier temporaire
-                File.Delete(tempFilePath);
+                // lire le csv
+                var tempFilePath = Path.GetTempFileName();
+                using (var fileStreamOutput = File.Create(tempFilePath))
+                {
+                    fileStream.CopyTo(fileStreamOutput);
+                }
+                    // Lecture via la méthode statique
+                    List<List<string>> data = CSVReader.ReadCsv(tempFilePath, separator);
+                    // Suppression du fichier temporaire
+                    File.Delete(tempFilePath);
 
-            List<string> errors = new List<string>();
-            // checking
-            // si employee n'existe pas => throws
-            // si mission existe pas => insertion mission + assignation mission
-            return null;
+                List<string> errors = [];
+                // checking
+                // employe
+                var employeeErrors = await _employeeService.CheckNameAndCode(data);
+                if (employeeErrors != null)
+                {
+                    errors.AddRange(employeeErrors);
+                }
+                // date
+                var dateError = CSVReader.CheckDate(data);
+                if (dateError != null)
+                {
+                    errors.AddRange(dateError);
+                }
+                // heure
+                var hourError = CSVReader.CheckHour(data);
+                if (hourError != null)
+                {
+                    errors.AddRange(hourError);
+                }
+
+                // si employee n'existe pas => throws
+                var matricule = data[1][0];
+                Employee employee = await _employeeService.VerifyEmployeeExistsAsync(matricule);
+
+                // si lieu de mission n'existe pas => insertion lieu de mission
+                var lieu_name = data[1][7].Split("/");
+                var nom = lieu_name[0];
+                string? pays = null;
+                if (lieu_name.Length == 2)
+                {
+                    pays = lieu_name[1];
+                }
+                Lieu? lieu = await _lieuService.VerifyLieuExistsAsync(nom, pays);
+                if (lieu == null)
+                {
+                    var lieuId = await _lieuService.CreateAsync(new LieuDTOForm
+                    {
+                        Nom = nom,
+                        Pays = pays
+                    });
+                    lieu = new Lieu
+                    {
+                        LieuId = lieuId,
+                        Nom = nom,
+                        Pays = pays
+                    };
+                }
+
+                // si mission existe pas => insertion mission
+                
+                // si mission assignation n'existe pas => insertion assignation mission : prendre la durée, date début, date fin
+
+                return errors;
+            }
+             catch (Exception ex)
+            {
+                throw new Exception($"Erreur durant l'import: {ex.Message}", ex);
+            }
         }
+
+        
         public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO)
         {
             try
