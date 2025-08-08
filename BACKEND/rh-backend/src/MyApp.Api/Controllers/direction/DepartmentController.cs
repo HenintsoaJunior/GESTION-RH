@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using MyApp.Api.Entities.direction;
 using MyApp.Api.Models.form.direction;
 using MyApp.Api.Services.direction;
-using System;
-using System.Threading.Tasks;
 
 namespace MyApp.Api.Controllers.direction
 {
