@@ -518,7 +518,7 @@ const AssignedPersonsList = () => {
                   className="table-row-clickable"
                   style={{ cursor: "pointer" }}
                 >
-                  <td>{missionId || "Non spécifié"}</td>
+                  <td>{assignment.assignationId || "Non spécifié"}</td>
                   <td>
                     {(assignment.beneficiary && assignment.directionAcronym)
                       ? `${assignment.beneficiary} (${assignment.directionAcronym})`

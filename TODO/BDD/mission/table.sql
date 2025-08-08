@@ -60,7 +60,7 @@ CREATE TABLE mission (
 
 
 CREATE TABLE mission_assignation(
-   assignation_id TEXT,
+   assignation_id VARCHAR(50),
    departure_date DATE NOT NULL,
    departure_time TIME,
    return_date DATE,

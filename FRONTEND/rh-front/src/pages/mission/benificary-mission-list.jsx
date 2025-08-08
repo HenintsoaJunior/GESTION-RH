@@ -550,7 +550,7 @@ const BeneficiaryMissionList = () => {
                   clickable
                   onClick={() => handleRowClick(assignment.missionId, assignment.employeeId)}
                 >
-                  <TableCell>{assignment.missionId || "Non spécifié"}</TableCell>
+                  <TableCell>{assignment.assignationId || "Non spécifié"}</TableCell>
                   <TableCell>
                     {(assignment.beneficiary && assignment.directionAcronym)
                       ? `${assignment.beneficiary} (${assignment.directionAcronym})`
