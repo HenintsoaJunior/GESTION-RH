@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronDown, ChevronUp, X, List, FileText, Download, ArrowLeft } from "lucide-react";
+import { ChevronDown, ChevronUp, X, List, FileText, Download, ArrowLeft, Plus } from "lucide-react";
 import { formatDate } from "utils/dateConverter";
 import Alert from "components/alert";
 import Pagination from "components/pagination";
@@ -479,6 +479,12 @@ const AssignedPersonsList = () => {
             <span className="assignments-count">({assignedPersons.length} assignation{assignedPersons.length > 1 ? 's' : ''})</span>
           )}
         </h2>
+        <div className="view-toggle">
+          <button onClick={() => navigate("/mission/create")} className="btn-new-request">
+            <Plus className="w-4 h-4" />
+            Nouvelle mission
+          </button>
+        </div>
       </div>
 
       {/* Tableau des données */}
@@ -512,7 +518,7 @@ const AssignedPersonsList = () => {
                   className="table-row-clickable"
                   style={{ cursor: "pointer" }}
                 >
-                  <td>{assignment.assignmentId || "Non spécifié"}</td>
+                  <td>{missionId || "Non spécifié"}</td>
                   <td>
                     {(assignment.beneficiary && assignment.directionAcronym)
                       ? `${assignment.beneficiary} (${assignment.directionAcronym})`

@@ -11,11 +11,13 @@ using MyApp.Api.Services.employe;
 using MyApp.Api.Models.form.mission;
 using MyApp.Api.Utils.exception;
 using MyApp.Utils.pdf;
+using MyApp.Utils.csv;
 
 namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
     {
+        Task<string> ImportMissionFromCsv(Stream fileStream, char separator);
         Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
@@ -24,7 +26,7 @@ namespace MyApp.Api.Services.mission
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
         Task<(string EmployeeId, string MissionId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation);
         Task<bool> UpdateAsync(MissionAssignation missionAssignation);
-        Task<bool> DeleteAsync(string employeeId, string missionId, string transportId);
+        Task<bool> DeleteAsync(string employeeId, string missionId);
         Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
         Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
     }
@@ -60,6 +62,23 @@ namespace MyApp.Api.Services.mission
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
+        public async Task<string> ImportMissionFromCsv(Stream fileStream, char separator)
+        {
+            // lire le csv
+            var tempFilePath = Path.GetTempFileName();
+            using (var fileStreamOutput = File.Create(tempFilePath))
+            {
+                fileStream.CopyTo(fileStreamOutput);
+            }
+                // Lecture via la méthode statique
+                List<List<string>> data = CSVReader.ReadCsv(tempFilePath, separator);
+                // Suppression du fichier temporaire
+                File.Delete(tempFilePath);
+
+            // checking
+            // inserer dans la base
+            return "";
+        }
         public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO)
         {
             try
@@ -567,11 +586,11 @@ namespace MyApp.Api.Services.mission
             await _repository.SaveChangesAsync();
         }
 
-        public async Task<bool> DeleteAsync(string employeeId, string missionId, string transportId)
+        public async Task<bool> DeleteAsync(string employeeId, string missionId)
         {
             try
             {
-                var existing = await _repository.GetByIdAsync(employeeId, missionId, transportId);
+                var existing = await _repository.GetByIdAsync(employeeId, missionId);
                 if (existing == null)
                 {
                     return false;

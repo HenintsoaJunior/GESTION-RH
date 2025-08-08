@@ -72,15 +72,13 @@ namespace MyApp.Api.Controllers
 
         // Met à jour une mission existante
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] Mission mission)
+        public async Task<IActionResult> Update(string id, [FromBody] MissionDTOForm mission)
         {
-            if (id != mission.MissionId) return BadRequest("ID mismatch");
-
             try
             {
-                var updated = await _missionService.UpdateAsync(mission);
-                if (!updated) return NotFound();
-                return NoContent();
+                var updated = await _missionService.UpdateAsync(id,mission);
+                
+                return Ok(new { success = updated, mission });
             }
             catch (Exception ex)
             {
@@ -97,7 +95,7 @@ namespace MyApp.Api.Controllers
             {
                 var deleted = await _missionService.DeleteAsync(id);
                 if (!deleted) return NotFound();
-                return NoContent();
+                return Ok(new { message = $"Mission with ID {id} successfully deleted" });
             }
             catch (Exception ex)
             {
