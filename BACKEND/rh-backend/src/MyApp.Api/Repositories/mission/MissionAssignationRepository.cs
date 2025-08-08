@@ -2,12 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.search.mission;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-
 namespace MyApp.Api.Repositories.mission
 {
     public interface IMissionAssignationRepository
@@ -156,7 +150,7 @@ namespace MyApp.Api.Repositories.mission
                 .Include(ma => ma.Employee)
                 .ThenInclude(e => e.Site)
                 .Include(ma => ma.Mission)
-                .ThenInclude(m => m.Lieu)
+                .ThenInclude(m => m!.Lieu)
                 .Include(ma => ma.Transport)
                 .AsQueryable();
 

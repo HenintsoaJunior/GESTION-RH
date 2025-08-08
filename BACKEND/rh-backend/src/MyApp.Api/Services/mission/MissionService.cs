@@ -69,35 +69,35 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<string> CreateAsync(MissionDTOForm missionDTO)
+        public async Task<string> CreateAsync(MissionDTOForm missionDto)
         {
             try
             {
                 var missionId = _sequenceGenerator.GenerateSequence("seq_mission_id", "MIS", 6, "-");
-                var mission = new Mission(missionDTO) { MissionId = missionId };
+                var mission = new Mission(missionDto) { MissionId = missionId };
 
                 await _repository.AddAsync(mission);
                 await _repository.SaveChangesAsync();
 
-                if (missionDTO.Assignations != null && missionDTO.Assignations.Any())
+                if (missionDto.Assignations.Any())
                 {
-                    foreach (var assignationDTO in missionDTO.Assignations)
+                    foreach (var assignationDto in missionDto.Assignations)
                     {
                         var missionAssignation = new MissionAssignation
                         {
-                            EmployeeId = assignationDTO.EmployeeId,
+                            EmployeeId = assignationDto.EmployeeId,
                             MissionId = missionId,
-                            TransportId = assignationDTO.TransportId,
-                            DepartureDate = assignationDTO.DepartureDate ?? DateTime.Now,
-                            DepartureTime = assignationDTO.DepartureTime,
-                            ReturnDate = assignationDTO.ReturnDate,
-                            ReturnTime = assignationDTO.ReturnTime,
-                            Duration = assignationDTO.Duration
+                            TransportId = assignationDto.TransportId,
+                            DepartureDate = assignationDto.DepartureDate ?? DateTime.Now,
+                            DepartureTime = assignationDto.DepartureTime,
+                            ReturnDate = assignationDto.ReturnDate,
+                            ReturnTime = assignationDto.ReturnTime,
+                            Duration = assignationDto.Duration
                         };
 
                         await _missionAssignationService.CreateAsync(missionAssignation);
                     }
-                    _logger.LogInformation("Created {Count} mission assignations for mission {MissionId}", missionDTO.Assignations.Count, missionId);
+                    _logger.LogInformation("Created {Count} mission assignations for mission {MissionId}", missionDto.Assignations.Count, missionId);
                 }
 
                 _logger.LogInformation("Mission créée avec l'ID: {MissionId}", missionId);
