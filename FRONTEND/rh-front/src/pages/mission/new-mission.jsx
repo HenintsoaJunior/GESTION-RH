@@ -1,55 +1,58 @@
-import "styles/generic-form-styles.css";
-import AutoCompleteInput from "components/auto-complete-input";
+import {
+  FormSectionTitle,
+  FormTable,
+  FormRow,
+  FormFieldCell,
+  FormLabel,
+  FormLabelRequired,
+  FormInput,
+  FormTextarea,
+  StyledAutoCompleteInput,
+  ErrorMessage,
+} from "styles/generaliser/form-container";
 
 const NewMissionForm = ({ formData, fieldErrors, isSubmitting, isLoading, regionDisplayNames, handleInputChange, handleAddNewSuggestion }) => {
   return (
-    <div className="form-section">
-      <h3 className="form-section-title text-lg font-semibold mb-4">Détails de la Mission</h3>
-      <table className="form-table w-full border-collapse">
+    <div>
+      <FormSectionTitle>Détails de la Mission</FormSectionTitle>
+      <FormTable>
         <tbody>
-          <tr className="form-row">
-            <td className="form-field-cell p-2 align-top">
-              <label htmlFor="missionTitle" className="form-label form-label-required block mb-2">
-                Intitulé de la Mission
-              </label>
-              <input
+          <FormRow>
+            <FormFieldCell>
+              <FormLabelRequired htmlFor="missionTitle">Intitulé de la Mission</FormLabelRequired>
+              <FormInput
                 id="missionTitle"
                 type="text"
                 name="missionTitle"
                 value={formData.missionTitle}
                 onChange={handleInputChange}
                 placeholder="Saisir le titre de la mission..."
-                className={`form-table w-full ${fieldErrors.Name ? "input-error" : ""}`}
+                className={fieldErrors.Name ? "input-error" : ""}
                 disabled={isSubmitting || isLoading.regions}
               />
               {fieldErrors.Name && (
-                <span className="error-message block mt-1">{fieldErrors.Name.join(", ")}</span>
+                <ErrorMessage>{fieldErrors.Name.join(", ")}</ErrorMessage>
               )}
-            </td>
-          </tr>
-          <tr className="form-row">
-            <td className="form-field-cell p-2 align-top">
-              <label htmlFor="description" className="form-label block mb-2">
-                Description
-              </label>
-              <textarea
+            </FormFieldCell>
+          </FormRow>
+          <FormRow>
+            <FormFieldCell>
+              <FormLabel htmlFor="description">Description</FormLabel>
+              <FormTextarea
                 id="description"
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Saisir une description..."
-                className="form-table w-full"
                 rows="4"
                 disabled={isSubmitting || isLoading.regions}
               />
-            </td>
-          </tr>
-          <tr className="form-row">
-            <td className="form-field-cell p-2 align-top">
-              <label htmlFor="location" className="form-label block mb-2">
-                Lieu
-              </label>
-              <AutoCompleteInput
+            </FormFieldCell>
+          </FormRow>
+          <FormRow>
+            <FormFieldCell>
+              <FormLabel htmlFor="location">Lieu</FormLabel>
+              <StyledAutoCompleteInput
                 value={formData.location}
                 onChange={(value) => {
                   const realValue = value.includes('/') ? value.split('/')[0] : value;
@@ -64,53 +67,49 @@ const NewMissionForm = ({ formData, fieldErrors, isSubmitting, isLoading, region
                 fieldType="location"
                 fieldLabel="lieu"
                 addNewRoute="/lieu/create"
-                className={`form-table autocomplete-input w-full ${fieldErrors.LieuId ? "input-error" : ""}`}
+                className={fieldErrors.LieuId ? "error" : ""}
               />
               {fieldErrors.LieuId && (
-                <span className="error-message block mt-1">{fieldErrors.LieuId.join(", ")}</span>
+                <ErrorMessage>{fieldErrors.LieuId.join(", ")}</ErrorMessage>
               )}
-            </td>
-          </tr>
-          <tr className="form-row">
-            <td className="form-field-cell p-2 align-top">
-              <label htmlFor="startDate" className="form-label form-label-required block mb-2">
-                Date de début
-              </label>
-              <input
+            </FormFieldCell>
+          </FormRow>
+          <FormRow>
+            <FormFieldCell>
+              <FormLabelRequired htmlFor="startDate">Date de début</FormLabelRequired>
+              <FormInput
                 id="startDate"
                 type="date"
                 name="startDate"
                 value={formData.startDate || ""}
                 onChange={handleInputChange}
-                className={`form-table w-full ${fieldErrors.StartDate ? "input-error" : ""}`}
+                className={fieldErrors.StartDate ? "input-error" : ""}
                 disabled={isSubmitting || isLoading.regions}
               />
               {fieldErrors.StartDate && (
-                <span className="error-message block mt-1">{fieldErrors.StartDate.join(", ")}</span>
+                <ErrorMessage>{fieldErrors.StartDate.join(", ")}</ErrorMessage>
               )}
-            </td>
-          </tr>
-          <tr className="form-row">
-            <td className="form-field-cell p-2 align-top">
-              <label htmlFor="endDate" className="form-label form-label-required block mb-2">
-                Date de fin
-              </label>
-              <input
+            </FormFieldCell>
+          </FormRow>
+          <FormRow>
+            <FormFieldCell>
+              <FormLabelRequired htmlFor="endDate">Date de fin</FormLabelRequired>
+              <FormInput
                 id="endDate"
                 type="date"
                 name="endDate"
                 value={formData.endDate || ""}
                 onChange={handleInputChange}
-                className={`form-table w-full ${fieldErrors.EndDate ? "input-error" : ""}`}
+                className={fieldErrors.EndDate ? "input-error" : ""}
                 disabled={isSubmitting || isLoading.regions}
               />
               {fieldErrors.EndDate && (
-                <span className="error-message block mt-1">{fieldErrors.EndDate.join(", ")}</span>
+                <ErrorMessage>{fieldErrors.EndDate.join(", ")}</ErrorMessage>
               )}
-            </td>
-          </tr>
+            </FormFieldCell>
+          </FormRow>
         </tbody>
-      </table>
+      </FormTable>
     </div>
   );
 };

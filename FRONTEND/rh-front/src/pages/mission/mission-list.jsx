@@ -1,3 +1,4 @@
+// src/components/MissionList.js
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -5,37 +6,85 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle, List, XCircle } from "lucide-react";
 import { Calendar as BigCalendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
-import "moment/locale/fr"; // Import de la locale française
+import "moment/locale/fr";
+import "react-big-calendar/lib/css/react-big-calendar.css";
 import { formatDate } from "utils/dateConverter";
 import { fetchMissions, fetchMissionStats, cancelMission } from "services/mission/mission";
 import Modal from "components/modal";
 import Pagination from "components/pagination";
-import "react-big-calendar/lib/css/react-big-calendar.css";
-import "styles/generic-table-styles.css";
-import AutoCompleteInput from "components/auto-complete-input";
 import { fetchAllRegions } from "services/lieu/lieu";
+import {
+  DashboardContainer,
+  StatsContainer,
+  StatsGrid,
+  StatCard,
+  StatIcon,
+  StatContent,
+  StatNumber,
+  StatLabel,
+  FiltersContainer,
+  FiltersHeader,
+  FiltersTitle,
+  FiltersControls,
+  FilterControlButton,
+  FiltersSection,
+  FormTableSearch,
+  FormRow,
+  FormFieldCell,
+  FormLabelSearch,
+  FormInputSearch,
+  StyledAutoCompleteInput,
+  FiltersActions,
+  ButtonReset,
+  ButtonSearch,
+  ButtonAdd,
+  ButtonUpdate,
+  ButtonCancel,
+  ButtonConfirm,
+  FiltersToggle,
+  ButtonShowFilters,
+  TableHeader,
+  TableTitle,
+  ViewToggle,
+  ButtonView,
+  TableContainer,
+  DataTable,
+  TableHeadCell,
+  TableRow,
+  TableCell,
+  StatusBadge,
+  CalendarLegend,
+  LegendItem,
+  LegendColor,
+  LegendLabel,
+  LegendNote,
+  ActionButtons,
+  ModalActions,
+  Loading,
+  NoDataMessage
+} from "styles/generaliser/table-container";
 
 // Configuration de moment en français
-moment.locale('fr');
+moment.locale("fr");
 
 // Configuration du localizer pour react-big-calendar avec les messages en français
 const localizer = momentLocalizer(moment);
 
 // Messages en français pour react-big-calendar
 const messages = {
-  allDay: 'Toute la journée',
-  previous: 'Précédent',
-  next: 'Suivant',
+  allDay: "Toute la journée",
+  previous: "Précédent",
+  next: "Suivant",
   today: "Aujourd'hui",
-  month: 'Mois',
-  week: 'Semaine',
-  day: 'Jour',
-  agenda: 'Agenda',
-  date: 'Date',
-  time: 'Heure',
-  event: 'Événement',
-  noEventsInRange: 'Aucun événement dans cette période.',
-  showMore: total => `+ ${total} événement(s) supplémentaire(s)`
+  month: "Mois",
+  week: "Semaine",
+  day: "Jour",
+  agenda: "Agenda",
+  date: "Date",
+  time: "Heure",
+  event: "Événement",
+  noEventsInRange: "Aucun événement dans cette période.",
+  showMore: (total) => `+ ${total} événement(s) supplémentaire(s)`,
 };
 
 const MissionList = () => {
@@ -84,12 +133,12 @@ const MissionList = () => {
     return {
       style: {
         backgroundColor,
-        borderRadius: '5px',
+        borderRadius: "5px",
         opacity: 0.8,
-        color: 'white',
-        border: '0px',
-        display: 'block'
-      }
+        color: "white",
+        border: "0px",
+        display: "block",
+      },
     };
   };
 
@@ -102,7 +151,7 @@ const MissionList = () => {
       (data) => {
         setRegions(data);
         setRegionNames(data.map((lieu) => lieu.nom));
-        setRegionDisplayNames(data.map((lieu) => `${lieu.nom}${lieu.pays ? `/${lieu.pays}` : ''}`));
+        setRegionDisplayNames(data.map((lieu) => `${lieu.nom}${lieu.pays ? `/${lieu.pays}` : ""}`));
       },
       setIsLoading,
       (alert) => setAlert(alert),
@@ -125,20 +174,20 @@ const MissionList = () => {
 
   const calendarEvents = useMemo(() => {
     const events = [];
-    
+
     missions.forEach((mission) => {
       const startDate = new Date(mission.startDate);
       const endDate = new Date(mission.endDate);
-      
+
       events.push({
         id: `${mission.missionId}-start`,
         title: `🚀 ${mission.name} (Début)`,
         start: startDate,
         end: startDate,
         allDay: true,
-        resource: { ...mission, eventType: 'start' },
+        resource: { ...mission, eventType: "start" },
       });
-      
+
       if (startDate.getTime() !== endDate.getTime()) {
         events.push({
           id: `${mission.missionId}-end`,
@@ -146,11 +195,11 @@ const MissionList = () => {
           start: endDate,
           end: endDate,
           allDay: true,
-          resource: { ...mission, eventType: 'end' },
+          resource: { ...mission, eventType: "end" },
         });
       }
     });
-    
+
     return events;
   }, [missions]);
 
@@ -230,7 +279,7 @@ const MissionList = () => {
   };
 
   const handleEventClick = (event) => {
-    const missionId = event.id.replace(/-(start|end)$/, '');
+    const missionId = event.id.replace(/-(start|end)$/, "");
     navigate(`/mission/assign-mission/${missionId}`);
   };
 
@@ -258,11 +307,11 @@ const MissionList = () => {
         : status === "Annulé"
         ? "status-cancelled"
         : "status-pending";
-    return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
+    return <StatusBadge className={statusClass}>{status || "Inconnu"}</StatusBadge>;
   };
 
   return (
-    <div className="dashboard-container">
+    <DashboardContainer>
       <Modal
         type={alert.type}
         message={alert.message}
@@ -278,120 +327,103 @@ const MissionList = () => {
         onClose={() => setShowCancelModal(false)}
         title="Confirmer l'annulation"
       >
-        <div className="modal-actions">
-          <button
-            className="btn-cancel"
-            onClick={() => setShowCancelModal(false)}
-          >
-            Annuler
-          </button>
-          <button
-            className="btn-confirm"
-            onClick={handleConfirmCancel}
-          >
-            Confirmer
-          </button>
-        </div>
+        <ModalActions>
+          <ButtonCancel onClick={() => setShowCancelModal(false)}>Annuler</ButtonCancel>
+          <ButtonConfirm onClick={handleConfirmCancel}>Confirmer</ButtonConfirm>
+        </ModalActions>
       </Modal>
 
-      <div className="stats-container">
-        <div className="stats-grid">
-          <div className="stat-card stat-card-total">
-            <div className="stat-icon">
-              <Clock className="w-6 h-6" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.total}</div>
-              <div className="stat-label">Total des missions</div>
-            </div>
-          </div>
-          <div className="stat-card stat-card-progress">
-            <div className="stat-icon">
-              <Clock className="w-6 h-6" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.enCours}</div>
-              <div className="stat-label">En Cours</div>
-            </div>
-          </div>
-          <div className="stat-card stat-card-pending">
-            <div className="stat-icon">
-              <Calendar className="w-6 h-6" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.planifiee}</div>
-              <div className="stat-label">Planifié</div>
-            </div>
-          </div>
-          <div className="stat-card stat-card-approved">
-            <div className="stat-icon">
-              <CheckCircle className="w-6 h-6" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.terminee}</div>
-              <div className="stat-label">Terminé</div>
-            </div>
-          </div>
-          <div className="stat-card stat-card-cancelled">
-            <div className="stat-icon">
-              <XCircle className="w-6 h-6" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.annulee}</div>
-              <div className="stat-label">Annulé</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StatsContainer>
+        <StatsGrid>
+          <StatCard className="stat-card-total">
+            <StatIcon>
+              <Clock size={24} />
+            </StatIcon>
+            <StatContent>
+              <StatNumber>{stats.total}</StatNumber>
+              <StatLabel>Total des missions</StatLabel>
+            </StatContent>
+          </StatCard>
+          <StatCard className="stat-card-progress">
+            <StatIcon>
+              <Clock size={24} />
+            </StatIcon>
+            <StatContent>
+              <StatNumber>{stats.enCours}</StatNumber>
+              <StatLabel>En Cours</StatLabel>
+            </StatContent>
+          </StatCard>
+          <StatCard className="stat-card-pending">
+            <StatIcon>
+              <Calendar size={24} />
+            </StatIcon>
+            <StatContent>
+              <StatNumber>{stats.planifiee}</StatNumber>
+              <StatLabel>Planifié</StatLabel>
+            </StatContent>
+          </StatCard>
+          <StatCard className="stat-card-approved">
+            <StatIcon>
+              <CheckCircle size={24} />
+            </StatIcon>
+            <StatContent>
+              <StatNumber>{stats.terminee}</StatNumber>
+              <StatLabel>Terminé</StatLabel>
+            </StatContent>
+          </StatCard>
+          <StatCard className="stat-card-cancelled">
+            <StatIcon>
+              <XCircle size={24} />
+            </StatIcon>
+            <StatContent>
+              <StatNumber>{stats.annulee}</StatNumber>
+              <StatLabel>Annulé</StatLabel>
+            </StatContent>
+          </StatCard>
+        </StatsGrid>
+      </StatsContainer>
 
       {!isHidden && (
-        <div className={`filters-container ${isMinimized ? "minimized" : ""}`}>
-          <div className="filters-header">
-            <h2 className="filters-title">Filtres de Recherche</h2>
-            <div className="filters-controls">
-              <button
-                type="button"
-                className="filter-control-btn filter-minimize-btn"
+        <FiltersContainer isMinimized={isMinimized}>
+          <FiltersHeader>
+            <FiltersTitle>Filtres de Recherche</FiltersTitle>
+            <FiltersControls>
+              <FilterControlButton
+                isMinimize
                 onClick={toggleMinimize}
                 title={isMinimized ? "Développer" : "Réduire"}
               >
-                {isMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-              </button>
-              <button
-                type="button"
-                className="filter-control-btn filter-close-btn"
-                onClick={toggleHide}
-                title="Fermer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+                {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              </FilterControlButton>
+              <FilterControlButton isClose onClick={toggleHide} title="Fermer">
+                <X size={16} />
+              </FilterControlButton>
+            </FiltersControls>
+          </FiltersHeader>
 
           {!isMinimized && (
-            <div className="filters-section">
+            <FiltersSection>
               <form onSubmit={handleFilterSubmit}>
-                <table className="form-table-search w-full border-collapse">
+                <FormTableSearch>
                   <tbody>
-                    <tr className="form-row">
-                      <td className="form-field-cell p-2 align-top">
-                        <label className="form-label-search block mb-2">Intitulé de la Mission</label>
-                        <input
+                    <FormRow>
+                      <FormFieldCell>
+                        <FormLabelSearch>Intitulé de la Mission</FormLabelSearch>
+                        <FormInputSearch
                           name="name"
                           type="text"
                           value={filters.name}
                           onChange={(e) => handleFilterChange("name", e.target.value)}
-                          className="form-input-search w-full"
                           placeholder="Recherche par titre"
                         />
-                      </td>
+                      </FormFieldCell>
 
-                      <td className="form-field-cell p-2 align-top">
-                        <label className="form-label-search block mb-2">Lieu</label>
-                        <AutoCompleteInput
+                      <FormFieldCell>
+                        <FormLabelSearch>Lieu</FormLabelSearch>
+                        <StyledAutoCompleteInput
                           value={filters.location}
                           onChange={(value) => {
-                            const regionName = value.includes('/') ? value.split('/')[0] : value;
+                            const regionName = value.includes("/") ? value.split("/")[0] : value;
                             const selectedRegion = regions.find((r) => r.nom === regionName);
                             setFilters((prev) => ({
                               ...prev,
@@ -406,197 +438,149 @@ const MissionList = () => {
                           showAddOption={false}
                           fieldType="lieuId"
                           fieldLabel="lieu"
-                          className="form-input-search w-full"
                         />
-                      </td>
-                      
-                      <td className="form-field-cell p-2 align-top">
-                        <label className="form-label-search block mb-2">Statut</label>
-                        <select
+                      </FormFieldCell>
+
+                      <FormFieldCell>
+                        <FormLabelSearch>Statut</FormLabelSearch>
+                        <FormInputSearch
+                          as="select"
                           name="status"
                           value={filters.status}
                           onChange={(e) => handleFilterChange("status", e.target.value)}
-                          className="form-input-search w-full"
                         >
                           <option value="">Tous les statuts</option>
                           <option value="En Cours">En Cours</option>
                           <option value="Planifié">Planifié</option>
                           <option value="Terminé">Terminé</option>
                           <option value="Annulé">Annulé</option>
-                        </select>
-                      </td>
-                      
-                      <td className="form-field-cell p-2 align-top">
-                        <label className="form-label-search block mb-2">Date de début</label>
-                        <input
+                        </FormInputSearch>
+                      </FormFieldCell>
+
+                      <FormFieldCell>
+                        <FormLabelSearch>Date de début</FormLabelSearch>
+                        <FormInputSearch
                           name="startDate"
                           type="date"
                           value={filters.startDate}
                           onChange={(e) => handleFilterChange("startDate", e.target.value)}
-                          className="form-input-search w-full"
                         />
-                      </td>
-                      
-                      <td className="form-field-cell p-2 align-top">
-                        <label className="form-label-search block mb-2">Date de fin</label>
-                        <input
+                      </FormFieldCell>
+
+                      <FormFieldCell>
+                        <FormLabelSearch>Date de fin</FormLabelSearch>
+                        <FormInputSearch
                           name="endDate"
                           type="date"
                           value={filters.endDate}
                           onChange={(e) => handleFilterChange("endDate", e.target.value)}
-                          className="form-input-search w-full"
                         />
-                      </td>
-                    </tr>
+                      </FormFieldCell>
+                    </FormRow>
                   </tbody>
-                </table>
+                </FormTableSearch>
 
-                <div className="filters-actions">
-                  <button type="button" className="btn-reset" onClick={handleResetFilters}>
+                <FiltersActions>
+                  <ButtonReset type="button" onClick={handleResetFilters}>
                     Réinitialiser
-                  </button>
-                  <button type="submit" className="btn-search">
-                    Rechercher
-                  </button>
-                </div>
+                  </ButtonReset>
+                  <ButtonSearch type="submit">Rechercher</ButtonSearch>
+                </FiltersActions>
               </form>
-            </div>
+            </FiltersSection>
           )}
-        </div>
+        </FiltersContainer>
       )}
 
       {isHidden && (
-        <div className="filters-toggle">
-          <button type="button" className="btn-show-filters" onClick={toggleHide}>
+        <FiltersToggle>
+          <ButtonShowFilters type="button" onClick={toggleHide}>
+            <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Afficher les filtres
-          </button>
-        </div>
+          </ButtonShowFilters>
+        </FiltersToggle>
       )}
 
-      <div className="table-header">
-        <h2 className="table-title">Liste des Missions</h2>
-        <div className="view-toggle">
-          <button
-            className={`btn-view ${viewMode === "list" ? "active" : ""}`}
-            onClick={() => setViewMode("list")}
-          >
-            <List className="w-4 h-4" /> Liste
-          </button>
-          <button
-            className={`btn-view ${viewMode === "calendar" ? "active" : ""}`}
-            onClick={() => setViewMode("calendar")}
-          >
-            <Calendar className="w-4 h-4" /> Calendrier
-          </button>
-          <button
-            onClick={() => navigate("/mission/form")}
-            className="btn-new-request"
-          >
-            <Plus className="w-4 h-4" />
+      <TableHeader>
+        <TableTitle>Liste des Missions</TableTitle>
+        <ViewToggle>
+          <ButtonView active={viewMode === "list"} onClick={() => setViewMode("list")}>
+            <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+            Liste
+          </ButtonView>
+          <ButtonView active={viewMode === "calendar"} onClick={() => setViewMode("calendar")}>
+            <Calendar size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+            Calendrier
+          </ButtonView>
+          <ButtonAdd onClick={() => navigate("/mission/form")}>
+            <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Nouvelle mission
-          </button>
-        </div>
-      </div>
+          </ButtonAdd>
+        </ViewToggle>
+      </TableHeader>
 
       {viewMode === "calendar" && (
-        <div className="calendar-legend" style={{ 
-          marginBottom: '20px', 
-          padding: '15px', 
-          backgroundColor: '#f8f9fa', 
-          borderRadius: '8px',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '15px',
-          justifyContent: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ 
-              width: '20px', 
-              height: '20px', 
-              backgroundColor: '#3b82f6', 
-              borderRadius: '4px' 
-            }}></div>
-            <span>En Cours</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ 
-              width: '20px', 
-              height: '20px', 
-              backgroundColor: '#f59e0b', 
-              borderRadius: '4px' 
-            }}></div>
-            <span>Planifié</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ 
-              width: '20px', 
-              height: '20px', 
-              backgroundColor: '#10b981', 
-              borderRadius: '4px' 
-            }}></div>
-            <span>Terminé</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ 
-              width: '20px', 
-              height: '20px', 
-              backgroundColor: '#ef4444', 
-              borderRadius: '4px' 
-            }}></div>
-            <span>Annulé</span>
-          </div>
-          <div style={{ 
-            marginLeft: '20px', 
-            padding: '8px 12px', 
-            backgroundColor: '#e9ecef', 
-            borderRadius: '4px',
-            fontSize: '12px',
-            color: '#6c757d'
-          }}>
-            🚀 = Début de mission | 🏁 = Fin de mission
-          </div>
-        </div>
+        <CalendarLegend>
+          <LegendItem>
+            <LegendColor color="#3b82f6" />
+            <LegendLabel>En Cours</LegendLabel>
+          </LegendItem>
+          <LegendItem>
+            <LegendColor color="#f59e0b" />
+            <LegendLabel>Planifié</LegendLabel>
+          </LegendItem>
+          <LegendItem>
+            <LegendColor color="#10b981" />
+            <LegendLabel>Terminé</LegendLabel>
+          </LegendItem>
+          <LegendItem>
+            <LegendColor color="#ef4444" />
+            <LegendLabel>Annulé</LegendLabel>
+          </LegendItem>
+          <LegendNote>🚀 = Début de mission | 🏁 = Fin de mission</LegendNote>
+        </CalendarLegend>
       )}
 
       {viewMode === "list" ? (
         <>
-          <div className="table-container">
-            <table className="data-table">
+          <TableContainer>
+            <DataTable>
               <thead>
                 <tr>
-                  <th>Intitulé</th>
-                  <th>Description</th>
-                  <th>Lieu</th>
-                  <th>Date de début</th>
-                  <th>Date de fin</th>
-                  <th>Statut</th>
-                  <th>Date de création</th>
-                  <th>Action</th>
+                  <TableHeadCell>Intitulé</TableHeadCell>
+                  <TableHeadCell>Description</TableHeadCell>
+                  <TableHeadCell>Lieu</TableHeadCell>
+                  <TableHeadCell>Date de début</TableHeadCell>
+                  <TableHeadCell>Date de fin</TableHeadCell>
+                  <TableHeadCell>Statut</TableHeadCell>
+                  <TableHeadCell>Date de création</TableHeadCell>
+                  <TableHeadCell>Action</TableHeadCell>
                 </tr>
               </thead>
-              <tbody> 
+              <tbody>
                 {isLoading.missions ? (
-                  <tr>
-                    <td colSpan={8}>Chargement...</td>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={8}>
+                      <Loading>Chargement...</Loading>
+                    </TableCell>
+                  </TableRow>
                 ) : missions.length > 0 ? (
                   missions.map((mission) => (
-                    <tr
+                    <TableRow
                       key={mission.missionId}
+                      clickable
                       onClick={() => handleRowClick(mission.missionId)}
-                      style={{ cursor: "pointer" }}
                     >
-                      <td>{mission.name || "Non spécifié"}</td>
-                      <td>{mission.description || "Non spécifié"}</td>
-                      <td>{`${mission.lieu.nom}/${mission.lieu.pays}` || "Non spécifié"}</td>
-                      <td>{formatDate(mission.startDate) || "Non spécifié"}</td>
-                      <td>{formatDate(mission.endDate) || "Non spécifié"}</td>
-                      <td>{getStatusBadge(mission.status)}</td>
-                      <td>{formatDate(mission.createdAt) || "Non spécifié"}</td>
-                      <td>
-                        <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            className="btn-update"
+                      <TableCell>{mission.name || "Non spécifié"}</TableCell>
+                      <TableCell>{mission.description || "Non spécifié"}</TableCell>
+                      <TableCell>{`${mission.lieu.nom}/${mission.lieu.pays}` || "Non spécifié"}</TableCell>
+                      <TableCell>{formatDate(mission.startDate) || "Non spécifié"}</TableCell>
+                      <TableCell>{formatDate(mission.endDate) || "Non spécifié"}</TableCell>
+                      <TableCell>{getStatusBadge(mission.status)}</TableCell>
+                      <TableCell>{formatDate(mission.createdAt) || "Non spécifié"}</TableCell>
+                      <TableCell>
+                        <ActionButtons>
+                          <ButtonUpdate
                             onClick={(e) => {
                               e.stopPropagation();
                               navigate(`/mission/form/${mission.missionId}`);
@@ -604,9 +588,8 @@ const MissionList = () => {
                             disabled={mission.status === "Annulé" || mission.status === "Terminé"}
                           >
                             Modifier
-                          </button>
-                          <button
-                            className="btn-cancel"
+                          </ButtonUpdate>
+                          <ButtonCancel
                             onClick={(e) => {
                               e.stopPropagation();
                               handleShowCancelModal(mission.missionId);
@@ -614,19 +597,21 @@ const MissionList = () => {
                             disabled={mission.status === "Annulé" || mission.status === "Terminé"}
                           >
                             Annuler
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                          </ButtonCancel>
+                        </ActionButtons>
+                      </TableCell>
+                    </TableRow>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan={8}>Aucune donnée trouvée.</td>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={8}>
+                      <NoDataMessage>Aucune donnée trouvée.</NoDataMessage>
+                    </TableCell>
+                  </TableRow>
                 )}
               </tbody>
-            </table>
-          </div>
+            </DataTable>
+          </TableContainer>
 
           <Pagination
             currentPage={currentPage}
@@ -634,10 +619,11 @@ const MissionList = () => {
             totalEntries={totalEntries}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
+            disabled={isLoading.assignMissions}
           />
         </>
       ) : (
-        <div className="calendar-container" style={{ height: "600px" }}>
+        <div style={{ height: "600px" }}>
           <BigCalendar
             localizer={localizer}
             events={calendarEvents}
@@ -654,7 +640,7 @@ const MissionList = () => {
           />
         </div>
       )}
-    </div>
+    </DashboardContainer>
   );
 };
 
