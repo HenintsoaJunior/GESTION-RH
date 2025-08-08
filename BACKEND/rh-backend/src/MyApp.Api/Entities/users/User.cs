@@ -4,6 +4,12 @@ using MyApp.Api.Entities.employee;
 
 namespace MyApp.Api.Entities.users
 {
+    public enum EmployeeType
+    {
+        Cadre = 0,
+        NonCadre = 1
+    }
+    
     [Table("users")]
     public class User : BaseEntity
     {
