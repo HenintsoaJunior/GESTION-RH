@@ -2,9 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.contract;
 using MyApp.Api.Services.contract;
 using MyApp.Api.Models.form.contract;
-using System;
-using System.Threading.Tasks;
-
 namespace MyApp.Api.Controllers.contract
 {
     [Route("api/[controller]")]
@@ -127,4 +124,4 @@ namespace MyApp.Api.Controllers.contract
             }
         }
     }
-}
+}   
