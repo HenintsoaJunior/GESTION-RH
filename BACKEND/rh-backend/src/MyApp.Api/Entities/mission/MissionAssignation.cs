@@ -7,9 +7,12 @@ using MyApp.Api.Models.form.mission;
 namespace MyApp.Api.Entities.mission
 {
     [Table("mission_assignation")]
-    [PrimaryKey(nameof(EmployeeId), nameof(MissionId))]
     public class MissionAssignation
     {
+        [Key]
+        [Column("assignation_id", Order = 0)]
+        [MaxLength(50)]
+        public string AssignationId { get; set; } = null!;
         [Column("employee_id", Order = 0)]
         [MaxLength(50)]
         public string EmployeeId { get; set; } = null!;

@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Models.form.employee;
 using MyApp.Api.Models.search.employee;
@@ -10,7 +9,7 @@ namespace MyApp.Api.Services.employee
 {
     public interface IEmployeeService
     {
-        Task<List<string>> CheckNameAndCode(List<List<string>> DataExcel);
+        Task<List<string>?> CheckNameAndCode(List<List<string>> dataExcel);
         Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Employee>> GetAllAsync();
         Task<Employee?> GetByIdAsync(string id);
@@ -50,7 +49,7 @@ namespace MyApp.Api.Services.employee
             {
                 throw new Exception("Employee inexistant");
             }
-            return result != null && result.Any();
+            return result.Any();
         }
 
         // check si le nom et le matricule sont tous les meme pour chaque ligne

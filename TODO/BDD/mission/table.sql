@@ -60,9 +60,7 @@ CREATE TABLE mission (
 
 
 CREATE TABLE mission_assignation(
-   employee_id VARCHAR(50),
-   mission_id VARCHAR(50),
-   transport_id VARCHAR(50),
+   assignation_id TEXT,
    departure_date DATE NOT NULL,
    departure_time TIME,
    return_date DATE,
@@ -70,11 +68,15 @@ CREATE TABLE mission_assignation(
    duration INT,
    created_at DATETIME,
    updated_at DATETIME,
-   PRIMARY KEY(employee_id, mission_id),
-   FOREIGN KEY(employee_id) REFERENCES employees(employee_id),
+   transport_id VARCHAR(50) NOT NULL,
+   mission_id VARCHAR(50) NOT NULL,
+   employee_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(assignation_id),
+   FOREIGN KEY(transport_id) REFERENCES transport(transport_id),
    FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
-   FOREIGN KEY(transport_id) REFERENCES transport(transport_id)
+   FOREIGN KEY(employee_id) REFERENCES employees(employee_id)
 );
+
 
 
 

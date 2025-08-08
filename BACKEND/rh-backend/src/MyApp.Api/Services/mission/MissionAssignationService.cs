@@ -7,10 +7,9 @@ using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.employee;
-using MyApp.Api.Services.employe;
 using MyApp.Api.Models.form.mission;
 using MyApp.Api.Utils.exception;
-using MyApp.Utils.pdf;
+using MyApp.Api.Utils.pdf;
 using MyApp.Utils.csv;
 
 namespace MyApp.Api.Services.mission
@@ -18,7 +17,7 @@ namespace MyApp.Api.Services.mission
     public interface IMissionAssignationService
     {
         Task<string> ImportMissionFromCsv(Stream fileStream, char separator);
-        Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
+        Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDto);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
@@ -79,20 +78,20 @@ namespace MyApp.Api.Services.mission
             // inserer dans la base
             return "";
         }
-        public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO)
+        public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDto)
         {
             try
             {
                 MissionPaiementResult paiements = await GeneratePaiementsAsync(
-                    generatePaiementDTO.EmployeeId,
-                    generatePaiementDTO.MissionId,
-                    generatePaiementDTO.LieuId,
-                    generatePaiementDTO.StartDate,
-                    generatePaiementDTO.EndDate,
-                    generatePaiementDTO.Status
+                    generatePaiementDto.EmployeeId,
+                    generatePaiementDto.MissionId,
+                    generatePaiementDto.LieuId,
+                    generatePaiementDto.StartDate,
+                    generatePaiementDto.EndDate,
+                    generatePaiementDto.Status
                 );
 
-                PDFGenerator pdf = new PDFGenerator(paiements.GetDescriptionForPDF(), paiements.GetTablesForPDF());
+                PdfGenerator pdf = new PdfGenerator(paiements.GetDescriptionForPDF(), paiements.GetTablesForPDF());
                 return pdf.GeneratePdf("Mission");
             }
             catch (Exception ex)
@@ -196,8 +195,9 @@ namespace MyApp.Api.Services.mission
             try
             {
                 var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, departureArrive, status);
-                
-                if (!missionAssignations.Any())
+
+                var assignations = missionAssignations as MissionAssignation[] ?? missionAssignations.ToArray();
+                if (!assignations.Any())
                 {
                     _logger.LogWarning("Aucune affectation de mission trouvée pour les filtres fournis : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, departureArrive={DepartureArrive}, status={Status}",
                         employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", departureArrive?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
@@ -209,7 +209,7 @@ namespace MyApp.Api.Services.mission
                 }
 
                 var paiementResults = new List<MissionPaiementResult>();
-                foreach (var missionAssignation in missionAssignations)
+                foreach (var missionAssignation in assignations)
                 {
                     var paiementResult = await GeneratePaymentsForAssignation(missionAssignation);
                     paiementResults.Add(paiementResult);
@@ -267,8 +267,9 @@ namespace MyApp.Api.Services.mission
             try
             {
                 var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, departureArrive, status);
-                
-                if (!missionAssignations.Any())
+
+                var assignations = missionAssignations as MissionAssignation[] ?? missionAssignations.ToArray();
+                if (!assignations.Any())
                 {
                     _logger.LogWarning("Aucune affectation trouvée pour la génération du rapport Excel avec les filtres : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, departureArrive={DepartureArrive}, status={Status}", 
                         employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", departureArrive?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
@@ -281,7 +282,7 @@ namespace MyApp.Api.Services.mission
 
                 var currentRow = 2;
                 
-                foreach (var assignment in missionAssignations)
+                foreach (var assignment in assignations)
                 {
                     try
                     {
@@ -497,7 +498,8 @@ namespace MyApp.Api.Services.mission
                     throw new CustomException(
                         $"Une assignation existe déjà pour l'employé {missionAssignation.EmployeeId} et la mission {missionAssignation.MissionId}.");
                 }
-
+                var assignationId = _sequenceGenerator.GenerateSequence("seq_assignation_id", "MA", 6, "-");
+                missionAssignation.AssignationId = assignationId;
                 SetCreationTimestamps(missionAssignation);
                 await SaveMissionAssignationAsync(missionAssignation);
                 await UpdateMissionStatusAsync(missionAssignation.MissionId);
