@@ -449,7 +449,7 @@ export const fetchMissionPayment = async (
     // Transformation des données pour assignmentDetails
     const assignmentDetails = data.missionAssignation
       ? {
-          assignmentId: `${data.missionAssignation.employeeId || ""}-${data.missionAssignation.missionId || ""}-${data.missionAssignation.transportId || ""}`,
+          assignationId: data.missionAssignation.assignationId,
           beneficiary: `${data.missionAssignation.employee?.firstName || ""} ${data.missionAssignation.employee?.lastName || ""}`.trim() || "Non spécifié",
           matricule: data.missionAssignation.employee?.employeeCode || "Non spécifié",
           missionTitle: data.missionAssignation.mission?.name || "Non spécifié",
@@ -531,7 +531,7 @@ export const fetchAssignMission = async (
 
     const assignMissionsData = Array.isArray(data.data)
       ? data.data.map((item) => ({
-          assignmentId: item.assignmentId || `${item.employeeId}-${item.missionId}-${item.transportId}`,
+          assignationId: item.assignationId,
           employeeId: item.employeeId,
           missionId: item.missionId,
           transportId: item.transportId,

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Models.form.mission;
 using MyApp.Api.Utils.exception;
-using MyApp.Utils.pdf;
+using MyApp.Api.Utils.pdf;
 using MyApp.Utils.csv;
 using MyApp.Api.Models.form.lieu;
 
@@ -102,7 +102,7 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        private async Task CreateMissionAssignationIfNotExists( List<List<string>> data, string employeeId, Mission mission, string transportId)
+        private async Task CreateMissionAssignationIfNotExists( List<List<string>> data, string employeeId, Mission mission, string? transportId)
         {
             var existing = await VerifyMissionAssignationByNameAsync(employeeId, mission.MissionId);
             if (existing != null) throw new Exception($"Mission déjà importé");
@@ -214,7 +214,7 @@ namespace MyApp.Api.Services.mission
                     generatePaiementDTO.Status
                 );
 
-                PDFGenerator pdf = new PDFGenerator(paiements.GetDescriptionForPDF(), paiements.GetTablesForPDF());
+                PdfGenerator pdf = new PdfGenerator(paiements.GetDescriptionForPDF(), paiements.GetTablesForPDF());
                 return pdf.GeneratePdf("Mission");
             }
             catch (Exception ex)
@@ -297,6 +297,7 @@ namespace MyApp.Api.Services.mission
         {
             return new MissionAssignation
             {
+                AssignationId = entity.AssignationId,
                 EmployeeId = entity.EmployeeId,
                 MissionId = entity.MissionId,
                 TransportId = entity.TransportId,
@@ -318,8 +319,9 @@ namespace MyApp.Api.Services.mission
             try
             {
                 var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, departureArrive, status);
-                
-                if (!missionAssignations.Any())
+
+                var assignations = missionAssignations as MissionAssignation[] ?? missionAssignations.ToArray();
+                if (!assignations.Any())
                 {
                     _logger.LogWarning("Aucune affectation de mission trouvée pour les filtres fournis : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, departureArrive={DepartureArrive}, status={Status}",
                         employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", departureArrive?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
@@ -331,7 +333,7 @@ namespace MyApp.Api.Services.mission
                 }
 
                 var paiementResults = new List<MissionPaiementResult>();
-                foreach (var missionAssignation in missionAssignations)
+                foreach (var missionAssignation in assignations)
                 {
                     var paiementResult = await GeneratePaymentsForAssignation(missionAssignation);
                     paiementResults.Add(paiementResult);
@@ -389,8 +391,9 @@ namespace MyApp.Api.Services.mission
             try
             {
                 var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, departureArrive, status);
-                
-                if (!missionAssignations.Any())
+
+                var assignations = missionAssignations as MissionAssignation[] ?? missionAssignations.ToArray();
+                if (!assignations.Any())
                 {
                     _logger.LogWarning("Aucune affectation trouvée pour la génération du rapport Excel avec les filtres : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, departureArrive={DepartureArrive}, status={Status}", 
                         employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", departureArrive?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
@@ -403,7 +406,7 @@ namespace MyApp.Api.Services.mission
 
                 var currentRow = 2;
                 
-                foreach (var assignment in missionAssignations)
+                foreach (var assignment in assignations)
                 {
                     try
                     {
@@ -606,6 +609,16 @@ namespace MyApp.Api.Services.mission
 
         public async Task<(string EmployeeId, string MissionId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation)
         {
+            // Validation des paramètres d'entrée
+            if (missionAssignation == null)
+                throw new ArgumentNullException(nameof(missionAssignation));
+            
+            if (string.IsNullOrWhiteSpace(missionAssignation.EmployeeId))
+                throw new ArgumentException("L'ID de l'employé ne peut pas être vide.", nameof(missionAssignation.EmployeeId));
+            
+            if (string.IsNullOrWhiteSpace(missionAssignation.MissionId))
+                throw new ArgumentException("L'ID de la mission ne peut pas être vide.", nameof(missionAssignation.MissionId));
+
             try
             {
                 // Vérifier si l'assignation existe déjà
@@ -620,30 +633,48 @@ namespace MyApp.Api.Services.mission
                         $"Une assignation existe déjà pour l'employé {missionAssignation.EmployeeId} et la mission {missionAssignation.MissionId}.");
                 }
 
+                // Générer l'ID d'assignation
+                var assignationId = _sequenceGenerator.GenerateSequence("seq_assignation_id", "MA", 6, "-");
+                missionAssignation.AssignationId = assignationId;
+                
+                // Définir les timestamps de création
                 SetCreationTimestamps(missionAssignation);
+                
+                // Sauvegarder l'assignation
                 await SaveMissionAssignationAsync(missionAssignation);
+                
+                // Mettre à jour le statut de la mission
                 await UpdateMissionStatusAsync(missionAssignation.MissionId);
+
+                _logger.LogInformation("Assignation créée avec succès pour EmployeeId={EmployeeId}, MissionId={MissionId}, AssignationId={AssignationId}",
+                    missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.AssignationId);
 
                 return (missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.TransportId);
             }
             catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx && (sqlEx.Number == 2601 || sqlEx.Number == 2627))
             {
-                _logger.LogError(ex, "Erreur de duplication lors de la création de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}, TransportId={TransportId}",
+                _logger.LogError(ex, "Erreur de contrainte d'unicité lors de la création de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}, TransportId={TransportId}",
                     missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.TransportId ?? "null");
+                
                 throw new CustomException(
-                    $"Erreur : Une assignation avec l'employé {missionAssignation.EmployeeId} et la mission {missionAssignation.MissionId} existe déjà. Veuillez vérifier les données saisies.",
+                    $"Une assignation avec l'employé {missionAssignation.EmployeeId} et la mission {missionAssignation.MissionId} existe déjà. Veuillez vérifier les données saisies.",
                     ex);
+            }
+            catch (CustomException)
+            {
+                // Re-lancer les exceptions métier sans les encapsuler
+                throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la création de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}",
+                _logger.LogError(ex, "Erreur inattendue lors de la création de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}",
                     missionAssignation.EmployeeId, missionAssignation.MissionId);
+                
                 throw new CustomException(
                     "Une erreur s'est produite lors de la création de l'assignation de mission. Veuillez réessayer ou contacter le support.",
                     ex);
             }
         }
-
         private static void SetCreationTimestamps(MissionAssignation missionAssignation)
         {
             missionAssignation.CreatedAt = DateTime.UtcNow;

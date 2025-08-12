@@ -12,7 +12,6 @@ import ServiceForm from 'pages/direction/service-form';
 import ProcessWorkflow from 'pages/recruitment/recruitments_request/process';
 import MissionForm from 'pages/mission/mission-form';
 import MissionList from 'pages/mission/mission-list';
-import AssignMissionForm from 'pages/mission/mission-assign-form';
 import AssignedPersonsList from 'pages/mission/mission-assign-list';
 import AssignmentDetails from 'pages/mission/mission-assign-details';
 import TransportForm from 'pages/transport/transport-form';
@@ -57,7 +56,6 @@ function AppRouter() {
           <Route path="/mission/form/:missionId" element={<MissionForm />} />
           <Route path="/mission/form" element={<MissionForm />} />
           <Route path="/mission/list" element={<MissionList />} />
-          <Route path="/mission/assign" element={<AssignMissionForm />} />
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
           <Route path="/assignments/details" element={<AssignmentDetails />} />
           <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />

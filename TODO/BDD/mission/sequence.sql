@@ -18,6 +18,11 @@ IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_transport_id')
     DROP SEQUENCE seq_transport_id;
 GO
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_assignation_id')
+    DROP SEQUENCE seq_transport_id;
+GO
+
+
 
 CREATE SEQUENCE seq_lieu_id
     AS INT
@@ -59,6 +64,16 @@ CREATE SEQUENCE seq_compensation_scale_id
 GO
 
 CREATE SEQUENCE seq_transport_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+CREATE SEQUENCE seq_assignation_id
     AS INT
     START WITH 1
     INCREMENT BY 1

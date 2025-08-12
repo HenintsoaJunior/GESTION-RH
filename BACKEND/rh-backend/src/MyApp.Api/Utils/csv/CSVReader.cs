@@ -255,13 +255,13 @@ namespace MyApp.Utils.csv
             return row.Count > Math.Max(nameIndex, codeIndex);
         }
 
-        public static void ValidatePresence(string value, string label, int rowIndex, int colIndex, List<string> errors)
+        public static void ValidatePresence(string value, string label, int rowIndex, int colIndex, List<string>? errors)
         {
             if (string.IsNullOrWhiteSpace(value))
                 errors.Add($"{rowIndex}:{colIndex + 1} => {label} manquant.");
         }
 
-        public static void CheckDuplicate(Dictionary<string, string> map, string code, string name, int rowIndex, int colIndex, List<string> errors)
+        public static void CheckDuplicate(Dictionary<string, string> map, string code, string name, int rowIndex, int colIndex, List<string>? errors)
         {
             if (string.IsNullOrWhiteSpace(code)) return;
 

@@ -1,9 +1,15 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using MyApp.Api.Entities.employee;
 
 namespace MyApp.Api.Entities.users
 {
+    public enum UserType
+    {
+        Cadre = 0,
+        NonCadre = 1
+    }
+
     [Table("users")]
     public class User : BaseEntity
     {
@@ -13,31 +19,60 @@ namespace MyApp.Api.Entities.users
         public string UserId { get; set; } = null!;
 
         [Required]
+        [Column("matricule")]
+        [MaxLength(100)]
+        public string Matricule { get; set; } = null!;
+
+        [Required]
         [Column("email")]
-        [MaxLength(100)]
-        public string Email { get; set; } = string.Empty;
+        [MaxLength(150)]
+        public string Email { get; set; } = null!;
 
-        [Required]
-        [Column("password")]
-        [MaxLength(255)]
-        public string Password { get; set; } = string.Empty;
-
-        [Required]
-        [Column("role")]
+        [Column("name")]
         [MaxLength(50)]
-        public string Role { get; set; } = string.Empty;
+        public string? Name { get; set; }
 
-        [Required]
-        [Column("function_")]
+        [Column("position_")]
+        [MaxLength(250)]
+        public string? Position { get; set; }
+
+        [Column("department")]
         [MaxLength(100)]
-        public string Function { get; set; } = string.Empty;
+        public string? Department { get; set; }
+
+        [Column("superior_id")]
+        [MaxLength(150)]
+        public string? SuperiorId { get; set; }
+
+        [Column("superior_name")]
+        [MaxLength(150)]
+        public string? SuperiorName { get; set; }
+
+        [Column("status")]
+        [MaxLength(50)]
+        public string? Status { get; set; }
+
+        [Column("signature")]
+        [MaxLength(250)]
+        public string? Signature { get; set; }
+
+        [Column("user_type")]
+        [MaxLength(50)]
+        public string? UserType { get; set; } // Could use enum directly if database stores "Cadre"/"NonCadre"
 
         [Required]
-        [Column("employee_id")]
+        [Column("role_id")]
         [MaxLength(50)]
-        public string EmployeeId { get; set; } = null!;
+        public string RoleId { get; set; } = null!;
 
-        [ForeignKey("EmployeeId")]
-        public Employee? Employee { get; set; }
+        [ForeignKey("RoleId")]
+        public Role? Role { get; set; }
+
+        [Column("refresh_token")]
+        [MaxLength(500)]
+        public string? RefreshToken { get; set; }
+
+        [Column("refresh_token_expiry")]
+        public DateTime? RefreshTokenExpiry { get; set; }
     }
 }

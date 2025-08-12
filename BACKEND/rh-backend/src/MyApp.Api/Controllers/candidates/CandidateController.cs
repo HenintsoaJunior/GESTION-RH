@@ -47,14 +47,14 @@ namespace MyApp.Api.Controllers
         public async Task<ActionResult> Create([FromBody] Candidate candidate)
         {
             await _candidateService.AddAsync(candidate);
-            return CreatedAtAction(nameof(GetById), new { id = candidate.Id }, candidate);
+            return CreatedAtAction(nameof(GetById), new { id = candidate.CandidateId }, candidate);
         }
 
         // PUT: api/candidates/{id}
         [HttpPut("{id}")]
         public async Task<ActionResult> Update(string id, [FromBody] Candidate candidate)
         {
-            if (id != candidate.Id)
+            if (id != candidate.CandidateId)
                 return BadRequest("L'ID ne correspond pas.");
 
             var existing = await _candidateService.GetByIdAsync(id);

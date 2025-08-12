@@ -48,7 +48,8 @@ namespace MyApp.Api.Entities.recruitment
 
             foreach (var flow in approvalFlows)
             {
-                User? user = await userService.GetByEmployeeIdAsync(flow.EmployeeId);
+                // User? user = await userService.GetByEmployeeIdAsync(flow.EmployeeId);
+                User? user = null;
                 var approval = new RecruitmentApproval
                 {
                     RecruitmentRequestId = recruitmentRequestId,
