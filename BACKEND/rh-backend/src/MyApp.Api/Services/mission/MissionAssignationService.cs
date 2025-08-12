@@ -174,6 +174,7 @@ namespace MyApp.Api.Services.mission
         {
             return new MissionAssignation
             {
+                AssignationId = entity.AssignationId,
                 EmployeeId = entity.EmployeeId,
                 MissionId = entity.MissionId,
                 TransportId = entity.TransportId,

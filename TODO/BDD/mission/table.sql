@@ -68,7 +68,7 @@ CREATE TABLE mission_assignation(
    duration INT,
    created_at DATETIME,
    updated_at DATETIME,
-   transport_id VARCHAR(50) NOT NULL,
+   transport_id VARCHAR(50),
    mission_id VARCHAR(50) NOT NULL,
    employee_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(assignation_id),

@@ -1,4 +1,3 @@
-// src/components/MissionList.js
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -384,18 +383,18 @@ const MissionList = () => {
       </StatsContainer>
 
       {!isHidden && (
-        <FiltersContainer isMinimized={isMinimized}>
+        <FiltersContainer $isMinimized={isMinimized}>
           <FiltersHeader>
             <FiltersTitle>Filtres de Recherche</FiltersTitle>
             <FiltersControls>
               <FilterControlButton
-                isMinimize
+                $isMinimized
                 onClick={toggleMinimize}
                 title={isMinimized ? "Développer" : "Réduire"}
               >
                 {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
               </FilterControlButton>
-              <FilterControlButton isClose onClick={toggleHide} title="Fermer">
+              <FilterControlButton $isClose onClick={toggleHide} title="Fermer">
                 <X size={16} />
               </FilterControlButton>
             </FiltersControls>
@@ -504,11 +503,11 @@ const MissionList = () => {
       <TableHeader>
         <TableTitle>Liste des Missions</TableTitle>
         <ViewToggle>
-          <ButtonView active={viewMode === "list"} onClick={() => setViewMode("list")}>
+          <ButtonView $active={viewMode === "list"} onClick={() => setViewMode("list")}>
             <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Liste
           </ButtonView>
-          <ButtonView active={viewMode === "calendar"} onClick={() => setViewMode("calendar")}>
+          <ButtonView $active={viewMode === "calendar"} onClick={() => setViewMode("calendar")}>
             <Calendar size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Calendrier
           </ButtonView>
@@ -568,7 +567,7 @@ const MissionList = () => {
                   missions.map((mission) => (
                     <TableRow
                       key={mission.missionId}
-                      clickable
+                      $clickable
                       onClick={() => handleRowClick(mission.missionId)}
                     >
                       <TableCell>{mission.name || "Non spécifié"}</TableCell>

@@ -7,7 +7,7 @@ namespace MyApp.Api.Repositories.users
 {
     public interface IUserRepository
     {
-        Task<User?> GetByEmployeeIdAsync(string employeeId);
+        // Task<User?> GetByEmployeeIdAsync(string employeeId);
         Task<IEnumerable<User>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
         Task<User?> GetByEmailAsync(string email);
@@ -25,18 +25,18 @@ namespace MyApp.Api.Repositories.users
             _context = context;
         }
 
-        public async Task<User?> GetByEmployeeIdAsync(string employeeId)
-        {
-            return await _context.Users
-                .Include(u => u.Employee)
-                .FirstOrDefaultAsync(u => u.EmployeeId == employeeId);
-        }
+        // public async Task<User?> GetByEmployeeIdAsync(string employeeId)
+        // {
+        //     return await _context.Users
+        //         .Include(u => u.Employee)
+        //         .FirstOrDefaultAsync(u => u.EmployeeId == employeeId);
+        // }
 
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             return await _context.Users
-                .Include(u => u.Employee)
-                .OrderByDescending(u => u.CreatedAt)
+                // .Include(u => u.Employee)
+                // .OrderByDescending(u => u.CreatedAt)
                 .ToListAsync();
         }
         
@@ -56,7 +56,7 @@ namespace MyApp.Api.Repositories.users
         public async Task<User?> GetByIdAsync(string id)
         {
             return await _context.Users
-                .Include(u => u.Employee)
+                // .Include(u => u.Employee)
                 .FirstOrDefaultAsync(u => u.UserId == id);
         }
 

@@ -10,18 +10,18 @@ namespace MyApp.Api.Entities.mission
     public class MissionAssignation
     {
         [Key]
-        [Column("assignation_id", Order = 0)]
+        [Column("assignation_id")]
         [MaxLength(50)]
         public string AssignationId { get; set; } = null!;
-        [Column("employee_id", Order = 0)]
+        [Column("employee_id")]
         [MaxLength(50)]
         public string EmployeeId { get; set; } = null!;
 
-        [Column("mission_id", Order = 1)]
+        [Column("mission_id")]
         [MaxLength(50)]
         public string MissionId { get; set; } = null!;
 
-        [Column("transport_id", Order = 2)]
+        [Column("transport_id")]
         [MaxLength(50)]
         public string? TransportId { get; set; }
 

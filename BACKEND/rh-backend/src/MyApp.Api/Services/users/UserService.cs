@@ -7,7 +7,7 @@ namespace MyApp.Api.Services.users
     public interface IUserService
     {
         Task<UserDto?> LoginAsync(string email, string password);
-        Task<User?> GetByEmployeeIdAsync(string employeeId);
+        // Task<User?> GetByEmployeeIdAsync(string employeeId);
         Task<IEnumerable<User>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
         Task<User?> GetByEmailAsync(string email);
@@ -24,10 +24,10 @@ namespace MyApp.Api.Services.users
         {
             _repository = repository;
         }
-        public async Task<User?> GetByEmployeeIdAsync(string employeeId)
-        {
-            return await _repository.GetByEmployeeIdAsync(employeeId) ?? throw new Exception("L'utilisateur n'existe pas");
-        }
+        // public async Task<User?> GetByEmployeeIdAsync(string employeeId)
+        // {
+        //     return await _repository.GetByEmployeeIdAsync(employeeId) ?? throw new Exception("L'utilisateur n'existe pas");
+        // }
 
         public async Task<IEnumerable<User>> GetAllAsync()
         {
@@ -91,7 +91,7 @@ namespace MyApp.Api.Services.users
             {
                 UserId = user.UserId,
                 Email = user.Email,
-                Role = user.Role
+                // Role = user.Role
             };
         }
     }

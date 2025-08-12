@@ -9,11 +9,11 @@ import Pagination from "components/pagination";
 import AutoCompleteInput from "components/auto-complete-input";
 import "styles/generic-table-styles.css";
 import { fetchAllEmployees } from "services/employee/employee";
-import { 
-  fetchAssignMission, 
+import {
+  fetchAssignMission,
   fetchMissionById,
   exportMissionAssignationPDF,
-  exportMissionAssignationExcel
+  exportMissionAssignationExcel,
 } from "services/mission/mission";
 import { fetchAllRegions } from "services/lieu/lieu";
 
@@ -63,12 +63,7 @@ const AssignedPersonsList = () => {
     }
 
     // Fetch mission details
-    fetchMissionById(
-      missionId,
-      setMissionDetails,
-      setIsLoading,
-      (error) => setAlert(error)
-    );
+    fetchMissionById(missionId, setMissionDetails, setIsLoading, (error) => setAlert(error));
 
     // Fetch employees
     fetchAllEmployees(
@@ -108,7 +103,7 @@ const AssignedPersonsList = () => {
   useEffect(() => {
     if (missionId) {
       console.log("Applied Filters for Mission:", appliedFilters);
-      
+
       fetchAssignMission(
         setAssignedPersons,
         setIsLoading,
@@ -137,7 +132,7 @@ const AssignedPersonsList = () => {
   // Validation et soumission des filtres
   const handleFilterSubmit = (event) => {
     event.preventDefault();
-    
+
     let updatedFilters = { ...filters };
 
     // Validation de l'employé sélectionné
@@ -177,7 +172,7 @@ const AssignedPersonsList = () => {
     setFilters(updatedFilters);
     setAppliedFilters(updatedFilters);
     setCurrentPage(1);
-    
+
     console.log("Mission Filters applied:", updatedFilters);
   };
 
@@ -296,7 +291,7 @@ const AssignedPersonsList = () => {
 
       {/* Section des filtres */}
       {!isHidden && (
-        <div className={`filters-container ${isMinimized ? "minimized" : ""}`}>
+        <div className={`filters-container ${isMinimized ? "minimized" : ""}`} data-minimized={isMinimized}>
           <div className="filters-header">
             <h2 className="filters-title">Filtres de Recherche</h2>
             <div className="filters-controls">
@@ -305,6 +300,7 @@ const AssignedPersonsList = () => {
                 className="filter-control-btn filter-minimize-btn"
                 onClick={toggleMinimize}
                 title={isMinimized ? "Développer" : "Réduire"}
+                data-minimized={isMinimized}
               >
                 {isMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
               </button>
@@ -313,6 +309,7 @@ const AssignedPersonsList = () => {
                 className="filter-control-btn filter-close-btn"
                 onClick={toggleHide}
                 title="Fermer"
+                data-close
               >
                 <X className="w-4 h-4" />
               </button>
@@ -439,19 +436,15 @@ const AssignedPersonsList = () => {
                 </table>
 
                 <div className="filters-actions">
-                  <button 
-                    type="button" 
-                    className="btn-reset" 
+                  <button
+                    type="button"
+                    className="btn-reset"
                     onClick={handleResetFilters}
                     disabled={isLoading.assignMissions}
                   >
                     Réinitialiser
                   </button>
-                  <button 
-                    type="submit" 
-                    className="btn-search"
-                    disabled={isLoading.assignMissions}
-                  >
+                  <button type="submit" className="btn-search" disabled={isLoading.assignMissions}>
                     {isLoading.assignMissions ? "Recherche..." : "Rechercher"}
                   </button>
                 </div>
@@ -476,7 +469,9 @@ const AssignedPersonsList = () => {
         <h2 className="table-title">
           Personnes Assignées à la Mission {missionId}
           {assignedPersons.length > 0 && (
-            <span className="assignments-count">({assignedPersons.length} assignation{assignedPersons.length > 1 ? 's' : ''})</span>
+            <span className="assignments-count">
+              ({assignedPersons.length} assignation{assignedPersons.length > 1 ? "s" : ""})
+            </span>
           )}
         </h2>
         <div className="view-toggle">
@@ -516,11 +511,11 @@ const AssignedPersonsList = () => {
                   key={`${assignment.employeeId}-${missionId}-${index}`}
                   onClick={() => handleRowClick(assignment.employeeId)}
                   className="table-row-clickable"
-                  style={{ cursor: "pointer" }}
+                  data-clickable
                 >
                   <td>{assignment.assignationId || "Non spécifié"}</td>
                   <td>
-                    {(assignment.beneficiary && assignment.directionAcronym)
+                    {assignment.beneficiary && assignment.directionAcronym
                       ? `${assignment.beneficiary} (${assignment.directionAcronym})`
                       : assignment.beneficiary || "Non spécifié"}
                   </td>
@@ -537,7 +532,10 @@ const AssignedPersonsList = () => {
               <tr>
                 <td colSpan={9} className="text-center py-4">
                   <div className="no-data-message">
-                    {appliedFilters.employeeId || appliedFilters.status || appliedFilters.startDate || appliedFilters.endDate
+                    {appliedFilters.employeeId ||
+                    appliedFilters.status ||
+                    appliedFilters.startDate ||
+                    appliedFilters.endDate
                       ? "Aucune assignation ne correspond aux critères de recherche pour cette mission."
                       : `Aucune personne assignée à la mission ${missionId}.`}
                   </div>

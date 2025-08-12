@@ -1,4 +1,3 @@
-// src/components/BeneficiaryMissionList.js
 "use client";
 
 import { useState, useEffect } from "react";
@@ -44,7 +43,7 @@ import {
   Loading,
   NoDataMessage,
   StatusBadge,
-  ViewToggle
+  ViewToggle,
 } from "styles/generaliser/table-container";
 
 const BeneficiaryMissionList = () => {
@@ -293,7 +292,7 @@ const BeneficiaryMissionList = () => {
         });
       },
       (error) => {
-        setIsLoading((prev) => ({ ...prev, exportExcel: false }));
+        setIsLoading((prev) => ({ ...prev, exportPDF: false }));
         setAlert({
           isOpen: true,
           type: "error",
@@ -330,18 +329,18 @@ const BeneficiaryMissionList = () => {
       />
 
       {!isHidden && (
-        <FiltersContainer isMinimized={isMinimized}>
+        <FiltersContainer $isMinimized={isMinimized}>
           <FiltersHeader>
             <FiltersTitle>Filtres de Recherche</FiltersTitle>
             <FiltersControls>
               <FilterControlButton
-                className="filter-minimize-btn"
+                $isMinimized={isMinimized}
                 onClick={toggleMinimize}
                 title={isMinimized ? "Développer" : "Réduire"}
               >
                 {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
               </FilterControlButton>
-              <FilterControlButton className="filter-close-btn" onClick={toggleHide} title="Fermer">
+              <FilterControlButton $isClose onClick={toggleHide} title="Fermer">
                 <X size={16} />
               </FilterControlButton>
             </FiltersControls>
@@ -532,7 +531,6 @@ const BeneficiaryMissionList = () => {
               <TableHeadCell>Fonction</TableHeadCell>
               <TableHeadCell>Lieu</TableHeadCell>
               <TableHeadCell>Date début</TableHeadCell>
-              <TableHeadCell>Date fin</TableHeadCell>
               <TableHeadCell>Statut</TableHeadCell>
             </tr>
           </thead>
@@ -547,12 +545,12 @@ const BeneficiaryMissionList = () => {
               assignedPersons.map((assignment, index) => (
                 <TableRow
                   key={`${assignment.employeeId}-${assignment.missionId}-${assignment.transportId}-${index}`}
-                  clickable
+                  $clickable
                   onClick={() => handleRowClick(assignment.missionId, assignment.employeeId)}
                 >
                   <TableCell>{assignment.assignationId || "Non spécifié"}</TableCell>
                   <TableCell>
-                    {(assignment.beneficiary && assignment.directionAcronym)
+                    {assignment.beneficiary && assignment.directionAcronym
                       ? `${assignment.beneficiary} (${assignment.directionAcronym})`
                       : assignment.beneficiary || "Non spécifié"}
                   </TableCell>
@@ -569,7 +567,11 @@ const BeneficiaryMissionList = () => {
               <TableRow>
                 <TableCell colSpan={9}>
                   <NoDataMessage>
-                    {appliedFilters.employeeId || appliedFilters.missionId || appliedFilters.status || appliedFilters.startDate || appliedFilters.endDate
+                    {appliedFilters.employeeId ||
+                    appliedFilters.missionId ||
+                    appliedFilters.status ||
+                    appliedFilters.startDate ||
+                    appliedFilters.endDate
                       ? "Aucune assignation de mission ne correspond aux critères de recherche."
                       : "Aucune assignation de mission trouvée."}
                   </NoDataMessage>
