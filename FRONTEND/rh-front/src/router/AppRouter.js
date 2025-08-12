@@ -23,6 +23,7 @@ import ShortcutsDashboard from 'pages/system/entite/shortcuts';
 import EmployeeList from 'pages/employee/employee-list';
 import EmployeeForm from 'pages/employee/employee-fom';
 import BeneficiaryMissionList from 'pages/mission/benificary-mission-list';
+import ProfilePage from 'layouts/profil-page';
 
 function AppRouter() {
   return (
@@ -31,6 +32,8 @@ function AppRouter() {
         <Route path="/" element={<Login />} />
         <Route element={<Template><Outlet /></Template>}>
           <Route path="/dashboard" element={<DashboardHome />} />
+          <Route path="/profil-page" element={<ProfilePage />} />
+          
           
           {/* Employee */}
           <Route path="/employee/edit/:employeeId" element={<EmployeeForm />} />
@@ -51,7 +54,8 @@ function AppRouter() {
           <Route path="/direction/service-form" element={<ServiceForm />} />
 
           {/* Mission */}
-          <Route path="/mission/create" element={<MissionForm />} />
+          <Route path="/mission/form/:missionId" element={<MissionForm />} />
+          <Route path="/mission/form" element={<MissionForm />} />
           <Route path="/mission/list" element={<MissionList />} />
           <Route path="/mission/assign" element={<AssignMissionForm />} />
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />

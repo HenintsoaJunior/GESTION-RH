@@ -9,11 +9,12 @@ namespace MyApp.Api.Services.mission
 {
     public interface IMissionService
     {
+        Task<Mission?> VerifyMissionByNameAsync(string name);
         Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Mission>> GetAllAsync();
         Task<Mission?> GetByIdAsync(string id);
         Task<string> CreateAsync(MissionDTOForm mission);
-        Task<bool> UpdateAsync(Mission mission);
+        Task<bool> UpdateAsync(string id,MissionDTOForm mission);
         Task<bool> DeleteAsync(string id);
         Task<MissionStats> GetStatisticsAsync();
         Task<bool> CancelAsync(string id);
@@ -38,10 +39,23 @@ namespace MyApp.Api.Services.mission
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        // check si la mission existe deja
+        public async Task<Mission?> VerifyMissionByNameAsync(string name)
+        {
+            var filters = new MissionSearchFiltersDTO
+            {
+                Name = name
+            };
+            var (result, total) = await _repository.SearchAsync(filters, 1, 1);
+            var mission = result.FirstOrDefault();
+            return mission;
+        }
+
         public async Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize)
         {
             return await _repository.SearchAsync(filters, page, pageSize);
         }
+
 
         public async Task<IEnumerable<Mission>> GetAllAsync()
         {
@@ -110,16 +124,17 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<bool> UpdateAsync(Mission mission)
+        public async Task<bool> UpdateAsync(string id,MissionDTOForm mission)
         {
             try
             {
-                var entity = await _repository.GetByIdAsync(mission.MissionId);
+                var entity = await _repository.GetByIdAsync(id);
                 if (entity == null) return false;
 
                 entity.Name = mission.Name;
                 entity.Description = mission.Description;
                 entity.StartDate = mission.StartDate;
+                entity.EndDate = mission.EndDate;
                 entity.LieuId = mission.LieuId;
 
                 await _repository.UpdateAsync(entity);
@@ -128,7 +143,7 @@ namespace MyApp.Api.Services.mission
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour de la mission {MissionId}", mission.MissionId);
+                _logger.LogError(ex, "Erreur lors de la mise à jour de la mission {MissionId}", id);
                 throw;
             }
         }

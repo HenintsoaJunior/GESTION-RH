@@ -11,36 +11,44 @@ namespace MyApp.Api.Controllers.mission
     [Route("api/[controller]")]
     public class MissionAssignationController : ControllerBase
     {
-        // Service injecté pour la gestion des assignations de mission
         private readonly IMissionAssignationService _service;
+        private readonly IMissionService _missionService;
 
-        public MissionAssignationController(IMissionAssignationService service)
+        public MissionAssignationController(IMissionAssignationService service, IMissionService missionService)
         {
-            _service = service;
+            _service = service ?? throw new ArgumentNullException(nameof(service));
+            _missionService = missionService;
         }
 
         [HttpPost("import-csv")]
-        public async Task<IActionResult> ImportCsv(IFormFile file, [FromQuery] char separator = ',')
+        public async Task<IActionResult> ImportCsv(IFormFile file, [FromQuery] char separator = ';')
         {
             if (file == null || file.Length == 0)
                 return BadRequest("Fichier non valide.");
 
             using var stream = file.OpenReadStream();
-            var result = await _service.ImportMissionFromCsv(stream, separator);
+            var result = await _service.ImportMissionFromCsv(stream, separator, (MissionService)_missionService);
             return Ok(result);
+        }
+
+        [HttpPost("duration")]
+        public async Task<IActionResult> GetDuration(DateTime StartDate, DateTime EndDate)
+        {
+            var duration = await Task.Run(() => _service.calculateDuration(StartDate, EndDate));
+            return Ok(duration);
         }
 
         // Récupère les employés non assignés à une mission spécifique
         [HttpGet("not-assigned/{missionId}")]
         public async Task<ActionResult<IEnumerable<Employee>>> GetEmployeesNotAssignedToMission(string missionId)
         {
+            if (string.IsNullOrWhiteSpace(missionId))
+            {
+                return BadRequest("L'identifiant de la mission est requis.");
+            }
+
             try
             {
-                if (string.IsNullOrWhiteSpace(missionId))
-                {
-                    return BadRequest("Valid MissionId is required.");
-                }
-
                 var employees = await _service.GetEmployeesNotAssignedToMissionAsync(missionId);
                 return Ok(employees);
             }
@@ -50,7 +58,7 @@ namespace MyApp.Api.Controllers.mission
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erreur serveur : {ex.Message}");
             }
         }
 
@@ -58,6 +66,11 @@ namespace MyApp.Api.Controllers.mission
         [HttpPost("generate-excel")]
         public async Task<IActionResult> GenerateExcel([FromBody] GeneratePaiementDTO generatePaiementDTO)
         {
+            if (generatePaiementDTO == null || string.IsNullOrWhiteSpace(generatePaiementDTO.MissionId))
+            {
+                return BadRequest("Les données de paiement ou l'identifiant de la mission sont requis.");
+            }
+
             try
             {
                 var excelBytes = await _service.GenerateExcelReportAsync(
@@ -68,8 +81,6 @@ namespace MyApp.Api.Controllers.mission
                     generatePaiementDTO.EndDate);
 
                 string excelName = $"MissionPaymentReport-{generatePaiementDTO.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.xlsx";
-        
-                // Retourne le fichier Excel généré
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
             }
             catch (InvalidOperationException ex)
@@ -78,9 +89,10 @@ namespace MyApp.Api.Controllers.mission
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"An error occurred while generating the Excel file: {ex.Message}");
+                return StatusCode(500, $"Erreur lors de la génération du fichier Excel : {ex.Message}");
             }
         }
+
         // Récupère toutes les assignations de mission
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MissionAssignation>>> GetAll()
@@ -92,86 +104,113 @@ namespace MyApp.Api.Controllers.mission
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erreur serveur : {ex.Message}");
             }
         }
 
-        // Récupère une assignation par identifiants (employé, mission, transport)
-        [HttpGet("{employeeId}/{missionId}/{transportId?}")]
-        public async Task<ActionResult<MissionAssignation>> GetById(string employeeId, string missionId, string? transportId)
+        // Récupère une assignation par identifiants (employé, mission)
+        [HttpGet("{employeeId}/{missionId}")]
+        public async Task<ActionResult<MissionAssignation>> GetById(string employeeId, string missionId)
         {
-            var missionAssignation = await _service.GetByIdAsync(employeeId, missionId, transportId);
-            if (missionAssignation == null)
+            if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
             {
-                return NotFound();
+                return BadRequest("Les identifiants de l'employé et de la mission sont requis.");
             }
-            return Ok(missionAssignation);
+
+            try
+            {
+                var missionAssignation = await _service.GetByIdAsync(employeeId, missionId, null);
+                if (missionAssignation == null)
+                {
+                    return NotFound("Aucune assignation trouvée pour ces identifiants.");
+                }
+                return Ok(missionAssignation);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erreur serveur : {ex.Message}");
+            }
         }
 
         // Crée une nouvelle assignation de mission
         [HttpPost]
         public async Task<ActionResult> Create([FromBody] MissionAssignationDTOForm dto)
         {
-            // Vérifie la validité du modèle reçu
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState); // Retourne les erreurs de validation
+                return BadRequest(ModelState);
             }
 
             try
             {
                 var missionAssignation = new MissionAssignation(dto);
                 var (employeeId, missionId, transportId) = await _service.CreateAsync(missionAssignation);
-        
-                // Retourne l'URL de la ressource créée
-                var routeValues = new { employeeId, missionId, transportId = transportId ?? string.Empty };
+
+                var routeValues = new { employeeId, missionId };
                 return CreatedAtAction(nameof(GetById), routeValues, missionAssignation);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erreur lors de la création de l'assignation : {ex.Message}");
             }
         }
-        
+
         // Met à jour une assignation existante
-        [HttpPut("{employeeId}/{missionId}/{transportId}")]
-        public async Task<ActionResult> Update(string employeeId, string missionId, string transportId, [FromBody] MissionAssignationDTOForm dto)
+        [HttpPut("{employeeId}/{missionId}")]
+        public async Task<ActionResult> Update(string employeeId, string missionId, [FromBody] MissionAssignationDTOForm dto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
+            {
+                return BadRequest("Les identifiants de l'employé et de la mission sont requis.");
+            }
+
+            if (dto.EmployeeId != employeeId || dto.MissionId != missionId)
+            {
+                return BadRequest("Les identifiants dans l'URL doivent correspondre à ceux du corps de la requête.");
+            }
+
             try
             {
                 var missionAssignation = new MissionAssignation(dto);
-
                 var success = await _service.UpdateAsync(missionAssignation);
                 if (!success)
                 {
-                    return NotFound("Mission assignation not found.");
+                    return NotFound("Aucune assignation trouvée pour ces identifiants.");
                 }
-
-                return NoContent();
+                return Ok(missionAssignation);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erreur lors de la mise à jour de l'assignation : {ex.Message}");
             }
         }
 
         // Supprime une assignation de mission
-        [HttpDelete("{employeeId}/{missionId}/{transportId}")]
-        public async Task<ActionResult> Delete(string employeeId, string missionId, string transportId)
+        [HttpDelete("{employeeId}/{missionId}")]
+        public async Task<ActionResult> Delete(string employeeId, string missionId)
         {
+            if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
+            {
+                return BadRequest("Les identifiants de l'employé et de la mission sont requis.");
+            }
+
             try
             {
-                var success = await _service.DeleteAsync(employeeId, missionId, transportId);
+                var success = await _service.DeleteAsync(employeeId, missionId);
                 if (!success)
                 {
-                    return NotFound("Mission assignation not found.");
+                    return NotFound("Aucune assignation trouvée pour ces identifiants.");
                 }
-
-                return NoContent();
+                return Ok("Assignation supprimée avec succès.");
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erreur lors de la suppression de l'assignation : {ex.Message}");
             }
         }
 
@@ -179,21 +218,25 @@ namespace MyApp.Api.Controllers.mission
         [HttpPost("search")]
         public async Task<ActionResult<object>> Search([FromBody] MissionAssignationSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
+            if (page < 1 || pageSize < 1)
+            {
+                return BadRequest("La page et la taille de la page doivent être supérieures à 0.");
+            }
+
             try
             {
                 var (results, totalCount) = await _service.SearchAsync(filters, page, pageSize);
-                // Retourne les résultats paginés et le nombre total
                 return Ok(new
                 {
-                    data = results,
-                    totalCount,
-                    page,
-                    pageSize
+                    Data = results,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erreur lors de la recherche : {ex.Message}");
             }
         }
     }

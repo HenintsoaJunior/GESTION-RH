@@ -7,11 +7,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace MyApp.Api.Repositories.mission
 {
     public interface IMissionAssignationRepository
     {
+        Task<IDbContextTransaction> BeginTransactionAsync();
         Task<IEnumerable<string>> GetAssignedEmployeeIdsAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
@@ -31,6 +33,10 @@ namespace MyApp.Api.Repositories.mission
         public MissionAssignationRepository(AppDbContext context)
         {
             _context = context;
+        }
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
         }
 
         public async Task<IEnumerable<string>> GetAssignedEmployeeIdsAsync(string missionId)
