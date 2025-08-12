@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
 
 namespace MyApp.Api.Entities.users
 {
@@ -32,7 +33,7 @@ namespace MyApp.Api.Entities.users
         [MaxLength(50)]
         public string? Name { get; set; }
 
-        [Column("position_")]
+        [Column("position")]
         [MaxLength(250)]
         public string? Position { get; set; }
 
@@ -57,22 +58,15 @@ namespace MyApp.Api.Entities.users
         public string? Signature { get; set; }
 
         [Column("user_type")]
-        [MaxLength(50)]
-        public string? UserType { get; set; } // Could use enum directly if database stores "Cadre"/"NonCadre"
-
-        [Required]
-        [Column("role_id")]
-        [MaxLength(50)]
-        public string RoleId { get; set; } = null!;
-
-        [ForeignKey("RoleId")]
-        public Role? Role { get; set; }
+        public UserType? UserType { get; set; }
 
         [Column("refresh_token")]
-        [MaxLength(500)]
+        [MaxLength(250)]
         public string? RefreshToken { get; set; }
 
         [Column("refresh_token_expiry")]
         public DateTime? RefreshTokenExpiry { get; set; }
+
+        public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }
 }
