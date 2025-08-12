@@ -1,6 +1,8 @@
 using MyApp.Api.Models.classes.user;
 using System.DirectoryServices;
 using System.Runtime.InteropServices;
+using MyApp.Api.Entities.users;
+using MyApp.Api.Services.users;
 
 namespace MyApp.Api.Services.ldap.user;
 
@@ -8,10 +10,40 @@ public interface ILdapService
 {
     List<UserAd>? GetUsersFromActiveDirectory(string domainPath);
     UserAd? GetManager(string domainPath, string? displayName = null, string? mail = null);
+    List<UserAd>? BuildFullOrganisationHierarchy(string domainPath);
+    Task<(int Added, int Updated, int Deleted)> ActualiseUsers(string domainPath);
 }
 
 public class LdapService : ILdapService
 {
+    private readonly IUserService _userService;
+
+    public LdapService(IUserService userService)
+    {
+        _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+    }
+
+    public List<UserAd>? BuildFullOrganisationHierarchy(string domainPath)
+    {
+        List<UserAd>? users = GetUsersFromActiveDirectory(domainPath);
+        if (users != null)
+        {
+            foreach (var user in users)
+            {
+                if (!string.IsNullOrWhiteSpace(user.DisplayName))
+                {
+                    var manager = GetManager(domainPath, user.DisplayName);
+                    if (manager != null)
+                    {
+                        user.DirectReports.Add(manager);
+                    }
+                }
+            }
+            return users;
+        }
+        return null;
+    }
+
     public List<UserAd>? GetUsersFromActiveDirectory(string domainPath)
     {
         if (string.IsNullOrWhiteSpace(domainPath))
@@ -20,7 +52,7 @@ public class LdapService : ILdapService
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new PlatformNotSupportedException("Active Directory access is only supported on Windows.");
         
-        List<UserAd>? users = new();
+        List<UserAd> users = new();
         try
         {
             using var entry = new DirectoryEntry(domainPath);
@@ -34,7 +66,7 @@ public class LdapService : ILdapService
                 using var userEntry = result.GetDirectoryEntry();
                 users.Add(new UserAd
                 {
-                    Id = userEntry.Properties["objectGUID"]?.Value is byte[] guid ? new Guid(guid).ToString() : "",
+                    UserId = userEntry.Properties["objectGUID"]?.Value is byte[] guid ? new Guid(guid).ToString() : "",
                     Matricule = userEntry.Properties["sAMAccountName"]?.Value?.ToString() ?? "",
                     DisplayName = userEntry.Properties["displayName"]?.Value?.ToString() ?? "",
                     Email = userEntry.Properties["mail"]?.Value?.ToString() ?? "",
@@ -104,7 +136,7 @@ public class LdapService : ILdapService
                         : null;
                     manager = new UserAd
                     {
-                        Id = objectGuidBytes != null ? new Guid(objectGuidBytes).ToString() : "",
+                        UserId = objectGuidBytes != null ? new Guid(objectGuidBytes).ToString() : "",
                         Matricule = managerResult.Properties["sAMAccountName"]?.Count > 0
                             ? managerResult.Properties["sAMAccountName"][0]?.ToString() ?? ""
                             : "",
@@ -135,5 +167,126 @@ public class LdapService : ILdapService
             throw;
         }
         return manager;
+    }
+
+    public async Task<(int Added, int Updated, int Deleted)> ActualiseUsers(string domainPath)
+    {
+        try
+        {
+            var adUsers = BuildFullOrganisationHierarchy(domainPath) ?? throw new InvalidOperationException("Failed to retrieve users from Active Directory");
+            var dbUsers = await _userService.GetAllUsersAsync();
+            var adUserDict = adUsers.ToDictionary(x => x.UserId);
+            var dbUsersDict = dbUsers.ToDictionary(x => x.UserId);
+            var toAdd = GetUsersToAdd(adUsers, dbUsersDict);
+            var (toUpdate, toDelete) = GetUsersToUpdateOrDelete(dbUsers, adUserDict);
+            await ApplyUserChanges(toAdd, toUpdate, toDelete);
+            return (toAdd.Count, toUpdate.Count, toDelete.Count);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to actualize users: {ex.Message}", ex);
+        }
+    }
+
+    private List<User> GetUsersToAdd(List<UserAd> adUsers, Dictionary<string, User> dbUsersDict)
+    {
+        var usersToAdd = new List<User>();
+        foreach (var adUser in adUsers)
+        {
+            if (!dbUsersDict.ContainsKey(adUser.UserId))
+            {
+                var superior = adUser.DirectReports?.FirstOrDefault();
+                usersToAdd.Add(new User
+                {
+                    UserId = adUser.UserId,
+                    Name = adUser.DisplayName,
+                    Email = adUser.Email!,
+                    Department = adUser.Department,
+                    Position = adUser.Title,
+                    SuperiorId = superior?.UserId,
+                    SuperiorName = superior?.DisplayName,
+                });
+            }
+        }
+        return usersToAdd;
+    }
+
+    private (List<User> ToUpdate, List<User> ToDelete) GetUsersToUpdateOrDelete(List<User> dbUsers, Dictionary<string, UserAd> adUserDict)
+    {
+        var usersToUpdate = new List<User>();
+        var usersToDelete = new List<User>();
+
+        foreach (var dbUser in dbUsers)
+        {
+            if (adUserDict.TryGetValue(dbUser.UserId, out var adUser))
+            {
+                string? depart = adUser.Department;
+                if (string.IsNullOrEmpty(adUser.Department) && adUser.DisplayName != null && adUser.DisplayName.Contains('('))
+                {
+                    var parts = adUser.DisplayName.Split('(', ')');
+                    if (parts.Length > 1)
+                    {
+                        depart = parts[1].Trim();
+                    }
+                }
+
+                var superiorId = adUser.DirectReports?.FirstOrDefault()?.UserId;
+                var superiorName = adUser.DirectReports?.FirstOrDefault()?.DisplayName;
+
+                if (dbUser.Name != adUser.DisplayName || 
+                    dbUser.Email != adUser.Email ||
+                    dbUser.Department != depart || 
+                    dbUser.Position != adUser.Title ||
+                    dbUser.SuperiorId != superiorId || 
+                    dbUser.SuperiorName != superiorName)
+                {
+                    dbUser.Name = adUser.DisplayName;
+                    dbUser.Email = adUser.Email!;
+                    dbUser.Department = depart;
+                    dbUser.Position = adUser.Title;
+                    dbUser.SuperiorId = superiorId;
+                    dbUser.SuperiorName = superiorName;
+                    usersToUpdate.Add(dbUser);
+                }
+            }
+            else
+            {
+                usersToDelete.Add(dbUser);
+            }
+        }
+
+        return (usersToUpdate, usersToDelete);
+    }
+
+    private async Task ApplyUserChanges(List<User> usersToAdd, List<User> usersToUpdate, List<User> usersToDelete)
+    {
+        const int batchSize = 10;
+
+        if (usersToAdd.Count > 0)
+        {
+            for (int i = 0; i < usersToAdd.Count; i += batchSize)
+            {
+                var batch = usersToAdd.Skip(i).Take(batchSize).ToList();
+                await _userService.AddUsersAsync(batch);
+            }
+        }
+
+        if (usersToUpdate.Count > 0)
+        {
+            for (int i = 0; i < usersToUpdate.Count; i += batchSize)
+            {
+                var batch = usersToUpdate.Skip(i).Take(batchSize).ToList();
+                await _userService.UpdateUsersAsync(batch);
+            }
+        }
+
+        if (usersToDelete.Count > 0)
+        {
+            for (int i = 0; i < usersToDelete.Count; i += batchSize)
+            {
+                var batch = usersToDelete.Skip(i).Take(batchSize).ToList();
+                await _userService.DeleteUsersAsync(batch);
+            }
+        }
     }
 }
