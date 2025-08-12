@@ -94,7 +94,6 @@ public class AuthService : IAuthService
 
         return user;
     }
-
     private ValidationResult ValidateUserAccess(User? user)
     {
         if (user == null)
