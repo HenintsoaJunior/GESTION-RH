@@ -12,21 +12,30 @@ namespace MyApp.Api.Controllers.mission
     public class MissionAssignationController : ControllerBase
     {
         private readonly IMissionAssignationService _service;
+        private readonly IMissionService _missionService;
 
-        public MissionAssignationController(IMissionAssignationService service)
+        public MissionAssignationController(IMissionAssignationService service, IMissionService missionService)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
+            _missionService = missionService;
         }
 
         [HttpPost("import-csv")]
-        public async Task<IActionResult> ImportCsv(IFormFile file, [FromQuery] char separator = ',')
+        public async Task<IActionResult> ImportCsv(IFormFile file, [FromQuery] char separator = ';')
         {
             if (file == null || file.Length == 0)
                 return BadRequest("Fichier non valide.");
 
             using var stream = file.OpenReadStream();
-            var result = await _service.ImportMissionFromCsv(stream, separator);
+            var result = await _service.ImportMissionFromCsv(stream, separator, (MissionService)_missionService);
             return Ok(result);
+        }
+
+        [HttpPost("duration")]
+        public async Task<IActionResult> GetDuration(DateTime StartDate, DateTime EndDate)
+        {
+            var duration = await Task.Run(() => _service.calculateDuration(StartDate, EndDate));
+            return Ok(duration);
         }
 
         // Récupère les employés non assignés à une mission spécifique
