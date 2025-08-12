@@ -142,6 +142,7 @@ namespace MyApp.Api.Repositories.mission
         {
             var query = _context.MissionAssignations
                 .Include(ma => ma.Employee)
+                .Include(ma => ma.Employee)
                 .ThenInclude(e => e.Direction)
                 .Include(ma => ma.Employee)
                 .ThenInclude(e => e.Department)

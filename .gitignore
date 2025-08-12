@@ -19,7 +19,7 @@ ehthumbs.db
 /FRONTEND/rh-front/.next/
 /FRONTEND/rh-front/.turbo/
 /FRONTEND/rh-front/.cache/
-/FRONTEND/rh-front/.eslintcache
+/FRONTEND/rh-front/.eslintcache/
 /FRONTEND/rh-front/src/config/apiConfig.js
 
 # --- Visual Studio & .NET (BACKEND) ---

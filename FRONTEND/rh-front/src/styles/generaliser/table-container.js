@@ -1,4 +1,3 @@
-// src/styles/TableStyles.js
 import styled from "styled-components";
 import AutoCompleteInput from "components/auto-complete-input";
 
@@ -112,9 +111,9 @@ export const TableTitle = styled.h2`
 `;
 
 export const TableRow = styled.tr`
-  cursor: ${({ clickable }) => (clickable ? "pointer" : "default")};
+  cursor: ${({ $clickable }) => ($clickable ? "pointer" : "default")};
   &:hover {
-    background: ${({ clickable }) => (clickable ? "var(--bg-tertiary)" : "transparent")};
+    background: ${({ $clickable }) => ($clickable ? "var(--bg-tertiary)" : "transparent")};
   }
 `;
 
@@ -181,8 +180,8 @@ export const FiltersContainer = styled.div`
   margin-bottom: var(--spacing-lg);
   padding: var(--spacing-lg);
 
-  ${({ isMinimized }) =>
-    isMinimized &&
+  ${({ $isMinimized }) =>
+    $isMinimized &&
     `
     margin-bottom: var(--spacing-md);
     & .filters-section {
@@ -247,8 +246,8 @@ export const FilterControlButton = styled.button`
     transform: scale(0.95);
   }
 
-  ${({ isMinimize }) =>
-    isMinimize &&
+  ${({ $isMinimized }) =>
+    $isMinimized &&
     `
     &:hover {
       background-color: #fef3c7;
@@ -257,8 +256,8 @@ export const FilterControlButton = styled.button`
     }
   `}
 
-  ${({ isClose }) =>
-    isClose &&
+  ${({ $isClose }) =>
+    $isClose &&
     `
     &:hover {
       background-color: #fee2e2;
@@ -734,8 +733,8 @@ export const ButtonView = styled.button`
   height: 40px;
   line-height: 1;
   transition: all 0.2s ease;
-  background-color: ${({ active }) => (active ? "var(--primary-color)" : "var(--bg-primary)")};
-  color: ${({ active }) => (active ? "#ffffff" : "var(--text-primary)")};
+  background-color: ${({ $active }) => ($active ? "var(--primary-color)" : "var(--bg-primary)")};
+  color: ${({ $active }) => ($active ? "#ffffff" : "var(--text-primary)")};
 
   &:hover {
     background-color: var(--bg-secondary);
