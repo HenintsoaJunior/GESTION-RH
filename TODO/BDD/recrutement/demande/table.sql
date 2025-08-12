@@ -299,7 +299,7 @@ CREATE TABLE role(
 
 CREATE TABLE users(
    user_id VARCHAR(50),
-   matricule VARCHAR(100) NOT NULL,
+   matricule VARCHAR(100),
    email VARCHAR(150) NOT NULL,
    name VARCHAR(50),
    position_ VARCHAR(250),
