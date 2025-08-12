@@ -2,7 +2,7 @@ namespace MyApp.Api.Models.classes.user;
 
 public class UserAd
 {
-    public string? Id { get; set; }
+    public string? UserId { get; set; }
     public string? Matricule {get; set;}
     public string? DisplayName { get; set; }
     public string? Email { get; set; }

@@ -10,26 +10,22 @@ public class UserDto
 
     [Required]
     [MaxLength(255)]
-    public string FirstName { get; set; } = default!;
-
-    [Required]
-    [MaxLength(255)]
-    public string LastName { get; set; } = default!;
+    public string? Name { get; set; } = default!;
 
     [Required]
     [MaxLength(100)]
     [EmailAddress]
     public string Email { get; set; } = default!;
 
-    [Required]
+    [MaxLength(100)]
+    public string? Department { get; set; }
+
+    [MaxLength(100)]
+    public string? Position { get; set; }
+
+    [MaxLength(50)]
+    public string? SuperiorId { get; set; }
+
     [MaxLength(255)]
-    public string Password { get; set; } = default!;
-
-    [Required]
-    [MaxLength(50)]
-    public string Role { get; set; } = default!;
-
-    [Required]
-    [MaxLength(50)]
-    public string DepartmentId { get; set; } = default!;
+    public string? SuperiorName { get; set; }
 }

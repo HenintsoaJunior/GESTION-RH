@@ -1,19 +1,25 @@
+// UserService.cs
 using MyApp.Api.Entities.users;
 using MyApp.Api.Models.form.users;
 using MyApp.Api.Repositories.users;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MyApp.Api.Services.users
 {
     public interface IUserService
     {
         Task<UserDto?> LoginAsync(string email, string password);
-        // Task<User?> GetByEmployeeIdAsync(string employeeId);
         Task<IEnumerable<User>> GetAllAsync();
+        Task<List<User>> GetAllUsersAsync();
         Task<User?> GetByIdAsync(string id);
         Task<User?> GetByEmailAsync(string email);
         Task AddAsync(User user);
         Task UpdateAsync(User user);
         Task DeleteAsync(User user);
+        Task AddUsersAsync(List<User> users);
+        Task UpdateUsersAsync(List<User> users);
+        Task DeleteUsersAsync(List<User> users);
     }
     
     public class UserService : IUserService
@@ -22,16 +28,18 @@ namespace MyApp.Api.Services.users
 
         public UserService(IUserRepository repository)
         {
-            _repository = repository;
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
-        // public async Task<User?> GetByEmployeeIdAsync(string employeeId)
-        // {
-        //     return await _repository.GetByEmployeeIdAsync(employeeId) ?? throw new Exception("L'utilisateur n'existe pas");
-        // }
 
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             return await _repository.GetAllAsync();
+        }
+
+        public async Task<List<User>> GetAllUsersAsync()
+        {
+            var users = await _repository.GetAllAsync();
+            return users.ToList();
         }
 
         public async Task<User?> GetByIdAsync(string id)
@@ -61,39 +69,49 @@ namespace MyApp.Api.Services.users
             await _repository.DeleteAsync(user);
             await _repository.SaveChangesAsync();
         }
-        
+
+        public async Task AddUsersAsync(List<User> users)
+        {
+            await _repository.AddUsersAsync(users);
+            await _repository.SaveChangesAsync();
+        }
+
+        public async Task UpdateUsersAsync(List<User> users)
+        {
+            await _repository.UpdateUsersAsync(users);
+            await _repository.SaveChangesAsync();
+        }
+
+        public async Task DeleteUsersAsync(List<User> users)
+        {
+            await _repository.DeleteUsersAsync(users);
+            await _repository.SaveChangesAsync();
+        }
+
         public async Task<UserDto?> LoginAsync(string email, string password)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-                    throw new Exception("Email and password are required.");
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                throw new ArgumentException("Email and password are required.");
 
-                var user = await _repository.GetByEmailAsync(email);
+            var user = await _repository.GetByEmailAsync(email);
+            if (user == null)
+                return null;
 
-                if (user == null)
-                    return null;
-
-                // if (!BCrypt.Net.BCrypt.Verify(password, user.Password))
-                //     return null;
-
-                return MapToDto(user);
-            }
-            catch (Exception)
-            {
-                throw new Exception("Failed to authenticate user.");
-            }
+            return MapToDto(user);
         }
 
         private static UserDto MapToDto(User user)
         {
-            return new UserDto()
+            return new UserDto
             {
                 UserId = user.UserId,
                 Email = user.Email,
-                // Role = user.Role
+                Name = user.Name,
+                Department = user.Department,
+                Position = user.Position,
+                SuperiorId = user.SuperiorId,
+                SuperiorName = user.SuperiorName
             };
         }
     }
 }
-
