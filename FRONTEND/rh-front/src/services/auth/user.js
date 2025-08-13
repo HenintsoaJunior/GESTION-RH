@@ -25,41 +25,35 @@ export const loginUser = async (username, password, setIsLoading, onSuccess, onE
 
     const data = await response.json();
 
-    if (data.user?.id && data.token) {
-      // Stocker les données dans localStorage
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          id: data.user.id,
-          matricule: data.user.matricule,
-          email: data.user.email,
-          name: data.user.name,
-          department: data.user.department,
-          poste: data.user.poste,
-          superiorId: data.user.superiorId,
-          superiorName: data.user.superiorName,
-          typeUser: data.user.typeUser,
-        })
-      );
-      localStorage.setItem("token", data.token); // Stocker le token séparément
+    if (data.user?.userId && data.token) {
+      // Stocker les données utilisateur dans localStorage
+      const userData = {
+        userId: data.user.userId,
+        email: data.user.email,
+        name: data.user.name,
+        department: data.user.department,
+        userType: data.user.userType,
+        roles: data.user.roles || [],
+      };
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      // Stocker l'objet token complet dans localStorage
+      localStorage.setItem("token", JSON.stringify({
+        accessToken: data.token.accessToken,
+        refreshToken: data.token.refreshToken,
+        expiresIn: data.token.expiresIn,
+      }));
 
       onSuccess({
         isOpen: true,
         type: data.type || "success",
         message: data.message || "Connexion réussie",
-        user: {
-          id: data.user.id,
-          matricule: data.user.matricule,
-          email: data.user.email,
-          name: data.user.name,
-          department: data.user.department,
-          poste: data.user.poste,
-          superiorId: data.user.superiorId,
-          superiorName: data.user.superiorName,
-          typeUser: data.user.typeUser,
-          habilitations: data.user.habilitations || [],
+        user: userData,
+        token: {
+          accessToken: data.token.accessToken,
+          refreshToken: data.token.refreshToken,
+          expiresIn: data.token.expiresIn,
         },
-        token: data.token,
       });
     } else {
       throw new Error("Réponse API invalide");
