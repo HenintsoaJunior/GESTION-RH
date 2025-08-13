@@ -294,7 +294,13 @@
         ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_003');
 
     
-    INSERT INTO role_habilitation (user_id, role_id)
+
+    INSERT INTO habilitations (habilitation_id,label)
+    VALUES
+        ('HAB_001','mission_insertion')
+
+    
+    INSERT INTO role_habilitation (habilitation_id, role_id)
     VALUES
         ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_001'),
         ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_002'),

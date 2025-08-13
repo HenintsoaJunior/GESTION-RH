@@ -1,4 +1,7 @@
 
+using System.Globalization;
+using System.Text;
+
 namespace MyApp.Api.Utils.csv
 {
     public class CSVReader
