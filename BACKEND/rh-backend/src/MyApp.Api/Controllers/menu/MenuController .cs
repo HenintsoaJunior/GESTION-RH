@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using MyApp.Api.Models.menu;
+using MyApp.Api.Models.list.menu;
 using MyApp.Api.Services.menu;
 
 namespace MyApp.Api.Controllers.menu
@@ -16,11 +16,11 @@ namespace MyApp.Api.Controllers.menu
         }
 
         [HttpGet("hierarchy")]
-        public async Task<ActionResult<IEnumerable<MenuHierarchyDto>>> GetMenuHierarchy()
+        public async Task<ActionResult<IEnumerable<MenuHierarchyDto>>> GetMenuHierarchy([FromQuery] string[]? roleNames = null)
         {
             try
             {
-                var menuHierarchy = await _menuService.GetMenuHierarchyAsync();
+                var menuHierarchy = await _menuService.GetMenuHierarchyAsync(roleNames);
                 return Ok(menuHierarchy);
             }
             catch (Exception ex)

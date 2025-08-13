@@ -1,17 +1,17 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace MyApp.Api.Entities.users
 {
     [Table("user_role")]
+    [PrimaryKey(nameof(UserId), nameof(RoleId))]
     public class UserRole : BaseEntity
     {
-        [Key]
         [Column("user_id")]
         [MaxLength(50)]
         public string UserId { get; set; } = null!;
-
-        [Key]
+        
         [Column("role_id")]
         [MaxLength(50)]
         public string RoleId { get; set; } = null!;

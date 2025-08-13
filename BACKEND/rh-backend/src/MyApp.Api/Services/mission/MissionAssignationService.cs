@@ -8,11 +8,9 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Models.form.mission;
+using MyApp.Api.Utils.csv;
 using MyApp.Api.Utils.exception;
 using MyApp.Api.Utils.pdf;
-using MyApp.Utils.csv;
-using MyApp.Api.Models.form.lieu;
-
 namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
@@ -72,7 +70,6 @@ namespace MyApp.Api.Services.mission
         public async Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator, MissionService missionService)
         {
             var errors = new List<string>();
-
             await using var transaction = await _repository.BeginTransactionAsync();
             try
             {
@@ -214,7 +211,7 @@ namespace MyApp.Api.Services.mission
                     generatePaiementDTO.Status
                 );
 
-                PdfGenerator pdf = new PdfGenerator(paiements.GetDescriptionForPDF(), paiements.GetTablesForPDF());
+                PdfGenerator pdf = new PdfGenerator(paiements.GetDescriptionForPdf(), paiements.GetTablesForPdf());
                 return pdf.GeneratePdf("Mission");
             }
             catch (Exception ex)

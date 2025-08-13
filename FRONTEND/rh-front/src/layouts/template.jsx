@@ -30,12 +30,15 @@ export default function Template({ children }) {
   const lastLocationRef = useRef("");
   const navigationUpdateRef = useRef(false);
 
-  // Retrieve user data from localStorage
+  // Retrieve user data from localStorage based on new login response format
   const user = JSON.parse(localStorage.getItem("user")) || {
     userId: "USER DEFAULT",
     name: "John Doe",
-    role: "Administrateur",
+    roles: [{ roleName: "Administrateur" }],
   };
+
+  // Derive role for display by joining roleNames
+  const userRole = user.roles?.map(role => role.roleName).join(", ") || "Administrateur";
 
   // Generate initials for avatar
   const getInitials = useCallback((name) => {
@@ -158,7 +161,7 @@ export default function Template({ children }) {
     fetchLanguages();
   }, [selectedLanguage]);
 
-  // Fetch menu data from API
+  // Fetch menu data from API with roleNames
   useEffect(() => {
     const fetchMenuData = async () => {
       if (isMenuLoading) return;
@@ -168,7 +171,11 @@ export default function Template({ children }) {
       }
       setIsMenuLoading(true);
       try {
-        const response = await fetch(`${BASE_URL}/api/Menu/hierarchy`);
+        // Extract roleNames from user.roles
+        const roleNames = user.roles?.map(role => role.roleName) || [];
+        // Construct query string with roleNames
+        const queryString = roleNames.length > 0 ? `?${roleNames.map(name => `roleNames=${encodeURIComponent(name)}`).join('&')}` : '';
+        const response = await fetch(`${BASE_URL}/api/Menu/hierarchy${queryString}`);
         if (!response.ok) throw new Error("Erreur réseau");
         const data = await response.json();
         menuDataRef.current = data;
@@ -185,7 +192,7 @@ export default function Template({ children }) {
       }
     };
     fetchMenuData();
-  }, [initializeExpandedMenus]);
+  }, [initializeExpandedMenus, user.roles]);
 
   // Update active item, header title, and expanded menus based on route
   useEffect(() => {
@@ -521,7 +528,7 @@ export default function Template({ children }) {
                   <div className="user-avatar">{getInitials(user.name)}</div>
                   <div className="user-info">
                     <span className="user-name">{user.userId}</span>
-                    <span className="user-role">{user.role}</span>
+                    <span className="user-role">{userRole}</span>
                   </div>
                   <FaIcons.FaChevronDown className="dropdown-arrow" />
                 </div>

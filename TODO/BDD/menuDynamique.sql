@@ -25,6 +25,16 @@ CREATE TABLE menu (
    FOREIGN KEY (module_id) REFERENCES module(module_id)
 );
 
+CREATE TABLE menu_role (
+   menu_id VARCHAR(50) NOT NULL,
+   role_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY (menu_id, role_id),
+   created_at DATETIME NOT NULL DEFAULT GETDATE(),
+   updated_at DATETIME NOT NULL DEFAULT GETDATE(),
+   FOREIGN KEY (menu_id) REFERENCES menu(menu_id),
+   FOREIGN KEY (role_id) REFERENCES role(role_id)
+);
+
 CREATE TABLE menu_hierarchy (
    hierarchy_id VARCHAR(50) PRIMARY KEY,
    parent_menu_id VARCHAR(50),
@@ -68,3 +78,18 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h6', 'menu2', 'menu2_1', GETDATE(), GETDATE()),
 ('h7', 'menu2', 'menu2_2', GETDATE(), GETDATE()),
 ('h8', 'menu2', 'menu2_3', GETDATE(), GETDATE());
+
+
+
+INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
+('menu1', 'ROLE_001', GETDATE(), GETDATE()),
+('menu1_1', 'ROLE_001', GETDATE(), GETDATE()),
+('menu1_2', 'ROLE_001',GETDATE(), GETDATE()),
+('menu2', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2_1', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2_2', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2_3', 'ROLE_001', GETDATE(), GETDATE());
+
+
+
+

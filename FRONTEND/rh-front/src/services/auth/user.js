@@ -1,13 +1,13 @@
 "use client";
 
-import { BASE_URL_LDAP } from "config/apiConfig";
+import { BASE_URL } from "config/apiConfig";
 
 // Fonction pour gérer la connexion d'un utilisateur
 export const loginUser = async (username, password, setIsLoading, onSuccess, onError) => {
   try {
     setIsLoading((prev) => ({ ...prev, login: true }));
 
-    const response = await fetch(`${BASE_URL_LDAP}/api/Login`, {
+    const response = await fetch(`${BASE_URL}/api/Auth`, {
       method: "POST",
       headers: {
         accept: "*/*",

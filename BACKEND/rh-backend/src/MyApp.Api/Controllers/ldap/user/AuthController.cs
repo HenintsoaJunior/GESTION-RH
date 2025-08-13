@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Services.ldap.user;
 using MyApp.Api.Services.users;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using MyApp.Api.Data;
 
 namespace MyApp.Api.Controllers.ldap.user;
@@ -22,6 +23,45 @@ public class AuthController : ControllerBase
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
+    
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenModel model)
+    {
+        if (string.IsNullOrWhiteSpace(model.RefreshToken))
+        {
+            return BadRequest(new { Message = "Refresh token is required", Type = "invalid_input" });
+        }
+
+        try
+        {
+            var tokenResponse = await _authService.RefreshTokenAsync(model.RefreshToken);
+
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddHours(1),
+                Path = "/"
+            };
+            Response.Cookies.Append("AuthToken", tokenResponse.AccessToken, cookieOptions);
+
+            return Ok(new
+            {
+                Token = tokenResponse,
+                Message = "Token refreshed successfully",
+                Type = "success"
+            });
+        }
+        catch (SecurityTokenException ex)
+        {
+            return Unauthorized(new { Message = ex.Message, Type = "invalid_refresh_token" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = $"An error occurred during token refresh: {ex.Message}", Type = "error" });
+        }
+    }
 
     [HttpPost]
     public async Task<IActionResult> Login([FromBody] LoginModel login)
@@ -31,60 +71,58 @@ public class AuthController : ControllerBase
             return BadRequest(new { Message = "Username and password are required", Type = "invalid_input" });
         }
 
-        var result = await _authService.ValidateUserAsync(login.Username, login.Password);
-
-        if (result.Type != "success" || result.User == null)
+        try
         {
-            return Unauthorized(new { result.Message, result.Type });
+            var result = await _authService.ValidateUserAsync(login.Username, login.Password);
+
+            if (result.Type != "success" || result.User == null)
+            {
+                return Unauthorized(new { result.Message, result.Type });
+            }
+
+            var token = await _authService.GenerateJwtTokenAsync(result.User);
+
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true, // Ensure HTTPS in production
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddHours(1),
+                Path = "/"
+            };
+
+            Response.Cookies.Append("AuthToken", token.AccessToken, cookieOptions);
+
+            var userResponse = new
+            {
+                result.User.UserId,
+                result.User.Email,
+                result.User.Name,
+                result.User.Department,
+                result.User.UserType,
+                Roles = _authService.GetUserRolesAndHabilitations(result.User)
+            };
+
+            return Ok(new { Token = token, User = userResponse, Message = result.Message, Type = result.Type });
         }
-
-        var token = await _authService.GenerateJwtTokenAsync(result.User);
-
-        var cookieOptions = new CookieOptions
+        catch (Exception ex)
         {
-            HttpOnly = true,
-            Secure = true, // Ensure HTTPS in production
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddHours(1), // Align with JWT expiration
-            Path = "/"
-        };
-
-        Response.Cookies.Append("AuthToken", token.AccessToken, cookieOptions);
-
-        var userResponse = new
-        {
-            result.User.UserId,
-            result.User.Email,
-            result.User.Name,
-            result.User.Department,
-            result.User.UserType,
-            Roles = result.User.UserRoles.Select(ur => ur.Role?.Name).Where(name => name != null)
-        };
-
-        return Ok(new { Token = token, User = userResponse, Message = result.Message, Type = result.Type });
+            return StatusCode(500, new { Message = $"An error occurred during login: {ex.Message}", Type = "error" });
+        }
     }
 
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout([FromBody] LogoutModel model)
+    public IActionResult Logout()
     {
-        if (string.IsNullOrWhiteSpace(model.RefreshToken))
+        try
         {
             Response.Cookies.Delete("AuthToken");
-            return Ok(new { Message = "Logged out successfully (no refresh token provided)" });
+            return Ok(new { Message = "Logged out successfully" });
         }
-
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.RefreshToken == model.RefreshToken);
-
-        if (user != null)
+        catch (Exception ex)
         {
-            user.RefreshToken = null;
-            user.RefreshTokenExpiry = null;
-            await _context.SaveChangesAsync();
+            return StatusCode(500, new { Message = $"An error occurred during logout: {ex.Message}", Type = "error" });
         }
-
-        Response.Cookies.Delete("AuthToken");
-        return Ok(new { Message = "Logged out successfully" });
     }
     
     public class LoginModel
@@ -92,9 +130,9 @@ public class AuthController : ControllerBase
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
-
-    public class LogoutModel
+    public class RefreshTokenModel
     {
-        public string? RefreshToken { get; set; }
+        public string RefreshToken { get; set; } = string.Empty;
     }
+    
 }
