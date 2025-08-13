@@ -1,14 +1,15 @@
-namespace MyApp.Api.Models.menu
+namespace MyApp.Api.Models.list.menu
 {
     public class MenuDto
     {
-        public string MenuId { get; set; } = default!;
-        public string MenuKey { get; set; } = default!;
+        public string MenuId { get; set; } = null!;
+        public string MenuKey { get; set; } = null!;
         public string? Icon { get; set; }
         public string? Link { get; set; }
-        public bool IsEnabled { get; set; } = true;
+        public bool IsEnabled { get; set; }
         public int? Position { get; set; }
         public string? ModuleId { get; set; }
+        public List<string> RoleNames { get; set; } = new List<string>();
     }
 
     public class MenuHierarchyDto

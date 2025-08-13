@@ -1,3 +1,4 @@
+using System.Globalization;
 using DocumentFormat.OpenXml.Bibliography;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Services.employee;
@@ -14,7 +15,7 @@ namespace MyApp.Api.Entities.mission
 
         // Utilisé pour générer la section de description du PDF
         // Utilisé pour générer le résumé de la mission dans le PDF
-        public object GetDescriptionForPDF()
+        public object GetDescriptionForPdf()
         {
             try
             {
@@ -24,21 +25,11 @@ namespace MyApp.Api.Entities.mission
                 return new
                 {
                     Mission = MissionAssignation.Mission?.Name ?? "N/A",
-                    Nom = (MissionAssignation.Employee != null
-                        ? $"{MissionAssignation.Employee.FirstName} {MissionAssignation.Employee.LastName}"
-                        : "N/A"),
-                    Matricule = (MissionAssignation.Employee != null
-                        ? $" {MissionAssignation.Employee.EmployeeCode}"
-                        : "N/A"),
-                    Direction = (MissionAssignation.Employee != null
-                        ? $" {(MissionAssignation.Employee.Direction != null ? MissionAssignation.Employee.Direction.DirectionName : "N/A")}"
-                        : "N/A"),
-                    Department = (MissionAssignation.Employee != null
-                    ? $" {(MissionAssignation.Employee.Department != null ? MissionAssignation.Employee.Department.DepartmentName : "N/A")}"
-                    : "N/A"),
-                    Service = (MissionAssignation.Employee != null
-                    ? $" {(MissionAssignation.Employee.Service != null ? MissionAssignation.Employee.Service.ServiceName : "N/A")}"
-                    : "N/A"),
+                    Nom = ($"{MissionAssignation.Employee.FirstName} {MissionAssignation.Employee.LastName}"),
+                    Matricule = ($" {MissionAssignation.Employee.EmployeeCode}"),
+                    Direction = ($" {(MissionAssignation.Employee.Direction != null ? MissionAssignation.Employee.Direction.DirectionName : "N/A")}"),
+                    Department = ($" {(MissionAssignation.Employee.Department != null ? MissionAssignation.Employee.Department.DepartmentName : "N/A")}"),
+                    Service = ($" {(MissionAssignation.Employee.Service != null ? MissionAssignation.Employee.Service.ServiceName : "N/A")}"),
                     Transport = MissionAssignation.Transport?.Type ?? "N/A",
                     Départ = MissionAssignation.DepartureDate.ToString("dd/MM/yyyy")+" "+ MissionAssignation.DepartureTime, 
                     Retour = MissionAssignation.ReturnDate?.ToString("dd/MM/yyyy") +" "+ MissionAssignation.ReturnTime ?? "N/A",
@@ -52,7 +43,7 @@ namespace MyApp.Api.Entities.mission
         }
 
         // Utilisé pour générer les tableaux du PDF
-        public List<object> GetTablesForPDF()
+        public List<object> GetTablesForPdf()
         {
             var tables = new List<object>();
             try
@@ -82,7 +73,7 @@ namespace MyApp.Api.Entities.mission
                     if (daily.CompensationScales != null)
                     {
                         var scales = daily.CompensationScales.ToList();
-                        row.Add(MissionAssignationService.CalculateTransportAmount(scales, MissionAssignation.TransportId).ToString("N2"));
+                        row.Add(MissionAssignationService.CalculateTransportAmount(scales, MissionAssignation!.TransportId).ToString("N2"));
                         row.Add(MissionAssignationService.CalculateExpenseAmount(scales, "Petit Déjeuner").ToString("N2"));
                         row.Add(MissionAssignationService.CalculateExpenseAmount(scales, "Déjeuner").ToString("N2"));
                         row.Add(MissionAssignationService.CalculateExpenseAmount(scales, "Dinner").ToString("N2"));
@@ -94,14 +85,14 @@ namespace MyApp.Api.Entities.mission
                     row.Add(daily.TotalAmount.ToString("N2"));
                     tables.Add(row);
                 }
-                var final_row = new List<string>();
-                final_row.Add("Total");
+                var finalRow = new List<string>();
+                finalRow.Add("Total");
                 for (int i = 0; i < 5; i++)
                 {
-                    final_row.Add(" ");
+                    finalRow.Add(" ");
                 }
-                final_row.Add(TotalAmount.ToString());
-                tables.Add(final_row);
+                finalRow.Add(TotalAmount.ToString(CultureInfo.InvariantCulture));
+                tables.Add(finalRow);
             }
             catch (Exception ex)
             {

@@ -38,14 +38,16 @@ const ProfilePage = () => {
     );
   }
 
+  // Derive roles for display by joining roleNames
+  const userRoles = user.roles?.map(role => role.roleName).join(", ") || "Non spécifié";
+
   const profileFields = [
     { label: 'Nom complet', value: user.name, icon: '👤' },
-    { label: 'Matricule', value: user.matricule, icon: '🆔' },
+    { label: 'Identifiant utilisateur', value: user.userId, icon: '🆔' },
     { label: 'Email', value: user.email, icon: '📧' },
     { label: 'Département', value: user.department, icon: '🏢' },
-    { label: 'Poste', value: user.poste, icon: '💼' },
-    { label: 'Supérieur hiérarchique', value: user.superiorName, icon: '👨‍💼' },
-    { label: 'Type d\'utilisateur', value: user.typeUser, icon: '🔐' }
+    { label: 'Type d\'utilisateur', value: user.userType, icon: '🔐' },
+    { label: 'Rôles', value: userRoles, icon: '👥' }
   ];
 
   return (

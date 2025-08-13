@@ -8,10 +8,9 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Models.form.mission;
+using MyApp.Api.Utils.csv;
 using MyApp.Api.Utils.exception;
 using MyApp.Api.Utils.pdf;
-using MyApp.Utils.csv;
-
 namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
@@ -61,7 +60,7 @@ namespace MyApp.Api.Services.mission
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
-        public async Task<string> ImportMissionFromCsv(Stream fileStream, char separator)
+        public Task<string> ImportMissionFromCsv(Stream fileStream, char separator)
         {
             // lire le csv
             var tempFilePath = Path.GetTempFileName();
@@ -76,7 +75,7 @@ namespace MyApp.Api.Services.mission
 
             // checking
             // inserer dans la base
-            return "";
+            return Task.FromResult("");
         }
         public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDto)
         {
@@ -91,7 +90,7 @@ namespace MyApp.Api.Services.mission
                     generatePaiementDto.Status
                 );
 
-                PdfGenerator pdf = new PdfGenerator(paiements.GetDescriptionForPDF(), paiements.GetTablesForPDF());
+                PdfGenerator pdf = new PdfGenerator(paiements.GetDescriptionForPdf(), paiements.GetTablesForPdf());
                 return pdf.GeneratePdf("Mission");
             }
             catch (Exception ex)

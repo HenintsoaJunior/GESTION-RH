@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.form.mission;
@@ -120,12 +121,12 @@ namespace MyApp.Api.Controllers
 
         // Récupère des statistiques sur les missions
         [HttpGet("stats")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<MissionStats>> GetStatistics()
         {
             var stats = await _missionService.GetStatisticsAsync();
             return Ok(stats);
         }
-
         // Annule une mission (change son statut à "Annulé")
         [HttpPut("{id}/cancel")]
         public async Task<IActionResult> CancelMission(string id)
