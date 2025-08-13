@@ -1,3 +1,4 @@
+using Microsoft.IdentityModel.Tokens;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Utils.generator;
@@ -6,6 +7,8 @@ namespace MyApp.Api.Services.mission
 {
     public interface ITransportService
     {
+        Task<Transport?> VerifyTransportByTypeAsync(string type);
+        Task<IEnumerable<Transport>> GetByTypeAsync(string type);
         Task<IEnumerable<Transport>> GetAllAsync();
         Task<Transport?> GetByIdAsync(string id);
         Task<string> CreateAsync(Transport transport);
@@ -24,6 +27,30 @@ namespace MyApp.Api.Services.mission
             _repository = repository;
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
+        }
+
+        public async Task<Transport?> VerifyTransportByTypeAsync(string type)
+        {
+            if(type.IsNullOrEmpty()) return null;
+            var transports = await GetByTypeAsync(type);
+            var transport = transports.FirstOrDefault();
+            if (transport == null)
+            {
+                throw new Exception("Type de transport inexistant");
+            }
+            return transport;
+        }
+
+        public async Task<IEnumerable<Transport>> GetByTypeAsync(string type)
+        {
+            var transports = await _repository.GetAllAsync();
+            return transports
+                .Where(t => t.Type.Equals(type, StringComparison.OrdinalIgnoreCase))
+                .Select(t => new Transport
+                {
+                    TransportId = t.TransportId,
+                    Type = t.Type
+                });
         }
 
         public async Task<IEnumerable<Transport>> GetAllAsync()

@@ -1,6 +1,4 @@
 
-using System.Globalization;
-
 namespace MyApp.Api.Utils.csv
 {
     public class CSVReader
@@ -12,35 +10,102 @@ namespace MyApp.Api.Utils.csv
         /// <param name="dataSeparator">Caractère séparateur de colonnes (ex: ',' ou ';')</param>
         /// <returns>Liste de lignes, chaque ligne étant une liste de champs</returns>
 
-        /// 
-        public static List<List<string>> ReadCsv(string filePath, char dataSeparator)
+        public static List<List<string>> ReadCsv(Stream fileStream, char dataSeparator)
         {
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException("Fichier CSV introuvable", filePath);
-
             var result = new List<List<string>>();
-
-            foreach (var rawLine in File.ReadLines(filePath))
+            // Lire directement depuis le stream sans écrire sur le disque
+            using var reader = new StreamReader(fileStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: false);
+            while (!reader.EndOfStream)
             {
-                string line = rawLine.Trim();
-
-                // Ignore les lignes vides
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
-
-                var values = line.Split(dataSeparator);
-                var row = new List<string>(values);
-
-                // Affichage de la ligne dans la console
-                Console.WriteLine($"Ligne lue : {string.Join(" | ", row)}");
-
+                var line = reader.ReadLine();
+                if (line == null) continue;
+                var row = line.Split(dataSeparator).Select(cell => cell.Trim()).ToList();
                 result.Add(row);
             }
-
+            // Log : afficher chaque cellule avec son index
+            for (int i = 0; i < result.Count; i++)
+            {
+                for (int j = 0; j < result[i].Count; j++)
+                {
+                    Console.WriteLine($"data[{i}][{j}] = {result[i][j]}");
+                }
+            }
             return result;
         }
 
-        public static List<string>? CheckHour(List<List<string>>? data)
+        /// prendre un bloc de donnees
+        public static List<List<string>> ExtractBlock(List<List<string>> dataExcel, int blockNumber)
+        {
+            if (blockNumber <= 0)
+                throw new ArgumentException("Le numéro de bloc doit être supérieur ou égal à 1.");
+
+            int currentBlock = 0;
+            bool inBlock = false;
+            var currentBlockRows = new List<List<string>>();
+
+            for (int i = 1; i < dataExcel.Count; i++) // On saute l'entête (ligne 0)
+            {
+                var row = dataExcel[i];
+                bool isEmpty = row.All(cell => string.IsNullOrWhiteSpace(cell));
+
+                if (!isEmpty)
+                {
+                    if (!inBlock)
+                    {
+                        currentBlock++;
+                        inBlock = true;
+                    }
+
+                    if (currentBlock == blockNumber)
+                    {
+                        currentBlockRows.Add(row);
+                    }
+                }
+                else
+                {
+                    inBlock = false;
+                }
+
+                if (currentBlock > blockNumber)
+                {
+                    break; // plus besoin de continuer une fois le bloc trouvé
+                }
+            }
+
+            return currentBlockRows;
+        }
+
+        // compte les blocs de données séparés par " "
+        public static int CountDataBlocks(List<List<string>> data)
+        {
+            int blockCount = 0;
+            bool inBlock = false;
+
+            for (int i = 1; i < data.Count; i++) // skip header (index 0)
+            {
+                var row = data[i];
+
+                // Ligne vide = nouveau bloc
+                bool isEmpty = row.All(cell => string.IsNullOrWhiteSpace(cell));
+
+                if (!isEmpty)
+                {
+                    if (!inBlock)
+                    {
+                        blockCount++;
+                        inBlock = true;
+                    }
+                }
+                else
+                {
+                    inBlock = false;
+                }
+            }
+
+            return blockCount;
+        }
+
+       public static List<string>? CheckHour(List<List<string>> data)
         {
             if (data == null || data.Count < 2)
                 return null;
@@ -60,21 +125,25 @@ namespace MyApp.Api.Utils.csv
 
                 if (row.Count <= hourColIndex)
                 {
-                    errors.Add($"{i}:{hourColIndex} => Colonne manquante.");
+                    errors.Add($"{i + 1}:{hourColIndex + 1} => Colonne manquante.");
                     continue;
                 }
 
                 var timeString = row[hourColIndex];
 
+                // Ignorer si l'heure est vide ou null
+                if (string.IsNullOrWhiteSpace(timeString))
+                    continue;
+
                 if (!TryParseHour(timeString, out TimeSpan currentTime))
                 {
-                    errors.Add($"{i}:{hourColIndex} => Heure invalide : '{timeString}'");
+                    errors.Add($"{i + 1}:{hourColIndex + 1} => Heure invalide : '{timeString}'");
                     continue;
                 }
 
                 if (previousTime.HasValue && currentTime < previousTime.Value)
                 {
-                    errors.Add($"{i}:{hourColIndex} => Heure non ordonnée : {currentTime:hh\\:mm} < {previousTime.Value:hh\\:mm}");
+                    errors.Add($"{i + 1}:{hourColIndex + 1} => Heure non ordonnée : {currentTime:hh\\:mm} < {previousTime.Value:hh\\:mm}");
                 }
 
                 previousTime = currentTime;
@@ -84,7 +153,8 @@ namespace MyApp.Api.Utils.csv
         }
 
 
-        public static List<string>? CheckDate(List<List<string>>? data)
+
+        public static List<string>? CheckDate(List<List<string>> data)
         {
             if (data == null || data.Count < 2)
                 return null;
@@ -103,7 +173,7 @@ namespace MyApp.Api.Utils.csv
                 var row = data[i];
                 if (row.Count <= dateColIndex)
                 {
-                    errors.Add($"{i}:{dateColIndex} => Colonne manquante.");
+                    errors.Add($"{i+1}:{dateColIndex + 1} => Colonne manquante.");
                     continue;
                 }
 
@@ -111,13 +181,13 @@ namespace MyApp.Api.Utils.csv
 
                 if (!TryParseDate(dateString, out DateTime currentDate))
                 {
-                    errors.Add($"{i}:{dateColIndex} => Date invalide : '{dateString}'");
+                    errors.Add($"{i+1}:{dateColIndex + 1} => Date invalide : '{dateString}'");
                     continue;
                 }
 
                 if (previousDate.HasValue && currentDate < previousDate.Value)
                 {
-                    errors.Add($"{i}:{dateColIndex} => Date non ordonnée : {currentDate:yyyy-MM-dd} < {previousDate.Value:yyyy-MM-dd}");
+                    errors.Add($"{i+1}:{dateColIndex + 1} => Date non ordonnée : {currentDate:yyyy-MM-dd} < {previousDate.Value:yyyy-MM-dd}");
                 }
 
                 previousDate = currentDate;
@@ -186,6 +256,7 @@ namespace MyApp.Api.Utils.csv
         {
             if (string.IsNullOrWhiteSpace(value))
                 errors!.Add($"{rowIndex}:{colIndex} => {label} manquant.");
+
         }
 
         public static void CheckDuplicate(Dictionary<string, string> map, string code, string name, int rowIndex, int colIndex, List<string>? errors)
@@ -197,6 +268,7 @@ namespace MyApp.Api.Utils.csv
                 if (!string.Equals(existingName, name, StringComparison.OrdinalIgnoreCase))
                 {
                     errors!.Add($"{rowIndex}:{colIndex} => Conflit : le code '{code}' est déjà associé au nom '{existingName}' (nouveau: '{name}').");
+
                 }
             }
             else

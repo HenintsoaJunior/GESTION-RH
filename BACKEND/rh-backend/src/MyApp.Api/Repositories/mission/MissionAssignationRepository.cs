@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.search.mission;
+
 namespace MyApp.Api.Repositories.mission
 {
     public interface IMissionAssignationRepository
     {
+        Task<IDbContextTransaction> BeginTransactionAsync();
         Task<IEnumerable<string>> GetAssignedEmployeeIdsAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
@@ -25,6 +28,10 @@ namespace MyApp.Api.Repositories.mission
         public MissionAssignationRepository(AppDbContext context)
         {
             _context = context;
+        }
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
         }
 
         public async Task<IEnumerable<string>> GetAssignedEmployeeIdsAsync(string missionId)

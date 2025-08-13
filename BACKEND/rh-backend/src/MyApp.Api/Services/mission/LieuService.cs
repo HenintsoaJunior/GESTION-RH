@@ -9,6 +9,7 @@ namespace MyApp.Api.Services.mission
     // Interface du service lieu, définit les opérations disponibles
     public interface ILieuService
     {
+        Task<Lieu?> VerifyLieuExistsAsync(string nom, string? pays);
         Task<(IEnumerable<Lieu>, int)> SearchAsync(LieuSearchFiltersDTO filters, int page, int pageSize); // Recherche paginée avec filtres
         Task<IEnumerable<Lieu>> GetAllAsync(); // Récupère tous les lieux
         Task<Lieu?> GetByIdAsync(string id); // Récupère un lieu par son ID
@@ -30,6 +31,19 @@ namespace MyApp.Api.Services.mission
             _repository = repository;
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
+        }
+
+        public async Task<Lieu?> VerifyLieuExistsAsync(string nom, string? pays)
+        {
+            
+            var filters = new LieuSearchFiltersDTO
+            {
+                Nom = nom,
+                Pays = pays
+            };
+            var (result, total) = await _repository.SearchAsync(filters, 1, 1);
+            var lieu = result.FirstOrDefault();
+            return lieu;
         }
 
         // Recherche paginée de lieux avec filtres
