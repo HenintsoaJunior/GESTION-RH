@@ -69,3 +69,40 @@ export const loginUser = async (username, password, setIsLoading, onSuccess, onE
     setIsLoading((prev) => ({ ...prev, login: false }));
   }
 };
+
+export const logoutUser = async (setIsLoading, onSuccess, onError) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, logout: true }));
+
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+
+    const response = await fetch(`${BASE_URL}/api/Auth/logout`, {
+      method: "POST",
+      headers: {
+        accept: "*/*",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${JSON.parse(localStorage.getItem("token"))?.accessToken || ""}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Échec de la déconnexion");
+    }
+
+    onSuccess({
+      isOpen: true,
+      type: "success",
+      message: "Déconnexion réussie",
+    });
+  } catch (error) {
+    console.error("Erreur lors de la déconnexion:", error);
+    onError({
+      message: "Erreur lors de la déconnexion",
+      type: "error",
+      details: error.message || "Erreur inconnue",
+    });
+  } finally {
+    setIsLoading((prev) => ({ ...prev, logout: false }));
+  }
+};
