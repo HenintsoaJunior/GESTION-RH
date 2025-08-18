@@ -23,53 +23,41 @@ namespace MyApp.Api.Controllers.jobs
             return Ok(offers);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(string id)
+        [HttpPost("search")]
+        public async Task<IActionResult> GetAllByCriteria([FromBody] JobOffer criteria)
         {
-            var offer = await _service.GetByIdAsync(id);
-            if (offer == null)
-                return NotFound();
-
-            return Ok(offer);
-        }
-
-        [HttpPost("by-criteria")]
-        public async Task<IActionResult> GetAllByCriteria([FromBody] JobOfferDTOForm jobOfferDTOForm)
-        {
-            var criteria = new JobOffer(jobOfferDTOForm);
             var offers = await _service.GetAllByCriteriaAsync(criteria);
             return Ok(offers);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] JobOffer offer)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(string id)
         {
-            await _service.AddAsync(offer);
-            return CreatedAtAction(nameof(GetById), new { id = offer.OfferId }, offer);
+            var offer = await _service.GetByIdAsync(id);
+            if (offer == null) return NotFound();
+            return Ok(offer);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] JobOfferDTOForm dto)
+        {
+            var id = await _service.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id }, new { id });
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] JobOffer offer)
+        public async Task<IActionResult> Update(string id, [FromBody] JobOfferDTOForm dto)
         {
-            if (id != offer.OfferId)
-                return BadRequest("ID mismatch");
-
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null)
-                return NotFound();
-
-            await _service.UpdateAsync(offer);
-            return NoContent();
+            var updated = await _service.UpdateAsync(id, dto);
+            if (updated == null) return NotFound();
+            return Ok(updated);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null)
-                return NotFound();
-
-            await _service.DeleteAsync(existing);
+            var deleted = await _service.DeleteAsync(id);
+            if (!deleted) return NotFound();
             return NoContent();
         }
     }

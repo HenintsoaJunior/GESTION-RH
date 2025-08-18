@@ -1,9 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using MyApp.Api.Entities;
 using MyApp.Api.Models.form.candidates;
 
-namespace YourAppNamespace.Entities
+namespace MyApp.Api.Entities.candidates
 {
     [Table("candidates")]
     public class Candidate : BaseEntity
@@ -11,7 +10,7 @@ namespace YourAppNamespace.Entities
         [Key]
         [Column("candidate_id")]
         [MaxLength(50)]
-        public string CandidateId { get; set; } = Guid.NewGuid().ToString();
+        public string CandidateId { get; set; } = null!;
 
         [Required]
         [Column("last_name")]
