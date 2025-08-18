@@ -17,5 +17,7 @@ namespace MyApp.Api.Entities.employee
         [Column("approver_role")]
         [MaxLength(50)]
         public string? ApproverRole { get; set; }
+        
+        
     }
 }

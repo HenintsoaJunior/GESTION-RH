@@ -17,6 +17,7 @@ DROP TABLE IF EXISTS cv_details;
 DROP TABLE IF EXISTS applications;
 DROP TABLE IF EXISTS user_role;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS menu_role;
 DROP TABLE IF EXISTS role_habilitation;
 DROP TABLE IF EXISTS role;
 DROP TABLE IF EXISTS habilitations;
@@ -307,7 +308,7 @@ CREATE TABLE users (
     superior_id VARCHAR(150),
     superior_name VARCHAR(150),
     status VARCHAR(50),
-    signature VARCHAR(250),
+    signature VARCHAR(500),
     user_type VARCHAR(50),
     refresh_token VARCHAR(MAX),
     refresh_token_expiry DATETIME,
@@ -317,7 +318,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE user_role (
-    user_id VARCHAR(50) NOT NULL,
+    user_id VARCHAR(250) NOT NULL,
     role_id VARCHAR(50) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -383,7 +384,7 @@ CREATE TABLE application_comments(
    created_at DATETIME NOT NULL,
    updated_at DATETIME,
    application_id VARCHAR(50) NOT NULL,
-   user_id VARCHAR(50) NOT NULL,
+   user_id VARCHAR(250) NOT NULL,
    PRIMARY KEY(comment_id),
    FOREIGN KEY(application_id) REFERENCES applications(application_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id)
@@ -402,7 +403,7 @@ CREATE TABLE recruitment_requests(
    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    status VARCHAR(10) DEFAULT 'BROUILLON',
    files VARBINARY(250),
-   requester_id VARCHAR(50) NOT NULL,
+   requester_id VARCHAR(250) NOT NULL,
    contract_type_id VARCHAR(50) NOT NULL,
    site_id VARCHAR(50) NOT NULL,
    recruitment_reason_id VARCHAR(50) NOT NULL,
@@ -433,7 +434,7 @@ CREATE TABLE recruitment_request_details(
 
 CREATE TABLE recruitment_approval(
    recruitment_request_id VARCHAR(50),
-   approver_id VARCHAR(50),
+   approver_id VARCHAR(250),
    status VARCHAR(50),
    approval_order INT,
    approval_date DATE,

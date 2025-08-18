@@ -121,7 +121,7 @@ namespace MyApp.Api.Controllers
 
         // Récupère des statistiques sur les missions
         [HttpGet("stats")]
-        [Authorize(Roles = "admin")]
+        //[Authorize(Roles = "admin")]
         public async Task<ActionResult<MissionStats>> GetStatistics()
         {
             var stats = await _missionService.GetStatisticsAsync();

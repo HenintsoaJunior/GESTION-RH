@@ -1,9 +1,10 @@
 @echo off
+echo Démarrage des services...
 
 REM Lancer le backend .NET
-start cmd /k "cd backend && dotnet run"
+start "" cmd /k "cd /d BACKEND\rh-backend\src\MyApp.Api && dotnet run"
 
 REM Lancer le frontend (Node.js)
-start cmd /k "cd frontend && npm start"
+start "" cmd /k "cd /d FRONTEND\rh-front && npm start"
 
-echo Lancement du backend (.NET) et du frontend (npm)...
+echo Backend (.NET) et Frontend (npm) lancés.

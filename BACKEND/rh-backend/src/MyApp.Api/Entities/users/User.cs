@@ -2,13 +2,14 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
+using MyApp.Api.Models.form.users;
 
 namespace MyApp.Api.Entities.users
 {
     public enum UserType
     {
-        Cadre = 0,
-        NonCadre = 1
+        Cadre,
+        NonCadre
     }
 
     [Table("users")]
@@ -54,7 +55,7 @@ namespace MyApp.Api.Entities.users
         public string? Status { get; set; }
 
         [Column("signature")]
-        [MaxLength(250)]
+        [MaxLength(500)]
         public string? Signature { get; set; }
 
         [Column("user_type")]
@@ -68,5 +69,20 @@ namespace MyApp.Api.Entities.users
         public DateTime? RefreshTokenExpiry { get; set; }
 
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+
+        public User()
+        {
+            
+        }
+        public User(UserDto user)
+        {
+            UserId = user.UserId;
+            Email = user.Email;
+            Name = user.Name;
+            Department = user.Department;
+            Position = user.Position;
+            SuperiorId = user.SuperiorId;
+            SuperiorName = user.SuperiorName;
+        }
     }
 }
