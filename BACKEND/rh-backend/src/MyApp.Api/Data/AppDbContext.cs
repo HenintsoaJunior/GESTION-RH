@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Entities.application;
+using MyApp.Api.Entities.candidates;
 using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.direction;
 using MyApp.Api.Entities.employee;
@@ -8,12 +10,12 @@ using MyApp.Api.Entities.mission;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.users;
-using YourAppNamespace.Entities;
 
 namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
+        public DbSet<Application> Applications { get; set; }
         public DbSet<Candidate> Candidates { get; set; }
         public DbSet<CategoriesOfEmployee> CategoriesOfEmployees { get; set; }
         public DbSet<MissionAssignation> MissionAssignations { get; set; }

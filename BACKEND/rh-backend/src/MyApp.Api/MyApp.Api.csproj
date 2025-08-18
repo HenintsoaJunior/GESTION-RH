@@ -28,6 +28,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\classes\mission\" />
+
   </ItemGroup>
 </Project>
