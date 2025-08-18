@@ -2,20 +2,49 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, ChevronDown, ChevronUp, X, List, FileText, Download } from "lucide-react";
+import { ChevronDown, ChevronUp, X, List } from "lucide-react";
 import { formatDate } from "utils/dateConverter";
 import Alert from "components/alert";
 import Pagination from "components/pagination";
-import AutoCompleteInput from "components/auto-complete-input";
-import "styles/generic-table-styles.css";
-import { 
-  fetchAssignMission, 
+import {
+  fetchAssignMission,
   fetchAllMissions,
   exportMissionAssignationPDF,
-  exportMissionAssignationExcel
+  exportMissionAssignationExcel,
 } from "services/mission/mission";
 import { fetchAllEmployees } from "services/employee/employee";
 import { fetchAllRegions } from "services/lieu/lieu";
+import {
+  DashboardContainer,
+  FiltersContainer,
+  FiltersHeader,
+  FiltersTitle,
+  FiltersControls,
+  FilterControlButton,
+  FiltersSection,
+  FormTableSearch,
+  FormRow,
+  FormFieldCell,
+  FormLabelSearch,
+  FormInputSearch,
+  StyledAutoCompleteInput,
+  FiltersActions,
+  ButtonReset,
+  ButtonSearch,
+  FiltersToggle,
+  ButtonShowFilters,
+  TableContainer,
+  DataTable,
+  TableHeader,
+  TableTitle,
+  TableRow,
+  TableCell,
+  TableHeadCell,
+  Loading,
+  NoDataMessage,
+  StatusBadge,
+  ViewToggle,
+} from "styles/generaliser/table-container";
 
 const BeneficiaryMissionList = () => {
   const navigate = useNavigate();
@@ -53,9 +82,7 @@ const BeneficiaryMissionList = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
-  // Chargement initial des données
   useEffect(() => {
-    // Fetch employees
     fetchAllEmployees(
       (data) => {
         setSuggestions((prev) => ({
@@ -72,7 +99,6 @@ const BeneficiaryMissionList = () => {
       (error) => setAlert(error)
     );
 
-    // Fetch missions
     fetchAllMissions(
       (data) => {
         setSuggestions((prev) => ({
@@ -89,11 +115,10 @@ const BeneficiaryMissionList = () => {
         }));
       },
       setIsLoading,
-      () => {}, // setTotalEntries pour les missions
+      () => {},
       (error) => setAlert(error)
     );
 
-    // Fetch regions
     fetchAllRegions(
       (data) => {
         setSuggestions((prev) => ({
@@ -110,10 +135,7 @@ const BeneficiaryMissionList = () => {
     );
   }, []);
 
-  // Chargement des assignations de mission avec filtres
   useEffect(() => {
-    console.log("Applied Filters:", appliedFilters);
-    
     fetchAssignMission(
       setAssignedPersons,
       setIsLoading,
@@ -133,18 +155,14 @@ const BeneficiaryMissionList = () => {
     );
   }, [appliedFilters, currentPage, pageSize]);
 
-  // Gestion des changements de filtres
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Validation et soumission des filtres
   const handleFilterSubmit = (event) => {
     event.preventDefault();
-    
     let updatedFilters = { ...filters };
 
-    // Validation de l'employé sélectionné
     if (filters.employeeName && !filters.employeeId) {
       const selectedEmployee = suggestions.beneficiary.find(
         (emp) => emp.displayName === filters.employeeName
@@ -161,7 +179,6 @@ const BeneficiaryMissionList = () => {
       updatedFilters.employeeName = selectedEmployee.displayName;
     }
 
-    // Validation de la mission sélectionnée
     if (filters.missionName && !filters.missionId) {
       const selectedMission = suggestions.missions.find(
         (mission) => mission.displayName === filters.missionName
@@ -178,7 +195,6 @@ const BeneficiaryMissionList = () => {
       updatedFilters.missionName = selectedMission.displayName;
     }
 
-    // Validation du lieu sélectionné
     if (filters.location && !filters.lieuId) {
       const selectedRegion = suggestions.regions.find(
         (region) => region.displayName === filters.location
@@ -198,11 +214,8 @@ const BeneficiaryMissionList = () => {
     setFilters(updatedFilters);
     setAppliedFilters(updatedFilters);
     setCurrentPage(1);
-    
-    console.log("Filters applied:", updatedFilters);
   };
 
-  // Réinitialisation des filtres
   const handleResetFilters = () => {
     const resetFilters = {
       status: "",
@@ -222,7 +235,6 @@ const BeneficiaryMissionList = () => {
     setAlert({ isOpen: true, type: "info", message: "Filtres réinitialisés." });
   };
 
-  // Gestion de la pagination
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
@@ -232,7 +244,6 @@ const BeneficiaryMissionList = () => {
     setCurrentPage(1);
   };
 
-  // Navigation vers les détails
   const handleRowClick = (missionId, employeeId) => {
     if (missionId && employeeId) {
       navigate(`/assignments/details?missionId=${missionId}&employeeId=${employeeId}`);
@@ -245,51 +256,55 @@ const BeneficiaryMissionList = () => {
     }
   };
 
-  // Export PDF
   const handleExportPDF = () => {
-    const exportFilters = {
-      missionId: appliedFilters.missionId || null,
-      employeeId: appliedFilters.employeeId || null,
-      transportId: appliedFilters.transportId || null,
-      lieuId: appliedFilters.lieuId || null,
-      departureDate: appliedFilters.startDate || null,
-      departureArrive: appliedFilters.endDate || null,
-      status: appliedFilters.status || null,
-    };
-
+    setIsLoading((prev) => ({ ...prev, exportPDF: true }));
     exportMissionAssignationPDF(
-      exportFilters,
-      setIsLoading,
-      (success) => setAlert(success),
-      (error) => setAlert(error)
+      appliedFilters,
+      () => {
+        setIsLoading((prev) => ({ ...prev, exportPDF: false }));
+        setAlert({
+          isOpen: true,
+          type: "success",
+          message: "Exportation PDF réussie.",
+        });
+      },
+      (error) => {
+        setIsLoading((prev) => ({ ...prev, exportPDF: false }));
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: "Erreur lors de l'exportation PDF.",
+        });
+      }
     );
   };
 
-  // Export Excel
   const handleExportExcel = () => {
-    const exportFilters = {
-      missionId: appliedFilters.missionId || null,
-      employeeId: appliedFilters.employeeId || null,
-      transportId: appliedFilters.transportId || null,
-      lieuId: appliedFilters.lieuId || null,
-      departureDate: appliedFilters.startDate || null,
-      departureArrive: appliedFilters.endDate || null,
-      status: appliedFilters.status || null,
-    };
-
+    setIsLoading((prev) => ({ ...prev, exportExcel: true }));
     exportMissionAssignationExcel(
-      exportFilters,
-      setIsLoading,
-      (success) => setAlert(success),
-      (error) => setAlert(error)
+      appliedFilters,
+      () => {
+        setIsLoading((prev) => ({ ...prev, exportExcel: false }));
+        setAlert({
+          isOpen: true,
+          type: "success",
+          message: "Exportation Excel réussie.",
+        });
+      },
+      (error) => {
+        setIsLoading((prev) => ({ ...prev, exportPDF: false }));
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: "Erreur lors de l'exportation Excel.",
+        });
+      }
     );
   };
 
-  // Contrôles d'affichage des filtres
   const toggleMinimize = () => setIsMinimized((prev) => !prev);
   const toggleHide = () => setIsHidden((prev) => !prev);
 
-  // Badge de statut
   const getStatusBadge = (status) => {
     const statusClass =
       status === "En Cours"
@@ -301,11 +316,11 @@ const BeneficiaryMissionList = () => {
         : status === "Annulé"
         ? "status-cancelled"
         : "status-pending";
-    return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
+    return <StatusBadge className={statusClass}>{status || "Inconnu"}</StatusBadge>;
   };
 
   return (
-    <div className="dashboard-container">
+    <DashboardContainer>
       <Alert
         type={alert.type}
         message={alert.message}
@@ -313,53 +328,45 @@ const BeneficiaryMissionList = () => {
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
 
-      {/* Section des filtres */}
       {!isHidden && (
-        <div className={`filters-container ${isMinimized ? "minimized" : ""}`}>
-          <div className="filters-header">
-            <h2 className="filters-title">Filtres de Recherche</h2>
-            <div className="filters-controls">
-              <button
-                type="button"
-                className="filter-control-btn filter-minimize-btn"
+        <FiltersContainer $isMinimized={isMinimized}>
+          <FiltersHeader>
+            <FiltersTitle>Filtres de Recherche</FiltersTitle>
+            <FiltersControls>
+              <FilterControlButton
+                $isMinimized={isMinimized}
                 onClick={toggleMinimize}
                 title={isMinimized ? "Développer" : "Réduire"}
               >
-                {isMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-              </button>
-              <button
-                type="button"
-                className="filter-control-btn filter-close-btn"
-                onClick={toggleHide}
-                title="Fermer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+                {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              </FilterControlButton>
+              <FilterControlButton $isClose onClick={toggleHide} title="Fermer">
+                <X size={16} />
+              </FilterControlButton>
+            </FiltersControls>
+          </FiltersHeader>
 
           {!isMinimized && (
-            <div className="filters-section">
+            <FiltersSection>
               <form onSubmit={handleFilterSubmit}>
-                <table className="form-table-search w-full border-collapse">
+                <FormTableSearch>
                   <tbody>
-                    <tr className="form-row">
-                      <td className="form-field-cell p-2 align-top">
-                        <label className="form-label-search block mb-2">Bénéficiaire</label>
-                        <AutoCompleteInput
+                    <FormRow>
+                      <FormFieldCell>
+                        <FormLabelSearch>Bénéficiaire</FormLabelSearch>
+                        <StyledAutoCompleteInput
                           value={filters.employeeName || ""}
                           onChange={(value) => {
                             setFilters((prev) => ({
                               ...prev,
                               employeeName: value,
-                              employeeId: value ? prev.employeeId : "", // Garde l'ID si la valeur existe
+                              employeeId: value ? prev.employeeId : "",
                             }));
                           }}
                           onSelect={(value) => {
                             const selectedEmployee = suggestions.beneficiary.find(
                               (emp) => emp.displayName === value
                             );
-                            console.log("Selected Employee:", selectedEmployee);
                             setFilters((prev) => ({
                               ...prev,
                               employeeId: selectedEmployee ? selectedEmployee.id : "",
@@ -376,13 +383,12 @@ const BeneficiaryMissionList = () => {
                           disabled={isLoading.employees || isLoading.assignMissions}
                           fieldType="beneficiary"
                           fieldLabel="bénéficiaire"
-                          className="form-input-search w-full"
                         />
-                      </td>
+                      </FormFieldCell>
 
-                      <td className="form-field-cell p-2 align-top">
-                        <label className="form-label-search block mb-2">Mission</label>
-                        <AutoCompleteInput
+                      <FormFieldCell>
+                        <FormLabelSearch>Mission</FormLabelSearch>
+                        <StyledAutoCompleteInput
                           value={filters.missionName || ""}
                           onChange={(value) => {
                             setFilters((prev) => ({
@@ -395,7 +401,6 @@ const BeneficiaryMissionList = () => {
                             const selectedMission = suggestions.missions.find(
                               (mission) => mission.displayName === value
                             );
-                            console.log("Selected Mission:", selectedMission);
                             setFilters((prev) => ({
                               ...prev,
                               missionId: selectedMission ? selectedMission.id : "",
@@ -412,13 +417,12 @@ const BeneficiaryMissionList = () => {
                           disabled={isLoading.missions || isLoading.assignMissions}
                           fieldType="mission"
                           fieldLabel="mission"
-                          className="form-input-search w-full"
                         />
-                      </td>
+                      </FormFieldCell>
 
-                      <td className="form-field-cell p-2 align-top">
-                        <label className="form-label-search block mb-2">Lieu</label>
-                        <AutoCompleteInput
+                      <FormFieldCell>
+                        <FormLabelSearch>Lieu</FormLabelSearch>
+                        <StyledAutoCompleteInput
                           value={filters.location || ""}
                           onChange={(value) => {
                             setFilters((prev) => ({
@@ -431,7 +435,6 @@ const BeneficiaryMissionList = () => {
                             const selectedRegion = suggestions.regions.find(
                               (region) => region.displayName === value
                             );
-                            console.log("Selected Region:", selectedRegion);
                             setFilters((prev) => ({
                               ...prev,
                               lieuId: selectedRegion ? selectedRegion.id : "",
@@ -448,152 +451,137 @@ const BeneficiaryMissionList = () => {
                           disabled={isLoading.regions || isLoading.assignMissions}
                           fieldType="lieuId"
                           fieldLabel="lieu"
-                          className="form-input-search w-full"
                         />
-                      </td>
+                      </FormFieldCell>
 
-                      <td className="form-field-cell p-2 align-top">
-                        <label className="form-label-search block mb-2">Statut</label>
-                        <select
+                      <FormFieldCell>
+                        <FormLabelSearch>Statut</FormLabelSearch>
+                        <FormInputSearch
+                          as="select"
                           name="status"
                           value={filters.status}
                           onChange={(e) => handleFilterChange("status", e.target.value)}
-                          className="form-input-search w-full"
                         >
                           <option value="">Tous les statuts</option>
                           <option value="En Cours">En Cours</option>
                           <option value="Planifié">Planifié</option>
                           <option value="Terminé">Terminé</option>
                           <option value="Annulé">Annulé</option>
-                        </select>
-                      </td>
+                        </FormInputSearch>
+                      </FormFieldCell>
 
-                      <td className="form-field-cell p-2 align-top">
-                        <label className="form-label-search block mb-2">Date début</label>
-                        <input
+                      <FormFieldCell>
+                        <FormLabelSearch>Date début</FormLabelSearch>
+                        <FormInputSearch
                           name="startDate"
                           type="date"
                           value={filters.startDate}
                           onChange={(e) => handleFilterChange("startDate", e.target.value)}
-                          className="form-input-search w-full"
                         />
-                      </td>
+                      </FormFieldCell>
 
-                      <td className="form-field-cell p-2 align-top">
-                        <label className="form-label-search block mb-2">Date fin</label>
-                        <input
+                      <FormFieldCell>
+                        <FormLabelSearch>Date fin</FormLabelSearch>
+                        <FormInputSearch
                           name="endDate"
                           type="date"
                           value={filters.endDate}
                           onChange={(e) => handleFilterChange("endDate", e.target.value)}
-                          className="form-input-search w-full"
                         />
-                      </td>
-                    </tr>
+                      </FormFieldCell>
+                    </FormRow>
                   </tbody>
-                </table>
+                </FormTableSearch>
 
-                <div className="filters-actions">
-                  <button 
-                    type="button" 
-                    className="btn-reset" 
-                    onClick={handleResetFilters}
-                    disabled={isLoading.assignMissions}
-                  >
+                <FiltersActions>
+                  <ButtonReset type="button" onClick={handleResetFilters} disabled={isLoading.assignMissions}>
                     Réinitialiser
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="btn-search"
-                    disabled={isLoading.assignMissions}
-                  >
+                  </ButtonReset>
+                  <ButtonSearch type="submit" disabled={isLoading.assignMissions}>
                     {isLoading.assignMissions ? "Recherche..." : "Rechercher"}
-                  </button>
-                </div>
+                  </ButtonSearch>
+                </FiltersActions>
               </form>
-            </div>
+            </FiltersSection>
           )}
-        </div>
+        </FiltersContainer>
       )}
 
-      {/* Bouton pour afficher les filtres cachés */}
       {isHidden && (
-        <div className="filters-toggle">
-          <button type="button" className="btn-show-filters" onClick={toggleHide}>
-            <List className="w-4 h-4 mr-2" />
+        <FiltersToggle>
+          <ButtonShowFilters type="button" onClick={toggleHide}>
+            <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Afficher les filtres
-          </button>
-        </div>
+          </ButtonShowFilters>
+        </FiltersToggle>
       )}
 
-      {/* En-tête du tableau avec actions */}
-      <div className="table-header">
-        <h2 className="table-title">Liste des Missions des Collaborateurs</h2>
+      <TableHeader>
+        <TableTitle>Liste des Missions des Collaborateurs</TableTitle>
+      </TableHeader>
 
-      </div>
-
-      {/* Tableau des données */}
-      <div className="table-container">
-        <table className="data-table">
+      <TableContainer>
+        <DataTable>
           <thead>
             <tr>
-              <th>ID Mission</th>
-              <th>Bénéficiaire</th>
-              <th>Matricule</th>
-              <th>Mission</th>
-              <th>Fonction</th>
-              <th>Lieu</th>
-              <th>Date début</th>
-              <th>Date fin</th>
-              <th>Statut</th>
+              <TableHeadCell>ID Mission</TableHeadCell>
+              <TableHeadCell>Bénéficiaire</TableHeadCell>
+              <TableHeadCell>Matricule</TableHeadCell>
+              <TableHeadCell>Mission</TableHeadCell>
+              <TableHeadCell>Fonction</TableHeadCell>
+              <TableHeadCell>Lieu</TableHeadCell>
+              <TableHeadCell>Date début</TableHeadCell>
+              <TableHeadCell>Statut</TableHeadCell>
             </tr>
           </thead>
           <tbody>
             {isLoading.assignMissions ? (
-              <tr>
-                <td colSpan={2} className="text-center py-4">
-                  <div className="loading">Chargement des données...</div>
-                </td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={9}>
+                  <Loading>Chargement des données...</Loading>
+                </TableCell>
+              </TableRow>
             ) : assignedPersons.length > 0 ? (
               assignedPersons.map((assignment, index) => (
-                <tr
+                <TableRow
                   key={`${assignment.employeeId}-${assignment.missionId}-${assignment.transportId}-${index}`}
+                  $clickable
                   onClick={() => handleRowClick(assignment.missionId, assignment.employeeId)}
-                  className="table-row-clickable"
-                  style={{ cursor: "pointer" }}
                 >
-                  <td>{assignment.missionId || "Non spécifié"}</td>
-                  <td>
-                    {(assignment.beneficiary && assignment.directionAcronym)
+                  <TableCell>{assignment.assignationId || "Non spécifié"}</TableCell>
+                  <TableCell>
+                    {assignment.beneficiary && assignment.directionAcronym
                       ? `${assignment.beneficiary} (${assignment.directionAcronym})`
                       : assignment.beneficiary || "Non spécifié"}
-                  </td>
-                  <td>{assignment.matricule || "Non spécifié"}</td>
-                  <td className="mission-title">{assignment.missionTitle || "Non spécifié"}</td>
-                  <td>{assignment.function || "Non spécifié"}</td>
-                  <td>{assignment.lieu || "Non spécifié"}</td>
-                  <td>{formatDate(assignment.startDate) || "Non spécifié"}</td>
-                  <td>{formatDate(assignment.endDate) || "Non spécifié"}</td>
-                  <td>{getStatusBadge(assignment.status)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell>{assignment.matricule || "Non spécifié"}</TableCell>
+                  <TableCell>{assignment.missionTitle || "Non spécifié"}</TableCell>
+                  <TableCell>{assignment.function || "Non spécifié"}</TableCell>
+                  <TableCell>{assignment.lieu || "Non spécifié"}</TableCell>
+                  <TableCell>{formatDate(assignment.startDate) || "Non spécifié"}</TableCell>
+                  <TableCell>{formatDate(assignment.endDate) || "Non spécifié"}</TableCell>
+                  <TableCell>{getStatusBadge(assignment.status)}</TableCell>
+                </TableRow>
               ))
             ) : (
-              <tr>
-                <td colSpan={9} className="text-center py-4">
-                  <div className="no-data-message">
-                    {appliedFilters.employeeId || appliedFilters.missionId || appliedFilters.status || appliedFilters.startDate || appliedFilters.endDate
+              <TableRow>
+                <TableCell colSpan={9}>
+                  <NoDataMessage>
+                    {appliedFilters.employeeId ||
+                    appliedFilters.missionId ||
+                    appliedFilters.status ||
+                    appliedFilters.startDate ||
+                    appliedFilters.endDate
                       ? "Aucune assignation de mission ne correspond aux critères de recherche."
                       : "Aucune assignation de mission trouvée."}
-                  </div>
-                </td>
-              </tr>
+                  </NoDataMessage>
+                </TableCell>
+              </TableRow>
             )}
           </tbody>
-        </table>
-      </div>
+        </DataTable>
+      </TableContainer>
 
-      {/* Pagination */}
       <Pagination
         currentPage={currentPage}
         pageSize={pageSize}
@@ -602,7 +590,7 @@ const BeneficiaryMissionList = () => {
         onPageSizeChange={handlePageSizeChange}
         disabled={isLoading.assignMissions}
       />
-    </div>
+    </DashboardContainer>
   );
 };
 

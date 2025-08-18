@@ -16,6 +16,9 @@ DROP TABLE IF EXISTS application_comments;
 DROP TABLE IF EXISTS cv_details;
 DROP TABLE IF EXISTS applications;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS role_habilitation;
+DROP TABLE IF EXISTS role;
+DROP TABLE IF EXISTS habilitations;
 DROP TABLE IF EXISTS categories_of_employee;
 DROP TABLE IF EXISTS employees;
 DROP TABLE IF EXISTS job_offers;
@@ -284,18 +287,55 @@ CREATE TABLE categories_of_employee(
 );
 
 
+CREATE TABLE role(
+   role_id VARCHAR(50),
+   name VARCHAR(50),
+   description VARCHAR(50),
+   created_at DATETIME,
+   updated_at DATETIME,
+   PRIMARY KEY(role_id)
+);
+
+
 CREATE TABLE users(
    user_id VARCHAR(50),
-   email VARCHAR(100) NOT NULL,
-   password VARCHAR(255) NOT NULL,
-   role VARCHAR(50) NOT NULL,
+   matricule VARCHAR(100),
+   email VARCHAR(150) NOT NULL,
+   name VARCHAR(50),
+   position_ VARCHAR(250),
+   department VARCHAR(100),
+   superior_id VARCHAR(150),
+   superior_name VARCHAR(150),
+   status VARCHAR(50),
+   signature VARCHAR(250),
+   user_type VARCHAR(50),
+   refresh_token TEXT,
+   refresh_token_expiry DATETIME,
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
-   function_ VARCHAR(100) NOT NULL,
-   employee_id VARCHAR(50) NOT NULL,
+   role_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(user_id),
-   FOREIGN KEY(employee_id) REFERENCES employees(employee_id)
+   UNIQUE(matricule),
+   UNIQUE(email),
+   FOREIGN KEY(role_id) REFERENCES role(role_id)
 );
+
+CREATE TABLE habilitations(
+   habilitation_id VARCHAR(50),
+   label VARCHAR(50),
+   created_at DATETIME,
+   updated_at DATETIME,
+   PRIMARY KEY(habilitation_id)
+);
+
+CREATE TABLE role_habilitation(
+   habilitation_id VARCHAR(50),
+   role_id VARCHAR(50),
+   PRIMARY KEY(habilitation_id, role_id),
+   FOREIGN KEY(habilitation_id) REFERENCES habilitations(habilitation_id),
+   FOREIGN KEY(role_id) REFERENCES role(role_id)
+);
+
 
 CREATE TABLE applications(
    application_id VARCHAR(50),

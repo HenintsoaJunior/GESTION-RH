@@ -211,15 +211,21 @@ VALUES
     ('AF_0003','EMP_0003');
     
 
-
--- Insertion des utilisateurs
-INSERT INTO users (user_id, email, password, role, created_at, updated_at, function_, employee_id)
+INSERT INTO role (role_id, name, description, created_at, updated_at)
 VALUES
-    ('USR_0001', 'jean.dupont@company.com', '1234', 'Employee', GETDATE(), NULL, 'Développeur Full Stack', 'EMP_0001'),
-    ('USR_0002', 'marie.rakoto@company.com', '1234', 'Employee', GETDATE(), NULL, 'Analyste Financier', 'EMP_0002'),
-    ('USR_0003', 'sophie.lefevre@company.com', '1234', 'Manager', GETDATE(), NULL, 'Responsable RH', 'EMP_0003'),
-    ('USR_0004', 'luc.bernard@company.com', '1234', 'Employee', GETDATE(), NULL, 'Technicien de Maintenance', 'EMP_0004'),
-    ('USR_0005', 'andriana.rabe@company.com', '1234', 'Employee', GETDATE(), NULL, 'Assistant Commercial', 'EMP_0005');
+    ('ROLE_001', 'admin', 'Administrator with full access', CURRENT_TIMESTAMP, NULL),
+    ('ROLE_002', 'rh', 'Human Resources role', CURRENT_TIMESTAMP, NULL),
+    ('ROLE_003', 'collaborateur', 'Standard employee role', CURRENT_TIMESTAMP, NULL);
+
+
+INSERT INTO users (user_id, matricule, email, name, position_, department, superior_id, superior_name, status, signature, user_type, created_at, updated_at, role_id)
+VALUES
+    ('USR_0001', 'ST_0001', 'jean.dupont@company.com', 'Jean Dupont', 'Développeur Full Stack', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL, 'ROLE_003'),
+    ('USR_0002', 'ST_0002', 'marie.rakoto@company.com', 'Marie Rakoto', 'Analyste Financier', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL, 'ROLE_003'),
+    ('USR_0003', 'ST_0003', 'sophie.lefevre@company.com', 'Sophie Lefevre', 'Responsable RH', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL, 'ROLE_002'),
+    ('USR_0004', 'ST_0004', 'luc.bernard@company.com', 'Luc Bernard', 'Technicien de Maintenance', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL, 'ROLE_003'),
+    ('USR_0005', 'ST_0005', 'andriana.rabe@company.com', 'Andriana Rabe', 'Assistant Commercial', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL, 'ROLE_003');
+
 
 -- Insertion des demandes de recrutement
 INSERT INTO recruitment_requests (

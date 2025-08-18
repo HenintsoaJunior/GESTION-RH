@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Models.form.employee;
 using MyApp.Api.Models.search.employee;
@@ -10,6 +9,7 @@ namespace MyApp.Api.Services.employee
 {
     public interface IEmployeeService
     {
+
         Task<Employee> VerifyEmployeeExistsAsync(string code);
         Task<List<string>?> CheckNameAndCode(List<List<string>> DataExcel);
         Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);

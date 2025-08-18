@@ -1,30 +1,28 @@
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
-using iText.IO.Font;
 using iText.IO.Font.Constants;
 using iText.Kernel.Font;
 using iText.Layout.Properties;
 using iText.Layout.Borders;
 using iText.Kernel.Colors;
-using System.Reflection;
 
-namespace MyApp.Utils.pdf
+namespace MyApp.Api.Utils.pdf
 {
-    public class PDFGenerator
+    public class PdfGenerator
     {
         private readonly object _description;
         private readonly List<object> _tables;
         private readonly string _imagePath = "wwwroot/images/logo.png";
 
         // Palette de couleurs personnalisée
-        private readonly DeviceRgb PrimaryColor = new DeviceRgb(105, 180, 46);    // Vert principal
-        private readonly DeviceRgb SecondaryColor = new DeviceRgb(157, 157, 156);  // Gris moyen
-        private readonly DeviceRgb AccentColor = new DeviceRgb(227, 6, 19);        // Rouge accent
-        private readonly DeviceRgb LightGray = new DeviceRgb(245, 245, 245);       // Gris très clair
-        private readonly DeviceRgb DarkGray = new DeviceRgb(120, 120, 120);        // Gris foncé
+        private readonly DeviceRgb _primaryColor = new DeviceRgb(105, 180, 46);    // Vert principal
+        private readonly DeviceRgb _secondaryColor = new DeviceRgb(157, 157, 156);  // Gris moyen
+        private readonly DeviceRgb _accentColor = new DeviceRgb(227, 6, 19);        // Rouge accent
+        private readonly DeviceRgb _lightGray = new DeviceRgb(245, 245, 245);       // Gris très clair
+        private readonly DeviceRgb _darkGray = new DeviceRgb(120, 120, 120);        // Gris foncé
 
-        public PDFGenerator(object description, List<object> tables)
+        public PdfGenerator(object description, List<object> tables)
         {
             _description = description ?? throw new ArgumentNullException(nameof(description));
             _tables = tables ?? throw new ArgumentNullException(nameof(tables));
@@ -96,7 +94,7 @@ namespace MyApp.Utils.pdf
 
             // Cellule pour le titre avec dégradé visuel
             var titleCell = new Cell()
-                .SetBackgroundColor(PrimaryColor)
+                .SetBackgroundColor(_primaryColor)
                 .SetBorder(Border.NO_BORDER)
                 .SetPadding(15)
                 .SetVerticalAlignment(VerticalAlignment.MIDDLE);
@@ -118,7 +116,7 @@ namespace MyApp.Utils.pdf
             var separator = new Table(1)
                 .UseAllAvailableWidth()
                 .SetHeight(3)
-                .SetBackgroundColor(AccentColor)
+                .SetBackgroundColor(_accentColor)
                 .SetMarginBottom(25);
             separator.AddCell(new Cell().SetBorder(Border.NO_BORDER));
             document.Add(separator);
@@ -130,7 +128,7 @@ namespace MyApp.Utils.pdf
             var sectionTitle = new Paragraph("INFORMATIONS DÉTAILLÉES")
                 .SetFont(boldFont)
                 .SetFontSize(16)
-                .SetFontColor(SecondaryColor)
+                .SetFontColor(_secondaryColor)
                 .SetMarginBottom(15);
             document.Add(sectionTitle);
 
@@ -144,16 +142,16 @@ namespace MyApp.Utils.pdf
             bool isEvenRow = false;
             foreach (var item in list)
             {
-                var backgroundColor = isEvenRow ? LightGray : ColorConstants.WHITE;
+                var backgroundColor = isEvenRow ? _lightGray : ColorConstants.WHITE;
 
                 var cellName = new Cell()
                     .Add(new Paragraph(item.Name)
                         .SetFont(boldFont)
                         .SetFontSize(11)
-                        .SetFontColor(SecondaryColor))
+                        .SetFontColor(_secondaryColor))
                     .SetBackgroundColor(backgroundColor)
                     .SetPadding(12)
-                    .SetBorderLeft(new SolidBorder(PrimaryColor, 3))
+                    .SetBorderLeft(new SolidBorder(_primaryColor, 3))
                     .SetBorderTop(Border.NO_BORDER)
                     .SetBorderRight(Border.NO_BORDER)
                     .SetBorderBottom(new SolidBorder(ColorConstants.LIGHT_GRAY, 0.5f));
@@ -186,7 +184,7 @@ namespace MyApp.Utils.pdf
             var sectionTitle = new Paragraph("DONNÉES TABULAIRES")
                 .SetFont(boldFont)
                 .SetFontSize(16)
-                .SetFontColor(SecondaryColor)
+                .SetFontColor(_secondaryColor)
                 .SetMarginBottom(15);
             document.Add(sectionTitle);
 
@@ -194,33 +192,34 @@ namespace MyApp.Utils.pdf
             if (rows.Any(row => row == null))
                 throw new Exception("Certains éléments ne sont pas des lignes valides (List<string>).");
 
-            int columnCount = rows[0].Count;
+            int columnCount = rows[0]!.Count;
             var table = new Table(columnCount)
                 .UseAllAvailableWidth()
                 .SetMarginBottom(20);
 
             // En-têtes avec style élégant
             var headerRow = rows[0];
-            foreach (var header in headerRow)
-            {
-                var headerCell = new Cell()
-                    .Add(new Paragraph(header)
-                        .SetFont(boldFont)
-                        .SetFontSize(12)
-                        .SetFontColor(ColorConstants.WHITE)
-                        .SetTextAlignment(TextAlignment.CENTER))
-                    .SetBackgroundColor(PrimaryColor)
-                    .SetPadding(12)
-                    .SetBorder(Border.NO_BORDER);
-                
-                table.AddHeaderCell(headerCell);
-            }
+            if (headerRow != null)
+                foreach (var header in headerRow)
+                {
+                    var headerCell = new Cell()
+                        .Add(new Paragraph(header)
+                            .SetFont(boldFont)
+                            .SetFontSize(12)
+                            .SetFontColor(ColorConstants.WHITE)
+                            .SetTextAlignment(TextAlignment.CENTER))
+                        .SetBackgroundColor(_primaryColor)
+                        .SetPadding(12)
+                        .SetBorder(Border.NO_BORDER);
+
+                    table.AddHeaderCell(headerCell);
+                }
 
             // Lignes de données avec alternance de couleurs
             bool isEvenRow = false;
             foreach (var row in rows.Skip(1))
             {
-                var backgroundColor = isEvenRow ? LightGray : ColorConstants.WHITE;
+                var backgroundColor = isEvenRow ? _lightGray : ColorConstants.WHITE;
                 
                 foreach (var cellValue in row)
                 {
@@ -250,7 +249,7 @@ namespace MyApp.Utils.pdf
             var signatureTitle = new Paragraph("SIGNATURES")
                 .SetFont(PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD))
                 .SetFontSize(14)
-                .SetFontColor(SecondaryColor)
+                .SetFontColor(_secondaryColor)
                 .SetMarginBottom(15);
             document.Add(signatureTitle);
 
@@ -296,7 +295,7 @@ namespace MyApp.Utils.pdf
                 .Add(new Paragraph("(employé envoyé en mission)")
                     .SetFont(font)
                     .SetFontSize(9)
-                    .SetFontColor(DarkGray)
+                    .SetFontColor(_darkGray)
                     .SetTextAlignment(TextAlignment.CENTER))
                 .SetBorder(Border.NO_BORDER)
                 .SetPadding(5);
@@ -320,7 +319,7 @@ namespace MyApp.Utils.pdf
                 .Add(new Paragraph("(signature)")
                     .SetFont(font)
                     .SetFontSize(9)
-                    .SetFontColor(DarkGray)
+                    .SetFontColor(_darkGray)
                     .SetTextAlignment(TextAlignment.CENTER))
                 .SetBorder(Border.NO_BORDER)
                 .SetPadding(20)
@@ -330,7 +329,7 @@ namespace MyApp.Utils.pdf
                 .Add(new Paragraph("(signature)")
                     .SetFont(font)
                     .SetFontSize(9)
-                    .SetFontColor(DarkGray)
+                    .SetFontColor(_darkGray)
                     .SetTextAlignment(TextAlignment.CENTER))
                 .SetBorder(Border.NO_BORDER)
                 .SetPadding(20)
@@ -340,7 +339,7 @@ namespace MyApp.Utils.pdf
                 .Add(new Paragraph("(signature)")
                     .SetFont(font)
                     .SetFontSize(9)
-                    .SetFontColor(DarkGray)
+                    .SetFontColor(_darkGray)
                     .SetTextAlignment(TextAlignment.CENTER))
                 .SetBorder(Border.NO_BORDER)
                 .SetPadding(20)
@@ -356,7 +355,7 @@ namespace MyApp.Utils.pdf
             var notesTitle = new Paragraph("NOTES IMPORTANTES")
                 .SetFont(PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD))
                 .SetFontSize(12)
-                .SetFontColor(AccentColor)
+                .SetFontColor(_accentColor)
                 .SetMarginBottom(10);
             document.Add(notesTitle);
 
@@ -373,7 +372,7 @@ namespace MyApp.Utils.pdf
                     .SetFontSize(10)
                     .SetTextAlignment(TextAlignment.JUSTIFIED))
                 .SetBackgroundColor(new DeviceRgb(255, 248, 248))
-                .SetBorder(new SolidBorder(AccentColor, 1))
+                .SetBorder(new SolidBorder(_accentColor, 1))
                 .SetPadding(15);
 
             notesTable.AddCell(notesCell);
@@ -383,7 +382,7 @@ namespace MyApp.Utils.pdf
             var separator = new Table(1)
                 .UseAllAvailableWidth()
                 .SetHeight(1)
-                .SetBackgroundColor(DarkGray)
+                .SetBackgroundColor(_darkGray)
                 .SetMarginBottom(10);
             separator.AddCell(new Cell().SetBorder(Border.NO_BORDER));
             document.Add(separator);
@@ -395,13 +394,13 @@ namespace MyApp.Utils.pdf
             var dateText = new Paragraph($"Document généré le : {DateTime.Now:dd/MM/yyyy à HH:mm}")
                 .SetFont(font)
                 .SetFontSize(9)
-                .SetFontColor(DarkGray)
+                .SetFontColor(_darkGray)
                 .SetTextAlignment(TextAlignment.LEFT);
 
             var companyText = new Paragraph("© Ravinala Airport - Document")
                 .SetFont(font)
                 .SetFontSize(9)
-                .SetFontColor(DarkGray)
+                .SetFontColor(_darkGray)
                 .SetTextAlignment(TextAlignment.RIGHT);
 
             footerTable.AddCell(new Cell().Add(dateText).SetBorder(Border.NO_BORDER));

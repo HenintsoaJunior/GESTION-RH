@@ -1,18 +1,17 @@
-import "styles/generic-form-styles.css";
-import AutoCompleteInput from "components/auto-complete-input";
+import { FormSectionTitle, FormTable, FormRow, FormFieldCell, FormLabel, FormLabelRequired, FormInput, FormTextarea, ErrorMessage,StyledAutoCompleteInput } from "styles/generaliser/form-container";
 
 const ExistingMissionForm = ({ formData, fieldErrors, isSubmitting, isLoading, suggestions, handleInputChange }) => {
   return (
-    <div className="form-section">
-      <h3 className="form-section-title text-lg font-semibold mb-4">Sélection de la Mission</h3>
-      <table className="form-table w-full border-collapse">
+    <div>
+      <FormSectionTitle>Sélection de la Mission</FormSectionTitle>
+      <FormTable>
         <tbody>
           {/* Mission and Mission Title in one row with two columns */}
-          <tr className="form-row dual-field-row">
-            <td className="form-field-cell p-2 align-top">
-              <label className="form-label form-label-required block mb-2">Mission</label>
-              <AutoCompleteInput
-                value={formData.missionSearch || ""} // Use a separate search field in formData
+          <FormRow className="dual-field-row">
+            <FormFieldCell>
+              <FormLabelRequired>Mission</FormLabelRequired>
+              <StyledAutoCompleteInput
+                value={formData.missionSearch || ""}
                 onChange={(value) => {
                   handleInputChange({ target: { name: 'missionSearch', value } });
                   const selectedMission = suggestions.mission.find((m) => m.displayName === value);
@@ -30,78 +29,73 @@ const ExistingMissionForm = ({ formData, fieldErrors, isSubmitting, isLoading, s
                 showAddOption={false}
                 fieldType="mission"
                 fieldLabel="mission"
-                className={`form-table autocomplete-input w-full ${fieldErrors.missionId ? "input-error" : ""}`}
+                className={`autocomplete-input w-full ${fieldErrors.missionId ? "input-error" : ""}`}
               />
               {fieldErrors.missionId && (
-                <span className="error-message block mt-1">{fieldErrors.missionId.join(", ")}</span>
+                <ErrorMessage>{fieldErrors.missionId.join(", ")}</ErrorMessage>
               )}
-            </td>
-            <td className="form-field-cell p-2 align-top">
-              <label className="form-label block mb-2">Intitulé de la Mission</label>
-              <input
+            </FormFieldCell>
+            <FormFieldCell>
+              <FormLabel>Intitulé de la Mission</FormLabel>
+              <FormInput
                 type="text"
                 value={formData.missionTitle}
-                className="form-table w-full bg-gray-100"
                 disabled
                 readOnly
               />
-            </td>
-          </tr>
+            </FormFieldCell>
+          </FormRow>
 
           {/* Other fields in separate rows, each spanning the full table width */}
-          <tr className="form-row">
-            <td className="form-field-cell p-2" colSpan="2">
-              <label className="form-label block mb-2">Description</label>
-              <textarea
+          <FormRow>
+            <FormFieldCell colSpan="2">
+              <FormLabel>Description</FormLabel>
+              <FormTextarea
                 value={formData.description}
-                className="form-table w-full bg-gray-100"
                 rows="4"
                 disabled
                 readOnly
               />
-            </td>
-          </tr>
+            </FormFieldCell>
+          </FormRow>
 
-          <tr className="form-row">
-            <td className="form-field-cell p-2" colSpan="2">
-              <label className="form-label block mb-2">Lieu</label>
-              <input
+          <FormRow>
+            <FormFieldCell colSpan="2">
+              <FormLabel>Lieu</FormLabel>
+              <FormInput
                 type="text"
                 value={formData.location}
-                className="form-table w-full bg-gray-100"
                 disabled
                 readOnly
               />
-            </td>
-          </tr>
+            </FormFieldCell>
+          </FormRow>
 
-          <tr className="form-row">
-            <td className="form-field-cell p-2" colSpan="2">
-              <label className="form-label block mb-2">Date de début</label>
-              <input
+          <FormRow>
+            <FormFieldCell colSpan="2">
+              <FormLabel>Date de début</FormLabel>
+              <FormInput
                 type="date"
                 value={formData.startDate || ""}
-                className="form-table w-full bg-gray-100"
                 disabled
                 readOnly
               />
-            </td>
-          </tr>
+            </FormFieldCell>
+          </FormRow>
 
-          <tr className="form-row">
-            <td className="form-field-cell p-2" colSpan="2">
-              <label className="form-label block mb-2">Date de fin</label>
-              <input
+          <FormRow>
+            <FormFieldCell colSpan="2">
+              <FormLabel>Date de fin</FormLabel>
+              <FormInput
                 type="date"
                 value={formData.endDate || ""}
-                className="form-table w-full bg-gray-100"
                 disabled
                 readOnly
               />
-            </td>
-          </tr>
+            </FormFieldCell>
+          </FormRow>
         </tbody>
-      </table>
+      </FormTable>
     </div>
   );
 };

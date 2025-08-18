@@ -10,8 +10,28 @@ import { fetchAllRegions } from "services/lieu/lieu";
 import { createMission, fetchAllMissions, createMissionAssignation, fetchMissionById, fetchAssignMission, updateMission, updateMissionAssignation, deleteMissionAssignation } from "services/mission/mission";
 import { fetchAllTransports } from "services/transport/transport";
 import { fetchEmployees } from "services/employee/employee";
-import "styles/generic-form-styles.css";
-import "styles/mission/beneficiary-details-popup.css";
+import {
+  FormContainer,
+  FormTable,
+  FormRow,
+  FormFieldCell,
+  FormLabelRequired,
+  FormSelect,
+  TableHeader,
+  TableTitle,
+  GenericForm,
+  FormSectionTitle,
+  BeneficiariesTableContainer,
+  BeneficiariesTable,
+  TableActionButton,
+  NoBeneficiaries,
+  FormActions,
+  SubmitButton,
+  ResetButton,
+  AddButton,
+  DateInfo,
+  DurationBadge,
+} from "styles/generaliser/form-container";
 
 const MissionForm = () => {
   const { missionId } = useParams();
@@ -918,7 +938,7 @@ const MissionForm = () => {
   };
 
   return (
-    <div className="form-container max-w-5xl mx-auto p-6">
+    <FormContainer>
       <Modal
         type={modal.type}
         message={modal.message}
@@ -966,35 +986,34 @@ const MissionForm = () => {
         index={editingIndex !== null ? editingIndex : formData.beneficiaries.length}
         isEditing={editingIndex !== null}
       />
-      <div className="table-header mb-6">
-        <h2 className="table-title text-2xl font-bold">{missionId ? "Modifier la Mission" : "Création et Assignation d'une Mission"}</h2>
-      </div>
+      <TableHeader>
+        <TableTitle>{missionId ? "Modifier la Mission" : "Création et Assignation d'une Mission"}</TableTitle>
+      </TableHeader>
 
-      <form id="combinedMissionForm" className="generic-form" onSubmit={handleSubmit}>
+      <GenericForm id="combinedMissionForm" onSubmit={handleSubmit}>
         {!missionId && (
-          <div className="form-section mb-6">
-            <h3 className="form-section-title text-lg font-semibold mb-4">Type de Mission</h3>
-            <table className="form-table w-full border-collapse">
+          <div>
+            <FormSectionTitle>Type de Mission</FormSectionTitle>
+            <FormTable>
               <tbody>
-                <tr className="form-row">
-                  <td className="form-field-cell p-2 align-top w-1/4">
-                    <label className="form-label form-label-required">Mode</label>
-                  </td>
-                  <td className="form-field-cell p-2 align-top">
-                    <select
+                <FormRow>
+                  <FormFieldCell>
+                    <FormLabelRequired>Mode</FormLabelRequired>
+                  </FormFieldCell>
+                  <FormFieldCell>
+                    <FormSelect
                       name="missionMode"
                       value={missionMode}
                       onChange={(e) => setMissionMode(e.target.value)}
-                      className="form-table w-full"
                       disabled={isSubmitting}
                     >
                       <option value="new">Nouvelle Mission</option>
                       <option value="existing">Mission Existante</option>
-                    </select>
-                  </td>
-                </tr>
+                    </FormSelect>
+                  </FormFieldCell>
+                </FormRow>
               </tbody>
-            </table>
+            </FormTable>
           </div>
         )}
 
@@ -1029,12 +1048,12 @@ const MissionForm = () => {
           />
         )}
 
-        <div className="form-section mb-6">
-          <h3 className="form-section-title text-lg font-semibold mb-4">Détails des Assignations</h3>
+        <div>
+          <FormSectionTitle>Détails des Assignations</FormSectionTitle>
           
           {formData.beneficiaries.length > 0 ? (
-            <div className="beneficiaries-table-container">
-              <table className="beneficiaries-table">
+            <BeneficiariesTableContainer>
+              <BeneficiariesTable>
                 <thead>
                   <tr>
                     <th className="col-id">ID</th>
@@ -1069,84 +1088,81 @@ const MissionForm = () => {
                         {beneficiary.transport || "-"}
                       </td>
                       <td className="col-dates">
-                        <div className="date-info">{formatDate(beneficiary.departureDate)}</div>
-                        <div className="date-info">{formatTime(beneficiary.departureTime)}</div>
+                        <DateInfo>{formatDate(beneficiary.departureDate)}</DateInfo>
+                        <DateInfo>{formatTime(beneficiary.departureTime)}</DateInfo>
                       </td>
                       <td className="col-dates">
-                        <div className="date-info">{formatDate(beneficiary.returnDate)}</div>
-                        <div className="date-info">{formatTime(beneficiary.returnTime)}</div>
+                        <DateInfo>{formatDate(beneficiary.returnDate)}</DateInfo>
+                        <DateInfo>{formatTime(beneficiary.returnTime)}</DateInfo>
                       </td>
                       <td className="col-duree">
                         {beneficiary.missionDuration ? (
-                          <span className="duration-badge">{beneficiary.missionDuration}j</span>
+                          <DurationBadge>{beneficiary.missionDuration}j</DurationBadge>
                         ) : "-"}
                       </td>
                       <td className="col-actions">
-                        <button
+                        <TableActionButton
                           type="button"
-                          className="table-action-btn edit-btn"
+                          className="edit-btn"
                           onClick={() => editBeneficiary(index)}
                           disabled={isSubmitting}
                           title="Modifier ce bénéficiaire"
                         >
                           <FaIcons.FaEdit />
-                        </button>
-                        <button
+                        </TableActionButton>
+                        <TableActionButton
                           type="button"
-                          className="table-action-btn delete-btn"
+                          className="delete-btn"
                           onClick={() => removeBeneficiary(index)}
                           disabled={isSubmitting}
                           title="Supprimer ce bénéficiaire"
                         >
                           <FaIcons.FaTrash />
-                        </button>
+                        </TableActionButton>
                       </td>
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
+              </BeneficiariesTable>
+            </BeneficiariesTableContainer>
           ) : (
-            <div className="no-beneficiaries">
+            <NoBeneficiaries>
               <p>Aucun bénéficiaire ajouté. Cliquez sur "Ajouter un Bénéficiaire" pour commencer.</p>
-            </div>
+            </NoBeneficiaries>
           )}
 
-          <button
+          <AddButton
             type="button"
-            className="add-btn"
             onClick={addBeneficiary}
             disabled={isSubmitting}
             title="Ajouter un nouveau bénéficiaire"
           >
             <FaIcons.FaPlus className="w-4 h-4" />
             <span>Ajouter un Bénéficiaire</span>
-          </button>
+          </AddButton>
         </div>
 
-        <div className="form-actions">
-          <button
+        <FormActions>
+          <SubmitButton
             type="submit"
-            className="submit-btn"
             disabled={isSubmitting || isLoading.regions || isLoading.employees || isLoading.transports}
             title={missionId ? "Mettre à jour la mission" : missionMode === "existing" ? "Assigner à la mission" : "Créer et assigner la mission"}
           >
             <span>{isSubmitting ? "Envoi en cours..." : missionId ? "Mettre à jour" : missionMode === "existing" ? "Assigner" : "Créer et Assigner"}</span>
             <FaIcons.FaArrowRight className="w-4 h-4" />
-          </button>
-          <button
+          </SubmitButton>
+          <ResetButton
             type="button"
-            className="reset-btn"
             onClick={handleReset}
             disabled={isSubmitting || isLoading.regions || isLoading.employees || isLoading.transports}
             title="Réinitialiser le formulaire"
           >
             <FaIcons.FaTrash className="w-4 h-4" />
             <span>Réinitialiser</span>
-          </button>
-        </div>
-      </form>
-    </div>
+          </ResetButton>
+        </FormActions>
+      </GenericForm>
+    </FormContainer>
   );
 };
 
