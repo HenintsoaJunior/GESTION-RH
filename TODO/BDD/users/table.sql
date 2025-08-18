@@ -55,3 +55,18 @@ CREATE TABLE role_habilitation(
    FOREIGN KEY(habilitation_id) REFERENCES habilitations(habilitation_id),
    FOREIGN KEY(role_id) REFERENCES role(role_id)
 );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -20,6 +20,8 @@ namespace MyApp.Api.Services.users
         Task AddUsersAsync(List<User> users);
         Task UpdateUsersAsync(List<User> users);
         Task DeleteUsersAsync(List<User> users);
+        
+        Task<IEnumerable<UserDto>> GetCollaboratorsAsync(string userId);
     }
     
     public class UserService : IUserService
@@ -34,6 +36,17 @@ namespace MyApp.Api.Services.users
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             return await _repository.GetAllAsync();
+        }
+        
+        public async Task<IEnumerable<UserDto>> GetCollaboratorsAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            var collaborators = await _repository.GetCollaboratorsAsync(userId);
+            
+            
+            return collaborators.Select(MapToDto);
         }
 
         public async Task<List<User>> GetAllUsersAsync()

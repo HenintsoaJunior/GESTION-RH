@@ -18,6 +18,7 @@ namespace MyApp.Api.Repositories.users
         Task UpdateUsersAsync(List<User> users);
         Task DeleteUsersAsync(List<User> users);
         Task SaveChangesAsync();
+        Task<IEnumerable<User>> GetCollaboratorsAsync(string userId);
     }
 
     public class UserRepository : IUserRepository
@@ -29,6 +30,15 @@ namespace MyApp.Api.Repositories.users
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
+        public async Task<IEnumerable<User>> GetCollaboratorsAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            return await _context.Users
+                .Where(u => u.SuperiorId == userId)
+                .ToListAsync();
+        }
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             return await _context.Users.ToListAsync();

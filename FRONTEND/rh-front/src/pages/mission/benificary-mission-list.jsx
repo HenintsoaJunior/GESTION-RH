@@ -9,8 +9,6 @@ import Pagination from "components/pagination";
 import {
   fetchAssignMission,
   fetchAllMissions,
-  exportMissionAssignationPDF,
-  exportMissionAssignationExcel,
 } from "services/mission/mission";
 import { fetchAllEmployees } from "services/employee/employee";
 import { fetchAllRegions } from "services/lieu/lieu";
@@ -43,7 +41,6 @@ import {
   Loading,
   NoDataMessage,
   StatusBadge,
-  ViewToggle,
 } from "styles/generaliser/table-container";
 
 const BeneficiaryMissionList = () => {
@@ -255,53 +252,6 @@ const BeneficiaryMissionList = () => {
       });
     }
   };
-
-  const handleExportPDF = () => {
-    setIsLoading((prev) => ({ ...prev, exportPDF: true }));
-    exportMissionAssignationPDF(
-      appliedFilters,
-      () => {
-        setIsLoading((prev) => ({ ...prev, exportPDF: false }));
-        setAlert({
-          isOpen: true,
-          type: "success",
-          message: "Exportation PDF réussie.",
-        });
-      },
-      (error) => {
-        setIsLoading((prev) => ({ ...prev, exportPDF: false }));
-        setAlert({
-          isOpen: true,
-          type: "error",
-          message: "Erreur lors de l'exportation PDF.",
-        });
-      }
-    );
-  };
-
-  const handleExportExcel = () => {
-    setIsLoading((prev) => ({ ...prev, exportExcel: true }));
-    exportMissionAssignationExcel(
-      appliedFilters,
-      () => {
-        setIsLoading((prev) => ({ ...prev, exportExcel: false }));
-        setAlert({
-          isOpen: true,
-          type: "success",
-          message: "Exportation Excel réussie.",
-        });
-      },
-      (error) => {
-        setIsLoading((prev) => ({ ...prev, exportPDF: false }));
-        setAlert({
-          isOpen: true,
-          type: "error",
-          message: "Erreur lors de l'exportation Excel.",
-        });
-      }
-    );
-  };
-
   const toggleMinimize = () => setIsMinimized((prev) => !prev);
   const toggleHide = () => setIsHidden((prev) => !prev);
 

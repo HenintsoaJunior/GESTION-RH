@@ -28,7 +28,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\users\" />
     <Folder Include="Models\classes\mission\" />
   </ItemGroup>
 </Project>
