@@ -17,55 +17,47 @@ namespace MyApp.Api.Controllers.jobs
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<JobDescription>>> GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var result = await _service.GetAllAsync();
-            return Ok(result);
+            var descriptions = await _service.GetAllAsync();
+            return Ok(descriptions);
+        }
+
+        [HttpPost("search")]
+        public async Task<IActionResult> GetAllByCriteria([FromBody] JobDescription criteria)
+        {
+            var descriptions = await _service.GetAllByCriteriaAsync(criteria);
+            return Ok(descriptions);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<JobDescription>> GetById(string id)
+        public async Task<IActionResult> GetById(string id)
         {
-            var result = await _service.GetByIdAsync(id);
-            if (result == null)
-                return NotFound();
-            return Ok(result);
-        }
-
-
-        [HttpPost("by-criteria")]
-        public async Task<ActionResult<IEnumerable<JobDescription>>> GetByCriteria([FromBody] JobDescription criteria)
-        {
-            var result = await _service.GetAllByCriteriaAsync(criteria);
-            return Ok(result);
+            var description = await _service.GetByIdAsync(id);
+            if (description == null) return NotFound();
+            return Ok(description);
         }
 
         [HttpPost]
-        public async Task<ActionResult> Create([FromBody] JobDescriptionDTOForm jobDescriptionDTOForm)
+        public async Task<IActionResult> Create([FromBody] JobDescriptionDTOForm dto)
         {
-            var jobDescription = new JobDescription(jobDescriptionDTOForm);
-            await _service.AddAsync(jobDescription);
-            return CreatedAtAction(nameof(GetById), new { id = jobDescription.DescriptionId }, jobDescription);
+            var id = await _service.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id }, new { id });
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult> Update(string id, [FromBody] JobDescription jobDescription)
+        public async Task<IActionResult> Update(string id, [FromBody] JobDescriptionDTOForm dto)
         {
-            if (id != jobDescription.DescriptionId)
-                return BadRequest("ID mismatch.");
-
-            await _service.UpdateAsync(jobDescription);
-            return NoContent();
+            var updated = await _service.UpdateAsync(id, dto);
+            if (updated == null) return NotFound();
+            return Ok(updated);
         }
 
         [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(string id)
         {
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null)
-                return NotFound();
-
-            await _service.DeleteAsync(existing);
+            var deleted = await _service.DeleteAsync(id);
+            if (!deleted) return NotFound();
             return NoContent();
         }
     }

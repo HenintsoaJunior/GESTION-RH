@@ -71,6 +71,39 @@ IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_user_id')
     DROP SEQUENCE seq_user_id;
 GO
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_role_id')
+    DROP SEQUENCE seq_user_id;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_habilitation_id')
+    DROP SEQUENCE seq_user_id;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_role_habilitation_id')
+    DROP SEQUENCE seq_user_id;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_candidate_id')
+    DROP SEQUENCE seq_user_id;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_job_description_id')
+    DROP SEQUENCE seq_user_id;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_job_offer_id')
+    DROP SEQUENCE seq_user_id;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_application_id')
+    DROP SEQUENCE seq_user_id;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_application_comment_id')
+    DROP SEQUENCE seq_user_id;
+GO
+
+
 
 -- Create sequences
 CREATE SEQUENCE seq_direction_id
@@ -234,4 +267,77 @@ CREATE SEQUENCE seq_user_id
     NO CYCLE
     CACHE 50;
 GO
+
+CREATE SEQUENCE seq_role_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+CREATE SEQUENCE seq_habilitation_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+CREATE SEQUENCE seq_role_habilitation_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+CREATE SEQUENCE seq_candidate_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+CREATE SEQUENCE seq_job_description_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+CREATE SEQUENCE seq_job_offer_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+CREATE SEQUENCE seq_application_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+CREATE SEQUENCE seq_application_comment_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
 
