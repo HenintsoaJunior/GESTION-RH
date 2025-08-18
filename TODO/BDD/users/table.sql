@@ -10,8 +10,8 @@ CREATE TABLE role (
 CREATE TABLE users (
     user_id VARCHAR(50) NOT NULL,
     matricule VARCHAR(100) UNIQUE,
-    email VARCHAR(150) NOT NULL UNIQUE,
-    name VARCHAR(50),
+    email VARCHAR(150) NOT NULL,
+    name VARCHAR(250),
     position VARCHAR(250),
     department VARCHAR(100),
     superior_id VARCHAR(150),

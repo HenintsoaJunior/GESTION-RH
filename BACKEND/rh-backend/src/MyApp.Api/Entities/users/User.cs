@@ -30,7 +30,7 @@ namespace MyApp.Api.Entities.users
         public string Email { get; set; } = null!;
 
         [Column("name")]
-        [MaxLength(50)]
+        [MaxLength(250)]
         public string? Name { get; set; }
 
         [Column("position")]

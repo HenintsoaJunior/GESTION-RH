@@ -13,6 +13,7 @@ namespace MyApp.Api.Entities.employee
     {
         [Key]
         [Column("employee_id")]
+        [MaxLength(250)]
         public string EmployeeId { get; set; } = default!;
 
         [Column("employee_code")]
@@ -21,16 +22,14 @@ namespace MyApp.Api.Entities.employee
 
         [Required]
         [Column("last_name")]
-        [MaxLength(50)]
+        [MaxLength(250)]
         public string LastName { get; set; } = default!;
 
         [Required]
         [Column("first_name")]
-        [MaxLength(100)]
+        [MaxLength(250)]
         public string FirstName { get; set; } = default!;
-
-        [Column("birth_date")]
-        public DateTime? BirthDate { get; set; }
+        
 
         [Column("birth_place")]
         [MaxLength(100)]
@@ -40,7 +39,7 @@ namespace MyApp.Api.Entities.employee
         public int ChildrenCount { get; set; } = 0;
 
         [Column("cin_number")]
-        [MaxLength(50)]
+        [MaxLength(100)]
         public string? CINNumber { get; set; }
 
         [Column("cin_date")]
@@ -51,10 +50,11 @@ namespace MyApp.Api.Entities.employee
         public string? CINPlace { get; set; }
 
         [Column("cnaPS_number")]
-        [MaxLength(50)]
+        [MaxLength(100)]
         public string? CNAPSNumber { get; set; }
 
         [Column("address")]
+        [MaxLength(100)]
         public string? Address { get; set; }
 
         [Column("address_complement")]
@@ -110,7 +110,7 @@ namespace MyApp.Api.Entities.employee
         public int Headcount { get; set; } = 1;
 
         [Column("birth_date_")]
-        public DateTime? BirthDate_ { get; set; }
+        public DateTime? BirthDate { get; set; }
 
         [Column("status")]
         [MaxLength(10)]
@@ -118,54 +118,64 @@ namespace MyApp.Api.Entities.employee
 
         // Foreign Keys + Navigations
         [Column("unit_id")]
+        [MaxLength(100)]
         public string? UnitId { get; set; }
 
         [ForeignKey("UnitId")]
         public Unit? Unit { get; set; }
 
         [Column("service_id")]
+        [MaxLength(100)]
         public string? ServiceId { get; set; }
 
         [ForeignKey("ServiceId")]
         public Service? Service { get; set; }
 
         [Column("department_id")]
+        [MaxLength(100)]
         public string? DepartmentId { get; set; }
 
         [ForeignKey("DepartmentId")]
         public Department? Department { get; set; }
 
         [Column("direction_id")]
+        [MaxLength(100)]
         public string DirectionId { get; set; } = default!;
 
         [ForeignKey("DirectionId")]
         public Direction? Direction { get; set; }
 
         [Column("working_time_type_id")]
+        [MaxLength(100)]
         public string WorkingTimeTypeId { get; set; } = default!;
 
         [ForeignKey("WorkingTimeTypeId")]
         public WorkingTimeType? WorkingTimeType { get; set; }
 
         [Column("contract_type_id")]
+        [MaxLength(100)]
         public string ContractTypeId { get; set; } = default!;
 
         [ForeignKey("ContractTypeId")]
         public ContractType? ContractType { get; set; }
 
         [Column("gender_id")]
+        [MaxLength(100)]
         public string GenderId { get; set; } = default!;
 
         [ForeignKey("GenderId")]
+        [MaxLength(100)]
         public Gender? Gender { get; set; }
 
         [Column("marital_status_id")]
+        [MaxLength(100)]
         public string MaritalStatusId { get; set; } = default!;
 
         [ForeignKey("MaritalStatusId")]
         public MaritalStatus? MaritalStatus { get; set; }
 
         [Column("site_id")]
+        [MaxLength(100)]
         public string SiteId { get; set; } = default!;
 
         [ForeignKey("SiteId")]
@@ -202,12 +212,11 @@ namespace MyApp.Api.Entities.employee
             DepartureDate = form.DepartureDate; // Added
             DepartureReasonCode = form.DepartureReasonCode; // Added
             DepartureReasonTitle = form.DepartureReasonTitle; // Added
-            BirthDate_ = form.BirthDate_; // Added
             Status = form.Status ?? "Actif"; // Valeur par défaut si null
             UnitId = form.UnitId;
             ServiceId = form.ServiceId;
             DepartmentId = form.DepartmentId;
-            DirectionId = form.DirectionId;
+            DirectionId = form.DirectionId!;
             WorkingTimeTypeId = form.WorkingTimeTypeId;
             ContractTypeId = form.ContractTypeId;
             GenderId = form.GenderId;

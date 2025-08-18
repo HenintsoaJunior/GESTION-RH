@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
 
 namespace MyApp.Api.Entities.menu
 {
@@ -33,5 +34,7 @@ namespace MyApp.Api.Entities.menu
         [Column("module_id")]
         [MaxLength(50)]
         public string? ModuleId { get; set; }
+
+        public List<MenuRole> MenuRoles { get; set; } = new List<MenuRole>(); // Added navigation property
     }
 }

@@ -2,14 +2,13 @@ using MyApp.Api.Entities.employee;
 using MyApp.Api.Models.form.employee;
 using MyApp.Api.Models.search.employee;
 using MyApp.Api.Repositories.employee;
+using MyApp.Api.Utils.csv;
 using MyApp.Api.Utils.generator;
-using MyApp.Utils.csv;
 
 namespace MyApp.Api.Services.employee
 {
     public interface IEmployeeService
     {
-
         Task<Employee> VerifyEmployeeExistsAsync(string code);
         Task<List<string>?> CheckNameAndCode(List<List<string>> DataExcel);
         Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
@@ -56,7 +55,7 @@ namespace MyApp.Api.Services.employee
         }
 
         // check si le nom et le matricule sont tous les meme pour chaque ligne
-        public async Task<List<string>?> CheckNameAndCode(List<List<string>> dataExcel)
+        public async Task<List<string>?> CheckNameAndCode(List<List<string>>? dataExcel)
         {
             var errors = new List<string>();
 
@@ -66,7 +65,7 @@ namespace MyApp.Api.Services.employee
                 return errors;
             }
 
-            var header = dataExcel[0];
+            var header = dataExcel![0];
             int nameIndex = CSVReader.GetColumnIndex(header, "nom");
             int codeIndex = CSVReader.GetColumnIndex(header, "matricule");
 

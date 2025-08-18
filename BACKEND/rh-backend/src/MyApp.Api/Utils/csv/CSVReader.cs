@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace MyApp.Utils.csv
+namespace MyApp.Api.Utils.csv
 {
     public class CSVReader
     {
@@ -231,7 +231,7 @@ namespace MyApp.Utils.csv
 
 
 
-        public static bool HasMinimumRows(List<List<string>> data)
+        public static bool HasMinimumRows(List<List<string>>? data)
         {
             return data != null && data.Count >= 2;
         }
@@ -258,7 +258,8 @@ namespace MyApp.Utils.csv
         public static void ValidatePresence(string value, string label, int rowIndex, int colIndex, List<string>? errors)
         {
             if (string.IsNullOrWhiteSpace(value))
-                errors.Add($"{rowIndex}:{colIndex + 1} => {label} manquant.");
+                errors!.Add($"{rowIndex}:{colIndex} => {label} manquant.");
+
         }
 
         public static void CheckDuplicate(Dictionary<string, string> map, string code, string name, int rowIndex, int colIndex, List<string>? errors)
@@ -269,7 +270,8 @@ namespace MyApp.Utils.csv
             {
                 if (!string.Equals(existingName, name, StringComparison.OrdinalIgnoreCase))
                 {
-                    errors.Add($"{rowIndex}:{colIndex + 1} => Conflit : le code '{code}' est déjà associé au nom '{existingName}' (nouveau: '{name}').");
+                    errors!.Add($"{rowIndex}:{colIndex} => Conflit : le code '{code}' est déjà associé au nom '{existingName}' (nouveau: '{name}').");
+
                 }
             }
             else

@@ -221,7 +221,7 @@ namespace MyApp.Api.Utils.pdf
             {
                 var backgroundColor = isEvenRow ? _lightGray : ColorConstants.WHITE;
                 
-                foreach (var cellValue in row)
+                foreach (var cellValue in row!)
                 {
                     var cell = new Cell()
                         .Add(new Paragraph(cellValue)

@@ -25,23 +25,31 @@ public class LdapService : ILdapService
 
     public List<UserAd>? BuildFullOrganisationHierarchy(string domainPath)
     {
-        List<UserAd>? users = GetUsersFromActiveDirectory(domainPath);
-        if (users != null)
+        try
         {
-            foreach (var user in users)
+            List<UserAd>? users = GetUsersFromActiveDirectory(domainPath);
+            if (users != null)
             {
-                if (!string.IsNullOrWhiteSpace(user.DisplayName))
+                foreach (var user in users)
                 {
-                    var manager = GetManager(domainPath, user.DisplayName);
-                    if (manager != null)
+                    if (!string.IsNullOrWhiteSpace(user.DisplayName))
                     {
-                        user.DirectReports.Add(manager);
+                        var manager = GetManager(domainPath, user.DisplayName);
+                        if (manager != null)
+                        {
+                            user.DirectReports.Add(manager);
+                        }
                     }
                 }
+                return users;
             }
-            return users;
+            return null;
         }
-        return null;
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error building full organisation hierarchy: {ex.Message}");
+            throw new InvalidOperationException("Failed to build organisation hierarchy", ex);
+        }
     }
 
     public List<UserAd>? GetUsersFromActiveDirectory(string domainPath)
@@ -51,7 +59,7 @@ public class LdapService : ILdapService
 
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new PlatformNotSupportedException("Active Directory access is only supported on Windows.");
-        
+
         List<UserAd> users = new();
         try
         {
@@ -100,7 +108,7 @@ public class LdapService : ILdapService
 
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new PlatformNotSupportedException("Active Directory access is only supported on Windows.");
-        
+
         string? managerDn = null;
         UserAd? manager = null;
 
@@ -175,15 +183,19 @@ public class LdapService : ILdapService
         {
             var adUsers = BuildFullOrganisationHierarchy(domainPath) ?? throw new InvalidOperationException("Failed to retrieve users from Active Directory");
             var dbUsers = await _userService.GetAllUsersAsync();
-            var adUserDict = adUsers.ToDictionary(x => x.UserId);
+            var adUserDict = adUsers
+                .Where(x => !string.IsNullOrEmpty(x.UserId))
+                .ToDictionary(x => x.UserId!);
+
             var dbUsersDict = dbUsers.ToDictionary(x => x.UserId);
             var toAdd = GetUsersToAdd(adUsers, dbUsersDict);
-            var (toUpdate, toDelete) = GetUsersToUpdateOrDelete(dbUsers, adUserDict);
+            var (toUpdate, toDelete) = GetUsersToUpdateOrDelete(dbUsers, adUserDict!);
             await ApplyUserChanges(toAdd, toUpdate, toDelete);
             return (toAdd.Count, toUpdate.Count, toDelete.Count);
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Error actualizing users: {ex.Message}");
             throw new InvalidOperationException($"Failed to actualize users: {ex.Message}", ex);
         }
     }
@@ -193,12 +205,13 @@ public class LdapService : ILdapService
         var usersToAdd = new List<User>();
         foreach (var adUser in adUsers)
         {
-            if (!dbUsersDict.ContainsKey(adUser.UserId))
+            if (!dbUsersDict.ContainsKey(adUser.UserId!))
             {
                 var superior = adUser.DirectReports?.FirstOrDefault();
                 usersToAdd.Add(new User
                 {
-                    UserId = adUser.UserId,
+                    UserId = adUser.UserId!,
+                    Matricule = adUser.Matricule!,
                     Name = adUser.DisplayName,
                     Email = adUser.Email!,
                     Department = adUser.Department,
@@ -234,6 +247,7 @@ public class LdapService : ILdapService
                 var superiorName = adUser.DirectReports?.FirstOrDefault()?.DisplayName;
 
                 if (dbUser.Name != adUser.DisplayName || 
+                    dbUser.Matricule != adUser.Matricule ||
                     dbUser.Email != adUser.Email ||
                     dbUser.Department != depart || 
                     dbUser.Position != adUser.Title ||
@@ -241,6 +255,7 @@ public class LdapService : ILdapService
                     dbUser.SuperiorName != superiorName)
                 {
                     dbUser.Name = adUser.DisplayName;
+                    dbUser.Matricule = adUser.Matricule!;
                     dbUser.Email = adUser.Email!;
                     dbUser.Department = depart;
                     dbUser.Position = adUser.Title;
@@ -262,31 +277,39 @@ public class LdapService : ILdapService
     {
         const int batchSize = 10;
 
-        if (usersToAdd.Count > 0)
+        try
         {
-            for (int i = 0; i < usersToAdd.Count; i += batchSize)
+            if (usersToAdd.Count > 0)
             {
-                var batch = usersToAdd.Skip(i).Take(batchSize).ToList();
-                await _userService.AddUsersAsync(batch);
+                for (int i = 0; i < usersToAdd.Count; i += batchSize)
+                {
+                    var batch = usersToAdd.Skip(i).Take(batchSize).ToList();
+                    await _userService.AddUsersAsync(batch);
+                }
+            }
+
+            if (usersToUpdate.Count > 0)
+            {
+                for (int i = 0; i < usersToUpdate.Count; i += batchSize)
+                {
+                    var batch = usersToUpdate.Skip(i).Take(batchSize).ToList();
+                    await _userService.UpdateUsersAsync(batch);
+                }
+            }
+
+            if (usersToDelete.Count > 0)
+            {
+                for (int i = 0; i < usersToDelete.Count; i += batchSize)
+                {
+                    var batch = usersToDelete.Skip(i).Take(batchSize).ToList();
+                    await _userService.DeleteUsersAsync(batch);
+                }
             }
         }
-
-        if (usersToUpdate.Count > 0)
+        catch (Exception ex)
         {
-            for (int i = 0; i < usersToUpdate.Count; i += batchSize)
-            {
-                var batch = usersToUpdate.Skip(i).Take(batchSize).ToList();
-                await _userService.UpdateUsersAsync(batch);
-            }
-        }
-
-        if (usersToDelete.Count > 0)
-        {
-            for (int i = 0; i < usersToDelete.Count; i += batchSize)
-            {
-                var batch = usersToDelete.Skip(i).Take(batchSize).ToList();
-                await _userService.DeleteUsersAsync(batch);
-            }
+            Console.WriteLine($"Error applying user changes: {ex.Message}");
+            throw new InvalidOperationException("Failed to apply user changes", ex);
         }
     }
 }
