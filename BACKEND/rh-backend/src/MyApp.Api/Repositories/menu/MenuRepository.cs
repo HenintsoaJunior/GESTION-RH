@@ -10,6 +10,7 @@ namespace MyApp.Api.Repositories.menu
         Task<Menu?> GetByIdAsync(string id);
         Task<IEnumerable<Menu>> GetByModuleIdAsync(string moduleId);
         Task<IEnumerable<Menu>> GetEnabledMenusAsync();
+        Task<IEnumerable<Menu>> GetAllWithRolesAsync(string[]? roleNames = null); // Updated to accept string array
     }
 
     public interface IMenuHierarchyRepository
@@ -23,13 +24,6 @@ namespace MyApp.Api.Repositories.menu
     {
         Task<IEnumerable<Module>> GetAllAsync();
         Task<Module?> GetByIdAsync(string id);
-    }
-
-    public interface IMenuTranslationRepository
-    {
-        Task<IEnumerable<MenuTranslation>> GetByLanguageIdAsync(string languageId);
-        Task<MenuTranslation?> GetByMenuAndLanguageAsync(string menuId, string languageId);
-        Task<IEnumerable<MenuTranslation>> GetByMenuIdAsync(string menuId);
     }
 
     public class MenuRepository : IMenuRepository
@@ -65,6 +59,21 @@ namespace MyApp.Api.Repositories.menu
                 .Where(m => m.IsEnabled)
                 .OrderBy(m => m.Position)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Menu>> GetAllWithRolesAsync(string[]? roleNames = null)
+        {
+            var query = _context.Menus
+                .Include(m => m.MenuRoles)
+                .ThenInclude(mr => mr.Role)
+                .AsQueryable();
+
+            if (roleNames != null && roleNames.Length > 0)
+            {
+                query = query.Where(m => m.MenuRoles.Any(mr => roleNames.Contains(mr.Role.Name)));
+            }
+
+            return await query.OrderBy(m => m.Position).ToListAsync();
         }
     }
 
@@ -114,36 +123,6 @@ namespace MyApp.Api.Repositories.menu
         public async Task<Module?> GetByIdAsync(string id)
         {
             return await _context.Modules.FindAsync(id);
-        }
-    }
-
-    public class MenuTranslationRepository : IMenuTranslationRepository
-    {
-        private readonly AppDbContext _context;
-
-        public MenuTranslationRepository(AppDbContext context)
-        {
-            _context = context;
-        }
-
-        public async Task<IEnumerable<MenuTranslation>> GetByLanguageIdAsync(string languageId)
-        {
-            return await _context.MenuTranslations
-                .Where(mt => mt.LanguageId == languageId)
-                .ToListAsync();
-        }
-
-        public async Task<MenuTranslation?> GetByMenuAndLanguageAsync(string menuId, string languageId)
-        {
-            return await _context.MenuTranslations
-                .FirstOrDefaultAsync(mt => mt.MenuId == menuId && mt.LanguageId == languageId);
-        }
-
-        public async Task<IEnumerable<MenuTranslation>> GetByMenuIdAsync(string menuId)
-        {
-            return await _context.MenuTranslations
-                .Where(mt => mt.MenuId == menuId)
-                .ToListAsync();
         }
     }
 }

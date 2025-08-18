@@ -62,8 +62,15 @@ Permettre une gestion complète et structurée des recrutements, incluant le dé
                     Liste des candidatures par fiche de poste
                     Statistiques :
                         Nombre total de candidatures
-                        Conversion par étape (% passés à l’étape suivante)
+                        Conversion par étape (% passés à l’étape suivante)dd
                         Durée moyenne par étape
+        5.Test et évaluation des candidats
+        6. Demande de recrutement
+            Demandeur => complète un formulaire de Demande
+            Validation de la demande selon cet ordre
+                Directeur concerné, DRH, DAF, DG
+                En cas de recommandation => retout immédiat vers le Demandeur
+            PDF généré après validation
         Sécurité et confidentialité
                 Seuls les utilisateurs RH ou managers autorisés peuvent accéder aux candidatures.
                 Données personnelles des candidats traitées selon les règles RGPD.
@@ -325,6 +332,24 @@ Fournir à la direction RH et aux managers une vision synthétique, visuelle et 
                 Réduction du temps de reporting
                 Support décisionnel pour la direction RH
 
+--------------------------------------------------------------------------------------------------------------------------------
+Suivi du budget
+    Rapprochement et suivi
+    Evolution rem
+    Rapport mensuel
+
+--------------------------------------------------------------------------------------------------------------------------------
+Gestion de mission
+    Creation et assignation mission a un employe
+        date depart
+        duree ou date arrivee
+        moyen de transport
+    Liste de tous les missions (vu par la RH)
+    Liste de mes missions et de mes collaborateurs
+    Clic sur un employe en mission  
+        => generation de l'etat de paiement des indemnités par jour (pour transport, petite dej, dej, hebergement (en fonction de la catégorie du salarié))
+    Import de mission(csv)
+    Export en excel(avec filtre employee) et pdf de l'etat de paiement
 --------------------------------------------------------------------------------------------------------------------------------
 Fonctionnalités transversales – exigences générales de l’application
         1. Import / Export CSV des données

@@ -1,88 +1,133 @@
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Repositories.recruitment;
+using MyApp.Api.Services.users;
 
 namespace MyApp.Api.Services.recruitment
 {
     public interface IRecruitmentApprovalService
     {
-        Task<IEnumerable<RecruitmentApproval>> GetRecommendedApprovalsByRequesterAsync(string requesterId);
-        Task<IEnumerable<RecruitmentApproval>> GetValidatedApprovalsByApproverAsync(string approverId);
-        Task<IEnumerable<RecruitmentApproval>> GetApprovalsByRequestIdAsync(string requestId);
-        Task<IEnumerable<RecruitmentApproval>> GetByApproverAsync(string approverId);
-        Task ValidateApprovalAsync(RecruitmentApproval approval);
-        Task RecommendApprovalAsync(RecruitmentApproval approval);
+        Task ValidateAsync(string recruitmentRequestId, string approverId);
+        Task RecommendAsync(string recruitmentRequestId, string approverId, string comment);
+        Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId);
+        Task<IEnumerable<RecruitmentApproval>> GetByStatusAndApproverIdAsync(string status, string approverId);
+        Task<IEnumerable<RecruitmentApproval>> GetByRecruitmentRequestIdAsync(string recruitmentRequestId);
+        Task AddAsync(string recruitmentRequestId, IEnumerable<ApprovalFlowEmployee> approvalFlows);
+        Task AddAsync(RecruitmentApproval approval);
+        Task UpdateAsync(RecruitmentApproval approval);
+        Task<RecruitmentApproval?> GetAsync(string recruitmentRequestId, string approverId, string flowId);
     }
 
-    // RecruitmentApprovalService.cs
     public class RecruitmentApprovalService : IRecruitmentApprovalService
     {
+        private readonly IUserService _userService;
         private readonly IRecruitmentApprovalRepository _repository;
+        private readonly ILogger<RecruitmentApprovalService> _logger;
 
-        public RecruitmentApprovalService(IRecruitmentApprovalRepository repository)
+        public RecruitmentApprovalService(
+            IUserService userService,
+            IRecruitmentApprovalRepository repository,
+            ILogger<RecruitmentApprovalService> logger)
         {
+            _userService = userService;
             _repository = repository;
+            _logger = logger;
         }
 
-        public async Task<IEnumerable<RecruitmentApproval>> GetRecommendedApprovalsByRequesterAsync(string requesterId)
+        public async Task ValidateAsync(string recruitmentRequestId, string approverId)
         {
-            return await _repository.GetRecommendedApprovalsByRequesterAsync(requesterId);
-        }
-        public async Task<IEnumerable<RecruitmentApproval>> GetValidatedApprovalsByApproverAsync(string approverId)
-        {
-            return await _repository.GetValidatedByApproverAsync(approverId);
+            await _repository.ValidateAsync(recruitmentRequestId, approverId);
         }
 
-
-        public async Task<IEnumerable<RecruitmentApproval>> GetApprovalsByRequestIdAsync(string requestId)
+        public async Task RecommendAsync(string recruitmentRequestId, string approverId, string comment)
         {
-            return await _repository.GetByRequestIdAsync(requestId);
+            await _repository.RecommendAsync(recruitmentRequestId, approverId, comment);
         }
 
-        public async Task<IEnumerable<RecruitmentApproval>> GetByApproverAsync(string approverId)
+        public async Task<IEnumerable<RecruitmentApproval>> GetByApproverIdAsync(string approverId)
         {
-            return await _repository.GetByApproverAsync(approverId);
+            return await _repository.GetByApproverIdAsync(approverId);
         }
 
-        public async Task ValidateApprovalAsync(RecruitmentApproval approval)
+        public async Task<IEnumerable<RecruitmentApproval>> GetByStatusAndApproverIdAsync(string status, string approverId)
         {
-            var existing = await _repository.GetAsync(approval.ApproverId, approval.RecruitmentRequestId);
+            return await _repository.GetByStatusAndApproverIdAsync(status, approverId);
+        }
 
-            if (existing == null)
+        public async Task<IEnumerable<RecruitmentApproval>> GetByRecruitmentRequestIdAsync(string recruitmentRequestId)
+        {
+            _logger.LogInformation("Récupération des approbations pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+            
+            try
             {
-                approval.Status = approval.Status ?? "Validé";
-                approval.ApprovalDate = approval.ApprovalDate ?? DateTime.Now;
+                var approvals = await _repository.GetByRecruitmentRequestIdAsync(recruitmentRequestId);
+                _logger.LogInformation("Approbations récupérées avec succès pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                return approvals;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des approbations pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                throw;
+            }
+        }
+
+        public async Task AddAsync(string recruitmentRequestId, IEnumerable<ApprovalFlowEmployee> approvalFlows)
+        {
+            _logger.LogInformation("Début de la création des RecruitmentApprovals pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+
+            try
+            {
+                IEnumerable<RecruitmentApproval> recruitmentApprovals = await RecruitmentApproval.GetRecruitmentApprovalsFromApprovalFlows(recruitmentRequestId, approvalFlows, _userService);
+                await _repository.AddRangeAsync(recruitmentApprovals);
+                await _repository.SaveChangesAsync();
+
+                _logger.LogInformation("RecruitmentApprovals ajoutés avec succès pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de l'ajout des RecruitmentApprovals pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                throw;
+            }
+        }
+
+        public async Task AddAsync(RecruitmentApproval approval)
+        {
+            _logger.LogInformation("Ajout d'un RecruitmentApproval: RecruitmentRequestId={RecruitmentRequestId}, ApproverId={ApproverId}",
+                approval.RecruitmentRequestId, approval.ApproverId);
+
+            try
+            {
                 await _repository.AddAsync(approval);
+                await _repository.SaveChangesAsync();
+                _logger.LogInformation("RecruitmentApproval ajouté avec succès: RecruitmentRequestId={RecruitmentRequestId}", approval.RecruitmentRequestId);
             }
-            else
+            catch (Exception ex)
             {
-                existing.Status = approval.Status ?? "Validé";
-                existing.ApprovalDate = approval.ApprovalDate ?? DateTime.Now;
-                existing.Comments = approval.Comments;
-                existing.Signature = approval.Signature;
-                await _repository.UpdateAsync(existing);
+                _logger.LogError(ex, "Erreur lors de l'ajout d'un RecruitmentApproval: RecruitmentRequestId={RecruitmentRequestId}", approval.RecruitmentRequestId);
+                throw;
             }
-
-            await _repository.SaveChangesAsync();
         }
 
-        public async Task RecommendApprovalAsync(RecruitmentApproval approval)
+        public async Task UpdateAsync(RecruitmentApproval approval)
         {
-            var existing = await _repository.GetAsync(approval.ApproverId, approval.RecruitmentRequestId);
+            _logger.LogInformation("Mise à jour d'un RecruitmentApproval: RecruitmentRequestId={RecruitmentRequestId}, ApproverId={ApproverId}",
+                approval.RecruitmentRequestId, approval.ApproverId);
 
-            if (existing == null)
+            try
             {
-                approval.Status = "Recommandé";
-                await _repository.AddAsync(approval);
+                await _repository.UpdateAsync(approval);
+                await _repository.SaveChangesAsync();
+                _logger.LogInformation("RecruitmentApproval mis à jour avec succès: RecruitmentRequestId={RecruitmentRequestId}", approval.RecruitmentRequestId);
             }
-            else
+            catch (Exception ex)
             {
-                existing.Comments = approval.Comments;
-                existing.Status = "Recommandé";
-                existing.Signature = approval.Signature;
-                await _repository.UpdateAsync(existing);
+                _logger.LogError(ex, "Erreur lors de la mise à jour d'un RecruitmentApproval: RecruitmentRequestId={RecruitmentRequestId}", approval.RecruitmentRequestId);
+                throw;
             }
+        }
 
-            await _repository.SaveChangesAsync();
+        public async Task<RecruitmentApproval?> GetAsync(string recruitmentRequestId, string approverId, string flowId)
+        {
+            return await _repository.GetAsync(recruitmentRequestId, approverId, flowId);
         }
     }
 }

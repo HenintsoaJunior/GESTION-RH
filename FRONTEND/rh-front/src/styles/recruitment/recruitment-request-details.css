@@ -1,0 +1,686 @@
+/* Container principal */
+.page-container {
+  min-height: 100vh;
+  background-color: var(--bg-secondary);
+  font-family: var(--font-family);
+}
+
+/* États de chargement et d'erreur */
+.chargement-conteneur,
+.erreur-conteneur {
+  min-height: 100vh;
+  background-color: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chargement-texte {
+  color: var(--text-muted);
+  animation: pulse 2s infinite;
+}
+
+.erreur-texte {
+  color: var(--text-muted);
+  font-size: var(--font-size-md);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* En-tête */
+.en-tete {
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.en-tete-contenu {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--spacing-lg) var(--spacing-2xl);
+}
+
+.en-tete-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navigation-gauche {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.bouton-retour {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+}
+
+.bouton-retour:hover {
+  color: var(--text-secondary);
+}
+
+.bouton-retour-icone {
+  width: 20px;
+  height: 20px;
+}
+
+.separateur-vertical {
+  height: 24px;
+  width: 1px;
+  background-color: var(--border-medium);
+}
+
+.titre-principal {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Badges de statut */
+.statut-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.statut-badge--approuve {
+  background-color: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.statut-badge--rejete {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.statut-badge--en-cours {
+  background-color: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.statut-badge--en-attente {
+  background-color: #fffbeb;
+  color: #92400e;
+  border-color: #fed7aa;
+}
+
+.statut-icone {
+  width: 16px;
+  height: 16px;
+}
+
+.statut-icone--approuve {
+  color: #16a34a;
+}
+.statut-icone--rejete {
+  color: #dc2626;
+}
+.statut-icone--en-cours {
+  color: #2563eb;
+}
+.statut-icone--en-attente {
+  color: #d97706;
+}
+
+.statut-texte {
+  font-weight: 500;
+}
+
+/* Contenu principal */
+.contenu-principal {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--spacing-3xl) var(--spacing-2xl);
+}
+
+.grille-principale {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-3xl);
+}
+
+@media (min-width: 1024px) {
+  .grille-principale {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.colonne-principale {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+}
+
+.colonne-secondaire {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+}
+
+/* Cartes - Design simplifié */
+.carte {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+.carte-en-tete {
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  border-bottom: 1px solid var(--border-light);
+  background-color: var(--bg-tertiary);
+}
+
+.carte-titre {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.carte-titre-secondaire {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.carte-titre-icone {
+  width: 20px;
+  height: 20px;
+}
+
+.carte-titre-icone--bleu {
+  color: #2563eb;
+}
+.carte-titre-icone--vert {
+  color: #16a34a;
+}
+.carte-titre-icone--orange {
+  color: #ea580c;
+}
+
+.carte-contenu {
+  padding: var(--spacing-2xl);
+}
+
+/* SECTION ACTIONS AMÉLIORÉES */
+
+/* Groupe de boutons d'actions */
+.groupe-boutons-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+/* Actions principales */
+.actions-principales {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+/* Séparateur pour les actions */
+.separateur-actions {
+  position: relative;
+  text-align: center;
+  margin: var(--spacing-sm) 0;
+}
+
+.separateur-actions::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-medium);
+}
+
+.separateur-texte {
+  background-color: var(--bg-primary);
+  padding: 0 var(--spacing-md);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Actions de téléchargement */
+.actions-telechargement {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.actions-fichiers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+
+/* BOUTONS SIMPLIFIÉS - SANS ANIMATIONS NI OMBRES */
+
+.bouton {
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Boutons d'action principale */
+.bouton--action-principale {
+  height: 48px;
+  padding: 0 var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+}
+
+/* Boutons d'action secondaire */
+.bouton--action-secondaire {
+  height: 44px;
+  padding: 0 var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+}
+
+/* Boutons de fichier */
+.bouton--action-fichier {
+  height: 40px;
+  padding: 0 var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  border: 1px solid;
+}
+
+/* Icônes des boutons */
+.bouton-icone {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.bouton--action-fichier .bouton-icone {
+  width: 16px;
+  height: 16px;
+}
+
+/* Couleurs spécifiques des boutons */
+.bouton--approuver {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.bouton--approuver:hover {
+  background-color: var(--success-hover);
+}
+
+.bouton--rejeter {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.bouton--rejeter:hover {
+  background-color: var(--danger-hover);
+}
+
+.bouton--telecharger {
+  background-color: var(--info-color);
+  color: white;
+}
+
+.bouton--telecharger:hover {
+  background-color: var(--info-hover);
+}
+
+.bouton--telecharger-pdf {
+  background-color: var(--bg-primary);
+  color: var(--pdf-color);
+  border-color: var(--border-medium);
+}
+
+.bouton--telecharger-pdf:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--pdf-hover);
+}
+
+.bouton--telecharger-word {
+  background-color: var(--bg-primary);
+  color: var(--purple-color);
+  border-color: var(--border-medium);
+}
+
+.bouton--telecharger-word:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--purple-hover);
+}
+
+/* BOUTONS DE GESTION SIMPLIFIÉS */
+
+.groupe-boutons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.bouton--modifier {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--spacing-lg);
+  border-radius: var(--radius-sm);
+  background-color: var(--warning-color);
+  color: white;
+  font-size: var(--font-size-sm);
+}
+
+.bouton--modifier:hover {
+  background-color: var(--warning-hover);
+}
+
+.bouton--supprimer {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--spacing-lg);
+  border-radius: var(--radius-sm);
+  background-color: var(--error-color);
+  color: white;
+  font-size: var(--font-size-sm);
+}
+
+.bouton--supprimer:hover {
+  background-color: var(--error-hover);
+}
+
+/* SECTION RECOMMANDATIONS SIMPLIFIÉE */
+
+.formulaire-recommandations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.zone-texte {
+  width: 100%;
+  height: 80px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  resize: none;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: var(--text-input);
+  background-color: var(--bg-primary);
+}
+
+.zone-texte:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.zone-texte::placeholder {
+  color: var(--text-placeholder);
+}
+
+.bouton--ajouter-recommandation {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--spacing-lg);
+  border-radius: var(--radius-sm);
+  background-color: var(--orange-color);
+  color: white;
+  font-size: var(--font-size-sm);
+  margin-top: 0;
+}
+
+.bouton--ajouter-recommandation:hover {
+  background-color: var(--orange-hover);
+}
+
+/* Texte des boutons */
+.bouton span {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Grille de champs */
+.grille-champs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-2xl);
+}
+
+@media (min-width: 768px) {
+  .grille-champs {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+}
+
+.champ--pleine-largeur {
+  grid-column: 1 / -1;
+}
+
+.champ-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-light);
+  margin-bottom: var(--spacing-xs);
+}
+
+.champ-valeur {
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+  margin: 0;
+}
+
+.champ-valeur--important {
+  font-weight: 500;
+}
+
+.champ-valeur--code {
+  font-family: "Courier New", monospace;
+  font-size: var(--font-size-sm);
+}
+
+.champ-avec-icone {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.champ-icone {
+  width: 16px;
+  height: 16px;
+  color: var(--text-light);
+}
+
+/* Informations administratives */
+.groupe-infos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.info-admin {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-admin-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-light);
+  margin-bottom: var(--spacing-xs);
+}
+
+.info-admin-valeur {
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+  margin: 0;
+}
+
+/* Additional styles for HTML content */
+.champ-valeur--html {
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.champ-valeur--html p,
+.champ-valeur--html div,
+.champ-valeur--html span,
+.champ-valeur--html ul,
+.champ-valeur--html ol,
+.champ-valeur--html li,
+.champ-valeur--html h1,
+.champ-valeur--html h2,
+.champ-valeur--html h3,
+.champ-valeur--html h4,
+.champ-valeur--html h5,
+.champ-valeur--html h6 {
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  margin: var(--spacing-sm) 0;
+}
+
+.champ-valeur--html ul,
+.champ-valeur--html ol {
+  padding-left: var(--spacing-2xl);
+}
+
+.champ-valeur--html li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.champ-valeur--html h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+}
+.champ-valeur--html h2 {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+}
+.champ-valeur--html h3 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+.champ-valeur--html h4 {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+}
+.champ-valeur--html h5 {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+.champ-valeur--html h6 {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .en-tete-navigation {
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    align-items: flex-start;
+  }
+
+  .navigation-gauche {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+
+  .separateur-vertical {
+    display: none;
+  }
+
+  .titre-principal {
+    font-size: var(--font-size-xl);
+  }
+
+  .contenu-principal {
+    padding: var(--spacing-lg);
+  }
+
+  .carte-contenu {
+    padding: var(--spacing-lg);
+  }
+
+  .actions-principales {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  .actions-fichiers {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  .bouton--action-principale {
+    height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .en-tete-contenu {
+    padding: var(--spacing-md);
+  }
+
+  .contenu-principal {
+    padding: var(--spacing-md);
+  }
+
+  .grille-principale {
+    gap: var(--spacing-lg);
+  }
+
+  .colonne-principale,
+  .colonne-secondaire {
+    gap: var(--spacing-lg);
+  }
+
+  .groupe-boutons-actions {
+    gap: var(--spacing-md);
+  }
+}

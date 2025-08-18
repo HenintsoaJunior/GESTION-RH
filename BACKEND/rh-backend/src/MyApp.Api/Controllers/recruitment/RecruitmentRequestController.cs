@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.recruitment;
+using MyApp.Api.Models.form.recruitment;
 using MyApp.Api.Services.recruitment;
-using Microsoft.AspNetCore.Http;
-using System.IO;
-using MyApp.Api.Models.recruitment;
+using MyApp.Api.Models.search;
+using MyApp.Api.Models.search.recruitment;
 
 namespace MyApp.Api.Controllers.recruitment
 {
@@ -11,171 +11,275 @@ namespace MyApp.Api.Controllers.recruitment
     [Route("api/[controller]")]
     public class RecruitmentRequestController : ControllerBase
     {
-        private readonly IRecruitmentApprovalService _approvalService;
-        private readonly IRecruitmentRequestFileService _fileService; // Ajout du service pour les fichiers
-        private readonly IRecruitmentRequestService _requestService;
+        private readonly IRecruitmentRequestService _service;
+        private readonly IRecruitmentRequestDetailService _service_details;
+        private readonly ILogger<RecruitmentRequestController> _logger;
 
         public RecruitmentRequestController(
-            IRecruitmentRequestService requestService,
-            IRecruitmentRequestFileService fileService,
-            IRecruitmentApprovalService approvalService) // Injection du nouveau service
+            IRecruitmentRequestService service,
+            IRecruitmentRequestDetailService service_details,
+            ILogger<RecruitmentRequestController> logger)
         {
-            _requestService = requestService;
-            _fileService = fileService;
-            _approvalService = approvalService;
+            _service = service;
+            _service_details = service_details;
+            _logger = logger;
         }
 
-        // les recommandations pour une demande
-        [HttpGet("approval-recommanded/{requesterId}")]
-        public async Task<IActionResult> GetRecommendedApprovalsByRequester(string requesterId)
-        {
-            var approvals = await _approvalService.GetRecommendedApprovalsByRequesterAsync(requesterId);
-            return Ok(approvals);
-        }
-
-        // les demandes qu'un approuveur a validé
-        [HttpGet("approval-validated-by-approver-id/{approverId}")]
-        public async Task<IActionResult> GetValidatedByApprover(string approverId)
-        {
-            var result = await _approvalService.GetValidatedApprovalsByApproverAsync(approverId);
-            return Ok(result);
-        }
-
-        // les demandes reçus par id approuveur
-        [HttpGet("approval-by-approver-id/{approverId}")]
-        public async Task<IActionResult> GetApprovalByApprover(string approverId)
-        {
-            var approvals = await _approvalService.GetByApproverAsync(approverId);
-            return Ok(approvals);
-        }
-
-        // les validations d'une demande par id demande
-        [HttpGet("approval-by-request-id/{requestId}")]
-        public async Task<IActionResult> GetApprovalByRequestId(string requestId)
-        {
-            var approvals = await _approvalService.GetApprovalsByRequestIdAsync(requestId);
-            return Ok(approvals);
-        }
-
-        // valider une demande
-        [HttpPost("approval/validate")]
-        public async Task<IActionResult> ValidateApproval([FromBody] RecruitmentApproval approval)
-        {
-            await _approvalService.ValidateApprovalAsync(approval);
-            return Ok("Approval validated.");
-        }
-
-        // recommander une demande
-        [HttpPost("approval/recommend")]
-        public async Task<IActionResult> RecommendApproval([FromBody] RecruitmentApproval approval)
-        {
-            await _approvalService.RecommendApprovalAsync(approval);
-            return Ok("Approval recommended.");
-        }
-
-        // les fichiers d'une demande
-        [HttpGet("requests/files")]
-        public async Task<IActionResult> GetFilesByRecruitmentRequestId([FromQuery] string recruitment_request_id)
-        {
-            var results = await _fileService.GetFilesByRecruitmentRequestIdAsync(recruitment_request_id);
-            return Ok(results);
-        }
-
-        // multi-critères
-        [HttpPost("requests/search")]
-        public async Task<IActionResult> Search([FromBody] RecruitmentRequestCriteria criteria)
-        {
-            var results = await _requestService.GetByCriteriaAsync(criteria);
-            return Ok(results);
-        }
-
-        // demandes paginé
-        [HttpGet("requests/paginated")]
-        public async Task<IActionResult> GetPaginated([FromQuery] int start, [FromQuery] int count, [FromQuery] string requesterId)
-        {
-            var results = await _requestService.GetPaginatedRequestsAsync(start, count, requesterId);
-            return Ok(results);
-        }
-
-        // les demandes par id demandeur
-        [HttpGet("requests/{idRequester}")]
-        public async Task<IActionResult> GetRequestsByRequester(string idRequester)
-        {
-            var requests = await _requestService.GetRequestsByRequesterAsync(idRequester);
-            if (requests == null) return NotFound();
-            return Ok(requests);
-        }
-
-        // toutes les demandes
         [HttpGet]
-        public async Task<IActionResult> GetAll() =>
-            Ok(await _requestService.GetAllRequestsAsync());
-
-        // get demande par id demande
-        [HttpGet("request/{id}")]
-        public async Task<IActionResult> GetRequestById(string id)
+        public async Task<ActionResult<IEnumerable<RecruitmentRequestDetail>>> GetAll()
         {
-            var request = await _requestService.GetRequestByIdAsync(id);
-            if (request == null) return NotFound();
-            return Ok(request);
+            try
+            {
+                _logger.LogInformation("Récupération de toutes les demandes de recrutement");
+                var result = await _service_details.GetAllAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de toutes les demandes de recrutement");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des demandes de recrutement.");
+            }
         }
 
-        // création de la demande
-        [HttpPost]
-        public async Task<IActionResult> Create([FromForm] CreateRecruitmentRequestDto requestDto)
+        [HttpGet("stats")]
+        public async Task<ActionResult<RecruitmentRequestStats>> GetStatistics()
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(ModelState);
+                _logger.LogInformation("Récupération des statistiques des demandes de recrutement");
+                var stats = await _service_details.GetStatisticsAsync();
+                return Ok(stats);
             }
-
-            if (!string.IsNullOrEmpty(requestDto.RecruitmentRequestId))
+            catch (Exception ex)
             {
-                var existingRequest = await _requestService.GetRequestByIdAsync(requestDto.RecruitmentRequestId);
-                if (existingRequest != null)
+                _logger.LogError(ex, "Erreur lors de la récupération des statistiques des demandes de recrutement");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des statistiques des demandes de recrutement.");
+            }
+        }
+
+        [HttpGet("search")]
+        public async Task<ActionResult<(IEnumerable<RecruitmentRequestDetail>, int)>> Search(
+            [FromQuery] RecruitmentRequestSearchFiltersDTO filters,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 5)
+        {
+            try
+            {
+                _logger.LogInformation("Recherche des demandes de recrutement avec filtres");
+
+                if (!string.IsNullOrWhiteSpace(filters.RequestDateMin?.ToString()) && !DateTime.TryParse(filters.RequestDateMin.ToString(), out _))
                 {
-                    ModelState.AddModelError("RecruitmentRequestId", "L'ID de la demande existe déjà.");
+                    _logger.LogWarning("Format de date invalide pour RequestDateMin");
+                    return BadRequest("Format de date invalide pour RequestDateMin.");
+                }
+                if (!string.IsNullOrWhiteSpace(filters.RequestDateMax?.ToString()) && !DateTime.TryParse(filters.RequestDateMax.ToString(), out _))
+                {
+                    _logger.LogWarning("Format de date invalide pour RequestDateMax");
+                    return BadRequest("Format de date invalide pour RequestDateMax.");
+                }
+
+                var (results, totalCount) = await _service_details.SearchAsync(filters, page, pageSize);
+                return Ok(new { Results = results, TotalCount = totalCount });
+            }
+            catch (FormatException ex)
+            {
+                _logger.LogWarning(ex, "Format de date invalide dans les paramètres de recherche");
+                return BadRequest("Format de date invalide.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la recherche des demandes de recrutement");
+                return StatusCode(500, "Une erreur est survenue lors de la recherche des demandes de recrutement.");
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<RecruitmentRequest>> GetById(string id)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de récupération d'une demande de recrutement avec un ID null ou vide");
+                    return BadRequest("L'ID de la demande de recrutement ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Récupération de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                var request = await _service.GetByRequestIdAsync(id);
+                if (request == null)
+                {
+                    _logger.LogWarning("Demande de recrutement non trouvée pour l'ID: {RecruitmentRequestId}", id);
+                    return NotFound();
+                }
+
+                return Ok(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération de la demande de recrutement.");
+            }
+        }
+
+        [HttpGet("detail/{recruitmentRequestId}")]
+        public async Task<ActionResult<RecruitmentRequestDetail>> GetDetailByRequestId(string recruitmentRequestId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(recruitmentRequestId))
+                {
+                    _logger.LogWarning("Tentative de récupération du détail d'une demande de recrutement avec un ID null ou vide");
+                    return BadRequest("L'ID de la demande de recrutement ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Récupération du détail de la demande de recrutement avec l'ID: {RecruitmentRequestId}", recruitmentRequestId);
+                var detail = await _service_details.GetSingleByRequestIdAsync(recruitmentRequestId);
+                if (detail == null)
+                {
+                    _logger.LogWarning("Détail de demande de recrutement non trouvé pour l'ID: {RecruitmentRequestId}", recruitmentRequestId);
+                    return NotFound();
+                }
+
+                return Ok(detail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du détail de la demande de recrutement avec l'ID: {RecruitmentRequestId}", recruitmentRequestId);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération du détail de la demande de recrutement.");
+            }
+        }
+
+        [HttpGet("requester/{requesterId}")]
+        public async Task<ActionResult<IEnumerable<RecruitmentRequest>>> GetByRequesterId(string requesterId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(requesterId))
+                {
+                    _logger.LogWarning("Tentative de récupération des demandes de recrutement avec un ID de demandeur null ou vide");
+                    return BadRequest("L'ID du demandeur ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Récupération des demandes de recrutement pour le demandeur: {RequesterId}", requesterId);
+                var result = await _service.GetByRequesterIdAsync(requesterId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des demandes de recrutement pour le demandeur: {RequesterId}", requesterId);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des demandes de recrutement par demandeur.");
+            }
+        }
+
+        [HttpGet("requester/{requesterId}/validated")]
+        public async Task<ActionResult<IEnumerable<RecruitmentRequest>>> GetByRequesterIdAndValidated(string requesterId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(requesterId))
+                {
+                    _logger.LogWarning("Tentative de récupération des demandes de recrutement validées avec un ID de demandeur null ou vide");
+                    return BadRequest("L'ID du demandeur ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Récupération des demandes de recrutement validées pour le demandeur: {RequesterId}", requesterId);
+                var result = await _service.GetByRequesterIdAndValidatedAsync(requesterId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des demandes de recrutement validées pour le demandeur: {RequesterId}", requesterId);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des demandes de recrutement validées.");
+            }
+        }
+
+        [HttpPost("create")]
+        public async Task<IActionResult> Create([FromBody] RecruitmentRequestDTOForm requestForm)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Données invalides lors de la création d'une demande de recrutement: {ModelStateErrors}", ModelState);
                     return BadRequest(ModelState);
                 }
+
+                var request = new RecruitmentRequest(requestForm);
+                var details = new RecruitmentRequestDetail(requestForm);
+                var requestReplacementReasons = RecruitmentRequestReplacementReason.FromForm(requestForm);
+
+                _logger.LogInformation("Création d'une nouvelle demande de recrutement pour le poste: {PositionTitle}", request.PositionTitle);
+
+                var requestId = await _service.CreateRequest(request, details, requestReplacementReasons);
+
+                _logger.LogInformation("Demande de recrutement créée avec succès avec l'ID: {RecruitmentRequestId}", requestId);
+
+                return CreatedAtAction(nameof(GetById), new { id = requestId }, new { Id = requestId, Message = "Demande de recrutement créée avec succès" });
             }
-
-            var request = new RecruitmentRequest
+            catch (ArgumentNullException ex)
             {
-                RecruitmentRequestId = string.IsNullOrEmpty(requestDto.RecruitmentRequestId)
-                    ? Guid.NewGuid().ToString()
-                    : requestDto.RecruitmentRequestId,
-                JobTitle = requestDto.JobTitle ?? string.Empty,
-                Description = requestDto.Description,
-                Status = requestDto.Status ?? "En Attente",
-                RequesterId = requestDto.RequesterId ?? string.Empty,
-                RequestDate = requestDto.RequestDate,
-                ApprovalDate = requestDto.ApprovalDate
-            };
-
-            await _requestService.AddRequestAsync(request);
-
-            if (requestDto.Files != null && requestDto.Files.Count > 0)
+                _logger.LogError(ex, "Argument null lors de la création de la demande de recrutement");
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
             {
-                foreach (var file in requestDto.Files)
+                _logger.LogError(ex, "Erreur lors de la création de la demande de recrutement pour le poste: {PositionTitle}", requestForm?.PositionTitle ?? "Inconnu");
+                return StatusCode(500, "Une erreur est survenue lors de la création de la demande de recrutement.");
+            }
+        }
+
+        [HttpPut("update/{id}")]
+        public async Task<IActionResult> Update(string id, [FromBody] RecruitmentRequest updatedRequest)
+        {
+            try
+            {
+                if (id != updatedRequest.RecruitmentRequestId)
                 {
-                    if (file.Length > 0)
-                    {
-                        using var memoryStream = new MemoryStream();
-                        await file.CopyToAsync(memoryStream);
-                        var fileBytes = memoryStream.ToArray();
-
-                        var recruitmentRequestFile = new RecruitmentRequestFile
-                        {
-                            FileId = Guid.NewGuid().ToString(),
-                            FileName = fileBytes,
-                            RecruitmentRequestId = request.RecruitmentRequestId
-                        };
-
-                        await _fileService.AddFileAsync(recruitmentRequestFile);
-                    }
+                    _logger.LogWarning("L'ID dans l'URL ({Id}) ne correspond pas à l'ID de la demande de recrutement ({RecruitmentRequestId})", id, updatedRequest.RecruitmentRequestId);
+                    return BadRequest("L'ID dans l'URL ne correspond pas à l'ID de la demande de recrutement.");
                 }
+
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de mise à jour d'une demande de recrutement avec un ID null ou vide");
+                    return BadRequest("L'ID de la demande de recrutement ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Mise à jour de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                await _service.UpdateAsync(updatedRequest);
+
+                _logger.LogInformation("Demande de recrutement mise à jour avec succès pour l'ID: {RecruitmentRequestId}", id);
+                return NoContent();
             }
-            return CreatedAtAction(nameof(GetRequestById), new { id = request.RecruitmentRequestId }, request);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la mise à jour de la demande de recrutement.");
+            }
+        }
+
+        [HttpDelete("delete/{id}")]
+        public async Task<IActionResult> Delete(string id)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de suppression d'une demande de recrutement avec un ID null ou vide");
+                    return BadRequest("L'ID de la demande de recrutement ne peut pas être null ou vide.");
+                }
+
+                _logger.LogInformation("Suppression de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                await _service.DeleteAsync(id);
+
+                _logger.LogInformation("Demande de recrutement supprimée avec succès pour l'ID: {RecruitmentRequestId}", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la suppression de la demande de recrutement.");
+            }
         }
     }
 }

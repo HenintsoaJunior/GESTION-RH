@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.users;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MyApp.Api.Repositories.users
 {
@@ -8,13 +10,15 @@ namespace MyApp.Api.Repositories.users
     {
         Task<IEnumerable<User>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
-        Task<User> CreateAsync(User user);
-        Task<User> UpdateAsync(User user);
-        Task DeleteAsync(string id);
-        Task<bool> ExistsAsync(string id);
-        Task<bool> EmailExistsAsync(string email, string? excludeUserId = null);
-        Task<bool> DepartmentExistsAsync(string departmentId);
         Task<User?> GetByEmailAsync(string email);
+        Task AddAsync(User user);
+        Task UpdateAsync(User user);
+        Task DeleteAsync(User user);
+        Task AddUsersAsync(List<User> users);
+        Task UpdateUsersAsync(List<User> users);
+        Task DeleteUsersAsync(List<User> users);
+        Task SaveChangesAsync();
+        Task<IEnumerable<User>> GetCollaboratorsAsync(string userId);
     }
 
     public class UserRepository : IUserRepository
@@ -23,143 +27,100 @@ namespace MyApp.Api.Repositories.users
 
         public UserRepository(AppDbContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
+        public async Task<IEnumerable<User>> GetCollaboratorsAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            return await _context.Users
+                .Where(u => u.SuperiorId == userId)
+                .ToListAsync();
+        }
         public async Task<IEnumerable<User>> GetAllAsync()
         {
-            try
-            {
-                return await _context.Users
-                    .Include(u => u.Department)
-                    .ToListAsync();
-            }
-            catch (Exception)
-            {
-                throw new Exception("Failed to retrieve users.");
-            }
-        }
-
-        public async Task<User?> GetByIdAsync(string id)
-        {
-            try
-            {
-                return await _context.Users
-                    .Include(u => u.Department)
-                    .FirstOrDefaultAsync(u => u.UserId == id);
-            }
-            catch (Exception)
-            {
-                throw new Exception($"Failed to retrieve user with ID {id}.");
-            }
-        }
-
-        public async Task<User> CreateAsync(User user)
-        {
-            try
-            {
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-                return user;
-            }
-            catch (DbUpdateException)
-            {
-                throw new Exception("Failed to create user due to a database error.");
-            }
-            catch (Exception)
-            {
-                throw new Exception("Failed to create user.");
-            }
-        }
-
-        public async Task<User> UpdateAsync(User user)
-        {
-            try
-            {
-                _context.Entry(user).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
-                return user;
-            }
-            catch (DbUpdateException)
-            {
-                throw new Exception("Failed to update user due to a database error.");
-            }
-            catch (Exception)
-            {
-                throw new Exception($"Failed to update user with ID {user.UserId}.");
-            }
-
-        }
-
-        public async Task DeleteAsync(string id)
-        {
-            try
-            {
-                var user = await _context.Users.FindAsync(id);
-                if (user == null)
-                    throw new Exception($"User with ID {id} not found.");
-
-                _context.Users.Remove(user);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                throw new Exception($"Failed to delete user with ID {id} due to a database error.");
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to delete user with ID {id}: {ex.Message}");
-            }
-        }
-
-        public async Task<bool> ExistsAsync(string id)
-        {
-            try
-            {
-                return await _context.Users.AnyAsync(u => u.UserId == id);
-            }
-            catch (Exception)
-            {
-                throw new Exception($"Failed to check existence of user with ID {id}.");
-            }
-        }
-
-        public async Task<bool> EmailExistsAsync(string email, string? excludeUserId = null)
-        {
-            try
-            {
-                return await _context.Users
-                    .AnyAsync(u => u.Email == email && (excludeUserId == null || u.UserId != excludeUserId));
-            }
-            catch (Exception)
-            {
-                throw new Exception("Failed to check if email exists.");
-            }
-        }
-
-        public async Task<bool> DepartmentExistsAsync(string departmentId)
-        {
-            try
-            {
-                return await _context.Departments.AnyAsync(d => d.DepartmentId == departmentId);
-            }
-            catch (Exception)
-            {
-                throw new Exception($"Failed to check existence of department with ID {departmentId}.");
-            }
+            return await _context.Users.ToListAsync();
         }
 
         public async Task<User?> GetByEmailAsync(string email)
         {
+            if (string.IsNullOrWhiteSpace(email))
+                throw new ArgumentException("Email cannot be null or empty.", nameof(email));
+
+            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        public async Task<User?> GetByIdAsync(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                throw new ArgumentException("Id cannot be null or empty.", nameof(id));
+
+            return await _context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+        }
+
+        public async Task AddAsync(User user)
+        {
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            await _context.Users.AddAsync(user);
+        }
+
+        public async Task UpdateAsync(User user)
+        {
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            _context.Users.Update(user);
+            await Task.CompletedTask;
+        }
+
+        public async Task DeleteAsync(User user)
+        {
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            _context.Users.Remove(user);
+            await Task.CompletedTask;
+        }
+
+        public async Task AddUsersAsync(List<User> users)
+        {
+            if (users == null || users.Count == 0)
+                throw new ArgumentException("User list cannot be null or empty.", nameof(users));
+
+            await _context.Users.AddRangeAsync(users);
+        }
+
+        public async Task UpdateUsersAsync(List<User> users)
+        {
+            if (users == null || users.Count == 0)
+                throw new ArgumentException("User list cannot be null or empty.", nameof(users));
+
+            _context.Users.UpdateRange(users);
+            await Task.CompletedTask;
+        }
+
+        public async Task DeleteUsersAsync(List<User> users)
+        {
+            if (users == null || users.Count == 0)
+                throw new ArgumentException("User list cannot be null or empty.", nameof(users));
+
+            _context.Users.RemoveRange(users);
+            await Task.CompletedTask;
+        }
+
+        public async Task SaveChangesAsync()
+        {
             try
             {
-                return await _context.Users
-                    .Include(u => u.Department)
-                    .FirstOrDefaultAsync(u => u.Email == email);
+                await _context.SaveChangesAsync();
             }
-            catch (Exception)
+            catch (DbUpdateException ex)
             {
-                throw new Exception("Failed to retrieve user by email.");
+                throw new InvalidOperationException($"Failed to save changes to the database: {ex.Message}", ex);
             }
         }
     }

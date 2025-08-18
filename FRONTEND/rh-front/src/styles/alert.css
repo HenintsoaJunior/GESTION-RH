@@ -1,0 +1,246 @@
+/* Container principal de l'alert - Style ERP */
+.alert-container {
+  position: fixed;
+  bottom: var(--spacing-2xl);
+  right: var(--spacing-2xl);
+  z-index: 9999;
+  font-family: var(--erp-font-family);
+  max-width: 420px;
+  pointer-events: none;
+  transition: bottom 0.3s ease;
+}
+
+/* Alert principale - Design ERP professionnel */
+.alert {
+  background: var(--alert-bg-color);
+  border-radius: var(--erp-radius-lg);
+  box-shadow: var(--erp-shadow-lg);
+  border: 1px solid var(--alert-border-color);
+  border-left: 4px solid var(--alert-border-color);
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  pointer-events: auto;
+  transform: translateX(100%);
+  opacity: 0;
+  animation: slideInRight 0.3s ease-out forwards;
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+/* Animation de fermeture */
+.alert.closing {
+  animation: slideOutRight 0.25s ease-in forwards;
+}
+
+/* Contenu de l'alert - Layout ERP */
+.alert-content {
+  padding: var(--erp-spacing-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--erp-spacing-md);
+  position: relative;
+  z-index: 1;
+}
+
+/* Icône - Style ERP minimaliste */
+.alert-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--erp-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--alert-icon-bg);
+  color: var(--alert-icon-color);
+  margin-top: var(--erp-spacing-xs);
+  font-size: var(--erp-font-size-sm);
+}
+
+/* Message - Typographie ERP */
+.alert-message {
+  flex: 1;
+  margin: 0;
+  font-size: var(--erp-font-size-sm);
+  font-weight: var(--erp-font-weight-medium);
+  color: var(--alert-text-color);
+  line-height: 1.5;
+  margin-top: var(--erp-spacing-sm);
+  letter-spacing: -0.01em;
+}
+
+/* Bouton de fermeture - Style ERP thème clair */
+.alert-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--alert-text-color);
+  cursor: pointer;
+  padding: var(--erp-spacing-xs);
+  border-radius: var(--erp-radius-sm);
+  transition: all 0.2s ease;
+  opacity: 0.7;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--erp-spacing-xs);
+}
+
+.alert-close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+
+.alert-close:active {
+  transform: scale(0.9);
+}
+
+/* Barre de progression - Style ERP discret */
+.alert-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--alert-border-color);
+  border-radius: 2px;
+  animation: progress 5s linear forwards;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+/* Types d'alerts - Couleurs ERP */
+.alert-success {
+  --alert-bg-color: var(--erp-success-bg);
+  --alert-border-color: var(--erp-success-border);
+  --alert-text-color: var(--erp-success-text);
+  --alert-icon-color: var(--erp-success-icon);
+  --alert-icon-bg: var(--erp-success-icon-bg);
+}
+
+.alert-error {
+  --alert-bg-color: var(--erp-error-bg);
+  --alert-border-color: var(--erp-error-border);
+  --alert-text-color: var(--erp-error-text);
+  --alert-icon-color: var(--erp-error-icon);
+  --alert-icon-bg: var(--erp-error-icon-bg);
+}
+
+.alert-info {
+  --alert-bg-color: var(--erp-info-bg);
+  --alert-border-color: var(--erp-info-border);
+  --alert-text-color: var(--erp-info-text);
+  --alert-icon-color: var(--erp-info-icon);
+  --alert-icon-bg: var(--erp-info-icon-bg);
+}
+
+.alert-warning {
+  --alert-bg-color: var(--erp-warning-bg);
+  --alert-border-color: var(--erp-warning-border);
+  --alert-text-color: var(--erp-warning-text);
+  --alert-icon-color: var(--erp-warning-icon);
+  --alert-icon-bg: var(--erp-warning-icon-bg);
+}
+
+/* Animations ERP - Slide depuis la droite */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+/* Responsive ERP */
+@media (max-width: 768px) {
+  .alert-container {
+    right: var(--spacing-lg);
+    bottom: var(--spacing-lg);
+    max-width: calc(100% - 2 * var(--spacing-lg));
+  }
+
+  .alert-content {
+    padding: var(--erp-spacing-md);
+    gap: var(--erp-spacing-sm);
+  }
+
+  .alert-icon {
+    width: 24px;
+    height: 24px;
+    font-size: var(--erp-font-size-xs);
+  }
+
+  .alert-message {
+    font-size: var(--erp-font-size-xs);
+  }
+
+  .alert-close {
+    width: 20px;
+    height: 20px;
+    padding: var(--erp-spacing-xs);
+  }
+}
+
+/* Effet hover ERP subtil */
+.alert:hover {
+  box-shadow: var(--erp-shadow-xl);
+  transform: translateY(-2px);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.alert:hover .alert-progress {
+  animation-play-state: paused;
+  opacity: 0.7;
+}
+
+/* Accessibilité ERP */
+@media (prefers-reduced-motion: reduce) {
+  .alert,
+  .alert-close,
+  .alert-progress {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Focus states pour accessibilité */
+.alert-close:focus {
+  outline: 2px solid var(--erp-primary);
+  outline-offset: 3px;
+  opacity: 1;
+}
+
+/* États multiples alerts */
+.alert-container + .alert-container {
+  bottom: calc(var(--spacing-2xl) + 90px);
+}
+
+.alert-container + .alert-container + .alert-container {
+  bottom: calc(var(--spacing-2xl) + 180px);
+}

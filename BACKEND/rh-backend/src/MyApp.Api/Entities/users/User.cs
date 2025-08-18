@@ -1,9 +1,17 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using MyApp.Api.Entities.departments;
+using System.Collections.Generic;
+using MyApp.Api.Models.form.users;
 
 namespace MyApp.Api.Entities.users
 {
+    public enum UserType
+    {
+        Cadre,
+        NonCadre
+    }
+
     [Table("users")]
     public class User : BaseEntity
     {
@@ -13,42 +21,68 @@ namespace MyApp.Api.Entities.users
         public string UserId { get; set; } = null!;
 
         [Required]
-        [Column("first_name")]
-        [MaxLength(255)]
-        public string FirstName { get; set; } = null!;
-
-        [Required]
-        [Column("last_name")]
-        [MaxLength(255)]
-        public string LastName { get; set; } = null!;
+        [Column("matricule")]
+        [MaxLength(100)]
+        public string Matricule { get; set; } = null!;
 
         [Required]
         [Column("email")]
-        [MaxLength(100)]
+        [MaxLength(150)]
         public string Email { get; set; } = null!;
 
-        [Required]
-        [Column("password")]
-        [MaxLength(255)]
-        public string Password { get; set; } = null!;
+        [Column("name")]
+        [MaxLength(250)]
+        public string? Name { get; set; }
 
-        [Required]
-        [Column("role")]
+        [Column("position")]
+        [MaxLength(250)]
+        public string? Position { get; set; }
+
+        [Column("department")]
+        [MaxLength(100)]
+        public string? Department { get; set; }
+
+        [Column("superior_id")]
+        [MaxLength(150)]
+        public string? SuperiorId { get; set; }
+
+        [Column("superior_name")]
+        [MaxLength(150)]
+        public string? SuperiorName { get; set; }
+
+        [Column("status")]
         [MaxLength(50)]
-        public string Role { get; set; } = null!;
+        public string? Status { get; set; }
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        [Column("signature")]
+        [MaxLength(500)]
+        public string? Signature { get; set; }
 
-        [Column("updated_at")]
-        public DateTime? UpdatedAt { get; set; }
+        [Column("user_type")]
+        public UserType? UserType { get; set; }
 
-        [Required]
-        [Column("department_id")]
-        [MaxLength(50)]
-        public string DepartmentId { get; set; } = null!;
+        [Column("refresh_token")]
+        [MaxLength(250)]
+        public string? RefreshToken { get; set; }
 
-        [ForeignKey("DepartmentId")]
-        public Department? Department { get; set; }
+        [Column("refresh_token_expiry")]
+        public DateTime? RefreshTokenExpiry { get; set; }
+
+        public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+
+        public User()
+        {
+            
+        }
+        public User(UserDto user)
+        {
+            UserId = user.UserId;
+            Email = user.Email;
+            Name = user.Name;
+            Department = user.Department;
+            Position = user.Position;
+            SuperiorId = user.SuperiorId;
+            SuperiorName = user.SuperiorName;
+        }
     }
 }

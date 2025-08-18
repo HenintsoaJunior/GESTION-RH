@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.recruitment;
 
@@ -6,13 +7,16 @@ namespace MyApp.Api.Repositories.recruitment
 {
     public interface IRecruitmentRequestRepository
     {
-        Task<IEnumerable<RecruitmentRequest>> GetByCriteriaAsync(RecruitmentRequestCriteria criteria);
-        Task<IEnumerable<RecruitmentRequest>> GetPaginatedAsync(int startIndex, int count, string requesterId);
-        Task<IEnumerable<RecruitmentRequest>> GetByRequesterAsync(string requesterId);
+        Task<IDbContextTransaction> BeginTransactionAsync();
         Task<IEnumerable<RecruitmentRequest>> GetAllAsync();
-        Task<RecruitmentRequest?> GetByIdAsync(string id);
+        Task<RecruitmentRequest?> GetByRequestIdAsync(string requestId);
+        Task<IEnumerable<RecruitmentRequest>> GetByRequesterIdAsync(string requesterId);
+        Task<IEnumerable<RecruitmentRequest>> GetByRequesterIdAndValidatedAsync(string requesterId);
         Task AddAsync(RecruitmentRequest request);
+        Task UpdateAsync(RecruitmentRequest request);
+        Task DeleteAsync(string id);
         Task SaveChangesAsync();
+        Task ReloadAsync(RecruitmentRequest request);
     }
 
     public class RecruitmentRequestRepository : IRecruitmentRequestRepository
@@ -24,58 +28,54 @@ namespace MyApp.Api.Repositories.recruitment
             _context = context;
         }
 
-        public async Task<IEnumerable<RecruitmentRequest>> GetByCriteriaAsync(RecruitmentRequestCriteria criteria)
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
         {
-            var query = _context.RecruitmentRequests.AsQueryable();
-            query = query.Where(r => r.RequesterId == criteria.RequesterId);
-
-            if (!string.IsNullOrEmpty(criteria.Status))
-                query = query.Where(r => r.Status == criteria.Status);
-
-            if (!string.IsNullOrEmpty(criteria.JobTitleKeyword))
-                query = query.Where(r => r.JobTitle.Contains(criteria.JobTitleKeyword));
-
-            if (criteria.RequestDateMin.HasValue)
-                query = query.Where(r => r.RequestDate >= criteria.RequestDateMin.Value);
-
-            if (criteria.RequestDateMax.HasValue)
-                query = query.Where(r => r.RequestDate <= criteria.RequestDateMax.Value);
-
-            if (criteria.ApprovalDateMin.HasValue)
-                query = query.Where(r => r.ApprovalDate != null && r.ApprovalDate >= criteria.ApprovalDateMin.Value);
-
-            if (criteria.ApprovalDateMax.HasValue)
-                query = query.Where(r => r.ApprovalDate != null && r.ApprovalDate <= criteria.ApprovalDateMax.Value);
-
-            return await query.ToListAsync();
-        }
-
-
-        public async Task<IEnumerable<RecruitmentRequest>> GetPaginatedAsync(int startIndex, int count, string requesterId)
-        {
-            return await _context.RecruitmentRequests
-                .Where(r => r.RequesterId == requesterId)
-                .OrderByDescending(r => r.RequestDate) //ou autre champs
-                .Skip(startIndex)
-                .Take(count)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<RecruitmentRequest>> GetByRequesterAsync(string requesterId)
-        {
-            return await _context.RecruitmentRequests
-                .Where(r => r.RequesterId == requesterId)
-                .ToListAsync();
+            return await _context.Database.BeginTransactionAsync();
         }
 
         public async Task<IEnumerable<RecruitmentRequest>> GetAllAsync()
         {
-            return await _context.RecruitmentRequests.ToListAsync();
+            return await _context.RecruitmentRequests
+                .Include(r => r.Requester)
+                .Include(r => r.ContractType)
+                .Include(r => r.Site)
+                .Include(r => r.RecruitmentReason)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
         }
 
-        public async Task<RecruitmentRequest?> GetByIdAsync(string id)
+        public async Task<RecruitmentRequest?> GetByRequestIdAsync(string requestId)
         {
-            return await _context.RecruitmentRequests.FindAsync(id);
+            return await _context.RecruitmentRequests
+                .Include(r => r.Requester)
+                .Include(r => r.ContractType)
+                .Include(r => r.Site)
+                .Include(r => r.RecruitmentReason)
+                .FirstOrDefaultAsync(r => r.RecruitmentRequestId == requestId);
+        }
+
+        public async Task<IEnumerable<RecruitmentRequest>> GetByRequesterIdAsync(string requesterId)
+        {
+            return await _context.RecruitmentRequests
+                .Where(r => r.RequesterId == requesterId)
+                .Include(r => r.Requester)
+                .Include(r => r.ContractType)
+                .Include(r => r.Site)
+                .Include(r => r.RecruitmentReason)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<RecruitmentRequest>> GetByRequesterIdAndValidatedAsync(string requesterId)
+        {
+            return await _context.RecruitmentRequests
+                .Where(r => r.RequesterId == requesterId && r.Status.ToLower() == "validé")
+                .Include(r => r.Requester)
+                .Include(r => r.ContractType)
+                .Include(r => r.Site)
+                .Include(r => r.RecruitmentReason)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
         }
 
         public async Task AddAsync(RecruitmentRequest request)
@@ -83,9 +83,30 @@ namespace MyApp.Api.Repositories.recruitment
             await _context.RecruitmentRequests.AddAsync(request);
         }
 
+        public async Task UpdateAsync(RecruitmentRequest request)
+        {
+            _context.RecruitmentRequests.Update(request);
+            await _context.SaveChangesAsync(); // Ensure changes are saved
+        }
+
+        public async Task DeleteAsync(string id)
+        {
+            var entity = await GetByRequestIdAsync(id);
+            if (entity != null)
+            {
+                _context.RecruitmentRequests.Remove(entity);
+                await _context.SaveChangesAsync(); // Ensure changes are saved
+            }
+        }
+
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
+        }
+
+        public async Task ReloadAsync(RecruitmentRequest request)
+        {
+            await _context.Entry(request).ReloadAsync();
         }
     }
 }

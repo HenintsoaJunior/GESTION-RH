@@ -1,165 +1,116 @@
-using Microsoft.EntityFrameworkCore;
-using MyApp.Api.Models.users;
+// UserService.cs
 using MyApp.Api.Entities.users;
+using MyApp.Api.Models.form.users;
 using MyApp.Api.Repositories.users;
-using BCrypt.Net;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MyApp.Api.Services.users
 {
     public interface IUserService
     {
-        Task<IEnumerable<UserDto>> GetAllAsync();
-        Task<UserDto?> GetByIdAsync(string id);
-        Task<UserDto> CreateAsync(UserDto dto);
-        Task<UserDto?> UpdateAsync(string id, UserDto dto);
-        Task<bool> DeleteAsync(string id);
         Task<UserDto?> LoginAsync(string email, string password);
+        Task<IEnumerable<User>> GetAllAsync();
+        Task<List<User>> GetAllUsersAsync();
+        Task<User?> GetByIdAsync(string id);
+        Task<User?> GetByEmailAsync(string email);
+        Task AddAsync(User user);
+        Task UpdateAsync(User user);
+        Task DeleteAsync(User user);
+        Task AddUsersAsync(List<User> users);
+        Task UpdateUsersAsync(List<User> users);
+        Task DeleteUsersAsync(List<User> users);
+        
+        Task<IEnumerable<UserDto>> GetCollaboratorsAsync(string userId);
     }
-
+    
     public class UserService : IUserService
     {
         private readonly IUserRepository _repository;
 
         public UserService(IUserRepository repository)
         {
-            _repository = repository;
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
 
-        public async Task<IEnumerable<UserDto>> GetAllAsync()
+        public async Task<IEnumerable<User>> GetAllAsync()
         {
-            try
-            {
-                var users = await _repository.GetAllAsync();
-                return users.Select(MapToDto);
-            }
-            catch (Exception)
-            {
-                throw new Exception("Failed to retrieve users.");
-            }
+            return await _repository.GetAllAsync();
+        }
+        
+        public async Task<IEnumerable<UserDto>> GetCollaboratorsAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            var collaborators = await _repository.GetCollaboratorsAsync(userId);
+            
+            
+            return collaborators.Select(MapToDto);
         }
 
-        public async Task<UserDto?> GetByIdAsync(string id)
+        public async Task<List<User>> GetAllUsersAsync()
         {
-            try
-            {
-                var user = await _repository.GetByIdAsync(id);
-                return user == null ? null : MapToDto(user);
-            }
-            catch (Exception)
-            {
-                throw new Exception($"Failed to retrieve user with ID {id}.");
-            }
+            var users = await _repository.GetAllAsync();
+            return users.ToList();
         }
 
-        public async Task<UserDto> CreateAsync(UserDto dto)
+        public async Task<User?> GetByIdAsync(string id)
         {
-            try
-            {
-                if (await _repository.EmailExistsAsync(dto.Email))
-                    throw new Exception("A user with this email already exists.");
-
-                if (!await _repository.DepartmentExistsAsync(dto.DepartmentId))
-                    throw new Exception("The specified department does not exist.");
-
-                var user = new User
-                {
-                    UserId = dto.UserId,
-                    FirstName = dto.FirstName,
-                    LastName = dto.LastName,
-                    Email = dto.Email,
-                    Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                    Role = dto.Role,
-                    DepartmentId = dto.DepartmentId,
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = null
-                };
-                var created = await _repository.CreateAsync(user);
-                return MapToDto(created);
-            }
-            catch (DbUpdateException)
-            {
-                throw new Exception("A user with this ID or email already exists.");
-            }
-            catch (Exception)
-            {
-                throw new Exception("Failed to create user.");
-            }
+            return await _repository.GetByIdAsync(id);
         }
 
-        public async Task<UserDto?> UpdateAsync(string id, UserDto dto)
+        public async Task<User?> GetByEmailAsync(string email)
         {
-            try
-            {
-                if (!await _repository.ExistsAsync(id))
-                    return null;
-
-                if (await _repository.EmailExistsAsync(dto.Email, id))
-                    throw new Exception("A user with this email already exists.");
-
-                if (!await _repository.DepartmentExistsAsync(dto.DepartmentId))
-                    throw new Exception("The specified department does not exist.");
-
-                var user = new User
-                {
-                    UserId = id,
-                    FirstName = dto.FirstName,
-                    LastName = dto.LastName,
-                    Email = dto.Email,
-                    Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                    Role = dto.Role,
-                    DepartmentId = dto.DepartmentId,
-                    UpdatedAt = DateTime.Now
-                };
-                var updated = await _repository.UpdateAsync(user);
-                return MapToDto(updated);
-            }
-            catch (DbUpdateException)
-            {
-                throw new Exception("Failed to update user due to a database error.");
-            }
-            catch (Exception)
-            {
-                throw new Exception($"Failed to update user with ID {id}.");
-            }
+            return await _repository.GetByEmailAsync(email);
         }
 
-        public async Task<bool> DeleteAsync(string id)
+        public async Task AddAsync(User user)
         {
-            try
-            {
-                if (!await _repository.ExistsAsync(id))
-                    return false;
+            await _repository.AddAsync(user);
+            await _repository.SaveChangesAsync();
+        }
 
-                await _repository.DeleteAsync(id);
-                return true;
-            }
-            catch (Exception)
-            {
-                throw new Exception($"Failed to delete user with ID {id}.");
-            }
+        public async Task UpdateAsync(User user)
+        {
+            await _repository.UpdateAsync(user);
+            await _repository.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(User user)
+        {
+            await _repository.DeleteAsync(user);
+            await _repository.SaveChangesAsync();
+        }
+
+        public async Task AddUsersAsync(List<User> users)
+        {
+            await _repository.AddUsersAsync(users);
+            await _repository.SaveChangesAsync();
+        }
+
+        public async Task UpdateUsersAsync(List<User> users)
+        {
+            await _repository.UpdateUsersAsync(users);
+            await _repository.SaveChangesAsync();
+        }
+
+        public async Task DeleteUsersAsync(List<User> users)
+        {
+            await _repository.DeleteUsersAsync(users);
+            await _repository.SaveChangesAsync();
         }
 
         public async Task<UserDto?> LoginAsync(string email, string password)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-                    throw new Exception("Email and password are required.");
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                throw new ArgumentException("Email and password are required.");
 
-                var user = await _repository.GetByEmailAsync(email);
+            var user = await _repository.GetByEmailAsync(email);
+            if (user == null)
+                return null;
 
-                if (user == null)
-                    return null;
-
-                // if (!BCrypt.Net.BCrypt.Verify(password, user.Password))
-                //     return null;
-
-                return MapToDto(user);
-            }
-            catch (Exception)
-            {
-                throw new Exception("Failed to authenticate user.");
-            }
+            return MapToDto(user);
         }
 
         private static UserDto MapToDto(User user)
@@ -167,11 +118,12 @@ namespace MyApp.Api.Services.users
             return new UserDto
             {
                 UserId = user.UserId,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
                 Email = user.Email,
-                Role = user.Role,
-                DepartmentId = user.DepartmentId
+                Name = user.Name,
+                Department = user.Department,
+                Position = user.Position,
+                SuperiorId = user.SuperiorId,
+                SuperiorName = user.SuperiorName
             };
         }
     }

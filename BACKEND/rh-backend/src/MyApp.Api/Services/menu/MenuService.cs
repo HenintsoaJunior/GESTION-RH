@@ -1,14 +1,14 @@
-using MyApp.Api.Models.menu;
+using MyApp.Api.Models.list.menu;
 using MyApp.Api.Entities.menu;
 using MyApp.Api.Repositories.menu;
+using Microsoft.EntityFrameworkCore;
 
 namespace MyApp.Api.Services.menu
 {
     public interface IMenuService
     {
-        Task<IEnumerable<MenuHierarchyDto>> GetMenuHierarchyAsync(string languageId);
+        Task<IEnumerable<MenuHierarchyDto>> GetMenuHierarchyAsync(string[]? roleNames = null);
         Task<IEnumerable<ModuleDto>> GetModulesAsync();
-        Task<IEnumerable<ModuleDto>> GetModulesWithMenusAsync(string languageId);
     }
 
     public class MenuService : IMenuService
@@ -16,28 +16,29 @@ namespace MyApp.Api.Services.menu
         private readonly IMenuRepository _menuRepository;
         private readonly IMenuHierarchyRepository _hierarchyRepository;
         private readonly IModuleRepository _moduleRepository;
-        private readonly IMenuTranslationRepository _translationRepository;
 
         public MenuService(
             IMenuRepository menuRepository,
             IMenuHierarchyRepository hierarchyRepository,
-            IModuleRepository moduleRepository,
-            IMenuTranslationRepository translationRepository)
+            IModuleRepository moduleRepository)
         {
             _menuRepository = menuRepository;
             _hierarchyRepository = hierarchyRepository;
             _moduleRepository = moduleRepository;
-            _translationRepository = translationRepository;
         }
 
-        public async Task<IEnumerable<MenuHierarchyDto>> GetMenuHierarchyAsync(string languageId)
+        public async Task<IEnumerable<MenuHierarchyDto>> GetMenuHierarchyAsync(string[]? roleNames = null)
         {
             var rootHierarchies = await _hierarchyRepository.GetRootMenusAsync();
             var result = new List<MenuHierarchyDto>();
 
+            // Fetch all menus with their roles in one query to avoid N+1
+            var menusWithRoles = await _menuRepository.GetAllWithRolesAsync(roleNames);
+            var menuDict = menusWithRoles.ToDictionary(m => m.MenuId, m => m);
+
             foreach (var hierarchy in rootHierarchies)
             {
-                var dto = await BuildMenuHierarchyDto(hierarchy, languageId);
+                var dto = await BuildMenuHierarchyDto(hierarchy, menuDict);
                 if (dto != null)
                 {
                     result.Add(dto);
@@ -53,48 +54,11 @@ namespace MyApp.Api.Services.menu
             return modules.Select(MapToModuleDto);
         }
 
-        public async Task<IEnumerable<ModuleDto>> GetModulesWithMenusAsync(string languageId)
+        private async Task<MenuHierarchyDto?> BuildMenuHierarchyDto(MenuHierarchy hierarchy, Dictionary<string, Menu> menuDict)
         {
-            var modules = await _moduleRepository.GetAllAsync();
-            var result = new List<ModuleDto>();
-
-            foreach (var module in modules)
-            {
-                var moduleDto = MapToModuleDto(module);
-                
-                var moduleMenus = await _menuRepository.GetByModuleIdAsync(module.ModuleId);
-                var moduleMenuHierarchies = new List<MenuHierarchyDto>();
-
-                foreach (var menu in moduleMenus.Where(m => m.IsEnabled))
-                {
-                    var hierarchies = await _hierarchyRepository.GetAllAsync();
-                    var menuHierarchy = hierarchies.FirstOrDefault(h => h.MenuId == menu.MenuId);
-                    
-                    if (menuHierarchy != null)
-                    {
-                        var hierarchyDto = await BuildMenuHierarchyDto(menuHierarchy, languageId);
-                        if (hierarchyDto != null)
-                        {
-                            moduleMenuHierarchies.Add(hierarchyDto);
-                        }
-                    }
-                }
-
-                moduleDto.Menus = moduleMenuHierarchies.OrderBy(m => m.Menu.Position).ToList();
-                result.Add(moduleDto);
-            }
-
-            return result;
-        }
-
-        private async Task<MenuHierarchyDto?> BuildMenuHierarchyDto(MenuHierarchy hierarchy, string languageId)
-        {
-            var menu = await _menuRepository.GetByIdAsync(hierarchy.MenuId);
-            if (menu == null || !menu.IsEnabled)
+            if (!menuDict.TryGetValue(hierarchy.MenuId, out var menu) || !menu.IsEnabled)
                 return null;
 
-            var translation = await _translationRepository.GetByMenuAndLanguageAsync(hierarchy.MenuId, languageId);
-            
             var menuDto = new MenuDto
             {
                 MenuId = menu.MenuId,
@@ -104,7 +68,7 @@ namespace MyApp.Api.Services.menu
                 IsEnabled = menu.IsEnabled,
                 Position = menu.Position,
                 ModuleId = menu.ModuleId,
-                Label = translation?.Label ?? menu.MenuKey // Fallback sur MenuKey si pas de traduction
+                RoleNames = menu.MenuRoles?.Select(mr => mr.Role.Name).ToList() ?? new List<string>()
             };
 
             var hierarchyDto = new MenuHierarchyDto
@@ -120,7 +84,7 @@ namespace MyApp.Api.Services.menu
             var childHierarchies = await _hierarchyRepository.GetByParentIdAsync(hierarchy.MenuId);
             foreach (var childHierarchy in childHierarchies)
             {
-                var childDto = await BuildMenuHierarchyDto(childHierarchy, languageId);
+                var childDto = await BuildMenuHierarchyDto(childHierarchy, menuDict);
                 if (childDto != null)
                 {
                     hierarchyDto.Children.Add(childDto);

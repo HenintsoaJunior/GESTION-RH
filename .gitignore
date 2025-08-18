@@ -6,9 +6,9 @@
 *.suo
 *.user
 *.DS_Store
+*.zip
 Thumbs.db
 ehthumbs.db
-*.xlsx
 ~$*.xlsx
 
 # --- Node (React FRONTEND) ---
@@ -19,7 +19,8 @@ ehthumbs.db
 /FRONTEND/rh-front/.next/
 /FRONTEND/rh-front/.turbo/
 /FRONTEND/rh-front/.cache/
-/FRONTEND/rh-front/.eslintcache
+/FRONTEND/rh-front/.eslintcache/
+/FRONTEND/rh-front/src/config/apiConfig.js
 
 # --- Visual Studio & .NET (BACKEND) ---
 
@@ -30,6 +31,8 @@ ehthumbs.db
 /BACKEND/rh-backend/src/MyApp.Api/obj
 /BACKEND/rh-backend/obj
 /BACKEND/rh-backend/.vs/
+/BACKEND/rh-backend/src/MyApp.Api/node_modules
+/BACKEND/rh-backend/src/MyApp.Api/.idea
 /TODO/Looping/*.lo1
 # --- Ignorer les fichiers de publication ---
 /FRONTEND/rh-front/.firebase/

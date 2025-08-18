@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using MyApp.Api.Entities;
-using MyApp.Api.Entities.departments;
-using MyApp.Api.Entities.contracts;
+using MyApp.Api.Entities.direction;
+using MyApp.Api.Entities.site;
+using MyApp.Model.form.Jobs;
 
 namespace MyApp.Api.Entities.jobs
 {
@@ -17,41 +17,69 @@ namespace MyApp.Api.Entities.jobs
         [Required]
         [Column("title")]
         [MaxLength(200)]
-        public string Title { get; set; } = null!;
-
-        [Column("location")]
-        [MaxLength(100)]
-        public string? Location { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         [Column("description")]
         public string? Description { get; set; }
 
-        [Column("required_skills")]
-        public string? RequiredSkills { get; set; }
-
-        [Column("required_experience")]
-        public string? RequiredExperience { get; set; }
+        [Column("attributions")]
+        public string? Attributions { get; set; }
 
         [Column("required_education")]
         [MaxLength(200)]
         public string? RequiredEducation { get; set; }
 
+        [Column("required_experience")]
+        public string? RequiredExperience { get; set; }
+
+        [Column("required_personal_qualities")]
+        public string? RequiredPersonalQualities { get; set; }
+
+        [Column("required_skills")]
+        public string? RequiredSkills { get; set; }
+
         [Column("required_languages")]
-        [MaxLength(200)]
         public string? RequiredLanguages { get; set; }
 
-        [Column("contract_type_id")]
+        [Required]
+        [Column("organigram")]
         [MaxLength(50)]
-        public string? ContractTypeId { get; set; }
+        public string OrganigramId { get; set; } = null!;
 
-        [ForeignKey("ContractTypeId")]
-        public ContractType? ContractType { get; set; }
-
-        [Column("department_id")]
+        [Required]
+        [Column("hierarchical_attachment")]
         [MaxLength(50)]
-        public string? DepartmentId { get; set; }
+        public string HierarchicalAttachmentId { get; set; } = null!;
 
-        [ForeignKey("DepartmentId")]
-        public Department? Department { get; set; }
+        [Required]
+        [Column("site_id")]
+        [MaxLength(50)]
+        public string SiteId { get; set; } = null!;
+
+        [ForeignKey("OrganigramId")]
+        public Service? Organigram { get; set; }
+
+        [ForeignKey("HierarchicalAttachmentId")]
+        public Service? HierarchicalAttachment { get; set; }
+
+        [ForeignKey("SiteId")]
+        public Site? Site { get; set; }
+
+        public JobDescription() { }
+
+        public JobDescription(JobDescriptionDTOForm jobDescriptionDTOForm)
+        {
+            Title = jobDescriptionDTOForm.Title;
+            Description = jobDescriptionDTOForm.Description;
+            Attributions = jobDescriptionDTOForm.Attributions;
+            RequiredEducation = jobDescriptionDTOForm.RequiredEducation;
+            RequiredExperience = jobDescriptionDTOForm.RequiredExperience;
+            RequiredPersonalQualities = jobDescriptionDTOForm.RequiredPersonalQualities;
+            RequiredSkills = jobDescriptionDTOForm.RequiredSkills;
+            RequiredLanguages = jobDescriptionDTOForm.RequiredLanguages;
+            OrganigramId = jobDescriptionDTOForm.OrganigramId;
+            HierarchicalAttachmentId = jobDescriptionDTOForm.HierarchicalAttachmentId;
+            SiteId = jobDescriptionDTOForm.SiteId;
+        }
     }
 }
