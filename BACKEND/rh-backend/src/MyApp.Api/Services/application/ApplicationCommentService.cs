@@ -49,7 +49,7 @@ namespace MyApp.Api.Services.application
             try
             {
                 var comment = await _repository.GetByIdAsync(id);
-                return comment == null ? null : comment;
+                return comment;
             }
             catch (Exception ex)
             {

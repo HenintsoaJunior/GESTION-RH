@@ -308,7 +308,7 @@ CREATE TABLE users (
     superior_id VARCHAR(150),
     superior_name VARCHAR(150),
     status VARCHAR(50),
-    signature VARCHAR(500),
+    signature VARCHAR(MAX),
     user_type VARCHAR(50),
     refresh_token VARCHAR(MAX),
     refresh_token_expiry DATETIME,
