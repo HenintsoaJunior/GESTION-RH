@@ -1,7 +1,5 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Collections.Generic;
 using MyApp.Api.Models.form.users;
 
 namespace MyApp.Api.Entities.users
@@ -55,7 +53,6 @@ namespace MyApp.Api.Entities.users
         public string? Status { get; set; }
 
         [Column("signature")]
-        [MaxLength(500)]
         public string? Signature { get; set; }
 
         [Column("user_type")]

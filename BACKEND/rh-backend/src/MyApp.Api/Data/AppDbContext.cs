@@ -15,6 +15,7 @@ namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
+        public DbSet<CvDetail> CvDetails { get; set; }
         public DbSet<ApplicationComment> ApplicationComments { get; set; }
         public DbSet<Application> Applications { get; set; }
         public DbSet<Candidate> Candidates { get; set; }
