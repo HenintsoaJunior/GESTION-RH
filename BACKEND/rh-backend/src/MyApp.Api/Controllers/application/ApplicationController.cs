@@ -7,22 +7,78 @@ namespace MyApp.Api.Controllers.application
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ApplicationsController : ControllerBase
+    public class ApplicationController(
+        IApplicationService applicationService,
+        IApplicationCommentService applicationCommentService,
+        ILogger<ApplicationController> logger)
+        : ControllerBase
     {
-        private readonly IApplicationService _service;
-        private readonly ILogger<ApplicationsController> _logger;
-
-        public ApplicationsController(IApplicationService service, ILogger<ApplicationsController> logger)
+        [HttpGet("application-comment")]
+        public async Task<ActionResult<IEnumerable<ApplicationComment>>> GetAllComments()
         {
-            _service = service;
-            _logger = logger;
+            var comments = await applicationCommentService.GetAllAsync();
+            return Ok(comments);
+        } 
+
+        // GET: api/applicationcomments/{id}
+        [HttpGet("application-comment/{id}")]
+        public async Task<ActionResult<ApplicationComment>> GetCommentById(string id)
+        {
+            var comment = await applicationCommentService.GetByIdAsync(id);
+            if (comment != null) return Ok(comment);
+            logger.LogWarning("Commentaire avec ID {CommentId} non trouvé", id);
+            return NotFound();
         }
 
+        // GET: api/applicationcomments/by-application/{applicationId}
+        [HttpGet("application-comment/by-application/{applicationId}")]
+        public async Task<ActionResult<IEnumerable<ApplicationComment>>> GetByApplicationId(string applicationId)
+        {
+            var comments = await applicationCommentService.GetByApplicationIdAsync(applicationId);
+            return Ok(comments);
+        }
+
+        // POST: api/applicationcomments
+        [HttpPost ("application-comment")]
+        public async Task<ActionResult<string>> Create([FromBody] ApplicationCommentDTOForm dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var id = await applicationCommentService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id }, id);
+        }
+
+        // PUT: api/applicationcomments/{id}
+        [HttpPut("application-comment/{id}")]
+        public async Task<ActionResult<ApplicationComment>> UpdateComment(string id, [FromBody] ApplicationCommentDTOForm dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var updated = await applicationCommentService.UpdateAsync(id, dto);
+            if (updated != null) return Ok(updated);
+            logger.LogWarning("Échec mise à jour : commentaire {CommentId} introuvable", id);
+            return NotFound();
+
+        }
+
+        // DELETE: api/applicationcomments/{id}
+        [HttpDelete("application-comment/{id}")]
+        public async Task<ActionResult> DeleteComment(string id)
+        {
+            var success = await applicationCommentService.DeleteAsync(id);
+            if (success) return NoContent();
+            logger.LogWarning("Échec suppression : commentaire {CommentId} introuvable", id);
+            return NotFound();
+
+        }
+        
         // GET: api/applications
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Application>>> GetAll()
         {
-            var applications = await _service.GetAllAsync();
+            var applications = await applicationService.GetAllAsync();
             return Ok(applications);
         }
 
@@ -30,7 +86,7 @@ namespace MyApp.Api.Controllers.application
         [HttpPost("search")]
         public async Task<ActionResult<IEnumerable<Application>>> GetAllByCriteria([FromBody] ApplicationDTOForm criteria)
         {
-            var results = await _service.GetAllByCriteriaAsync(criteria);
+            var results = await applicationService.GetAllByCriteriaAsync(criteria);
             return Ok(results);
         }
 
@@ -38,13 +94,10 @@ namespace MyApp.Api.Controllers.application
         [HttpGet("{id}")]
         public async Task<ActionResult<Application>> GetById(string id)
         {
-            var application = await _service.GetByIdAsync(id);
-            if (application == null)
-            {
-                _logger.LogWarning("Application avec ID {ApplicationId} non trouvée", id);
-                return NotFound();
-            }
-            return Ok(application);
+            var application = await applicationService.GetByIdAsync(id);
+            if (application != null) return Ok(application);
+            logger.LogWarning("Application avec ID {ApplicationId} non trouvée", id);
+            return NotFound();
         }
 
         // POST: api/applications
@@ -54,7 +107,7 @@ namespace MyApp.Api.Controllers.application
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var id = await _service.CreateAsync(dto);
+            var id = await applicationService.CreateAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id }, id);
         }
 
@@ -65,28 +118,22 @@ namespace MyApp.Api.Controllers.application
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var updatedEntity = await _service.UpdateAsync(id, dto);
-            if (updatedEntity == null)
-            {
-                _logger.LogWarning("Échec de la mise à jour, application avec ID {ApplicationId} introuvable", id);
-                return NotFound();
-            }
+            var updatedEntity = await applicationService.UpdateAsync(id, dto);
+            if (updatedEntity != null) return Ok(updatedEntity);
+            logger.LogWarning("Échec de la mise à jour, application avec ID {ApplicationId} introuvable", id);
+            return NotFound();
 
-            return Ok(updatedEntity);
         }
 
         // DELETE: api/applications/{id}
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(string id)
         {
-            var success = await _service.DeleteAsync(id);
-            if (!success)
-            {
-                _logger.LogWarning("Échec de suppression, application avec ID {ApplicationId} introuvable", id);
-                return NotFound();
-            }
+            var success = await applicationService.DeleteAsync(id);
+            if (success) return NoContent();
+            logger.LogWarning("Échec de suppression, application avec ID {ApplicationId} introuvable", id);
+            return NotFound();
 
-            return NoContent();
         }
     }
 }

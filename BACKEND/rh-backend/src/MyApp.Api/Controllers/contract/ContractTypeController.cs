@@ -6,21 +6,14 @@ namespace MyApp.Api.Controllers.contract
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ContractTypeController : ControllerBase
+    public class ContractTypeController(IContractTypeService contractTypeService) : ControllerBase
     {
-        private readonly IContractTypeService _contractTypeService;
-
-        public ContractTypeController(IContractTypeService contractTypeService)
-        {
-            _contractTypeService = contractTypeService;
-        }
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ContractType>>> GetAll()
         {
             try
             {
-                var contractTypes = await _contractTypeService.GetAllAsync();
+                var contractTypes = await contractTypeService.GetAllAsync();
                 return Ok(contractTypes);
             }
             catch (Exception ex)
@@ -34,7 +27,7 @@ namespace MyApp.Api.Controllers.contract
         {
             try
             {
-                var contractType = await _contractTypeService.GetByIdAsync(id);
+                var contractType = await contractTypeService.GetByIdAsync(id);
                 if (contractType == null)
                 {
                     return NotFound();
@@ -64,7 +57,7 @@ namespace MyApp.Api.Controllers.contract
                 };
 
 
-                await _contractTypeService.AddAsync(contractType);
+                await contractTypeService.AddAsync(contractType);
                 return CreatedAtAction(nameof(GetById), new { id = contractType.ContractTypeId }, contractType);
             }
             catch (Exception ex)
@@ -89,13 +82,13 @@ namespace MyApp.Api.Controllers.contract
                     return BadRequest("L'ID dans l'URL ne correspond pas à l'ID du contrat");
                 }
 
-                var existingContractType = await _contractTypeService.GetByIdAsync(id);
+                var existingContractType = await contractTypeService.GetByIdAsync(id);
                 if (existingContractType == null)
                 {
                     return NotFound();
                 }
 
-                await _contractTypeService.UpdateAsync(contractType);
+                await contractTypeService.UpdateAsync(contractType);
                 return NoContent();
             }
             catch (Exception ex)
@@ -109,13 +102,13 @@ namespace MyApp.Api.Controllers.contract
         {
             try
             {
-                var contractType = await _contractTypeService.GetByIdAsync(id);
+                var contractType = await contractTypeService.GetByIdAsync(id);
                 if (contractType == null)
                 {
                     return NotFound();
                 }
 
-                await _contractTypeService.DeleteAsync(id);
+                await contractTypeService.DeleteAsync(id);
                 return NoContent();
             }
             catch (Exception ex)

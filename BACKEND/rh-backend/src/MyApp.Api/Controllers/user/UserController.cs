@@ -6,21 +6,14 @@ namespace MyApp.Api.Controllers.user;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UserController : ControllerBase
+public class UserController(IUserService userService) : ControllerBase
 {
-    private readonly IUserService _userService;
-
-    public UserController(IUserService userService)
-    {
-        _userService = userService;
-    }
-    
     [HttpGet("{userId}/collaborators")]
     public async Task<ActionResult<IEnumerable<UserDto>>> GetCollaborators(string userId)
     {
         try
         {
-            var collaborators = await _userService.GetCollaboratorsAsync(userId);
+            var collaborators = await userService.GetCollaboratorsAsync(userId);
             return Ok(collaborators);
         }
         catch (Exception e)

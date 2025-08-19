@@ -9,32 +9,26 @@ namespace MyApp.Api.Controllers.mission
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class MissionAssignationController : ControllerBase
+    public class MissionAssignationController(IMissionAssignationService service, IMissionService missionService)
+        : ControllerBase
     {
-        private readonly IMissionAssignationService _service;
-        private readonly IMissionService _missionService;
-
-        public MissionAssignationController(IMissionAssignationService service, IMissionService missionService)
-        {
-            _service = service ?? throw new ArgumentNullException(nameof(service));
-            _missionService = missionService;
-        }
+        private readonly IMissionAssignationService _service = service ?? throw new ArgumentNullException(nameof(service));
 
         [HttpPost("import-csv")]
-        public async Task<IActionResult> ImportCsv(IFormFile file, [FromQuery] char separator = ';')
+        public async Task<IActionResult> ImportCsv(IFormFile? file, [FromQuery] char separator = ';')
         {
             if (file == null || file.Length == 0)
                 return BadRequest("Fichier non valide.");
 
             using var stream = file.OpenReadStream();
-            var result = await _service.ImportMissionFromCsv(stream, separator, (MissionService)_missionService);
+            var result = await _service.ImportMissionFromCsv(stream, separator, (MissionService)missionService);
             return Ok(result);
         }
 
         [HttpPost("duration")]
-        public async Task<IActionResult> GetDuration(DateTime StartDate, DateTime EndDate)
+        public async Task<IActionResult> GetDuration(DateTime startDate, DateTime endDate)
         {
-            var duration = await Task.Run(() => _service.calculateDuration(StartDate, EndDate));
+            var duration = await Task.Run(() => _service.calculateDuration(startDate, endDate));
             return Ok(duration);
         }
 
@@ -64,9 +58,9 @@ namespace MyApp.Api.Controllers.mission
 
         // Génère et télécharge un rapport Excel des paiements de mission
         [HttpPost("generate-excel")]
-        public async Task<IActionResult> GenerateExcel([FromBody] GeneratePaiementDTO generatePaiementDTO)
+        public async Task<IActionResult> GenerateExcel([FromBody] GeneratePaiementDTO? generatePaiementDto)
         {
-            if (generatePaiementDTO == null || string.IsNullOrWhiteSpace(generatePaiementDTO.MissionId))
+            if (generatePaiementDto == null || string.IsNullOrWhiteSpace(generatePaiementDto.MissionId))
             {
                 return BadRequest("Les données de paiement ou l'identifiant de la mission sont requis.");
             }
@@ -74,13 +68,13 @@ namespace MyApp.Api.Controllers.mission
             try
             {
                 var excelBytes = await _service.GenerateExcelReportAsync(
-                    generatePaiementDTO.EmployeeId,
-                    generatePaiementDTO.MissionId,
-                    generatePaiementDTO.DirectionId,
-                    generatePaiementDTO.StartDate,
-                    generatePaiementDTO.EndDate);
+                    generatePaiementDto.EmployeeId,
+                    generatePaiementDto.MissionId,
+                    generatePaiementDto.DirectionId,
+                    generatePaiementDto.StartDate,
+                    generatePaiementDto.EndDate);
 
-                string excelName = $"MissionPaymentReport-{generatePaiementDTO.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                var excelName = $"MissionPaymentReport-{generatePaiementDto.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.xlsx";
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
             }
             catch (InvalidOperationException ex)

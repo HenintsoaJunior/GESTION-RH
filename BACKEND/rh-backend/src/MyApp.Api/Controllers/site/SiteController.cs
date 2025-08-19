@@ -6,20 +6,13 @@ namespace MyApp.Api.Controllers.site
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class SiteController : ControllerBase
+    public class SiteController(ISiteService siteService) : ControllerBase
     {
-        private readonly ISiteService _siteService;
-
-        public SiteController(ISiteService siteService)
-        {
-            _siteService = siteService;
-        }
-
         // GET: api/site
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Site>>> GetAll()
         {
-            var sites = await _siteService.GetAllAsync();
+            var sites = await siteService.GetAllAsync();
             return Ok(sites);
         }
 
@@ -27,7 +20,7 @@ namespace MyApp.Api.Controllers.site
         [HttpGet("{id}")]
         public async Task<ActionResult<Site>> GetById(string id)
         {
-            var site = await _siteService.GetByIdAsync(id);
+            var site = await siteService.GetByIdAsync(id);
             if (site == null)
             {
                 return NotFound();
@@ -42,7 +35,7 @@ namespace MyApp.Api.Controllers.site
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            await _siteService.AddAsync(site);
+            await siteService.AddAsync(site);
             return CreatedAtAction(nameof(GetById), new { id = site.SiteId }, site);
         }
 
@@ -53,11 +46,11 @@ namespace MyApp.Api.Controllers.site
             if (id != site.SiteId)
                 return BadRequest("L'ID dans l'URL ne correspond pas à l'entité.");
 
-            var existing = await _siteService.GetByIdAsync(id);
+            var existing = await siteService.GetByIdAsync(id);
             if (existing == null)
                 return NotFound();
 
-            await _siteService.UpdateAsync(site);
+            await siteService.UpdateAsync(site);
             return NoContent();
         }
 
@@ -65,11 +58,11 @@ namespace MyApp.Api.Controllers.site
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(string id)
         {
-            var site = await _siteService.GetByIdAsync(id);
+            var site = await siteService.GetByIdAsync(id);
             if (site == null)
                 return NotFound();
 
-            await _siteService.DeleteAsync(id);
+            await siteService.DeleteAsync(id);
             return NoContent();
         }
     }

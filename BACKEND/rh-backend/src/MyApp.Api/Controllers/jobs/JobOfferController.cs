@@ -7,33 +7,26 @@ namespace MyApp.Api.Controllers.jobs
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class JobOfferController : ControllerBase
+    public class JobOfferController(IJobOfferService service) : ControllerBase
     {
-        private readonly IJobOfferService _service;
-
-        public JobOfferController(IJobOfferService service)
-        {
-            _service = service;
-        }
-
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var offers = await _service.GetAllAsync();
+            var offers = await service.GetAllAsync();
             return Ok(offers);
         }
 
         [HttpPost("search")]
-        public async Task<IActionResult> GetAllByCriteria([FromBody] JobOffer criteria)
+        public async Task<IActionResult> GetAllByCriteria([FromBody] JobOfferDTOForm criteria)
         {
-            var offers = await _service.GetAllByCriteriaAsync(criteria);
+            var offers = await service.GetAllByCriteriaAsync(criteria);
             return Ok(offers);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
-            var offer = await _service.GetByIdAsync(id);
+            var offer = await service.GetByIdAsync(id);
             if (offer == null) return NotFound();
             return Ok(offer);
         }
@@ -41,14 +34,14 @@ namespace MyApp.Api.Controllers.jobs
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] JobOfferDTOForm dto)
         {
-            var id = await _service.CreateAsync(dto);
+            var id = await service.CreateAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id }, new { id });
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] JobOfferDTOForm dto)
         {
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await service.UpdateAsync(id, dto);
             if (updated == null) return NotFound();
             return Ok(updated);
         }
@@ -56,7 +49,7 @@ namespace MyApp.Api.Controllers.jobs
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var deleted = await _service.DeleteAsync(id);
+            var deleted = await service.DeleteAsync(id);
             if (!deleted) return NotFound();
             return NoContent();
         }

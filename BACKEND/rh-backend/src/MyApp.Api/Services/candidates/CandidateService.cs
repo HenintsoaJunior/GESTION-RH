@@ -7,7 +7,7 @@ namespace MyApp.Api.Services.candidates
 {
     public interface ICandidateService
     {
-        Task<IEnumerable<Candidate>> GetAllByCriteriaAsync(Candidate criteria);
+        Task<IEnumerable<Candidate>> GetAllByCriteriaAsync(CandidateDTOForm criteria);
         Task<IEnumerable<Candidate>> GetAllAsync();
         Task<Candidate?> GetByIdAsync(string id);
         Task<string> CreateAsync(CandidateDTOForm candidateDto);
@@ -31,19 +31,44 @@ namespace MyApp.Api.Services.candidates
             _logger = logger;
         }
 
-        public async Task<IEnumerable<Candidate>> GetAllByCriteriaAsync(Candidate criteria)
+        public async Task<IEnumerable<Candidate>> GetAllByCriteriaAsync(CandidateDTOForm criteria)
         {
-            return await _repository.GetAllByCriteriaAsync(criteria);
+            try
+            {
+                var search = new Candidate(criteria);
+                return await _repository.GetAllByCriteriaAsync(search);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des candidats par critères");
+                throw;
+            }
         }
 
         public async Task<IEnumerable<Candidate>> GetAllAsync()
         {
-            return await _repository.GetAllAsync();
+            try
+            {
+                return await _repository.GetAllAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de tous les candidats");
+                throw;
+            }
         }
 
         public async Task<Candidate?> GetByIdAsync(string id)
         {
-            return await _repository.GetByIdAsync(id);
+            try
+            {
+                return await _repository.GetByIdAsync(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du candidat {CandidateId}", id);
+                throw;
+            }
         }
 
         public async Task<string> CreateAsync(CandidateDTOForm candidateDto)
@@ -76,7 +101,7 @@ namespace MyApp.Api.Services.candidates
             {
                 var entity = await _repository.GetByIdAsync(id);
                 if (entity == null) return false;
-                
+
                 entity = new Candidate(candidateDto);
 
                 await _repository.UpdateAsync(entity);

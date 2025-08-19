@@ -7,21 +7,15 @@ namespace MyApp.Api.Controllers.mission
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class TransportController : ControllerBase
+    public class TransportController(ITransportService transportService) : ControllerBase
     {
         // Service injecté pour la gestion des transports
-        private readonly ITransportService _transportService;
-
-        public TransportController(ITransportService transportService)
-        {
-            _transportService = transportService;
-        }
 
         // Récupère la liste de tous les moyens de transport
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Transport>>> GetAll()
         {
-            var transports = await _transportService.GetAllAsync();
+            var transports = await transportService.GetAllAsync();
             return Ok(transports);
         }
 
@@ -29,7 +23,7 @@ namespace MyApp.Api.Controllers.mission
         [HttpGet("{id}")]
         public async Task<ActionResult<Transport>> GetById(string id)
         {
-            var transport = await _transportService.GetByIdAsync(id);
+            var transport = await transportService.GetByIdAsync(id);
             if (transport == null)
             {
                 return NotFound();
@@ -50,7 +44,7 @@ namespace MyApp.Api.Controllers.mission
                 Type = transportDtoForm.Type
             };
 
-            await _transportService.CreateAsync(transport);
+            await transportService.CreateAsync(transport);
             return Ok(transport);
         }
 
@@ -63,7 +57,7 @@ namespace MyApp.Api.Controllers.mission
                 return BadRequest();
             }
 
-            var updated = await _transportService.UpdateAsync(transport);
+            var updated = await transportService.UpdateAsync(transport);
             if (!updated)
             {
                 return NotFound();
@@ -75,7 +69,7 @@ namespace MyApp.Api.Controllers.mission
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(string id)
         {
-            var deleted = await _transportService.DeleteAsync(id);
+            var deleted = await transportService.DeleteAsync(id);
             if (!deleted)
             {
                 return NotFound();

@@ -10,31 +10,23 @@ namespace MyApp.Api.Controllers.direction
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class DirectionController : ControllerBase
+    public class DirectionController(
+        IDirectionService directionService,
+        ILogger<DirectionController> logger)
+        : ControllerBase
     {
-        private readonly IDirectionService _directionService;
-        private readonly ILogger<DirectionController> _logger;
-
-        public DirectionController(
-            IDirectionService directionService,
-            ILogger<DirectionController> logger)
-        {
-            _directionService = directionService;
-            _logger = logger;
-        }
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Direction>>> GetAll()
         {
             try
             {
-                _logger.LogInformation("Récupération de toutes les directions");
-                var directions = await _directionService.GetAllAsync();
+                logger.LogInformation("Récupération de toutes les directions");
+                var directions = await directionService.GetAllAsync();
                 return Ok(directions);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération de toutes les directions");
+                logger.LogError(ex, "Erreur lors de la récupération de toutes les directions");
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des directions.");
             }
         }
@@ -46,15 +38,15 @@ namespace MyApp.Api.Controllers.direction
             {
                 if (string.IsNullOrWhiteSpace(id))
                 {
-                    _logger.LogWarning("Tentative de récupération d'une direction avec un ID null ou vide");
+                    logger.LogWarning("Tentative de récupération d'une direction avec un ID null ou vide");
                     return BadRequest("L'ID de la direction ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Récupération de la direction avec l'ID: {DirectionId}", id);
-                var direction = await _directionService.GetByIdAsync(id);
+                logger.LogInformation("Récupération de la direction avec l'ID: {DirectionId}", id);
+                var direction = await directionService.GetByIdAsync(id);
                 if (direction == null)
                 {
-                    _logger.LogWarning("Direction non trouvée pour l'ID: {DirectionId}", id);
+                    logger.LogWarning("Direction non trouvée pour l'ID: {DirectionId}", id);
                     return NotFound();
                 }
 
@@ -62,7 +54,7 @@ namespace MyApp.Api.Controllers.direction
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération de la direction avec l'ID: {DirectionId}", id);
+                logger.LogError(ex, "Erreur lors de la récupération de la direction avec l'ID: {DirectionId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la récupération de la direction.");
             }
         }
@@ -74,7 +66,7 @@ namespace MyApp.Api.Controllers.direction
             {
                 if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning("Données invalides lors de l'ajout d'une direction: {ModelStateErrors}", ModelState);
+                    logger.LogWarning("Données invalides lors de l'ajout d'une direction: {ModelStateErrors}", ModelState);
                     return BadRequest(ModelState);
                 }
 
@@ -84,15 +76,15 @@ namespace MyApp.Api.Controllers.direction
                     Acronym = form.Acronym
                 };
 
-                _logger.LogInformation("Ajout d'une nouvelle direction: {DirectionName}", direction.DirectionName);
-                await _directionService.AddAsync(direction);
+                logger.LogInformation("Ajout d'une nouvelle direction: {DirectionName}", direction.DirectionName);
+                await directionService.AddAsync(direction);
 
-                _logger.LogInformation("Direction créée avec succès avec l'ID: {DirectionId}", direction.DirectionId);
+                logger.LogInformation("Direction créée avec succès avec l'ID: {DirectionId}", direction.DirectionId);
                 return CreatedAtAction(nameof(GetById), new { id = direction.DirectionId }, direction);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de l'ajout de la direction: {DirectionName}", form?.DirectionName);
+                logger.LogError(ex, "Erreur lors de l'ajout de la direction: {DirectionName}", form?.DirectionName);
                 return StatusCode(500, "Une erreur est survenue lors de l'ajout de la direction.");
             }
         }
@@ -104,33 +96,33 @@ namespace MyApp.Api.Controllers.direction
             {
                 if (id != direction.DirectionId)
                 {
-                    _logger.LogWarning("L'ID dans l'URL ({Id}) ne correspond pas à l'ID de la direction ({DirectionId})", id, direction.DirectionId);
+                    logger.LogWarning("L'ID dans l'URL ({Id}) ne correspond pas à l'ID de la direction ({DirectionId})", id, direction.DirectionId);
                     return BadRequest("L'ID dans l'URL ne correspond pas à l'ID de la direction.");
                 }
 
                 if (string.IsNullOrWhiteSpace(id))
                 {
-                    _logger.LogWarning("Tentative de mise à jour d'une direction avec un ID null ou vide");
+                    logger.LogWarning("Tentative de mise à jour d'une direction avec un ID null ou vide");
                     return BadRequest("L'ID de la direction ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Vérification de l'existence de la direction avec l'ID: {DirectionId}", id);
-                var existingDirection = await _directionService.GetByIdAsync(id);
+                logger.LogInformation("Vérification de l'existence de la direction avec l'ID: {DirectionId}", id);
+                var existingDirection = await directionService.GetByIdAsync(id);
                 if (existingDirection == null)
                 {
-                    _logger.LogWarning("Direction non trouvée pour l'ID: {DirectionId}", id);
+                    logger.LogWarning("Direction non trouvée pour l'ID: {DirectionId}", id);
                     return NotFound();
                 }
 
-                _logger.LogInformation("Mise à jour de la direction avec l'ID: {DirectionId}", id);
-                await _directionService.UpdateAsync(direction);
+                logger.LogInformation("Mise à jour de la direction avec l'ID: {DirectionId}", id);
+                await directionService.UpdateAsync(direction);
 
-                _logger.LogInformation("Direction mise à jour avec succès pour l'ID: {DirectionId}", id);
+                logger.LogInformation("Direction mise à jour avec succès pour l'ID: {DirectionId}", id);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour de la direction avec l'ID: {DirectionId}", id);
+                logger.LogError(ex, "Erreur lors de la mise à jour de la direction avec l'ID: {DirectionId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la mise à jour de la direction.");
             }
         }
@@ -142,27 +134,27 @@ namespace MyApp.Api.Controllers.direction
             {
                 if (string.IsNullOrWhiteSpace(id))
                 {
-                    _logger.LogWarning("Tentative de suppression d'une direction avec un ID null ou vide");
+                    logger.LogWarning("Tentative de suppression d'une direction avec un ID null ou vide");
                     return BadRequest("L'ID de la direction ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Vérification de l'existence de la direction avec l'ID: {DirectionId}", id);
-                var direction = await _directionService.GetByIdAsync(id);
+                logger.LogInformation("Vérification de l'existence de la direction avec l'ID: {DirectionId}", id);
+                var direction = await directionService.GetByIdAsync(id);
                 if (direction == null)
                 {
-                    _logger.LogWarning("Direction non trouvée pour l'ID: {DirectionId}", id);
+                    logger.LogWarning("Direction non trouvée pour l'ID: {DirectionId}", id);
                     return NotFound();
                 }
 
-                _logger.LogInformation("Suppression de la direction avec l'ID: {DirectionId}", id);
-                await _directionService.DeleteAsync(id);
+                logger.LogInformation("Suppression de la direction avec l'ID: {DirectionId}", id);
+                await directionService.DeleteAsync(id);
 
-                _logger.LogInformation("Direction supprimée avec succès pour l'ID: {DirectionId}", id);
+                logger.LogInformation("Direction supprimée avec succès pour l'ID: {DirectionId}", id);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la suppression de la direction avec l'ID: {DirectionId}", id);
+                logger.LogError(ex, "Erreur lors de la suppression de la direction avec l'ID: {DirectionId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la suppression de la direction.");
             }
         }
