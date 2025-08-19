@@ -1,23 +1,18 @@
 using System.DirectoryServices;
 using Microsoft.AspNetCore.Mvc;
-using MyApp.Api.Services.ldap.objectclass;
 using MyApp.Api.Models.classes.objectclass;
+using MyApp.Api.Services.ldap.objectclass;
 
-namespace MyApp.Api.Controllers.ldap.objectclass;
+namespace MyApp.Api.Controllers.ldap.user;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ObjectClassController : ControllerBase
+public class ObjectClassController(IObjectClassService objectClassService, IConfiguration configuration)
+    : ControllerBase
 {
-    private readonly IObjectClassService _objectClassService;
-    private readonly IConfiguration _configuration;
+    private readonly IObjectClassService _objectClassService = objectClassService ?? throw new ArgumentNullException(nameof(objectClassService));
+    private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
-    public ObjectClassController(IObjectClassService objectClassService, IConfiguration configuration)
-    {
-        _objectClassService = objectClassService ?? throw new ArgumentNullException(nameof(objectClassService));
-        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-    }
-    
     [HttpGet("attributes/{objectClassName}")]
     public ActionResult<ObjectClassSchema> GetObjectClassAttributes(string objectClassName)
     {

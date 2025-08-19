@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.form.mission;
@@ -6,21 +5,14 @@ using MyApp.Api.Models.list.mission;
 using MyApp.Api.Models.search.mission;
 using MyApp.Api.Services.mission;
 
-namespace MyApp.Api.Controllers
+namespace MyApp.Api.Controllers.mission
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class MissionController : ControllerBase
+    public class MissionController(IMissionService missionService, ILogger<MissionController> logger)
+        : ControllerBase
     {
-        private readonly IMissionService _missionService;
-        private readonly ILogger<MissionController> _logger;
-
         // Constructeur avec injection du service mission et du logger
-        public MissionController(IMissionService missionService, ILogger<MissionController> logger)
-        {
-            _missionService = missionService;
-            _logger = logger;
-        }
 
         // Récupère toutes les missions
         [HttpGet]
@@ -28,12 +20,12 @@ namespace MyApp.Api.Controllers
         {
             try
             {
-                var missions = await _missionService.GetAllAsync();
+                var missions = await missionService.GetAllAsync();
                 return Ok(missions);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération de toutes les missions");
+                logger.LogError(ex, "Erreur lors de la récupération de toutes les missions");
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des missions");
             }
         }
@@ -44,13 +36,13 @@ namespace MyApp.Api.Controllers
         {
             try
             {
-                var mission = await _missionService.GetByIdAsync(id);
+                var mission = await missionService.GetByIdAsync(id);
                 if (mission == null) return NotFound();
                 return Ok(mission);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération de la mission {MissionId}", id);
+                logger.LogError(ex, "Erreur lors de la récupération de la mission {MissionId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la récupération de la mission");
             }
         }
@@ -61,12 +53,12 @@ namespace MyApp.Api.Controllers
         {
             try
             {
-                var id = await _missionService.CreateAsync(mission);
+                var id = await missionService.CreateAsync(mission);
                 return Ok(new { id, mission });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la création de la mission");
+                logger.LogError(ex, "Erreur lors de la création de la mission");
                 return StatusCode(500, "Une erreur est survenue lors de la création de la mission");
             }
         }
@@ -77,13 +69,13 @@ namespace MyApp.Api.Controllers
         {
             try
             {
-                var updated = await _missionService.UpdateAsync(id,mission);
+                var updated = await missionService.UpdateAsync(id,mission);
                 
                 return Ok(new { success = updated, mission });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour de la mission {MissionId}", id);
+                logger.LogError(ex, "Erreur lors de la mise à jour de la mission {MissionId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la mise à jour de la mission");
             }
         }
@@ -94,13 +86,13 @@ namespace MyApp.Api.Controllers
         {
             try
             {
-                var deleted = await _missionService.DeleteAsync(id);
+                var deleted = await missionService.DeleteAsync(id);
                 if (!deleted) return NotFound();
                 return Ok(new { message = $"Mission with ID {id} successfully deleted" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la suppression de la mission {MissionId}", id);
+                logger.LogError(ex, "Erreur lors de la suppression de la mission {MissionId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la suppression de la mission");
             }
         }
@@ -109,7 +101,7 @@ namespace MyApp.Api.Controllers
         [HttpPost("search")]
         public async Task<ActionResult<object>> Search([FromBody] MissionSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var (results, totalCount) = await _missionService.SearchAsync(filters, page, pageSize);
+            var (results, totalCount) = await missionService.SearchAsync(filters, page, pageSize);
             return Ok(new
             {
                 data = results,
@@ -124,19 +116,19 @@ namespace MyApp.Api.Controllers
         //[Authorize(Roles = "admin")]
         public async Task<ActionResult<MissionStats>> GetStatistics()
         {
-            var stats = await _missionService.GetStatisticsAsync();
+            var stats = await missionService.GetStatisticsAsync();
             return Ok(stats);
         }
         // Annule une mission (change son statut à "Annulé")
         [HttpPut("{id}/cancel")]
         public async Task<IActionResult> CancelMission(string id)
         {
-            var cancelled = await _missionService.CancelAsync(id);
+            var cancelled = await missionService.CancelAsync(id);
             if (!cancelled) 
             {
                 return NotFound(new { error = $"Mission with ID {id} not found" });
             }
-            _logger.LogInformation("Mission {MissionId} cancelled via controller", id);
+            logger.LogInformation("Mission {MissionId} cancelled via controller", id);
             return Ok(new { message = $"Mission with ID {id} successfully cancelled" });
         }
     }

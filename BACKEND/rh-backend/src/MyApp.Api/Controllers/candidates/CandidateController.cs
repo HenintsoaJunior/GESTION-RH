@@ -7,24 +7,16 @@ namespace MyApp.Api.Controllers.candidates
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CandidatesController : ControllerBase
+    public class CandidateController(
+        ICandidateService service,
+        ILogger<CandidateController> logger)
+        : ControllerBase
     {
-        private readonly ICandidateService _service;
-        private readonly ILogger<CandidatesController> _logger;
-
-        public CandidatesController(
-            ICandidateService service,
-            ILogger<CandidatesController> logger)
-        {
-            _service = service;
-            _logger = logger;
-        }
-
         // GET: api/candidates
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Candidate>>> GetAll()
         {
-            var candidates = await _service.GetAllAsync();
+            var candidates = await service.GetAllAsync();
             return Ok(candidates);
         }
 
@@ -32,7 +24,7 @@ namespace MyApp.Api.Controllers.candidates
         [HttpGet("{id}")]
         public async Task<ActionResult<Candidate>> GetById(string id)
         {
-            var candidate = await _service.GetByIdAsync(id);
+            var candidate = await service.GetByIdAsync(id);
             if (candidate == null)
             {
                 return NotFound(new { Message = $"Candidat avec ID {id} introuvable." });
@@ -51,12 +43,12 @@ namespace MyApp.Api.Controllers.candidates
 
             try
             {
-                var newId = await _service.CreateAsync(candidateDto);
+                var newId = await service.CreateAsync(candidateDto);
                 return CreatedAtAction(nameof(GetById), new { id = newId }, new { CandidateId = newId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la création d'un candidat");
+                logger.LogError(ex, "Erreur lors de la création d'un candidat");
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }
@@ -72,7 +64,7 @@ namespace MyApp.Api.Controllers.candidates
 
             try
             {
-                var updated = await _service.UpdateAsync(id, candidateDto);
+                var updated = await service.UpdateAsync(id, candidateDto);
                 if (!updated)
                 {
                     return NotFound(new { Message = $"Candidat avec ID {id} introuvable." });
@@ -81,7 +73,7 @@ namespace MyApp.Api.Controllers.candidates
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour du candidat {CandidateId}", id);
+                logger.LogError(ex, "Erreur lors de la mise à jour du candidat {CandidateId}", id);
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }
@@ -92,7 +84,7 @@ namespace MyApp.Api.Controllers.candidates
         {
             try
             {
-                var deleted = await _service.DeleteAsync(id);
+                var deleted = await service.DeleteAsync(id);
                 if (!deleted)
                 {
                     return NotFound(new { Message = $"Candidat avec ID {id} introuvable." });
@@ -101,16 +93,16 @@ namespace MyApp.Api.Controllers.candidates
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la suppression du candidat {CandidateId}", id);
+                logger.LogError(ex, "Erreur lors de la suppression du candidat {CandidateId}", id);
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }
 
         // GET: api/candidates/search
         [HttpPost("search")]
-        public async Task<ActionResult<IEnumerable<Candidate>>> Search([FromBody] Candidate criteria)
+        public async Task<ActionResult<IEnumerable<Candidate>>> Search([FromBody] CandidateDTOForm criteria)
         {
-            var candidates = await _service.GetAllByCriteriaAsync(criteria);
+            var candidates = await service.GetAllByCriteriaAsync(criteria);
             return Ok(candidates);
         }
     }

@@ -1,28 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Services.recruitment;
-using System;
 
 namespace MyApp.Api.Controllers.recruitment
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ReplacementReasonController : ControllerBase
+    public class ReplacementReasonController(IReplacementReasonService reasonService) : ControllerBase
     {
-        private readonly IReplacementReasonService _reasonService;
-
-        public ReplacementReasonController(IReplacementReasonService reasonService)
-        {
-            _reasonService = reasonService;
-        }
-
         // GET: api/replacementreason
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ReplacementReason>>> GetAll()
         {
             try
             {
-                var reasons = await _reasonService.GetAllAsync();
+                var reasons = await reasonService.GetAllAsync();
                 return Ok(reasons);
             }
             catch (Exception ex)
@@ -37,7 +29,7 @@ namespace MyApp.Api.Controllers.recruitment
         {
             try
             {
-                var reason = await _reasonService.GetByIdAsync(id);
+                var reason = await reasonService.GetByIdAsync(id);
                 if (reason == null)
                     return NotFound();
 
@@ -58,7 +50,7 @@ namespace MyApp.Api.Controllers.recruitment
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                await _reasonService.AddAsync(reason);
+                await reasonService.AddAsync(reason);
                 return CreatedAtAction(nameof(GetById), new { id = reason.ReplacementReasonId }, reason);
             }
             catch (Exception ex)
@@ -76,11 +68,11 @@ namespace MyApp.Api.Controllers.recruitment
                 if (id != reason.ReplacementReasonId)
                     return BadRequest("L'ID dans l'URL ne correspond pas à l'entité.");
 
-                var existing = await _reasonService.GetByIdAsync(id);
+                var existing = await reasonService.GetByIdAsync(id);
                 if (existing == null)
                     return NotFound();
 
-                await _reasonService.UpdateAsync(reason);
+                await reasonService.UpdateAsync(reason);
                 return NoContent();
             }
             catch (Exception ex)
@@ -95,11 +87,11 @@ namespace MyApp.Api.Controllers.recruitment
         {
             try
             {
-                var reason = await _reasonService.GetByIdAsync(id);
+                var reason = await reasonService.GetByIdAsync(id);
                 if (reason == null)
                     return NotFound();
 
-                await _reasonService.DeleteAsync(id);
+                await reasonService.DeleteAsync(id);
                 return NoContent();
             }
             catch (Exception ex)

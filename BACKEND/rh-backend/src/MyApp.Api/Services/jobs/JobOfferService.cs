@@ -7,7 +7,7 @@ namespace MyApp.Api.Services.jobs
 {
     public interface IJobOfferService
     {
-        Task<IEnumerable<JobOffer>> GetAllByCriteriaAsync(JobOffer criteria);
+        Task<IEnumerable<JobOffer>> GetAllByCriteriaAsync(JobOfferDTOForm criteria);
         Task<IEnumerable<JobOffer>> GetAllAsync();
         Task<JobOffer?> GetByIdAsync(string id);
         Task<string> CreateAsync(JobOfferDTOForm dto);
@@ -31,68 +31,117 @@ namespace MyApp.Api.Services.jobs
             _logger = logger;
         }
 
-        public async Task<IEnumerable<JobOffer>> GetAllByCriteriaAsync(JobOffer criteria)
+        public async Task<IEnumerable<JobOffer>> GetAllByCriteriaAsync(JobOfferDTOForm criteria)
         {
-            return await _repository.GetAllByCriteriaAsync(criteria);
+            try
+            {
+                var search = new JobOffer(criteria);
+                return await _repository.GetAllByCriteriaAsync(search);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des offres avec critères");
+                throw;
+            }
         }
 
         public async Task<IEnumerable<JobOffer>> GetAllAsync()
         {
-            return await _repository.GetAllAsync();
+            try
+            {
+                return await _repository.GetAllAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de toutes les offres");
+                throw;
+            }
         }
 
         public async Task<JobOffer?> GetByIdAsync(string id)
         {
-            return await _repository.GetByIdAsync(id);
+            try
+            {
+                return await _repository.GetByIdAsync(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de l'offre {JobOfferId}", id);
+                throw;
+            }
         }
 
         public async Task<string> CreateAsync(JobOfferDTOForm dto)
         {
-            var jobOffer = new JobOffer(dto);
-
-            if (string.IsNullOrWhiteSpace(jobOffer.OfferId))
+            try
             {
-                jobOffer.OfferId = _sequenceGenerator.GenerateSequence("seq_job_offer_id", "JOF", 6, "-");
+                var jobOffer = new JobOffer(dto);
+
+                if (string.IsNullOrWhiteSpace(jobOffer.OfferId))
+                {
+                    jobOffer.OfferId = _sequenceGenerator.GenerateSequence("seq_job_offer_id", "JOF", 6, "-");
+                }
+
+                await _repository.AddAsync(jobOffer);
+                await _repository.SaveChangesAsync();
+
+                _logger.LogInformation("JobOffer créé avec l'ID: {JobOfferId}", jobOffer.OfferId);
+
+                return jobOffer.OfferId;
             }
-
-            await _repository.AddAsync(jobOffer);
-            await _repository.SaveChangesAsync();
-
-            _logger.LogInformation("JobOffer créé avec l'ID: {JobOfferId}", jobOffer.OfferId);
-
-            return jobOffer.OfferId;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création d'une offre d'emploi");
+                throw;
+            }
         }
 
         public async Task<JobOffer?> UpdateAsync(string id, JobOfferDTOForm dto)
         {
-            var existing = await _repository.GetByIdAsync(id);
-            if (existing == null) return null;
-
-            // Re-crée l’objet avec le DTO mais garde l’ID existant
-            var updated = new JobOffer(dto)
+            try
             {
-                OfferId = existing.OfferId
-            };
+                var existing = await _repository.GetByIdAsync(id);
+                if (existing == null) return null;
 
-            await _repository.UpdateAsync(updated);
-            await _repository.SaveChangesAsync();
+                // Re-crée l’objet avec le DTO mais garde l’ID existant
+                var updated = new JobOffer(dto)
+                {
+                    OfferId = existing.OfferId
+                };
 
-            _logger.LogInformation("JobOffer {JobOfferId} mis à jour avec succès", id);
+                await _repository.UpdateAsync(updated);
+                await _repository.SaveChangesAsync();
 
-            return updated;
+                _logger.LogInformation("JobOffer {JobOfferId} mis à jour avec succès", id);
+
+                return updated;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour de l'offre {JobOfferId}", id);
+                throw;
+            }
         }
 
         public async Task<bool> DeleteAsync(string id)
         {
-            var entity = await _repository.GetByIdAsync(id);
-            if (entity == null) return false;
+            try
+            {
+                var entity = await _repository.GetByIdAsync(id);
+                if (entity == null) return false;
 
-            await _repository.DeleteAsync(entity);
-            await _repository.SaveChangesAsync();
+                await _repository.DeleteAsync(entity);
+                await _repository.SaveChangesAsync();
 
-            _logger.LogInformation("JobOffer {JobOfferId} supprimé avec succès", id);
+                _logger.LogInformation("JobOffer {JobOfferId} supprimé avec succès", id);
 
-            return true;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de l'offre {JobOfferId}", id);
+                throw;
+            }
         }
     }
 }

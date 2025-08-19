@@ -8,17 +8,9 @@ namespace MyApp.Api.Controllers.mission
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class LieuController : ControllerBase
+    public class LieuController(ILieuService lieuService, ILogger<LieuController> logger) : ControllerBase
     {
-        private readonly ILieuService _lieuService;
-        private readonly ILogger<LieuController> _logger;
-
         // Constructeur avec injection du service lieu et du logger
-        public LieuController(ILieuService lieuService, ILogger<LieuController> logger)
-        {
-            _lieuService = lieuService;
-            _logger = logger;
-        }
 
         // Récupère tous les lieux
         [HttpGet]
@@ -26,12 +18,12 @@ namespace MyApp.Api.Controllers.mission
         {
             try
             {
-                var lieux = await _lieuService.GetAllAsync();
+                var lieux = await lieuService.GetAllAsync();
                 return Ok(lieux);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération de tous les lieux");
+                logger.LogError(ex, "Erreur lors de la récupération de tous les lieux");
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des lieux");
             }
         }
@@ -42,13 +34,13 @@ namespace MyApp.Api.Controllers.mission
         {
             try
             {
-                var lieu = await _lieuService.GetByIdAsync(id);
+                var lieu = await lieuService.GetByIdAsync(id);
                 if (lieu == null) return NotFound("Lieu non trouvé");
                 return Ok(lieu);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération du lieu {LieuId}", id);
+                logger.LogError(ex, "Erreur lors de la récupération du lieu {LieuId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la récupération du lieu");
             }
         }
@@ -64,12 +56,12 @@ namespace MyApp.Api.Controllers.mission
 
             try
             {
-                var id = await _lieuService.CreateAsync(lieu);
+                var id = await lieuService.CreateAsync(lieu);
                 return Ok(new { id, lieu });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la création du lieu");
+                logger.LogError(ex, "Erreur lors de la création du lieu");
                 return StatusCode(500, "Une erreur est survenue lors de la création du lieu");
             }
         }
@@ -83,13 +75,13 @@ namespace MyApp.Api.Controllers.mission
 
             try
             {
-                var updated = await _lieuService.UpdateAsync(lieu);
+                var updated = await lieuService.UpdateAsync(lieu);
                 if (!updated) return NotFound("Lieu non trouvé");
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour du lieu {LieuId}", id);
+                logger.LogError(ex, "Erreur lors de la mise à jour du lieu {LieuId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la mise à jour du lieu");
             }
         }
@@ -100,13 +92,13 @@ namespace MyApp.Api.Controllers.mission
         {
             try
             {
-                var deleted = await _lieuService.DeleteAsync(id);
+                var deleted = await lieuService.DeleteAsync(id);
                 if (!deleted) return NotFound("Lieu non trouvé");
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la suppression du lieu {LieuId}", id);
+                logger.LogError(ex, "Erreur lors de la suppression du lieu {LieuId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la suppression du lieu");
             }
         }
@@ -122,7 +114,7 @@ namespace MyApp.Api.Controllers.mission
 
             try
             {
-                var (results, totalCount) = await _lieuService.SearchAsync(filters, page, pageSize);
+                var (results, totalCount) = await lieuService.SearchAsync(filters, page, pageSize);
                 return Ok(new
                 {
                     data = results,
@@ -133,7 +125,7 @@ namespace MyApp.Api.Controllers.mission
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la recherche des lieux");
+                logger.LogError(ex, "Erreur lors de la recherche des lieux");
                 return StatusCode(500, "Une erreur est survenue lors de la recherche des lieux");
             }
         }

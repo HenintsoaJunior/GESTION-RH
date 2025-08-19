@@ -33,62 +33,109 @@ namespace MyApp.Api.Services.application
 
         public async Task<IEnumerable<Application>> GetAllAsync()
         {
-            return await _repository.GetAllAsync();
+            try
+            {
+                return await _repository.GetAllAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de toutes les applications");
+                throw;
+            }
         }
 
         public async Task<IEnumerable<Application>> GetAllByCriteriaAsync(ApplicationDTOForm criteria)
         {
-            var entityCriteria = new Application(criteria);
-            return await _repository.GetAllByCriteriaAsync(entityCriteria);
+            try
+            {
+                var entityCriteria = new Application(criteria);
+                return await _repository.GetAllByCriteriaAsync(entityCriteria);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des applications par critères");
+                throw;
+            }
         }
 
         public async Task<Application?> GetByIdAsync(string id)
         {
-            var app = await _repository.GetByIdAsync(id);
-            return app != null ? app : null;
+            try
+            {
+                var app = await _repository.GetByIdAsync(id);
+                return app != null ? app : null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de l'application {ApplicationId}", id);
+                throw;
+            }
         }
 
         public async Task<string> CreateAsync(ApplicationDTOForm dto)
         {
-            var application = new Application(dto);
-            if (string.IsNullOrWhiteSpace(application.ApplicationId))
+            try
             {
-                application.ApplicationId = _sequenceGenerator.GenerateSequence("seq_application_id", "APP", 6, "-");
+                var application = new Application(dto);
+                if (string.IsNullOrWhiteSpace(application.ApplicationId))
+                {
+                    application.ApplicationId = _sequenceGenerator.GenerateSequence("seq_application_id", "APP", 6, "-");
+                }
+
+                await _repository.AddAsync(application);
+                await _repository.SaveChangesAsync();
+                _logger.LogInformation("Application créée avec l'ID: {ApplicationId}", application.ApplicationId);
+
+                return application.ApplicationId;
             }
-
-            await _repository.AddAsync(application);
-            await _repository.SaveChangesAsync();
-            _logger.LogInformation("Application créée avec l'ID: {ApplicationId}", application.ApplicationId);
-
-            return application.ApplicationId;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création d'une application");
+                throw;
+            }
         }
 
         public async Task<Application?> UpdateAsync(string id, ApplicationDTOForm dto)
         {
-            var entity = await _repository.GetByIdAsync(id);
-            if (entity == null) return null;
+            try
+            {
+                var entity = await _repository.GetByIdAsync(id);
+                if (entity == null) return null;
 
-            entity = new Application(dto);
-            await _repository.UpdateAsync(entity);
-            await _repository.SaveChangesAsync();
+                entity = new Application(dto);
+                await _repository.UpdateAsync(entity);
+                await _repository.SaveChangesAsync();
 
-            _logger.LogInformation("Application {ApplicationId} mise à jour avec succès", id);
+                _logger.LogInformation("Application {ApplicationId} mise à jour avec succès", id);
 
-            return entity;
+                return entity;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour de l'application {ApplicationId}", id);
+                throw;
+            }
         }
 
         public async Task<bool> DeleteAsync(string id)
         {
-            var entity = await _repository.GetByIdAsync(id);
-            if (entity == null) return false;
+            try
+            {
+                var entity = await _repository.GetByIdAsync(id);
+                if (entity == null) return false;
 
-            await _repository.DeleteAsync(entity);
-            await _repository.SaveChangesAsync();
+                await _repository.DeleteAsync(entity);
+                await _repository.SaveChangesAsync();
 
-            _logger.LogInformation("Application {ApplicationId} supprimée avec succès", id);
+                _logger.LogInformation("Application {ApplicationId} supprimée avec succès", id);
 
-            return true;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de l'application {ApplicationId}", id);
+                throw;
+            }
         }
-        
     }
 }
