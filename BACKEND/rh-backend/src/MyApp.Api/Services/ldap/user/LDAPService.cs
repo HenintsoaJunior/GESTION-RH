@@ -181,14 +181,24 @@ public class LdapService : ILdapService
         try
         {
             var adUsers = BuildFullOrganisationHierarchy(domainPath) ?? throw new InvalidOperationException("Failed to retrieve users from Active Directory");
+            var filteredAdUsers = adUsers
+                .Where(x => !string.IsNullOrEmpty(x.Email))
+                .ToList();
+        
             var dbUsers = await _userService.GetAllUsersAsync();
-            var adUserDict = adUsers
+            var filteredDbUsers = dbUsers
+                .Where(x => !string.IsNullOrEmpty(x.Email))
+                .ToList();
+
+            var adUserDict = filteredAdUsers
                 .Where(x => !string.IsNullOrEmpty(x.UserId))
                 .ToDictionary(x => x.UserId!);
 
-            var dbUsersDict = dbUsers.ToDictionary(x => x.UserId);
-            var toAdd = GetUsersToAdd(adUsers, dbUsersDict);
-            var (toUpdate, toDelete) = GetUsersToUpdateOrDelete(dbUsers, adUserDict!);
+            var dbUsersDict = filteredDbUsers
+                .ToDictionary(x => x.UserId);
+
+            var toAdd = GetUsersToAdd(filteredAdUsers, dbUsersDict);
+            var (toUpdate, toDelete) = GetUsersToUpdateOrDelete(filteredDbUsers, adUserDict);
             await ApplyUserChanges(toAdd, toUpdate, toDelete);
             return (toAdd.Count, toUpdate.Count, toDelete.Count);
         }
@@ -198,7 +208,6 @@ public class LdapService : ILdapService
             throw new InvalidOperationException($"Failed to actualize users: {ex.Message}", ex);
         }
     }
-
     private List<User> GetUsersToAdd(List<UserAd> adUsers, Dictionary<string, User> dbUsersDict)
     {
         var usersToAdd = new List<User>();

@@ -17,6 +17,21 @@ public class UserController : ControllerBase
         _userService = userService ?? throw new ArgumentNullException(nameof(userService));
     }
 
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<User>>> GetAll()
+    {
+        try
+        {
+            var users = await _userService.GetAllAsync();
+            return Ok(users);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
     [HttpGet("{userId}/collaborators")]
     public async Task<ActionResult<IEnumerable<UserDto>>> GetCollaborators(string userId)
     {
@@ -32,7 +47,7 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpGet("search")]
+    [HttpPost("search")]
     public async Task<ActionResult<(IEnumerable<User>, int)>> Search([FromQuery] UserSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         try
