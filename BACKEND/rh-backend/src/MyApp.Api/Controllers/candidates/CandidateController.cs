@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.candidates;
-using MyApp.Api.Models.form.candidates;
+using MyApp.Api.Models.dto.candidates;
 using MyApp.Api.Services.candidates;
 
 namespace MyApp.Api.Controllers.candidates

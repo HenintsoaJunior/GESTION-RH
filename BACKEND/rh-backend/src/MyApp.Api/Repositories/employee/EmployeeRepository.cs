@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.employee;
-using MyApp.Api.Models.search.employee;
+using MyApp.Api.Models.dto.employee;
 
 namespace MyApp.Api.Repositories.employee
 {

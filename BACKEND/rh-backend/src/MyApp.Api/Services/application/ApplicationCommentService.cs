@@ -1,5 +1,5 @@
 ﻿using MyApp.Api.Entities.application;
-using MyApp.Api.Models.form.application;
+using MyApp.Api.Models.dto.application;
 using MyApp.Api.Repositories.application;
 using MyApp.Api.Utils.generator;
 

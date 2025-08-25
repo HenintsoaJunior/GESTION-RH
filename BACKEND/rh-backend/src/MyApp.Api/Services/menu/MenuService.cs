@@ -1,7 +1,7 @@
-using MyApp.Api.Models.list.menu;
 using MyApp.Api.Entities.menu;
 using MyApp.Api.Repositories.menu;
 using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Models.dto.menu;
 
 namespace MyApp.Api.Services.menu
 {

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
-using MyApp.Api.Models.form.lieu;
-using MyApp.Api.Models.search.mission;
+using MyApp.Api.Models.dto.lieu;
 using MyApp.Api.Services.mission;
 
 namespace MyApp.Api.Controllers.mission

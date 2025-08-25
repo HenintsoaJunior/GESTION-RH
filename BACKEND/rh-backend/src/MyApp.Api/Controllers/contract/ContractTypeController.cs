@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.contract;
+using MyApp.Api.Models.dto.contract;
 using MyApp.Api.Services.contract;
-using MyApp.Api.Models.form.contract;
+
 namespace MyApp.Api.Controllers.contract
 {
     [Route("api/[controller]")]

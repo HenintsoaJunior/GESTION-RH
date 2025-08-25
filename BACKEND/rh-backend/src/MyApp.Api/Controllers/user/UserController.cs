@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.users;
 using MyApp.Api.Models.classes.user;
-using MyApp.Api.Models.form.users;
+using MyApp.Api.Models.dto.users;
 using MyApp.Api.Services.users;
 
 namespace MyApp.Api.Controllers.user;

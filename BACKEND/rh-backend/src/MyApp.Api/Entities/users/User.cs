@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using MyApp.Api.Models.form.users;
+using MyApp.Api.Models.dto.users;
 
 namespace MyApp.Api.Entities.users
 {

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
-using MyApp.Api.Models.form.transport;
+using MyApp.Api.Models.dto.transport;
 using MyApp.Api.Services.mission;
 
 namespace MyApp.Api.Controllers.mission

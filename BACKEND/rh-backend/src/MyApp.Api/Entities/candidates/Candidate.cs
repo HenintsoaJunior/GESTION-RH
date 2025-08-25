@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using MyApp.Api.Models.form.candidates;
+using MyApp.Api.Models.dto.candidates;
 
 namespace MyApp.Api.Entities.candidates
 {

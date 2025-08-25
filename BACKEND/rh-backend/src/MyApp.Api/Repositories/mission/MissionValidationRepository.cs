@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.mission;
-using MyApp.Api.Models.search.mission;
+using MyApp.Api.Models.dto.mission;
 
 namespace MyApp.Api.Repositories.mission
 {

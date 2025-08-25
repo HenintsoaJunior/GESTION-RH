@@ -1,5 +1,5 @@
 using MyApp.Api.Entities.jobs;
-using MyApp.Api.Models.form.jobs;
+using MyApp.Api.Models.dto.jobs;
 using MyApp.Api.Repositories.jobs;
 using MyApp.Api.Utils.generator;
 
