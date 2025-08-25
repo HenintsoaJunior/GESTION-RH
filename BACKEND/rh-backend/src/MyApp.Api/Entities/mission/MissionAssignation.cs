@@ -46,7 +46,10 @@ namespace MyApp.Api.Entities.mission
 
         [Column("updated_at")]
         public DateTime? UpdatedAt { get; set; }
-
+        
+        [Column("is_validated")]
+        public int? IsValidated { get; set; }
+        
         [ForeignKey("EmployeeId")]
         public Employee Employee { get; set; }= null!;
 
@@ -69,7 +72,8 @@ namespace MyApp.Api.Entities.mission
             DepartureTime = dto.DepartureTime;
             ReturnDate = dto.ReturnDate;
             ReturnTime = dto.ReturnTime;
-            Duration = dto.Duration;;
+            Duration = dto.Duration;
+            IsValidated = 0;
         }
     }
 }

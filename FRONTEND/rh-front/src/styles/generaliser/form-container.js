@@ -115,13 +115,18 @@ export const FormFieldCell = styled.td`
   padding: var(--spacing-xs);
   vertical-align: top;
 
-  @media (max-width: 768px) {
-    font-size: var(--font-size-sm);
+  @media (max-width: 480px) {
+    display: block;
+    width: 100%;
   }
 `;
 
 export const FormLabel = styled.label`
   margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  display: block;
 `;
 
 export const FormLabelRequired = styled(FormLabel)`
