@@ -1,7 +1,7 @@
 using MyApp.Api.Entities.jobs;
+using MyApp.Api.Models.dto.jobs;
 using MyApp.Api.Repositories.jobs;
 using MyApp.Api.Utils.generator;
-using MyApp.Model.form.Jobs;
 
 namespace MyApp.Api.Services.jobs
 {

@@ -1,6 +1,5 @@
 using MyApp.Api.Entities.mission;
-using MyApp.Api.Models.form.lieu;
-using MyApp.Api.Models.search.mission;
+using MyApp.Api.Models.dto.lieu;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Utils.generator;
 

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.jobs;
+using MyApp.Api.Models.dto.jobs;
 using MyApp.Api.Services.jobs;
-using MyApp.Model.form.Jobs;
 
 namespace MyApp.Api.Controllers.jobs
 {

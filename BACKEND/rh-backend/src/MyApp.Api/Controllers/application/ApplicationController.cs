@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.application;
-using MyApp.Api.Models.form.application;
+using MyApp.Api.Models.dto.application;
 using MyApp.Api.Services.application;
 
 namespace MyApp.Api.Controllers.application

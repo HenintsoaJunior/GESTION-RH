@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.direction;
 using MyApp.Api.Entities.site;
-using MyApp.Api.Models.form.employee;
+using MyApp.Api.Models.dto.employee;
 
 namespace MyApp.Api.Entities.employee
 {

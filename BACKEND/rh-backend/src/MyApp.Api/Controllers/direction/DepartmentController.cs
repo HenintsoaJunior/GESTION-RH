@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.direction;
-using MyApp.Api.Models.form.direction;
+using MyApp.Api.Models.dto.direction;
 using MyApp.Api.Services.direction;
 
 namespace MyApp.Api.Controllers.direction
