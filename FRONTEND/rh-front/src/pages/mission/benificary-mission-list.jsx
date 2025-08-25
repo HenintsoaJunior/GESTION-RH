@@ -481,6 +481,7 @@ const BeneficiaryMissionList = () => {
               <TableHeadCell>Fonction</TableHeadCell>
               <TableHeadCell>Lieu</TableHeadCell>
               <TableHeadCell>Date début</TableHeadCell>
+              <TableHeadCell>Date Fin</TableHeadCell>
               <TableHeadCell>Statut</TableHeadCell>
             </tr>
           </thead>

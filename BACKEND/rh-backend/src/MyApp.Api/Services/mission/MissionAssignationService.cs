@@ -25,8 +25,8 @@ namespace MyApp.Api.Services.mission
         Task<MissionAssignation?> GetByEmployeeIdMissionIdAsync(string employeeId, string missionId);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
         Task<(string EmployeeId, string MissionId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation);
-        Task<bool> UpdateAsync(MissionAssignation missionAssignation);
-        Task<bool> DeleteAsync(string employeeId, string missionId);
+        Task<bool> UpdateAsync(string assignationId, MissionAssignation missionAssignation);
+        Task<bool> DeleteAsync(string assignationId);
         Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
         Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
     }
@@ -697,16 +697,16 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<bool> UpdateAsync(MissionAssignation missionAssignation)
+        public async Task<bool> UpdateAsync(string assignationId, MissionAssignation missionAssignation)
         {
             try
             {
-                var existing = await GetExistingAssignationForUpdateAsync(missionAssignation);
+                var existing = await _repository.GetByAssignationIdAsync(assignationId); // New repository method
                 if (existing == null) return false;
 
                 UpdateAssignationFields(existing, missionAssignation);
                 await SaveUpdatedAssignationAsync(existing);
-                
+                _logger.LogInformation("Assignation mise à jour avec succès pour AssignationId: {AssignationId}", assignationId);
                 return true;
             }
             catch (Exception ex)
@@ -714,7 +714,6 @@ namespace MyApp.Api.Services.mission
                 throw new Exception($"Error updating mission assignation: {ex.Message}", ex);
             }
         }
-
         private async Task<MissionAssignation?> GetExistingAssignationForUpdateAsync(MissionAssignation missionAssignation)
         {
             return await _repository.GetByIdAsync(missionAssignation.EmployeeId,
@@ -723,6 +722,9 @@ namespace MyApp.Api.Services.mission
 
         private static void UpdateAssignationFields(MissionAssignation existing, MissionAssignation updated)
         {
+            existing.EmployeeId = updated.EmployeeId;
+            existing.MissionId = updated.MissionId;
+            existing.TransportId = updated.TransportId;
             existing.DepartureDate = updated.DepartureDate;
             existing.DepartureTime = updated.DepartureTime;
             existing.ReturnDate = updated.ReturnDate;
@@ -737,11 +739,11 @@ namespace MyApp.Api.Services.mission
             await _repository.SaveChangesAsync();
         }
 
-        public async Task<bool> DeleteAsync(string employeeId, string missionId)
+        public async Task<bool> DeleteAsync(string assignationId)
         {
             try
             {
-                var existing = await _repository.GetByIdAsync(employeeId, missionId);
+                var existing = await _repository.GetByAssignationIdAsync(assignationId); // New repository method
                 if (existing == null)
                 {
                     return false;

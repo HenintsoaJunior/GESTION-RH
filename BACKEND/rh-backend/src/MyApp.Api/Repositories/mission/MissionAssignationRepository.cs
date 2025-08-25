@@ -13,6 +13,7 @@ namespace MyApp.Api.Repositories.mission
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId);
+        Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId);
         Task<IEnumerable<MissionAssignation>> GetFilteredAssignationsAsync(string? employeeId, string? missionId, string? lieuId, DateTime? departureDate, DateTime? departureArrive, string? status);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
         Task AddAsync(MissionAssignation missionAssignation);
@@ -90,6 +91,23 @@ namespace MyApp.Api.Repositories.mission
                 .FirstOrDefaultAsync(ma => 
                     ma.EmployeeId == employeeId && 
                     ma.MissionId == missionId);
+        }
+        
+        public async Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId)
+        {
+            return await _context.MissionAssignations
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Direction)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Department)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Service)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Site)
+                .Include(ma => ma.Mission!)
+                .ThenInclude(m => m.Lieu)
+                .Include(ma => ma.Transport)
+                .FirstOrDefaultAsync(ma => ma.AssignationId == assignationId);
         }
 
         public async Task<IEnumerable<MissionAssignation>> GetFilteredAssignationsAsync(string? employeeId, string? missionId, string? lieuId, DateTime? departureDate, DateTime? departureArrive, string? status)

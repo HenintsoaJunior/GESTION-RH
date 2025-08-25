@@ -34,15 +34,14 @@ export const updateMission = async (
 
 
 export const deleteMissionAssignation = async (
-  employeeId,
-  missionId,
+  assignationId,
   setIsLoading,
   onSuccess,
   onError
 ) => {
   try {
     setIsLoading((prev) => ({ ...prev, missionAssignation: true }));
-    await apiDelete(`/api/MissionAssignation/${employeeId}/${missionId}`);
+    await apiDelete(`/api/MissionAssignation/${assignationId}`);
     onSuccess({
       isOpen: true,
       type: "success",
@@ -64,10 +63,8 @@ export const deleteMissionAssignation = async (
   }
 };
 
-
 export const updateMissionAssignation = async (
-  employeeId,
-  missionId,
+  assignationId,
   assignationData,
   setIsLoading,
   onSuccess,
@@ -76,15 +73,12 @@ export const updateMissionAssignation = async (
   try {
     setIsLoading((prev) => ({ ...prev, missionAssignation: true }));
 
-    // Vérifie que employeeId et missionId sont fournis et cohérents avec assignationData
-    if (!employeeId || !missionId) {
-      throw new Error("Les identifiants de l'employé et de la mission sont requis.");
-    }
-    if (assignationData.employeeId !== employeeId || assignationData.missionId !== missionId) {
-      throw new Error("Les identifiants dans les paramètres doivent correspondre à ceux des données d'assignation.");
+    // Vérifie que assignationId et missionId sont fournis
+    if (!assignationId) {
+      throw new Error("Les identifiants de l'assignation et de la mission sont requis.");
     }
 
-    const updatedAssignation = await apiPut(`/api/MissionAssignation/${employeeId}/${missionId}`, assignationData);
+    const updatedAssignation = await apiPut(`/api/MissionAssignation/${assignationId}`, assignationData);
     
     onSuccess({
       isOpen: true,

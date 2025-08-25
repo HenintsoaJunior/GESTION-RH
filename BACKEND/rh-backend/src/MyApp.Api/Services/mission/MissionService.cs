@@ -97,8 +97,17 @@ namespace MyApp.Api.Services.mission
                 {
                     foreach (var assignationDto in missionDto.Assignations)
                     {
-                        var missionAssignation = new MissionAssignation(assignationDto);
-                        
+                        var missionAssignation = new MissionAssignation
+                        {
+                            EmployeeId = assignationDto.EmployeeId,
+                            MissionId = missionId,
+                            TransportId = assignationDto.TransportId,
+                            DepartureDate = assignationDto.DepartureDate ?? DateTime.Now,
+                            DepartureTime = assignationDto.DepartureTime,
+                            ReturnDate = assignationDto.ReturnDate,
+                            ReturnTime = assignationDto.ReturnTime,
+                            Duration = assignationDto.Duration
+                        };
                         await _missionAssignationService.CreateAsync(missionAssignation);
                     }
                     _logger.LogInformation("Created {Count} mission assignations for mission {MissionId}", missionDto.Assignations.Count, missionId);

@@ -71,6 +71,7 @@ const MissionForm = () => {
   const [editingBeneficiary, setEditingBeneficiary] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [newBeneficiary, setNewBeneficiary] = useState({
+    assignationId: "",
     beneficiary: "",
     employeeId: "",
     matricule: "",
@@ -170,7 +171,8 @@ const MissionForm = () => {
       fetchAssignMission(
         (assignMissions) => {
           const beneficiaries = assignMissions.map((assign) => ({
-            beneficiary: "",
+            assignationId: assign.assignationId || `temp-${Date.now()}`,
+            beneficiary: assign.beneficiary || `${assign.employee?.lastName} ${assign.employee?.firstName} (${assign.directionAcronym || "N/A"})`,
             employeeId: assign.employeeId || "",
             matricule: assign.matricule || "",
             function: assign.function || "",
@@ -286,73 +288,20 @@ const MissionForm = () => {
   }, [missionId]);
 
   useEffect(() => {
-    if (suggestions.beneficiary.length > 0 && formData.beneficiaries.length > 0) {
-      setFormData((prev) => {
-        const updatedBeneficiaries = prev.beneficiaries.map((beneficiary) => {
-          if (beneficiary.employeeId && !beneficiary.beneficiary) {
-            const selectedEmployee = suggestions.beneficiary.find(
-              (emp) => emp.id === beneficiary.employeeId
-            );
-            if (selectedEmployee) {
-              return {
-                ...beneficiary,
-                beneficiary: selectedEmployee.displayName,
-                matricule: selectedEmployee.employeeCode || beneficiary.matricule,
-                function: selectedEmployee.jobTitle || beneficiary.function,
-                base: selectedEmployee.site || beneficiary.base,
-                direction: selectedEmployee.direction || beneficiary.direction,
-                department: selectedEmployee.department || beneficiary.department,
-                service: selectedEmployee.service || beneficiary.service,
-                costCenter: selectedEmployee.costCenter || beneficiary.costCenter,
-              };
-            }
-          } else if (beneficiary.beneficiary && (!beneficiary.matricule || !beneficiary.function || !beneficiary.direction)) {
-            const selectedEmployee = suggestions.beneficiary.find(
-              (emp) => emp.displayName === beneficiary.beneficiary || emp.id === beneficiary.employeeId
-            );
-            if (selectedEmployee) {
-              return {
-                ...beneficiary,
-                beneficiary: selectedEmployee.displayName,
-                employeeId: selectedEmployee.id,
-                matricule: selectedEmployee.employeeCode || beneficiary.matricule,
-                function: selectedEmployee.jobTitle || beneficiary.function,
-                base: selectedEmployee.site || beneficiary.base,
-                direction: selectedEmployee.direction || beneficiary.direction,
-                department: selectedEmployee.department || beneficiary.department,
-                service: selectedEmployee.service || beneficiary.service,
-                costCenter: selectedEmployee.costCenter || beneficiary.costCenter,
-              };
-            }
-          }
-          return beneficiary;
-        });
-
-        const hasChanges = updatedBeneficiaries.some((updated, index) => {
-          const original = prev.beneficiaries[index];
-          return updated.beneficiary !== original.beneficiary ||
-                 updated.matricule !== original.matricule ||
-                 updated.function !== original.function ||
-                 updated.direction !== original.direction;
-        });
-
-        return hasChanges ? { ...prev, beneficiaries: updatedBeneficiaries } : prev;
-      });
-    }
-  }, [suggestions.beneficiary, formData.beneficiaries.length]);
-
-  useEffect(() => {
-    if (suggestions.beneficiary.length === 0) return;
+    if (suggestions.beneficiary.length === 0 || suggestions.transport.length === 0) return;
 
     setFormData((prev) => {
       const newBeneficiaries = prev.beneficiaries.map((beneficiary) => {
-        if (beneficiary.beneficiary) {
+        let updatedBeneficiary = { ...beneficiary };
+
+        if (beneficiary.employeeId) {
           const selectedEmployee = suggestions.beneficiary.find(
-            (emp) => emp.displayName === beneficiary.beneficiary
+            (emp) => emp.id === beneficiary.employeeId
           );
           if (selectedEmployee) {
-            return {
-              ...beneficiary,
+            updatedBeneficiary = {
+              ...updatedBeneficiary,
+              beneficiary: selectedEmployee.displayName,
               employeeId: selectedEmployee.id || "",
               matricule: selectedEmployee.employeeCode || "",
               function: selectedEmployee.jobTitle || "",
@@ -364,86 +313,22 @@ const MissionForm = () => {
             };
           }
         }
-        return {
-          ...beneficiary,
-          employeeId: "",
-          matricule: "",
-          function: "",
-          base: "",
-          direction: "",
-          department: "",
-          service: "",
-          costCenter: "",
-        };
-      });
 
-      return prev.beneficiaries !== newBeneficiaries ? { ...prev, beneficiaries: newBeneficiaries } : prev;
-    });
-  }, [suggestions.beneficiary]);
-
-  useEffect(() => {
-    if (newBeneficiary.beneficiary && suggestions.beneficiary.length > 0) {
-      const selectedEmployee = suggestions.beneficiary.find(
-        (emp) => emp.displayName === newBeneficiary.beneficiary
-      );
-      if (selectedEmployee) {
-        setNewBeneficiary((prev) => ({
-          ...prev,
-          employeeId: selectedEmployee.id || "",
-          matricule: selectedEmployee.employeeCode || "",
-          function: selectedEmployee.jobTitle || "",
-          base: selectedEmployee.site || "",
-          direction: selectedEmployee.direction || "",
-          department: selectedEmployee.department || "",
-          service: selectedEmployee.service || "",
-          costCenter: selectedEmployee.costCenter || "",
-        }));
-      }
-    } else if (!newBeneficiary.beneficiary) {
-      setNewBeneficiary((prev) => ({
-        ...prev,
-        employeeId: "",
-        matricule: "",
-        function: "",
-        base: "",
-        direction: "",
-        department: "",
-        service: "",
-        costCenter: "",
-      }));
-    }
-  }, [newBeneficiary.beneficiary, suggestions.beneficiary]);
-
-  useEffect(() => {
-    if (suggestions.transport.length === 0) return;
-
-    setFormData((prev) => {
-      const newBeneficiaries = prev.beneficiaries.map((beneficiary) => {
         if (beneficiary.transport) {
           const selectedTransport = suggestions.transport.find((t) => t.type === beneficiary.transport);
-          return {
-            ...beneficiary,
+          updatedBeneficiary = {
+            ...updatedBeneficiary,
             transportId: selectedTransport ? selectedTransport.id : null,
           };
         }
-        return { ...beneficiary, transportId: null };
+
+        return updatedBeneficiary;
       });
 
       return prev.beneficiaries !== newBeneficiaries ? { ...prev, beneficiaries: newBeneficiaries } : prev;
     });
-  }, [suggestions.transport]);
 
-  useEffect(() => {
-    if (newBeneficiary.transport && suggestions.transport.length > 0) {
-      const selectedTransport = suggestions.transport.find((t) => t.type === newBeneficiary.transport);
-      setNewBeneficiary((prev) => ({
-        ...prev,
-        transportId: selectedTransport ? selectedTransport.id : null,
-      }));
-    } else if (!newBeneficiary.transport) {
-      setNewBeneficiary((prev) => ({ ...prev, transportId: null }));
-    }
-  }, [newBeneficiary.transport, suggestions.transport]);
+  }, [suggestions.beneficiary, suggestions.transport, formData.beneficiaries.length]);
 
   useEffect(() => {
     if (!missionId && missionMode === "existing" && formData.missionId) {
@@ -507,6 +392,20 @@ const MissionForm = () => {
     if (index !== undefined) {
       setNewBeneficiary((prev) => {
         const updatedBeneficiary = { ...prev, [name]: value || "" };
+
+        if (name === "beneficiary") {
+          const selectedEmployee = suggestions.beneficiary.find((emp) => emp.displayName === value);
+          if (selectedEmployee) {
+            updatedBeneficiary.employeeId = selectedEmployee.id || "";
+            updatedBeneficiary.matricule = selectedEmployee.employeeCode || "";
+            updatedBeneficiary.function = selectedEmployee.jobTitle || "";
+            updatedBeneficiary.base = selectedEmployee.site || "";
+            updatedBeneficiary.direction = selectedEmployee.direction || "";
+            updatedBeneficiary.department = selectedEmployee.department || "";
+            updatedBeneficiary.service = selectedEmployee.service || "";
+            updatedBeneficiary.costCenter = selectedEmployee.costCenter || "";
+          }
+        }
 
         if (name === "departureDate" || name === "returnDate") {
           const missionStart =
@@ -573,6 +472,7 @@ const MissionForm = () => {
     setEditingBeneficiary(null);
     setEditingIndex(null);
     setNewBeneficiary({
+      assignationId: "",
       beneficiary: "",
       employeeId: "",
       matricule: "",
@@ -613,12 +513,19 @@ const MissionForm = () => {
     } else {
       setFormData((prev) => ({
         ...prev,
-        beneficiaries: [...prev.beneficiaries, beneficiary],
+        beneficiaries: [
+          ...prev.beneficiaries,
+          {
+            ...beneficiary,
+            assignationId: beneficiary.assignationId || `temp-${Date.now()}`,
+          },
+        ],
       }));
       showAlert("success", "Bénéficiaire ajouté avec succès.");
     }
-    
+
     setNewBeneficiary({
+      assignationId: "",
       beneficiary: "",
       employeeId: "",
       matricule: "",
@@ -643,11 +550,10 @@ const MissionForm = () => {
 
   const removeBeneficiary = async (index) => {
     const beneficiary = formData.beneficiaries[index];
-    if (beneficiary.employeeId && missionId) {
+    if (beneficiary.assignationId && !beneficiary.assignationId.startsWith("temp-") && missionId) {
       try {
         await deleteMissionAssignation(
-          beneficiary.employeeId,
-          missionId,
+          beneficiary.assignationId,
           setIsLoading,
           (alert) => setAlert(alert),
           (error) => {
@@ -657,7 +563,7 @@ const MissionForm = () => {
           }
         );
       } catch (error) {
-        return; // Arrêter si la suppression échoue
+        return;
       }
     }
 
@@ -706,16 +612,16 @@ const MissionForm = () => {
     const selectedEmployeeIds = new Set();
     for (let i = 0; i < formData.beneficiaries.length; i++) {
       const beneficiary = formData.beneficiaries[i];
-      const selectedEmployee = suggestions.beneficiary.find((emp) => emp.displayName === beneficiary.beneficiary);
-      
-      if (!selectedEmployee && beneficiary.beneficiary) {
+      const selectedEmployee = suggestions.beneficiary.find((emp) => emp.id === beneficiary.employeeId);
+
+      if (!selectedEmployee && beneficiary.employeeId) {
         showModal("error", `Veuillez sélectionner un employé valide pour le bénéficiaire ${i + 1}.`);
         setIsSubmitting(false);
         return;
       }
       if (selectedEmployee) {
         if (selectedEmployeeIds.has(selectedEmployee.id)) {
-          showModal("error", `L'employé ${selectedEmployee.name} est sélectionné plusieurs fois.`);
+          showModal("error", `L'employé ${selectedEmployee.displayName} est sélectionné plusieurs fois.`);
           setIsSubmitting(false);
           return;
         }
@@ -780,7 +686,7 @@ const MissionForm = () => {
         );
 
         for (const beneficiary of formData.beneficiaries) {
-          const selectedEmployee = suggestions.beneficiary.find((emp) => emp.displayName === beneficiary.beneficiary);
+          const selectedEmployee = suggestions.beneficiary.find((emp) => emp.id === beneficiary.employeeId);
           const selectedTransport = beneficiary.transport
             ? suggestions.transport.find((t) => t.type === beneficiary.transport)
             : null;
@@ -797,26 +703,30 @@ const MissionForm = () => {
           };
 
           if (selectedEmployee) {
-            if (beneficiary.employeeId && beneficiary.employeeId === selectedEmployee.id) {
+            const isNewBeneficiary = !beneficiary.assignationId || beneficiary.assignationId.startsWith("temp-");
+
+            if (!isNewBeneficiary) {  
               const updatedAssignation = await updateMissionAssignation(
-                selectedEmployee.id,
-                missionId,
+                beneficiary.assignationId,
                 assignationData,
                 (loading) => setIsSubmitting(loading.missionAssignation),
                 (alert) => setAlert(alert),
                 (error) => {
-                  setModal(error);
+                  setModal({ ...error, details: { assignationId: beneficiary.assignationId, missionId } });
                   setFieldErrors(error.fieldErrors || {});
                   throw error;
                 }
               );
-              // Mettre à jour le bénéficiaire avec les données renvoyées
+
               setFormData((prev) => ({
                 ...prev,
                 beneficiaries: prev.beneficiaries.map((b) =>
-                  b.employeeId === selectedEmployee.id && b.missionId === missionId
+                  b.assignationId === updatedAssignation.assignationId
                     ? {
                         ...b,
+                        assignationId: updatedAssignation.assignationId,
+                        beneficiary: selectedEmployee.displayName,
+                        employeeId: updatedAssignation.employeeId || "",
                         departureDate: updatedAssignation.departureDate ? new Date(updatedAssignation.departureDate).toISOString().split('T')[0] : "",
                         departureTime: updatedAssignation.departureTime || "",
                         returnDate: updatedAssignation.returnDate ? new Date(updatedAssignation.returnDate).toISOString().split('T')[0] : "",
@@ -829,16 +739,37 @@ const MissionForm = () => {
                 ),
               }));
             } else {
-              await createMissionAssignation(
+              const newAssignation = await createMissionAssignation(
                 assignationData,
                 (loading) => setIsSubmitting(loading.missionAssignation),
                 (alert) => setAlert(alert),
                 (error) => {
-                  setModal(error);
+                  setModal({ ...error, details: { assignationId: beneficiary.assignationId, missionId } });
                   setFieldErrors(error.fieldErrors || {});
                   throw error;
                 }
               );
+
+              setFormData((prev) => ({
+                ...prev,
+                beneficiaries: prev.beneficiaries.map((b) =>
+                  b.assignationId === beneficiary.assignationId
+                    ? {
+                        ...b,
+                        assignationId: newAssignation.assignationId,
+                        beneficiary: selectedEmployee.displayName,
+                        employeeId: newAssignation.employeeId || "",
+                        departureDate: newAssignation.departureDate ? new Date(newAssignation.departureDate).toISOString().split('T')[0] : "",
+                        departureTime: newAssignation.departureTime || "",
+                        returnDate: newAssignation.returnDate ? new Date(newAssignation.returnDate).toISOString().split('T')[0] : "",
+                        returnTime: newAssignation.returnTime || "",
+                        missionDuration: newAssignation.duration ? newAssignation.duration.toString() : "",
+                        transport: newAssignation.transport?.type || b.transport,
+                        transportId: newAssignation.transportId || b.transportId,
+                      }
+                    : b
+                ),
+              }));
             }
           }
         }
@@ -847,7 +778,7 @@ const MissionForm = () => {
         navigate("/mission/list");
       } else if (missionMode === "existing") {
         for (const beneficiary of formData.beneficiaries) {
-          const selectedEmployee = suggestions.beneficiary.find((emp) => emp.displayName === beneficiary.beneficiary);
+          const selectedEmployee = suggestions.beneficiary.find((emp) => emp.id === beneficiary.employeeId);
           const selectedTransport = beneficiary.transport
             ? suggestions.transport.find((t) => t.type === beneficiary.transport)
             : null;
@@ -868,7 +799,7 @@ const MissionForm = () => {
             (loading) => setIsSubmitting(loading.missionAssignation),
             (alert) => setAlert(alert),
             (error) => {
-              setModal(error);
+              setModal({ ...error, details: { missionId: formData.missionId } });
               setFieldErrors(error.fieldErrors || {});
               throw error;
             }
@@ -884,7 +815,7 @@ const MissionForm = () => {
           endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
           lieuId: selectedRegion ? selectedRegion.lieuId : formData.lieuId,
           assignations: formData.beneficiaries.map((beneficiary) => {
-            const selectedEmployee = suggestions.beneficiary.find((emp) => emp.displayName === beneficiary.beneficiary);
+            const selectedEmployee = suggestions.beneficiary.find((emp) => emp.id === beneficiary.employeeId);
             const selectedTransport = beneficiary.transport
               ? suggestions.transport.find((t) => t.type === beneficiary.transport)
               : null;
@@ -958,6 +889,7 @@ const MissionForm = () => {
           setEditingBeneficiary(null);
           setEditingIndex(null);
           setNewBeneficiary({
+            assignationId: "",
             beneficiary: "",
             employeeId: "",
             matricule: "",
@@ -1131,15 +1063,18 @@ const MissionForm = () => {
             </NoBeneficiaries>
           )}
 
-          <AddButton
-            type="button"
-            onClick={addBeneficiary}
-            disabled={isSubmitting}
-            title="Ajouter un nouveau bénéficiaire"
-          >
-            <FaIcons.FaPlus className="w-4 h-4" />
-            <span>Ajouter un Bénéficiaire</span>
-          </AddButton>
+          {!missionId && (
+            <AddButton
+              type="button"
+              onClick={addBeneficiary}
+              disabled={isSubmitting}
+              title="Ajouter un nouveau bénéficiaire"
+            >
+              <FaIcons.FaPlus className="w-4 h-4" />
+              <span>Ajouter un Bénéficiaire</span>
+            </AddButton>
+          )}
+
         </div>
 
         <FormActions>

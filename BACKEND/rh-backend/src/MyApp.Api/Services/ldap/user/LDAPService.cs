@@ -22,7 +22,6 @@ public class LdapService : ILdapService
     {
         _userService = userService ?? throw new ArgumentNullException(nameof(userService));
     }
-
     public List<UserAd>? BuildFullOrganisationHierarchy(string domainPath)
     {
         try
