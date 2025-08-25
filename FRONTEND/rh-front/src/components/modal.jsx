@@ -1,94 +1,94 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react"
-import "styles/modal.css"
+import { useState, useEffect, useCallback } from "react";
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react";
+import {
+  ModalBackdrop,
+  ModalContainer,
+  ModalHeader,
+  ModalIconContainer,
+  ModalTextContent,
+  ModalTitle,
+  ModalMessageList,
+  ModalMessage,
+  ModalCloseButton,
+  ModalActions,
+  DarkMode,
+} from "styles/generaliser/modal";
 
 const Modal = ({ type = "info", message, isOpen, onClose, title, children }) => {
-  const [visible, setVisible] = useState(isOpen)
+  const [visible, setVisible] = useState(isOpen);
 
-  // Fonction pour jouer le son de notification
   const playNotificationSound = useCallback(() => {
-    const audio = new Audio("/sounds/notification.mp3")
-    audio.volume = 0.5
+    const audio = new Audio("/sounds/notification.mp3");
+    audio.volume = 0.5;
     audio.play().catch((error) => {
-      console.warn("Impossible de jouer le son de notification:", error)
-    })
-  }, [])
+      console.warn("Impossible de jouer le son de notification:", error);
+    });
+  }, []);
 
   const handleClose = useCallback(() => {
-    setVisible(false)
-    onClose()
-  }, [onClose])
+    setVisible(false);
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     if (isOpen) {
-      setVisible(true)
+      setVisible(true);
       try {
-        playNotificationSound()
+        playNotificationSound();
       } catch (error) {
-        console.warn("Impossible de jouer le son de notification:", error)
+        console.warn("Impossible de jouer le son de notification:", error);
       }
     } else {
-      setVisible(false)
+      setVisible(false);
     }
-  }, [isOpen, playNotificationSound])
+  }, [isOpen, playNotificationSound]);
 
-  if (!visible) return null
+  if (!visible) return null;
 
   const getIcon = () => {
-    const iconProps = { size: 28, strokeWidth: 2 }
-    switch (type) {
+    const iconProps = { size: 28, strokeWidth: 2 };
+    switch ( type ) {
       case "success":
-        return <CheckCircle {...iconProps} className="text-emerald-500" />
+        return <CheckCircle {...iconProps} />;
       case "error":
-        return <AlertCircle {...iconProps} className="text-red-500" />
+        return <AlertCircle {...iconProps} />;
       case "warning":
-        return <AlertTriangle {...iconProps} className="text-amber-500" />
+        return <AlertTriangle {...iconProps} />;
       case "info":
       default:
-        return <Info {...iconProps} className="text-blue-500" />
+        return <Info {...iconProps} />;
     }
-  }
+  };
 
-  const getTypeStyles = () => {
-    switch (type) {
-      case "success":
-        return "border-l-emerald-500 bg-emerald-50"
-      case "error":
-        return "border-l-red-500 bg-red-50"
-      case "warning":
-        return "border-l-amber-500 bg-amber-50"
-      case "info":
-      default:
-        return "border-l-blue-500 bg-blue-50"
-    }
-  }
-
-  // Split the message into lines based on periods and filter out empty strings
-  const messageLines = message.split('.').map(line => line.trim()).filter(line => line.length > 0)
+  const messageLines = message.split('.').map(line => line.trim()).filter(line => line.length > 0);
 
   return (
-    <div className="modal-backdrop">
-      <div className={`modal ${getTypeStyles()}`}>
-        <div className="modal-header">
-          <div className="modal-icon-container">{getIcon()}</div>
-          <div className="modal-text-content">
-            {title && <h3 className="modal-title">{title}</h3>}
-            <ul className="modal-message-list">
-              {messageLines.map((line, index) => (
-                <li key={index} className="modal-message">{line}</li>
-              ))}
-            </ul>
-          </div>
-          <button onClick={handleClose} className="modal-close-btn" aria-label="Fermer la notification">
-            <X size={20} strokeWidth={2} />
-          </button>
-        </div>
-        {children} {/* Add this to render the buttons */}
-      </div>
-    </div>
-  )
-}
+    <DarkMode>
+      <ModalBackdrop>
+        <ModalContainer className={`modal-${type}`}>
+          <ModalHeader>
+            <ModalIconContainer className={`icon-${type}`}>
+              {getIcon()}
+            </ModalIconContainer>
+            <ModalTextContent>
+              {title && <ModalTitle>{title}</ModalTitle>}
+              <ModalMessageList>
+                {messageLines.map((line, index) => (
+                  <ModalMessage key={index} className={`modal-${type}`}>{line}</ModalMessage>
+                ))}
+              </ModalMessageList>
+            </ModalTextContent>
+            <ModalCloseButton onClick={handleClose} aria-label="Fermer la notification">
+              <X size={20} strokeWidth={2} />
+            </ModalCloseButton>
+          </ModalHeader>
+          {children && <ModalActions>{children}</ModalActions>}
+        </ModalContainer>
+      </ModalBackdrop>
+    </DarkMode>
+  );
+};
 
-export default Modal
+export default Modal;

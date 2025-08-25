@@ -23,6 +23,7 @@ import EmployeeList from 'pages/employee/employee-list';
 import EmployeeForm from 'pages/employee/employee-fom';
 import BeneficiaryMissionList from 'pages/mission/benificary-mission-list';
 import ProfilePage from 'layouts/profil-page';
+import UserList from 'pages/users/users-list';
 
 function AppRouter() {
   return (
@@ -34,6 +35,8 @@ function AppRouter() {
           <Route path="/profil-page" element={<ProfilePage />} />
           
           
+          {/* Utilisateur */}
+          <Route path="/utilisateur" element={<UserList />} />
           {/* Employee */}
           <Route path="/employee/edit/:employeeId" element={<EmployeeForm />} />
           <Route path="/employee/list" element={<EmployeeList />} />
