@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using MyApp.Api.Models.form.recruitment;
+using MyApp.Api.Models.dto.recruitment;
 
 namespace MyApp.Api.Entities.recruitment
 {

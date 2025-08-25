@@ -1,5 +1,5 @@
 ﻿using MyApp.Api.Entities.candidates;
-using MyApp.Api.Models.form.candidates;
+using MyApp.Api.Models.dto.candidates;
 using MyApp.Api.Repositories.candidates;
 using MyApp.Api.Utils.generator;
 

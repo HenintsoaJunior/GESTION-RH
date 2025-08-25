@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Entities.direction;
 using MyApp.Api.Entities.site;
-using MyApp.Model.form.Jobs;
+using MyApp.Api.Models.dto.jobs;
 
 namespace MyApp.Api.Entities.jobs
 {

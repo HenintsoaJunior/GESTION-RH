@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.employee;
-using MyApp.Api.Models.form.employee;
-using MyApp.Api.Models.search.employee;
+using MyApp.Api.Models.dto.employee;
 using MyApp.Api.Services.employee;
 
 

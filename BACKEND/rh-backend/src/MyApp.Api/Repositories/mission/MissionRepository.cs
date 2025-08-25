@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.mission;
+using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Models.list.mission;
-using MyApp.Api.Models.search.mission;
 
 namespace MyApp.Api.Repositories.mission
 {
@@ -45,15 +45,23 @@ namespace MyApp.Api.Repositories.mission
             }
 
             // Filtre par date de début
-            if (filters.StartDate.HasValue)
+            if (filters.MinStartDate.HasValue)
             {
-                query = query.Where(m => m.StartDate >= filters.StartDate.Value);
+                query = query.Where(m => m.StartDate >= filters.MinStartDate.Value);
+            }
+            if (filters.MaxStartDate.HasValue)
+            {
+                query = query.Where(m => m.StartDate <= filters.MaxStartDate.Value);
             }
 
             // Filtre par date de fin
-            if (filters.EndDate.HasValue)
+            if (filters.MinEndDate.HasValue)
             {
-                query = query.Where(m => m.EndDate <= filters.EndDate.Value);
+                query = query.Where(m => m.EndDate >= filters.MinEndDate.Value);
+            }
+            if (filters.MaxEndDate.HasValue)
+            {
+                query = query.Where(m => m.EndDate <= filters.MaxEndDate.Value);
             }
 
             // Filtre par LieuId

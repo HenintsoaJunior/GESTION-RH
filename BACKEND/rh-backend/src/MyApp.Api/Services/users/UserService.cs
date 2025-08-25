@@ -1,10 +1,10 @@
 // UserService.cs
 using MyApp.Api.Entities.users;
-using MyApp.Api.Models.form.users;
 using MyApp.Api.Repositories.users;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MyApp.Api.Models.classes.user;
+using MyApp.Api.Models.dto.users;
 
 namespace MyApp.Api.Services.users
 {

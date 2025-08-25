@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.recruitment;
-using MyApp.Api.Models.form.recruitment;
+using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Services.recruitment;
-using MyApp.Api.Models.search.recruitment;
 
 namespace MyApp.Api.Controllers.recruitment
 {

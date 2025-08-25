@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.jobs;
-using MyApp.Model.form.Jobs;
 
 namespace MyApp.Api.Repositories.jobs
 {

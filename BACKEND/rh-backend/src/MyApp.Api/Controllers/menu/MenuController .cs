@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using MyApp.Api.Models.list.menu;
+using MyApp.Api.Models.dto.menu;
 using MyApp.Api.Services.menu;
 
 namespace MyApp.Api.Controllers.menu

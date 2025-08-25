@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.mission;
-using MyApp.Api.Models.search.mission;
+using MyApp.Api.Models.dto.mission;
 
 namespace MyApp.Api.Repositories.mission
 {
@@ -200,14 +200,24 @@ namespace MyApp.Api.Repositories.mission
                 query = query.Where(ma => ma.Mission != null && ma.Mission.LieuId.Contains(filters.LieuId));
             }
 
-            if (filters.DepartureDate.HasValue)
+            if (filters.MinDepartureDate.HasValue)
             {
-                query = query.Where(ma => ma.DepartureDate >= filters.DepartureDate.Value);
+                query = query.Where(ma => ma.DepartureDate >= filters.MinDepartureDate.Value);
+            }
+            
+            if (filters.MaxDepartureDate.HasValue)
+            {
+                query = query.Where(ma => ma.DepartureDate <= filters.MaxDepartureDate.Value);
+            }
+            
+            if (filters.MinArrivalDate.HasValue)
+            {
+                query = query.Where(ma => ma.DepartureDate >= filters.MinArrivalDate.Value);
             }
 
-            if (filters.DepartureArrive.HasValue)
+            if (filters.MaxArrivalDate.HasValue)
             {
-                query = query.Where(ma => ma.DepartureDate <= filters.DepartureArrive.Value);
+                query = query.Where(ma => ma.DepartureDate <= filters.MaxArrivalDate.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(filters.Status))
