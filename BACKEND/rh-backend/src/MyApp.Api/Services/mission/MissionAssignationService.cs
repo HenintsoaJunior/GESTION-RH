@@ -17,7 +17,7 @@ namespace MyApp.Api.Services.mission
     public interface IMissionAssignationService
     {
         Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator, MissionService missionService);
-        Task<int> calculateDuration(DateTime Start, DateTime End);
+        Task<int> CalculateDuration(DateTime start, DateTime end);
         Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
@@ -86,7 +86,7 @@ namespace MyApp.Api.Services.mission
                 var mission = await GetOrCreateMissionAsync(data, lieu.LieuId, missionService);
                 // si transport n'existe pas => throws
                 var transport = await _transportService.VerifyTransportByTypeAsync(data[1][10]);
-                // si mission assignation n'existe pas => insetion
+                // si mission assignation n'existe pas => insertion
                 if(transport != null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, transport.TransportId);
                 if(transport == null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, null);
 
@@ -114,8 +114,8 @@ namespace MyApp.Api.Services.mission
                 DepartureTime = TimeSpan.TryParse(data[1][6], out var depTime) ? depTime : (TimeSpan?)null,
                 ReturnDate = mission.EndDate,
                 ReturnTime = TimeSpan.TryParse(data[1][8], out var retTime) ? retTime : (TimeSpan?)null,
-                Duration = (mission.StartDate.HasValue && mission.EndDate.HasValue)
-                    ? await calculateDuration(mission.StartDate.Value, mission.EndDate.Value)
+                Duration = mission is { StartDate: not null, EndDate: not null }
+                    ? await CalculateDuration(mission.StartDate.Value, mission.EndDate.Value)
                     : 0
             });
 
@@ -168,16 +168,16 @@ namespace MyApp.Api.Services.mission
             var employeeErrors = await _employeeService.CheckNameAndCode(data);
             if (employeeErrors != null) errors.AddRange(employeeErrors);
 
-            var dateErrors = CSVReader.CheckDate(data);
-            if (dateErrors != null) errors.AddRange(dateErrors);
-
-            var hourErrors = CSVReader.CheckHour(data);
-            if (hourErrors != null) errors.AddRange(hourErrors);
+            // var dateErrors = CSVReader.CheckDate(data);
+            // if (dateErrors != null) errors.AddRange(dateErrors);
+            //
+            // var hourErrors = CSVReader.CheckHour(data);
+            // if (hourErrors != null) errors.AddRange(hourErrors);
 
             return errors;
         }
 
-        public async Task<MissionAssignation?> VerifyMissionAssignationByNameAsync(string employeeId, string missionId)
+        private async Task<MissionAssignation?> VerifyMissionAssignationByNameAsync(string employeeId, string missionId)
         {
             var filters = new MissionAssignationSearchFiltersDTO
             {
@@ -189,7 +189,7 @@ namespace MyApp.Api.Services.mission
             return assignation;
         }
 
-        public Task<int> calculateDuration(DateTime Start, DateTime End)
+        public Task<int> CalculateDuration(DateTime Start, DateTime End)
         {
             if (End < Start)
                 throw new ArgumentException("La date de fin ne peut pas être antérieure à la date de début.");

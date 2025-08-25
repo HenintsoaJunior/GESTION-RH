@@ -78,7 +78,22 @@ CREATE TABLE mission_assignation(
 );
 
 
-
+-- validation par circuit (collaborateur → manager → directeur de tutelle → RH)
+CREATE TABLE mission_validation (
+   mission_validation_id VARCHAR(50),
+   mission_id VARCHAR(50) NOT NULL,
+   mission_assignation_id VARCHAR(50) NOT NULL,
+   mission_creator VARCHAR(50) NOT NULL,
+   status VARCHAR(20) DEFAULT 'En Attente',
+   to_whom VARCHAR(50),
+   validation_date DATETIME,
+   created_at DATETIME,
+   updated_at DATETIME,
+   PRIMARY KEY(validation_id),
+   FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
+   FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id),
+   FOREIGN KEY(mission_creator) REFERENCES employees(employee_id)
+);
 
 
 

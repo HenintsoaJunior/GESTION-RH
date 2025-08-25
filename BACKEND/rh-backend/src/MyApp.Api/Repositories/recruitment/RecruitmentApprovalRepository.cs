@@ -116,7 +116,7 @@ namespace MyApp.Api.Repositories.recruitment
             await _context.RecruitmentApprovals.AddAsync(approval);
         }
 
-        public async Task UpdateAsync(RecruitmentApproval approval)
+        public Task UpdateAsync(RecruitmentApproval approval)
         {
             if (approval == null)
             {
@@ -124,6 +124,7 @@ namespace MyApp.Api.Repositories.recruitment
             }
 
             _context.RecruitmentApprovals.Update(approval);
+            return Task.CompletedTask;
         }
 
         public async Task SaveChangesAsync()

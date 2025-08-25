@@ -45,13 +45,10 @@ namespace MyApp.Api.Services.employee
             {
                 EmployeeCode = code
             };
-            var (result, total) = await _repository.SearchAsync(filters, 1, 1);
+            Console.WriteLine("Code "+ filters.EmployeeCode);
+            var (result, _) = await _repository.SearchAsync(filters, 1, 1);
             var employee = result?.FirstOrDefault();
-            if (employee == null)
-            {
-                throw new Exception("Employee inexistant");
-            }
-            return employee;
+            return employee ?? throw new Exception("Employee inexistant");
         }
 
         // check si le nom et le matricule sont tous les meme pour chaque ligne

@@ -28,7 +28,7 @@ namespace MyApp.Api.Controllers.mission
         [HttpPost("duration")]
         public async Task<IActionResult> GetDuration(DateTime startDate, DateTime endDate)
         {
-            var duration = await Task.Run(() => _service.calculateDuration(startDate, endDate));
+            var duration = await Task.Run(() => _service.CalculateDuration(startDate, endDate));
             return Ok(duration);
         }
 

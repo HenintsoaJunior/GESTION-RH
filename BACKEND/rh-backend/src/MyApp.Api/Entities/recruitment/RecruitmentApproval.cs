@@ -41,7 +41,7 @@ namespace MyApp.Api.Entities.recruitment
         [ForeignKey("ApproverId")]
         public User? Approver { get; set; }
 
-        public static async Task<IEnumerable<RecruitmentApproval>> GetRecruitmentApprovalsFromApprovalFlows(string recruitmentRequestId, IEnumerable<ApprovalFlowEmployee> approvalFlows, IUserService userService)
+        public static Task<IEnumerable<RecruitmentApproval>> GetRecruitmentApprovalsFromApprovalFlows(string recruitmentRequestId, IEnumerable<ApprovalFlowEmployee> approvalFlows, IUserService userService)
         {
             var recruitmentApprovals = new List<RecruitmentApproval>();
             bool first = true;
@@ -54,7 +54,7 @@ namespace MyApp.Api.Entities.recruitment
                 {
                     RecruitmentRequestId = recruitmentRequestId,
                     ApproverId = user?.UserId ?? string.Empty,
-                    ApprovalOrder = flow.ApprovalFlow.ApprovalOrder,
+                    ApprovalOrder = flow.ApprovalFlow?.ApprovalOrder,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     Status = first ? "En attente" : null,
@@ -64,7 +64,7 @@ namespace MyApp.Api.Entities.recruitment
                 first = false;
             }
 
-            return recruitmentApprovals;
+            return Task.FromResult<IEnumerable<RecruitmentApproval>>(recruitmentApprovals);
         }
     }
 }
