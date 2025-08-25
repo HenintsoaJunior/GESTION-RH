@@ -1,15 +1,37 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-
-import 'styles/profile-page.css'; // Import your CSS styles
+import {
+  ProfilePageContainer,
+  ProfileContainer,
+  ProfileHeader,
+  ProfileAvatar,
+  AvatarText,
+  ProfileHeaderInfo,
+  ProfileTitle,
+  ProfileSubtitle,
+  ProfileContent,
+  ProfileGrid,
+  ProfileField,
+  FieldHeader,
+  FieldIcon,
+  FieldLabel,
+  FieldValue,
+  FieldEmpty,
+  LoadingContainer,
+  LoadingSpinner,
+  LoadingText,
+  ErrorContainer,
+  ErrorIcon,
+  ErrorText,
+  ErrorButton
+} from 'styles/generaliser/profil-container';
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Récupérer les données utilisateur depuis localStorage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -19,73 +41,67 @@ const ProfilePage = () => {
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p className="loading-text">Chargement du profil...</p>
-      </div>
+      <LoadingContainer>
+        <LoadingSpinner />
+        <LoadingText>Chargement du profil...</LoadingText>
+      </LoadingContainer>
     );
   }
 
   if (!user) {
     return (
-      <div className="error-container">
-        <div className="error-icon">⚠️</div>
-        <p className="error-text">Aucun utilisateur connecté</p>
-        <button className="error-button" onClick={() => window.location.reload()}>
+      <ErrorContainer>
+        <ErrorIcon>⚠️</ErrorIcon>
+        <ErrorText>Aucun utilisateur connecté</ErrorText>
+        <ErrorButton onClick={() => window.location.reload()}>
           Actualiser
-        </button>
-      </div>
+        </ErrorButton>
+      </ErrorContainer>
     );
   }
 
-  // Derive roles for display by joining roleNames
   const userRoles = user.roles?.map(role => role.roleName).join(", ") || "Non spécifié";
 
   const profileFields = [
     { label: 'Nom complet', value: user.name, icon: '👤' },
-    { label: 'Identifiant utilisateur', value: user.userId, icon: '🆔' },
     { label: 'Email', value: user.email, icon: '📧' },
     { label: 'Département', value: user.department, icon: '🏢' },
-    { label: 'Type d\'utilisateur', value: user.userType, icon: '🔐' },
     { label: 'Rôles', value: userRoles, icon: '👥' }
   ];
 
   return (
-    <div className="profile-page">
-      <div className="profile-container">
-        {/* Header */}
-        <div className="profile-header">
-          <div className="profile-avatar">
-            <span className="avatar-text">
+    <ProfilePageContainer>
+      <ProfileContainer>
+        <ProfileHeader>
+          <ProfileAvatar>
+            <AvatarText>
               {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-            </span>
-          </div>
-          <div className="profile-header-info">
-            <h1 className="profile-title">Profil Utilisateur</h1>
-            <p className="profile-subtitle">Informations personnelles et professionnelles</p>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="profile-content">
-          <div className="profile-grid">
+            </AvatarText>
+          </ProfileAvatar>
+          <ProfileHeaderInfo>
+            <ProfileTitle>Profil Utilisateur</ProfileTitle>
+            <ProfileSubtitle>Informations personnelles et professionnelles</ProfileSubtitle>
+          </ProfileHeaderInfo>
+        </ProfileHeader>
+        <ProfileContent>
+          <ProfileGrid>
             {profileFields.map((field, index) => (
-              <div key={index} className="profile-field">
-                <div className="field-header">
-                  <span className="field-icon">{field.icon}</span>
-                  <label className="field-label">{field.label}</label>
-                </div>
-                <div className="field-value">
+              <ProfileField key={index}>
+                <FieldHeader>
+                  <FieldIcon>{field.icon}</FieldIcon>
+                  <FieldLabel>{field.label}</FieldLabel>
+                </FieldHeader>
+                <FieldValue>
                   {field.value || (
-                    <span className="field-empty">Non spécifié</span>
+                    <FieldEmpty>Non spécifié</FieldEmpty>
                   )}
-                </div>
-              </div>
+                </FieldValue>
+              </ProfileField>
             ))}
-          </div>
-        </div>
-      </div>
-    </div>
+          </ProfileGrid>
+        </ProfileContent>
+      </ProfileContainer>
+    </ProfilePageContainer>
   );
 };
 

@@ -3,11 +3,13 @@ using MyApp.Api.Data;
 using MyApp.Api.Entities.users;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MyApp.Api.Models.classes.user;
 
 namespace MyApp.Api.Repositories.users
 {
     public interface IUserRepository
     {
+        Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<User>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
         Task<User?> GetByEmailAsync(string email);
@@ -30,6 +32,47 @@ namespace MyApp.Api.Repositories.users
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
+        
+        public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)
+        {
+            var query = _context.Users.AsQueryable();
+
+            // Filtre par matricule
+            if (!string.IsNullOrWhiteSpace(filters.Matricule))
+            {
+                query = query.Where(u => u.Matricule.Contains(filters.Matricule));
+            }
+
+            // Filtre par nom
+            if (!string.IsNullOrWhiteSpace(filters.Name))
+            {
+                query = query.Where(u => u.Name!.Contains(filters.Name));
+            }
+
+            // Filtre par département
+            if (!string.IsNullOrWhiteSpace(filters.Department))
+            {
+                query = query.Where(u => u.Department != null && u.Department.Contains(filters.Department));
+            }
+
+            // Filtre par statut
+            if (!string.IsNullOrWhiteSpace(filters.Status))
+            {
+                query = query.Where(u => u.Status != null && u.Status.Contains(filters.Status));
+            }
+
+            var totalCount = await query.CountAsync(); // Nombre total de résultats
+
+            // Récupération des résultats paginés
+            var results = await query
+                .OrderBy(u => u.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (results, totalCount);
+        }
+        
         public async Task<IEnumerable<User>> GetCollaboratorsAsync(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))

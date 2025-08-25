@@ -288,7 +288,6 @@ public class AuthService : IAuthService
             throw new Exception($"Error refreshing token: {ex.Message}", ex);
         }
     }
-
     private Claim[] CreateUserClaims(User user)
     {
         var claims = new List<Claim>
@@ -297,7 +296,7 @@ public class AuthService : IAuthService
             new Claim(JwtRegisteredClaimNames.Name, user.Name ?? ""),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-            new Claim("user_type", user.UserType?.ToString() ?? "Unknown")
+            new Claim("user_type", user.UserType.ToString() ?? string.Empty)
         };
 
         var roleClaims = user.UserRoles

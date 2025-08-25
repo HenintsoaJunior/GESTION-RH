@@ -526,10 +526,10 @@ export default function Template({ children }) {
               <div className="user-profile-dropdown">
                 <div className="user-profile">
                   <div className="user-avatar">{getInitials(user.name)}</div>
-                  <div className="user-info">
+                  {/* <div className="user-info">
                     <span className="user-name">{user.userId}</span>
                     <span className="user-role">{userRole}</span>
-                  </div>
+                  </div> */}
                   <FaIcons.FaChevronDown className="dropdown-arrow" />
                 </div>
                 <div className="user-dropdown-menu">

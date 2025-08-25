@@ -6,9 +6,10 @@ namespace MyApp.Api.Entities.users
 {
     public enum UserType
     {
-        Cadre,
-        NonCadre
+        Cadre = 1,
+        NonCadre = 0
     }
+
 
     [Table("users")]
     public class User : BaseEntity
