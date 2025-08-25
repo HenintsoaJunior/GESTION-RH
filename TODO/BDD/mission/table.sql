@@ -57,9 +57,7 @@ CREATE TABLE mission (
    FOREIGN KEY(lieu_id) REFERENCES lieu(lieu_id)
 );
 
-
-
-CREATE TABLE mission_assignation(
+CREATE TABLE mission_assignation (
    assignation_id VARCHAR(50),
    departure_date DATE NOT NULL,
    departure_time TIME,
@@ -71,12 +69,12 @@ CREATE TABLE mission_assignation(
    transport_id VARCHAR(50),
    mission_id VARCHAR(50) NOT NULL,
    employee_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(assignation_id),
-   FOREIGN KEY(transport_id) REFERENCES transport(transport_id),
-   FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
-   FOREIGN KEY(employee_id) REFERENCES employees(employee_id)
+   is_validated INT DEFAULT 0,
+   PRIMARY KEY (assignation_id),
+   FOREIGN KEY (transport_id) REFERENCES transport(transport_id),
+   FOREIGN KEY (mission_id) REFERENCES mission(mission_id),
+   FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
 );
-
 
 -- validation par circuit (collaborateur → manager → directeur de tutelle → RH)
 CREATE TABLE mission_validation (
@@ -89,7 +87,7 @@ CREATE TABLE mission_validation (
    validation_date DATETIME,
    created_at DATETIME,
    updated_at DATETIME,
-   PRIMARY KEY(validation_id),
+   PRIMARY KEY(mission_validation_id),
    FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
    FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id),
    FOREIGN KEY(mission_creator) REFERENCES employees(employee_id)

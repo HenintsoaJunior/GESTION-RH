@@ -50,7 +50,7 @@ public class AuthService : IAuthService
                 var dbUser = await GetUserFromDatabaseAsync(ldapResult.EmailAddress);
                 return ValidateUserAccess(dbUser);
             }
-            else if (ldapResult.Type == "ldap_unavailable")
+            else if (ldapResult.Type == "ldap_unavailable" || ldapResult.Type == "ldap_error")
             {
                 return await FallbackValidateAsync(username, password);
             }
