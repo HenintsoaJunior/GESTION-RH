@@ -218,74 +218,6 @@
         ('ROLE_003', 'collaborateur', 'Standard employee role', CURRENT_TIMESTAMP, NULL);
 
 
-    -- INSERT INTO users (user_id, matricule, email, name, position, department, superior_id, superior_name, status, signature, user_type, created_at, updated_at)
-    -- VALUES
-    --     ('USR_0001', 'ST_0001', 'jean.dupont@company.com', 'Jean Dupont', 'Développeur Full Stack', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL),
-    --     ('USR_0002', 'ST_0002', 'marie.rakoto@company.com', 'Marie Rakoto', 'Analyste Financier', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL),
-    --     ('USR_0003', 'ST_0003', 'sophie.lefevre@company.com', 'Sophie Lefevre', 'Responsable RH', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL),
-    --     ('USR_0004', 'ST_0004', 'luc.bernard@company.com', 'Luc Bernard', 'Technicien de Maintenance', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL),
-    --     ('USR_0005', 'ST_0005', 'andriana.rabe@company.com', 'Andriana Rabe', 'Assistant Commercial', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL);
-
-
-    -- -- Insertion des demandes de recrutement
-    -- INSERT INTO recruitment_requests (
-    --     recruitment_request_id, position_title, position_count, contract_duration, 
-    --     former_employee_name, replacement_date, new_position_explanation, 
-    --     desired_start_date, created_at, updated_at, status, files, 
-    --     requester_id, recruitment_reason_id, site_id, contract_type_id
-    -- )
-    -- VALUES 
-    --     ('RRQ_0001', 'Développeur Full Stack', 2, '12 mois', 'Jean Dupont', '2025-06-01', NULL, '2025-08-01', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0001', 'RR_0001', 'ST_0001', 'CT_0001'),
-    --     ('RRQ_0002', 'Analyste Financier', 1, 'CDI', NULL, NULL, 'Nouveau poste pour expansion', '2025-09-01', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0002', 'RR_0002', 'ST_0002', 'CT_0002'),
-    --     ('RRQ_0003', 'Technicien de Maintenance', 3, '6 mois', 'Marie Lefèvre', '2025-05-15', NULL, '2025-07-15', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0004', 'RR_0001', 'ST_0001', 'CT_0003'),
-    --     ('RRQ_0004', 'Responsable RH', 1, 'CDI', 'Luc Martin', '2025-04-30', NULL, '2025-06-30', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0003', 'RR_0001', 'ST_0001', 'CT_0002'),
-    --     ('RRQ_0005', 'Assistant Commercial', 2, '3 mois', NULL, NULL, 'Projet temporaire', '2025-07-01', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0005', 'RR_0002', 'ST_0001', 'CT_0003'),
-    --     ('RRQ_0006', 'Chef de Projet', 1, '18 mois', 'Sophie Bernard', '2025-06-10', NULL, '2025-08-15', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0003', 'RR_0001', 'ST_0002', 'CT_0001'),
-    --     ('RRQ_0007', 'Agent de Sécurité', 4, 'CDD 6 mois', NULL, NULL, 'Renforcement équipe', '2025-07-10', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0003', 'RR_0002', 'ST_0002', 'CT_0003');
-
-    -- -- Insertion des détails des demandes de recrutement
-    -- INSERT INTO recruitment_request_details (
-    --     recruitment_request_detail_id, supervisor_position, created_at, updated_at,
-    --     recruitment_request_id, direction_id, department_id, service_id, direct_supervisor_id
-    -- )
-    -- VALUES
-    --     ('RRD_0001', 'Lead Développeur', GETDATE(), NULL, 'RRQ_0001', 'DR_0001', 'DP_0001', 'SR_0001', 'EMP_0001'),
-    --     ('RRD_0002', 'Manager Financier', GETDATE(), NULL, 'RRQ_0002', 'DR_0007', 'DP_0007', 'SR_0007', 'EMP_0002'),
-    --     ('RRD_0003', 'Chef d''Équipe Maintenance', GETDATE(), NULL, 'RRQ_0003', 'DR_0005', 'DP_0005', 'SR_0005', 'EMP_0004'),
-    --     ('RRD_0004', 'Directeur RH', GETDATE(), NULL, 'RRQ_0004', 'DR_0004', 'DP_0004', 'SR_0004', 'EMP_0003'),
-    --     ('RRD_0005', 'Responsable Commercial', GETDATE(), NULL, 'RRQ_0005', 'DR_0002', 'DP_0002', 'SR_0002', 'EMP_0005'),
-    --     ('RRD_0006', 'Manager de Projet', GETDATE(), NULL, 'RRQ_0006', 'DR_0001', 'DP_0001', 'SR_0001', 'EMP_0001'),
-    --     ('RRD_0007', 'Superviseur Sécurité', GETDATE(), NULL, 'RRQ_0007', 'DR_0003', 'DP_0003', 'SR_0003', 'EMP_0004');
-
-    -- -- Insertion des nationalités des employés
-    -- INSERT INTO employee_nationalities (employee_id, nationality_id)
-    -- VALUES
-    --     ('EMP_0001', 'NAT_0001'),
-    --     ('EMP_0001', 'NAT_0002'),
-    --     ('EMP_0002', 'NAT_0001'),
-    --     ('EMP_0003', 'NAT_0002'),
-    --     ('EMP_0004', 'NAT_0001'),
-    --     ('EMP_0005', 'NAT_0001');
-
-    -- -- Insertion des approbations de recrutement (CORRIGÉ)
-    -- INSERT INTO recruitment_approval (
-    --     recruitment_request_id, approver_id, status, approval_order,
-    --     approval_date, comment, signature, created_at, updated_at
-    -- )
-    -- VALUES
-    --     ('RRQ_0001', 'USR_0001', 'Approuvé', 2, '2025-07-12', 'Budget validé', NULL, GETDATE(), NULL),
-    --     ('RRQ_0002', 'USR_0002', 'En attente', 1, NULL, 'En revue financière', NULL, GETDATE(), NULL),
-    --     ('RRQ_0002', 'USR_0003', 'En attente', 2, NULL, NULL, NULL, GETDATE(), NULL),
-    --     ('RRQ_0003', 'USR_0004', 'Approuvé', 1, '2025-07-11', 'Remplacement urgent', NULL, GETDATE(), NULL),
-    --     ('RRQ_0003', 'USR_0003', 'Approuvé', 2, '2025-07-12', 'Validé par DSI', NULL, GETDATE(), NULL),
-    --     ('RRQ_0004', 'USR_0003', 'En attente', 1, NULL, 'En attente de validation RH', NULL, GETDATE(), NULL),
-    --     ('RRQ_0005', 'USR_0005', 'Approuvé', 1, '2025-07-11', 'Projet temporaire approuvé', NULL, GETDATE(), NULL),
-    --     ('RRQ_0005', 'USR_0003', 'Approuvé', 2, '2025-07-12', 'Budget marketing validé', NULL, GETDATE(), NULL),
-    --     ('RRQ_0006', 'USR_0001', 'En attente', 1, NULL, 'En revue par superviseur', NULL, GETDATE(), NULL),
-    --     ('RRQ_0006', 'USR_0002', 'En attente', 2, NULL, NULL, NULL, GETDATE(), NULL),
-    --     ('RRQ_0007', 'USR_0004', 'Approuvé', 1, '2025-07-11', 'Renforcement sécurité validé', NULL, GETDATE(), NULL),
-    --     ('RRQ_0007', 'USR_0003', 'Approuvé', 2, '2025-07-12', 'Conforme aux normes DQRSE', NULL, GETDATE(), NULL);
-
 
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '000465d0-0530-41d9-872f-d6012418ba7e', '00298', 'Safidy RAKOTONDRAJOA (DSI)', 'safidy.rakotondrajoa@ravinala-airports.aero', 'Responsable des applications IT', 'DSI', '83dc05fd-0e42-43f5-b0e0-1567df7647b1', 'Vonjimampianina RAKOTOARISOA (DSI)', null, null, 0);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '002b1f12-e8c5-4a30-81ca-e8532855de71', '00182', 'Dealilalaina Sedera RASOLOMANANA (DRH)', 'sedera.rasolomanana@ravinala-airports.aero', 'Directrice des Ressources Humaines', 'DRH', 'ec738732-6e94-4288-be4a-c098408d199d', 'Daniel LEFEBVRE (DGE)', null, null, null);
@@ -538,7 +470,6 @@ VALUES
     ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_001'),
     ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_002'),
     ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_003');
-
 
 
 INSERT INTO habilitations (habilitation_id,label)

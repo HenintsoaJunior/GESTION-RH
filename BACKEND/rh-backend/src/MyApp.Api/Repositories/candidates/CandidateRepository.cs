@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
-using YourAppNamespace.Entities;
+using MyApp.Api.Entities.candidates;
 
 namespace MyApp.Api.Repositories.candidates
 {

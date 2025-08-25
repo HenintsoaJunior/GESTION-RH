@@ -6,31 +6,23 @@ namespace MyApp.Api.Controllers.direction
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UnitController : ControllerBase
+    public class UnitController(
+        IUnitService unitService,
+        ILogger<UnitController> logger)
+        : ControllerBase
     {
-        private readonly IUnitService _unitService;
-        private readonly ILogger<UnitController> _logger;
-
-        public UnitController(
-            IUnitService unitService,
-            ILogger<UnitController> logger)
-        {
-            _unitService = unitService;
-            _logger = logger;
-        }
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Unit>>> GetAll()
         {
             try
             {
-                _logger.LogInformation("Récupération de toutes les unités");
-                var units = await _unitService.GetAllAsync();
+                logger.LogInformation("Récupération de toutes les unités");
+                var units = await unitService.GetAllAsync();
                 return Ok(units);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des unités");
+                logger.LogError(ex, "Erreur lors de la récupération des unités");
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des unités.");
             }
         }
@@ -42,15 +34,15 @@ namespace MyApp.Api.Controllers.direction
             {
                 if (string.IsNullOrWhiteSpace(id))
                 {
-                    _logger.LogWarning("Tentative de récupération d'une unité avec un ID null ou vide");
+                    logger.LogWarning("Tentative de récupération d'une unité avec un ID null ou vide");
                     return BadRequest("L'ID de l'unité ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Récupération de l'unité avec l'ID: {UnitId}", id);
-                var unit = await _unitService.GetByIdAsync(id);
+                logger.LogInformation("Récupération de l'unité avec l'ID: {UnitId}", id);
+                var unit = await unitService.GetByIdAsync(id);
                 if (unit == null)
                 {
-                    _logger.LogWarning("Unité non trouvée pour l'ID: {UnitId}", id);
+                    logger.LogWarning("Unité non trouvée pour l'ID: {UnitId}", id);
                     return NotFound();
                 }
 
@@ -58,7 +50,7 @@ namespace MyApp.Api.Controllers.direction
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération de l'unité avec l'ID: {UnitId}", id);
+                logger.LogError(ex, "Erreur lors de la récupération de l'unité avec l'ID: {UnitId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la récupération de l'unité.");
             }
         }
@@ -70,17 +62,17 @@ namespace MyApp.Api.Controllers.direction
             {
                 if (string.IsNullOrWhiteSpace(serviceId))
                 {
-                    _logger.LogWarning("Tentative de récupération des unités avec un ID de service null ou vide");
+                    logger.LogWarning("Tentative de récupération des unités avec un ID de service null ou vide");
                     return BadRequest("L'ID du service ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Récupération des unités par service: {ServiceId}", serviceId);
-                var units = await _unitService.GetByServiceAsync(serviceId);
+                logger.LogInformation("Récupération des unités par service: {ServiceId}", serviceId);
+                var units = await unitService.GetByServiceAsync(serviceId);
                 return Ok(units);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des unités par service: {ServiceId}", serviceId);
+                logger.LogError(ex, "Erreur lors de la récupération des unités par service: {ServiceId}", serviceId);
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des unités par service.");
             }
         }
@@ -92,27 +84,27 @@ namespace MyApp.Api.Controllers.direction
             {
                 if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning("Données invalides lors de la création d'une unité: {ModelStateErrors}", ModelState);
+                    logger.LogWarning("Données invalides lors de la création d'une unité: {ModelStateErrors}", ModelState);
                     return BadRequest(ModelState);
                 }
 
-                _logger.LogInformation("Création d'une nouvelle unité");
-                await _unitService.AddAsync(unit);
+                logger.LogInformation("Création d'une nouvelle unité");
+                await unitService.AddAsync(unit);
 
                 // Récupérer l'unité créée
-                var createdUnit = await _unitService.GetByIdAsync(unit.UnitId);
+                var createdUnit = await unitService.GetByIdAsync(unit.UnitId);
                 if (createdUnit == null)
                 {
-                    _logger.LogWarning("Unité non trouvée après création");
+                    logger.LogWarning("Unité non trouvée après création");
                     return StatusCode(500, "L'unité n'a pas été trouvée après création.");
                 }
 
-                _logger.LogInformation("Unité créée avec succès avec l'ID: {UnitId}", createdUnit.UnitId);
+                logger.LogInformation("Unité créée avec succès avec l'ID: {UnitId}", createdUnit.UnitId);
                 return Ok(createdUnit);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la création de l'unité");
+                logger.LogError(ex, "Erreur lors de la création de l'unité");
                 return StatusCode(500, "Une erreur est survenue lors de la création de l'unité.");
             }
         }
@@ -124,33 +116,33 @@ namespace MyApp.Api.Controllers.direction
             {
                 if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning("Données invalides lors de la mise à jour d'une unité: {ModelStateErrors}", ModelState);
+                    logger.LogWarning("Données invalides lors de la mise à jour d'une unité: {ModelStateErrors}", ModelState);
                     return BadRequest(ModelState);
                 }
 
                 if (string.IsNullOrWhiteSpace(id))
                 {
-                    _logger.LogWarning("Tentative de mise à jour d'une unité avec un ID null ou vide");
+                    logger.LogWarning("Tentative de mise à jour d'une unité avec un ID null ou vide");
                     return BadRequest("L'ID de l'unité ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Vérification de l'existence de l'unité avec l'ID: {UnitId}", id);
-                var existingUnit = await _unitService.GetByIdAsync(id);
+                logger.LogInformation("Vérification de l'existence de l'unité avec l'ID: {UnitId}", id);
+                var existingUnit = await unitService.GetByIdAsync(id);
                 if (existingUnit == null)
                 {
-                    _logger.LogWarning("Unité non trouvée pour l'ID: {UnitId}", id);
+                    logger.LogWarning("Unité non trouvée pour l'ID: {UnitId}", id);
                     return NotFound();
                 }
 
-                _logger.LogInformation("Mise à jour de l'unité avec l'ID: {UnitId}", id);
-                await _unitService.UpdateAsync(id, unit);
+                logger.LogInformation("Mise à jour de l'unité avec l'ID: {UnitId}", id);
+                await unitService.UpdateAsync(id, unit);
 
-                _logger.LogInformation("Unité mise à jour avec succès pour l'ID: {UnitId}", id);
+                logger.LogInformation("Unité mise à jour avec succès pour l'ID: {UnitId}", id);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour de l'unité avec l'ID: {UnitId}", id);
+                logger.LogError(ex, "Erreur lors de la mise à jour de l'unité avec l'ID: {UnitId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la mise à jour de l'unité.");
             }
         }
@@ -162,27 +154,27 @@ namespace MyApp.Api.Controllers.direction
             {
                 if (string.IsNullOrWhiteSpace(id))
                 {
-                    _logger.LogWarning("Tentative de suppression d'une unité avec un ID null ou vide");
+                    logger.LogWarning("Tentative de suppression d'une unité avec un ID null ou vide");
                     return BadRequest("L'ID de l'unité ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Vérification de l'existence de l'unité avec l'ID: {UnitId}", id);
-                var unit = await _unitService.GetByIdAsync(id);
+                logger.LogInformation("Vérification de l'existence de l'unité avec l'ID: {UnitId}", id);
+                var unit = await unitService.GetByIdAsync(id);
                 if (unit == null)
                 {
-                    _logger.LogWarning("Unité non trouvée pour l'ID: {UnitId}", id);
+                    logger.LogWarning("Unité non trouvée pour l'ID: {UnitId}", id);
                     return NotFound();
                 }
 
-                _logger.LogInformation("Suppression de l'unité avec l'ID: {UnitId}", id);
-                await _unitService.DeleteAsync(id);
+                logger.LogInformation("Suppression de l'unité avec l'ID: {UnitId}", id);
+                await unitService.DeleteAsync(id);
 
-                _logger.LogInformation("Unité supprimée avec succès pour l'ID: {UnitId}", id);
+                logger.LogInformation("Unité supprimée avec succès pour l'ID: {UnitId}", id);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la suppression de l'unité avec l'ID: {UnitId}", id);
+                logger.LogError(ex, "Erreur lors de la suppression de l'unité avec l'ID: {UnitId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la suppression de l'unité.");
             }
         }

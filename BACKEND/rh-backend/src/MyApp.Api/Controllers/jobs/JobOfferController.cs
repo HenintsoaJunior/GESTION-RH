@@ -7,69 +7,50 @@ namespace MyApp.Api.Controllers.jobs
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class JobOfferController : ControllerBase
+    public class JobOfferController(IJobOfferService service) : ControllerBase
     {
-        private readonly IJobOfferService _service;
-
-        public JobOfferController(IJobOfferService service)
-        {
-            _service = service;
-        }
-
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var offers = await _service.GetAllAsync();
+            var offers = await service.GetAllAsync();
+            return Ok(offers);
+        }
+
+        [HttpPost("search")]
+        public async Task<IActionResult> GetAllByCriteria([FromBody] JobOfferDTOForm criteria)
+        {
+            var offers = await service.GetAllByCriteriaAsync(criteria);
             return Ok(offers);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
-            var offer = await _service.GetByIdAsync(id);
-            if (offer == null)
-                return NotFound();
-
+            var offer = await service.GetByIdAsync(id);
+            if (offer == null) return NotFound();
             return Ok(offer);
         }
 
-        [HttpPost("by-criteria")]
-        public async Task<IActionResult> GetAllByCriteria([FromBody] JobOfferDTOForm jobOfferDTOForm)
-        {
-            var criteria = new JobOffer(jobOfferDTOForm);
-            var offers = await _service.GetAllByCriteriaAsync(criteria);
-            return Ok(offers);
-        }
-
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] JobOffer offer)
+        public async Task<IActionResult> Create([FromBody] JobOfferDTOForm dto)
         {
-            await _service.AddAsync(offer);
-            return CreatedAtAction(nameof(GetById), new { id = offer.OfferId }, offer);
+            var id = await service.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id }, new { id });
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] JobOffer offer)
+        public async Task<IActionResult> Update(string id, [FromBody] JobOfferDTOForm dto)
         {
-            if (id != offer.OfferId)
-                return BadRequest("ID mismatch");
-
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null)
-                return NotFound();
-
-            await _service.UpdateAsync(offer);
-            return NoContent();
+            var updated = await service.UpdateAsync(id, dto);
+            if (updated == null) return NotFound();
+            return Ok(updated);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null)
-                return NotFound();
-
-            await _service.DeleteAsync(existing);
+            var deleted = await service.DeleteAsync(id);
+            if (!deleted) return NotFound();
             return NoContent();
         }
     }

@@ -7,16 +7,10 @@ namespace MyApp.Api.Controllers.ldap.user;
 
 [Route("api/[controller]")]
 [ApiController]
-public class LdapController : ControllerBase
+public class LdapController(ILdapService ldapService, IConfiguration configuration) : ControllerBase
 {
-    private readonly ILdapService _ldapService;
-    private readonly IConfiguration _configuration;
-
-    public LdapController(ILdapService ldapService, IConfiguration configuration)
-    {
-        _ldapService = ldapService ?? throw new ArgumentNullException(nameof(ldapService));
-        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-    }
+    private readonly ILdapService _ldapService = ldapService ?? throw new ArgumentNullException(nameof(ldapService));
+    private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
     [HttpGet]
     public ActionResult<List<UserAd>> GetUsersFromActiveDirectory()
