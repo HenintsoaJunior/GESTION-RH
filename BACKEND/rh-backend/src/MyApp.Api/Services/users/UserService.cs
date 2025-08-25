@@ -4,11 +4,13 @@ using MyApp.Api.Models.form.users;
 using MyApp.Api.Repositories.users;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MyApp.Api.Models.classes.user;
 
 namespace MyApp.Api.Services.users
 {
     public interface IUserService
     {
+        Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize);
         Task<UserDto?> LoginAsync(string email, string password);
         Task<IEnumerable<User>> GetAllAsync();
         Task<List<User>> GetAllUsersAsync();
@@ -32,7 +34,12 @@ namespace MyApp.Api.Services.users
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
-
+        
+        public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)
+        {
+            return await _repository.SearchAsync(filters, page, pageSize);
+        }
+        
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             return await _repository.GetAllAsync();

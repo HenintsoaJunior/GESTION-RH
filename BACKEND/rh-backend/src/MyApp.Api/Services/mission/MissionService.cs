@@ -108,7 +108,6 @@ namespace MyApp.Api.Services.mission
                             ReturnTime = assignationDto.ReturnTime,
                             Duration = assignationDto.Duration
                         };
-
                         await _missionAssignationService.CreateAsync(missionAssignation);
                     }
                     _logger.LogInformation("Created {Count} mission assignations for mission {MissionId}", missionDto.Assignations.Count, missionId);

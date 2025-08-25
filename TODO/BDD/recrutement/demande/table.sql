@@ -1,6 +1,8 @@
 -- Tables les plus dépendantes (feuilles de dépendance)
+DROP TABLE IF EXISTS mission_validation;
 DROP TABLE IF EXISTS mission_assignation;
 DROP TABLE IF EXISTS compensation_scale;
+DROP TABLE IF EXISTS mission_validation;
 DROP TABLE IF EXISTS mission;
 DROP TABLE IF EXISTS lieu;
 DROP TABLE IF EXISTS transport;
@@ -309,7 +311,7 @@ CREATE TABLE users (
     superior_name VARCHAR(150),
     status VARCHAR(50),
     signature VARCHAR(MAX),
-    user_type VARCHAR(50),
+    user_type INT,
     refresh_token VARCHAR(MAX),
     refresh_token_expiry DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
