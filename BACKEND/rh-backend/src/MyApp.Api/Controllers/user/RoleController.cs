@@ -11,6 +11,7 @@ namespace MyApp.Api.Controllers.user
         IRoleService roleService,
         IRoleHabilitationService roleHabilitationService,
         IHabilitationService habilitationService,
+        IUserRoleService userRoleService,
         ILogger<RoleController> logger)
         : ControllerBase
     {
@@ -319,6 +320,107 @@ namespace MyApp.Api.Controllers.user
             {
                 _logger.LogError(ex, "Erreur lors de la suppression de la relation rôle-habilitation avec HabilitationId {HabilitationId} et RoleId {RoleId}", habilitationId, roleId);
                 return StatusCode(500, "Une erreur est survenue lors de la suppression de la relation rôle-habilitation");
+            }
+        }
+
+        // -------------------- USER-ROLES --------------------
+        [HttpGet("user-roles")]
+        public async Task<ActionResult<IEnumerable<UserRole>>> GetAllUserRoles()
+        {
+            try
+            {
+                var userRoles = await userRoleService.GetAllAsync();
+                return Ok(userRoles);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de toutes les relations utilisateur-rôle");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des relations utilisateur-rôle");
+            }
+        }
+
+        [HttpGet("user-roles/{userId}/{roleId}")]
+        public async Task<ActionResult<UserRole>> GetUserRole(string userId, string roleId)
+        {
+            try
+            {
+                var userRole = await userRoleService.GetByKeysAsync(userId, roleId);
+                if (userRole == null)
+                {
+                    _logger.LogWarning("Relation utilisateur-rôle avec UserId {UserId} et RoleId {RoleId} non trouvée", userId, roleId);
+                    return NotFound();
+                }
+                return Ok(userRole);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de la relation utilisateur-rôle avec UserId {UserId} et RoleId {RoleId}", userId, roleId);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération de la relation utilisateur-rôle");
+            }
+        }
+
+        [HttpPost("user-roles")]
+        public async Task<ActionResult> CreateUserRole([FromBody] UserRoleDTOForm userRole)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                var created = await userRoleService.CreateAsync(userRole);
+                return CreatedAtAction(nameof(GetUserRole), new { userId = created.UserId, roleId = created.RoleId }, created);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création d'une relation utilisateur-rôle");
+                return StatusCode(500, "Une erreur est survenue lors de la création de la relation utilisateur-rôle");
+            }
+        }
+
+        [HttpPut("user-roles")]
+        public async Task<ActionResult> UpdateUserRole([FromBody] UserRoleDTOForm userRole)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                var existing = await userRoleService.GetByKeysAsync(userRole.UserId, userRole.RoleId);
+                if (existing == null)
+                {
+                    _logger.LogWarning("Échec de la mise à jour, relation utilisateur-rôle avec UserId {UserId} et RoleId {RoleId} introuvable", userRole.UserId, userRole.RoleId);
+                    return NotFound();
+                }
+
+                await userRoleService.UpdateAsync(userRole);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour de la relation utilisateur-rôle avec UserId {UserId} et RoleId {RoleId}", userRole.UserId, userRole.RoleId);
+                return StatusCode(500, "Une erreur est survenue lors de la mise à jour de la relation utilisateur-rôle");
+            }
+        }
+
+        [HttpDelete("user-roles/{userId}/{roleId}")]
+        public async Task<ActionResult> DeleteUserRole(string userId, string roleId)
+        {
+            try
+            {
+                var existing = await userRoleService.GetByKeysAsync(userId, roleId);
+                if (existing == null)
+                {
+                    _logger.LogWarning("Échec de suppression, relation utilisateur-rôle avec UserId {UserId} et RoleId {RoleId} introuvable", userId, roleId);
+                    return NotFound();
+                }
+
+                await userRoleService.DeleteAsync(userId, roleId);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de la relation utilisateur-rôle avec UserId {UserId} et RoleId {RoleId}", userId, roleId);
+                return StatusCode(500, "Une erreur est survenue lors de la suppression de la relation utilisateur-rôle");
             }
         }
     }
