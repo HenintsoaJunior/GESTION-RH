@@ -39,12 +39,9 @@ namespace MyApp.Api.Controllers.user
             try
             {
                 var role = await roleService.GetByIdAsync(id);
-                if (role == null)
-                {
-                    _logger.LogWarning("Rôle avec ID {RoleId} non trouvé", id);
-                    return NotFound();
-                }
-                return Ok(role);
+                if (role != null) return Ok(role);
+                _logger.LogWarning("Rôle avec ID {RoleId} non trouvé", id);
+                return NotFound();
             }
             catch (Exception ex)
             {

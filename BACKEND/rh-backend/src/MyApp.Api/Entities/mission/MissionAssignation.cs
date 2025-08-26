@@ -75,5 +75,17 @@ namespace MyApp.Api.Entities.mission
             Duration = dto.Duration;
             IsValidated = 0;
         }
+
+        public MissionAssignation(string missionId, MissionAssignationDTOForm assignationDto)
+        {
+            EmployeeId = assignationDto.EmployeeId;
+            MissionId = missionId;
+            TransportId = assignationDto.TransportId;
+            DepartureDate = assignationDto.DepartureDate ?? DateTime.Now;
+            DepartureTime = assignationDto.DepartureTime;
+            ReturnDate = assignationDto.ReturnDate;
+            ReturnTime = assignationDto.ReturnTime;
+            Duration = assignationDto.Duration;
+        }
     }
 }

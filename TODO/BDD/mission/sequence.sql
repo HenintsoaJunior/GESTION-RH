@@ -26,6 +26,9 @@ IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_mission_validation_id')
     DROP SEQUENCE seq_mission_validation_id;
 GO
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_log_id')
+    DROP SEQUENCE seq_mission_validation_id;
+GO
 
 
 CREATE SEQUENCE seq_lieu_id
@@ -88,6 +91,15 @@ GO
 
 
 CREATE SEQUENCE seq_mission_validation_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+CREATE SEQUENCE seq_log_id
     AS INT
     START WITH 1
     INCREMENT BY 1
