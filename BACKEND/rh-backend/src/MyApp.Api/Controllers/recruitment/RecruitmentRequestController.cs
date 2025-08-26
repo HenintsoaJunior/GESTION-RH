@@ -94,13 +94,10 @@ namespace MyApp.Api.Controllers.recruitment
 
                 logger.LogInformation("Récupération de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
                 var request = await service.GetByRequestIdAsync(id);
-                if (request == null)
-                {
-                    logger.LogWarning("Demande de recrutement non trouvée pour l'ID: {RecruitmentRequestId}", id);
-                    return NotFound();
-                }
+                if (request != null) return Ok(request);
+                logger.LogWarning("Demande de recrutement non trouvée pour l'ID: {RecruitmentRequestId}", id);
+                return NotFound();
 
-                return Ok(request);
             }
             catch (Exception ex)
             {
@@ -122,13 +119,10 @@ namespace MyApp.Api.Controllers.recruitment
 
                 logger.LogInformation("Récupération du détail de la demande de recrutement avec l'ID: {RecruitmentRequestId}", recruitmentRequestId);
                 var detail = await serviceDetails.GetSingleByRequestIdAsync(recruitmentRequestId);
-                if (detail == null)
-                {
-                    logger.LogWarning("Détail de demande de recrutement non trouvé pour l'ID: {RecruitmentRequestId}", recruitmentRequestId);
-                    return NotFound();
-                }
+                if (detail != null) return Ok(detail);
+                logger.LogWarning("Détail de demande de recrutement non trouvé pour l'ID: {RecruitmentRequestId}", recruitmentRequestId);
+                return NotFound();
 
-                return Ok(detail);
             }
             catch (Exception ex)
             {
@@ -211,7 +205,7 @@ namespace MyApp.Api.Controllers.recruitment
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Erreur lors de la création de la demande de recrutement pour le poste: {PositionTitle}", requestForm.PositionTitle ?? "Inconnu");
+                logger.LogError(ex, "Erreur lors de la création de la demande de recrutement pour le poste: {PositionTitle}", requestForm.PositionTitle);
                 return StatusCode(500, "Une erreur est survenue lors de la création de la demande de recrutement.");
             }
         }
