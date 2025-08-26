@@ -323,7 +323,7 @@ CREATE TABLE user_role (
     user_id VARCHAR(250) NOT NULL,
     role_id VARCHAR(50) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
     PRIMARY KEY (user_id, role_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id)
         ON UPDATE CASCADE
@@ -337,7 +337,7 @@ CREATE TABLE user_role (
 CREATE TABLE habilitations(
    habilitation_id VARCHAR(50),
    label VARCHAR(50),
-   created_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    PRIMARY KEY(habilitation_id)
 );
@@ -345,6 +345,8 @@ CREATE TABLE habilitations(
 CREATE TABLE role_habilitation(
    habilitation_id VARCHAR(50),
    role_id VARCHAR(50),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
    PRIMARY KEY(habilitation_id, role_id),
    FOREIGN KEY(habilitation_id) REFERENCES habilitations(habilitation_id),
    FOREIGN KEY(role_id) REFERENCES role(role_id)
