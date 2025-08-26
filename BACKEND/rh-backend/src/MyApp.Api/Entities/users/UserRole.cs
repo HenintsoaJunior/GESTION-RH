@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Models.dto.users;
 
 namespace MyApp.Api.Entities.users
 {
@@ -21,5 +22,13 @@ namespace MyApp.Api.Entities.users
 
         [ForeignKey("RoleId")]
         public Role? Role { get; set; }
+        
+        public UserRole(){}
+
+        public UserRole(UserRoleDTOForm dto)
+        {
+            UserId = dto.UserId;
+            RoleId = dto.RoleId;
+        }
     }
 }

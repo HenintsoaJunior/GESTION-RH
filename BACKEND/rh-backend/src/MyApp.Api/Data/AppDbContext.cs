@@ -51,6 +51,7 @@ namespace MyApp.Api.Data
         public DbSet<Service> Services { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<Direction> Directions { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<User> Users { get; set; }
         
         public DbSet<Role>  Roles { get; set; }
