@@ -1,4 +1,5 @@
 using MyApp.Api.Entities.users;
+using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.users;
 using MyApp.Api.Utils.generator;
 
@@ -8,7 +9,7 @@ public interface IRoleService
     {
         Task<IEnumerable<Role>> GetAllAsync();
         Task<Role?> GetByIdAsync(string id);
-        Task AddAsync(Role role);
+        Task AddAsync(RoleDTOForm dto);
         Task UpdateAsync(Role role);
         Task DeleteAsync(string id);
     }
@@ -63,10 +64,11 @@ public interface IRoleService
             }
         }
 
-        public async Task AddAsync(Role role)
+        public async Task AddAsync(RoleDTOForm dto)
         {
             try
             {
+                var role = new Role(dto);
                 if (role == null)
                 {
                     throw new ArgumentNullException(nameof(role), "Le rôle ne peut pas être null");
@@ -85,7 +87,7 @@ public interface IRoleService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de l'ajout du rôle avec l'ID: {RoleId}", role?.RoleId);
+                _logger.LogError(ex, "Erreur lors de l'ajout du rôle");
                 throw;
             }
         }

@@ -1,4 +1,5 @@
 using MyApp.Api.Entities.users;
+using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.users;
 using MyApp.Api.Utils.generator;
 
@@ -8,7 +9,7 @@ public interface IHabilitationService
     {
         Task<IEnumerable<Habilitation>> GetAllAsync();
         Task<Habilitation?> GetByIdAsync(string id);
-        Task AddAsync(Habilitation habilitation);
+        Task AddAsync(HabilitationDTOForm dto);
         Task UpdateAsync(Habilitation habilitation);
         Task DeleteAsync(string id);
     }
@@ -63,10 +64,11 @@ public interface IHabilitationService
             }
         }
 
-        public async Task AddAsync(Habilitation habilitation)
+        public async Task AddAsync(HabilitationDTOForm dto)
         {
             try
             {
+                var habilitation= new Habilitation(dto);
                 if (habilitation == null)
                 {
                     throw new ArgumentNullException(nameof(habilitation), "L'habilitation ne peut pas être null");
@@ -85,7 +87,7 @@ public interface IHabilitationService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de l'ajout de l'habilitation avec l'ID: {HabilitationId}", habilitation?.HabilitationId);
+                _logger.LogError(ex, "Erreur lors de l'ajout de l'habilitation");
                 throw;
             }
         }
