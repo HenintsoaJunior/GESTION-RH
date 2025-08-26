@@ -28,6 +28,7 @@ public interface IRoleHabilitationRepository
             return await _context.RoleHabilitations
                 .Include(rh => rh.Habilitation)
                 .Include(rh => rh.Role)
+                .OrderByDescending(rh => rh.CreatedAt)
                 .ToListAsync();
         }
 
