@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using MyApp.Api.Models.dto.users;
 
 namespace MyApp.Api.Entities.users;
 
@@ -17,4 +18,11 @@ public class Habilitation : BaseEntity
     public string Label { get; set; } = null!;
 
     public ICollection<RoleHabilitation> RoleHabilitations { get; set; } = new List<RoleHabilitation>();
+    
+    public Habilitation(){}
+
+    public Habilitation(HabilitationDTOForm dto)
+    {
+        Label = dto.Label;
+    }
 }

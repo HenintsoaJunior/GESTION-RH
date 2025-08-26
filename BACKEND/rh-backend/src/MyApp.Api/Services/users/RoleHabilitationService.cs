@@ -1,4 +1,5 @@
 using MyApp.Api.Entities.users;
+using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.users;
 
 namespace MyApp.Api.Services.users;
@@ -7,7 +8,7 @@ public interface IRoleHabilitationService
     {
         Task<IEnumerable<RoleHabilitation>> GetAllAsync();
         Task<RoleHabilitation?> GetByKeysAsync(string habilitationId, string roleId);
-        Task AddAsync(RoleHabilitation roleHabilitation);
+        Task AddAsync(RoleHabilitationDTOForm dto);
         Task UpdateAsync(RoleHabilitation roleHabilitation);
         Task DeleteAsync(string habilitationId, string roleId);
     }
@@ -59,10 +60,11 @@ public interface IRoleHabilitationService
             }
         }
 
-        public async Task AddAsync(RoleHabilitation roleHabilitation)
+        public async Task AddAsync(RoleHabilitationDTOForm dto)
         {
             try
             {
+                var roleHabilitation = new RoleHabilitation(dto);
                 if (roleHabilitation == null)
                 {
                     throw new ArgumentNullException(nameof(roleHabilitation), "Le role_habilitation ne peut pas être null");
@@ -80,7 +82,7 @@ public interface IRoleHabilitationService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de l'ajout du role_habilitation avec HabilitationId: {HabilitationId} et RoleId: {RoleId}", roleHabilitation?.HabilitationId, roleHabilitation?.RoleId);
+                _logger.LogError(ex, "Erreur lors de l'ajout du role_habilitation");
                 throw;
             }
         }
