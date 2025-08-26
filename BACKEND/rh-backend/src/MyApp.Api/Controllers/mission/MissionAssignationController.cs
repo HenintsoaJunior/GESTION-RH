@@ -26,7 +26,7 @@ namespace MyApp.Api.Controllers.mission
 
             try
             {
-                using var stream = file.OpenReadStream();
+                await using var stream = file.OpenReadStream();
                 var result = await _service.ImportMissionFromCsv(stream, separator, (MissionService)_missionService);
                 return Ok(result);
             }
@@ -138,12 +138,9 @@ namespace MyApp.Api.Controllers.mission
             try
             {
                 var missionAssignation = await _service.GetByIdAsync(employeeId, missionId, null);
-                if (missionAssignation == null)
-                {
-                    _logger.LogWarning("Aucune assignation trouvée pour EmployeeId: {EmployeeId}, MissionId: {MissionId}", employeeId, missionId);
-                    return NotFound("Aucune assignation trouvée pour ces identifiants.");
-                }
-                return Ok(missionAssignation);
+                if (missionAssignation != null) return Ok(missionAssignation);
+                _logger.LogWarning("Aucune assignation trouvée pour EmployeeId: {EmployeeId}, MissionId: {MissionId}", employeeId, missionId);
+                return NotFound("Aucune assignation trouvée pour ces identifiants.");
             }
             catch (Exception ex)
             {
@@ -209,12 +206,9 @@ namespace MyApp.Api.Controllers.mission
 
                 var missionAssignation = new MissionAssignation(dto);
                 var success = await _service.UpdateAsync(assignationId, missionAssignation);
-                if (!success)
-                {
-                    _logger.LogWarning("Aucune assignation trouvée pour l'identifiant: {AssignationId}", assignationId);
-                    return NotFound("Aucune assignation trouvée pour cet identifiant.");
-                }
-                return Ok(missionAssignation);
+                if (success) return Ok(missionAssignation);
+                _logger.LogWarning("Aucune assignation trouvée pour l'identifiant: {AssignationId}", assignationId);
+                return NotFound("Aucune assignation trouvée pour cet identifiant.");
             }
             catch (Exception ex)
             {
@@ -235,12 +229,9 @@ namespace MyApp.Api.Controllers.mission
             try
             {
                 var success = await _service.DeleteAsync(assignationId);
-                if (!success)
-                {
-                    _logger.LogWarning("Aucune assignation trouvée pour l'identifiant: {AssignationId}", assignationId);
-                    return NotFound("Aucune assignation trouvée pour cet identifiant.");
-                }
-                return Ok("Assignation supprimée avec succès.");
+                if (success) return Ok("Assignation supprimée avec succès.");
+                _logger.LogWarning("Aucune assignation trouvée pour l'identifiant: {AssignationId}", assignationId);
+                return NotFound("Aucune assignation trouvée pour cet identifiant.");
             }
             catch (Exception ex)
             {
