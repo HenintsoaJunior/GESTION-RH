@@ -12,6 +12,8 @@ namespace MyApp.Api.Services.users
         Task<UserRole> CreateAsync(UserRoleDTOForm dto);
         Task<UserRole?> UpdateAsync(UserRoleDTOForm dto);
         Task<bool> DeleteAsync(string userId, string roleId);
+        
+        Task AddAsync(UserRoleDtoFormBulk dto);
     }
 
     public class UserRoleService : IUserRoleService
@@ -127,6 +129,38 @@ namespace MyApp.Api.Services.users
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la suppression de la relation utilisateur-rôle avec UserId {UserId} et RoleId {RoleId}", userId, roleId);
+                throw;
+            }
+        }
+        
+        public async Task AddAsync(UserRoleDtoFormBulk dto)
+        {
+            try
+            {
+                if (dto == null || string.IsNullOrWhiteSpace(dto.UserId) || !dto.RoleIds.Any())
+                {
+                    throw new ArgumentException("L'ID de l'utilisateur ou la liste des IDs de rôles ne peuvent pas être null ou vides");
+                }
+
+                // Validate role IDs
+                foreach (var roleId in dto.RoleIds)
+                {
+                    if (string.IsNullOrWhiteSpace(roleId))
+                    {
+                        throw new ArgumentException("L'ID du rôle ne peut pas être null ou vide");
+                    }
+                }
+
+                // Synchronize roles for the user
+                await _repository.SynchronizeRolesAsync(dto.UserId, dto.RoleIds);
+
+                await _repository.SaveChangesAsync();
+
+                _logger.LogInformation("Relations utilisateur-rôle mises à jour avec succès pour UserId {UserId}", dto.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour des relations utilisateur-rôle pour UserId {UserId}", dto.UserId);
                 throw;
             }
         }

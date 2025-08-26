@@ -35,7 +35,10 @@ namespace MyApp.Api.Repositories.users
         
         public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)
         {
-            var query = _context.Users.AsQueryable();
+            var query = _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .AsQueryable();
 
             // Filtre par matricule
             if (!string.IsNullOrWhiteSpace(filters.Matricule))
@@ -84,7 +87,10 @@ namespace MyApp.Api.Repositories.users
         }
         public async Task<IEnumerable<User>> GetAllAsync()
         {
-            return await _context.Users.ToListAsync();
+            return await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .ToListAsync();
         }
 
         public async Task<User?> GetByEmailAsync(string email)
