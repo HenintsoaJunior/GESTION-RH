@@ -472,9 +472,30 @@ VALUES
     ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_003');
 
 
-INSERT INTO habilitations (habilitation_id,label)
+INSERT INTO habilitations (habilitation_id, label)
 VALUES
-    ('HAB_001','mission_insertion')
+    ('HAB_001','mission_insertion'),
+    ('HAB_002','mission_consultation'),
+    ('HAB_003','mission_modification'),
+    ('HAB_004','mission_suppression'),
+    ('HAB_005','mission_validation'),
+    ('HAB_006','utilisateur_consultation'),
+    ('HAB_007','utilisateur_creation'),
+    ('HAB_008','utilisateur_modification'),
+    ('HAB_009','utilisateur_suppression'),
+    ('HAB_010','role_consultation'),
+    ('HAB_011','role_creation'),
+    ('HAB_012','role_modification'),
+    ('HAB_013','role_suppression'),
+    ('HAB_014','rapport_consultation'),
+    ('HAB_015','rapport_export'),
+    ('HAB_016','parametre_systeme'),
+    ('HAB_017','journal_audit_consultation'),
+    ('HAB_018','journal_audit_export'),
+    ('HAB_019','tableau_de_bord_consultation'),
+    ('HAB_020','statistique_export'),
+    ('HAB_021','administration_generale');
+
 
 
 INSERT INTO role_habilitation (habilitation_id, role_id)

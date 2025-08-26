@@ -10,7 +10,7 @@ public interface IRoleService
         Task<IEnumerable<Role>> GetAllAsync();
         Task<Role?> GetByIdAsync(string id);
         Task AddAsync(RoleDTOForm dto);
-        Task UpdateAsync(Role role);
+        Task UpdateAsync(RoleDTOFormUpdate role);
         Task DeleteAsync(string id);
     }
 
@@ -92,28 +92,30 @@ public interface IRoleService
             }
         }
 
-        public async Task UpdateAsync(Role role)
+        public async Task UpdateAsync(RoleDTOFormUpdate roleDto)
         {
             try
             {
-                if (role == null)
+                if (roleDto == null)
                 {
-                    throw new ArgumentNullException(nameof(role), "Le rôle ne peut pas être null");
+                    _logger.LogWarning("Tentative de mise à jour avec un RoleDTOForm null");
+                    throw new ArgumentNullException(nameof(roleDto), "Les données du rôle ne peuvent pas être nulles");
+                }
+        
+                var existingRole = await _repository.GetByIdAsync(roleDto.RoleId);
+                if (existingRole == null)
+                {
+                    throw new InvalidOperationException($"Le rôle avec l'ID {roleDto.RoleId} n'existe pas");
                 }
 
-                if (string.IsNullOrWhiteSpace(role.RoleId))
-                {
-                    throw new ArgumentException("L'ID du rôle ne peut pas être null ou vide", nameof(role.RoleId));
-                }
-
-                await _repository.UpdateAsync(role);
+                existingRole.Name = roleDto.Name;
+                existingRole.Description = roleDto.Description;
+                
                 await _repository.SaveChangesAsync();
-
-                _logger.LogInformation("Rôle mis à jour avec succès pour l'ID: {RoleId}", role.RoleId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour du rôle avec l'ID: {RoleId}", role?.RoleId);
+                _logger.LogError(ex, "Erreur lors de la mise à jour du rôle avec le nom: {Name}", roleDto?.Name);
                 throw;
             }
         }

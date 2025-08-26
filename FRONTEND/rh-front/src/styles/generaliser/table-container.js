@@ -572,12 +572,12 @@ export const ButtonUpdate = styled.button`
   height: 32px;
   line-height: 1;
   transition: all 0.2s ease;
-  background-color: #3b82f6;
+  background-color: var(--primary-color);
   color: #ffffff;
   min-width: 70px;
 
   &:hover {
-    background-color: #2563eb;
+    background-color: var(--primary-hover);
     transform: translateY(-1px);
   }
 
@@ -589,7 +589,7 @@ export const ButtonUpdate = styled.button`
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
-    background-color: #3b82f6;
+    background-color: var(-primary-dark);
   }
 
   @media (max-width: 768px) {

@@ -10,7 +10,7 @@ import {
 } from "styles/generaliser/form-container";
 import {
   PopupOverlay,
-  BeneficiaryPopup,
+  PagePopup,
   PopupHeader,
   PopupTitle,
   PopupClose,
@@ -43,7 +43,7 @@ const BeneficiaryPopupComponent = ({ isOpen, onClose, onSubmit, beneficiary, sug
 
   return (
     <PopupOverlay>
-      <BeneficiaryPopup> {/* Use the renamed styled component */}
+      <PagePopup> {/* Use the renamed styled component */}
         <PopupHeader>
           <PopupTitle>Ajout d'un bénéficiaire</PopupTitle>
           <PopupClose onClick={onClose} disabled={isSubmitting}>
@@ -280,7 +280,7 @@ const BeneficiaryPopupComponent = ({ isOpen, onClose, onSubmit, beneficiary, sug
             Fermer
           </ButtonSecondary>
         </PopupActions>
-      </BeneficiaryPopup>
+      </PagePopup>
     </PopupOverlay>
   );
 };

@@ -25,9 +25,9 @@ public class RoleHabilitation : BaseEntity
     
     public RoleHabilitation(){}
 
-    public RoleHabilitation(RoleHabilitationDTOForm dto)
-    {
-        HabilitationId = dto.HabilitationId;
-        RoleId = dto.RoleId;    
-    }
+    // public RoleHabilitation(RoleHabilitationDTOForm dto)
+    // {
+    //     HabilitationId = dto.HabilitationId;
+    //     RoleId = dto.RoleId;    
+    // }
 }

@@ -26,6 +26,8 @@ public class HabilitationRepository : IHabilitationRepository
     public async Task<IEnumerable<Habilitation>> GetAllAsync()
     {
         return await _context.Habilitations
+            .Include(h => h.RoleHabilitations)
+            .ThenInclude(rh => rh.Role)
             .OrderByDescending(h => h.CreatedAt)
             .ToListAsync();
     }

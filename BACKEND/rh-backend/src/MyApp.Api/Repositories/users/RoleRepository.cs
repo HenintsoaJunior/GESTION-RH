@@ -26,6 +26,7 @@ public class RoleRepository : IRoleRepository
     public async Task<IEnumerable<Role>> GetAllAsync()
     {
         return await _context.Roles
+            .Include(r => r.RoleHabilitations) // Eagerly load RoleHabilitations
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
     }

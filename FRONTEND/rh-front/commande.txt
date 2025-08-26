@@ -1,0 +1,455 @@
+Peux tu me creer des service pour le role 
+
+
+prend example sur cette code 
+"use client";
+
+import { apiGet, apiPost } from "utils/apiUtils";
+import { handleValidationError } from "utils/validation";
+
+export const createTransport = async (
+  transportData,
+  setIsLoading,
+  onSuccess,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, transports: true })); // Indique le chargement
+
+    // Préparation du corps de la requête
+    const requestBody = {
+      type: transportData.type.trim(),
+    };
+
+    // Appel API pour créer le transport
+    const newTransport = await apiPost("/api/Transport", requestBody);
+
+    // Affiche un message de succès
+    onSuccess({
+      isOpen: true,
+      type: "success",
+      message: `Transport "${transportData.type}" créé avec succès !`,
+    });
+
+    return newTransport;
+  } catch (error) {
+    // Gestion des erreurs
+    console.error("Erreur lors de la création du transport:", error);
+    onError(handleValidationError(error, "Erreur lors de la création du transport"));
+    throw error;
+  } finally {
+    setIsLoading((prev) => ({ ...prev, transports: false })); // Fin du chargement
+  }
+};
+
+export const fetchAllTransports = async (
+  setTransports,
+  setIsLoading,
+  setTotalEntries,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, transports: true }));
+
+    // Use apiGet instead of direct fetch
+    const data = await apiGet("/api/Transport");
+    console.log("API Response (All Transports):", data);
+
+    // Ensure transports is always an array
+    const transportsData = Array.isArray(data) ? data : [];
+    setTransports(transportsData);
+    setTotalEntries(transportsData.length || 0);
+  } catch (error) {
+    console.error("Erreur lors du chargement des transports:", error);
+    onError({
+      isOpen: true,
+      type: "error",
+      message: `Erreur lors du chargement des transports: ${error.message}`,
+    });
+    setTransports([]);
+  } finally {
+    setIsLoading((prev) => ({ ...prev, transports: false }));
+  }
+};
+
+export const fetchTransportById = async (
+  transportId,
+  setTransport,
+  setIsLoading,
+  onError
+) => {
+  try {
+    if (typeof setIsLoading === "function") {
+      setIsLoading(true);
+    }
+
+    // Use apiGet instead of direct fetch
+    const data = await apiGet(`/api/Transport/${transportId}`);
+    setTransport(data);
+  } catch (error) {
+    console.error("Erreur lors du chargement du transport:", error);
+    onError({
+      isOpen: true,
+      type: "error",
+      message: `Erreur lors du chargement du transport: ${error.message}`,
+    });
+  } finally {
+    if (typeof setIsLoading === "function") {
+      setIsLoading(false);
+    }
+  }
+};
+
+export const getTransportId = (type, transports) =>
+  transports.find((transport) => transport.type === type)?.transportId || "";
+
+
+
+voici le controller du role 
+using Microsoft.AspNetCore.Mvc;
+using MyApp.Api.Entities.users;
+using MyApp.Api.Services.users;
+
+namespace MyApp.Api.Controllers.user
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class RoleController(
+        IRoleService roleService,
+        IRoleHabilitationService roleHabilitationService,
+        IHabilitationService habilitationService,
+        ILogger<RoleController> logger)
+        : ControllerBase
+    {
+        private readonly ILogger<RoleController> _logger = logger;
+
+        // -------------------- RÔLES --------------------
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Role>>> GetAllRoles()
+        {
+            try
+            {
+                var roles = await roleService.GetAllAsync();
+                return Ok(roles);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de tous les rôles");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des rôles");
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Role>> GetRoleById(string id)
+        {
+            try
+            {
+                var role = await roleService.GetByIdAsync(id);
+                if (role == null)
+                {
+                    _logger.LogWarning("Rôle avec ID {RoleId} non trouvé", id);
+                    return NotFound();
+                }
+                return Ok(role);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du rôle avec ID {RoleId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération du rôle");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> CreateRole([FromBody] Role role)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                await roleService.AddAsync(role);
+                return CreatedAtAction(nameof(GetRoleById), new { id = role.RoleId }, role);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création d'un rôle");
+                return StatusCode(500, "Une erreur est survenue lors de la création du rôle");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult> UpdateRole(string id, [FromBody] Role role)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                if (id != role.RoleId)
+                    return BadRequest("L'ID dans l'URL ne correspond pas à l'entité.");
+
+                var existing = await roleService.GetByIdAsync(id);
+                if (existing == null)
+                {
+                    _logger.LogWarning("Échec de la mise à jour, rôle avec ID {RoleId} introuvable", id);
+                    return NotFound();
+                }
+
+                await roleService.UpdateAsync(role);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour du rôle avec ID {RoleId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la mise à jour du rôle");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteRole(string id)
+        {
+            try
+            {
+                var existing = await roleService.GetByIdAsync(id);
+                if (existing == null)
+                {
+                    _logger.LogWarning("Échec de suppression, rôle avec ID {RoleId} introuvable", id);
+                    return NotFound();
+                }
+
+                await roleService.DeleteAsync(id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression du rôle avec ID {RoleId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la suppression du rôle");
+            }
+        }
+
+        // -------------------- HABILITATIONS --------------------
+        [HttpGet("habilitations")]
+        public async Task<ActionResult<IEnumerable<Habilitation>>> GetAllHabilitations()
+        {
+            try
+            {
+                var habilitations = await habilitationService.GetAllAsync();
+                return Ok(habilitations);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de toutes les habilitations");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des habilitations");
+            }
+        }
+
+        [HttpGet("habilitations/{id}")]
+        public async Task<ActionResult<Habilitation>> GetHabilitationById(string id)
+        {
+            try
+            {
+                var habilitation = await habilitationService.GetByIdAsync(id);
+                if (habilitation == null)
+                {
+                    _logger.LogWarning("Habilitation avec ID {HabilitationId} non trouvée", id);
+                    return NotFound();
+                }
+                return Ok(habilitation);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de l'habilitation avec ID {HabilitationId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération de l'habilitation");
+            }
+        }
+
+        [HttpPost("habilitations")]
+        public async Task<ActionResult> CreateHabilitation([FromBody] Habilitation habilitation)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                await habilitationService.AddAsync(habilitation);
+                return CreatedAtAction(nameof(GetHabilitationById), new { id = habilitation.HabilitationId }, habilitation);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création d'une habilitation");
+                return StatusCode(500, "Une erreur est survenue lors de la création de l'habilitation");
+            }
+        }
+
+        [HttpPut("habilitations/{id}")]
+        public async Task<ActionResult> UpdateHabilitation(string id, [FromBody] Habilitation habilitation)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                if (id != habilitation.HabilitationId)
+                    return BadRequest("L'ID dans l'URL ne correspond pas à l'entité.");
+
+                var existing = await habilitationService.GetByIdAsync(id);
+                if (existing == null)
+                {
+                    _logger.LogWarning("Échec de la mise à jour, habilitation avec ID {HabilitationId} introuvable", id);
+                    return NotFound();
+                }
+
+                await habilitationService.UpdateAsync(habilitation);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour de l'habilitation avec ID {HabilitationId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la mise à jour de l'habilitation");
+            }
+        }
+
+        [HttpDelete("habilitations/{id}")]
+        public async Task<ActionResult> DeleteHabilitation(string id)
+        {
+            try
+            {
+                var existing = await habilitationService.GetByIdAsync(id);
+                if (existing == null)
+                {
+                    _logger.LogWarning("Échec de suppression, habilitation avec ID {HabilitationId} introuvable", id);
+                    return NotFound();
+                }
+
+                await habilitationService.DeleteAsync(id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de l'habilitation avec ID {HabilitationId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la suppression de l'habilitation");
+            }
+        }
+
+        // -------------------- ROLE-HABILITATIONS --------------------
+        [HttpGet("role-habilitations")]
+        public async Task<ActionResult<IEnumerable<RoleHabilitation>>> GetAllRoleHabilitations()
+        {
+            try
+            {
+                var roleHabilitations = await roleHabilitationService.GetAllAsync();
+                return Ok(roleHabilitations);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de toutes les relations rôle-habilitation");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des relations rôle-habilitation");
+            }
+        }
+
+        [HttpGet("role-habilitations/{habilitationId}/{roleId}")]
+        public async Task<ActionResult<RoleHabilitation>> GetRoleHabilitation(string habilitationId, string roleId)
+        {
+            try
+            {
+                var roleHabilitation = await roleHabilitationService.GetByKeysAsync(habilitationId, roleId);
+                if (roleHabilitation == null)
+                {
+                    _logger.LogWarning("Relation rôle-habilitation avec HabilitationId {HabilitationId} et RoleId {RoleId} non trouvée", habilitationId, roleId);
+                    return NotFound();
+                }
+                return Ok(roleHabilitation);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de la relation rôle-habilitation avec HabilitationId {HabilitationId} et RoleId {RoleId}", habilitationId, roleId);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération de la relation rôle-habilitation");
+            }
+        }
+
+        [HttpPost("role-habilitations")]
+        public async Task<ActionResult> CreateRoleHabilitation([FromBody] RoleHabilitation roleHabilitation)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                await roleHabilitationService.AddAsync(roleHabilitation);
+                return CreatedAtAction(nameof(GetRoleHabilitation), new { habilitationId = roleHabilitation.HabilitationId, roleId = roleHabilitation.RoleId }, roleHabilitation);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création d'une relation rôle-habilitation");
+                return StatusCode(500, "Une erreur est survenue lors de la création de la relation rôle-habilitation");
+            }
+        }
+
+        [HttpPut("role-habilitations")]
+        public async Task<ActionResult> UpdateRoleHabilitation([FromBody] RoleHabilitation roleHabilitation)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                var existing = await roleHabilitationService.GetByKeysAsync(roleHabilitation.HabilitationId, roleHabilitation.RoleId);
+                if (existing == null)
+                {
+                    _logger.LogWarning("Échec de la mise à jour, relation rôle-habilitation avec HabilitationId {HabilitationId} et RoleId {RoleId} introuvable", roleHabilitation.HabilitationId, roleHabilitation.RoleId);
+                    return NotFound();
+                }
+
+                await roleHabilitationService.UpdateAsync(roleHabilitation);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour de la relation rôle-habilitation avec HabilitationId {HabilitationId} et RoleId {RoleId}", roleHabilitation.HabilitationId, roleHabilitation.RoleId);
+                return StatusCode(500, "Une erreur est survenue lors de la mise à jour de la relation rôle-habilitation");
+            }
+        }
+
+        [HttpDelete("role-habilitations/{habilitationId}/{roleId}")]
+        public async Task<ActionResult> DeleteRoleHabilitation(string habilitationId, string roleId)
+        {
+            try
+            {
+                var existing = await roleHabilitationService.GetByKeysAsync(habilitationId, roleId);
+                if (existing == null)
+                {
+                    _logger.LogWarning("Échec de suppression, relation rôle-habilitation avec HabilitationId {HabilitationId} et RoleId {RoleId} introuvable", habilitationId, roleId);
+                    return NotFound();
+                }
+
+                await roleHabilitationService.DeleteAsync(habilitationId, roleId);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de la relation rôle-habilitation avec HabilitationId {HabilitationId} et RoleId {RoleId}", habilitationId, roleId);
+                return StatusCode(500, "Une erreur est survenue lors de la suppression de la relation rôle-habilitation");
+            }
+        }
+    }
+}
+
+
+Creer une service pour ces controller :
+
+
+
+Assigner des Habilitations pour "Rôle"
+
+change le "Rôle" par le name du role choisi car en envoie const handleAssignHabilitations = (role) => {
+    navigate("/habilitation/list", {
+      state: {
+        roleId: role.roleId,
+        initialHabilitations: role.roleHabilitations || [],
+      },
+    });
+  };
+
+sur le RoleList:
+
+et enleve le button nouvelle habilitation 
