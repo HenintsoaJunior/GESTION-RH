@@ -29,3 +29,10 @@ public class UserDto
     [MaxLength(255)]
     public string? SuperiorName { get; set; }
 }
+
+
+public class UserRoleDtoFormBulk
+{
+    public required string UserId { get; set; }
+    public required IEnumerable<string> RoleIds { get; set; }
+}

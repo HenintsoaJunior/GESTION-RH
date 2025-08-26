@@ -26,8 +26,9 @@ import {
   LoadingCardsState,
 } from "styles/generaliser/card-container";
 import Modal from "components/modal";
-import Alert from "components/alert"; 
+import Alert from "components/alert";
 import RolePopupComponent from "./role-form";
+import UserListPopupComponent from "./user-form"; // Import the UserListPopupComponent
 import { fetchAllRoles, createRole, updateRole } from "services/users/roles";
 import { formatDate } from "utils/dateConverter";
 
@@ -36,7 +37,9 @@ const RoleList = () => {
   const [totalEntries, setTotalEntries] = useState(0);
   const [isLoading, setIsLoading] = useState({ roles: false });
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [isRolePopupOpen, setIsRolePopupOpen] = useState(false);
+  const [isUserPopupOpen, setIsUserPopupOpen] = useState(false); // State for UserListPopupComponent
+  const [selectedRole, setSelectedRole] = useState(null); // Track the selected role for user assignment
   const [role, setRole] = useState({ name: "", description: "" });
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,8 +65,6 @@ const RoleList = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setRole((prev) => ({ ...prev, [name]: value }));
-    
-    // Supprimer les erreurs pour le champ modifié
     if (fieldErrors[name]) {
       setFieldErrors((prev) => ({ ...prev, [name]: null }));
     }
@@ -76,49 +77,47 @@ const RoleList = () => {
 
     try {
       if (roleData.roleId) {
-        // Mise à jour d'un rôle existant
         await updateRole(
           roleData,
           setIsLoading,
           (successAlert) => {
             setAlert({
               isOpen: true,
-              type: "success", // Use Alert for success
+              type: "success",
               message: successAlert.message || "Rôle mis à jour avec succès",
             });
             setRole({ name: "", description: "" });
-            setIsPopupOpen(false);
+            setIsRolePopupOpen(false);
             fetchAllRoles(setRoles, setIsLoading, setTotalEntries, handleError);
           },
           (error) => {
             setFieldErrors(error.errors || { name: ["Erreur lors de la mise à jour du rôle"] });
             setAlert({
               isOpen: true,
-              type: "error", // Use Modal for error
+              type: "error",
               message: error.message || "Erreur lors de la mise à jour du rôle",
             });
           }
         );
       } else {
-        // Création d'un nouveau rôle
         await createRole(
           roleData,
           setIsLoading,
           (successAlert) => {
             setAlert({
               isOpen: true,
-              type: "success", // Use Alert for success
+              type: "success",
               message: successAlert.message || "Rôle créé avec succès",
             });
             setRole({ name: "", description: "" });
-            setIsPopupOpen(false);
+            setIsRolePopupOpen(false);
             fetchAllRoles(setRoles, setIsLoading, setTotalEntries, handleError);
           },
           (error) => {
             setFieldErrors(error.errors || { name: ["Erreur lors de la création du rôle"] });
             setAlert({
               isOpen: true,
-              type: "error", // Use Modal for error
+              type: "error",
               message: error.message || "Erreur lors de la création du rôle",
             });
           }
@@ -139,12 +138,13 @@ const RoleList = () => {
       description: roleToEdit.description || "",
     });
     setFieldErrors({});
-    setIsPopupOpen(true);
+    setIsRolePopupOpen(true);
   };
 
   const handleAssignUsers = (role) => {
-    console.log("Assigner des utilisateurs au rôle:", role.roleId);
-    // TODO: Implémenter la navigation ou le modal d'assignation d'utilisateurs
+    console.log("Assigner des utilisateurs au rôle:", role?.roleId || "Aucun rôle sélectionné");
+    setSelectedRole(role); // Store the selected role
+    setIsUserPopupOpen(true); // Open the UserListPopupComponent
   };
 
   const handleAssignHabilitations = (role) => {
@@ -157,16 +157,21 @@ const RoleList = () => {
     });
   };
 
-  const handleClosePopup = () => {
-    setIsPopupOpen(false);
+  const handleCloseRolePopup = () => {
+    setIsRolePopupOpen(false);
     setRole({ name: "", description: "" });
     setFieldErrors({});
+  };
+
+  const handleCloseUserPopup = () => {
+    setIsUserPopupOpen(false);
+    setSelectedRole(null); // Clear the selected role
   };
 
   const handleAddNew = () => {
     setRole({ name: "", description: "" });
     setFieldErrors({});
-    setIsPopupOpen(true);
+    setIsRolePopupOpen(true);
   };
 
   return (
@@ -190,7 +195,13 @@ const RoleList = () => {
 
       <TableHeader>
         <TableTitle>Liste des Rôles ({totalEntries})</TableTitle>
-        <div>
+        <div style={{ display: "flex", gap: "var(--spacing-sm)" }}>
+          <ButtonAdd
+            className="assign-user"
+            onClick={() => handleAssignUsers(null)} // For global user assignment (optional)
+          >
+            Assignation Utilisateur
+          </ButtonAdd>
           <ButtonAdd onClick={handleAddNew}>
             <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Nouveau
@@ -209,40 +220,31 @@ const RoleList = () => {
               <CardHeader>
                 <CardTitle>{role.name || "Non spécifié"}</CardTitle>
               </CardHeader>
-              
               <CardBody>
                 <CardField>
                   <CardLabel>Description</CardLabel>
                   <CardValue>{role.description || "Non spécifié"}</CardValue>
                 </CardField>
-                
                 <CardField>
                   <CardLabel>Date de création</CardLabel>
                   <CardValue>{formatDate(role.createdAt) || "Non spécifié"}</CardValue>
                 </CardField>
-                
               </CardBody>
-              
               <CardFooter>
-                <CardActionButton 
-                  className="edit" 
+                <CardActionButton
+                  className="edit"
                   onClick={() => handleEdit(role)}
                   disabled={isSubmitting}
                 >
                   Modifier
                 </CardActionButton>
-                <CardActionButton 
-                  className="assign" 
+                <CardActionButton
+                  className="assign"
                   onClick={() => handleAssignHabilitations(role)}
                 >
                   Assignation Habilitation
                 </CardActionButton>
-                <CardActionButton 
-                  className="assign-user" 
-                  onClick={() => handleAssignUsers(role)}
-                >
-                  Assignation Utilisateur
-                </CardActionButton>
+                
               </CardFooter>
             </Card>
           ))
@@ -254,14 +256,19 @@ const RoleList = () => {
       </CardsContainer>
 
       <RolePopupComponent
-        isOpen={isPopupOpen}
-        onClose={handleClosePopup}
+        isOpen={isRolePopupOpen}
+        onClose={handleCloseRolePopup}
         onSubmit={handleSubmit}
         role={role}
         isSubmitting={isSubmitting}
         fieldErrors={fieldErrors}
         handleInputChange={handleInputChange}
         buttonText={role.roleId ? "Modifier" : "Ajouter"}
+      />
+
+      <UserListPopupComponent
+        isOpen={isUserPopupOpen}
+        onClose={handleCloseUserPopup}
       />
     </DashboardContainer>
   );

@@ -30,7 +30,6 @@ CREATE TABLE compensation_scale(
    FOREIGN KEY(employee_category_id) REFERENCES employee_categories(employee_category_id)
 );
 
-
 CREATE TABLE lieu (
    lieu_id VARCHAR(50) PRIMARY KEY,
    nom VARCHAR(255) NOT NULL,
