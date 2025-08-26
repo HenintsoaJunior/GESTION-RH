@@ -2,7 +2,7 @@
 {
     public class RoleHabilitationDTOForm
     {
-        public string HabilitationId { get; set; } = null!;
-        public string RoleId { get; set; } = null!;
+        public List<string> HabilitationIds { get; set; } = new List<string>();
+        public List<string> RoleIds { get; set; } = new List<string>();
     }
 }

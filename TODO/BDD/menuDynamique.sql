@@ -69,7 +69,7 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, created_at, updated_at) VALUES
 ('menu_hab', 'habilitation', 'fa-shield-alt', '/habilitation', 1, 2, 'habilitation', GETDATE(), GETDATE()),
 ('menu_hab_1', 'habilitation-creer', 'fa-plus', '/habilitation/create', 1, 1, 'habilitation', GETDATE(), GETDATE()),
-('menu_hab_2', 'habilitation-liste', 'fa-list', '/habilitation/list', 1, 2, 'habilitation', GETDATE(), GETDATE());
+('menu_hab_2', 'habilitation-liste', 'fa-list', '/role/list', 1, 2, 'habilitation', GETDATE(), GETDATE());
 
 -- Insert menu recrutement
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, created_at, updated_at) VALUES

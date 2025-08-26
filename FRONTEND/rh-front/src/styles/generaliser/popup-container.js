@@ -244,7 +244,7 @@ export const PopupOverlay = styled.div`
   z-index: 1000;
 `;
 
-export const BeneficiaryPopup = styled.div`
+export const PagePopup = styled.div`
   background: var(--bg-primary);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);

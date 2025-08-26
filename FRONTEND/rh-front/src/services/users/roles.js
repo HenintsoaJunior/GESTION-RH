@@ -101,7 +101,6 @@ export const fetchRoleById = async (
 
 // Service pour mettre à jour un rôle
 export const updateRole = async (
-  roleId,
   roleData,
   setIsLoading,
   onSuccess,
@@ -112,13 +111,13 @@ export const updateRole = async (
 
     // Préparation du corps de la requête
     const requestBody = {
-      roleId: roleId,
+      roleId: roleData.roleId,
       name: roleData.name.trim(),
       description: roleData.description?.trim() || "",
     };
 
     // Appel API pour mettre à jour le rôle
-    await apiPut(`/api/Role/${roleId}`, requestBody);
+    await apiPut(`/api/Role/${roleData.roleId}`, requestBody);
 
     // Affiche un message de succès
     onSuccess({

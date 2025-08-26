@@ -71,7 +71,7 @@ namespace MyApp.Api.Controllers.user
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult> UpdateRole(string id, [FromBody] Role role)
+        public async Task<ActionResult> UpdateRole(string id, [FromBody] RoleDTOFormUpdate role)
         {
             try
             {
@@ -89,7 +89,7 @@ namespace MyApp.Api.Controllers.user
                 }
 
                 await roleService.UpdateAsync(role);
-                return NoContent();
+                return Ok(role);
             }
             catch (Exception ex)
             {
@@ -266,7 +266,7 @@ namespace MyApp.Api.Controllers.user
                     return BadRequest(ModelState);
 
                 await roleHabilitationService.AddAsync(roleHabilitation);
-                return CreatedAtAction(nameof(GetRoleHabilitation), new { habilitationId = roleHabilitation.HabilitationId, roleId = roleHabilitation.RoleId }, roleHabilitation);
+                return CreatedAtAction(nameof(GetRoleHabilitation), new { habilitationId = roleHabilitation.HabilitationIds.FirstOrDefault(), roleId = roleHabilitation.RoleIds.FirstOrDefault() }, roleHabilitation);
             }
             catch (Exception ex)
             {
