@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Models.dto.users;
 
 namespace MyApp.Api.Entities.users;
 
@@ -21,4 +22,12 @@ public class RoleHabilitation
 
     [ForeignKey("RoleId")]
     public Role? Role { get; set; }
+    
+    public RoleHabilitation(){}
+
+    public RoleHabilitation(RoleHabilitationDTOForm dto)
+    {
+        HabilitationId = dto.HabilitationId;
+        RoleId = dto.RoleId;    
+    }
 }

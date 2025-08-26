@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.users;
+using MyApp.Api.Models.dto.users;
 using MyApp.Api.Services.users;
 
 namespace MyApp.Api.Controllers.user
@@ -52,7 +53,7 @@ namespace MyApp.Api.Controllers.user
         }
 
         [HttpPost]
-        public async Task<ActionResult> CreateRole([FromBody] Role role)
+        public async Task<ActionResult> CreateRole([FromBody] RoleDTOForm role)
         {
             try
             {
@@ -60,7 +61,7 @@ namespace MyApp.Api.Controllers.user
                     return BadRequest(ModelState);
 
                 await roleService.AddAsync(role);
-                return CreatedAtAction(nameof(GetRoleById), new { id = role.RoleId }, role);
+                return Ok(role);
             }
             catch (Exception ex)
             {
@@ -141,12 +142,9 @@ namespace MyApp.Api.Controllers.user
             try
             {
                 var habilitation = await habilitationService.GetByIdAsync(id);
-                if (habilitation == null)
-                {
-                    _logger.LogWarning("Habilitation avec ID {HabilitationId} non trouvée", id);
-                    return NotFound();
-                }
-                return Ok(habilitation);
+                if (habilitation != null) return Ok(habilitation);
+                _logger.LogWarning("Habilitation avec ID {HabilitationId} non trouvée", id);
+                return NotFound();
             }
             catch (Exception ex)
             {
@@ -156,7 +154,7 @@ namespace MyApp.Api.Controllers.user
         }
 
         [HttpPost("habilitations")]
-        public async Task<ActionResult> CreateHabilitation([FromBody] Habilitation habilitation)
+        public async Task<ActionResult> CreateHabilitation([FromBody] HabilitationDTOForm habilitation)
         {
             try
             {
@@ -164,7 +162,7 @@ namespace MyApp.Api.Controllers.user
                     return BadRequest(ModelState);
 
                 await habilitationService.AddAsync(habilitation);
-                return CreatedAtAction(nameof(GetHabilitationById), new { id = habilitation.HabilitationId }, habilitation);
+                return Ok(habilitation);
             }
             catch (Exception ex)
             {
@@ -260,7 +258,7 @@ namespace MyApp.Api.Controllers.user
         }
 
         [HttpPost("role-habilitations")]
-        public async Task<ActionResult> CreateRoleHabilitation([FromBody] RoleHabilitation roleHabilitation)
+        public async Task<ActionResult> CreateRoleHabilitation([FromBody] RoleHabilitationDTOForm roleHabilitation)
         {
             try
             {
