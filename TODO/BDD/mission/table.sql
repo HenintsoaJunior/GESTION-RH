@@ -93,5 +93,18 @@ CREATE TABLE mission_validation (
    FOREIGN KEY(mission_creator) REFERENCES employees(employee_id)
 );
 
+-- logs
+CREATE TABLE logs(
+   log_id VARCHAR(50),
+   action VARCHAR(100) NOT NULL,
+   table_name VARCHAR(255),
+   old_values TEXT,
+   new_values TEXT,
+   date_ DATETIME,
+   user_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(log_id),
+   FOREIGN KEY(user_id) REFERENCES users(user_id)
+);
+
 
 
