@@ -26,8 +26,6 @@ public class HabilitationRepository : IHabilitationRepository
     public async Task<IEnumerable<Habilitation>> GetAllAsync()
     {
         return await _context.Habilitations
-            .Include(h => h.RoleHabilitations)
-            .ThenInclude(rh => rh.Role)
             .OrderByDescending(h => h.CreatedAt)
             .ToListAsync();
     }
@@ -35,8 +33,6 @@ public class HabilitationRepository : IHabilitationRepository
     public async Task<Habilitation?> GetByIdAsync(string id)
     {
         return await _context.Habilitations
-            .Include(h => h.RoleHabilitations)
-            .ThenInclude(rh => rh.Role)
             .FirstOrDefaultAsync(h => h.HabilitationId == id);
     }
 

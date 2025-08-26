@@ -7,7 +7,7 @@ namespace MyApp.Api.Entities.users;
 
 [Table("role_habilitation")]
 [PrimaryKey(nameof(HabilitationId), nameof(RoleId))]
-public class RoleHabilitation
+public class RoleHabilitation : BaseEntity
 {
     [Column("habilitation_id")]
     [MaxLength(50)]

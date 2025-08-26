@@ -26,8 +26,6 @@ public class RoleRepository : IRoleRepository
     public async Task<IEnumerable<Role>> GetAllAsync()
     {
         return await _context.Roles
-            .Include(r => r.RoleHabilitations)
-            .ThenInclude(rh => rh.Habilitation)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
     }
@@ -35,8 +33,6 @@ public class RoleRepository : IRoleRepository
     public async Task<Role?> GetByIdAsync(string id)
     {
         return await _context.Roles
-            .Include(r => r.RoleHabilitations)
-            .ThenInclude(rh => rh.Habilitation)
             .FirstOrDefaultAsync(r => r.RoleId == id);
     }
 
