@@ -1,4 +1,5 @@
 -- Tables les plus dépendantes (feuilles de dépendance)
+DROP TABLE IF EXISTS logs;
 DROP TABLE IF EXISTS mission_validation;
 DROP TABLE IF EXISTS mission_assignation;
 DROP TABLE IF EXISTS compensation_scale;

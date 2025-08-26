@@ -5,6 +5,7 @@ using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.direction;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.jobs;
+using MyApp.Api.Entities.logs;
 using MyApp.Api.Entities.menu;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Entities.recruitment;
@@ -15,6 +16,7 @@ namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
+        public DbSet<Log>  Logs { get; set; }
         public DbSet<MissionValidation>  MissionValidations { get; set; }
         public DbSet<CvDetail> CvDetails { get; set; }
         public DbSet<ApplicationComment> ApplicationComments { get; set; }
