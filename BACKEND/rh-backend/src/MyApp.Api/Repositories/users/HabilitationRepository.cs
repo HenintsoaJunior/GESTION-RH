@@ -35,6 +35,7 @@ public class HabilitationRepository : IHabilitationRepository
     public async Task<Habilitation?> GetByIdAsync(string id)
     {
         return await _context.Habilitations
+            .AsNoTracking()
             .FirstOrDefaultAsync(h => h.HabilitationId == id);
     }
 

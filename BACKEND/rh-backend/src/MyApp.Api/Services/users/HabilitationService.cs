@@ -1,6 +1,7 @@
 using MyApp.Api.Entities.users;
 using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.users;
+using MyApp.Api.Services.logs;
 using MyApp.Api.Utils.generator;
 
 namespace MyApp.Api.Services.users;
@@ -9,23 +10,26 @@ public interface IHabilitationService
     {
         Task<IEnumerable<Habilitation>> GetAllAsync();
         Task<Habilitation?> GetByIdAsync(string id);
-        Task AddAsync(HabilitationDTOForm dto);
-        Task UpdateAsync(Habilitation habilitation);
-        Task DeleteAsync(string id);
+        Task AddAsync(HabilitationDTOForm dto, string userId);
+        Task UpdateAsync(string id, HabilitationDTOForm dto,  string userId);
+        Task DeleteAsync(string id, string userId);
     }
 
     public class HabilitationService : IHabilitationService
     {
         private readonly IHabilitationRepository _repository;
+        private readonly ILogService _logService;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<HabilitationService> _logger;
 
         public HabilitationService(
             IHabilitationRepository repository,
+            ILogService logService,
             ISequenceGenerator sequenceGenerator,
             ILogger<HabilitationService> logger)
         {
             _repository = repository;
+            _logService = logService;
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
         }
@@ -64,78 +68,86 @@ public interface IHabilitationService
             }
         }
 
-        public async Task AddAsync(HabilitationDTOForm dto)
+        public async Task AddAsync(HabilitationDTOForm dto, string userId)
+    {
+        try
         {
-            try
+            var habilitation = new Habilitation(dto);
+
+            if (string.IsNullOrWhiteSpace(habilitation.HabilitationId))
             {
-                var habilitation= new Habilitation(dto);
-                if (habilitation == null)
-                {
-                    throw new ArgumentNullException(nameof(habilitation), "L'habilitation ne peut pas être null");
-                }
-
-                if (string.IsNullOrWhiteSpace(habilitation.HabilitationId))
-                {
-                    habilitation.HabilitationId = _sequenceGenerator.GenerateSequence("seq_habilitation_id", "HAB", 6, "-");
-                    _logger.LogInformation("ID généré pour l'habilitation: {HabilitationId}", habilitation.HabilitationId);
-                }
-
-                await _repository.AddAsync(habilitation);
-                await _repository.SaveChangesAsync();
-
-                _logger.LogInformation("Habilitation ajoutée avec succès avec l'ID: {HabilitationId}", habilitation.HabilitationId);
+                habilitation.HabilitationId = _sequenceGenerator.GenerateSequence("seq_habilitation_id", "HAB", 6, "-");
+                _logger.LogInformation("ID généré pour l'habilitation: {HabilitationId}", habilitation.HabilitationId);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de l'ajout de l'habilitation");
-                throw;
-            }
+
+            await _repository.AddAsync(habilitation);
+            await _repository.SaveChangesAsync();
+
+            _logger.LogInformation("Habilitation ajoutée avec succès avec l'ID: {HabilitationId}", habilitation.HabilitationId);
+
+            // === Ajout dans les logs ===
+            await _logService.LogAsync("INSERTION", null, habilitation, userId);
         }
-
-        public async Task UpdateAsync(Habilitation habilitation)
+        catch (Exception ex)
         {
-            try
-            {
-                if (habilitation == null)
-                {
-                    throw new ArgumentNullException(nameof(habilitation), "L'habilitation ne peut pas être null");
-                }
-
-                if (string.IsNullOrWhiteSpace(habilitation.HabilitationId))
-                {
-                    throw new ArgumentException("L'ID de l'habilitation ne peut pas être null ou vide", nameof(habilitation.HabilitationId));
-                }
-
-                await _repository.UpdateAsync(habilitation);
-                await _repository.SaveChangesAsync();
-
-                _logger.LogInformation("Habilitation mise à jour avec succès pour l'ID: {HabilitationId}", habilitation.HabilitationId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la mise à jour de l'habilitation avec l'ID: {HabilitationId}", habilitation?.HabilitationId);
-                throw;
-            }
+            _logger.LogError(ex, "Erreur lors de l'ajout de l'habilitation");
+            throw;
         }
+    }
 
-        public async Task DeleteAsync(string id)
+    public async Task UpdateAsync(string id, HabilitationDTOForm dto, string userId)
+    {
+        try
         {
-            try
+            var existing = await _repository.GetByIdAsync(id);
+            if (existing == null)
             {
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    throw new ArgumentException("L'ID de l'habilitation ne peut pas être null ou vide", nameof(id));
-                }
-
-                await _repository.DeleteAsync(id);
-                await _repository.SaveChangesAsync();
-
-                _logger.LogInformation("Habilitation supprimée avec succès pour l'ID: {HabilitationId}", id);
+                throw new InvalidOperationException($"L'habilitation avec l'ID {id} n'existe pas");
             }
-            catch (Exception ex)
+
+            var updated = new Habilitation(dto)
             {
-                _logger.LogError(ex, "Erreur lors de la suppression de l'habilitation avec l'ID: {HabilitationId}", id);
-                throw;
-            }
+                HabilitationId = id
+            };
+
+            await _repository.UpdateAsync(updated);
+            await _repository.SaveChangesAsync();
+
+            _logger.LogInformation("Habilitation mise à jour avec succès pour l'ID: {HabilitationId}", id);
+
+            // === Ajout dans les logs ===
+            await _logService.LogAsync("MODIFICATION", existing, updated, userId);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la mise à jour de l'habilitation avec l'ID: {HabilitationId}", id);
+            throw;
+        }
+    }
+
+    public async Task DeleteAsync(string id, string userId)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentException("L'ID de l'habilitation ne peut pas être null ou vide", nameof(id));
+            }
+
+            var existing = await _repository.GetByIdAsync(id);
+
+            await _repository.DeleteAsync(id);
+            await _repository.SaveChangesAsync();
+
+            _logger.LogInformation("Habilitation supprimée avec succès pour l'ID: {HabilitationId}", id);
+
+            // === Ajout dans les logs ===
+            await _logService.LogAsync("SUPPRESSION", existing, null, userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la suppression de l'habilitation avec l'ID: {HabilitationId}", id);
+            throw;
+        }
+    }
     }
