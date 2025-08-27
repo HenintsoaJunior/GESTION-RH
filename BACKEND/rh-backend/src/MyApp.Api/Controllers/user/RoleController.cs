@@ -50,15 +50,15 @@ namespace MyApp.Api.Controllers.user
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult> CreateRole([FromBody] RoleDTOForm role)
+        [HttpPost ("{userId}")]
+        public async Task<ActionResult> CreateRole([FromBody] RoleDTOForm role, string userId)
         {
             try
             {
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                await roleService.AddAsync(role);
+                await roleService.AddAsync(role, userId);
                 return Ok(role);
             }
             catch (Exception ex)
@@ -68,16 +68,13 @@ namespace MyApp.Api.Controllers.user
             }
         }
 
-        [HttpPut("{id}")]
-        public async Task<ActionResult> UpdateRole(string id, [FromBody] RoleDTOFormUpdate role)
+        [HttpPut("{id}/{userId}")]
+        public async Task<ActionResult> UpdateRole(string id, [FromBody] RoleDTOForm role, string userId)
         {
             try
             {
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
-
-                if (id != role.RoleId)
-                    return BadRequest("L'ID dans l'URL ne correspond pas à l'entité.");
 
                 var existing = await roleService.GetByIdAsync(id);
                 if (existing == null)
@@ -86,7 +83,7 @@ namespace MyApp.Api.Controllers.user
                     return NotFound();
                 }
 
-                await roleService.UpdateAsync(role);
+                await roleService.UpdateAsync(id ,role, userId);
                 return Ok(role);
             }
             catch (Exception ex)
@@ -96,8 +93,8 @@ namespace MyApp.Api.Controllers.user
             }
         }
 
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> DeleteRole(string id)
+        [HttpDelete("{id}/{userId}")]
+        public async Task<ActionResult> DeleteRole(string id, string userId)
         {
             try
             {
@@ -108,7 +105,7 @@ namespace MyApp.Api.Controllers.user
                     return NotFound();
                 }
 
-                await roleService.DeleteAsync(id);
+                await roleService.DeleteAsync(id, userId);
                 return NoContent();
             }
             catch (Exception ex)
@@ -151,15 +148,15 @@ namespace MyApp.Api.Controllers.user
             }
         }
 
-        [HttpPost("habilitations")]
-        public async Task<ActionResult> CreateHabilitation([FromBody] HabilitationDTOForm habilitation)
+        [HttpPost("habilitations/{userId}")]
+        public async Task<ActionResult> CreateHabilitation([FromBody] HabilitationDTOForm habilitation, string userId)
         {
             try
             {
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                await habilitationService.AddAsync(habilitation);
+                await habilitationService.AddAsync(habilitation, userId);
                 return Ok(habilitation);
             }
             catch (Exception ex)
@@ -169,17 +166,14 @@ namespace MyApp.Api.Controllers.user
             }
         }
 
-        [HttpPut("habilitations/{id}")]
-        public async Task<ActionResult> UpdateHabilitation(string id, [FromBody] Habilitation habilitation)
+        [HttpPut("habilitations/{id}/{userId}")]
+        public async Task<ActionResult> UpdateHabilitation(string id, [FromBody] HabilitationDTOForm habilitation, string userId)
         {
             try
             {
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
-
-                if (id != habilitation.HabilitationId)
-                    return BadRequest("L'ID dans l'URL ne correspond pas à l'entité.");
-
+                
                 var existing = await habilitationService.GetByIdAsync(id);
                 if (existing == null)
                 {
@@ -187,7 +181,7 @@ namespace MyApp.Api.Controllers.user
                     return NotFound();
                 }
 
-                await habilitationService.UpdateAsync(habilitation);
+                await habilitationService.UpdateAsync(id, habilitation, userId);
                 return NoContent();
             }
             catch (Exception ex)
@@ -197,8 +191,8 @@ namespace MyApp.Api.Controllers.user
             }
         }
 
-        [HttpDelete("habilitations/{id}")]
-        public async Task<ActionResult> DeleteHabilitation(string id)
+        [HttpDelete("habilitations/{id}/{userId}")]
+        public async Task<ActionResult> DeleteHabilitation(string id, string userId)
         {
             try
             {
@@ -209,7 +203,7 @@ namespace MyApp.Api.Controllers.user
                     return NotFound();
                 }
 
-                await habilitationService.DeleteAsync(id);
+                await habilitationService.DeleteAsync(id, userId);
                 return NoContent();
             }
             catch (Exception ex)

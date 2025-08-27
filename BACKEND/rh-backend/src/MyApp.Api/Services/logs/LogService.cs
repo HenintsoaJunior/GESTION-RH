@@ -7,6 +7,7 @@ namespace MyApp.Api.Services.logs
 {
     public interface ILogService
     {
+        Task LogAsync<T>(string action, T? oldEntity, T? newEntity, string userId);
         Task<IEnumerable<Log>> GetAllAsync();
         Task<Log?> GetByIdAsync(string logId);
         Task AddAsync(LogDTOForm dto);
@@ -29,6 +30,35 @@ namespace MyApp.Api.Services.logs
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
         }
+        
+        public async Task LogAsync<T>(string action, T? oldEntity, T? newEntity, string userId)
+        {
+            var oldValues = oldEntity == null ? null : SerializeEntity(oldEntity);
+            var newValues = newEntity == null ? null : SerializeEntity(newEntity);
+
+            await AddAsync(new LogDTOForm
+            {
+                Action = action,
+                TableName = typeof(T).Name.ToLower() + "s", // ex: Role => "roles"
+                OldValues = oldValues,
+                NewValues = newValues,
+                UserId = userId
+            });
+        }
+
+        /// <summary>
+        /// Sérialise les propriétés publiques d'une entité en chaîne lisible
+        /// </summary>
+        private static string SerializeEntity<T>(T entity)
+        {
+            var props = typeof(T).GetProperties();
+            return string.Join(", ", props.Select(p =>
+            {
+                var value = p.GetValue(entity);
+                return $"{p.Name}={value ?? "null"}";
+            }));
+        }
+
 
         public async Task<IEnumerable<Log>> GetAllAsync()
         {
