@@ -68,8 +68,8 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 -- Insert menu habilitation
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, created_at, updated_at) VALUES
 ('menu_hab', 'habilitation', 'fa-shield-alt', '/habilitation', 1, 2, 'habilitation', GETDATE(), GETDATE()),
-('menu_hab_1', 'habilitation-creer', 'fa-plus', '/habilitation/create', 1, 1, 'habilitation', GETDATE(), GETDATE()),
-('menu_hab_2', 'habilitation-liste', 'fa-list', '/habilitation/list', 1, 2, 'habilitation', GETDATE(), GETDATE());
+-- ('menu_hab_1', 'habilitation-creer', 'fa-plus', '/habilitation/create', 1, 1, 'habilitation', GETDATE(), GETDATE()),
+('menu_hab_2', 'habilitation-liste', 'fa-list', '/role/list', 1, 2, 'habilitation', GETDATE(), GETDATE());
 
 -- Insert menu recrutement
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, created_at, updated_at) VALUES
@@ -88,7 +88,7 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
 ('h0', NULL, 'menu0', GETDATE(), GETDATE()),
 ('h_hab', NULL, 'menu_hab', GETDATE(), GETDATE()),
-('h_hab_1', 'menu_hab', 'menu_hab_1', GETDATE(), GETDATE()),
+-- ('h_hab_1', 'menu_hab', 'menu_hab_1', GETDATE(), GETDATE()),
 ('h_hab_2', 'menu_hab', 'menu_hab_2', GETDATE(), GETDATE()),
 ('h1', NULL, 'menu1', GETDATE(), GETDATE()),
 ('h2', 'menu1', 'menu1_1', GETDATE(), GETDATE()),
