@@ -21,6 +21,9 @@ namespace MyApp.Api.Repositories.users
         Task DeleteUsersAsync(List<User> users);
         Task SaveChangesAsync();
         Task<IEnumerable<User>> GetCollaboratorsAsync(string userId);
+        Task<User?> GetSuperiorAsync(string userId);
+        
+        Task<User?> GetDrhAsync();
     }
 
     public class UserRepository : IUserRepository
@@ -31,8 +34,35 @@ namespace MyApp.Api.Repositories.users
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
-
         
+        public async Task<User?> GetDrhAsync()
+        {
+            return await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .Where(u => u.Department == "DRH" && 
+                            (u.Position == "Directeur des Ressources Humaines" || 
+                             u.Position == "Directrice des Ressources Humaines" || 
+                             u.Position == "DRH"))
+                .OrderBy(u => u.Name)
+                .FirstOrDefaultAsync();
+        }
+        public async Task<User?> GetSuperiorAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+
+            if (user == null || string.IsNullOrWhiteSpace(user.SuperiorId))
+                return null;
+
+            return await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.UserId == user.SuperiorId);
+        }
         public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)
         {
             var query = _context.Users
