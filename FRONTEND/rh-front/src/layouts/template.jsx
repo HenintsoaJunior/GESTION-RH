@@ -38,11 +38,11 @@ export default function Template({ children }) {
   };
 
   // Derive role for display by joining roleNames
-  const userRole = user.roles?.map(role => role.roleName).join(", ") || "Administrateur";
+  const userRole = user.roles?.map((role) => role.roleName).join(", ") || "Administrateur";
 
   // Generate initials for avatar
   const getInitials = useCallback((name) => {
-    const cleanName = name.replace(/\s*\([^)]+\)\s*/g, '').trim();
+    const cleanName = name.replace(/\s*\([^)]+\)\s*/g, "").trim();
     const nameParts = cleanName.split(/\s+/);
     const firstInitial = nameParts[0] ? nameParts[0][0] : "J";
     const lastInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1][0] : "D";
@@ -242,8 +242,11 @@ export default function Template({ children }) {
       }
       setIsMenuLoading(true);
       try {
-        const roleNames = user.roles?.map(role => role.roleName) || [];
-        const queryString = roleNames.length > 0 ? `?${roleNames.map(name => `roleNames=${encodeURIComponent(name)}`).join('&')}` : '';
+        const roleNames = user.roles?.map((role) => role.roleName) || [];
+        const queryString =
+          roleNames.length > 0
+            ? `?${roleNames.map((name) => `roleNames=${encodeURIComponent(name)}`).join("&")}`
+            : "";
         const response = await fetch(`${BASE_URL}/api/Menu/hierarchy${queryString}`);
         if (!response.ok) throw new Error("Erreur réseau");
         const data = await response.json();
@@ -405,6 +408,25 @@ export default function Template({ children }) {
     [selectedLanguage]
   );
 
+  // Grouper les éléments du menu par section
+  const groupMenuBySection = useCallback((menuItems) => {
+    const grouped = {
+      navigation: [],
+      administration: [],
+    };
+
+    menuItems.forEach((item) => {
+      const section = item.menu.section || "navigation"; // Par défaut, navigation si non spécifié
+      grouped[section].push(item);
+    });
+
+    // Trier les éléments par position
+    grouped.navigation.sort((a, b) => a.menu.position - b.menu.position);
+    grouped.administration.sort((a, b) => a.menu.position - b.menu.position);
+
+    return grouped;
+  }, []);
+
   const renderMenuItem = useCallback(
     (item, level = 0) => {
       const IconComponent = getIconComponent(item.menu.icon);
@@ -442,7 +464,6 @@ export default function Template({ children }) {
               <span className="nav-text">{menuLabel}</span>
             </Link>
           )}
-
           {hasChildren && (
             <ul className={`submenu level-${level + 1} ${isExpanded ? "expanded" : ""}`}>
               {item.children.map((child) => renderMenuItem(child, level + 1))}
@@ -471,6 +492,75 @@ export default function Template({ children }) {
     return null;
   }, []);
 
+  // Rendu du menu avec sections
+  const renderMenu = useCallback(() => {
+    const groupedMenu = groupMenuBySection(menuData);
+
+    return (
+      <nav className="sidebar-nav">
+        {isMenuLoading ? (
+          <div className="menu-loading-dots">Chargement du menu ...</div>
+        ) : (
+          <ul>
+            {/* Section Navigation */}
+            {groupedMenu.navigation.length > 0 && (
+              <>
+                <div className="sidebar-divider">
+                  <span>{!collapsed && "NAVIGATION"}</span>
+                </div>
+                {groupedMenu.navigation.map((item) => renderMenuItem(item, 0))}
+              </>
+            )}
+
+            {/* Section Administration */}
+            {groupedMenu.administration.length > 0 && (
+              <>
+                <div className="sidebar-divider">
+                  <span>{!collapsed && "ADMINISTRATION"}</span>
+                </div>
+                {groupedMenu.administration.map((item) => renderMenuItem(item, 0))}
+              </>
+            )}
+
+            {/* Éléments statiques dans la section Administration */}
+            <li className="nav-item">
+              <Link
+                to="/system"
+                className={`nav-button ${activeItem === "system" ? "active" : ""}`}
+                onClick={setActive("system", "System", null)}
+              >
+                <div className="nav-icon-wrapper">
+                  <FaIcons.FaCogs className="nav-icon" />
+                </div>
+                <span className="nav-text">System</span>
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link
+                to="/entite"
+                className={`nav-button ${activeItem === "entite" ? "active" : ""}`}
+                onClick={setActive("entite", "Entite", null)}
+              >
+                <div className="nav-icon-wrapper">
+                  <FaIcons.FaBuilding className="nav-icon" />
+                </div>
+                <span className="nav-text">Entite</span>
+              </Link>
+            </li>
+          </ul>
+        )}
+      </nav>
+    );
+  }, [
+    menuData,
+    isMenuLoading,
+    collapsed,
+    activeItem,
+    renderMenuItem,
+    setActive,
+    groupMenuBySection,
+  ]);
+
   return (
     <div className={`app theme-${theme}`}>
       {mobileOpen && <div className="sidebar-overlay" onClick={handleOverlayClick} />}
@@ -482,46 +572,7 @@ export default function Template({ children }) {
           </div>
         </div>
 
-        <div className="sidebar-divider">
-          <span>{!collapsed && "NAVIGATION"}</span>
-        </div>
-
-        <nav className="sidebar-nav">
-          {isMenuLoading ? (
-            <div className="menu-loading-dots">Chargement du menu ...</div>
-          ) : (
-            <ul>
-              {menuData.map((item) => renderMenuItem(item, 0))}
-              <div className="sidebar-divider">
-                <span>{!collapsed && "ADMINISTRATION"}</span>
-              </div>
-              <li className="nav-item">
-                <Link
-                  to="/system"
-                  className={`nav-button ${activeItem === "system" ? "active" : ""}`}
-                  onClick={setActive("system", "System", null)}
-                >
-                  <div className="nav-icon-wrapper">
-                    <FaIcons.FaCogs className="nav-icon" />
-                  </div>
-                  <span className="nav-text">System</span>
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  to="/entite"
-                  className={`nav-button ${activeItem === "entite" ? "active" : ""}`}
-                  onClick={setActive("entite", "Entite", null)}
-                >
-                  <div className="nav-icon-wrapper">
-                    <FaIcons.FaBuilding className="nav-icon" />
-                  </div>
-                  <span className="nav-text">Entite</span>
-                </Link>
-              </li>
-            </ul>
-          )}
-        </nav>
+        {renderMenu()}
 
         <div className="sidebar-footer">
           {!collapsed ? (

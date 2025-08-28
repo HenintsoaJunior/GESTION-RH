@@ -68,7 +68,7 @@ public class RoleService : IRoleService
         }
     }
 
-    public async Task AddAsync(RoleDTOForm dto, string userId)
+    public async Task AddAsync(RoleDTOForm dto)
     {
         try
         {

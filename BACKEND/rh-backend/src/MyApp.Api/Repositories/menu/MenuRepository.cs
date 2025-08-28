@@ -40,6 +40,7 @@ namespace MyApp.Api.Repositories.menu
             return await _context.Menus.OrderBy(m => m.Position).ToListAsync();
         }
 
+        
         public async Task<Menu?> GetByIdAsync(string id)
         {
             return await _context.Menus.FindAsync(id);
