@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Entities.employee;
+using MyApp.Api.Entities.users;
 using MyApp.Api.Models.dto.mission;
 
 namespace MyApp.Api.Entities.mission
@@ -12,6 +13,25 @@ namespace MyApp.Api.Entities.mission
         [Column("mission_validation_id")]
         [MaxLength(50)]
         public string MissionValidationId { get; set; } = null!;
+
+        [Column("status")]
+        [MaxLength(50)]
+        public string? Status { get; set; }
+
+        [Column("to_whom")]
+        [MaxLength(50)]
+        public string? ToWhom { get; set; }
+
+        [Column("validation_date")]
+        public DateTime? ValidationDate { get; set; }
+
+        [Required]
+        [Column("mission_creator")]
+        [MaxLength(50)]
+        public string MissionCreator { get; set; } = null!;
+
+        [ForeignKey("MissionCreator")]
+        public User? User { get; set; }   
 
         [Required]
         [Column("mission_id")]
@@ -29,37 +49,18 @@ namespace MyApp.Api.Entities.mission
         [ForeignKey("MissionAssignationId")]
         public MissionAssignation? MissionAssignation { get; set; }
 
-        [Required]
-        [Column("mission_creator")]
-        [MaxLength(50)]
-        public string MissionCreator { get; set; } = null!;
-
-        [ForeignKey("MissionCreator")]
-        public Employee? Employee { get; set; }
-
-        [Column("status")]
-        [MaxLength(20)]
-        public string Status { get; set; } = "En Attente";
-
-        [Column("to_whom")]
-        [MaxLength(50)]
-        public string? ToWhom { get; set; }
-
-        [Column("validation_date")]
-        public DateTime? ValidationDate { get; set; }
-
         public MissionValidation()
         {
         }
 
-        public MissionValidation(MissionValidationDTOForm missionValidationDto)
+        public MissionValidation(MissionValidationDTOForm dto)
         {
-            MissionId = missionValidationDto.MissionId;
-            MissionAssignationId = missionValidationDto.MissionAssignationId;
-            MissionCreator = missionValidationDto.MissionCreator;
-            Status = missionValidationDto.Status ?? "En Attente";
-            ToWhom = missionValidationDto.ToWhom;
-            ValidationDate = missionValidationDto.ValidationDate;
+            MissionId = dto.MissionId;
+            MissionAssignationId = dto.MissionAssignationId;
+            MissionCreator = dto.MissionCreator;
+            Status = dto.Status;
+            ToWhom = dto.ToWhom;
+            ValidationDate = dto.ValidationDate;
         }
     }
 }

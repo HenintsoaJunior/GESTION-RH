@@ -7,6 +7,8 @@ namespace MyApp.Api.Repositories.mission
 {
     public interface IMissionValidationRepository
     {
+        Task<IEnumerable<MissionValidation>> GetRequestAsync();
+        Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<MissionValidation>> GetAllAsync();
         Task<MissionValidation?> GetByIdAsync(string id);
@@ -25,13 +27,56 @@ namespace MyApp.Api.Repositories.mission
         {
             _context = context;
         }
+        
+        //prendre les demandes validations
+        public async Task<IEnumerable<MissionValidation>> GetRequestAsync()
+        {
+            return await _context.MissionValidations
+                .Include(mv => mv.Mission)
+                .Include(mv => mv.MissionAssignation)
+                .Include(mv => mv.User)
+                .Where(mv => mv.Status == "En Attente")
+                .OrderByDescending(mv => mv.ValidationDate)
+                .ToListAsync();
+        }
+        
+        //valider une demande 
+        public async Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId)
+        {
+            var missionValidation = await _context.MissionValidations
+                .FirstOrDefaultAsync(mv => mv.MissionValidationId == missionValidationId 
+                                           && mv.MissionAssignationId == missionAssignationId);
+
+            if (missionValidation == null) return false;
+
+            // Valider la ligne courante
+            missionValidation.Status = "Validé";
+            missionValidation.ValidationDate = DateTime.UtcNow;
+            _context.MissionValidations.Update(missionValidation);
+
+            // Chercher la prochaine ligne pour ce MissionAssignationId
+            var nextValidation = await _context.MissionValidations
+                .Where(mv => mv.MissionAssignationId == missionAssignationId && mv.Status == null)
+                .OrderBy(mv => mv.CreatedAt) // ordre logique (ex : chronologique)
+                .FirstOrDefaultAsync();
+
+            if (nextValidation != null)
+            {
+                nextValidation.Status = "En Attente";
+                _context.MissionValidations.Update(nextValidation);
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
 
         public async Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize)
         {
             var query = _context.MissionValidations
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.Employee)
+                .Include(mv => mv.User)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(filters.MissionId))
@@ -51,7 +96,7 @@ namespace MyApp.Api.Repositories.mission
 
             if (!string.IsNullOrWhiteSpace(filters.Status))
             {
-                query = query.Where(mv => mv.Status.Contains(filters.Status));
+                query = query.Where(mv => mv.Status != null && mv.Status.Contains(filters.Status));
             }
 
             if (!string.IsNullOrWhiteSpace(filters.ToWhom))
@@ -80,7 +125,7 @@ namespace MyApp.Api.Repositories.mission
             return await _context.MissionValidations
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.Employee)
+                .Include(mv => mv.User)
                 .OrderByDescending(mv => mv.CreatedAt)
                 .ToListAsync();
         }
@@ -90,7 +135,7 @@ namespace MyApp.Api.Repositories.mission
             return await _context.MissionValidations
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.Employee)
+                .Include(mv => mv.User)
                 .FirstOrDefaultAsync(mv => mv.MissionValidationId == id);
         }
 
