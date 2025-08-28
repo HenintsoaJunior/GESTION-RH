@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
@@ -9,6 +10,7 @@ namespace MyApp.Api.Repositories.mission
     // Interface du repository pour la gestion des missions
     public interface IMissionRepository
     {
+        Task<IDbContextTransaction> BeginTransactionAsync();
         Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Mission>> GetAllAsync();
         Task<Mission?> GetByIdAsync(string id);
@@ -29,6 +31,11 @@ namespace MyApp.Api.Repositories.mission
         public MissionRepository(AppDbContext context)
         {
             _context = context;
+        }
+        
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
         }
 
         // Recherche paginée de missions avec filtres
