@@ -13,7 +13,7 @@ namespace MyApp.Api.Services.mission
         Task<IEnumerable<Mission>> GetAllAsync();
         Task<Mission?> GetByIdAsync(string id);
         Task<string> CreateAsync(MissionDTOForm mission);
-        Task<bool> UpdateAsync(string id,MissionDTOForm mission);
+        Task<bool> UpdateAsync(string id, MissionDTOForm mission);
         Task<bool> DeleteAsync(string id);
         Task<MissionStats> GetStatisticsAsync();
         Task<bool> CancelAsync(string id);
@@ -24,13 +24,13 @@ namespace MyApp.Api.Services.mission
         private readonly IMissionRepository _repository;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly IMissionAssignationService _missionAssignationService;
-        private readonly ILogger<Mission> _logger;
+        private readonly ILogger<MissionService> _logger; // Updated to use MissionService
 
         public MissionService(
             IMissionRepository repository,
             ISequenceGenerator sequenceGenerator,
             IMissionAssignationService missionAssignationService,
-            ILogger<Mission> logger)
+            ILogger<MissionService> logger)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
@@ -38,28 +38,45 @@ namespace MyApp.Api.Services.mission
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        // check si la mission existe deja
         public async Task<Mission?> VerifyMissionByNameAsync(string name)
         {
-            var filters = new MissionSearchFiltersDTO
+            try
             {
-                Name = name
-            };
-            var (result, total) = await _repository.SearchAsync(filters, 1, 1);
-            var mission = result.FirstOrDefault();
-            return mission;
+                _logger.LogInformation("Vérification de l'existence de la mission avec le nom: {Name}", name);
+                var filters = new MissionSearchFiltersDTO
+                {
+                    Name = name
+                };
+                var (result, total) = await _repository.SearchAsync(filters, 1, 1);
+                var mission = result.FirstOrDefault();
+                return mission;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la vérification de la mission avec le nom: {Name}", name);
+                throw;
+            }
         }
 
         public async Task<(IEnumerable<Mission>, int)> SearchAsync(MissionSearchFiltersDTO filters, int page, int pageSize)
         {
-            return await _repository.SearchAsync(filters, page, pageSize);
+            try
+            {
+                _logger.LogInformation("Recherche des missions avec filtres, page={Page}, pageSize={PageSize}", page, pageSize);
+                return await _repository.SearchAsync(filters, page, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la recherche des missions");
+                throw;
+            }
         }
-
 
         public async Task<IEnumerable<Mission>> GetAllAsync()
         {
             try
             {
+                _logger.LogInformation("Récupération de toutes les missions");
                 return await _repository.GetAllAsync();
             }
             catch (Exception ex)
@@ -73,6 +90,13 @@ namespace MyApp.Api.Services.mission
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de récupération d'une mission avec un ID null ou vide");
+                    return null;
+                }
+
+                _logger.LogInformation("Récupération de la mission avec l'ID: {MissionId}", id);
                 return await _repository.GetByIdAsync(id);
             }
             catch (Exception ex)
@@ -82,28 +106,45 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<string> CreateAsync(MissionDTOForm missionDto)
+        public async Task<string> CreateAsync(MissionDTOForm? missionDto)
         {
             try
             {
-                var missionId = _sequenceGenerator.GenerateSequence("seq_mission_id", "MIS", 6, "-");
-                var mission = new Mission(missionDto) { MissionId = missionId };
-
-                await _repository.AddAsync(mission);
-                await _repository.SaveChangesAsync();
-
-                if (missionDto.Assignations.Count != 0)
+                if (missionDto == null)
                 {
-                    foreach (var missionAssignation in missionDto.Assignations.Select(assignationDto => new MissionAssignation(missionId, assignationDto)))
-                    {
-                        await _missionAssignationService.CreateAsync(missionAssignation);
-                    }
-
-                    _logger.LogInformation("Created {Count} mission assignations for mission {MissionId}", missionDto.Assignations.Count, missionId);
+                    _logger.LogWarning("Tentative de création avec un MissionDTOForm null");
+                    throw new ArgumentNullException(nameof(missionDto), "Les données de la mission ne peuvent pas être nulles");
                 }
 
-                _logger.LogInformation("Mission créée avec l'ID: {MissionId}", missionId);
-                return missionId;
+                await using var transaction = await _repository.BeginTransactionAsync();
+                try
+                {
+                    var missionId = _sequenceGenerator.GenerateSequence("seq_mission_id", "MIS", 6, "-");
+                    var mission = new Mission(missionDto) { MissionId = missionId };
+
+                    await _repository.AddAsync(mission);
+                    await _repository.SaveChangesAsync();
+
+                    if (missionDto.Assignations.Count != 0)
+                    {
+                        foreach (var missionAssignation in missionDto.Assignations.Select(assignationDto => new MissionAssignation(missionId, assignationDto)))
+                        {
+                            await _missionAssignationService.CreateAsync(missionAssignation);
+                        }
+
+                        _logger.LogInformation("Création de {Count} assignations pour la mission {MissionId}", missionDto.Assignations.Count, missionId);
+                    }
+
+                    await transaction.CommitAsync();
+                    _logger.LogInformation("Mission créée avec l'ID: {MissionId}", missionId);
+                    return missionId;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Erreur lors de la création de la mission, transaction annulée");
+                    throw;
+                }
             }
             catch (Exception ex)
             {
@@ -112,12 +153,22 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<bool> UpdateAsync(string id,MissionDTOForm mission)
+        public async Task<bool> UpdateAsync(string id, MissionDTOForm? mission)
         {
             try
             {
+                if (mission == null)
+                {
+                    _logger.LogWarning("Tentative de mise à jour avec un MissionDTOForm null");
+                    throw new ArgumentNullException(nameof(mission), "Les données de la mission ne peuvent pas être nulles");
+                }
+
                 var entity = await _repository.GetByIdAsync(id);
-                if (entity == null) return false;
+                if (entity == null)
+                {
+                    _logger.LogWarning("Mission avec l'ID {MissionId} n'existe pas", id);
+                    return false;
+                }
 
                 entity.Name = mission.Name;
                 entity.Description = mission.Description;
@@ -127,6 +178,7 @@ namespace MyApp.Api.Services.mission
 
                 await _repository.UpdateAsync(entity);
                 await _repository.SaveChangesAsync();
+                _logger.LogInformation("Mission mise à jour avec succès avec l'ID: {MissionId}", id);
                 return true;
             }
             catch (Exception ex)
@@ -138,29 +190,75 @@ namespace MyApp.Api.Services.mission
 
         public async Task<bool> DeleteAsync(string id)
         {
-            var entity = await _repository.GetByIdAsync(id);
-            if (entity == null) return false;
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative de suppression avec un ID null ou vide");
+                    throw new ArgumentException("L'ID de la mission ne peut pas être null ou vide", nameof(id));
+                }
 
-            await _repository.DeleteAsync(entity);
-            await _repository.SaveChangesAsync();
-            return true;
+                var entity = await _repository.GetByIdAsync(id);
+                if (entity == null)
+                {
+                    _logger.LogWarning("Mission avec l'ID {MissionId} n'existe pas", id);
+                    return false;
+                }
+
+                await _repository.DeleteAsync(entity);
+                await _repository.SaveChangesAsync();
+                _logger.LogInformation("Mission supprimée avec succès avec l'ID: {MissionId}", id);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de la mission {MissionId}", id);
+                throw;
+            }
         }
 
         public async Task<bool> CancelAsync(string id)
         {
-            var entity = await _repository.GetByIdAsync(id);
-            if (entity == null) return false;
+            try
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _logger.LogWarning("Tentative d'annulation avec un ID null ou vide");
+                    throw new ArgumentException("L'ID de la mission ne peut pas être null ou vide", nameof(id));
+                }
 
-            entity.Status = "Annulé";
-            await _repository.UpdateAsync(entity);
-            await _repository.SaveChangesAsync();
-            _logger.LogInformation("Mission {MissionId} annulée", id);
-            return true;
+                var entity = await _repository.GetByIdAsync(id);
+                if (entity == null)
+                {
+                    _logger.LogWarning("Mission avec l'ID {MissionId} n'existe pas", id);
+                    return false;
+                }
+
+                entity.Status = "Annulé";
+                await _repository.UpdateAsync(entity);
+                await _repository.SaveChangesAsync();
+                _logger.LogInformation("Mission {MissionId} annulée", id);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de l'annulation de la mission {MissionId}", id);
+                throw;
+            }
         }
 
         public async Task<MissionStats> GetStatisticsAsync()
         {
-            return await _repository.GetStatisticsAsync();
+            try
+            {
+                _logger.LogInformation("Récupération des statistiques des missions");
+                return await _repository.GetStatisticsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des statistiques des missions");
+                throw;
+            }
         }
     }
 }
