@@ -47,6 +47,46 @@ public class UserController : ControllerBase
         }
     }
 
+    [HttpGet("{userId}/superior")]
+    public async Task<ActionResult<UserDto>> GetSuperior(string userId)
+    {
+        try
+        {
+            var superior = await _userService.GetSuperiorAsync(userId);
+            if (superior == null)
+                return NotFound("No superior found for the specified user.");
+
+            return Ok(superior);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+    [HttpGet("drh")]
+    public async Task<ActionResult<UserDto>> GetDrh()
+    {
+        try
+        {
+            var drh = await _userService.GetDrhAsync();
+            if (drh == null)
+                return NotFound("No DRH found.");
+
+            return Ok(drh);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
     [HttpPost("search")]
     public async Task<ActionResult<(IEnumerable<User>, int)>> Search([FromQuery] UserSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {

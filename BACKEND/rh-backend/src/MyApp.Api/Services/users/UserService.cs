@@ -24,6 +24,10 @@ namespace MyApp.Api.Services.users
         Task DeleteUsersAsync(List<User> users);
         
         Task<IEnumerable<UserDto>> GetCollaboratorsAsync(string userId);
+        
+        Task<UserDto?> GetSuperiorAsync(string userId);
+
+        Task<UserDto?> GetDrhAsync();
     }
     
     public class UserService : IUserService
@@ -33,6 +37,20 @@ namespace MyApp.Api.Services.users
         public UserService(IUserRepository repository)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        }
+        
+        public async Task<UserDto?> GetDrhAsync()
+        {
+            var drh = await _repository.GetDrhAsync();
+            return drh != null ? MapToDto(drh) : null;
+        }
+        public async Task<UserDto?> GetSuperiorAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be CSUll or empty.", nameof(userId));
+
+            var superior = await _repository.GetSuperiorAsync(userId);
+            return superior != null ? MapToDto(superior) : null;
         }
         
         public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)
