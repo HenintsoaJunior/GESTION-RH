@@ -322,7 +322,7 @@ export const ButtonPrimary = styled.button`
 `;
 
 export const ButtonSecondary = styled(ButtonPrimary)`
-  background-color: var(--text-secondary);
+  background-color: var(--error-color);
 
   &:hover {
     background-color: var(--text-muted);

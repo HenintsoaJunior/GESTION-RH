@@ -62,7 +62,6 @@ export const searchUsers = async (
   }
 };
 
-
 export const syncLdap = async (onSuccess, onError) => {
   try {
     await apiPost("/api/Ldap/sync", {});
@@ -82,3 +81,50 @@ export const syncLdap = async (onSuccess, onError) => {
   }
 };
 
+export const fetchSuperior = async (setSuperior, setIsLoading, onError) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, superior: true }));
+
+    const userData = JSON.parse(localStorage.getItem("user"));
+    if (!userData || !userData.userId) {
+      throw new Error("Aucun ID utilisateur trouvé dans le localStorage.");
+    }
+    const idToUse = userData.userId;
+
+    const data = await apiGet(`/api/user/${idToUse}/superior`);
+    if (!data) {
+      throw new Error("Aucune donnée de supérieur retournée par l'API.");
+    }
+
+    setSuperior(data);
+  } catch (error) {
+    console.error("Erreur lors du chargement du supérieur:", error);
+    onError({
+      isOpen: true,
+      type: "error",
+      message: `Erreur lors du chargement du supérieur : ${error.message}`,
+    });
+    setSuperior(null);
+  } finally {
+    setIsLoading((prev) => ({ ...prev, superior: false }));
+  }
+};
+
+// Fetch the DRH
+export const fetchDrh = async (setDrh, setIsLoading, onError) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, drh: true }));
+    const data = await apiGet("/api/user/drh");
+    setDrh(data || null);
+  } catch (error) {
+    console.error("Erreur lors du chargement du DRH:", error);
+    onError({
+      isOpen: true,
+      type: "error",
+      message: `Erreur lors du chargement du DRH: ${error.message}`,
+    });
+    setDrh(null);
+  } finally {
+    setIsLoading((prev) => ({ ...prev, drh: false }));
+  }
+};

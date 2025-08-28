@@ -42,11 +42,8 @@ export default function Template({ children }) {
 
   // Generate initials for avatar
   const getInitials = useCallback((name) => {
-    // Remove content in parentheses (e.g., "(DRH)")
     const cleanName = name.replace(/\s*\([^)]+\)\s*/g, '').trim();
-    // Split the name into parts
     const nameParts = cleanName.split(/\s+/);
-    // Get first name (first part) and last name (last part)
     const firstInitial = nameParts[0] ? nameParts[0][0] : "J";
     const lastInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1][0] : "D";
     return `${firstInitial}${lastInitial}`.toUpperCase();
@@ -121,6 +118,80 @@ export default function Template({ children }) {
     [getMenuLabel]
   );
 
+  // Function to generate breadcrumb trail
+  const generateBreadcrumbs = useCallback(() => {
+    const currentPath = location.pathname === "/" ? "/" : location.pathname + location.hash;
+    const breadcrumbs = [];
+
+    // Static breadcrumb for home
+    breadcrumbs.push({
+      title: "Accueil",
+      path: "/",
+      isActive: currentPath === "/",
+    });
+
+    // Handle static routes
+    if (currentPath === "/system") {
+      breadcrumbs.push({
+        title: "System",
+        path: "/system",
+        isActive: true,
+      });
+    } else if (currentPath === "/entite") {
+      breadcrumbs.push({
+        title: "Entite",
+        path: "/entite",
+        isActive: true,
+      });
+    } else if (currentPath === "/profil-page") {
+      breadcrumbs.push({
+        title: "Mon profil",
+        path: "/profil-page",
+        isActive: true,
+      });
+    } else {
+      // Dynamic menu-based breadcrumbs
+      const matchedResult = findMenuItemByPath(menuData, currentPath);
+      if (matchedResult) {
+        const { item, parentKey, title } = matchedResult;
+
+        // Find parent item if exists
+        if (parentKey) {
+          const findParent = (items, key) => {
+            for (const menuItem of items) {
+              if (menuItem.menu.menuKey === key) {
+                return menuItem.menu;
+              }
+              if (menuItem.children && menuItem.children.length > 0) {
+                const parent = findParent(menuItem.children, key);
+                if (parent) return parent;
+              }
+            }
+            return null;
+          };
+
+          const parentMenu = findParent(menuData, parentKey);
+          if (parentMenu) {
+            breadcrumbs.push({
+              title: getMenuLabel(parentMenu),
+              path: parentMenu.link,
+              isActive: false,
+            });
+          }
+        }
+
+        // Add current item
+        breadcrumbs.push({
+          title,
+          path: item.link,
+          isActive: true,
+        });
+      }
+    }
+
+    return breadcrumbs;
+  }, [location.pathname, location.hash, menuData, findMenuItemByPath, getMenuLabel]);
+
   // Initialize expanded menus for all menu items with children
   const initializeExpandedMenus = useCallback((menuItems) => {
     const expanded = {};
@@ -171,9 +242,7 @@ export default function Template({ children }) {
       }
       setIsMenuLoading(true);
       try {
-        // Extract roleNames from user.roles
         const roleNames = user.roles?.map(role => role.roleName) || [];
-        // Construct query string with roleNames
         const queryString = roleNames.length > 0 ? `?${roleNames.map(name => `roleNames=${encodeURIComponent(name)}`).join('&')}` : '';
         const response = await fetch(`${BASE_URL}/api/Menu/hierarchy${queryString}`);
         if (!response.ok) throw new Error("Erreur réseau");
@@ -211,6 +280,8 @@ export default function Template({ children }) {
       staticRouteMatch = { key: "system", title: "System" };
     } else if (currentPath === "/entite") {
       staticRouteMatch = { key: "entite", title: "Entite" };
+    } else if (currentPath === "/profil-page") {
+      staticRouteMatch = { key: "profile", title: "Mon profil" };
     }
 
     if (matchedResult) {
@@ -487,7 +558,22 @@ export default function Template({ children }) {
             >
               <FaIcons.FaBars />
             </button>
-            <h1>{headerTitle}</h1>
+            <nav className="breadcrumb">
+              {generateBreadcrumbs().map((crumb, index) => (
+                <span key={index} className="breadcrumb-item-wrapper">
+                  {crumb.isActive ? (
+                    <span className="breadcrumb-item active">{crumb.title}</span>
+                  ) : (
+                    <Link to={crumb.path} className="breadcrumb-item">
+                      {crumb.title}
+                    </Link>
+                  )}
+                  {index < generateBreadcrumbs().length - 1 && (
+                    <span className="breadcrumb-separator">></span>
+                  )}
+                </span>
+              ))}
+            </nav>
           </div>
 
           <div className="header-center">
@@ -526,10 +612,6 @@ export default function Template({ children }) {
               <div className="user-profile-dropdown">
                 <div className="user-profile">
                   <div className="user-avatar">{getInitials(user.name)}</div>
-                  {/* <div className="user-info">
-                    <span className="user-name">{user.userId}</span>
-                    <span className="user-role">{userRole}</span>
-                  </div> */}
                   <FaIcons.FaChevronDown className="dropdown-arrow" />
                 </div>
                 <div className="user-dropdown-menu">

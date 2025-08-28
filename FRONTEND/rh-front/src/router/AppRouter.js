@@ -22,6 +22,7 @@ import ShortcutsDashboard from 'pages/system/entite/shortcuts';
 import EmployeeList from 'pages/employee/employee-list';
 import EmployeeForm from 'pages/employee/employee-fom';
 import BeneficiaryMissionList from 'pages/mission/benificary-mission-list';
+import MissionValidationPage from 'pages/mission/mission-validation';
 import ProfilePage from 'layouts/profil-page';
 import UserList from 'pages/users/users-list';
 import RoleList from 'pages/roles/roles-list';
@@ -65,6 +66,7 @@ function AppRouter() {
           <Route path="/mission/form/:missionId" element={<MissionForm />} />
           <Route path="/mission/form" element={<MissionForm />} />
           <Route path="/mission/list" element={<MissionList />} />
+          <Route path="/mission/validation" element={<MissionValidationPage />} />
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
           <Route path="/assignments/details" element={<AssignmentDetails />} />
           <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />
