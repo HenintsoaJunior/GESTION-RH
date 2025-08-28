@@ -189,20 +189,21 @@ namespace MyApp.Api.Services.mission
                 if (existingMissionValidation == null)
                 {
                     _logger.LogWarning("Validation de mission avec l'ID {MissionValidationId} n'existe pas", id);
-                    return false;
+                    throw new InvalidOperationException($"La validation de mission avec l'ID {id} n'existe pas");
                 }
 
-                // Update existing entity to avoid tracking conflict
-                existingMissionValidation.MissionId = missionValidationDto.MissionId; // Update with actual properties
-                // Update other properties as needed, e.g., existingMissionValidation.Status = missionValidationDto.Status;
+                var newMissionValidation = new MissionValidation(missionValidationDto)
+                {
+                    MissionValidationId = id
+                };
 
-                await _repository.UpdateAsync(existingMissionValidation);
+                await _repository.UpdateAsync(newMissionValidation);
                 await _repository.SaveChangesAsync();
 
                 _logger.LogInformation("Validation de mission mise à jour avec succès avec l'ID: {MissionValidationId}", id);
 
                 // Log the modification
-                await _logService.LogAsync("MODIFICATION", existingMissionValidation, existingMissionValidation, userId);
+                await _logService.LogAsync("MODIFICATION", existingMissionValidation, newMissionValidation, userId);
 
                 return true;
             }

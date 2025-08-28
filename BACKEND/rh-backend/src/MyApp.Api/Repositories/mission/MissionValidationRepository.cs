@@ -133,6 +133,7 @@ namespace MyApp.Api.Repositories.mission
         public async Task<MissionValidation?> GetByIdAsync(string id)
         {
             return await _context.MissionValidations
+                .AsNoTracking()
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
                 .Include(mv => mv.User)
