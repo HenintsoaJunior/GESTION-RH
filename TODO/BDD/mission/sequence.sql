@@ -27,7 +27,7 @@ IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_mission_validation_id')
 GO
 
 IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_log_id')
-    DROP SEQUENCE seq_mission_validation_id;
+    DROP SEQUENCE seq_log_id;
 GO
 
 

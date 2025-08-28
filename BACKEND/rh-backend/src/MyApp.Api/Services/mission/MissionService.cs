@@ -92,13 +92,13 @@ namespace MyApp.Api.Services.mission
                 await _repository.AddAsync(mission);
                 await _repository.SaveChangesAsync();
 
-                if (missionDto.Assignations.Any())
+                if (missionDto.Assignations.Count != 0)
                 {
-                    foreach (var assignationDto in missionDto.Assignations)
+                    foreach (var missionAssignation in missionDto.Assignations.Select(assignationDto => new MissionAssignation(missionId, assignationDto)))
                     {
-                        var missionAssignation = new MissionAssignation(missionId, assignationDto);
                         await _missionAssignationService.CreateAsync(missionAssignation);
                     }
+
                     _logger.LogInformation("Created {Count} mission assignations for mission {MissionId}", missionDto.Assignations.Count, missionId);
                 }
 

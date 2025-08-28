@@ -11,12 +11,12 @@ namespace MyApp.Api.Entities.logs
         [Key]
         [Column("log_id")]
         [MaxLength(50)]
-        public string LogId { get; set; } = Guid.NewGuid().ToString();
+        public string LogId { get; set; } = null!;
 
         [Required]
         [Column("action")]
         [MaxLength(100)]
-        public string Action { get; set; } = string.Empty;
+        public string Action { get; set; } = null!;
 
         [Column("table_name")]
         [MaxLength(255)]
@@ -30,7 +30,7 @@ namespace MyApp.Api.Entities.logs
 
         [Required]
         [Column("user_id")]
-        [MaxLength(50)]
+        [MaxLength(250)]
         public string UserId { get; set; } = null!;
 
         [ForeignKey("UserId")]

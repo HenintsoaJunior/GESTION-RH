@@ -33,11 +33,5 @@ namespace MyApp.Api.Entities.users
             Name = dto.Name;
             Description = dto.Description;
         }
-        
-        public Role(RoleDTOFormUpdate dto)
-        {
-            Name = dto.Name;
-            Description = dto.Description;
-        }
     }
 }

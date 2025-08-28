@@ -1,9 +1,19 @@
+DROP TABLE IF EXISTS logs;
+DROP TABLE IF EXISTS mission_validation;
+DROP TABLE IF EXISTS mission_assignation;
+DROP TABLE IF EXISTS compensation_scale;
+DROP TABLE IF EXISTS mission_validation;
+DROP TABLE IF EXISTS mission;
+DROP TABLE IF EXISTS lieu;
+DROP TABLE IF EXISTS transport;
+DROP TABLE IF EXISTS expense_type;
+
 CREATE TABLE expense_type (
    expense_type_id VARCHAR(50),
    type VARCHAR(255),
    time_start TIME,
    time_end TIME,
-   created_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    PRIMARY KEY(expense_type_id)
 );
@@ -11,7 +21,7 @@ CREATE TABLE expense_type (
 CREATE TABLE transport(
    transport_id VARCHAR(50),
    type VARCHAR(50) NOT NULL,
-   created_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    PRIMARY KEY(transport_id)
 );
@@ -19,7 +29,7 @@ CREATE TABLE transport(
 CREATE TABLE compensation_scale(
    compensation_scale_id VARCHAR(50),
    amount DECIMAL(15,2),
-   created_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    transport_id VARCHAR(50),
    expense_type_id VARCHAR(50),
@@ -37,7 +47,7 @@ CREATE TABLE lieu (
    ville VARCHAR(255),
    code_postal VARCHAR(20),
    pays VARCHAR(255) NOT NULL,
-   created_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME
 );
 
@@ -50,7 +60,7 @@ CREATE TABLE mission (
    end_date DATE,
    status VARCHAR(20) NOT NULL DEFAULT 'En Cours',
    lieu_id VARCHAR(50) NOT NULL,
-   created_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    PRIMARY KEY(mission_id),
    FOREIGN KEY(lieu_id) REFERENCES lieu(lieu_id)
@@ -63,7 +73,7 @@ CREATE TABLE mission_assignation (
    return_date DATE,
    return_time TIME,
    duration INT,
-   created_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    transport_id VARCHAR(50),
    mission_id VARCHAR(50) NOT NULL,
@@ -84,7 +94,7 @@ CREATE TABLE mission_validation (
    status VARCHAR(20) DEFAULT 'En Attente',
    to_whom VARCHAR(50),
    validation_date DATETIME,
-   created_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    PRIMARY KEY(mission_validation_id),
    FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
@@ -99,8 +109,9 @@ CREATE TABLE logs(
    table_name VARCHAR(255),
    old_values TEXT,
    new_values TEXT,
-   date_ DATETIME,
-   user_id VARCHAR(50) NOT NULL,
+   user_id VARCHAR(250) NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
    PRIMARY KEY(log_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id)
 );

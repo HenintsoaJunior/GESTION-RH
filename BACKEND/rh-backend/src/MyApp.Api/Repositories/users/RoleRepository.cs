@@ -34,6 +34,7 @@ public class RoleRepository : IRoleRepository
     public async Task<Role?> GetByIdAsync(string id)
     {
         return await _context.Roles
+            .AsNoTracking()
             .FirstOrDefaultAsync(r => r.RoleId == id);
     }
 
