@@ -8,10 +8,12 @@ import moment from "moment";
 import "moment/locale/fr";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { formatDate } from "utils/dateConverter";
+import { hasHabilitation } from "utils/authUtils"; // Import the utility function
 import { fetchMissions, fetchMissionStats, cancelMission } from "services/mission/mission";
 import Modal from "components/modal";
 import Pagination from "components/pagination";
 import { fetchAllRegions } from "services/lieu/lieu";
+import AssignedPersonsList from "./mission-assign-list";
 import {
   DashboardContainer,
   StatsContainer,
@@ -60,7 +62,7 @@ import {
   ActionButtons,
   ModalActions,
   Loading,
-  NoDataMessage
+  NoDataMessage,
 } from "styles/generaliser/table-container";
 
 // Configuration de moment en français
@@ -111,6 +113,9 @@ const MissionList = () => {
   const [regionDisplayNames, setRegionDisplayNames] = useState([]);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [missionToCancel, setMissionToCancel] = useState(null);
+  const [showAssignedPersonsPopup, setShowAssignedPersonsPopup] = useState(false);
+  const [selectedMissionId, setSelectedMissionId] = useState(null);
+  const [permissions, setPermissions] = useState({}); // New state to store permissions per mission
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -170,6 +175,23 @@ const MissionList = () => {
     fetchMissions(setMissions, setIsLoading, setTotalEntries, initialFilters, currentPage, pageSize, handleError);
     fetchMissionStats(setStats, setIsLoading, handleError);
   }, [currentPage, pageSize, handleError]);
+
+  // Fetch permissions for each mission when missions change
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      const newPermissions = {};
+      for (const mission of missions) {
+        const canModify = await hasHabilitation("mission_modification") && mission.status !== "Annulé" && mission.status !== "Terminé";
+        const canCancel = await hasHabilitation("mission_suppression") && mission.status !== "Annulé" && mission.status !== "Terminé";
+        newPermissions[mission.missionId] = { canModify, canCancel };
+      }
+      setPermissions(newPermissions);
+    };
+
+    if (missions.length > 0) {
+      fetchPermissions();
+    }
+  }, [missions]);
 
   const calendarEvents = useMemo(() => {
     const events = [];
@@ -243,7 +265,8 @@ const MissionList = () => {
 
   const handleRowClick = (missionId) => {
     if (missionId) {
-      navigate(`/mission/assign-mission/${missionId}`);
+      setSelectedMissionId(missionId);
+      setShowAssignedPersonsPopup(true);
     }
   };
 
@@ -279,7 +302,8 @@ const MissionList = () => {
 
   const handleEventClick = (event) => {
     const missionId = event.id.replace(/-(start|end)$/, "");
-    navigate(`/mission/assign-mission/${missionId}`);
+    setSelectedMissionId(missionId);
+    setShowAssignedPersonsPopup(true);
   };
 
   const handleSelectSlot = ({ start }) => {
@@ -309,6 +333,42 @@ const MissionList = () => {
     return <StatusBadge className={statusClass}>{status || "Inconnu"}</StatusBadge>;
   };
 
+  // Generalized function to render action buttons based on habilitations
+  const renderActionButtons = (mission) => {
+    const missionPermissions = permissions[mission.missionId] || { canModify: false, canCancel: false };
+
+    if (!missionPermissions.canModify && !missionPermissions.canCancel) {
+      return <TableCell>—</TableCell>;
+    }
+
+    return (
+      <TableCell>
+        <ActionButtons>
+          {missionPermissions.canModify && (
+            <ButtonUpdate
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/mission/form/${mission.missionId}`);
+              }}
+            >
+              Modifier
+            </ButtonUpdate>
+          )}
+          {missionPermissions.canCancel && (
+            <ButtonCancel
+              onClick={(e) => {
+                e.stopPropagation();
+                handleShowCancelModal(mission.missionId);
+              }}
+            >
+              Annuler
+            </ButtonCancel>
+          )}
+        </ActionButtons>
+      </TableCell>
+    );
+  };
+
   return (
     <DashboardContainer>
       <Modal
@@ -331,6 +391,13 @@ const MissionList = () => {
           <ButtonConfirm onClick={handleConfirmCancel}>Confirmer</ButtonConfirm>
         </ModalActions>
       </Modal>
+
+      {showAssignedPersonsPopup && (
+        <AssignedPersonsList
+          missionId={selectedMissionId}
+          onClose={() => setShowAssignedPersonsPopup(false)}
+        />
+      )}
 
       <StatsContainer>
         <StatsGrid>
@@ -577,28 +644,7 @@ const MissionList = () => {
                       <TableCell>{formatDate(mission.endDate) || "Non spécifié"}</TableCell>
                       <TableCell>{getStatusBadge(mission.status)}</TableCell>
                       <TableCell>{formatDate(mission.createdAt) || "Non spécifié"}</TableCell>
-                      <TableCell>
-                        <ActionButtons>
-                          <ButtonUpdate
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/mission/form/${mission.missionId}`);
-                            }}
-                            disabled={mission.status === "Annulé" || mission.status === "Terminé"}
-                          >
-                            Modifier
-                          </ButtonUpdate>
-                          <ButtonCancel
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleShowCancelModal(mission.missionId);
-                            }}
-                            disabled={mission.status === "Annulé" || mission.status === "Terminé"}
-                          >
-                            Annuler
-                          </ButtonCancel>
-                        </ActionButtons>
-                      </TableCell>
+                      {renderActionButtons(mission)}
                     </TableRow>
                   ))
                 ) : (
@@ -618,7 +664,7 @@ const MissionList = () => {
             totalEntries={totalEntries}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
-            disabled={isLoading.assignMissions}
+            disabled={isLoading.missions}
           />
         </>
       ) : (

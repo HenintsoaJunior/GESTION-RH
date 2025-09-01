@@ -1,37 +1,3 @@
-    -- Suppression des données des tables avec dépendances (ordre inverse de création)
-    DELETE FROM approval_flow_employee;
-    DELETE FROM recruitment_approval;
-    DELETE FROM employee_nationalities;
-    DELETE FROM recruitment_request_replacement_reasons;
-    DELETE FROM recruitment_request_details;
-    DELETE FROM recruitment_requests;
-    DELETE FROM application_comments;
-    DELETE FROM cv_details;
-    DELETE FROM applications;
-    DELETE FROM users;
-    DELETE FROM candidates;
-    DELETE FROM categories_of_employee;
-    DELETE FROM employees;
-    DELETE FROM job_offers;
-    DELETE FROM job_descriptions;
-    DELETE FROM units;
-    DELETE FROM service;
-    DELETE FROM department;
-    DELETE FROM direction;
-    DELETE FROM site;
-
-    -- Suppression des données des tables de référence (sans dépendances)
-    DELETE FROM nationalities;
-    DELETE FROM marital_statuses;
-    DELETE FROM genders;
-    DELETE FROM contract_types;
-    DELETE FROM employee_categories;
-    DELETE FROM working_time_types;
-    DELETE FROM recruitment_reasons;
-    DELETE FROM replacement_reasons;
-    DELETE FROM approval_flow;
-
-    -- Insertion des directions
 INSERT INTO direction (direction_id, direction_name, acronym, created_at, updated_at)
 VALUES 
     ('DR_0001', 'Direction Technique', 'DTE', GETDATE(), NULL),
@@ -45,7 +11,6 @@ VALUES
     ('DR_0009', 'Direction Générale', 'DGE', GETDATE(), NULL),
     ('DR_0010', 'Communication et Relations Publiques', 'COM', GETDATE(), NULL);
 
--- Insertion des départements
 INSERT INTO department (department_id, department_name, direction_id, created_at, updated_at)
 VALUES 
     ('DP_0001', 'Bâtiments et Génie Civil', 'DR_0001', GETDATE(), NULL),
@@ -84,7 +49,6 @@ VALUES
     ('DP_0034', 'Direction Générale', 'DR_0009', GETDATE(), NULL),
     ('DP_0035', 'Communication', 'DR_0010', GETDATE(), NULL);
 
--- Insertion des services
 INSERT INTO service (service_id, service_name, department_id, created_at, updated_at)
 VALUES 
     ('SR_0001', 'Conception Technique', 'DP_0001', GETDATE(), NULL),
@@ -123,130 +87,121 @@ VALUES
     ('SR_0034', 'Administration Générale', 'DP_0034', GETDATE(), NULL),
     ('SR_0035', 'Communication Interne et Externe', 'DP_0035', GETDATE(), NULL);
 
-    -- Insertion des unités
-    INSERT INTO units (unit_id, unit_name, service_id, created_at, updated_at)
-    VALUES 
-        ('UN_0001', 'Unité de Conception Mécanique', 'SR_0001', GETDATE(), GETDATE()),
-        ('UN_0002', 'Unité de Publicité Numérique', 'SR_0002', GETDATE(), GETDATE()),
-        ('UN_0003', 'Unité d''Inspection Qualité', 'SR_0003', GETDATE(), GETDATE());
 
-    -- Insertion des sites
-    INSERT INTO site (site_id, site_name, code, longitude, latitude, created_at, updated_at)
-    VALUES 
-        ('ST_0001', 'Antananarivo', 'TNR', NULL, NULL, GETDATE(), NULL),
-        ('ST_0002', 'Nosy Be', 'NOS', NULL, NULL, GETDATE(), NULL);
-
-    -- Insertion des nationalités
-    INSERT INTO nationalities (nationality_id, code, name)
-    VALUES 
-        ('NAT_0001', 'MG', 'Malagasy'),
-        ('NAT_0002', 'FR', 'Français'),
-        ('NAT_0003', 'US', 'Américain');
-
-    -- Insertion des statuts matrimoniaux
-    INSERT INTO marital_statuses (marital_status_id, code, label)
-    VALUES 
-        ('MS_0001', 'CEL', 'Célibataire'),
-        ('MS_0002', 'MAR', 'Marié'),
-        ('MS_0003', 'DIV', 'Divorcé');
-
-    -- Insertion des genres
-    INSERT INTO genders (gender_id, code, label, created_at, updated_at)
-    VALUES 
-        ('GEN_0001', 'M', 'Masculin', GETDATE(), NULL),
-        ('GEN_0002', 'F', 'Féminin', GETDATE(), NULL),
-        ('GEN_0003', 'NB', 'Non-binaire', GETDATE(), NULL);
-
-    -- Insertion des types de contrat
-    INSERT INTO contract_types (contract_type_id, code, label, created_at, updated_at)
-    VALUES 
-        ('CT_0001', 'CDI', 'Contrat à Durée Indéterminée', GETDATE(), NULL),
-        ('CT_0002', 'CDD', 'Contrat à Durée Déterminée', GETDATE(), NULL),
-        ('CT_0003', 'CTT', 'Contrat de Travail Temporaire', GETDATE(), NULL);
-
-    -- Insertion des catégories d'employés
-    INSERT INTO employee_categories (employee_category_id, code, label, created_at, updated_at)
-    VALUES 
-        ('EC_0001', 'CAD', 'Cadre', GETDATE(), NULL),
-        ('EC_0002', 'EMP', 'Employé', GETDATE(), NULL),
-        ('EC_0003', 'TEC', 'Technicien', GETDATE(), NULL);
-
-    -- Insertion des types de temps de travail
-    INSERT INTO working_time_types (working_time_type_id, code, label, created_at, updated_at)
-    VALUES 
-        ('WTT_0001', 'TP', 'Temps plein', GETDATE(), NULL),
-        ('WTT_0002', 'TPT', 'Temps partiel', GETDATE(), NULL),
-        ('WTT_0003', 'MT', 'Mi-temps', GETDATE(), NULL);
-
-    -- Insertion des raisons de recrutement
-    INSERT INTO recruitment_reasons (recruitment_reason_id, name, created_at, updated_at)
-    VALUES 
-        ('RR_0001', 'Remplacement d''un employé', GETDATE(), NULL),
-        ('RR_0002', 'Création d''un nouveau poste', GETDATE(), NULL),
-        ('RR_0003', 'Dotation prévue au budget', GETDATE(), NULL);
-
-    -- Insertion des raisons de remplacement
-    INSERT INTO replacement_reasons (replacement_reason_id, name, created_at, updated_at)
-    VALUES 
-        ('RPR_0001', 'Décès', GETDATE(), NULL),
-        ('RPR_0002', 'Démission', GETDATE(), NULL),
-        ('RPR_0003', 'Essai non-concluant', GETDATE(), NULL),
-        ('RPR_0004', 'Retraite', GETDATE(), NULL),
-        ('RPR_0005', 'Licenciement', GETDATE(), NULL),
-        ('RPR_0006', 'Rupture de contrat à l''amiable', GETDATE(), NULL),
-        ('RPR_0007', 'Mobilité interne', GETDATE(), NULL);
-
-    -- Insertion des flux d'approbation
-    INSERT INTO approval_flow (approval_flow_id, approval_order, approver_role, created_at, updated_at)
-    VALUES
-        ('AF_0001', 1, 'Superviseur Direct', GETDATE(), NULL),
-        ('AF_0002', 2, 'Manager DSI', GETDATE(), NULL),
-        ('AF_0003', 3, 'Manager Financier', GETDATE(), NULL);
-
-        
-        
+INSERT INTO units (unit_id, unit_name, service_id, created_at, updated_at)
+VALUES 
+    ('UN_0001', 'TNRDRH', 'SR_0013', GETDATE(), GETDATE()),
+    ('UN_0002', 'TNRDRH', 'SR_0014', GETDATE(), GETDATE()),
+    ('UN_0003', 'TNRDRH', 'SR_0015', GETDATE(), GETDATE()),
+    ('UN_0004', 'TNRDRH', 'SR_0016', GETDATE(), GETDATE()),
+    ('UN_0005', 'TNRDAF', 'SR_0026', GETDATE(), GETDATE()),
+    ('UN_0006', 'TNRDAF', 'SR_0034', GETDATE(), GETDATE()),
+    ('UN_0007', 'TNRDAF', 'SR_0028', GETDATE(), GETDATE()),
+    ('UN_0008', 'TNRDAF', 'SR_0029', GETDATE(), GETDATE()),
+    ('UN_0009', 'TNRDAF', 'SR_0027', GETDATE(), GETDATE()),
+    ('UN_0010', 'TNRDAF', 'SR_0030', GETDATE(), GETDATE()),
+    ('UN_0011', 'TNRDAF', 'SR_0031', GETDATE(), GETDATE()),
+    ('UN_0012', 'TNRDCM', 'SR_0005', GETDATE(), GETDATE()),
+    ('UN_0013', 'TNRDCM', 'SR_0006', GETDATE(), GETDATE()),
+    ('UN_0014', 'TNRDCM', 'SR_0005', GETDATE(), GETDATE()),
+    ('UN_0015', 'TNRDCM', 'SR_0007', GETDATE(), GETDATE()),
+    ('UN_0016', 'TNRDCM', 'SR_0008', GETDATE(), GETDATE()),
+    ('UN_0017', 'TNRDCM', 'SR_0005', GETDATE(), GETDATE()),
+    ('UN_0018', 'TNRDJA', 'SR_0032', GETDATE(), GETDATE()),
+    ('UN_0019', 'TNRQRS', 'SR_0009', GETDATE(), GETDATE()),
+    ('UN_0020', 'TNRQRS', 'SR_0012', GETDATE(), GETDATE()),
+    ('UN_0021', 'TNRQRS', 'SR_0010', GETDATE(), GETDATE()),
+    ('UN_0022', 'TNRQRS', 'SR_0011', GETDATE(), GETDATE()),
+    ('UN_0023', 'TNRQRS', 'SR_0012', GETDATE(), GETDATE()),
+    ('UN_0024', 'TNRDOP', 'SR_0021', GETDATE(), GETDATE()),
+    ('UN_0025', 'TNRDOP', 'SR_0025', GETDATE(), GETDATE()),
+    ('UN_0026', 'TNRDOP', 'SR_0022', GETDATE(), GETDATE()),
+    ('UN_0027', 'TNRDOP', 'SR_0021', GETDATE(), GETDATE()),
+    ('UN_0028', 'TNRDOP', 'SR_0024', GETDATE(), GETDATE()),
+    ('UN_0029', 'TNRDOP', 'SR_0023', GETDATE(), GETDATE()),
+    ('UN_0030', 'TNRDOP', 'SR_0017', GETDATE(), GETDATE()),
+    ('UN_0031', 'TNRDOP', 'SR_0003', GETDATE(), GETDATE()),
+    ('UN_0032', 'TNRDTE', 'SR_0001', GETDATE(), GETDATE()),
+    ('UN_0033', 'TNRDTE', 'SR_0002', GETDATE(), GETDATE()),
+    ('UN_0034', 'TNRDTE', 'SR_0003', GETDATE(), GETDATE()),
+    ('UN_0035', 'TNRDTE', 'SR_0004', GETDATE(), GETDATE()),
+    ('UN_0036', 'TNRDTE', 'SR_0003', GETDATE(), GETDATE()),
+    ('UN_0037', 'TNRDGE', 'SR_0033', GETDATE(), GETDATE()),
+    ('UN_0038', 'TNRDGE', 'SR_0035', GETDATE(), GETDATE()),
+    ('UN_0039', 'TNRDGE', 'SR_0005', GETDATE(), GETDATE()),
+    ('UN_0040', 'TNRDGE', 'SR_0009', GETDATE(), GETDATE()),
+    ('UN_0041', 'TNRDGE', 'SR_0010', GETDATE(), GETDATE()),
+    ('UN_0042', 'TNRQHS', 'SR_0010', GETDATE(), GETDATE()),
+    ('UN_0043', 'NOSDOP', 'SR_0020', GETDATE(), GETDATE()),
+    ('UN_0044', 'NOSDOP', 'SR_0022', GETDATE(), GETDATE()),
+    ('UN_0045', 'NOSDOP', 'SR_0021', GETDATE(), GETDATE()),
+    ('UN_0046', 'TNRDMT', 'SR_0003', GETDATE(), GETDATE()),
+    ('UN_0047', 'TNRDMT', 'SR_0003', GETDATE(), GETDATE()),
+    ('UN_0048', 'TNRDMT', 'SR_0003', GETDATE(), GETDATE()),
+    ('UN_0049', 'TNRCOM', 'SR_0035', GETDATE(), GETDATE()),
+    ('UN_0050', 'TNRDMA', 'SR_0005', GETDATE(), GETDATE()),
+    ('UN_0051', 'TNRDMA', 'SR_0005', GETDATE(), GETDATE()),
+    ('UN_0052', 'TNRDMA', 'SR_0005', GETDATE(), GETDATE()),
+    ('UN_0053', 'TNRJUR', 'SR_0033', GETDATE(), GETDATE()),
+    ('UN_0054', 'TNRDSI', 'SR_0017', GETDATE(), GETDATE()),
+    ('UN_0055', 'TNRDSI', 'SR_0018', GETDATE(), GETDATE()),
+    ('UN_0056', 'TNRDSI', 'SR_0019', GETDATE(), GETDATE()),
+    ('UN_0057', 'TNRDOR', 'SR_0021', GETDATE(), GETDATE()),
+    ('UN_0058', 'TNRORA', 'SR_0021', GETDATE(), GETDATE()),
+    ('UN_0059', 'NOSDGE', 'SR_0010', GETDATE(), GETDATE()),
+    ('UN_0060', 'NOSDTE', 'SR_0003', GETDATE(), GETDATE()),
+    ('UN_0061', 'NOSQHS', 'SR_0010', GETDATE(), GETDATE()),
+    ('UN_0062', 'NOSDSI', 'SR_0017', GETDATE(), GETDATE());
 
 
-    -- Insertion des employés
-    INSERT INTO employees (
-        employee_id, employee_code, last_name, first_name, birth_date, birth_place, children_count,
-        cin_number, cin_date, cin_place, cnaPS_number, address, address_complement,
-        bank_code, branch_code, account_number, rib_key, hire_date, job_title, grade,
-        is_executive, contract_end_date, departure_date, departure_reason_code, departure_reason_title,
-        headcount, birth_date_, status, created_at, updated_at,
-        site_id, marital_status_id, gender_id, contract_type_id, working_time_type_id,
-        direction_id, department_id, service_id, unit_id
-    )
-    VALUES
-        ('EMP_0001', '154', 'Dupont', 'Jean', '1985-03-15', 'Antananarivo', 2,
-        'CIN123456789', '2010-06-20', 'Antananarivo', 'CNAPS987654321', 'Lot 123, Analakely', NULL,
-        'BOA001', '12345', '12345678901234567890', '01', '2023-01-10', 'Développeur Full Stack', 'Senior',
-        0, '2025-01-09', NULL, NULL, NULL,
-        1, NULL, 'Actif', GETDATE(), NULL,
-        'ST_0001', 'MS_0002', 'GEN_0001', 'CT_0002', 'WTT_0001',
-        'DR_0001', 'DP_0001', 'SR_0001', 'UN_0001');
+INSERT INTO site (site_id, site_name, code, longitude, latitude, created_at, updated_at)
+VALUES 
+    ('ST_0001', 'Antananarivo', 'TNR', NULL, NULL, GETDATE(), NULL),
+    ('ST_0002', 'Nosy Be', 'NOS', NULL, NULL, GETDATE(), NULL);
 
-    -- categorie d'employee
-    INSERT INTO categories_of_employee (employee_id, employee_category_id, created_at, updated_at)
-    VALUES 
-        ('EMP_0001', 'EC_0001', '2023-01-10', NULL), -- Jean Dupont -> Cadre
-        ('EMP_0002', 'EC_0002', '2024-03-01', NULL), -- Marie Rakoto -> Employé
-        ('EMP_0003', 'EC_0001', '2022-06-15', NULL), -- Sophie Lefèvre -> Cadre
-        ('EMP_0004', 'EC_0003', '2024-01-20', NULL), -- Luc Bernard -> Technicien
-        ('EMP_0005', 'EC_0002', '2023-09-01', NULL); 
+INSERT INTO nationalities (nationality_id, code, name)
+VALUES 
+    ('NAT_0001', 'MG', 'Malagasy'),
+    ('NAT_0002', 'FR', 'Français'),
+    ('NAT_0003', 'US', 'Américain');
 
-    INSERT INTO approval_flow_employee(approval_flow_id,employee_id)
-    VALUES
-        ('AF_0001','EMP_0001'),
-        ('AF_0002','EMP_0002'),
-        ('AF_0003','EMP_0003');
-        
+INSERT INTO genders (gender_id, code, label, created_at, updated_at)
+VALUES 
+    ('GEN_0001', 'M', 'Masculin', GETDATE(), NULL),
+    ('GEN_0002', 'F', 'Féminin', GETDATE(), NULL),
+    ('GEN_0003', 'NB', 'Non-binaire', GETDATE(), NULL);
 
-    INSERT INTO role (role_id, name, description, created_at, updated_at)
-    VALUES
-        ('ROLE_001', 'admin', 'Administrator with full access', CURRENT_TIMESTAMP, NULL),
-        ('ROLE_002', 'rh', 'Human Resources role', CURRENT_TIMESTAMP, NULL),
-        ('ROLE_003', 'collaborateur', 'Standard employee role', CURRENT_TIMESTAMP, NULL);
+INSERT INTO contract_types (contract_type_id, code, label, created_at, updated_at)
+VALUES 
+    ('CT_0001', 'CDI', 'Contrat à Durée Indéterminée', GETDATE(), NULL),
+    ('CT_0002', 'CDD', 'Contrat à Durée Déterminée', GETDATE(), NULL),
+    ('CT_0003', 'CTT', 'Contrat de Travail Temporaire', GETDATE(), NULL);
+
+INSERT INTO employee_categories (employee_category_id, code, label, created_at, updated_at)
+VALUES 
+    ('EC_0001', 'CAD', 'Cadre', GETDATE(), NULL),
+    ('EC_0002', 'EMP', 'Employé', GETDATE(), NULL),
+    ('EC_0003', 'TEC', 'Technicien', GETDATE(), NULL);
+
+INSERT INTO employees (employee_id, employee_code, last_name, first_name, phone_number, hire_date, job_title, contract_end_date, site_id, gender_id, contract_type_id, direction_id, department_id, service_id, unit_id)
+VALUES 
+    ('EMP_0001', 'ST154', 'RAKOTOARIMANANA', 'Miantsafitia', '038 89 499 77', '2025-05-01', 'Stagiaire RH', '2025-12-31', 'ST_0001', 'GEN_0001', 'CT_0003', 'DR_0004', 'DP_0013', 'SR_0013', 'UN_0001'),
+    ('EMP_0002', 'ST155', 'ANDRIAMBOLOLONA', 'Mandaniaina', '034 11 245 79', '2025-05-01', 'Stagiaire RH', '2025-12-31', 'ST_0001', 'GEN_0001', 'CT_0003', 'DR_0004', 'DP_0013', 'SR_0013', 'UN_0001'),
+    ('EMP_0003', '00446', 'RAKOTOMAVO', 'Christelle', '034 36 865 57', '2025-01-27', 'Chef(fe) de Projet SI et Innov', NULL, 'ST_0001', 'GEN_0002', 'CT_0001', 'DR_0005', 'DP_0019', 'SR_0019', 'UN_0056');
+
+INSERT INTO categories_of_employee (employee_id, employee_category_id, created_at, updated_at)
+VALUES 
+    ('EMP_0001', 'EC_0001', '2023-01-10', NULL),
+    ('EMP_0002', 'EC_0001', '2024-03-01', NULL), 
+    ('EMP_0003', 'EC_0001', '2022-06-15', NULL);
+
+
+INSERT INTO role (role_id, name, description, created_at, updated_at)
+VALUES
+    ('ROLE_001', 'admin', 'Administrator with full access', CURRENT_TIMESTAMP, NULL),
+    ('ROLE_002', 'rh', 'Human Resources role', CURRENT_TIMESTAMP, NULL),
+    ('ROLE_003', 'collaborateur', 'Standard employee role', CURRENT_TIMESTAMP, NULL);
+
 
 
 
@@ -536,4 +491,71 @@ VALUES
     ('HAB_001', 'ROLE_003');
 
 
-    
+INSERT INTO lieu (lieu_id, nom, adresse, ville, code_postal, pays, created_at, updated_at) VALUES
+('1', 'Analamanga', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('2', 'Bongolava', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('3', 'Itasy', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('4', 'Vakinankaratra', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('5', 'Diana', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('6', 'Sava', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('7', 'Amoron''i Mania', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('8', 'Atsimo-Atsinanana', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('9', 'Haute Matsiatra', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('10', 'Ihorombe', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('11', 'Fitovinany', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('12', 'Vatovavy', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('13', 'Betsiboka', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('14', 'Boeny', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('15', 'Melaky', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('16', 'Sofia', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('17', 'Alaotra-Mangoro', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('18', 'Analanjirofo', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('19', 'Atsinanana', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('20', 'Androy', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('21', 'Anosy', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('22', 'Atsimo-Andrefana', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('23', 'Menabe', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
+('24', 'Nosy Be', '', '', '', 'Madagascar', GETDATE(), GETDATE());
+
+
+INSERT INTO expense_type (expense_type_id, type, time_start, time_end, created_at, updated_at)
+VALUES 
+('exp001', 'Petit Déjeuner', '06:30:00', '08:00:00', GETDATE(), GETDATE()),
+('exp002', 'Déjeuner',        '12:00:00', '13:30:00', GETDATE(), GETDATE()),
+('exp003', 'Dinner',           '18:30:00', '20:00:00', GETDATE(), GETDATE()),
+('exp004', 'Hébergement',     '21:00:00', '05:00:00', GETDATE(), GETDATE());
+INSERT INTO transport (transport_id, type, created_at, updated_at)
+VALUES 
+('tr001', 'Voiture', GETDATE(), GETDATE()),
+('tr002', 'Avion', GETDATE(), GETDATE());
+
+INSERT INTO compensation_scale (
+  compensation_scale_id, amount, created_at, updated_at, 
+  transport_id, expense_type_id, employee_category_id
+) VALUES 
+('comp001', 15000.00, GETDATE(), GETDATE(), 'tr001', NULL, 'EC_0001'),
+('comp002', 50000.00, GETDATE(), GETDATE(), 'tr002', NULL, 'EC_0001'),
+('comp003', 25000.00, GETDATE(), GETDATE(), NULL, 'exp001', 'EC_0001'),
+('comp004', 35000.00, GETDATE(), GETDATE(), NULL, 'exp002', 'EC_0001'),
+('comp005', 35000.00, GETDATE(), GETDATE(), NULL, 'exp003', 'EC_0001'),
+('comp006', 120000.00, GETDATE(), GETDATE(), NULL, 'exp004', 'EC_0001');
+INSERT INTO compensation_scale (
+  compensation_scale_id, amount, created_at, updated_at, 
+  transport_id, expense_type_id, employee_category_id
+) VALUES 
+('comp007', 15000.00, GETDATE(), GETDATE(), 'tr001', NULL, 'EC_0002'),
+('comp008', 50000.00, GETDATE(), GETDATE(), 'tr002', NULL, 'EC_0002'),
+('comp009', 25000.00, GETDATE(), GETDATE(), NULL, 'exp001', 'EC_0002'),
+('comp0010', 35000.00, GETDATE(), GETDATE(), NULL, 'exp002', 'EC_0002'),
+('comp0011', 35000.00, GETDATE(), GETDATE(), NULL, 'exp003', 'EC_0002'),
+('comp0012', 120000.00, GETDATE(), GETDATE(), NULL, 'exp004', 'EC_0002');
+INSERT INTO compensation_scale (
+  compensation_scale_id, amount, created_at, updated_at, 
+  transport_id, expense_type_id, employee_category_id
+) VALUES 
+('comp0013', 15000.00, GETDATE(), GETDATE(), 'tr001', NULL, 'EC_0003'),
+('comp0014', 50000.00, GETDATE(), GETDATE(), 'tr002', NULL, 'EC_0003'),
+('comp0015', 25000.00, GETDATE(), GETDATE(), NULL, 'exp001', 'EC_0003'),
+('comp0016', 35000.00, GETDATE(), GETDATE(), NULL, 'exp002', 'EC_0003'),
+('comp0017', 35000.00, GETDATE(), GETDATE(), NULL, 'exp003', 'EC_0003'),
+('comp0018', 120000.00, GETDATE(), GETDATE(), NULL, 'exp004', 'EC_0003');

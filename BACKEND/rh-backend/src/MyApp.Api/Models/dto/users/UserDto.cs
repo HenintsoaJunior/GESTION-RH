@@ -17,7 +17,10 @@ public class UserDto
     [EmailAddress]
     public string Email { get; set; } = default!;
 
-    [MaxLength(100)]
+    [MaxLength(50)]
+    public string? Matricule { get; set; }
+    
+    [MaxLength(50)]
     public string? Department { get; set; }
 
     [MaxLength(100)]

@@ -101,28 +101,6 @@ namespace MyApp.Api.Controllers.employee
             }
         }
 
-        [HttpGet("status/{status}")]
-        public async Task<ActionResult<IEnumerable<Employee>>> GetByStatus(string status)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(status))
-                {
-                    logger.LogWarning("Tentative de récupération des employés avec un statut null ou vide");
-                    return BadRequest("Le statut ne peut pas être null ou vide.");
-                }
-
-                logger.LogInformation("Récupération des employés par statut: {Status}", status);
-                var employees = await employeeService.GetByStatusAsync(status);
-                return Ok(employees);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors de la récupération des employés par statut: {Status}", status);
-                return StatusCode(500, "Une erreur est survenue lors de la récupération des employés par statut.");
-            }
-        }
-
         [HttpPost]
         public async Task<ActionResult<Employee>> Create([FromBody] EmployeeFormDTO employeeForm)
         {

@@ -31,7 +31,6 @@ public class MissionAssignationSearchFiltersDTO
     public string? EmployeeId { get; set; }
     public string? MissionId { get; set; }
     public string? TransportId { get; set; }
-
     public string? LieuId { get; set; }
     public DateTime? MinDepartureDate { get; set; }
     public DateTime? MaxDepartureDate { get; set; }
