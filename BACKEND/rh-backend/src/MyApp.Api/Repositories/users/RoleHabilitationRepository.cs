@@ -13,6 +13,8 @@ public interface IRoleHabilitationRepository
     Task DeleteAsync(string habilitationId, string roleId);
     Task SaveChangesAsync();
     Task SynchronizeHabilitationsAsync(string roleId, IEnumerable<string> newHabilitationIds);
+    
+    Task<IEnumerable<Habilitation>> GetHabilitationsByUserIdAsync(string userId);
 }
 
 public class RoleHabilitationRepository : IRoleHabilitationRepository
@@ -24,6 +26,22 @@ public class RoleHabilitationRepository : IRoleHabilitationRepository
         _context = context;
     }
 
+    public async Task<IEnumerable<Habilitation>> GetHabilitationsByUserIdAsync(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("L'ID de l'utilisateur ne peut pas être null ou vide", nameof(userId));
+
+        return await _context.Habilitations
+            .Where(h => _context.UserRoles
+                .Where(ur => ur.UserId == userId)
+                .Join(_context.RoleHabilitations,
+                    ur => ur.RoleId,
+                    rh => rh.RoleId,
+                    (ur, rh) => rh.HabilitationId)
+                .Contains(h.HabilitationId))
+            .OrderBy(h => h.Label)
+            .ToListAsync();
+    }
     public async Task<IEnumerable<RoleHabilitation>> GetAllAsync()
     {
         return await _context.RoleHabilitations

@@ -180,6 +180,7 @@ namespace MyApp.Api.Repositories.users
                             UserId = u.UserId,
                             Email = u.Email,
                             Name = u.Name,
+                            Matricule = u.Matricule,
                             Department = u.Department,
                             Position = u.Position,
                             SuperiorId = u.SuperiorId,

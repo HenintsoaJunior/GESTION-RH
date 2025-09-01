@@ -2,19 +2,60 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle, List, XCircle, Edit2, Trash2 } from "lucide-react";
+import { Plus, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle, XCircle, Edit2, Trash2 } from "lucide-react";
 import { formatDate } from "utils/dateConverter";
 import {
   searchEmployees,
   deleteEmployee,
   fetchEmployeeStats,
 } from "services/employee/employee";
-import Alert from "components/alert";
 import Modal from "components/modal";
 import Pagination from "components/pagination";
 import AutoCompleteInput from "components/auto-complete-input";
 import { fetchSites } from "services/site/site";
-import "styles/generic-table-styles.css";
+import {
+  DashboardContainer,
+  StatsContainer,
+  StatsGrid,
+  StatCard,
+  StatIcon,
+  StatContent,
+  StatNumber,
+  StatLabel,
+  FiltersContainer,
+  FiltersHeader,
+  FiltersTitle,
+  FiltersControls,
+  FilterControlButton,
+  FiltersSection,
+  FormTableSearch,
+  FormRow,
+  FormFieldCell,
+  FormLabelSearch,
+  FormInputSearch,
+  StyledAutoCompleteInput,
+  FiltersActions,
+  ButtonReset,
+  ButtonSearch,
+  ButtonAdd,
+  ButtonUpdate,
+  ButtonCancel,
+  ButtonConfirm,
+  FiltersToggle,
+  ButtonShowFilters,
+  TableHeader,
+  TableTitle,
+  TableContainer,
+  DataTable,
+  TableHeadCell,
+  TableRow,
+  TableCell,
+  StatusBadge,
+  ActionButtons,
+  ModalActions,
+  Loading,
+  NoDataMessage
+} from "styles/generaliser/table-container";
 
 const EmployeeList = () => {
   const navigate = useNavigate();
@@ -202,16 +243,17 @@ const EmployeeList = () => {
         : status === "Inactif"
         ? "status-cancelled"
         : "status-pending";
-    return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
+    return <StatusBadge className={statusClass}>{status || "Inconnu"}</StatusBadge>;
   };
 
   return (
-    <div className="dashboard-container">
-      <Alert
+    <DashboardContainer>
+      <Modal
         type={alert.type}
         message={alert.message}
         isOpen={alert.isOpen}
         onClose={() => setAlert({ ...alert, isOpen: false, fieldErrors: {} })}
+        title="Notification"
       />
 
       <Modal
@@ -224,157 +266,133 @@ const EmployeeList = () => {
         }}
         title="Confirmer la suppression"
       >
-        <div className="modal-actions">
-          <button
-            className="btn-cancel"
+        <ModalActions>
+          <ButtonCancel
             onClick={() => {
               setShowDeleteModal(false);
               setEmployeeToDelete(null);
             }}
           >
             Annuler
-          </button>
-          <button
-            className="btn-confirm"
-            onClick={handleConfirmDelete}
-          >
+          </ButtonCancel>
+          <ButtonConfirm onClick={handleConfirmDelete}>
             Confirmer
-          </button>
-        </div>
+          </ButtonConfirm>
+        </ModalActions>
       </Modal>
 
-      <div className="stats-container">
-        <div className="stats-grid">
-          <div className="stat-card stat-card-total">
-            <div className="stat-icon">
-              <Clock className="w-6 h-6" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.total}</div>
-              <div className="stat-label">Total des employés</div>
-            </div>
-          </div>
-          <div className="stat-card stat-card-approved">
-            <div className="stat-icon">
-              <CheckCircle className="w-6 h-6" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.actif}</div>
-              <div className="stat-label">Actifs</div>
-            </div>
-          </div>
-          <div className="stat-card stat-card-cancelled">
-            <div className="stat-icon">
-              <XCircle className="w-6 h-6" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.inactif}</div>
-              <div className="stat-label">Inactifs</div>
-            </div>
-          </div>
-          <div className="stat-card stat-card-pending">
-            <div className="stat-icon">
-              <Calendar className="w-6 h-6" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.departed}</div>
-              <div className="stat-label">Départés</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StatsContainer>
+        <StatsGrid>
+          <StatCard className="stat-card-total">
+            <StatIcon>
+              <Clock size={24} />
+            </StatIcon>
+            <StatContent>
+              <StatNumber>{stats.total}</StatNumber>
+              <StatLabel>Total des employés</StatLabel>
+            </StatContent>
+          </StatCard>
+          <StatCard className="stat-card-approved">
+            <StatIcon>
+              <CheckCircle size={24} />
+            </StatIcon>
+            <StatContent>
+              <StatNumber>{stats.actif}</StatNumber>
+              <StatLabel>Actifs</StatLabel>
+            </StatContent>
+          </StatCard>
+          <StatCard className="stat-card-cancelled">
+            <StatIcon>
+              <XCircle size={24} />
+            </StatIcon>
+            <StatContent>
+              <StatNumber>{stats.inactif}</StatNumber>
+              <StatLabel>Inactifs</StatLabel>
+            </StatContent>
+          </StatCard>
+          <StatCard className="stat-card-pending">
+            <StatIcon>
+              <Calendar size={24} />
+            </StatIcon>
+            <StatContent>
+              <StatNumber>{stats.departed}</StatNumber>
+              <StatLabel>Départés</StatLabel>
+            </StatContent>
+          </StatCard>
+        </StatsGrid>
+      </StatsContainer>
 
       {!isHidden && (
-        <div className={`filters-container ${isMinimized ? "minimized" : ""}`}>
-          <div className="filters-header">
-            <h2 className="filters-title">Filtres de Recherche</h2>
-            <div className="filters-controls">
-              <button
-                type="button"
-                className="filter-control-btn filter-minimize-btn"
+        <FiltersContainer $isMinimized={isMinimized}>
+          <FiltersHeader>
+            <FiltersTitle>Filtres de Recherche</FiltersTitle>
+            <FiltersControls>
+              <FilterControlButton
+                $isMinimized
                 onClick={toggleMinimize}
                 title={isMinimized ? "Développer" : "Réduire"}
               >
-                {isMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-              </button>
-              <button
-                type="button"
-                className="filter-control-btn filter-close-btn"
-                onClick={toggleHide}
-                title="Fermer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+                {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              </FilterControlButton>
+              <FilterControlButton $isClose onClick={toggleHide} title="Fermer">
+                <X size={16} />
+              </FilterControlButton>
+            </FiltersControls>
+          </FiltersHeader>
 
           {!isMinimized && (
-            <div className="filters-section">
+            <FiltersSection>
               <form onSubmit={handleFilterSubmit}>
-                <table className="form-table-search">
+                <FormTableSearch>
                   <tbody>
-                    <tr>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Nom</label>
-                      </th>
-                      <td className="form-input-cell-search">
-                        <input
+                    <FormRow>
+                      <FormFieldCell>
+                        <FormLabelSearch>Nom</FormLabelSearch>
+                        <FormInputSearch
                           name="lastName"
                           type="text"
                           value={filters.lastName}
                           onChange={(e) => handleFilterChange("lastName", e.target.value)}
-                          className="form-input-search"
                           placeholder="Recherche par nom"
                         />
-                      </td>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Prénom</label>
-                      </th>
-                      <td className="form-input-cell-search">
-                        <input
+                      </FormFieldCell>
+                      <FormFieldCell>
+                        <FormLabelSearch>Prénom</FormLabelSearch>
+                        <FormInputSearch
                           name="firstName"
                           type="text"
                           value={filters.firstName}
                           onChange={(e) => handleFilterChange("firstName", e.target.value)}
-                          className="form-input-search"
                           placeholder="Recherche par prénom"
                         />
-                      </td>
-                    </tr>
-                    <tr>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Titre du poste</label>
-                      </th>
-                      <td className="form-input-cell-search">
-                        <input
+                      </FormFieldCell>
+                    </FormRow>
+                    <FormRow>
+                      <FormFieldCell>
+                        <FormLabelSearch>Titre du poste</FormLabelSearch>
+                        <FormInputSearch
                           name="jobTitle"
                           type="text"
                           value={filters.jobTitle}
                           onChange={(e) => handleFilterChange("jobTitle", e.target.value)}
-                          className="form-input-search"
                           placeholder="Recherche par titre"
                         />
-                      </td>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Code employé</label>
-                      </th>
-                      <td className="form-input-cell-search">
-                        <input
+                      </FormFieldCell>
+                      <FormFieldCell>
+                        <FormLabelSearch>Code employé</FormLabelSearch>
+                        <FormInputSearch
                           name="employeeCode"
                           type="text"
                           value={filters.employeeCode}
                           onChange={(e) => handleFilterChange("employeeCode", e.target.value)}
-                          className="form-input-search"
                           placeholder="Recherche par code"
                         />
-                      </td>
-                    </tr>
-                    <tr>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Site</label>
-                      </th>
-                      <td className="form-input-cell-search">
-                        <AutoCompleteInput
+                      </FormFieldCell>
+                    </FormRow>
+                    <FormRow>
+                      <FormFieldCell>
+                        <FormLabelSearch>Site</FormLabelSearch>
+                        <StyledAutoCompleteInput
                           value={filters.site}
                           onChange={(value) => {
                             const selectedSite = sites.find((s) => s.siteName === value);
@@ -391,151 +409,135 @@ const EmployeeList = () => {
                           showAddOption={false}
                           fieldType="siteId"
                           fieldLabel="site"
-                          className="form-input-search"
                         />
-                      </td>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Statut</label>
-                      </th>
-                      <td className="form-input-cell-search">
-                        <select
+                      </FormFieldCell>
+                      <FormFieldCell>
+                        <FormLabelSearch>Statut</FormLabelSearch>
+                        <FormInputSearch
+                          as="select"
                           name="status"
                           value={filters.status}
                           onChange={(e) => handleFilterChange("status", e.target.value)}
-                          className="form-input-search"
                         >
                           <option value="">Tous les statuts</option>
                           <option value="Actif">Actif</option>
                           <option value="Inactif">Inactif</option>
-                        </select>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Date de départ min</label>
-                      </th>
-                      <td className="form-input-cell-search">
-                        <input
+                        </FormInputSearch>
+                      </FormFieldCell>
+                    </FormRow>
+                    <FormRow>
+                      <FormFieldCell>
+                        <FormLabelSearch>Date de départ min</FormLabelSearch>
+                        <FormInputSearch
                           name="departureDateMin"
                           type="date"
                           value={filters.departureDateMin}
                           onChange={(e) => handleFilterChange("departureDateMin", e.target.value)}
-                          className="form-input-search"
                         />
-                      </td>
-                      <th className="form-label-cell-search">
-                        <label className="form-label-search">Date de départ max</label>
-                      </th>
-                      <td className="form-input-cell-search">
-                        <input
+                      </FormFieldCell>
+                      <FormFieldCell>
+                        <FormLabelSearch>Date de départ max</FormLabelSearch>
+                        <FormInputSearch
                           name="departureDateMax"
                           type="date"
                           value={filters.departureDateMax}
                           onChange={(e) => handleFilterChange("departureDateMax", e.target.value)}
-                          className="form-input-search"
                         />
-                      </td>
-                    </tr>
+                      </FormFieldCell>
+                    </FormRow>
                   </tbody>
-                </table>
+                </FormTableSearch>
 
-                <div className="filters-actions">
-                  <button type="button" className="btn-reset" onClick={handleResetFilters}>
+                <FiltersActions>
+                  <ButtonReset type="button" onClick={handleResetFilters}>
                     Réinitialiser
-                  </button>
-                  <button type="submit" className="btn-search">
-                    Rechercher
-                  </button>
-                </div>
+                  </ButtonReset>
+                  <ButtonSearch type="submit">Rechercher</ButtonSearch>
+                </FiltersActions>
               </form>
-            </div>
+            </FiltersSection>
           )}
-        </div>
+        </FiltersContainer>
       )}
 
       {isHidden && (
-        <div className="filters-toggle">
-          <button type="button" className="btn-show-filters" onClick={toggleHide}>
+        <FiltersToggle>
+          <ButtonShowFilters type="button" onClick={toggleHide}>
             Afficher les filtres
-          </button>
-        </div>
+          </ButtonShowFilters>
+        </FiltersToggle>
       )}
 
-      <div className="table-header">
-        <h2 className="table-title">Liste des Employés</h2>
-        <div className="view-toggle">
-          <button
-            onClick={() => navigate("/employee/create")}
-            className="btn-new-request"
-          >
-            <Plus className="w-4 h-4" />
-            Nouvel employé
-          </button>
-        </div>
-      </div>
+      <TableHeader>
+        <TableTitle>Liste des Employés</TableTitle>
+        <ButtonAdd onClick={() => navigate("/employee/create")}>
+          <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+          Nouvel employé
+        </ButtonAdd>
+      </TableHeader>
 
-      <div className="table-container">
-        <table className="data-table">
+      <TableContainer>
+        <DataTable>
           <thead>
             <tr>
-              <th>Nom</th>
-              <th>Prénom</th>
-              <th>Titre du poste</th>
-              <th>Code employé</th>
-              <th>Site</th>
-              <th>Statut</th>
-              <th>Date d'embauche</th>
-              <th>Actions</th>
+              <TableHeadCell>Nom</TableHeadCell>
+              <TableHeadCell>Prénom</TableHeadCell>
+              <TableHeadCell>Titre du poste</TableHeadCell>
+              <TableHeadCell>Code employé</TableHeadCell>
+              <TableHeadCell>Site</TableHeadCell>
+              <TableHeadCell>Statut</TableHeadCell>
+              <TableHeadCell>Date d'embauche</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
             </tr>
           </thead>
           <tbody>
             {isLoading.employees ? (
-              <tr>
-                <td colSpan={8}>Chargement...</td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={8}>
+                  <Loading>Chargement...</Loading>
+                </TableCell>
+              </TableRow>
             ) : employees.length > 0 ? (
               employees.map((employee) => (
-                <tr
+                <TableRow
                   key={employee.employeeId}
+                  $clickable
                   onClick={() => handleRowClick(employee.employeeId)}
-                  style={{ cursor: "pointer" }}
                 >
-                  <td>{employee.lastName || "Non spécifié"}</td>
-                  <td>{employee.firstName || "Non spécifié"}</td>
-                  <td>{employee.jobTitle || "Non spécifié"}</td>
-                  <td>{employee.employeeCode || "Non spécifié"}</td>
-                  <td>{employee.site?.siteName || "Non spécifié"}</td>
-                  <td>{getStatusBadge(employee.status)}</td>
-                  <td>{formatDate(employee.hireDate) || "Non spécifié"}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        className="btn-edit"
+                  <TableCell>{employee.lastName || "Non spécifié"}</TableCell>
+                  <TableCell>{employee.firstName || "Non spécifié"}</TableCell>
+                  <TableCell>{employee.jobTitle || "Non spécifié"}</TableCell>
+                  <TableCell>{employee.employeeCode || "Non spécifié"}</TableCell>
+                  <TableCell>{employee.site?.siteName || "Non spécifié"}</TableCell>
+                  <TableCell>{getStatusBadge(employee.status)}</TableCell>
+                  <TableCell>{formatDate(employee.hireDate) || "Non spécifié"}</TableCell>
+                  <TableCell>
+                    <ActionButtons>
+                      <ButtonUpdate
                         onClick={(e) => handleEditEmployee(employee.employeeId, e)}
-                        title="Modifier"
                       >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="btn-cancel"
+                        <Edit2 size={16} />
+                      </ButtonUpdate>
+                      <ButtonCancel
                         onClick={(e) => handleDeleteClick(employee.employeeId, e)}
                         disabled={employee.status === "Inactif"}
-                        title="Supprimer"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                        <Trash2 size={16} />
+                      </ButtonCancel>
+                    </ActionButtons>
+                  </TableCell>
+                </TableRow>
               ))
             ) : (
-              <tr>
-                <td colSpan={8}>Aucune donnée trouvée.</td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={8}>
+                  <NoDataMessage>Aucune donnée trouvée.</NoDataMessage>
+                </TableCell>
+              </TableRow>
             )}
           </tbody>
-        </table>
-      </div>
+        </DataTable>
+      </TableContainer>
 
       <Pagination
         currentPage={currentPage}
@@ -543,8 +545,9 @@ const EmployeeList = () => {
         totalEntries={totalEntries}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        disabled={isLoading.employees}
       />
-    </div>
+    </DashboardContainer>
   );
 };
 

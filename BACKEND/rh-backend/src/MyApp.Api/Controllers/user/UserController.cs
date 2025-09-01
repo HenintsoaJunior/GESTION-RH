@@ -11,10 +11,14 @@ namespace MyApp.Api.Controllers.user;
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IRoleHabilitationService _roleHabilitationService;
 
-    public UserController(IUserService userService)
+    public UserController(
+        IUserService userService,
+        IRoleHabilitationService roleHabilitationService)
     {
         _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+        _roleHabilitationService = roleHabilitationService ?? throw new ArgumentNullException(nameof(roleHabilitationService));
     }
 
     [HttpGet]
@@ -94,6 +98,7 @@ public class UserController : ControllerBase
         try
         {
             var drh = await _userService.GetDrhAsync();
+            
             if (drh == null)
                 return NotFound("No DRH found.");
 
@@ -113,6 +118,29 @@ public class UserController : ControllerBase
         {
             var (users, totalCount) = await _userService.SearchAsync(filters, page, pageSize);
             return Ok(new { Users = users, TotalCount = totalCount });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+    [HttpGet("{userId}/habilitations")]
+    public async Task<ActionResult<IEnumerable<Habilitation>>> GetHabilitationsByUserId(string userId)
+    {
+        try
+        {
+            var habilitations = await _roleHabilitationService.GetHabilitationsByUserIdAsync(userId);
+            if (!habilitations.Any())
+            {
+                return Ok(new List<Habilitation>()); // Return empty list instead of NotFound for consistency
+            }
+            return Ok(habilitations);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception e)
         {

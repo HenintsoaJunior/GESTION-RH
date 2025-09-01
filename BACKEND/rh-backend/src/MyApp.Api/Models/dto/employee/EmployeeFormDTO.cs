@@ -15,40 +15,8 @@ namespace MyApp.Api.Models.dto.employee
         [MaxLength(50, ErrorMessage = "Le code employé ne peut pas dépasser 50 caractères.")]
         public string? EmployeeCode { get; set; }
 
-        public DateTime? BirthDate { get; set; }
-
-        [MaxLength(100, ErrorMessage = "Le lieu de naissance ne peut pas dépasser 100 caractères.")]
-        public string? BirthPlace { get; set; }
-
-        public int ChildrenCount { get; set; } = 0;
-
-        [MaxLength(50, ErrorMessage = "Le numéro CIN ne peut pas dépasser 50 caractères.")]
-        public string? CINNumber { get; set; }
-
-        public DateTime? CINDate { get; set; }
-
-        [MaxLength(100, ErrorMessage = "Le lieu de délivrance du CIN ne peut pas dépasser 100 caractères.")]
-        public string? CINPlace { get; set; }
-
-        [MaxLength(50, ErrorMessage = "Le numéro CNAPS ne peut pas dépasser 50 caractères.")]
-        public string? CNAPSNumber { get; set; }
-
-        public string? Address { get; set; }
-
-        [MaxLength(200, ErrorMessage = "Le complément d'adresse ne peut pas dépasser 200 caractères.")]
-        public string? AddressComplement { get; set; }
-
-        [MaxLength(50, ErrorMessage = "Le code bancaire ne peut pas dépasser 50 caractères.")]
-        public string? BankCode { get; set; }
-
-        [MaxLength(50, ErrorMessage = "Le code de l'agence ne peut pas dépasser 50 caractères.")]
-        public string? BranchCode { get; set; }
-
-        [MaxLength(50, ErrorMessage = "Le numéro de compte ne peut pas dépasser 50 caractères.")]
-        public string? AccountNumber { get; set; }
-
-        [MaxLength(50, ErrorMessage = "La clé RIB ne peut pas dépasser 50 caractères.")]
-        public string? RibKey { get; set; }
+        [MaxLength(20, ErrorMessage = "Le numéro de téléphone ne peut pas dépasser 20 caractères.")]
+        public string? PhoneNumber { get; set; }
 
         [Required(ErrorMessage = "La date d'embauche est requise.")]
         public DateTime HireDate { get; set; }
@@ -56,66 +24,63 @@ namespace MyApp.Api.Models.dto.employee
         [MaxLength(100, ErrorMessage = "Le titre du poste ne peut pas dépasser 100 caractères.")]
         public string? JobTitle { get; set; }
 
-        [MaxLength(50, ErrorMessage = "Le grade ne peut pas dépasser 50 caractères.")]
-        public string? Grade { get; set; }
-
-        public bool IsExecutive { get; set; } = false;
-
         public DateTime? ContractEndDate { get; set; }
 
-        public DateTime? DepartureDate { get; set; } // Added for DepartureDate
-
-        [MaxLength(50, ErrorMessage = "Le code de raison de départ ne peut pas dépasser 50 caractères.")]
-        public string? DepartureReasonCode { get; set; } // Added for DepartureReasonCode
-
-        [MaxLength(100, ErrorMessage = "Le titre de raison de départ ne peut pas dépasser 100 caractères.")]
-        public string? DepartureReasonTitle { get; set; } // Added for DepartureReasonTitle
-
-        public DateTime? BirthDate_ { get; set; } // Added for BirthDate_
-
-        [MaxLength(10, ErrorMessage = "Le statut ne peut pas dépasser 10 caractères.")]
-        public string? Status { get; set; } = "Actif";
-        public string? UnitId { get; set; }
-        public string? ServiceId { get; set; }
-        public string? DepartmentId { get; set; }
-        public string? DirectionId { get; set; }
-
-        [Required(ErrorMessage = "L'identifiant du type de temps de travail est requis.")]
-        public string WorkingTimeTypeId { get; set; } = default!;
-
-        [Required(ErrorMessage = "L'identifiant du type de contrat est requis.")]
-        public string ContractTypeId { get; set; } = default!;
+        [Required(ErrorMessage = "L'identifiant du site est requis.")]
+        [MaxLength(50, ErrorMessage = "L'identifiant du site ne peut pas dépasser 50 caractères.")]
+        public string SiteId { get; set; } = default!;
 
         [Required(ErrorMessage = "L'identifiant du genre est requis.")]
+        [MaxLength(50, ErrorMessage = "L'identifiant du genre ne peut pas dépasser 50 caractères.")]
         public string GenderId { get; set; } = default!;
 
-        [Required(ErrorMessage = "L'identifiant de la situation matrimoniale est requis.")]
-        public string MaritalStatusId { get; set; } = default!;
+        [Required(ErrorMessage = "L'identifiant du type de contrat est requis.")]
+        [MaxLength(50, ErrorMessage = "L'identifiant du type de contrat ne peut pas dépasser 50 caractères.")]
+        public string ContractTypeId { get; set; } = default!;
 
-        [Required(ErrorMessage = "L'identifiant du site est requis.")]
-        public string SiteId { get; set; } = default!;
+        [Required(ErrorMessage = "L'identifiant de la direction est requis.")]
+        [MaxLength(50, ErrorMessage = "L'identifiant de la direction ne peut pas dépasser 50 caractères.")]
+        public string DirectionId { get; set; } = default!;
+
+        [MaxLength(50, ErrorMessage = "L'identifiant du département ne peut pas dépasser 50 caractères.")]
+        public string? DepartmentId { get; set; }
+
+        [MaxLength(50, ErrorMessage = "L'identifiant du service ne peut pas dépasser 50 caractères.")]
+        public string? ServiceId { get; set; }
+
+        [MaxLength(50, ErrorMessage = "L'identifiant de l'unité ne peut pas dépasser 50 caractères.")]
+        public string? UnitId { get; set; }
     }
-    
+
     public class EmployeeSearchFiltersDTO
     {
+        [MaxLength(100, ErrorMessage = "Le titre du poste ne peut pas dépasser 100 caractères.")]
         public string? JobTitle { get; set; }
+
+        [MaxLength(50, ErrorMessage = "Le nom de famille ne peut pas dépasser 50 caractères.")]
         public string? LastName { get; set; }
+
+        [MaxLength(100, ErrorMessage = "Le prénom ne peut pas dépasser 100 caractères.")]
         public string? FirstName { get; set; }
+
+        [MaxLength(50, ErrorMessage = "L'identifiant de la direction ne peut pas dépasser 50 caractères.")]
         public string? DirectionId { get; set; }
+
+        [MaxLength(50, ErrorMessage = "L'identifiant du type de contrat ne peut pas dépasser 50 caractères.")]
         public string? ContractTypeId { get; set; }
+
+        [MaxLength(50, ErrorMessage = "Le code employé ne peut pas dépasser 50 caractères.")]
         public string? EmployeeCode { get; set; }
+
+        [MaxLength(50, ErrorMessage = "L'identifiant du site ne peut pas dépasser 50 caractères.")]
         public string? SiteId { get; set; }
-        public string? Status { get; set; }
+
+        [MaxLength(50, ErrorMessage = "L'identifiant du genre ne peut pas dépasser 50 caractères.")]
         public string? GenderId { get; set; }
-        public DateTime? DepartureDateMin { get; set; }
-        public DateTime? DepartureDateMax { get; set; }
     }
-    
+
     public class EmployeeStats
     {
         public int Total { get; set; }
-        public int Actif { get; set; }
-        public int Inactif { get; set; }
-        public int Departed { get; set; }
     }
 }
