@@ -35,6 +35,10 @@ namespace MyApp.Api.Entities.menu
         [MaxLength(50)]
         public string? ModuleId { get; set; }
 
-        public List<MenuRole> MenuRoles { get; set; } = new List<MenuRole>(); // Added navigation property
+        [Column("section")]
+        [MaxLength(50)]
+        public string? Section { get; set; }
+
+        public List<MenuRole> MenuRoles { get; set; } = new List<MenuRole>();
     }
 }

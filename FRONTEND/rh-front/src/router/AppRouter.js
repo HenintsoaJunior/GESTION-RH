@@ -22,11 +22,13 @@ import ShortcutsDashboard from 'pages/system/entite/shortcuts';
 import EmployeeList from 'pages/employee/employee-list';
 import EmployeeForm from 'pages/employee/employee-fom';
 import BeneficiaryMissionList from 'pages/mission/benificary-mission-list';
+import ProcessValidationPage from 'pages/mission/mission-process-validation';
 import MissionValidationPage from 'pages/mission/mission-validation';
 import ProfilePage from 'layouts/profil-page';
 import UserList from 'pages/users/users-list';
 import RoleList from 'pages/roles/roles-list';
 import HabilitationAssign from 'pages/habilitation/habilitation-list';
+import LogList from 'pages/logs/logs-list';
 
 function AppRouter() {
   return (
@@ -36,8 +38,9 @@ function AppRouter() {
         <Route element={<Template><Outlet /></Template>}>
           <Route path="/dashboard" element={<DashboardHome />} />
           <Route path="/profil-page" element={<ProfilePage />} />
-          
-          
+          {/* logs */}
+          <Route path="/logs" element={<LogList />} />
+
           {/* Utilisateur */}
           <Route path="/utilisateur" element={<UserList />} />
           <Route path="/role/list" element={<RoleList />} />
@@ -66,7 +69,8 @@ function AppRouter() {
           <Route path="/mission/form/:missionId" element={<MissionForm />} />
           <Route path="/mission/form" element={<MissionForm />} />
           <Route path="/mission/list" element={<MissionList />} />
-          <Route path="/mission/validation" element={<MissionValidationPage />} />
+          <Route path="/mission/process-validation" element={<ProcessValidationPage />} />
+          <Route path="/mission/to-validate" element={<MissionValidationPage />} />
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
           <Route path="/assignments/details" element={<AssignmentDetails />} />
           <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />

@@ -26,7 +26,7 @@ import {
 import { FormInputSearch, ActionButtons, ButtonUpdate, ButtonCancel, NoDataMessage } from "styles/generaliser/table-container";
 import { ErrorMessage } from "styles/generaliser/form-container";
 import AutoCompleteInput from "components/auto-complete-input";
-import { fetchAllUsers, searchUsers } from "services/users/users";
+import { fetchAllUsers, fetchUserRoles, searchUsers } from "services/users/users";
 import { fetchAllRoles } from "services/users/roles";
 import { createUserRoleBulk } from "services/users/user_role";
 import Alert from "components/alert";
@@ -107,7 +107,7 @@ const UserListPopupComponent = ({ isOpen, onClose, selectedRole, onAssignUsers }
   const userNames = users.map((user) => user.name || "N/A");
 
   // Handle autocomplete input change
-  const handleUserChange = (value) => {
+  const handleUserChange = async (value) => {
     setSelectedUser(value);
     const selectedUserObj = users.find((user) => user.name === value);
     setSelectedUserId(selectedUserObj ? selectedUserObj.userId : null);
@@ -118,16 +118,29 @@ const UserListPopupComponent = ({ isOpen, onClose, selectedRole, onAssignUsers }
       userId: selectedUserObj ? undefined : value ? ["Utilisateur non trouvé dans la liste."] : [""],
     }));
 
-    // Pre-select user's existing roles
-    if (selectedUserObj && selectedUserObj.userRoles) {
-      const userRoleIds = selectedUserObj.userRoles.map((userRole) => userRole.roleId);
-      // Combine user's roles with the selectedRole (if any), avoiding duplicates
-      const combinedRoles = selectedRole
-        ? [...new Set([...userRoleIds, selectedRole.roleId])]
-        : userRoleIds;
-      setSelectedRoles(combinedRoles);
+    // Fetch user's roles
+    if (selectedUserObj) {
+      await fetchUserRoles(
+        selectedUserObj.userId,
+        setIsLoading,
+        (roleIds) => {
+          // Combine user's roles with the selectedRole (if any), avoiding duplicates
+          const combinedRoles = selectedRole
+            ? [...new Set([...roleIds, selectedRole.roleId])]
+            : roleIds;
+          setSelectedRoles(combinedRoles);
+        },
+        (error) => {
+          setAlert({
+            isOpen: true,
+            type: "error",
+            message: error.message || "Erreur lors du chargement des rôles de l'utilisateur.",
+          });
+          setSelectedRoles(selectedRole ? [selectedRole.roleId] : []);
+        }
+      );
     } else {
-      // If no user is selected or user has no roles, reset to selectedRole (if any)
+      // If no user is selected, reset to selectedRole (if any)
       setSelectedRoles(selectedRole ? [selectedRole.roleId] : []);
     }
   };
@@ -180,7 +193,7 @@ const UserListPopupComponent = ({ isOpen, onClose, selectedRole, onAssignUsers }
     }
   };
 
-  // Handle user and role assignment - VERSION AVEC FERMETURE AUTOMATIQUE
+  // Handle user and role assignment
   const handleAssign = async () => {
     if (!selectedUserId) {
       setFieldErrors((prev) => ({
@@ -227,9 +240,6 @@ const UserListPopupComponent = ({ isOpen, onClose, selectedRole, onAssignUsers }
           setSelectedUserId(null);
           setSelectedRoles(selectedRole ? [selectedRole.roleId] : []);
           setFieldErrors({});
-          
-          // L'alerte se fermera automatiquement et déclenchera la fermeture du popup
-          // via handleAlertClose()
         },
         (error) => {
           setAlert({
@@ -257,7 +267,6 @@ const UserListPopupComponent = ({ isOpen, onClose, selectedRole, onAssignUsers }
 
   // Handle cancel
   const handleCancel = () => {
-    // Nettoyer le timer si il existe
     if (autoCloseTimer) {
       clearTimeout(autoCloseTimer);
       setAutoCloseTimer(null);
@@ -290,7 +299,7 @@ const UserListPopupComponent = ({ isOpen, onClose, selectedRole, onAssignUsers }
         </PopupHeader>
 
         <PopupContent>
-          {/* Alerts - VERSION AVEC FERMETURE AUTOMATIQUE */}
+          {/* Alerts */}
           {alert.isOpen && (
             <>
               {alert.type === "success" ? (
@@ -335,7 +344,7 @@ const UserListPopupComponent = ({ isOpen, onClose, selectedRole, onAssignUsers }
                       ? "Aucun utilisateur disponible"
                       : "Saisir ou sélectionner un utilisateur..."
                   }
-                  disabled={isLoading.users}
+                  disabled={isLoading.users || isLoading.userRoles}
                   showAddOption={false}
                   fieldType="user"
                   fieldLabel="utilisateur"

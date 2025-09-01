@@ -28,8 +28,8 @@ import {
 import Modal from "components/modal";
 import Alert from "components/alert";
 import RolePopupComponent from "./role-form";
-import UserListPopupComponent from "./user-form"; // Import the UserListPopupComponent
-import { fetchAllRoles, createRole, updateRole } from "services/users/roles";
+import UserListPopupComponent from "./user-form";
+import { fetchAllRoles, createRole, updateRole, deleteRole } from "services/users/roles";
 import { formatDate } from "utils/dateConverter";
 
 const RoleList = () => {
@@ -38,12 +38,20 @@ const RoleList = () => {
   const [isLoading, setIsLoading] = useState({ roles: false });
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [isRolePopupOpen, setIsRolePopupOpen] = useState(false);
-  const [isUserPopupOpen, setIsUserPopupOpen] = useState(false); // State for UserListPopupComponent
-  const [selectedRole, setSelectedRole] = useState(null); // Track the selected role for user assignment
+  const [isUserPopupOpen, setIsUserPopupOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(null);
   const [role, setRole] = useState({ name: "", description: "" });
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  // Récupérer userId depuis localStorage
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem("user") || "{}");
+    setUserId(userData?.userId || null);
+  }, []);
 
   // Gestion des erreurs
   const handleError = useCallback((error) => {
@@ -72,12 +80,22 @@ const RoleList = () => {
 
   // Gestion de la soumission du formulaire
   const handleSubmit = async (roleData) => {
+    if (!userId) {
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: "Utilisateur non authentifié. Veuillez vous connecter.",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     setFieldErrors({});
 
     try {
       if (roleData.roleId) {
         await updateRole(
+          userId,
           roleData,
           setIsLoading,
           (successAlert) => {
@@ -101,6 +119,7 @@ const RoleList = () => {
         );
       } else {
         await createRole(
+          userId,
           roleData,
           setIsLoading,
           (successAlert) => {
@@ -130,6 +149,46 @@ const RoleList = () => {
     }
   };
 
+  // Gestion de la suppression d'un rôle
+  const handleDelete = async (roleId) => {
+    if (!userId) {
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: "Utilisateur non authentifié. Veuillez vous connecter.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await deleteRole(
+        userId,
+        roleId,
+        setIsLoading,
+        (successAlert) => {
+          setAlert({
+            isOpen: true,
+            type: "success",
+            message: successAlert.message || "Rôle supprimé avec succès",
+          });
+          fetchAllRoles(setRoles, setIsLoading, setTotalEntries, handleError);
+        },
+        (error) => {
+          setAlert({
+            isOpen: true,
+            type: "error",
+            message: error.message || "Erreur lors de la suppression du rôle",
+          });
+        }
+      );
+    } catch (error) {
+      console.error("Erreur dans handleDelete:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Fonctions d'actions
   const handleEdit = (roleToEdit) => {
     setRole({
@@ -143,8 +202,8 @@ const RoleList = () => {
 
   const handleAssignUsers = (role) => {
     console.log("Assigner des utilisateurs au rôle:", role?.roleId || "Aucun rôle sélectionné");
-    setSelectedRole(role); // Store the selected role
-    setIsUserPopupOpen(true); // Open the UserListPopupComponent
+    setSelectedRole(role);
+    setIsUserPopupOpen(true);
   };
 
   const handleAssignHabilitations = (role) => {
@@ -165,7 +224,7 @@ const RoleList = () => {
 
   const handleCloseUserPopup = () => {
     setIsUserPopupOpen(false);
-    setSelectedRole(null); // Clear the selected role
+    setSelectedRole(null);
   };
 
   const handleAddNew = () => {
@@ -198,7 +257,7 @@ const RoleList = () => {
         <div style={{ display: "flex", gap: "var(--spacing-sm)" }}>
           <ButtonAdd
             className="assign-user"
-            onClick={() => handleAssignUsers(null)} // For global user assignment (optional)
+            onClick={() => handleAssignUsers(null)}
           >
             Assignation Utilisateur
           </ButtonAdd>

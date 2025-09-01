@@ -5,6 +5,7 @@ import { handleValidationError } from "utils/validation";
 
 // Service pour créer un rôle
 export const createRole = async (
+  userId,
   roleData,
   setIsLoading,
   onSuccess,
@@ -17,6 +18,7 @@ export const createRole = async (
     const requestBody = {
       name: roleData.name.trim(),
       description: roleData.description?.trim() || "",
+      userId, // Ajout du userId dans le corps de la requête
     };
 
     // Appel API pour créer le rôle
@@ -82,7 +84,7 @@ export const fetchRoleById = async (
       setIsLoading(true);
     }
 
-    // Utilisation de apiGet pour récupérer un rôle spécifique
+    // Utilisation de apiGet pour récupérer un rôle spécifique sans userId
     const data = await apiGet(`/api/Role/${roleId}`);
     setRole(data);
   } catch (error) {
@@ -101,6 +103,7 @@ export const fetchRoleById = async (
 
 // Service pour mettre à jour un rôle
 export const updateRole = async (
+  userId,
   roleData,
   setIsLoading,
   onSuccess,
@@ -114,6 +117,7 @@ export const updateRole = async (
       roleId: roleData.roleId,
       name: roleData.name.trim(),
       description: roleData.description?.trim() || "",
+      userId, // Ajout du userId dans le corps de la requête
     };
 
     // Appel API pour mettre à jour le rôle
@@ -144,7 +148,7 @@ export const deleteRole = async (
   try {
     setIsLoading((prev) => ({ ...prev, roles: true }));
 
-    // Appel API pour supprimer le rôle
+    // Appel API pour supprimer le rôle sans userId
     await apiDelete(`/api/Role/${roleId}`);
 
     // Affiche un message de succès

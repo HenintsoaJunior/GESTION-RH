@@ -184,11 +184,23 @@ public class LdapService : ILdapService
             var filteredAdUsers = adUsers
                 .Where(x => !string.IsNullOrEmpty(x.Email))
                 .ToList();
-        
-            var dbUsers = await _userService.GetAllUsersAsync();
-            var filteredDbUsers = dbUsers
-                .Where(x => !string.IsNullOrEmpty(x.Email))
-                .ToList();
+
+            var filteredDbUsers = new List<User>();
+            await foreach (var batch in await _userService.GetAllInBatchesAsync(batchSize: 1000))
+            {
+                var users = await Task.Run(() => batch.Select(dto => new User
+                {
+                    UserId = dto.UserId,
+                    Email = dto.Email,
+                    Name = dto.Name,
+                    Department = dto.Department,
+                    Position = dto.Position,
+                    SuperiorId = dto.SuperiorId,
+                    SuperiorName = dto.SuperiorName
+                }).Where(u => !string.IsNullOrEmpty(u.Email)));
+
+                filteredDbUsers.AddRange(users);
+            }
 
             var adUserDict = filteredAdUsers
                 .Where(x => !string.IsNullOrEmpty(x.UserId))

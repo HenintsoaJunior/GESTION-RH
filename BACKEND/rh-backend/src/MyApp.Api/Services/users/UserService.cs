@@ -1,10 +1,10 @@
-// UserService.cs
 using MyApp.Api.Entities.users;
 using MyApp.Api.Repositories.users;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MyApp.Api.Models.classes.user;
 using MyApp.Api.Models.dto.users;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MyApp.Api.Services.users
 {
@@ -12,8 +12,9 @@ namespace MyApp.Api.Services.users
     {
         Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize);
         Task<UserDto?> LoginAsync(string email, string password);
-        Task<IEnumerable<User>> GetAllAsync();
-        Task<List<User>> GetAllUsersAsync();
+        Task<(IEnumerable<UserDto>, int)> GetAllPaginatedAsync(int page, int pageSize);
+        Task<IAsyncEnumerable<IEnumerable<UserDto>>> GetAllInBatchesAsync(int batchSize = 1000);
+        Task<IEnumerable<UserDto>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
         Task<User?> GetByEmailAsync(string email);
         Task AddAsync(User user);
@@ -22,69 +23,76 @@ namespace MyApp.Api.Services.users
         Task AddUsersAsync(List<User> users);
         Task UpdateUsersAsync(List<User> users);
         Task DeleteUsersAsync(List<User> users);
-        
         Task<IEnumerable<UserDto>> GetCollaboratorsAsync(string userId);
-        
         Task<UserDto?> GetSuperiorAsync(string userId);
-
         Task<UserDto?> GetDrhAsync();
+        Task<IEnumerable<string>> GetUserRolesAsync(string userId);
     }
-    
+
     public class UserService : IUserService
     {
         private readonly IUserRepository _repository;
+        private readonly IMemoryCache _cache;
 
-        public UserService(IUserRepository repository)
+        public UserService(IUserRepository repository, IMemoryCache cache = null!)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _cache = cache;
         }
-        
+
         public async Task<UserDto?> GetDrhAsync()
         {
             var drh = await _repository.GetDrhAsync();
             return drh != null ? MapToDto(drh) : null;
         }
-        public async Task<UserDto?> GetSuperiorAsync(string userId)
-        {
-            if (string.IsNullOrWhiteSpace(userId))
-                throw new ArgumentException("User ID cannot be CSUll or empty.", nameof(userId));
 
-            var superior = await _repository.GetSuperiorAsync(userId);
-            return superior != null ? MapToDto(superior) : null;
-        }
-        
-        public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)
-        {
-            return await _repository.SearchAsync(filters, page, pageSize);
-        }
-        
-        public async Task<IEnumerable<User>> GetAllAsync()
-        {
-            return await _repository.GetAllAsync();
-        }
-        
-        public async Task<IEnumerable<UserDto>> GetCollaboratorsAsync(string userId)
+        public async Task<UserDto?> GetSuperiorAsync(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
                 throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
 
-            var collaborators = await _repository.GetCollaboratorsAsync(userId);
-            
-            
-            return collaborators.Select(MapToDto);
+            var superior = await _repository.GetSuperiorAsync(userId);
+            return superior != null ? MapToDto(superior) : null;
         }
 
-        public async Task<List<User>> GetAllUsersAsync()
+        public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)
         {
-            var users = await _repository.GetAllAsync();
-            return users.ToList();
+            return await _repository.SearchAsync(filters, page, pageSize);
+        }
+
+        public async Task<(IEnumerable<UserDto>, int)> GetAllPaginatedAsync(int page, int pageSize)
+        {
+            return await _repository.GetAllPaginatedAsync(page, pageSize);
+        }
+
+        public async Task<IAsyncEnumerable<IEnumerable<UserDto>>> GetAllInBatchesAsync(int batchSize = 1000)
+        {
+            return await _repository.GetAllInBatchesAsync(batchSize);
+        }
+
+        public async Task<IEnumerable<UserDto>> GetAllAsync()
+        {
+            var allUsers = new List<UserDto>();
+            await foreach (var batch in await _repository.GetAllInBatchesAsync(batchSize: 1000))
+            {
+                allUsers.AddRange(batch);
+            }
+            return allUsers;
+        }
+
+        public async Task<IEnumerable<string>> GetUserRolesAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            return await _repository.GetUserRolesAsync(userId);
         }
 
         public async Task<User?> GetByIdAsync(string id)
         {
             return await _repository.GetByIdAsync(id);
         }
-
+    
         public async Task<User?> GetByEmailAsync(string email)
         {
             return await _repository.GetByEmailAsync(email);
@@ -124,6 +132,15 @@ namespace MyApp.Api.Services.users
         {
             await _repository.DeleteUsersAsync(users);
             await _repository.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<UserDto>> GetCollaboratorsAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            var collaborators = await _repository.GetCollaboratorsAsync(userId);
+            return collaborators.Select(MapToDto);
         }
 
         public async Task<UserDto?> LoginAsync(string email, string password)

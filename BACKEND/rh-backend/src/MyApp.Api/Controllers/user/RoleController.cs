@@ -50,15 +50,15 @@ namespace MyApp.Api.Controllers.user
             }
         }
 
-        [HttpPost ("{userId}")]
-        public async Task<ActionResult> CreateRole([FromBody] RoleDTOForm role, string userId)
+        [HttpPost]
+        public async Task<ActionResult> CreateRole([FromBody] RoleDTOForm role)
         {
             try
             {
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                await roleService.AddAsync(role, userId);
+                await roleService.AddAsync(role);
                 return Ok(role);
             }
             catch (Exception ex)
@@ -68,8 +68,8 @@ namespace MyApp.Api.Controllers.user
             }
         }
 
-        [HttpPut("{id}/{userId}")]
-        public async Task<ActionResult> UpdateRole(string id, [FromBody] RoleDTOForm role, string userId)
+        [HttpPut("{id}")]
+        public async Task<ActionResult> UpdateRole(string id, [FromBody] RoleDTOForm role)
         {
             try
             {
@@ -83,7 +83,7 @@ namespace MyApp.Api.Controllers.user
                     return NotFound();
                 }
 
-                await roleService.UpdateAsync(id ,role, userId);
+                await roleService.UpdateAsync(id ,role);
                 return Ok(role);
             }
             catch (Exception ex)

@@ -18,12 +18,31 @@ public class UserController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<User>>> GetAll()
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetAll()
     {
         try
         {
             var users = await _userService.GetAllAsync();
             return Ok(users);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+    [HttpGet("{userId}/roles")]
+    public async Task<ActionResult<IEnumerable<string>>> GetUserRoles(string userId)
+    {
+        try
+        {
+            var roleIds = await _userService.GetUserRolesAsync(userId);
+            return Ok(roleIds);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception e)
         {

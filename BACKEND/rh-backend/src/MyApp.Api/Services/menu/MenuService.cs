@@ -32,7 +32,6 @@ namespace MyApp.Api.Services.menu
             var rootHierarchies = await _hierarchyRepository.GetRootMenusAsync();
             var result = new List<MenuHierarchyDto>();
 
-            // Fetch all menus with their roles in one query to avoid N+1
             var menusWithRoles = await _menuRepository.GetAllWithRolesAsync(roleNames);
             var menuDict = menusWithRoles.ToDictionary(m => m.MenuId, m => m);
 
@@ -68,6 +67,7 @@ namespace MyApp.Api.Services.menu
                 IsEnabled = menu.IsEnabled,
                 Position = menu.Position,
                 ModuleId = menu.ModuleId,
+                Section = menu.Section, // Inclure le champ Section
                 RoleNames = menu.MenuRoles?.Select(mr => mr.Role.Name).ToList() ?? new List<string>()
             };
 
@@ -80,7 +80,6 @@ namespace MyApp.Api.Services.menu
                 Children = new List<MenuHierarchyDto>()
             };
 
-            // Récupérer les sous-menus
             var childHierarchies = await _hierarchyRepository.GetByParentIdAsync(hierarchy.MenuId);
             foreach (var childHierarchy in childHierarchies)
             {

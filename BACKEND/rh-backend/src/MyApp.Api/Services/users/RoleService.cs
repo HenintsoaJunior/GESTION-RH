@@ -10,8 +10,8 @@ public interface IRoleService
 {
     Task<IEnumerable<Role>> GetAllAsync();
     Task<Role?> GetByIdAsync(string id);
-    Task AddAsync(RoleDTOForm dto, string userId);
-    Task UpdateAsync(string id, RoleDTOForm role, string userId);
+    Task AddAsync(RoleDTOForm dto);
+    Task UpdateAsync(string id, RoleDTOForm role);
     Task DeleteAsync(string id, string userId);
 }
 
@@ -68,7 +68,7 @@ public class RoleService : IRoleService
         }
     }
 
-    public async Task AddAsync(RoleDTOForm dto, string userId)
+    public async Task AddAsync(RoleDTOForm dto)
     {
         try
         {
@@ -88,9 +88,8 @@ public class RoleService : IRoleService
             await _repository.SaveChangesAsync();
 
             _logger.LogInformation("Rôle ajouté avec succès avec l'ID: {RoleId}", role.RoleId);
-
-            // === Ajout dans les logs ===
-            await _logService.LogAsync("INSERTION", null, role, userId);
+            
+            await _logService.LogAsync("INSERTION", null, role, dto.UserId, "Name,Description");
         }
         catch (Exception ex)
         {
@@ -99,7 +98,7 @@ public class RoleService : IRoleService
         }
     }
 
-    public async Task UpdateAsync(string id, RoleDTOForm? roleDto, string userId)
+    public async Task UpdateAsync(string id, RoleDTOForm? roleDto)
     {
         try
         {
@@ -125,8 +124,9 @@ public class RoleService : IRoleService
 
             _logger.LogInformation("Rôle mis à jour avec succès avec l'ID: {RoleId}", id);
 
-            // === Ajout dans les logs ===
-            await _logService.LogAsync("MODIFICATION", existingRole, newRole, userId);
+            // === Ajout dans les logs - CORRIGÉ ===
+            // Passer les objets réels au lieu des chaînes littérales
+            await _logService.LogAsync("MODIFICATION", existingRole, newRole, roleDto.UserId, "Name,Description");
         }
         catch (Exception ex)
         {
