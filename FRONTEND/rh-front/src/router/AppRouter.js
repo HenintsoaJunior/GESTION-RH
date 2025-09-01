@@ -28,6 +28,7 @@ import ProfilePage from 'layouts/profil-page';
 import UserList from 'pages/users/users-list';
 import RoleList from 'pages/roles/roles-list';
 import HabilitationAssign from 'pages/habilitation/habilitation-list';
+import LogList from 'pages/logs/logs-list';
 
 function AppRouter() {
   return (
@@ -37,8 +38,9 @@ function AppRouter() {
         <Route element={<Template><Outlet /></Template>}>
           <Route path="/dashboard" element={<DashboardHome />} />
           <Route path="/profil-page" element={<ProfilePage />} />
-          
-          
+          {/* logs */}
+          <Route path="/logs" element={<LogList />} />
+
           {/* Utilisateur */}
           <Route path="/utilisateur" element={<UserList />} />
           <Route path="/role/list" element={<RoleList />} />

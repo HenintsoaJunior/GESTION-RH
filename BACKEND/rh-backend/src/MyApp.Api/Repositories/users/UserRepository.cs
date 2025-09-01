@@ -4,13 +4,16 @@ using MyApp.Api.Entities.users;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MyApp.Api.Models.classes.user;
+using MyApp.Api.Models.dto.users;
 
 namespace MyApp.Api.Repositories.users
 {
     public interface IUserRepository
     {
         Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize);
-        Task<IEnumerable<User>> GetAllAsync();
+        Task<(IEnumerable<UserDto>, int)> GetAllPaginatedAsync(int page, int pageSize);
+        Task<IAsyncEnumerable<IEnumerable<UserDto>>> GetAllInBatchesAsync(int batchSize = 1000);
+        Task<IEnumerable<UserDto>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
         Task<User?> GetByEmailAsync(string email);
         Task AddAsync(User user);
@@ -22,8 +25,8 @@ namespace MyApp.Api.Repositories.users
         Task SaveChangesAsync();
         Task<IEnumerable<User>> GetCollaboratorsAsync(string userId);
         Task<User?> GetSuperiorAsync(string userId);
-        
         Task<User?> GetDrhAsync();
+        Task<IEnumerable<string>> GetUserRolesAsync(string userId);
     }
 
     public class UserRepository : IUserRepository
@@ -34,69 +37,71 @@ namespace MyApp.Api.Repositories.users
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
-        
+
         public async Task<User?> GetDrhAsync()
         {
             return await _context.Users
+                .AsNoTracking()
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
-                .Where(u => u.Department == "DRH" && 
-                            (u.Position == "Directeur des Ressources Humaines" || 
-                             u.Position == "Directrice des Ressources Humaines" || 
+                .Where(u => u.Department == "DRH" &&
+                            (u.Position == "Directeur des Ressources Humaines" ||
+                             u.Position == "Directrice des Ressources Humaines" ||
                              u.Position == "DRH"))
                 .OrderBy(u => u.Name)
                 .FirstOrDefaultAsync();
         }
+
         public async Task<User?> GetSuperiorAsync(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
                 throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
 
             var user = await _context.Users
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.UserId == userId);
 
             if (user == null || string.IsNullOrWhiteSpace(user.SuperiorId))
                 return null;
 
             return await _context.Users
+                .AsNoTracking()
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.UserId == user.SuperiorId);
         }
+
         public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)
         {
             var query = _context.Users
+                .AsNoTracking()
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .AsQueryable();
 
-            // Filtre par matricule
             if (!string.IsNullOrWhiteSpace(filters.Matricule))
             {
-                query = query.Where(u => u.Matricule.Contains(filters.Matricule));
+                query = query.Where(u => u.Matricule == filters.Matricule);
             }
 
-            // Filtre par nom
             if (!string.IsNullOrWhiteSpace(filters.Name))
             {
-                query = query.Where(u => u.Name!.Contains(filters.Name));
+                var name = filters.Name.ToLower();
+                query = query.Where(u => u.Name != null && u.Name.ToLower().Contains(name));
             }
 
-            // Filtre par département
             if (!string.IsNullOrWhiteSpace(filters.Department))
             {
                 query = query.Where(u => u.Department != null && u.Department.Contains(filters.Department));
             }
 
-            // Filtre par statut
             if (!string.IsNullOrWhiteSpace(filters.Status))
             {
                 query = query.Where(u => u.Status != null && u.Status.Contains(filters.Status));
             }
 
-            var totalCount = await query.CountAsync(); // Nombre total de résultats
+            var totalCount = await query.CountAsync();
 
-            // Récupération des résultats paginés
             var results = await query
                 .OrderBy(u => u.Name)
                 .Skip((page - 1) * pageSize)
@@ -105,21 +110,104 @@ namespace MyApp.Api.Repositories.users
 
             return (results, totalCount);
         }
-        
+
         public async Task<IEnumerable<User>> GetCollaboratorsAsync(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
                 throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
 
             return await _context.Users
+                .AsNoTracking()
                 .Where(u => u.SuperiorId == userId)
                 .ToListAsync();
         }
-        public async Task<IEnumerable<User>> GetAllAsync()
+
+        public async Task<(IEnumerable<UserDto>, int)> GetAllPaginatedAsync(int page, int pageSize)
+        {
+            var query = _context.Users
+                .AsNoTracking()
+                .Select(u => new UserDto
+                {
+                    UserId = u.UserId,
+                    Email = u.Email,
+                    Name = u.Name,
+                    Department = u.Department,
+                    Position = u.Position,
+                    SuperiorId = u.SuperiorId,
+                    SuperiorName = u.SuperiorName
+                })
+                .AsQueryable();
+
+            var totalCount = await query.CountAsync();
+
+            var results = await query
+                .OrderBy(dto => dto.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (results, totalCount);
+        }
+
+        public async Task<IEnumerable<UserDto>> GetAllAsync()
         {
             return await _context.Users
-                .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
+                .AsNoTracking()
+                .Select(u => new UserDto
+                {
+                    UserId = u.UserId,
+                    Email = u.Email,
+                    Name = u.Name,
+                    Department = u.Department,
+                    Position = u.Position,
+                    SuperiorId = u.SuperiorId,
+                    SuperiorName = u.SuperiorName
+                })
+                .ToListAsync();
+        }
+
+        public async Task<IAsyncEnumerable<IEnumerable<UserDto>>> GetAllInBatchesAsync(int batchSize = 1000)
+        {
+            async IAsyncEnumerable<IEnumerable<UserDto>> GetBatches()
+            {
+                int page = 1;
+                while (true)
+                {
+                    var batch = await _context.Users
+                        .AsNoTracking()
+                        .Select(u => new UserDto
+                        {
+                            UserId = u.UserId,
+                            Email = u.Email,
+                            Name = u.Name,
+                            Department = u.Department,
+                            Position = u.Position,
+                            SuperiorId = u.SuperiorId,
+                            SuperiorName = u.SuperiorName
+                        })
+                        .Skip((page - 1) * batchSize)
+                        .Take(batchSize)
+                        .ToListAsync();
+
+                    if (!batch.Any()) yield break;
+
+                    yield return batch;
+                    page++;
+                }
+            }
+
+            return await Task.FromResult(GetBatches());
+        }
+
+        public async Task<IEnumerable<string>> GetUserRolesAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            return await _context.UserRoles
+                .AsNoTracking()
+                .Where(ur => ur.UserId == userId)
+                .Select(ur => ur.RoleId)
                 .ToListAsync();
         }
 
@@ -128,7 +216,9 @@ namespace MyApp.Api.Repositories.users
             if (string.IsNullOrWhiteSpace(email))
                 throw new ArgumentException("Email cannot be null or empty.", nameof(email));
 
-            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            return await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email == email);
         }
 
         public async Task<User?> GetByIdAsync(string id)
@@ -136,7 +226,9 @@ namespace MyApp.Api.Repositories.users
             if (string.IsNullOrWhiteSpace(id))
                 throw new ArgumentException("Id cannot be null or empty.", nameof(id));
 
-            return await _context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+            return await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.UserId == id);
         }
 
         public async Task AddAsync(User user)

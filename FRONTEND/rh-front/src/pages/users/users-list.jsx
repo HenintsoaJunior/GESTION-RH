@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, X, RefreshCw, List } from "lucide-react";
 import {
   DashboardContainer,
@@ -15,6 +15,7 @@ import {
   FormFieldCell,
   FormLabelSearch,
   FormInputSearch,
+  StyledAutoCompleteInput,
   FiltersActions,
   ButtonReset,
   ButtonSearch,
@@ -30,9 +31,9 @@ import {
   Loading,
   NoDataMessage,
 } from "styles/generaliser/table-container";
-import { searchUsers, syncLdap } from "services/users/users";
+import { searchUsers, syncLdap, fetchAllUsers } from "services/users/users";
 import { formatDate } from "utils/dateConverter";
-import Modal from "components/modal";
+import Alert from "components/alert";
 import Pagination from "components/pagination";
 
 const UserList = () => {
@@ -41,6 +42,11 @@ const UserList = () => {
     matricule: "",
     name: "",
     department: "",
+    status: "",
+  });
+  const [appliedFilters, setAppliedFilters] = useState({ ...filters });
+  const [suggestions, setSuggestions] = useState({
+    users: [],
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -50,90 +56,130 @@ const UserList = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
-  // Gestion de l'erreur
-  const handleError = useCallback((error) => {
-    setAlert({
-      show: true,
-      type: 'error',
-      message: error.message || 'LDAP synchronization failed',
-    });
-    setIsLoading((prev) => ({ ...prev, sync: false }));
+  // Fetch users for autocomplete suggestions
+  useEffect(() => {
+    fetchAllUsers(
+      (data) => {
+        setSuggestions({
+          users: data.map((user) => ({
+            id: user.matricule || user.userId,
+            name: user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Non spécifié",
+            displayName: user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Non spécifié",
+            matricule: user.matricule,
+          })),
+        });
+      },
+      setIsLoading,
+      () => {}, // setTotalEntries not needed for suggestions
+      (error) => setAlert(error)
+    );
   }, []);
 
-  // Gestion du succès
-  const handleSuccess = useCallback((alert) => {
-    setAlert({
-      ...alert,
-      show: true,
-      type: 'success',
-      message: alert.message || 'LDAP synchronization completed successfully!',
-    });
-    setIsLoading((prev) => ({ ...prev, sync: false }));
-    // Refresh the user list after successful sync
-    searchUsers(setUsers, setIsLoading, setTotalEntries, filters, currentPage, pageSize, handleError);
-  }, [filters, currentPage, pageSize]);
-
-  // Charger les utilisateurs avec searchUsers
+  // Fetch users when filters or pagination change
   useEffect(() => {
-    searchUsers(setUsers, setIsLoading, setTotalEntries, filters, currentPage, pageSize, handleError);
-  }, [currentPage, pageSize, filters, handleError]);
+    searchUsers(
+      setUsers,
+      setIsLoading,
+      setTotalEntries,
+      {
+        matricule: appliedFilters.matricule || "",
+        name: appliedFilters.name || "",
+        department: appliedFilters.department || "",
+        status: appliedFilters.status || "",
+      },
+      currentPage,
+      pageSize,
+      (error) => setAlert(error)
+    );
+  }, [appliedFilters, currentPage, pageSize]);
 
-  // Gérer les changements de filtres
+  // Handle filter input changes
   const handleFilterChange = (name, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    setCurrentPage(1); // Reset to first page when filters change
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Soumettre les filtres de recherche
+  // Handle filter form submission
   const handleFilterSubmit = (event) => {
     event.preventDefault();
+    
+    // Apply filters directly without additional validation for now
+    const updatedFilters = { ...filters };
+    
+    setFilters(updatedFilters);
+    setAppliedFilters(updatedFilters);
     setCurrentPage(1);
-    searchUsers(setUsers, setIsLoading, setTotalEntries, filters, 1, pageSize, handleError);
   };
 
-  // Réinitialiser les filtres et actualiser
+  // Reset filters
   const handleResetFilters = () => {
     const resetFilters = {
       matricule: "",
       name: "",
       department: "",
+      status: "",
     };
     setFilters(resetFilters);
+    setAppliedFilters(resetFilters);
     setCurrentPage(1);
-    searchUsers(setUsers, setIsLoading, setTotalEntries, resetFilters, 1, pageSize, handleError);
+    setAlert({ isOpen: true, type: "info", message: "Filtres réinitialisés." });
   };
 
-  // Gérer le changement de page
+  // Handle pagination changes
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    // searchUsers is called via useEffect due to currentPage dependency
   };
 
-  // Gérer le changement de taille de page
   const handlePageSizeChange = (event) => {
-    const newPageSize = Number(event.target.value);
-    setPageSize(newPageSize);
+    setPageSize(Number(event.target.value));
     setCurrentPage(1);
-    // searchUsers is called via useEffect due to pageSize dependency
   };
 
-  // Synchroniser les utilisateurs
+  // Toggle filter section minimize state
+  const toggleMinimize = () => setIsMinimized((prev) => !prev);
+
+  // Toggle filter section visibility
+  const toggleHide = () => setIsHidden((prev) => !prev);
+
+  // Synchronize users
   const handleSync = () => {
     setIsLoading((prev) => ({ ...prev, sync: true }));
-    syncLdap(handleSuccess, handleError);
+    syncLdap(
+      (successAlert) => {
+        setAlert({
+          isOpen: true,
+          type: "success",
+          message: successAlert.message || "Synchronisation LDAP réussie!",
+        });
+        setIsLoading((prev) => ({ ...prev, sync: false }));
+        // Refresh users after sync
+        searchUsers(
+          setUsers,
+          setIsLoading,
+          setTotalEntries,
+          appliedFilters,
+          currentPage,
+          pageSize,
+          (error) => setAlert(error)
+        );
+      },
+      (error) => {
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: error.message || "Erreur lors de la synchronisation LDAP",
+        });
+        setIsLoading((prev) => ({ ...prev, sync: false }));
+      }
+    );
   };
 
   return (
     <DashboardContainer>
-      <Modal
+      <Alert
         type={alert.type}
         message={alert.message}
         isOpen={alert.isOpen}
         onClose={() => setAlert({ ...alert, isOpen: false })}
-        title="Notification"
       />
 
       {!isHidden && (
@@ -142,13 +188,13 @@ const UserList = () => {
             <FiltersTitle>Filtres de Recherche</FiltersTitle>
             <FiltersControls>
               <FilterControlButton
-                $isMinimized
-                onClick={() => setIsMinimized(!isMinimized)}
+                $isMinimized={isMinimized}
+                onClick={toggleMinimize}
                 title={isMinimized ? "Développer" : "Réduire"}
               >
                 {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
               </FilterControlButton>
-              <FilterControlButton $isClose onClick={() => setIsHidden(!isHidden)} title="Fermer">
+              <FilterControlButton $isClose onClick={toggleHide} title="Fermer">
                 <X size={16} />
               </FilterControlButton>
             </FiltersControls>
@@ -160,47 +206,59 @@ const UserList = () => {
                 <FormTableSearch>
                   <tbody>
                     <FormRow>
-                      <FormFieldCell>
-                        <FormLabelSearch>Matricule</FormLabelSearch>
-                        <FormInputSearch
-                          name="matricule"
-                          type="text"
-                          value={filters.matricule}
-                          onChange={(e) => handleFilterChange("matricule", e.target.value)}
-                          placeholder="Recherche par matricule"
-                        />
-                      </FormFieldCell>
 
                       <FormFieldCell>
                         <FormLabelSearch>Nom</FormLabelSearch>
-                        <FormInputSearch
-                          name="name"
-                          type="text"
-                          value={filters.name}
-                          onChange={(e) => handleFilterChange("name", e.target.value)}
-                          placeholder="Recherche par nom"
+                        <StyledAutoCompleteInput
+                          value={filters.name || ""}
+                          onChange={(value) => {
+                            setFilters((prev) => ({
+                              ...prev,
+                              name: value,
+                            }));
+                          }}
+                          onSelect={(value) => {
+                            const selectedUser = suggestions.users.find(
+                              (user) => user.displayName === value
+                            );
+                            setFilters((prev) => ({
+                              ...prev,
+                              name: selectedUser ? selectedUser.displayName : value,
+                            }));
+                          }}
+                          suggestions={suggestions.users
+                            .filter((user) =>
+                              user.displayName.toLowerCase().includes(filters.name?.toLowerCase() || "")
+                            )
+                            .map((user) => user.displayName)}
+                          maxVisibleItems={5}
+                          placeholder="Rechercher par nom..."
+                          disabled={isLoading.users || isLoading.sync}
+                          fieldType="user"
+                          fieldLabel="utilisateur"
+                          showAddOption={false}
                         />
                       </FormFieldCell>
 
-                      <FormFieldCell>
-                        <FormLabelSearch>Département</FormLabelSearch>
-                        <FormInputSearch
-                          name="department"
-                          type="text"
-                          value={filters.department}
-                          onChange={(e) => handleFilterChange("department", e.target.value)}
-                          placeholder="Recherche par département"
-                        />
-                      </FormFieldCell>
+                      
                     </FormRow>
                   </tbody>
                 </FormTableSearch>
 
                 <FiltersActions>
-                  <ButtonReset type="button" onClick={handleResetFilters}>
+                  <ButtonReset 
+                    type="button" 
+                    onClick={handleResetFilters} 
+                    disabled={isLoading.users || isLoading.sync}
+                  >
                     Réinitialiser
                   </ButtonReset>
-                  <ButtonSearch type="submit">Rechercher</ButtonSearch>
+                  <ButtonSearch 
+                    type="submit" 
+                    disabled={isLoading.users || isLoading.sync}
+                  >
+                    {isLoading.users ? "Recherche..." : "Rechercher"}
+                  </ButtonSearch>
                 </FiltersActions>
               </form>
             </FiltersSection>
@@ -210,7 +268,7 @@ const UserList = () => {
 
       {isHidden && (
         <FiltersToggle>
-          <ButtonShowFilters type="button" onClick={() => setIsHidden(!isHidden)}>
+          <ButtonShowFilters type="button" onClick={toggleHide}>
             <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Afficher les filtres
           </ButtonShowFilters>
@@ -221,7 +279,7 @@ const UserList = () => {
         <TableTitle>Liste des Utilisateurs</TableTitle>
         <ButtonSearch onClick={handleSync} disabled={isLoading.sync}>
           <RefreshCw size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-          Synchroniser
+          {isLoading.sync ? "Synchronisation..." : "Synchroniser"}
         </ButtonSearch>
       </TableHeader>
 
@@ -241,24 +299,33 @@ const UserList = () => {
             {isLoading.users ? (
               <TableRow>
                 <TableCell colSpan={6}>
-                  <Loading>Chargement...</Loading>
+                  <Loading>Chargement des données...</Loading>
                 </TableCell>
               </TableRow>
             ) : users.length > 0 ? (
-              users.map((user) => (
-                <TableRow key={user.userId}>
+              users.map((user, index) => (
+                <TableRow key={`${user.userId || user.matricule}-${index}`}>
                   <TableCell>{user.matricule || "Non spécifié"}</TableCell>
                   <TableCell>{user.name || "Non spécifié"}</TableCell>
                   <TableCell>{user.email || "Non spécifié"}</TableCell>
                   <TableCell>{user.department || "Non spécifié"}</TableCell>
                   <TableCell>{user.position || "Non spécifié"}</TableCell>
-                  <TableCell>{formatDate(user.createdAt) || "Non spécifié"}</TableCell>
+                  <TableCell>
+                    {formatDate(user.createdAt) || "Non spécifié"}
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell colSpan={6}>
-                  <NoDataMessage>Aucune donnée trouvée.</NoDataMessage>
+                  <NoDataMessage>
+                    {appliedFilters.matricule ||
+                    appliedFilters.name ||
+                    appliedFilters.department ||
+                    appliedFilters.status
+                      ? "Aucun utilisateur ne correspond aux critères de recherche."
+                      : "Aucun utilisateur trouvé."}
+                  </NoDataMessage>
                 </TableCell>
               </TableRow>
             )}

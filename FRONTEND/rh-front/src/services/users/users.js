@@ -24,7 +24,26 @@ export const fetchAllUsers = async (setUsers, setIsLoading, setTotalEntries, onE
   }
 };
 
-// Search users with filters
+export const fetchUserRoles = async (userId, setIsLoading, onSuccess, onError) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, userRoles: true }));
+    const data = await apiGet(`/api/user/${userId}/roles`);
+    console.log("API Response (User Roles):", data);
+
+    const roleIds = Array.isArray(data) ? data : [];
+    onSuccess(roleIds);
+  } catch (error) {
+    console.error("Erreur lors du chargement des rôles de l'utilisateur:", error);
+    onError({
+      isOpen: true,
+      type: "error",
+      message: `Erreur lors du chargement des rôles de l'utilisateur: ${error.message}`,
+    });
+  } finally {
+    setIsLoading((prev) => ({ ...prev, userRoles: false }));
+  }
+};
+
 export const searchUsers = async (
   setUsers,
   setIsLoading,
@@ -36,27 +55,43 @@ export const searchUsers = async (
 ) => {
   try {
     setIsLoading((prev) => ({ ...prev, users: true }));
-    const requestBody = {
-      matricule: filters.matricule?.trim() || "",
-      name: filters.name?.trim() || "",
-      department: filters.department?.trim() || "",
-      status: filters.status?.trim() || "",
-    };
-    console.log("Request Body for user search:", requestBody);
-    const data = await apiPost("/api/user/search", requestBody, { page, pageSize });
-    console.log("API Response (User Search):", data);
-
+    
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+    
+    if (filters.matricule?.trim()) {
+      queryParams.append('Matricule', filters.matricule.trim());
+    }
+    if (filters.name?.trim()) {
+      queryParams.append('Name', filters.name.trim());
+    }
+    if (filters.department?.trim()) {
+      queryParams.append('Department', filters.department.trim());
+    }
+    if (filters.status?.trim()) {
+      queryParams.append('Status', filters.status.trim());
+    }
+    
+    const queryString = queryParams.toString();
+    
+    const data = await apiPost(`/api/user/search?${queryString}`, {});
+    
     const usersData = Array.isArray(data.users) ? data.users : [];
     setUsers(usersData);
     setTotalEntries(data.totalCount || usersData.length || 0);
+    
   } catch (error) {
-    console.error("Erreur lors de la recherche des utilisateurs:", error);
+    
     onError({
       isOpen: true,
       type: "error",
-      message: `Erreur lors de la recherche des utilisateurs: ${error.message}`,
+      message: error.response?.data?.message || error.message || "Erreur lors de la recherche des utilisateurs",
+      fieldErrors: error.response?.data?.errors || {},
     });
     setUsers([]);
+    setTotalEntries(0);
   } finally {
     setIsLoading((prev) => ({ ...prev, users: false }));
   }
