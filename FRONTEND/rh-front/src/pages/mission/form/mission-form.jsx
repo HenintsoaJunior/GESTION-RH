@@ -5,7 +5,7 @@ import Modal from "components/modal";
 import * as FaIcons from "react-icons/fa";
 import NewMissionForm from "./new-mission";
 import ExistingMissionForm from "./existing-mission";
-import BeneficiaryPopup from "./benificiary-mission-popup";
+import BeneficiaryPopup from "../benificiary/benificiary-mission-popup";
 import { fetchAllRegions } from "services/lieu/lieu";
 import { createMission, fetchAllMissions, createMissionAssignation, fetchMissionById, fetchAssignMission, updateMission, updateMissionAssignation, deleteMissionAssignation } from "services/mission/mission";
 import { fetchAllTransports } from "services/transport/transport";
@@ -705,7 +705,7 @@ const MissionForm = () => {
           if (selectedEmployee) {
             const isNewBeneficiary = !beneficiary.assignationId || beneficiary.assignationId.startsWith("temp-");
 
-            if (!isNewBeneficiary) {  
+            if (!isNewBeneficiary) {
               const updatedAssignation = await updateMissionAssignation(
                 beneficiary.assignationId,
                 assignationData,
@@ -982,7 +982,7 @@ const MissionForm = () => {
 
         <div>
           <FormSectionTitle>Détails des Assignations</FormSectionTitle>
-          
+
           {formData.beneficiaries.length > 0 ? (
             <BeneficiariesTableContainer>
               <BeneficiariesTable>

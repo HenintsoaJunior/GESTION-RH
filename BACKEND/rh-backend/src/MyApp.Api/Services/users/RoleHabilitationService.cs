@@ -11,6 +11,8 @@ public interface IRoleHabilitationService
     Task AddAsync(RoleHabilitationDTOForm dto);
     Task UpdateAsync(RoleHabilitation roleHabilitation);
     Task DeleteAsync(string habilitationId, string roleId);
+
+    Task<IEnumerable<Habilitation>> GetHabilitationsByUserIdAsync(string userId);
 }
  
 public class RoleHabilitationService : IRoleHabilitationService
@@ -26,6 +28,33 @@ public class RoleHabilitationService : IRoleHabilitationService
         _logger = logger;
     }
 
+    public async Task<IEnumerable<Habilitation>> GetHabilitationsByUserIdAsync(string userId)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                _logger.LogWarning("Tentative de récupération des habilitations avec un ID utilisateur null ou vide");
+                throw new ArgumentException("L'ID de l'utilisateur ne peut pas être null ou vide", nameof(userId));
+            }
+
+            _logger.LogInformation("Récupération des habilitations pour l'utilisateur avec ID: {UserId}", userId);
+            var habilitations = await _repository.GetHabilitationsByUserIdAsync(userId);
+
+            var async = habilitations.ToList();
+            if (!async.Any())
+            {
+                _logger.LogInformation("Aucune habilitation trouvée pour l'utilisateur avec ID: {UserId}", userId);
+            }
+
+            return async;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération des habilitations pour l'utilisateur avec ID: {UserId}", userId);
+            throw;
+        }
+    }
     public async Task<IEnumerable<RoleHabilitation>> GetAllAsync()
     {
         try

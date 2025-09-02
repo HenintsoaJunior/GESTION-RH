@@ -413,3 +413,72 @@ export const AutoCompleteSuggestion = styled.div`
     border-bottom: none;
   }
 `;
+
+export const FormTableContainer = styled.div`
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 600px; /* Increased height for form table */
+  margin-bottom: var(--spacing-xl); /* Larger margin for better spacing */
+  position: relative;
+  padding: var(--spacing-md); /* Added padding for form context */
+  width: 100%;
+  min-width: 1200px; /* Larger minimum width for form table */
+
+  &::-webkit-scrollbar {
+    width: 8px; /* Slightly larger scrollbar */
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: var(--radius-sm);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: var(--radius-sm);
+
+    &:hover {
+      background: var(--primary-hover);
+    }
+  }
+`;
+
+export const FormTable = styled(BeneficiariesTable)`
+  min-width: 1100px; /* Slightly larger min-width for form table */
+  font-size: var(--font-size-sm); /* Slightly larger font for form context */
+
+  & th {
+    padding: var(--spacing-lg); /* More padding for form headers */
+    font-size: var(--font-size-sm);
+  }
+
+  & td {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-sm);
+    max-width: 200px; /* Increased max-width for form cells */
+  }
+
+  & .col-beneficiary {
+    min-width: 250px;
+    max-width: 300px;
+
+    @media (max-width: 768px) {
+      min-width: 180px;
+      max-width: 220px;
+    }
+  }
+
+  & .col-fonction {
+    min-width: 180px;
+    max-width: 250px;
+
+    @media (max-width: 768px) {
+      min-width: 150px;
+      max-width: 180px;
+    }
+  }
+`;

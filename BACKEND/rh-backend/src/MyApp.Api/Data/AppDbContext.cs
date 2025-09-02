@@ -33,15 +33,9 @@ namespace MyApp.Api.Data
         public DbSet<ApprovalFlowEmployee> ApprovalFlowEmployees { get; set; } 
         public DbSet<JobOffer> JobOffers { get; set; } 
         public DbSet<JobDescription> JobDescriptions { get; set; } 
-        public DbSet<RecruitmentApproval> RecruitmentApprovals { get; set; } 
         public DbSet<EmployeeNationality> EmployeeNationalities { get; set; } 
         public DbSet<ApprovalFlow> ApprovalFlows { get; set; } 
-        public DbSet<RecruitmentRequestDetail> RecruitmentRequestDetails { get; set; } 
         public DbSet<Employee> Employees { get; set; } 
-        public DbSet<RecruitmentRequest> RecruitmentRequests { get; set; } 
-        public DbSet<RecruitmentRequestReplacementReason> RecruitmentRequestReplacementReasons { get; set; } 
-        public DbSet<ReplacementReason> ReplacementReasons { get; set; }  
-        public DbSet<RecruitmentReason> RecruitmentReasons { get; set; }  
         public DbSet<WorkingTimeType> WorkingTimeTypes { get; set; }  
         public DbSet<EmployeeCategory> EmployeeCategories { get; set; }   
         public DbSet<ContractType> ContractTypes { get; set; }   

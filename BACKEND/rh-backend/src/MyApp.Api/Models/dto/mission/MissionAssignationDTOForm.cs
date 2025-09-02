@@ -29,9 +29,10 @@ public class MissionAssignationDTOForm
 public class MissionAssignationSearchFiltersDTO
 {
     public string? EmployeeId { get; set; }
+    
+    public string? [] Matricule { get; set; } = null!;
     public string? MissionId { get; set; }
     public string? TransportId { get; set; }
-
     public string? LieuId { get; set; }
     public DateTime? MinDepartureDate { get; set; }
     public DateTime? MaxDepartureDate { get; set; }

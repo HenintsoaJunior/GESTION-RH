@@ -1,105 +1,5 @@
 -- Drop tables if they exist
 DROP TABLE IF EXISTS menu_hierarchy;
-DROP TABLE IF EXISTS menu;
-DROP TABLE IF EXISTS module;
-
--- Create table
-CREATE TABLE module (
-   module_id VARCHAR(50) PRIMARY KEY,
-   module_name VARCHAR(100) NOT NULL,
-   description VARCHAR(MAX),
-   created_at DATETIME NOT NULL DEFAULT GETDATE(),
-   updated_at DATETIME NOT NULL DEFAULT GETDATE()
-);
-
-CREATE TABLE menu (
-   menu_id VARCHAR(50) PRIMARY KEY,
-   menu_key VARCHAR(50) NOT NULL UNIQUE,
-   icon VARCHAR(50),
-   link VARCHAR(255),
-   is_enabled BIT DEFAULT 1,
-   position INT,
-   module_id VARCHAR(50),
-   section VARCHAR(50), -- ajout de la section
-   created_at DATETIME NOT NULL DEFAULT GETDATE(),
-   updated_at DATETIME NOT NULL DEFAULT GETDATE(),
-   FOREIGN KEY (module_id) REFERENCES module(module_id)
-);
-
-CREATE TABLE menu_role (
-   menu_id VARCHAR(50) NOT NULL,
-   role_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY (menu_id, role_id),
-   created_at DATETIME NOT NULL DEFAULT GETDATE(),
-   updated_at DATETIME NOT NULL DEFAULT GETDATE(),
-   FOREIGN KEY (menu_id) REFERENCES menu(menu_id),
-   FOREIGN KEY (role_id) REFERENCES role(role_id)
-);
-
-CREATE TABLE menu_hierarchy (
-   hierarchy_id VARCHAR(50) PRIMARY KEY,
-   parent_menu_id VARCHAR(50),
-   menu_id VARCHAR(50) NOT NULL,
-   created_at DATETIME NOT NULL DEFAULT GETDATE(),
-   updated_at DATETIME NOT NULL DEFAULT GETDATE(),
-   FOREIGN KEY (parent_menu_id) REFERENCES menu(menu_id),
-   FOREIGN KEY (menu_id) REFERENCES menu(menu_id)
-);
-
--- Drop tables if they exist
-DROP TABLE IF EXISTS menu_hierarchy;
-DROP TABLE IF EXISTS menu_role;
-DROP TABLE IF EXISTS menu;
-DROP TABLE IF EXISTS module;
-
--- Create table module
-CREATE TABLE module (
-   module_id VARCHAR(50) PRIMARY KEY,
-   module_name VARCHAR(100) NOT NULL,
-   description VARCHAR(MAX),
-   created_at DATETIME NOT NULL DEFAULT GETDATE(),
-   updated_at DATETIME NOT NULL DEFAULT GETDATE()
-);
-
--- Create table menu
-CREATE TABLE menu (
-   menu_id VARCHAR(50) PRIMARY KEY,
-   menu_key VARCHAR(50) NOT NULL UNIQUE,
-   icon VARCHAR(50),
-   link VARCHAR(255),
-   is_enabled BIT DEFAULT 1,
-   position INT,
-   module_id VARCHAR(50),
-   section VARCHAR(50) NOT NULL, -- ajout section obligatoire
-   created_at DATETIME NOT NULL DEFAULT GETDATE(),
-   updated_at DATETIME NOT NULL DEFAULT GETDATE(),
-   FOREIGN KEY (module_id) REFERENCES module(module_id)
-);
-
--- Create table menu_role
-CREATE TABLE menu_role (
-   menu_id VARCHAR(50) NOT NULL,
-   role_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY (menu_id, role_id),
-   created_at DATETIME NOT NULL DEFAULT GETDATE(),
-   updated_at DATETIME NOT NULL DEFAULT GETDATE(),
-   FOREIGN KEY (menu_id) REFERENCES menu(menu_id),
-   FOREIGN KEY (role_id) REFERENCES role(role_id)
-);
-
--- Create table menu_hierarchy
-CREATE TABLE menu_hierarchy (
-   hierarchy_id VARCHAR(50) PRIMARY KEY,
-   parent_menu_id VARCHAR(50),
-   menu_id VARCHAR(50) NOT NULL,
-   created_at DATETIME NOT NULL DEFAULT GETDATE(),
-   updated_at DATETIME NOT NULL DEFAULT GETDATE(),
-   FOREIGN KEY (parent_menu_id) REFERENCES menu(menu_id),
-   FOREIGN KEY (menu_id) REFERENCES menu(menu_id)
-);
-
--- Drop tables if they exist
-DROP TABLE IF EXISTS menu_hierarchy;
 DROP TABLE IF EXISTS menu_role;
 DROP TABLE IF EXISTS menu;
 DROP TABLE IF EXISTS module;
@@ -154,31 +54,24 @@ CREATE TABLE menu_hierarchy (
 INSERT INTO module (module_id, module_name, description, created_at, updated_at) VALUES
 ('user', 'Utilisateurs', 'Gestion des utilisateurs et rôles', GETDATE(), GETDATE()),
 ('habilitation', 'Habilitation', 'Gestion des habilitations et autorisations', GETDATE(), GETDATE()),
-('recruitment', 'Suivi du Recrutement', 'Gestion des candidatures, postes et filtres multicritères', GETDATE(), GETDATE()),
 ('mission', 'Suivi des Missions', 'Gestion des missions, assignations et paiements', GETDATE(), GETDATE()),
 ('logs', 'Logs', 'Suivi et journalisation des actions utilisateurs et systèmes', GETDATE(), GETDATE());
 
 -- Insert menus (avec section)
--- Administration : utilisateur
+-- Administration: utilisateur
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu0', 'utilisateurs', 'fa-users', '/utilisateur', 1, 1, 'user', 'administration', GETDATE(), GETDATE());
 
--- Administration : habilitation
+-- Administration: habilitation
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu_hab', 'habilitation', 'fa-shield-alt', '/habilitation', 1, 2, 'habilitation', 'administration', GETDATE(), GETDATE()),
 ('menu_hab_2', 'habilitation-liste', 'fa-list', '/role/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
 
--- Administration : logs
+-- Administration: logs
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu_logs', 'logs', 'fa-file-alt', '/logs', 1, 4, 'logs', 'administration', GETDATE(), GETDATE());
 
--- Navigation : recrutement
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu1', 'recrutement', 'fa-user-plus', '/recruitment', 1, 1, 'recruitment', 'navigation', GETDATE(), GETDATE()),
-('menu1_1', 'demande-creer', 'fa-plus', '/recruitment/recruitment-request/create', 1, 1, 'recruitment', 'navigation', GETDATE(), GETDATE()),
-('menu1_2', 'demande-liste', 'fa-list', '/recruitment/recruitment-request/list', 1, 2, 'recruitment', 'navigation', GETDATE(), GETDATE());
-
--- Navigation : mission
+-- Navigation: mission
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_0', 'mission-a-valider', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
@@ -193,9 +86,6 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h_hab', NULL, 'menu_hab', GETDATE(), GETDATE()),
 ('h_hab_2', 'menu_hab', 'menu_hab_2', GETDATE(), GETDATE()),
 ('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),
-('h1', NULL, 'menu1', GETDATE(), GETDATE()),
-('h2', 'menu1', 'menu1_1', GETDATE(), GETDATE()),
-('h3', 'menu1', 'menu1_2', GETDATE(), GETDATE()),
 ('h4', NULL, 'menu2', GETDATE(), GETDATE()),
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
 ('h2_1', 'menu2', 'menu2_1', GETDATE(), GETDATE()),
@@ -212,10 +102,6 @@ INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
 ('menu_hab_2', 'ROLE_001', GETDATE(), GETDATE()),
 -- Logs
 ('menu_logs', 'ROLE_001', GETDATE(), GETDATE()),
--- Recrutement
-('menu1', 'ROLE_001', GETDATE(), GETDATE()),
-('menu1_1', 'ROLE_001', GETDATE(), GETDATE()),
-('menu1_2', 'ROLE_001', GETDATE(), GETDATE()),
 -- Mission
 ('menu2', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_0', 'ROLE_001', GETDATE(), GETDATE()),
