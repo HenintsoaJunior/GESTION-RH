@@ -100,6 +100,7 @@ public class AuthController(
             var userResponse = new
             {
                 result.User.UserId,
+                result.User.Matricule,
                 result.User.Email,
                 result.User.Name,
                 result.User.Department,

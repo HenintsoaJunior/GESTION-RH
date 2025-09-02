@@ -200,6 +200,11 @@ namespace MyApp.Api.Repositories.mission
                 query = query.Where(ma => ma.Mission != null && ma.Mission.LieuId.Contains(filters.LieuId));
             }
 
+            if (filters.Matricule.Any(m => !string.IsNullOrWhiteSpace(m)))
+            {
+                query = query.Where(ma => filters.Matricule.Contains(ma.Employee.EmployeeCode));
+            }
+
             if (filters.MinDepartureDate.HasValue)
             {
                 query = query.Where(ma => ma.DepartureDate >= filters.MinDepartureDate.Value);

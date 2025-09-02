@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronUp, X, List } from "lucide-react";
+import { ChevronDown, ChevronUp, X, List, User, Users } from "lucide-react";
 import { formatDate } from "utils/dateConverter";
 import Alert from "components/alert";
 import Pagination from "components/pagination";
 import {
   fetchAssignMission,
-  fetchAllMissions,
+  fetchAllMissions
 } from "services/mission/mission";
 import { fetchAllEmployees } from "services/employee/employee";
 import { fetchAllRegions } from "services/lieu/lieu";
+import { fetchCollaborators } from "services/users/users";
 import {
   DashboardContainer,
   FiltersContainer,
@@ -41,11 +42,14 @@ import {
   Loading,
   NoDataMessage,
   StatusBadge,
+  ViewToggle,
+  ButtonView,
 } from "styles/generaliser/table-container";
 
 const BeneficiaryMissionList = () => {
   const navigate = useNavigate();
   const [assignedPersons, setAssignedPersons] = useState([]);
+  const [collaborators, setCollaborators] = useState([]);
   const [filters, setFilters] = useState({
     status: "",
     employeeId: "",
@@ -57,6 +61,7 @@ const BeneficiaryMissionList = () => {
     missionName: "",
     lieuId: "",
     location: "",
+    matricule: [],
   });
   const [appliedFilters, setAppliedFilters] = useState({ ...filters });
   const [suggestions, setSuggestions] = useState({
@@ -74,10 +79,30 @@ const BeneficiaryMissionList = () => {
     regions: false,
     exportPDF: false,
     exportExcel: false,
+    collaborators: false,
   });
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
+  const [viewMode, setViewMode] = useState("all");
+
+  // Get user data from localStorage
+  const userData = JSON.parse(localStorage.getItem("user") || "{}");
+  const userId = userData?.userId || "";
+  const userMatricule = userData?.matricule || "";
+
+  // Set "Toutes les Missions" as default on mount
+  useEffect(() => {
+    const defaultFilters = {
+      ...filters,
+      matricule: [],
+      employeeId: "",
+      employeeName: "",
+    };
+    setFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
+    setViewMode("all");
+  }, []);
 
   useEffect(() => {
     fetchAllEmployees(
@@ -130,7 +155,16 @@ const BeneficiaryMissionList = () => {
       setIsLoading,
       (error) => setAlert(error)
     );
-  }, []);
+
+    if (userId) {
+      fetchCollaborators(
+        userId,
+        setCollaborators,
+        setIsLoading,
+        (error) => setAlert(error)
+      );
+    }
+  }, [userId]);
 
   useEffect(() => {
     fetchAssignMission(
@@ -145,6 +179,7 @@ const BeneficiaryMissionList = () => {
         status: appliedFilters.status || "",
         missionId: appliedFilters.missionId || "",
         lieuId: appliedFilters.lieuId || "",
+        matricule: appliedFilters.matricule || [],
       },
       currentPage,
       pageSize,
@@ -225,11 +260,55 @@ const BeneficiaryMissionList = () => {
       missionName: "",
       lieuId: "",
       location: "",
+      matricule: [],
     };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
     setCurrentPage(1);
     setAlert({ isOpen: true, type: "info", message: "Filtres réinitialisés." });
+    setViewMode("all");
+  };
+
+  const handleAllMissions = () => {
+    const allMissionsFilters = {
+      ...filters,
+      matricule: [],
+      employeeId: "",
+      employeeName: "",
+    };
+    setFilters(allMissionsFilters);
+    setAppliedFilters(allMissionsFilters);
+    setCurrentPage(1);
+    setViewMode("all");
+  };
+
+  const handleCollaboratorsMissions = () => {
+    const collaboratorMatricules = collaborators
+      .map((collab) => collab.employeeCode || collab.matricule || "")
+      .filter((matricule) => matricule);
+    const collaboratorsMissionsFilters = {
+      ...filters,
+      matricule: collaboratorMatricules,
+      employeeId: "",
+      employeeName: "",
+    };
+    setFilters(collaboratorsMissionsFilters);
+    setAppliedFilters(collaboratorsMissionsFilters);
+    setCurrentPage(1);
+    setViewMode("collaborators");
+  };
+
+  const handleMyMissions = () => {
+    const myMissionsFilters = {
+      ...filters,
+      matricule: [userMatricule],
+      employeeId: "",
+      employeeName: "",
+    };
+    setFilters(myMissionsFilters);
+    setAppliedFilters(myMissionsFilters);
+    setCurrentPage(1);
+    setViewMode("my");
   };
 
   const handlePageChange = (page) => {
@@ -252,6 +331,7 @@ const BeneficiaryMissionList = () => {
       });
     }
   };
+
   const toggleMinimize = () => setIsMinimized((prev) => !prev);
   const toggleHide = () => setIsHidden((prev) => !prev);
 
@@ -468,6 +548,34 @@ const BeneficiaryMissionList = () => {
 
       <TableHeader>
         <TableTitle>Liste des Missions des Collaborateurs</TableTitle>
+        <ViewToggle>
+          <ButtonView
+            $active={viewMode === "all"}
+            onClick={handleAllMissions}
+            disabled={isLoading.assignMissions}
+          >
+            <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+            Toutes les Missions
+          </ButtonView>
+          {collaborators.length > 0 && (
+            <ButtonView
+              $active={viewMode === "collaborators"}
+              onClick={handleCollaboratorsMissions}
+              disabled={isLoading.assignMissions || isLoading.collaborators}
+            >
+              <Users size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+              Missions des Collaborateurs
+            </ButtonView>
+          )}
+          <ButtonView
+            $active={viewMode === "my"}
+            onClick={handleMyMissions}
+            disabled={isLoading.assignMissions || !userMatricule}
+          >
+            <User size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+            Mes Missions
+          </ButtonView>
+        </ViewToggle>
       </TableHeader>
 
       <TableContainer>
@@ -522,7 +630,8 @@ const BeneficiaryMissionList = () => {
                     appliedFilters.missionId ||
                     appliedFilters.status ||
                     appliedFilters.startDate ||
-                    appliedFilters.endDate
+                    appliedFilters.endDate ||
+                    appliedFilters.matricule.length > 0
                       ? "Aucune assignation de mission ne correspond aux critères de recherche."
                       : "Aucune assignation de mission trouvée."}
                   </NoDataMessage>

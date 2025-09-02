@@ -162,6 +162,7 @@ namespace MyApp.Api.Services.users
                 UserId = user.UserId,
                 Email = user.Email,
                 Name = user.Name,
+                Matricule = user.Matricule,
                 Department = user.Department,
                 Position = user.Position,
                 SuperiorId = user.SuperiorId,
