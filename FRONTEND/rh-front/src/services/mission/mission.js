@@ -502,23 +502,25 @@ export const fetchAssignMission = async (
       page,
       pageSize,
     }).toString();
-    
+
+    // Include matricule as an array in the requestBody
     const requestBody = {
       employeeId: filters.employeeId || "",
       missionId: filters.missionId || "",
       transportId: filters.transportId || "",
       lieuId: filters.lieuId || "",
-      departureDate: filters.startDate && !isNaN(new Date(filters.startDate).getTime())
+      matricule: Array.isArray(filters.matricule) ? filters.matricule : filters.matricule ? [filters.matricule] : [],
+      minDepartureDate: filters.startDate && !isNaN(new Date(filters.startDate).getTime())
         ? new Date(filters.startDate).toISOString()
         : null,
-      returnDate: filters.endDate && !isNaN(new Date(filters.endDate).getTime())
+      maxDepartureDate: filters.endDate && !isNaN(new Date(filters.endDate).getTime())
         ? new Date(filters.endDate).toISOString()
         : null,
       status: filters.status || "",
     };
-    
+
     console.log("Request Body:", requestBody);
-    
+
     // Appel API pour récupérer les assignations
     const data = await apiPost(`/api/MissionAssignation/search?${queryParams}`, requestBody);
     console.log("API Response (Mission Assignations):", data);
@@ -539,7 +541,7 @@ export const fetchAssignMission = async (
           missionTitle: item.mission?.name || "Non spécifié",
           startDate: item.mission?.startDate || "Non spécifié",
           endDate: item.mission?.endDate || "Non spécifié",
-          lieu: item.mission?.lieu?.nom || "Non spécifié", // ✅ CORRIGÉ: ajout du ? pour lieu
+          lieu: item.mission?.lieu?.nom || "Non spécifié",
           function: item.employee?.jobTitle || "Non spécifié",
           base: item.employee?.site?.siteName || "Non spécifié",
           status: item.mission?.status || "Non spécifié",
@@ -549,7 +551,7 @@ export const fetchAssignMission = async (
           transport: item.transport,
         }))
       : [];
-      
+
     setAssignMissions(assignMissionsData);
     setTotalEntries(data.totalCount || assignMissionsData.length || 0);
   } catch (error) {
@@ -565,7 +567,6 @@ export const fetchAssignMission = async (
     setIsLoading((prev) => ({ ...prev, assignMissions: false }));
   }
 };
-
 // Fonction pour récupérer toutes les missions
 export const fetchAllMissions = async (
   setMissions,

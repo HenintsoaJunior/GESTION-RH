@@ -145,7 +145,6 @@ export const fetchSuperior = async (setSuperior, setIsLoading, onError) => {
   }
 };
 
-// Fetch the DRH
 export const fetchDrh = async (setDrh, setIsLoading, onError) => {
   try {
     setIsLoading((prev) => ({ ...prev, drh: true }));
@@ -161,5 +160,26 @@ export const fetchDrh = async (setDrh, setIsLoading, onError) => {
     setDrh(null);
   } finally {
     setIsLoading((prev) => ({ ...prev, drh: false }));
+  }
+};
+
+export const fetchCollaborators = async (userId, setCollaborators, setIsLoading, onError) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, collaborators: true }));
+    const data = await apiGet(`/api/User/${userId}/collaborators`);
+    console.log("API Response (Collaborators):", data);
+
+    const collaboratorsData = Array.isArray(data) ? data : [];
+    setCollaborators(collaboratorsData);
+  } catch (error) {
+    console.error("Erreur lors du chargement des collaborateurs:", error);
+    onError({
+      isOpen: true,
+      type: "error",
+      message: `Erreur lors du chargement des collaborateurs: ${error.message}`,
+    });
+    setCollaborators([]);
+  } finally {
+    setIsLoading((prev) => ({ ...prev, collaborators: false }));
   }
 };
