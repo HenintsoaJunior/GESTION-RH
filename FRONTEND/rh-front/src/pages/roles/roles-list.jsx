@@ -10,6 +10,9 @@ import {
   ButtonAdd,
   Loading,
   NoDataMessage,
+  ButtonCancel,
+  ButtonConfirm,
+  ModalActions,
 } from "styles/generaliser/table-container";
 import {
   CardsContainer,
@@ -40,9 +43,11 @@ const RoleList = () => {
   const [isRolePopupOpen, setIsRolePopupOpen] = useState(false);
   const [isUserPopupOpen, setIsUserPopupOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
-  const [role, setRole] = useState({ name: "", description: "" });
+  const [role, setRole] = useState({ name: "", description: "", habilitations: [], habilitationIds: [] });
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState(null);
   const navigate = useNavigate();
 
   // Récupérer userId depuis localStorage
@@ -104,7 +109,7 @@ const RoleList = () => {
               type: "success",
               message: successAlert.message || "Rôle mis à jour avec succès",
             });
-            setRole({ name: "", description: "" });
+            resetRoleForm();
             setIsRolePopupOpen(false);
             fetchAllRoles(setRoles, setIsLoading, setTotalEntries, handleError);
           },
@@ -128,7 +133,7 @@ const RoleList = () => {
               type: "success",
               message: successAlert.message || "Rôle créé avec succès",
             });
-            setRole({ name: "", description: "" });
+            resetRoleForm();
             setIsRolePopupOpen(false);
             fetchAllRoles(setRoles, setIsLoading, setTotalEntries, handleError);
           },
@@ -150,7 +155,7 @@ const RoleList = () => {
   };
 
   // Gestion de la suppression d'un rôle
-  const handleDelete = async (roleId) => {
+  const handleDelete = async () => {
     if (!userId) {
       setAlert({
         isOpen: true,
@@ -163,8 +168,8 @@ const RoleList = () => {
     setIsSubmitting(true);
     try {
       await deleteRole(
+        roleToDelete,
         userId,
-        roleId,
         setIsLoading,
         (successAlert) => {
           setAlert({
@@ -186,16 +191,43 @@ const RoleList = () => {
       console.error("Erreur dans handleDelete:", error);
     } finally {
       setIsSubmitting(false);
+      setShowDeleteModal(false);
+      setRoleToDelete(null);
     }
+  };
+
+  // Afficher la modale de confirmation de suppression
+  const handleShowDeleteModal = (roleId) => {
+    setRoleToDelete(roleId);
+    setShowDeleteModal(true);
+  };
+
+  // Fonction pour réinitialiser le formulaire
+  const resetRoleForm = () => {
+    setRole({ 
+      name: "", 
+      description: "", 
+      habilitations: [], 
+      habilitationIds: [] 
+    });
   };
 
   // Fonctions d'actions
   const handleEdit = (roleToEdit) => {
+    console.log("Modification du rôle:", roleToEdit);
+    
+    // Extraire les habilitations du rôle
+    const existingHabilitations = roleToEdit.roleHabilitations || [];
+    const habilitationIds = existingHabilitations.map(rh => rh.habilitation?.habilitationId || rh.habilitationId).filter(Boolean);
+    
     setRole({
       roleId: roleToEdit.roleId,
       name: roleToEdit.name,
       description: roleToEdit.description || "",
+      habilitations: existingHabilitations.map(rh => rh.habilitation || rh),
+      habilitationIds: habilitationIds,
     });
+    
     setFieldErrors({});
     setIsRolePopupOpen(true);
   };
@@ -206,19 +238,9 @@ const RoleList = () => {
     setIsUserPopupOpen(true);
   };
 
-  const handleAssignHabilitations = (role) => {
-    navigate("/habilitation/list", {
-      state: {
-        roleId: role.roleId,
-        roleName: role.name,
-        initialHabilitations: role.roleHabilitations || [],
-      },
-    });
-  };
-
   const handleCloseRolePopup = () => {
     setIsRolePopupOpen(false);
-    setRole({ name: "", description: "" });
+    resetRoleForm();
     setFieldErrors({});
   };
 
@@ -228,9 +250,14 @@ const RoleList = () => {
   };
 
   const handleAddNew = () => {
-    setRole({ name: "", description: "" });
+    resetRoleForm();
     setFieldErrors({});
     setIsRolePopupOpen(true);
+  };
+
+  // Compter les habilitations pour chaque rôle
+  const getHabilitationCount = (role) => {
+    return role.roleHabilitations?.length || 0;
   };
 
   return (
@@ -252,6 +279,19 @@ const RoleList = () => {
         />
       )}
 
+      <Modal
+        type="warning"
+        message="Êtes-vous sûr de vouloir supprimer ce rôle ? Cette action est irréversible."
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Confirmer la suppression"
+      >
+        <ModalActions>
+          <ButtonCancel onClick={() => setShowDeleteModal(false)}>Annuler</ButtonCancel>
+          <ButtonConfirm onClick={handleDelete}>Confirmer</ButtonConfirm>
+        </ModalActions>
+      </Modal>
+
       <TableHeader>
         <TableTitle>Liste des Rôles ({totalEntries})</TableTitle>
         <div style={{ display: "flex", gap: "var(--spacing-sm)" }}>
@@ -268,28 +308,59 @@ const RoleList = () => {
         </div>
       </TableHeader>
 
-      <CardsContainer>
+      {/* Container avec espacement réduit */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+        gap: "var(--spacing-xs)", // Espacement réduit entre les cartes
+        padding: "0"
+      }}>
         {isLoading.roles ? (
-          <LoadingCardsState>
+          <div style={{ 
+            gridColumn: "1 / -1",
+            display: "flex",
+            justifyContent: "center",
+            padding: "var(--spacing-xl)"
+          }}>
             <Loading>Chargement...</Loading>
-          </LoadingCardsState>
+          </div>
         ) : roles.length > 0 ? (
           roles.map((role) => (
-            <Card key={role.roleId}>
+            <Card 
+              key={role.roleId}
+              style={{
+                margin: "0", // Supprime les marges par défaut
+                height: "fit-content" // Ajuste la hauteur au contenu
+              }}
+            >
               <CardHeader>
                 <CardTitle>{role.name || "Non spécifié"}</CardTitle>
               </CardHeader>
-              <CardBody>
-                <CardField>
+              <CardBody style={{ 
+                padding: "var(--spacing-xs)", // Padding réduit pour compacter
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--spacing-xs)" // Espacement réduit entre les champs
+              }}>
+                <CardField style={{ margin: "0" }}>
                   <CardLabel>Description</CardLabel>
                   <CardValue>{role.description || "Non spécifié"}</CardValue>
                 </CardField>
-                <CardField>
+                <CardField style={{ margin: "0" }}>
+                  <CardLabel>Habilitations</CardLabel>
+                  <CardValue>
+                    {getHabilitationCount(role)} habilitation{getHabilitationCount(role) > 1 ? 's' : ''} associée{getHabilitationCount(role) > 1 ? 's' : ''}
+                  </CardValue>
+                </CardField>
+                <CardField style={{ margin: "0" }}>
                   <CardLabel>Date de création</CardLabel>
                   <CardValue>{formatDate(role.createdAt) || "Non spécifié"}</CardValue>
                 </CardField>
               </CardBody>
-              <CardFooter>
+              <CardFooter style={{ 
+                padding: "var(--spacing-xs)", // Padding réduit
+                gap: "var(--spacing-xs)" // Espacement réduit entre les boutons
+              }}>
                 <CardActionButton
                   className="edit"
                   onClick={() => handleEdit(role)}
@@ -297,22 +368,28 @@ const RoleList = () => {
                 >
                   Modifier
                 </CardActionButton>
-                <CardActionButton
-                  className="assign"
-                  onClick={() => handleAssignHabilitations(role)}
-                >
-                  Assignation Habilitation
-                </CardActionButton>
                 
+                <CardActionButton
+                  className="delete"
+                  onClick={() => handleShowDeleteModal(role.roleId)}
+                  disabled={isSubmitting}
+                >
+                  Supprimer
+                </CardActionButton>
               </CardFooter>
             </Card>
           ))
         ) : (
-          <EmptyCardsState>
+          <div style={{ 
+            gridColumn: "1 / -1",
+            display: "flex",
+            justifyContent: "center",
+            padding: "var(--spacing-xl)"
+          }}>
             <NoDataMessage>Aucun rôle trouvé.</NoDataMessage>
-          </EmptyCardsState>
+          </div>
         )}
-      </CardsContainer>
+      </div>
 
       <RolePopupComponent
         isOpen={isRolePopupOpen}

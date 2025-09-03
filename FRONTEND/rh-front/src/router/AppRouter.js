@@ -22,7 +22,6 @@ import MissionValidationPage from 'pages/mission/validation/mission-validation';
 import ProfilePage from 'layouts/profil-page';
 import UserList from 'pages/users/users-list';
 import RoleList from 'pages/roles/roles-list';
-import HabilitationAssign from 'pages/habilitation/habilitation-list';
 import LogList from 'pages/logs/logs-list';
 
 function AppRouter() {
@@ -39,8 +38,6 @@ function AppRouter() {
           {/* Utilisateur */}
           <Route path="/utilisateur" element={<UserList />} />
           <Route path="/role/list" element={<RoleList />} />
-          <Route path="/habilitation/list" element={<HabilitationAssign />} />
-
           
           {/* Employee */}
           <Route path="/employee/edit/:employeeId" element={<EmployeeForm />} />

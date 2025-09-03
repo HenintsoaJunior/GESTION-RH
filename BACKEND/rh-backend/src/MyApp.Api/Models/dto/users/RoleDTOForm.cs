@@ -1,16 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace MyApp.Api.Models.dto.users
-{
-    public class RoleDTOForm
-    {
-        [Required(ErrorMessage = "Le nom du rôle est obligatoire.")]
-        public required string UserId  { get; set; }
-        [Required(ErrorMessage = "Le nom du rôle est obligatoire.")]
-        [MaxLength(50, ErrorMessage = "Le nom du rôle ne doit pas dépasser 50 caractères.")]
-        public string Name { get; set; } = null!;
+namespace MyApp.Api.Models.dto.users;
 
-        [MaxLength(250, ErrorMessage = "La description ne doit pas dépasser 250 caractères.")]
-        public string? Description { get; set; }
-    }
+public class RoleDTOForm
+{
+    [Required(ErrorMessage = "Le nom du rôle est obligatoire.")]
+    public string? Name { get; set; }
+    public string? Description { get; set; }
+    [Required(ErrorMessage = "Le user est obligatoire.")]
+    public string? UserId { get; set; }
+    public List<string> HabilitationIds { get; set; } = new List<string>();
 }

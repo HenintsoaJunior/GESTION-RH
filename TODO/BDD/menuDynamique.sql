@@ -1,8 +1,3 @@
--- Drop tables if they exist
-DROP TABLE IF EXISTS menu_hierarchy;
-DROP TABLE IF EXISTS menu_role;
-DROP TABLE IF EXISTS menu;
-DROP TABLE IF EXISTS module;
 
 -- Create table module
 CREATE TABLE module (
