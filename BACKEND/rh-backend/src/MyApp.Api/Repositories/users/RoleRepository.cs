@@ -26,7 +26,7 @@ public class RoleRepository : IRoleRepository
     public async Task<IEnumerable<Role>> GetAllAsync()
     {
         return await _context.Roles
-            .Include(r => r.RoleHabilitations) // Eagerly load RoleHabilitations
+            .Include(r => r.RoleHabilitations)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
     }
@@ -53,9 +53,17 @@ public class RoleRepository : IRoleRepository
 
     public async Task DeleteAsync(string id)
     {
-        var role = await GetByIdAsync(id);
+        var role = await _context.Roles
+            .Include(r => r.RoleHabilitations)
+            .Include(r => r.UserRoles)
+            .FirstOrDefaultAsync(r => r.RoleId == id);
+
         if (role != null)
+        {
+            _context.RoleHabilitations.RemoveRange(role.RoleHabilitations);
+            _context.UserRoles.RemoveRange(role.UserRoles);
             _context.Roles.Remove(role);
+        }
     }
 
     public async Task SaveChangesAsync()

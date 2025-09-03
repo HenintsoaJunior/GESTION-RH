@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   FormTable,
   FormRow,
@@ -18,12 +19,61 @@ import {
   ButtonPrimary,
   ButtonSecondary,
 } from "styles/generaliser/popup-container";
+import HabilitationAssign from "../habilitation/habilitation-assign";
 
-const RolePopupComponent = ({ isOpen, onClose, onSubmit, role, isSubmitting, fieldErrors, handleInputChange, buttonText }) => {
+const RolePopupComponent = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  role, 
+  isSubmitting, 
+  fieldErrors, 
+  handleInputChange, 
+  buttonText 
+}) => {
+  const [selectedHabilitations, setSelectedHabilitations] = useState([]);
+
+  // Initialiser les habilitations sélectionnées quand le rôle change
+  useEffect(() => {
+    if (role.habilitations && Array.isArray(role.habilitations)) {
+      // Si role.habilitations contient des objets avec habilitationId
+      const habilitationIds = role.habilitations.map(h => 
+        typeof h === 'string' ? h : h.habilitationId
+      );
+      setSelectedHabilitations(habilitationIds);
+    } else if (role.habilitationIds && Array.isArray(role.habilitationIds)) {
+      // Si role.habilitationIds existe directement
+      setSelectedHabilitations(role.habilitationIds);
+    } else {
+      setSelectedHabilitations([]);
+    }
+  }, [role]);
+
+  // Réinitialiser les habilitations sélectionnées quand la popup se ferme
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedHabilitations([]);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   // Détermine si le bouton doit être désactivé
   const isButtonDisabled = isSubmitting || !role.name || fieldErrors["name"];
+
+  // Fonction de soumission qui inclut les habilitations
+  const handleSubmit = () => {
+    const roleData = {
+      ...role,
+      habilitationIds: selectedHabilitations, // Utiliser habilitationIds pour correspondre au DTO
+    };
+    onSubmit(roleData);
+  };
+
+  // Gérer le changement des habilitations sélectionnées
+  const handleHabilitationsChange = (newSelectedHabilitations) => {
+    setSelectedHabilitations(newSelectedHabilitations);
+  };
 
   return (
     <PopupOverlay>
@@ -34,7 +84,6 @@ const RolePopupComponent = ({ isOpen, onClose, onSubmit, role, isSubmitting, fie
             ×
           </PopupClose>
         </PopupHeader>
-
         <PopupContent>
           <FormTable>
             <tbody>
@@ -70,15 +119,48 @@ const RolePopupComponent = ({ isOpen, onClose, onSubmit, role, isSubmitting, fie
               </FormRow>
             </tbody>
           </FormTable>
+          
+          <div style={{ marginTop: "var(--spacing-lg)" }}>
+            <div style={{ 
+              marginBottom: "var(--spacing-md)",
+              padding: "var(--spacing-sm)",
+              background: "var(--bg-secondary)",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--border-light)"
+            }}>
+              <h4 style={{ 
+                margin: "0 0 var(--spacing-xs) 0", 
+                fontSize: "var(--font-size-sm)",
+                color: "var(--text-primary)",
+                fontWeight: "500"
+              }}>
+                Habilitations du rôle
+              </h4>
+              <p style={{ 
+                margin: 0, 
+                fontSize: "var(--font-size-xs)", 
+                color: "var(--text-secondary)" 
+              }}>
+                Sélectionnez les habilitations à associer à ce rôle ({selectedHabilitations.length} sélectionnée{selectedHabilitations.length > 1 ? 's' : ''})
+              </p>
+            </div>
+            
+            <HabilitationAssign
+              roleId={role.roleId}
+              roleName={role.name}
+              initialHabilitations={role.habilitations || []}
+              onHabilitationsChange={handleHabilitationsChange}
+            />
+          </div>
         </PopupContent>
-
+        
         <PopupActions>
           <ButtonPrimary
             type="button"
-            onClick={() => onSubmit(role)}
+            onClick={handleSubmit}
             disabled={isButtonDisabled}
           >
-            {buttonText}
+            {isSubmitting ? "Traitement..." : buttonText}
           </ButtonPrimary>
           <ButtonSecondary
             type="button"
