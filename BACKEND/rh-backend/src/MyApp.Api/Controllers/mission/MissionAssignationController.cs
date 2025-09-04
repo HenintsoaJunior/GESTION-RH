@@ -161,7 +161,7 @@ namespace MyApp.Api.Controllers.mission
             try
             {
                 var missionAssignation = new MissionAssignation(dto);
-                var (employeeId, missionId, transportId) = await _service.CreateAsync(missionAssignation);
+                var (employeeId, missionId, assignationId, transportId) = await _service.CreateAsync(missionAssignation);
 
                 var routeValues = new { employeeId, missionId };
                 return CreatedAtAction(nameof(GetById), routeValues, missionAssignation);
