@@ -11,6 +11,7 @@ namespace MyApp.Api.Repositories.mission
         Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<MissionValidation>> GetAllAsync();
+        Task<IEnumerable<MissionValidation?>?> GetByAssignationIdAsync(string assignationId);
         Task<MissionValidation?> GetByIdAsync(string id);
         Task AddAsync(MissionValidation missionValidation);
         Task UpdateAsync(MissionValidation missionValidation);
@@ -129,6 +130,14 @@ namespace MyApp.Api.Repositories.mission
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
                 .Include(mv => mv.User)
+                .OrderByDescending(mv => mv.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<MissionValidation?>?> GetByAssignationIdAsync(string assignationId)
+        {
+            return await _context.MissionValidations
+                .Where(mv => mv.MissionAssignationId == assignationId)
                 .OrderByDescending(mv => mv.CreatedAt)
                 .ToListAsync();
         }

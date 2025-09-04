@@ -126,21 +126,7 @@ namespace MyApp.Api.Services.mission
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(assignationId))
-                {
-                    _logger.LogWarning("Tentative de récupération d'une validation de mission avec un assignationId null ou vide");
-                    return null;
-                }
-
-                _logger.LogInformation("Récupération de la validation de mission pour assignationId={AssignationId}", assignationId);
-
-                var filters = new MissionValidationSearchFiltersDTO
-                {
-                    MissionAssignationId = assignationId
-                };
-
-                var (result, total) = await _repository.SearchAsync(filters, 1, 1);
-                return result;
+                return await _repository.GetByAssignationIdAsync(assignationId);
             }
             catch (Exception ex)
             {
@@ -148,8 +134,6 @@ namespace MyApp.Api.Services.mission
                 throw;
             }
         }
-
-
         public async Task<MissionValidation?> GetByIdAsync(string id)
         {
             try
