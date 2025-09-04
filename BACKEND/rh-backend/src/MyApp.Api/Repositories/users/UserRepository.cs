@@ -52,14 +52,14 @@ namespace MyApp.Api.Repositories.users
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<User?> GetSuperiorAsync(string userId)
+        public async Task<User?> GetSuperiorAsync(string matricule)
         {
-            if (string.IsNullOrWhiteSpace(userId))
-                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+            if (string.IsNullOrWhiteSpace(matricule))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(matricule));
 
             var user = await _context.Users
                 .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.UserId == userId);
+                .FirstOrDefaultAsync(u => u.Matricule == matricule);
 
             if (user == null || string.IsNullOrWhiteSpace(user.SuperiorId))
                 return null;
