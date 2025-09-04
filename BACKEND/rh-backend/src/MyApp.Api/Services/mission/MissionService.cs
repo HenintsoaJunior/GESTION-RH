@@ -22,6 +22,7 @@ namespace MyApp.Api.Services.mission
     public class MissionService : IMissionService
     {
         private readonly IMissionRepository _repository;
+        private readonly IMissionValidationService _validationService;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly IMissionAssignationService _missionAssignationService;
         private readonly ILogger<MissionService> _logger; // Updated to use MissionService
@@ -30,12 +31,13 @@ namespace MyApp.Api.Services.mission
             IMissionRepository repository,
             ISequenceGenerator sequenceGenerator,
             IMissionAssignationService missionAssignationService,
-            ILogger<MissionService> logger)
+            ILogger<MissionService> logger, IMissionValidationService validationService)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
             _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _validationService = validationService;
         }
 
         public async Task<Mission?> VerifyMissionByNameAsync(string name)
@@ -122,19 +124,36 @@ namespace MyApp.Api.Services.mission
                     var missionId = _sequenceGenerator.GenerateSequence("seq_mission_id", "MIS", 6, "-");
                     var mission = new Mission(missionDto) { MissionId = missionId };
 
+                    //création mission
                     await _repository.AddAsync(mission);
                     await _repository.SaveChangesAsync();
-
+                    
+                    //création mission assignation
                     if (missionDto.Assignations.Count != 0)
                     {
                         foreach (var missionAssignation in missionDto.Assignations.Select(assignationDto => new MissionAssignation(missionId, assignationDto)))
                         {
-                            await _missionAssignationService.CreateAsync(missionAssignation);
+                            var assignationId = await _missionAssignationService.CreateAsync(missionAssignation);
+                            //insertion dans mission validation
+                            // pour DRH
+                            var missionValidationDtoForm = new MissionValidationDTOForm
+                            {
+                                MissionId = missionId,
+                                MissionAssignationId = assignationId,
+                                MissionCreator = missionDto.UserId,
+                                Status = "En attente",
+                                ToWhom = "DRH"
+                            };
+                            await _validationService.CreateAsync(missionValidationDtoForm, missionDto.UserId);
+                            
+                            //pour tutelle
+                            missionValidationDtoForm.Status = null;
+                            missionValidationDtoForm.ToWhom = "Directeur de tutelle";
+                            await _validationService.CreateAsync(missionValidationDtoForm, missionDto.UserId);
                         }
 
                         _logger.LogInformation("Création de {Count} assignations pour la mission {MissionId}", missionDto.Assignations.Count, missionId);
                     }
-
                     await transaction.CommitAsync();
                     _logger.LogInformation("Mission créée avec l'ID: {MissionId}", missionId);
                     return missionId;

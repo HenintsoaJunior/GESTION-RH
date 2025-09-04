@@ -7,14 +7,13 @@ using iText.Layout.Properties;
 using iText.Layout.Borders;
 using iText.Kernel.Colors;
 using MyApp.Api.Entities.employee;
+using MyApp.Api.Entities.mission;
 
 namespace MyApp.Api.Utils.pdf
 {
-    public class PdfGenerator
+    public class PdfGenerator(object? description = null, List<object>? tables = null)
     {
-        private readonly object? _description;
-        private readonly List<object>? _tables;
-        private const string ImagePath = "wwwroot/images/logo.png";
+        private const string ImagePath = @"F:\Stage-RH\Projet\GESTION-RH\FRONTEND\rh-front\public\Logo.png";
 
         // Palette de couleurs personnalisée
         private readonly DeviceRgb _primaryColor = new DeviceRgb(105, 180, 46);    // Vert principal
@@ -22,12 +21,6 @@ namespace MyApp.Api.Utils.pdf
         private readonly DeviceRgb _accentColor = new DeviceRgb(227, 6, 19);        // Rouge accent
         private readonly DeviceRgb _lightGray = new DeviceRgb(245, 245, 245);       // Gris très clair
         private readonly DeviceRgb _darkGray = new DeviceRgb(120, 120, 120);        // Gris foncé
-
-        public PdfGenerator(object? description = null, List<object>? tables = null)
-        {
-            _description = description;
-            _tables = tables;
-        }
 
         public byte[] GeneratePdf(string? title = null, bool includeHeader = true, bool includeDescription = true, bool includeTable = true, bool includeFooter = true)
         {
@@ -49,14 +42,14 @@ namespace MyApp.Api.Utils.pdf
                     GenerateHeader(document, boldFont, title);
                 }
 
-                if (includeDescription && _description != null)
+                if (includeDescription && description != null)
                 {
-                    GenerateDescription(document, _description, font, boldFont);
+                    GenerateDescription(document, description, font, boldFont);
                 }
 
-                if (includeTable && _tables != null && _tables.Count != 0)
+                if (includeTable && tables != null && tables.Count != 0)
                 {
-                    GenerateTable(document, _tables, font, boldFont);
+                    GenerateTable(document, tables, font, boldFont);
                 }
 
                 if (includeFooter)
@@ -73,8 +66,8 @@ namespace MyApp.Api.Utils.pdf
             }
         }
     
-        //attestation d'emploi
-        public byte[] GenerateEmploymentCertificate(EmployeeCertificate employeeCertificate, string companyName, string? issueDate, string issuePlace)
+        // attestation d'emploi
+        public byte[] GenerateEmploymentCertificate(EmployeeCertificate employeeCertificate, string? companyName, string? issueDate, string issuePlace)
         {
             try
             {
@@ -151,18 +144,445 @@ namespace MyApp.Api.Utils.pdf
                 throw new Exception($"Erreur lors de la génération de l'attestation d'emploi: {ex.Message}", ex);
             }
         }
-
-        private void GenerateHeader(Document document, PdfFont boldFont, string title)
+        
+        // Ordre de mission
+        public byte[] GenerateMissionOrder(MissionAssignation details, string? issueDate, string issuePlace)
         {
-            // En-tête avec fond coloré
-            var headerTable = new Table(UnitValue.CreatePercentArray([1, 4]))
+            try
+            {
+                using var memoryStream = new MemoryStream();
+                var writer = new PdfWriter(memoryStream);
+                var pdf = new PdfDocument(writer);
+                var document = new Document(pdf);
+
+                // Marges personnalisées
+                document.SetMargins(30, 30, 30, 30);
+
+                var font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
+                var boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+
+                // Header spécialisé pour l'ordre de mission
+                GenerateHeader(document, boldFont, "Ordre de mission", "MS", 1, 1);
+
+                // Corps du document - Formulaire d'ordre de mission
+                GenerateMissionOrderBody(document, details, font, boldFont);
+
+                // Sections pour les visas et signatures
+                issueDate = issueDate ?? DateTime.Now.ToString("dd MMMM yyyy");
+                GenerateMissionOrderSections(document, font, boldFont, issuePlace, issueDate);
+
+                document.Close();
+                return memoryStream.ToArray();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Erreur lors de la génération de l'ordre de mission: {ex.Message}", ex);
+            }
+        }
+        private static void GenerateMissionOrderBody(Document document, MissionAssignation details, PdfFont font, PdfFont boldFont)
+        {
+            // Texte d'introduction
+            var introText = new Paragraph("Il est ordonné à :")
+                .SetFont(boldFont)
+                .SetFontSize(14)
+                .SetMarginBottom(20);
+            document.Add(introText);
+
+            // Table principale pour les informations
+            var mainTable = new Table(UnitValue.CreatePercentArray([1, 1]))
                 .UseAllAvailableWidth()
                 .SetMarginBottom(20);
 
-            // Cellule pour le logo avec fond coloré
+            // Ligne 1 : Nom et prénoms
+            var nomLabel = new Cell()
+                .Add(new Paragraph("Nom et prénoms :")
+                    .SetFont(boldFont)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(8);
+
+            var nomValue = new Cell()
+                .Add(new Paragraph(details.Employee.FirstName + " " + details.Employee.LastName)
+                    .SetFont(font)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetBorderBottom(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(8);
+
+            mainTable.AddCell(nomLabel);
+            mainTable.AddCell(nomValue);
+
+            // Ligne 2 : Fonction et Matricule
+            var fonctionLabel = new Cell()
+                .Add(new Paragraph("Fonction :")
+                    .SetFont(boldFont)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(8);
+
+            var fonctionMatricule = new Cell()
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(8);
+
+            var fonctionMatriculeTable = new Table(UnitValue.CreatePercentArray([2, 1, 1]))
+                .UseAllAvailableWidth();
+
+            fonctionMatriculeTable.AddCell(new Cell()
+                .Add(new Paragraph(details.Employee.JobTitle)
+                    .SetFont(font)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetBorderBottom(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(2));
+
+            fonctionMatriculeTable.AddCell(new Cell()
+                .Add(new Paragraph("Matricule :")
+                    .SetFont(boldFont)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(2)
+                .SetTextAlignment(TextAlignment.RIGHT));
+
+            fonctionMatriculeTable.AddCell(new Cell()
+                .Add(new Paragraph(details.Employee.EmployeeCode)
+                    .SetFont(font)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetBorderBottom(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(2));
+
+            fonctionMatricule.Add(fonctionMatriculeTable);
+
+            mainTable.AddCell(fonctionLabel);
+            mainTable.AddCell(fonctionMatricule);
+
+            // Ligne 3 : Direction et Département/Service
+            var directionLabel = new Cell()
+                .Add(new Paragraph("Direction :")
+                    .SetFont(boldFont)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(8);
+
+            var directionDept = new Cell()
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(8);
+
+            var directionDeptTable = new Table(UnitValue.CreatePercentArray([2, 1, 2]))
+                .UseAllAvailableWidth();
+
+            directionDeptTable.AddCell(new Cell()
+                .Add(new Paragraph(details.Employee.Direction?.Acronym)
+                    .SetFont(font)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetBorderBottom(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(2));
+
+            directionDeptTable.AddCell(new Cell()
+                .Add(new Paragraph("Département / Service :")
+                    .SetFont(boldFont)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(2)
+                .SetTextAlignment(TextAlignment.CENTER));
+
+            directionDeptTable.AddCell(new Cell()
+                .Add(new Paragraph(details.Employee.Department?.DepartmentName)
+                    .SetFont(font)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetBorderBottom(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(2));
+
+            directionDept.Add(directionDeptTable);
+
+            mainTable.AddCell(directionLabel);
+            mainTable.AddCell(directionDept);
+
+            document.Add(mainTable);
+
+            // Autres champs en pleine largeur
+            var fieldsTable = new Table(1)
+                .UseAllAvailableWidth()
+                .SetMarginBottom(20);
+
+            // De se rendre à
+            var destinationRow = new Cell()
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(8);
+
+            var destinationTable = new Table(UnitValue.CreatePercentArray([1, 4]))
+                .UseAllAvailableWidth();
+
+            destinationTable.AddCell(new Cell()
+                .Add(new Paragraph("De se rendre à :")
+                    .SetFont(boldFont)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(5));
+
+            destinationTable.AddCell(new Cell()
+                .Add(new Paragraph(details.Mission?.Lieu?.Ville)
+                    .SetFont(font)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetBorderBottom(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(5));
+
+            destinationRow.Add(destinationTable);
+            fieldsTable.AddCell(destinationRow);
+
+            // Motif
+            var motifRow = new Cell()
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(8);
+
+            var motifTable = new Table(UnitValue.CreatePercentArray([1, 4]))
+                .UseAllAvailableWidth();
+
+            motifTable.AddCell(new Cell()
+                .Add(new Paragraph("Motif :")
+                    .SetFont(boldFont)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(5));
+
+            motifTable.AddCell(new Cell()
+                .Add(new Paragraph(details.Mission?.Description)
+                    .SetFont(font)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetBorderBottom(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(5));
+
+            motifRow.Add(motifTable);
+            fieldsTable.AddCell(motifRow);
+
+            // Moyen de transport
+            var transportRow = new Cell()
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(8);
+
+            var transportTable = new Table(UnitValue.CreatePercentArray([1, 4]))
+                .UseAllAvailableWidth();
+
+            transportTable.AddCell(new Cell()
+                .Add(new Paragraph("Moyen de transport :")
+                    .SetFont(boldFont)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(5));
+
+            transportTable.AddCell(new Cell()
+                .Add(new Paragraph(details.Transport?.Type)
+                    .SetFont(font)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetBorderBottom(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(5));
+
+            transportRow.Add(transportTable);
+            fieldsTable.AddCell(transportRow);
+
+            // Date et heure de départ
+            var departRow = new Cell()
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(8);
+
+            var departTable = new Table(UnitValue.CreatePercentArray([1, 4]))
+                .UseAllAvailableWidth();
+
+            departTable.AddCell(new Cell()
+                .Add(new Paragraph("Date et heure de départ :")
+                    .SetFont(boldFont)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(5));
+
+            departTable.AddCell(new Cell()
+                .Add(new Paragraph(details.DepartureDate + details.DepartureTime.ToString())
+                    .SetFont(font)
+                    .SetFontSize(12))
+                .SetBorder(Border.NO_BORDER)
+                .SetBorderBottom(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(5));
+
+            departRow.Add(departTable);
+            fieldsTable.AddCell(departRow);
+
+            document.Add(fieldsTable);
+        }
+
+        private void GenerateMissionOrderSections(Document document, PdfFont font, PdfFont boldFont, string lieuEmission, string dateEmission)
+        {
+            // Date et lieu d'émission
+            var dateEmissionText = new Paragraph($"{lieuEmission}, le {dateEmission}")
+                .SetFont(font)
+                .SetFontSize(12)
+                .SetTextAlignment(TextAlignment.RIGHT)
+                .SetMarginBottom(20);
+            document.Add(dateEmissionText);
+
+            // Section des visas
+            var visaTable = new Table(UnitValue.CreatePercentArray([1, 1]))
+                .UseAllAvailableWidth()
+                .SetMarginBottom(30);
+
+            var visaDrhCell = new Cell()
+                .Add(new Paragraph("Visa Direction des Ressources Humaines")
+                    .SetFont(boldFont)
+                    .SetFontSize(12)
+                    .SetTextAlignment(TextAlignment.CENTER))
+                .SetBorder(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(20)
+                .SetMinHeight(60);
+
+            var visaTutelleCell = new Cell()
+                .Add(new Paragraph("La Direction de tutelle")
+                    .SetFont(boldFont)
+                    .SetFontSize(12)
+                    .SetTextAlignment(TextAlignment.CENTER))
+                .SetBorder(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(20)
+                .SetMinHeight(60);
+
+            visaTable.AddCell(visaDrhCell);
+            visaTable.AddCell(visaTutelleCell);
+
+            document.Add(visaTable);
+
+            // Sections de suivi de mission
+            GenerateMissionTrackingSections(document, boldFont);
+        }
+
+        private static void GenerateMissionTrackingSections(Document document, PdfFont boldFont)
+        {
+            // ARRIVEE SUR LE LIEU DE REALISATION DE LA MISSION
+            var arriveeTitle = new Paragraph("ARRIVEE SUR LE LIEU DE REALISATION DE LA MISSION")
+                .SetFont(boldFont)
+                .SetFontSize(12)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetUnderline()
+                .SetMarginBottom(15);
+            document.Add(arriveeTitle);
+
+            var arriveeTable = new Table(UnitValue.CreatePercentArray([1, 2]))
+                .UseAllAvailableWidth()
+                .SetMarginBottom(30);
+
+            // Date et Heure
+            var arriveeLeftCell = new Cell()
+                .Add(new Paragraph("Date :")
+                    .SetFont(boldFont)
+                    .SetFontSize(11))
+                .Add(new Paragraph("\n\nHeure :")
+                    .SetFont(boldFont)
+                    .SetFontSize(11))
+                .SetBorder(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(15)
+                .SetMinHeight(80);
+
+            // Nom, prénoms et fonction de l'Autorité + Signature et cachet
+            var arriveeRightCell = new Cell()
+                .Add(new Paragraph("Nom, prénoms et fonction de l'Autorité")
+                    .SetFont(boldFont)
+                    .SetFontSize(11))
+                .Add(new Paragraph("\n\nSignature et cachet")
+                    .SetFont(boldFont)
+                    .SetFontSize(11))
+                .SetBorder(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(15)
+                .SetMinHeight(80);
+
+            arriveeTable.AddCell(arriveeLeftCell);
+            arriveeTable.AddCell(arriveeRightCell);
+            document.Add(arriveeTable);
+
+            // DEPART DU LIEU DE REALISATION DE LA MISSION
+            var departTitle = new Paragraph("DEPART DU LIEU DE REALISATION DE LA MISSION")
+                .SetFont(boldFont)
+                .SetFontSize(12)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetUnderline()
+                .SetMarginBottom(15);
+            document.Add(departTitle);
+
+            var departTable = new Table(UnitValue.CreatePercentArray([1, 2]))
+                .UseAllAvailableWidth()
+                .SetMarginBottom(30);
+
+            var departLeftCell = new Cell()
+                .Add(new Paragraph("Date :")
+                    .SetFont(boldFont)
+                    .SetFontSize(11))
+                .Add(new Paragraph("\n\nHeure :")
+                    .SetFont(boldFont)
+                    .SetFontSize(11))
+                .SetBorder(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(15)
+                .SetMinHeight(80);
+
+            var departRightCell = new Cell()
+                .Add(new Paragraph("Nom, prénoms et fonction de l'Autorité")
+                    .SetFont(boldFont)
+                    .SetFontSize(11))
+                .Add(new Paragraph("\n\nSignature et cachet")
+                    .SetFont(boldFont)
+                    .SetFontSize(11))
+                .SetBorder(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(15)
+                .SetMinHeight(80);
+
+            departTable.AddCell(departLeftCell);
+            departTable.AddCell(departRightCell);
+            document.Add(departTable);
+
+            // ARRIVEE SUR LE LIEU DE TRAVAIL HABITUEL
+            var retourTitle = new Paragraph("ARRIVEE SUR LE LIEU DE TRAVAIL HABITUEL")
+                .SetFont(boldFont)
+                .SetFontSize(12)
+                .SetTextAlignment(TextAlignment.CENTER)
+                .SetUnderline()
+                .SetMarginBottom(15);
+            document.Add(retourTitle);
+
+            var retourTable = new Table(UnitValue.CreatePercentArray([1, 1]))
+                .UseAllAvailableWidth();
+
+            var retourDateCell = new Cell()
+                .Add(new Paragraph("Date :")
+                    .SetFont(boldFont)
+                    .SetFontSize(11))
+                .SetBorder(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(15)
+                .SetMinHeight(60);
+
+            var retourHeureCell = new Cell()
+                .Add(new Paragraph("Heure :")
+                    .SetFont(boldFont)
+                    .SetFontSize(11))
+                .SetBorder(new SolidBorder(ColorConstants.BLACK, 1))
+                .SetPadding(15)
+                .SetMinHeight(60);
+
+            retourTable.AddCell(retourDateCell);
+            retourTable.AddCell(retourHeureCell);
+            document.Add(retourTable);
+        }
+
+        // Méthode modifiée pour le header général (avec numérotation des pages)
+        private void GenerateHeader(Document document, PdfFont boldFont, string title, string reference = "", int currentPage = 1, int totalPages = 1)
+        {
+            // Header table avec 3 colonnes comme pour l'ordre de mission
+            var headerTable = new Table(UnitValue.CreatePercentArray([1, 3, 1]))
+                .UseAllAvailableWidth()
+                .SetMarginBottom(20);
+
+            // Cellule logo
             var logoCell = new Cell()
                 .SetBorder(Border.NO_BORDER)
-                .SetPadding(15)
+                .SetPadding(10)
                 .SetVerticalAlignment(VerticalAlignment.MIDDLE);
 
             if (File.Exists(ImagePath))
@@ -173,18 +593,8 @@ namespace MyApp.Api.Utils.pdf
                     .SetAutoScaleWidth(true);
                 logoCell.Add(image);
             }
-            else
-            {
-                // Placeholder élégant si pas de logo
-                var placeholder = new Paragraph("LOGO")
-                    .SetFont(boldFont)
-                    .SetFontSize(14)
-                    .SetFontColor(ColorConstants.BLACK)
-                    .SetTextAlignment(TextAlignment.CENTER);
-                logoCell.Add(placeholder);
-            }
 
-            // Cellule pour le titre avec dégradé visuel
+            // Cellule titre centrale
             var titleCell = new Cell()
                 .SetBackgroundColor(_primaryColor)
                 .SetBorder(Border.NO_BORDER)
@@ -199,12 +609,36 @@ namespace MyApp.Api.Utils.pdf
 
             titleCell.Add(titleParagraph);
 
+            // Cellule référence et page
+            var infoCell = new Cell()
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(10)
+                .SetVerticalAlignment(VerticalAlignment.TOP);
+
+            if (!string.IsNullOrEmpty(reference))
+            {
+                var referenceText = new Paragraph(reference)
+                    .SetFont(boldFont)
+                    .SetFontSize(12)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetMarginBottom(5);
+                infoCell.Add(referenceText);
+            }
+
+            var pageText = new Paragraph($"Page {currentPage}/{totalPages}")
+                .SetFont(PdfFontFactory.CreateFont(StandardFonts.HELVETICA))
+                .SetFontSize(10)
+                .SetTextAlignment(TextAlignment.RIGHT);
+
+            infoCell.Add(pageText);
+
             headerTable.AddCell(logoCell);
             headerTable.AddCell(titleCell);
+            headerTable.AddCell(infoCell);
 
             document.Add(headerTable);
 
-            // Ligne de séparation élégante
+            // Ligne de séparation
             var separator = new Table(1)
                 .UseAllAvailableWidth()
                 .SetHeight(3)
