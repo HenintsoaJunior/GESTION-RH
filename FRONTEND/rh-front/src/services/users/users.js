@@ -116,21 +116,18 @@ export const syncLdap = async (onSuccess, onError) => {
   }
 };
 
-export const fetchSuperior = async (setSuperior, setIsLoading, onError) => {
+export const fetchSuperior = async (matricule, setSuperior, setIsLoading, onError) => {
   try {
     setIsLoading((prev) => ({ ...prev, superior: true }));
-
-    const userData = JSON.parse(localStorage.getItem("user"));
-    if (!userData || !userData.userId) {
-      throw new Error("Aucun ID utilisateur trouvé dans le localStorage.");
+    
+    if (!matricule) {
+      throw new Error("Matricule requis pour charger le supérieur.");
     }
-    const idToUse = userData.userId;
-
-    const data = await apiGet(`/api/user/${idToUse}/superior`);
+    
+    const data = await apiGet(`/api/user/${matricule}/superior`);
     if (!data) {
       throw new Error("Aucune donnée de supérieur retournée par l'API.");
     }
-
     setSuperior(data);
   } catch (error) {
     console.error("Erreur lors du chargement du supérieur:", error);

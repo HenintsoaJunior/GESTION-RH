@@ -1,63 +1,78 @@
-import React, { useState, useEffect, useCallback } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, FileText, Download, ArrowLeft, ArrowRight } from "lucide-react";
-import { formatDate } from "utils/dateConverter";
-import Alert from "components/alert";
+import { X, FileText, Download, ArrowLeft } from "lucide-react";
+import ValidationStepper from "../validation/validation-stepper";
 import Pagination from "components/pagination";
-import {
-  ValidationContainer,
-  ValidationTimeline,
-  ValidationStep,
-  StepIndicator,
-  StepNumber,
-  ValidationStatusIcon,
-  ValidationStepContent,
-  ValidationStepHeader,
-  ValidationStepTitle,
-  ValidationStatusBadge,
-  ValidationStepBody,
-  ValidatorDetails,
-  ValidationDetailField,
-  ValidationDetailLabel,
-  ValidationDetailValue,
-  ValidationCommentSection,
-  ValidationComment,
-  ValidationDateTime,
-  NoValidatorMessage,
-  InProgressMessage,
-  LoadingValidationState,
-  EmptyValidationState,
-  ValidationProgress,
-  ValidationProgressHeader,
-  ValidationProgressBar,
-  ValidationProgressStats,
-} from "styles/generaliser/process-container";
+import Alert from "components/alert";
 import {
   PopupOverlay,
-  PagePopup,
+  PopupContainer,
   PopupHeader,
   PopupTitle,
-  PopupClose,
+  CloseButton,
   PopupContent,
-  PopupActions,
-  ButtonPrimary,
-  ButtonSecondary,
-} from "styles/generaliser/popup-container";
-import "styles/generic-table-styles.css";
+  LoadingContainer,
+  ContentArea,
+  StepHeader,
+  StepTitle,
+  StatusBadge,
+  ValidatorCard,
+  ValidatorTitle,
+  ValidatorGrid,
+  ValidatorSection,
+  SectionTitle,
+  ValidatorItem,
+  Avatar,
+  ValidatorInfo,
+  ValidatorName,
+  ValidatorRole,
+  InfoGrid,
+  InfoItem,
+  InfoLabel,
+  InfoValue,
+  CommentCard,
+  CommentTitle,
+  CommentText,
+  CommentDate,
+  InfoAlert,
+  AlertText,
+  PopupFooter,
+  FooterActions,
+  ActionButton,
+  StepCounter,
+} from "styles/generaliser/details-mission-container";
+import {
+  CardsContainer,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardBody,
+  CardField,
+  CardLabel,
+  EmptyCardsState,
+} from "styles/generaliser/card-container";
+import { NoDataMessage } from "styles/generaliser/table-container";
+import { fetchSuperior, fetchDrh } from "services/users/users";
+import { formatValidatorData } from "services/mission/validator-utils";
 import {
   fetchAssignMission,
   fetchMissionById,
   exportMissionAssignationPDF,
   exportMissionAssignationExcel,
 } from "services/mission/mission";
+import { formatDate } from "utils/dateConverter";
 
-const DetailsMission = ({ missionId, onClose, isOpen }) => {
+const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState({
     assignMissions: false,
     mission: false,
     exportPDF: false,
     exportExcel: false,
+    superior: false,
+    drh: false,
   });
   const [error, setError] = useState({ isOpen: false, type: "", message: "" });
   const [assignedPersons, setAssignedPersons] = useState([]);
@@ -66,163 +81,149 @@ const DetailsMission = ({ missionId, onClose, isOpen }) => {
   const [pageSize, setPageSize] = useState(10);
   const [totalEntries, setTotalEntries] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
+  const [superior, setSuperior] = useState(null);
+  const [drh, setDrh] = useState(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
-  // Mock validator data
-  const [validationSteps] = useState([
+  const [validationSteps, setValidationSteps] = useState([
     {
       id: 1,
-      title: "Validation Supérieur Hiérarchique",
+      title: "Validation Supérieur",
+      subtitle: "Hiérarchique",
       status: "approved",
-      validator: {
-        name: "Jean Dupont",
-        email: "jean.dupont@entreprise.com",
-        department: "Gestion de Projet",
-        position: "Manager",
-      },
+      hasIndicator: true,
+      validator: null,
       validatedAt: "2024-01-15T10:30:00",
       comment: "Mission approuvée. Les objectifs sont clairs et réalisables.",
       order: 1,
     },
     {
       id: 2,
-      title: "Validation Direction des Ressources Humaines",
-      status: "approved",
-      validator: {
-        name: "Marie Dubois",
-        email: "marie.dubois@entreprise.com",
-        department: "Ressources Humaines",
-        position: "Directrice",
-      },
-      validatedAt: "2024-01-16T14:20:00",
-      comment: "Budget approuvé et ressources allouées.",
-      order: 2,
-    },
-    {
-      id: 3,
-      title: "Validation Direction Générale",
+      title: "Validation RH",
+      subtitle: "Ressources Humaines",
       status: "in-progress",
-      validator: {
-        name: "Pierre Martin",
-        email: "pierre.martin@entreprise.com",
-        department: "Direction Générale",
-        position: "Directeur Général",
-      },
+      hasIndicator: true,
+      validator: null,
       validatedAt: null,
       comment: null,
-      order: 3,
-    },
-    {
-      id: 4,
-      title: "Validation Finale",
-      status: "pending",
-      validator: {
-        name: "Sophie Bernard",
-        email: "sophie.bernard@entreprise.com",
-        department: "Administration",
-        position: "Administratrice",
-      },
-      validatedAt: null,
-      comment: null,
-      order: 4,
+      order: 2,
     },
   ]);
 
-  // Handle Escape key to close popup
-  const handleKeyDown = useCallback(
-    (event) => {
-      if (event.key === "Escape" && isOpen && !isLoading.mission && !isLoading.assignMissions) {
-        onClose();
-      }
-    },
-    [isOpen, onClose, isLoading.mission, isLoading.assignMissions]
-  );
+  const handleError = (error) => {
+    setError(error);
+  };
+
+  // Fonction pour vérifier si toutes les données sont chargées
+  const checkDataLoaded = (assignedPersons, superior, drh) => {
+    const hasAssignedPersons = assignedPersons && assignedPersons.length > 0;
+    const hasSuperior = superior !== null;
+    const hasDrh = drh !== null;
+    return hasAssignedPersons && hasSuperior && hasDrh;
+  };
 
   useEffect(() => {
-    if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
-      return () => document.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [isOpen, handleKeyDown]);
-
-  useEffect(() => {
-    if (!isOpen || !missionId) {
-      if (!missionId) {
-        setError({
-          isOpen: true,
-          type: "error",
-          message: "Aucun ID de mission fourni.",
-        });
-      }
+    if (!missionId) {
+      setError({
+        isOpen: true,
+        type: "error",
+        message: "Aucun ID de mission fourni.",
+      });
       return;
     }
 
-    fetchMissionById(missionId, setMissionDetails, setIsLoading, (error) =>
-      setError(error)
-    );
-    fetchAssignMission(
-      setAssignedPersons,
-      setIsLoading,
-      setTotalEntries,
-      { missionId },
-      currentPage,
-      pageSize,
-      (error) => setError(error)
-    );
-  }, [missionId, currentPage, pageSize, isOpen]);
+    const loadInitialData = async () => {
+      try {
+        // Fetch Assigned Persons
+        await fetchAssignMission(
+          setAssignedPersons,
+          setIsLoading,
+          setTotalEntries,
+          { missionId },
+          currentPage,
+          pageSize,
+          handleError
+        );
+      } catch (error) {
+        handleError({
+          isOpen: true,
+          type: "error",
+          message: "Erreur lors du chargement des assignations.",
+        });
+      }
+    };
 
-  const calculateProgress = () => {
-    const approvedSteps = validationSteps.filter(
-      (step) => step.status === "approved"
-    ).length;
-    return Math.round((approvedSteps / validationSteps.length) * 100);
-  };
+    loadInitialData();
+  }, [missionId, currentPage, pageSize]);
 
-  const getStepColor = (status, index) => {
-    if (status === "approved") return "#22c55e"; // Vert
-    if (status === "in-progress") return "#3b82f6"; // Bleu
-    if (status === "rejected") return "#ef4444"; // Rouge
-    return "#94a3b8"; // Gris pour pending
-  };
+  // Effet pour récupérer le supérieur et DRH une fois qu'on a les personnes assignées
+  useEffect(() => {
+    if (assignedPersons.length > 0 && assignedPersons[0]?.matricule) {
+      const matricule = assignedPersons[0].matricule;
+      
+      const loadValidators = async () => {
+        try {
+          // Fetch Superior
+          setIsLoading((prev) => ({ ...prev, superior: true }));
+          const superiorData = await fetchSuperior(
+            matricule,
+            setSuperior,
+            setIsLoading,
+            handleError
+          );
+          
+          // Fetch DRH
+          setIsLoading((prev) => ({ ...prev, drh: true }));
+          await fetchDrh(
+            (data) => {
+              setDrh(data);
+              setIsLoading((prev) => ({ ...prev, drh: false }));
+            },
+            setIsLoading,
+            handleError
+          );
+          
+          setIsLoading((prev) => ({ ...prev, superior: false }));
+        } catch (error) {
+          setIsLoading((prev) => ({ ...prev, superior: false, drh: false }));
+          handleError({
+            isOpen: true,
+            type: "error",
+            message: "Erreur lors du chargement des validateurs.",
+          });
+        }
+      };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "pending":
-        return "○";
-      case "in-progress":
-        return "○";
-      case "approved":
-        return "✓";
-      case "rejected":
-        return "✗";
-      default:
-        return "○";
+      loadValidators();
     }
-  };
+  }, [assignedPersons]);
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case "pending":
-        return "En Attente";
-      case "in-progress":
-        return "En Cours";
-      case "approved":
-        return "Approuvée";
-      case "rejected":
-        return "Rejetée";
-      default:
-        return "En Attente";
+  // Effet pour mettre à jour les validationSteps et vérifier si toutes les données sont chargées
+  useEffect(() => {
+    if (superior && drh && assignedPersons.length > 0) {
+      const formattedSuperior = formatValidatorData(superior, "Manager");
+      const formattedDrh = formatValidatorData(drh, "Directrice RH");
+      
+      setValidationSteps((prevSteps) =>
+        prevSteps.map((step) => {
+          if (step.order === 1) {
+            return { ...step, validator: formattedSuperior };
+          } else if (step.order === 2) {
+            return { ...step, validator: formattedDrh };
+          }
+          return step;
+        })
+      );
+
+      // Marquer les données comme chargées
+      setDataLoaded(true);
     }
-  };
+  }, [superior, drh, assignedPersons]);
 
-  const formatDateString = (dateString) => {
-    if (!dateString) return null;
-    return new Date(dateString).toLocaleString("fr-FR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    }
   };
 
   const handlePageChange = (page) => {
@@ -252,7 +253,7 @@ const DetailsMission = ({ missionId, onClose, isOpen }) => {
       exportFilters,
       setIsLoading,
       (success) => setError(success),
-      (error) => setError(error)
+      handleError
     );
   };
 
@@ -262,47 +263,58 @@ const DetailsMission = ({ missionId, onClose, isOpen }) => {
       exportFilters,
       setIsLoading,
       (success) => setError(success),
-      (error) => setError(error)
+      handleError
     );
   };
 
-  const handleNextStep = () => {
-    if (currentStep < validationSteps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handlePrevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleCancel = () => {
-    onClose();
+  const getStatusBadge = (status) => {
+    const statusClass =
+      status === "En Cours"
+        ? "status-progress"
+        : status === "Planifié"
+        ? "status-pending"
+        : status === "Terminé"
+        ? "status-approved"
+        : status === "Annulé"
+        ? "status-cancelled"
+        : "status-pending";
+    return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
   };
 
   if (!isOpen) return null;
 
-  const currentStepData = validationSteps[currentStep];
+  const currentStepData = validationSteps[currentStep] || validationSteps[0];
+  const currentAssignedPerson = assignedPersons[currentStep] || assignedPersons[0];
+  const formattedAssignedPerson = currentAssignedPerson
+    ? formatValidatorData(currentAssignedPerson, "Collaborateur")
+    : null;
+
+  const isLoadingData = isLoading.assignMissions || isLoading.superior || isLoading.drh || !dataLoaded;
 
   return (
     <PopupOverlay role="dialog" aria-labelledby="mission-details-title" aria-modal="true">
-      <PagePopup style={{ maxWidth: "900px", height: "80vh" }}>
+      <PopupContainer>
+        {/* Header */}
         <PopupHeader>
           <PopupTitle id="mission-details-title">
-            Processus de Validation - Mission {missionId}
+            Détails de la Mission {missionId}
+            {assignedPersons.length > 0 && (
+              <span className="assignments-count">
+                ({assignedPersons.length} assignation{assignedPersons.length > 1 ? "s" : ""})
+              </span>
+            )}
           </PopupTitle>
-          <PopupClose
-            onClick={onClose}
-            disabled={isLoading.mission || isLoading.assignMissions}
+          <CloseButton
+            onClick={handleClose}
+            disabled={isLoadingData}
             aria-label="Fermer la fenêtre"
           >
             <X size={24} />
-          </PopupClose>
+          </CloseButton>
         </PopupHeader>
 
-        <PopupContent style={{ padding: "2rem", display: "flex", flexDirection: "column", height: "100%" }}>
+        {/* Content */}
+        <PopupContent>
           <Alert
             type={error.type}
             message={error.message}
@@ -310,301 +322,196 @@ const DetailsMission = ({ missionId, onClose, isOpen }) => {
             onClose={() => setError({ ...error, isOpen: false })}
           />
 
-          {isLoading.mission ? (
-            <LoadingValidationState>
-              Chargement des informations de la mission...
-            </LoadingValidationState>
+          <ValidationStepper steps={validationSteps} currentStep={currentStep} />
+
+          {isLoadingData ? (
+            <LoadingContainer>Chargement des informations de la mission...</LoadingContainer>
           ) : (
-            <div style={{ display: "flex", height: "100%", gap: "2rem" }}>
-              {/* Timeline verticale à gauche */}
-              <div style={{ 
-                width: "200px", 
-                display: "flex", 
-                flexDirection: "column", 
-                alignItems: "center",
-                paddingTop: "2rem"
-              }}>
-                {validationSteps.map((step, index) => (
-                  <div key={step.id} style={{ 
-                    display: "flex", 
-                    flexDirection: "column", 
-                    alignItems: "center",
-                    position: "relative",
-                    marginBottom: index === validationSteps.length - 1 ? "0" : "3rem"
-                  }}>
-                    {/* Numéro de l'étape avec cercle coloré */}
-                    <div style={{
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "50%",
-                      backgroundColor: getStepColor(step.status, index),
-                      color: "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: "bold",
-                      fontSize: "1.2rem",
-                      zIndex: 2,
-                      position: "relative"
-                    }}>
-                      {step.status === "approved" ? "✓" : index + 1}
-                    </div>
-                    
-                    {/* Ligne de connexion */}
-                    {index < validationSteps.length - 1 && (
-                      <div style={{
-                        width: "4px",
-                        height: "60px",
-                        backgroundColor: getStepColor(step.status, index),
-                        marginTop: "8px"
-                      }} />
-                    )}
-                    
-                    {/* Barre de progression horizontale */}
-                    <div style={{
-                      position: "absolute",
-                      left: "50px",
-                      top: "15px",
-                      width: "120px",
-                      height: "10px",
-                      backgroundColor: "#e5e7eb",
-                      borderRadius: "5px",
-                      overflow: "hidden"
-                    }}>
-                      <div style={{
-                        width: step.status === "approved" ? "100%" : 
-                               step.status === "in-progress" ? "60%" : "0%",
-                        height: "100%",
-                        backgroundColor: getStepColor(step.status, index),
-                        borderRadius: "5px",
-                        transition: "width 0.3s ease"
-                      }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Contenu détaillé à droite */}
-              <div style={{ 
-                flex: 1, 
-                display: "flex", 
-                flexDirection: "column",
-                backgroundColor: "#f8fafc",
-                borderRadius: "12px",
-                padding: "2rem",
-                position: "relative"
-              }}>
-                {currentStepData && (
-                  <>
-                    {/* En-tête de l'étape */}
-                    <div style={{ marginBottom: "2rem" }}>
-                      <h2 style={{ 
-                        fontSize: "1.5rem", 
-                        fontWeight: "600",
-                        color: "#1f2937",
-                        marginBottom: "0.5rem"
-                      }}>
-                        {currentStepData.title}
-                      </h2>
-                      <div style={{
-                        display: "inline-block",
-                        padding: "0.5rem 1rem",
-                        borderRadius: "20px",
-                        backgroundColor: getStepColor(currentStepData.status),
-                        color: "white",
-                        fontSize: "0.9rem",
-                        fontWeight: "500"
-                      }}>
-                        {getStatusText(currentStepData.status)}
-                      </div>
-                    </div>
-
-                    {/* Détails du validateur */}
-                    <div style={{ 
-                      backgroundColor: "white",
-                      borderRadius: "8px",
-                      padding: "1.5rem",
-                      marginBottom: "1.5rem",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-                    }}>
-                      <h3 style={{ 
-                        fontSize: "1.1rem", 
-                        fontWeight: "600", 
-                        marginBottom: "1rem",
-                        color: "#374151"
-                      }}>
-                        Informations du Validateur
-                      </h3>
+            <ContentArea>
+              {/* Validator Details */}
+              {validationSteps.some((step) => step.validator) ? (
+                <ValidatorCard>
+                  <ValidatorGrid>
+                    <ValidatorSection>
+                      <SectionTitle>Validateurs</SectionTitle>
+                      {/* N+1 Validator */}
+                      {validationSteps[0].validator ? (
+                        <ValidatorItem>
+                          <Avatar size="40px">{validationSteps[0].validator.initials}</Avatar>
+                          <ValidatorInfo>
+                            <ValidatorName>{validationSteps[0].validator.name}</ValidatorName>
+                            <ValidatorRole>Validation Supérieur Hiérarchique (N+1)</ValidatorRole>
+                          </ValidatorInfo>
+                        </ValidatorItem>
+                      ) : (
+                        <ValidatorItem>
+                          <div
+                            style={{
+                              textAlign: "center",
+                              padding: "var(--spacing-md)",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            Validateur N+1 non disponible
+                          </div>
+                        </ValidatorItem>
+                      )}
+                      {/* DRH Validator */}
+                      {validationSteps[1].validator ? (
+                        <ValidatorItem>
+                          <Avatar size="40px">{validationSteps[1].validator.initials}</Avatar>
+                          <ValidatorInfo>
+                            <ValidatorName>{validationSteps[1].validator.name}</ValidatorName>
+                            <ValidatorRole>Validation RH Ressources Humaines (DRH)</ValidatorRole>
+                          </ValidatorInfo>
+                        </ValidatorItem>
+                      ) : (
+                        <ValidatorItem>
+                          <div
+                            style={{
+                              textAlign: "center",
+                              padding: "var(--spacing-md)",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            Validateur DRH non disponible
+                          </div>
+                        </ValidatorItem>
+                      )}
+                    </ValidatorSection>
+                    <ValidatorSection>
+                      <SectionTitle>Personnes Assignées à la Mission</SectionTitle>
+                      {assignedPersons.length > 0 ? (
+                        assignedPersons.map((assignment, index) => (
+                          <ValidatorItem 
+                            key={`${assignment.employeeId}-${missionId}-${index}`}
+                            onClick={() => handleCardClick(assignment.employeeId)}
+                            style={{ cursor: "pointer", marginBottom: "var(--spacing-md)" }}
+                          >
+                            <Avatar size="40px">
+                              {assignment.beneficiary 
+                                ? assignment.beneficiary.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                                : 'NA'
+                              }
+                            </Avatar>
+                            <ValidatorInfo>
+                              {/* Correction : utiliser des props transient avec $ pour éviter qu'elles soient passées au DOM */}
+                              <ValidatorName 
+                                style={{ 
+                                  fontWeight: 'bold',
+                                  fontSize: '1.1em'
+                                }}
+                              >
+                                {assignment.beneficiary && assignment.directionAcronym
+                                  ? `${assignment.beneficiary} (${assignment.directionAcronym})`
+                                  : assignment.beneficiary || "Non spécifié"}
+                              </ValidatorName>
+                            </ValidatorInfo>
+                          </ValidatorItem>
+                        ))
+                      ) : (
+                        <ValidatorItem>
+                          <div
+                            style={{
+                              textAlign: "center",
+                              padding: "var(--spacing-md)",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            Aucune personne assignée à la mission {missionId || "inconnue"}.
+                          </div>
+                        </ValidatorItem>
+                      )}
                       
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                        <div>
-                          <label style={{ 
-                            fontSize: "0.9rem", 
-                            fontWeight: "500", 
-                            color: "#6b7280",
-                            display: "block",
-                            marginBottom: "0.25rem"
-                          }}>
-                            Nom
-                          </label>
-                          <div style={{ color: "#111827", fontWeight: "500" }}>
-                            {currentStepData.validator?.name || "Non spécifié"}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label style={{ 
-                            fontSize: "0.9rem", 
-                            fontWeight: "500", 
-                            color: "#6b7280",
-                            display: "block",
-                            marginBottom: "0.25rem"
-                          }}>
-                            Email
-                          </label>
-                          <div style={{ color: "#111827" }}>
-                            {currentStepData.validator?.email || "Non spécifié"}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label style={{ 
-                            fontSize: "0.9rem", 
-                            fontWeight: "500", 
-                            color: "#6b7280",
-                            display: "block",
-                            marginBottom: "0.25rem"
-                          }}>
-                            Département
-                          </label>
-                          <div style={{ color: "#111827" }}>
-                            {currentStepData.validator?.department || "Non spécifié"}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label style={{ 
-                            fontSize: "0.9rem", 
-                            fontWeight: "500", 
-                            color: "#6b7280",
-                            display: "block",
-                            marginBottom: "0.25rem"
-                          }}>
-                            Poste
-                          </label>
-                          <div style={{ color: "#111827" }}>
-                            {currentStepData.validator?.position || "Non spécifié"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Commentaires et date */}
-                    {(currentStepData.comment || currentStepData.validatedAt) && (
-                      <div style={{ 
-                        backgroundColor: "white",
-                        borderRadius: "8px",
-                        padding: "1.5rem",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-                      }}>
-                        {currentStepData.comment && (
-                          <>
-                            <h3 style={{ 
-                              fontSize: "1.1rem", 
-                              fontWeight: "600", 
-                              marginBottom: "1rem",
-                              color: "#374151"
+                      {assignedPersons.length > 0 && (
+                        <InfoGrid style={{ 
+                          marginTop: "var(--spacing-lg)",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                          gap: "var(--spacing-md)"
+                        }}>
+                          {assignedPersons.map((assignment, index) => (
+                            <div key={`info-${assignment.employeeId}-${index}`} style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(2, 1fr)",
+                              gap: "var(--spacing-sm)",
+                              padding: "var(--spacing-md)",
+                              border: "1px solid var(--border-light)",
+                              borderRadius: "var(--border-radius)",
+                              backgroundColor: "var(--background-light)"
                             }}>
-                              Commentaire
-                            </h3>
-                            <div style={{ 
-                              color: "#111827",
-                              lineHeight: "1.6",
-                              marginBottom: "1rem"
-                            }}>
-                              {currentStepData.comment}
+                              <InfoItem>
+                                <InfoLabel>N° Assignation</InfoLabel>
+                                <InfoValue>{assignment.assignationId || "Non spécifié"}</InfoValue>
+                              </InfoItem>
+                              <InfoItem>
+                                <InfoLabel>Matricule</InfoLabel>
+                                <InfoValue>{assignment.matricule || "Non spécifié"}</InfoValue>
+                              </InfoItem>
+                              <InfoItem>
+                                <InfoLabel>Fonction</InfoLabel>
+                                <InfoValue>{assignment.function || "Non spécifié"}</InfoValue>
+                              </InfoItem>
+                              <InfoItem>
+                                <InfoLabel>Site</InfoLabel>
+                                <InfoValue>{assignment.base || "Non spécifié"}</InfoValue>
+                              </InfoItem>
                             </div>
-                          </>
-                        )}
-                        
-                        {currentStepData.validatedAt && (
-                          <div style={{ 
-                            fontSize: "0.9rem", 
-                            color: "#6b7280",
-                            borderTop: "1px solid #e5e7eb",
-                            paddingTop: "1rem"
-                          }}>
-                            Validé le : {formatDateString(currentStepData.validatedAt)}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          ))}
+                        </InfoGrid>
+                      )}
+                    </ValidatorSection>
+                  </ValidatorGrid>
+                </ValidatorCard>
+              ) : (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "var(--spacing-md)",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Aucune information de validateur disponible
+                </div>
+              )}
 
-                    {currentStepData.status === "in-progress" && (
-                      <div style={{ 
-                        backgroundColor: "#dbeafe",
-                        border: "1px solid #93c5fd",
-                        borderRadius: "8px",
-                        padding: "1rem",
-                        marginTop: "1rem",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem"
-                      }}>
-                        <span style={{ fontSize: "1.2rem" }}>🔄</span>
-                        <span style={{ color: "#1e40af", fontWeight: "500" }}>
-                          Validation en cours d'examen...
-                        </span>
+              {/* Comments and Date */}
+              {(currentStepData.comment || currentStepData.validatedAt) && (
+                <CommentCard>
+                  {currentStepData.comment && (
+                    <>
+                      <CommentTitle>Commentaire</CommentTitle>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--spacing-sm)" }}>
+                        <Avatar size="24px">{currentStepData.validator?.initials || "JD"}</Avatar>
+                        <CommentText>{currentStepData.comment}</CommentText>
                       </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
+                    </>
+                  )}
+                  {currentStepData.validatedAt && (
+                    <CommentDate>
+                      Validé le :{" "}
+                      {new Date(currentStepData.validatedAt).toLocaleString("fr-FR", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </CommentDate>
+                  )}
+                </CommentCard>
+              )}
+
+              {currentStepData.status === "in-progress" && (
+                <InfoAlert>
+                  <span style={{ fontSize: "1.2rem" }}>🔄</span>
+                  <AlertText>Validation en cours d'examen...</AlertText>
+                </InfoAlert>
+              )}
+            </ContentArea>
           )}
         </PopupContent>
-
-        {/* Actions en bas */}
-        <PopupActions style={{ 
-          padding: "1.5rem 2rem", 
-          borderTop: "1px solid #e5e7eb",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center"
-        }}>
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <ButtonSecondary 
-              onClick={handlePrevStep}
-              disabled={currentStep === 0}
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-            >
-              <ArrowLeft size={16} />
-              Précédent
-            </ButtonSecondary>
-            
-            <ButtonSecondary onClick={handleCancel}>
-              Annuler
-            </ButtonSecondary>
-          </div>
-          
-          <div style={{ 
-            fontSize: "0.9rem", 
-            color: "#6b7280",
-            fontWeight: "500"
-          }}>
-            Étape {currentStep + 1} sur {validationSteps.length}
-          </div>
-          
-          <ButtonPrimary 
-            onClick={handleNextStep}
-            disabled={currentStep === validationSteps.length - 1}
-            style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-          >
-            Suivant
-            <ArrowRight size={16} />
-          </ButtonPrimary>
-        </PopupActions>
-      </PagePopup>
+      </PopupContainer>
     </PopupOverlay>
   );
 };

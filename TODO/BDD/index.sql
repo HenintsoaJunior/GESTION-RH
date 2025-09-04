@@ -216,6 +216,7 @@ CREATE TABLE employees(
    hire_date DATE NOT NULL,
    job_title VARCHAR(100) NULL,
    contract_end_date DATE NULL,
+   status VARCHAR(50) DEFAULT 'Actif',
    site_id VARCHAR(50) NOT NULL,
    gender_id VARCHAR(50) NOT NULL,
    contract_type_id VARCHAR(50) NOT NULL,
