@@ -24,7 +24,7 @@ namespace MyApp.Api.Services.users
         Task UpdateUsersAsync(List<User> users);
         Task DeleteUsersAsync(List<User> users);
         Task<IEnumerable<UserDto>> GetCollaboratorsAsync(string userId);
-        Task<UserDto?> GetSuperiorAsync(string userId);
+        Task<UserDto?> GetSuperiorAsync(string matricule);
         Task<UserDto?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
     }
@@ -46,12 +46,12 @@ namespace MyApp.Api.Services.users
             return drh != null ? MapToDto(drh) : null;
         }
 
-        public async Task<UserDto?> GetSuperiorAsync(string userId)
+        public async Task<UserDto?> GetSuperiorAsync(string matricule)
         {
-            if (string.IsNullOrWhiteSpace(userId))
-                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+            if (string.IsNullOrWhiteSpace(matricule))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(matricule));
 
-            var superior = await _repository.GetSuperiorAsync(userId);
+            var superior = await _repository.GetSuperiorAsync(matricule);
             return superior != null ? MapToDto(superior) : null;
         }
 

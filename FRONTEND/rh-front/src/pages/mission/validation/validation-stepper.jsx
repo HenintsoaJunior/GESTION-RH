@@ -1,6 +1,5 @@
-"use client"
-
-import { StepperContainer, StepItem, StepCircle, StepLabel, StepSubtitle } from "styles/generaliser/validation-stepper-container"
+"use client";
+import { StepperContainer, StepItem, StepCircle, StepLabel, StepSubtitle } from "styles/generaliser/validation-stepper-container";
 
 const ValidationStepper = ({ steps, currentStep, onStepClick }) => {
   return (
@@ -8,11 +7,11 @@ const ValidationStepper = ({ steps, currentStep, onStepClick }) => {
       {steps.map((step, index) => (
         <StepItem
           key={step.id}
-          clickable={index <= currentStep}
-          completed={index < currentStep}
+          $clickable={index <= currentStep}
+          $completed={index < currentStep}
           onClick={() => onStepClick && onStepClick(index)}
         >
-          <StepCircle status={step.status} hasIndicator={step.hasIndicator}>
+          <StepCircle $status={step.status} $hasIndicator={step.hasIndicator}>
             {step.hasIndicator ? "✓" : index + 1}
           </StepCircle>
           <StepLabel>{step.title}</StepLabel>
@@ -20,7 +19,7 @@ const ValidationStepper = ({ steps, currentStep, onStepClick }) => {
         </StepItem>
       ))}
     </StepperContainer>
-  )
-}
+  );
+};
 
-export default ValidationStepper
+export default ValidationStepper;
