@@ -789,3 +789,76 @@ export const DurationBadge = styled.span`
   font-weight: 600;
   display: inline-block;
 `;
+
+// Stepper Styles
+export const StepperWrapper = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--border-light);
+    z-index: 1;
+  }
+`;
+
+export const StepItem = styled.div`
+  display: flex;
+  align-items: center;
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--text-muted);
+  position: relative;
+  z-index: 2;
+  padding: 0 var(--spacing-md);
+  background: var(--bg-primary);
+
+  span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--border-light);
+    color: var(--text-muted);
+    margin-right: var(--spacing-sm);
+    font-weight: 600;
+  }
+
+  ${({ active }) =>
+    active &&
+    css`
+      color: var(--primary-color);
+
+      span {
+        background: var(--primary-color);
+        color: #ffffff;
+      }
+    `}
+`;
+
+export const StepContent = styled.div`
+  display: ${({ active }) => (active ? "block" : "none")};
+`;
+
+export const StepNavigation = styled(FormActions)`
+  justify-content: space-between;
+`;
+
+export const NextButton = styled(SubmitButton)``;
+
+export const PreviousButton = styled(SubmitButton)`
+  background-color: #6c757d;
+  &:hover {
+    color:#000;
+    background-color: var(--secondary-hover);
+  }
+`;
