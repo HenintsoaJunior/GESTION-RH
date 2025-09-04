@@ -21,6 +21,7 @@ namespace MyApp.Api.Services.mission
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
+        Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId);
         Task<MissionAssignation?> GetByEmployeeIdMissionIdAsync(string employeeId, string missionId);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
         Task<(string EmployeeId, string MissionId, string assignationId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation);
@@ -276,6 +277,18 @@ namespace MyApp.Api.Services.mission
                 throw new Exception($"Error retrieving mission assignation: {ex.Message}", ex);
             }
         }
+        
+        public async Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId)
+        {
+            try
+            {
+                return await _repository.GetByAssignationIdAsync(assignationId); // New repository method
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving mission assignation : {ex.Message}", ex);
+            }
+        }
 
         public async Task<MissionAssignation?> GetByEmployeeIdMissionIdAsync(string employeeId, string missionId)
         {
@@ -350,11 +363,7 @@ namespace MyApp.Api.Services.mission
         private async Task<MissionAssignation> GetMissionAssignationAsync(string employeeId, string missionId)
         {
             var missionAssignation = await GetByEmployeeIdMissionIdAsync(employeeId, missionId);
-            if (missionAssignation == null)
-            {
-                throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
-            }
-            return missionAssignation;
+            return missionAssignation ?? throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
         }
 
         private async Task<MissionPaiementResult> GeneratePaymentsForAssignation(MissionAssignation missionAssignation)
@@ -363,12 +372,12 @@ namespace MyApp.Api.Services.mission
             return await missionPaiement.GeneratePaiement(missionAssignation, _compensationScaleService);
         }
 
-        private void LogPaymentGenerationResult(MissionPaiementResult paiementResult, string employeeId, string missionId)
+        private static void LogPaymentGenerationResult(MissionPaiementResult paiementResult, string employeeId, string missionId)
         {
             // Méthode conservée pour compatibilité mais sans logs
         }
 
-        private MissionPaiementResult CombinePaiementResults(List<MissionPaiementResult> results)
+        private static MissionPaiementResult CombinePaiementResults(List<MissionPaiementResult> results)
         {
             if (results.Count == 1)
                 return results[0];

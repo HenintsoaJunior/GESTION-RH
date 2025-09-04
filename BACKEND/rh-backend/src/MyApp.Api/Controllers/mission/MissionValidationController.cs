@@ -11,10 +11,12 @@ namespace MyApp.Api.Controllers.mission
     public class MissionValidationController(
         IMissionValidationService missionValidationService,
         IConfiguration configuration,
-        ILogger<MissionValidationController> logger)
+        ILogger<MissionValidationController> logger,
+        IMissionAssignationService missionAssignationService)
         : ControllerBase
     {
         private readonly IMissionValidationService _missionValidationService = missionValidationService ?? throw new ArgumentNullException(nameof(missionValidationService));
+        private readonly IMissionAssignationService _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
         private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         private readonly ILogger<MissionValidationController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     
@@ -62,12 +64,13 @@ namespace MyApp.Api.Controllers.mission
             {
                 _logger.LogInformation("Validation de missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}", missionValidationId, missionAssignationId);
                 var result = await _missionValidationService.ValidateAsync(missionValidationId, missionAssignationId, userId);
-                if (!result)
-                {
-                    _logger.LogWarning("Validation impossible pour missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}", missionValidationId, missionAssignationId);
-                    return NotFound(new { message = "Validation impossible." });
-                }
-                return Ok(new { message = "Validation effectuée avec succès." });
+                if (!result) return Ok(new { message = "Validation effectuée avec succès." });
+                var missionAssignation = await _missionAssignationService.GetByAssignationIdAsync(missionAssignationId);
+                if (missionAssignation == null) return Ok(new { message = "Aucune validation à faire." });
+                missionAssignation.IsValidated = 1;
+                //changer le isValidated de ce mission assignation en 1
+                await _missionAssignationService.UpdateAsync(missionAssignationId, missionAssignation);
+                return Ok(new { message = "La mission a été validée" });
             }
             catch (Exception ex)
             {

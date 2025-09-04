@@ -58,7 +58,6 @@ namespace MyApp.Api.Services.mission
             try
             {
                 var result = await _repository.ValidateAsync(missionValidationId, missionAssignationId);
-                if (!result) return result;
                 _logger.LogInformation(
                     "Validation effectuée pour missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}",
                     missionValidationId, missionAssignationId);
