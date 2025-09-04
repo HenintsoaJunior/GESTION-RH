@@ -47,7 +47,7 @@ namespace MyApp.Api.Entities.employee
         
         [Column("status")]
         [MaxLength(50)]
-        public String Status { get; set; }
+        public string? Status { get; set; }
 
         [Required]
         [Column("site_id")]

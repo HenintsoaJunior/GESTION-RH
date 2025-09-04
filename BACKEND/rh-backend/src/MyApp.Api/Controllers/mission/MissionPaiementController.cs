@@ -17,7 +17,7 @@ namespace MyApp.Api.Controllers.mission
             try
             {
                 var pdfBytes = await _missionAssignationService.GeneratePdfReportAsync(generatePaiementDto);
-                var pdfName = $"MissionPaymentReport-{generatePaiementDto.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                var pdfName = $"Indemnité de mission-{generatePaiementDto.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
                 return File(pdfBytes, "application/pdf", pdfName);
             }
             catch (InvalidOperationException ex)
