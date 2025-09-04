@@ -133,13 +133,13 @@ namespace MyApp.Api.Services.mission
                     {
                         foreach (var missionAssignation in missionDto.Assignations.Select(assignationDto => new MissionAssignation(missionId, assignationDto)))
                         {
-                            var assignationId = await _missionAssignationService.CreateAsync(missionAssignation);
+                            var assignation = await _missionAssignationService.CreateAsync(missionAssignation);
                             //insertion dans mission validation
                             // pour DRH
                             var missionValidationDtoForm = new MissionValidationDTOForm
                             {
                                 MissionId = missionId,
-                                MissionAssignationId = assignationId,
+                                MissionAssignationId = assignation.assignationId,
                                 MissionCreator = missionDto.UserId,
                                 Status = "En attente",
                                 ToWhom = "DRH"

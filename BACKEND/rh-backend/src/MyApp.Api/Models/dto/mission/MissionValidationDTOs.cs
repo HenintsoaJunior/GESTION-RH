@@ -12,7 +12,7 @@
     public class MissionValidationDTOForm
     {
         public string MissionId { get; set; } = null!;
-        public (string EmployeeId, string MissionId, string assignationId, string? TransportId) MissionAssignationId { get; set; } = null!;
+        public string MissionAssignationId { get; set; } = null!;
         public string MissionCreator { get; set; } = null!;
         public string? Status { get; set; }
         public string? ToWhom { get; set; }
