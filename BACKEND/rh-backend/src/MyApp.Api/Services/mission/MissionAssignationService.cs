@@ -17,7 +17,7 @@ namespace MyApp.Api.Services.mission
     {
         Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator, MissionService missionService);
         Task<int> CalculateDuration(DateTime start, DateTime end);
-        Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
+        Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDto);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
