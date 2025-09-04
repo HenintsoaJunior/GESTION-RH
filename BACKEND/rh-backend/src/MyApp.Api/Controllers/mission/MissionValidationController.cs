@@ -1,20 +1,42 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MyApp.Api.Entities.mission;
+using MyApp.Api.Entities.employee;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Services.mission;
+using MyApp.Api.Utils.pdf;
 
-namespace MyApp.Api.Controllers
+namespace MyApp.Api.Controllers.mission
 {
     [ApiController]
     [Route("api/[controller]")]
     public class MissionValidationController(
         IMissionValidationService missionValidationService,
+        IConfiguration configuration,
         ILogger<MissionValidationController> logger)
         : ControllerBase
     {
         private readonly IMissionValidationService _missionValidationService = missionValidationService ?? throw new ArgumentNullException(nameof(missionValidationService));
+        private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         private readonly ILogger<MissionValidationController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
+    
+        [HttpPost("generate-employment-certificate")]
+        public IActionResult GenerateEmploymentCertificate([FromBody] EmployeeCertificate employeeCertificate)
+        {
+            try
+            {
+                var pdfBytes = new PdfGenerator().GenerateEmploymentCertificate(employeeCertificate, _configuration.GetSection("Company:Name").Value, null,"Antananarivo");
+                var pdfName = $"Attestation de travail-{employeeCertificate.EmployeeName}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                return File(pdfBytes, "application/pdf", pdfName);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while generating the employment certificate: {ex.Message}");
+            }
+        }
+        
         // GET: api/MissionValidation/requests
         [HttpGet("requests")]
         public async Task<IActionResult> GetRequests()

@@ -17,13 +17,13 @@ namespace MyApp.Api.Services.mission
     {
         Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator, MissionService missionService);
         Task<int> CalculateDuration(DateTime start, DateTime end);
-        Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
+        Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDto);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
         Task<MissionAssignation?> GetByEmployeeIdMissionIdAsync(string employeeId, string missionId);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
-        Task<(string EmployeeId, string MissionId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation);
+        Task<(string EmployeeId, string MissionId, string assignationId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation);
         Task<bool> UpdateAsync(string assignationId, MissionAssignation missionAssignation);
         Task<bool> DeleteAsync(string assignationId);
         Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
@@ -121,7 +121,7 @@ namespace MyApp.Api.Services.mission
             await CreateAsync(assignation);
         }
 
-        private async Task<Mission> GetOrCreateMissionAsync(List<List<string>> data, string lieuId, MissionService missionService)
+        private static async Task<Mission> GetOrCreateMissionAsync(List<List<string>> data, string lieuId, MissionService missionService)
         {
             var missionName = data[1][4];
             var startDate = DateTime.Parse(data[1][9]);
@@ -151,7 +151,7 @@ namespace MyApp.Api.Services.mission
         {
             var parts = lieuData.Split("/");
             var nom = parts[0];
-            string? pays = parts.Length == 2 ? parts[1] : null;
+            var pays = parts.Length == 2 ? parts[1] : null;
 
             var lieu = await _lieuService.VerifyLieuExistsAsync(nom, pays);
             if (lieu != null) return lieu;
@@ -188,30 +188,30 @@ namespace MyApp.Api.Services.mission
             return assignation;
         }
 
-        public Task<int> CalculateDuration(DateTime Start, DateTime End)
+        public Task<int> CalculateDuration(DateTime start, DateTime end)
         {
-            if (End < Start)
+            if (end < start)
                 throw new ArgumentException("La date de fin ne peut pas être antérieure à la date de début.");
 
-            TimeSpan duration = End.Date - Start.Date;
+            TimeSpan duration = end.Date - start.Date;
             return Task.FromResult(duration.Days);
         }
         
 
-        public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO)
+        public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDto)
         {
             try
             {
-                MissionPaiementResult paiements = await GeneratePaiementsAsync(
-                    generatePaiementDTO.EmployeeId,
-                    generatePaiementDTO.MissionId,
-                    generatePaiementDTO.LieuId,
-                    generatePaiementDTO.StartDate,
-                    generatePaiementDTO.EndDate,
-                    generatePaiementDTO.Status
+                var paiements = await GeneratePaiementsAsync(
+                    generatePaiementDto.EmployeeId,
+                    generatePaiementDto.MissionId,
+                    generatePaiementDto.LieuId,
+                    generatePaiementDto.StartDate,
+                    generatePaiementDto.EndDate,
+                    generatePaiementDto.Status
                 );
 
-                PdfGenerator pdf = new PdfGenerator(paiements.GetDescriptionForPdf(), paiements.GetTablesForPdf());
+                var pdf = new PdfGenerator(paiements.GetDescriptionForPdf(), paiements.GetTablesForPdf());
                 return pdf.GeneratePdf("Mission");
             }
             catch (Exception ex)
@@ -604,12 +604,11 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<(string EmployeeId, string MissionId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation)
+        public async Task<(string EmployeeId, string MissionId, string assignationId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation)
         {
             // Validation des paramètres d'entrée
-            if (missionAssignation == null)
-                throw new ArgumentNullException(nameof(missionAssignation));
-            
+            ArgumentNullException.ThrowIfNull(missionAssignation);
+
             if (string.IsNullOrWhiteSpace(missionAssignation.EmployeeId))
                 throw new ArgumentException("L'ID de l'employé ne peut pas être vide.", nameof(missionAssignation.EmployeeId));
             
@@ -646,7 +645,7 @@ namespace MyApp.Api.Services.mission
                 _logger.LogInformation("Assignation créée avec succès pour EmployeeId={EmployeeId}, MissionId={MissionId}, AssignationId={AssignationId}",
                     missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.AssignationId);
 
-                return (missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.TransportId);
+                return (missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.AssignationId, missionAssignation.TransportId);
             }
             catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx && (sqlEx.Number == 2601 || sqlEx.Number == 2627))
             {
