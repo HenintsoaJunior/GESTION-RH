@@ -46,15 +46,17 @@ namespace MyApp.Api.Repositories.mission
             var missionValidation = await _context.MissionValidations
                 .FirstOrDefaultAsync(mv => mv.MissionValidationId == missionValidationId 
                                            && mv.MissionAssignationId == missionAssignationId);
-
-            if (missionValidation == null) return false;
-
+            
             // Valider la ligne courante
-            missionValidation.Status = "Validé";
-            missionValidation.ValidationDate = DateTime.UtcNow;
-            _context.MissionValidations.Update(missionValidation);
+            if (missionValidation != null)
+            {
+                missionValidation.Status = "Validé";
+                missionValidation.ValidationDate = DateTime.UtcNow;
+                _context.MissionValidations.Update(missionValidation);
+            }
 
             // Chercher la prochaine ligne pour ce MissionAssignationId
+            var isFinished = true;
             var nextValidation = await _context.MissionValidations
                 .Where(mv => mv.MissionAssignationId == missionAssignationId && mv.Status == null)
                 .OrderBy(mv => mv.CreatedAt) // ordre logique (ex : chronologique)
@@ -64,10 +66,11 @@ namespace MyApp.Api.Repositories.mission
             {
                 nextValidation.Status = "En Attente";
                 _context.MissionValidations.Update(nextValidation);
+                isFinished = false;
             }
 
             await _context.SaveChangesAsync();
-            return true;
+            return isFinished;
         }
 
 
