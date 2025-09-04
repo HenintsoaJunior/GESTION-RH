@@ -13,6 +13,7 @@ namespace MyApp.Api.Services.mission
         Task<MissionValidation?> VerifyMissionValidationByMissionIdAsync(string missionId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<MissionValidation>> GetAllAsync();
+        Task<IEnumerable<MissionValidation?>?> GetByAssignationIdAsync(string assignationId);
         Task<MissionValidation?> GetByIdAsync(string id);
         Task<string> CreateAsync(MissionValidationDTOForm missionValidation, string userId); // Modified to include userId
         Task<bool> UpdateAsync(string id, MissionValidationDTOForm missionValidation, string userId); // Modified to include userId
@@ -120,6 +121,34 @@ namespace MyApp.Api.Services.mission
                 throw;
             }
         }
+        
+        public async Task<IEnumerable<MissionValidation?>?> GetByAssignationIdAsync(string assignationId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(assignationId))
+                {
+                    _logger.LogWarning("Tentative de récupération d'une validation de mission avec un assignationId null ou vide");
+                    return null;
+                }
+
+                _logger.LogInformation("Récupération de la validation de mission pour assignationId={AssignationId}", assignationId);
+
+                var filters = new MissionValidationSearchFiltersDTO
+                {
+                    MissionAssignationId = assignationId
+                };
+
+                var (result, total) = await _repository.SearchAsync(filters, 1, 1);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de la validation de mission avec assignationId={AssignationId}", assignationId);
+                throw;
+            }
+        }
+
 
         public async Task<MissionValidation?> GetByIdAsync(string id)
         {

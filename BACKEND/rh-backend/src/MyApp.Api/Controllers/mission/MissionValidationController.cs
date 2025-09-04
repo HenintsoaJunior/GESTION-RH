@@ -39,6 +39,35 @@ namespace MyApp.Api.Controllers.mission
             }
         }
         
+        //prendre l'évolution de ma demande
+        // GET: api/MissionValidation/assignation/{assignationId}
+        [HttpGet("by-assignation-id/{assignationId}")]
+        public async Task<IActionResult> GetByAssignationId(string assignationId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(assignationId))
+                {
+                    _logger.LogWarning("Tentative de récupération avec un assignationId null ou vide");
+                    return BadRequest(new { message = "L'assignationId ne peut pas être null ou vide." });
+                }
+
+                _logger.LogInformation("Récupération de la validation de mission pour assignationId={AssignationId}", assignationId);
+                var entity = await _missionValidationService.GetByAssignationIdAsync(assignationId);
+
+                if (entity != null) return Ok(entity);
+
+                _logger.LogWarning("Validation de mission non trouvée pour assignationId={AssignationId}", assignationId);
+                return NotFound(new { message = $"Validation de mission pour assignationId {assignationId} non trouvée." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de la validation de mission avec assignationId={AssignationId}", assignationId);
+                return StatusCode(500, new { message = "Une erreur est survenue lors de la récupération de la validation." });
+            }
+        }
+
+        
         // GET: api/MissionValidation/requests
         [HttpGet("requests")]
         public async Task<IActionResult> GetRequests()
