@@ -1,19 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Plus, Clock, Calendar, ChevronDown, ChevronUp, X, CheckCircle, List, XCircle } from "lucide-react";
 import { Calendar as BigCalendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "moment/locale/fr";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { formatDate } from "utils/dateConverter";
-import { hasHabilitation } from "utils/authUtils"; // Import the utility function
+import { hasHabilitation } from "utils/authUtils";
 import { fetchMissions, fetchMissionStats, cancelMission } from "services/mission/mission";
 import Modal from "components/modal";
 import Pagination from "components/pagination";
 import { fetchAllRegions } from "services/lieu/lieu";
 import AssignedPersonsList from "./mission-assign-list";
+import DetailsMission from "./mission-details";
+import MissionForm from "../form/mission-form";
 import {
   DashboardContainer,
   StatsContainer,
@@ -90,6 +92,7 @@ const messages = {
 
 const MissionList = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [missions, setMissions] = useState([]);
   const [stats, setStats] = useState({ total: 0, enCours: 0, planifiee: 0, terminee: 0, annulee: 0 });
   const [filters, setFilters] = useState({
@@ -115,7 +118,10 @@ const MissionList = () => {
   const [missionToCancel, setMissionToCancel] = useState(null);
   const [showAssignedPersonsPopup, setShowAssignedPersonsPopup] = useState(false);
   const [selectedMissionId, setSelectedMissionId] = useState(null);
-  const [permissions, setPermissions] = useState({}); // New state to store permissions per mission
+  const [permissions, setPermissions] = useState({});
+  const [showMissionForm, setShowMissionForm] = useState(false);
+  const [selectedMissionIdForEdit, setSelectedMissionIdForEdit] = useState(null);
+  const [initialStartDate, setInitialStartDate] = useState(null);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -150,6 +156,11 @@ const MissionList = () => {
     setAlert(error);
   }, []);
 
+  const refetchData = useCallback(() => {
+    fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, currentPage, pageSize, handleError);
+    fetchMissionStats(setStats, setIsLoading, handleError);
+  }, [filters, currentPage, pageSize, handleError]);
+
   useEffect(() => {
     fetchAllRegions(
       (data) => {
@@ -164,19 +175,9 @@ const MissionList = () => {
   }, []);
 
   useEffect(() => {
-    const initialFilters = {
-      name: "",
-      startDate: "",
-      endDate: "",
-      lieuId: "",
-      location: "",
-      status: "",
-    };
-    fetchMissions(setMissions, setIsLoading, setTotalEntries, initialFilters, currentPage, pageSize, handleError);
-    fetchMissionStats(setStats, setIsLoading, handleError);
-  }, [currentPage, pageSize, handleError]);
+    refetchData();
+  }, [refetchData]);
 
-  // Fetch permissions for each mission when missions change
   useEffect(() => {
     const fetchPermissions = async () => {
       const newPermissions = {};
@@ -277,8 +278,7 @@ const MissionList = () => {
         setIsLoading,
         (successAlert) => {
           setAlert(successAlert);
-          fetchMissions(setMissions, setIsLoading, setTotalEntries, filters, currentPage, pageSize, handleError);
-          fetchMissionStats(setStats, setIsLoading, handleError);
+          refetchData();
         },
         handleError
       );
@@ -308,7 +308,13 @@ const MissionList = () => {
 
   const handleSelectSlot = ({ start }) => {
     const formattedDate = moment(start).format("YYYY-MM-DD");
-    navigate(`/mission/create?startDate=${formattedDate}`);
+    setInitialStartDate(formattedDate);
+    setShowMissionForm(true);
+  };
+
+  const handleEditMission = (missionId) => {
+    setSelectedMissionIdForEdit(missionId);
+    setShowMissionForm(true);
   };
 
   const toggleMinimize = () => {
@@ -333,7 +339,6 @@ const MissionList = () => {
     return <StatusBadge className={statusClass}>{status || "Inconnu"}</StatusBadge>;
   };
 
-  // Generalized function to render action buttons based on habilitations
   const renderActionButtons = (mission) => {
     const missionPermissions = permissions[mission.missionId] || { canModify: false, canCancel: false };
 
@@ -348,7 +353,7 @@ const MissionList = () => {
             <ButtonUpdate
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/mission/form/${mission.missionId}`);
+                handleEditMission(mission.missionId);
               }}
             >
               Modifier
@@ -367,6 +372,11 @@ const MissionList = () => {
         </ActionButtons>
       </TableCell>
     );
+  };
+
+  const handleFormSuccess = (type, message) => {
+    setAlert({ isOpen: true, type, message });
+    refetchData();
   };
 
   return (
@@ -393,9 +403,24 @@ const MissionList = () => {
       </Modal>
 
       {showAssignedPersonsPopup && (
-        <AssignedPersonsList
+        <DetailsMission
           missionId={selectedMissionId}
+          isOpen={showAssignedPersonsPopup}
           onClose={() => setShowAssignedPersonsPopup(false)}
+        />
+      )}
+
+      {showMissionForm && (
+        <MissionForm
+          isOpen={showMissionForm}
+          onClose={() => {
+            setShowMissionForm(false);
+            setSelectedMissionIdForEdit(null);
+            setInitialStartDate(null);
+          }}
+          missionId={selectedMissionIdForEdit}
+          initialStartDate={initialStartDate}
+          onFormSuccess={handleFormSuccess}
         />
       )}
 
@@ -578,7 +603,7 @@ const MissionList = () => {
             <Calendar size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Calendrier
           </ButtonView>
-          <ButtonAdd onClick={() => navigate("/mission/form")}>
+          <ButtonAdd onClick={() => setShowMissionForm(true)}>
             <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Nouvelle mission
           </ButtonAdd>
