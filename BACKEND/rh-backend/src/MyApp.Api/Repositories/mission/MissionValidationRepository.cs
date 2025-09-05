@@ -36,6 +36,7 @@ namespace MyApp.Api.Repositories.mission
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
                 .Include(mv => mv.Creator)
+                .Include(mv => mv.Validator)
                 .Where(mv => mv.ToWhom == userId)
                 .Where(mv => mv.Status == "En attente")
                 .AsQueryable();
@@ -155,7 +156,8 @@ namespace MyApp.Api.Repositories.mission
             }
 
             var missionValidations = await _context.MissionValidations
-                .Include(mv => mv.ToWhom)
+                .Include(mv => mv.Validator)
+                .Include(mv => mv.MissionAssignation)
                 .Where(mv => mv.MissionAssignationId == assignationId)
                 .OrderByDescending(mv => mv.CreatedAt)
                 .ToListAsync();
