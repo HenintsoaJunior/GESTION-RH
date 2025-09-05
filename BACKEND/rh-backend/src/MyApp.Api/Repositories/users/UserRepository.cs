@@ -24,7 +24,7 @@ namespace MyApp.Api.Repositories.users
         Task DeleteUsersAsync(List<User> users);
         Task SaveChangesAsync();
         Task<IEnumerable<User>> GetCollaboratorsAsync(string userId);
-        Task<User?> GetSuperiorAsync(string userId);
+        Task<User?> GetSuperiorAsync(string matricule);
         Task<User?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
     }

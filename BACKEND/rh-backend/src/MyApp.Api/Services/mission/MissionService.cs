@@ -2,6 +2,8 @@ using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Models.list.mission;
 using MyApp.Api.Repositories.mission;
+using MyApp.Api.Services.employee;
+using MyApp.Api.Services.users;
 using MyApp.Api.Utils.generator;
 
 namespace MyApp.Api.Services.mission
@@ -15,7 +17,7 @@ namespace MyApp.Api.Services.mission
         Task<string> CreateAsync(MissionDTOForm mission);
         Task<bool> UpdateAsync(string id, MissionDTOForm mission);
         Task<bool> DeleteAsync(string id);
-        Task<MissionStats> GetStatisticsAsync();
+        Task<MissionStats> GetStatisticsAsync(string[]? matricule = null);
         Task<bool> CancelAsync(string id);
     }
 
@@ -23,6 +25,8 @@ namespace MyApp.Api.Services.mission
     {
         private readonly IMissionRepository _repository;
         private readonly IMissionValidationService _validationService;
+        private readonly IUserService _userService;
+        private readonly IEmployeeService _employeeService;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly IMissionAssignationService _missionAssignationService;
         private readonly ILogger<MissionService> _logger; // Updated to use MissionService
@@ -31,13 +35,15 @@ namespace MyApp.Api.Services.mission
             IMissionRepository repository,
             ISequenceGenerator sequenceGenerator,
             IMissionAssignationService missionAssignationService,
-            ILogger<MissionService> logger, IMissionValidationService validationService)
+            ILogger<MissionService> logger, IMissionValidationService validationService, IUserService userService, IEmployeeService employeeService)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
             _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _validationService = validationService;
+            _userService = userService;
+            _employeeService = employeeService;
         }
 
         public async Task<Mission?> VerifyMissionByNameAsync(string name)
@@ -124,31 +130,40 @@ namespace MyApp.Api.Services.mission
                     var missionId = _sequenceGenerator.GenerateSequence("seq_mission_id", "MIS", 6, "-");
                     var mission = new Mission(missionDto) { MissionId = missionId };
 
-                    //création mission
+                    // Création mission
                     await _repository.AddAsync(mission);
                     await _repository.SaveChangesAsync();
-                    
-                    //création mission assignation
-                    if (missionDto.Assignations.Count != 0)
+
+                    // Création mission assignation
+                    if (missionDto.Assignations?.Count > 0)
                     {
                         foreach (var missionAssignation in missionDto.Assignations.Select(assignationDto => new MissionAssignation(missionId, assignationDto)))
                         {
                             var assignation = await _missionAssignationService.CreateAsync(missionAssignation);
-                            //insertion dans mission validation
-                            // pour DRH
+                            
+                            var drh = await _userService.GetDrhAsync();
+                            var employee = await _employeeService.GetByIdAsync(missionAssignation.EmployeeId);
+                            if (employee == null)
+                            {
+                                throw new InvalidOperationException($"Employé avec ID {assignation.EmployeeId} introuvable.");
+                            }
+                            var superior = await _userService.GetSuperiorAsync(employee.EmployeeCode);
+                            
                             var missionValidationDtoForm = new MissionValidationDTOForm
                             {
                                 MissionId = missionId,
                                 MissionAssignationId = assignation.assignationId,
                                 MissionCreator = missionDto.UserId,
-                                Status = "En attente",
-                                ToWhom = "DRH"
+                                Status = null,
+                                ToWhom = "DRH",
+                                DhrId = drh?.UserId,
+                                SuperiorId = superior?.UserId
                             };
                             await _validationService.CreateAsync(missionValidationDtoForm, missionDto.UserId);
-                            
-                            //pour tutelle
-                            missionValidationDtoForm.Status = null;
+                            missionValidationDtoForm.Status = "En attente";
                             missionValidationDtoForm.ToWhom = "Directeur de tutelle";
+                            missionValidationDtoForm.SuperiorId = superior?.UserId;
+                            missionValidationDtoForm.DhrId = drh?.UserId;
                             await _validationService.CreateAsync(missionValidationDtoForm, missionDto.UserId);
                         }
 
@@ -266,16 +281,16 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<MissionStats> GetStatisticsAsync()
+        public async Task<MissionStats> GetStatisticsAsync(string[]? matricule = null)
         {
             try
             {
-                _logger.LogInformation("Récupération des statistiques des missions");
-                return await _repository.GetStatisticsAsync();
+                _logger.LogInformation("Récupération des statistiques des missions avec matricule filter: {Matricule}", matricule != null ? string.Join(", ", matricule) : "none");
+                return await _repository.GetStatisticsAsync(matricule);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des statistiques des missions");
+                _logger.LogError(ex, "Erreur lors de la récupération des statistiques des missions avec matricule filter: {Matricule}", matricule != null ? string.Join(", ", matricule) : "none");
                 throw;
             }
         }

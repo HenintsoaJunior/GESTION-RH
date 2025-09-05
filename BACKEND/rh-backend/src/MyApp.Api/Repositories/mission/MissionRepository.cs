@@ -18,7 +18,7 @@ namespace MyApp.Api.Repositories.mission
         Task UpdateAsync(Mission mission);
         Task DeleteAsync(Mission mission);
         Task SaveChangesAsync();
-        Task<MissionStats> GetStatisticsAsync();
+        Task<MissionStats> GetStatisticsAsync(string[]? matricule = null);
         Task<bool> CancelAsync(string id);
     }
 
@@ -153,20 +153,46 @@ namespace MyApp.Api.Repositories.mission
             return true;
         }
 
-        // Récupère des statistiques sur les missions (total, par statut)
-        public async Task<MissionStats> GetStatisticsAsync()
+        public async Task<MissionStats> GetStatisticsAsync(string[]? matricule = null)
         {
-            var total = await _context.Missions.CountAsync();
-            var enCours = await _context.Missions
-                .CountAsync(m => m.Status == "En Cours");
-            var planifiee = await _context.Missions
-                .CountAsync(m => m.Status == "Planifié");
-            var terminee = await _context.Missions
-                .CountAsync(m => m.Status == "Terminé");
-            var annulee = await _context.Missions
-                .CountAsync(m => m.Status == "Annulé");
+            // Start with the Missions table
+            var query = _context.Missions.AsQueryable();
 
-            return new MissionStats()
+            // Apply matricule filter if provided
+            if (matricule != null && matricule.Any(m => !string.IsNullOrWhiteSpace(m)))
+            {
+                // Get distinct MissionIds that match the matricule filter
+                var distinctMissionIds = await query
+                    .Join(
+                        _context.MissionAssignations,
+                        mission => mission.MissionId,
+                        assignation => assignation.MissionId,
+                        (mission, assignation) => new { MissionId = mission.MissionId, Assignation = assignation }
+                    )
+                    .Join(
+                        _context.Employees,
+                        ma => ma.Assignation.EmployeeId,
+                        employee => employee.EmployeeId,
+                        (ma, employee) => new { ma.MissionId, Employee = employee }
+                    )
+                    .Where(me => matricule.Contains(me.Employee.EmployeeCode))
+                    .Select(me => me.MissionId)
+                    .Distinct()
+                    .ToListAsync();
+
+                // Filter the query to only include missions with the distinct MissionIds
+                query = query.Where(m => distinctMissionIds.Contains(m.MissionId));
+            }
+
+            // Calculate statistics
+            var total = await query.CountAsync();
+            var enCours = await query.CountAsync(m => m.Status == "En Cours");
+            var planifiee = await query.CountAsync(m => m.Status == "Planifié");
+            var terminee = await query.CountAsync(m => m.Status == "Terminé");
+            var annulee = await query.CountAsync(m => m.Status == "Annulé");
+
+            // Return the MissionStats object
+            return new MissionStats
             {
                 Total = total,
                 EnCours = enCours,

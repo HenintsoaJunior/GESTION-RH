@@ -134,12 +134,36 @@ namespace MyApp.Api.Repositories.mission
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<MissionValidation?>?> GetByAssignationIdAsync(string assignationId)
+        public async Task<IEnumerable<MissionValidation?>?> GetByAssignationIdAsync(string? assignationId)
         {
-            return await _context.MissionValidations
-                .Where(mv => mv.MissionAssignationId == assignationId)
+            if (string.IsNullOrEmpty(assignationId))
+            {
+                return null;
+            }
+
+            var missionValidations = await _context.MissionValidations
+                .Include(mv => mv.Drh)
+                .Include(mv => mv.Superior)
+                .Where(mv => mv.MissionAssignationId == assignationId 
+                             && (mv.ToWhom == "DRH" || mv.ToWhom == "Directeur de tutelle"))
                 .OrderByDescending(mv => mv.CreatedAt)
                 .ToListAsync();
+
+            foreach (var mv in missionValidations)
+            {
+                if (mv.ToWhom == "DRH")
+                {
+                    mv.Superior = null;
+                    mv.SuperiorId = null;
+                }
+                else if (mv.ToWhom == "Directeur de tutelle")
+                {
+                    mv.Drh = null;
+                    mv.DrhId = null;
+                }
+            }
+
+            return missionValidations;
         }
 
         public async Task<MissionValidation?> GetByIdAsync(string id)

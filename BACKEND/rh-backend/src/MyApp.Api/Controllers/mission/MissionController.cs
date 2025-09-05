@@ -112,11 +112,19 @@ namespace MyApp.Api.Controllers.mission
 
         // Récupère des statistiques sur les missions
         [HttpGet("stats")]
-        //[Authorize(Roles = "admin")]
-        public async Task<ActionResult<MissionStats>> GetStatistics()
+//[Authorize(Roles = "admin")]
+        public async Task<ActionResult<MissionStats>> GetStatistics([FromQuery] string[]? matricule = null)
         {
-            var stats = await missionService.GetStatisticsAsync();
-            return Ok(stats);
+            try
+            {
+                var stats = await missionService.GetStatisticsAsync(matricule);
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving mission statistics with matricule filter: {Matricule}", matricule != null ? string.Join(", ", matricule) : "none");
+                return StatusCode(500, "An error occurred while retrieving mission statistics.");
+            }
         }
         // Annule une mission (change son statut à "Annulé")
         [HttpPut("{id}/cancel")]
