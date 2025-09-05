@@ -54,7 +54,6 @@ import {
   EmptyCardsState,
 } from "styles/generaliser/card-container";
 import { NoDataMessage } from "styles/generaliser/table-container";
-import { fetchSuperior, fetchDrh } from "services/users/users";
 import { formatValidatorData } from "services/mission/validator-utils";
 import {
   fetchAssignMission,
@@ -62,17 +61,19 @@ import {
   exportMissionAssignationPDF,
   exportMissionAssignationExcel,
 } from "services/mission/mission";
+import { useGetMissionValidationsByAssignationId } from "services/mission/validator-utils";
 import { formatDate } from "utils/dateConverter";
 
 const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
   const navigate = useNavigate();
+  const getMissionValidations = useGetMissionValidationsByAssignationId();
+
   const [isLoading, setIsLoading] = useState({
     assignMissions: false,
     mission: false,
     exportPDF: false,
     exportExcel: false,
-    superior: false,
-    drh: false,
+    validations: false,
   });
   const [error, setError] = useState({ isOpen: false, type: "", message: "" });
   const [assignedPersons, setAssignedPersons] = useState([]);
@@ -81,45 +82,62 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
   const [pageSize, setPageSize] = useState(10);
   const [totalEntries, setTotalEntries] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
-  const [superior, setSuperior] = useState(null);
-  const [drh, setDrh] = useState(null);
-  const [dataLoaded, setDataLoaded] = useState(false);
-
-  const [validationSteps, setValidationSteps] = useState([
-    {
-      id: 1,
-      title: "Validation Supérieur",
-      subtitle: "Hiérarchique",
-      status: "approved",
-      hasIndicator: true,
-      validator: null,
-      validatedAt: "2024-01-15T10:30:00",
-      comment: "Mission approuvée. Les objectifs sont clairs et réalisables.",
-      order: 1,
-    },
-    {
-      id: 2,
-      title: "Validation RH",
-      subtitle: "Ressources Humaines",
-      status: "in-progress",
-      hasIndicator: true,
-      validator: null,
-      validatedAt: null,
-      comment: null,
-      order: 2,
-    },
-  ]);
+  const [validationSteps, setValidationSteps] = useState([]);
 
   const handleError = (error) => {
     setError(error);
   };
 
-  // Fonction pour vérifier si toutes les données sont chargées
-  const checkDataLoaded = (assignedPersons, superior, drh) => {
-    const hasAssignedPersons = assignedPersons && assignedPersons.length > 0;
-    const hasSuperior = superior !== null;
-    const hasDrh = drh !== null;
-    return hasAssignedPersons && hasSuperior && hasDrh;
+  // Fonction pour mapper les validations vers les steps
+  const mapValidationsToSteps = (validations) => {
+    const stepMapping = {
+      "Directeur de tutelle": {
+        title: "Validation Supérieur",
+        subtitle: "Hiérarchique",
+        order: 1,
+      },
+      "DRH": {
+        title: "Validation RH",
+        subtitle: "Ressources Humaines",
+        order: 2,
+      },
+    };
+
+    const mappedSteps = validations.map((validation) => {
+      const stepInfo = stepMapping[validation.toWhom] || {
+        title: validation.toWhom,
+        subtitle: "",
+        order: validation.toWhom === "DRH" ? 2 : 1,
+      };
+
+      // Déterminer le statut
+      let status;
+      if (validation.status === "En attente") {
+        status = "in-progress";
+      } else if (validation.status === "Approuvé" || validation.status === "Validé") {
+        status = "approved";
+      } else if (validation.status === "Rejeté") {
+        status = "rejected";
+      } else {
+        status = "pending";
+      }
+
+      const mappedStep = {
+        id: validation.missionValidationId,
+        title: stepInfo.title,
+        subtitle: stepInfo.subtitle,
+        status: status,
+        hasIndicator: true,
+        validator: validation.validator,
+        validatedAt: validation.createdAt,
+        comment: "Mission approuvée. Les objectifs sont clairs et réalisables.", // Commentaire à la dur comme demandé
+        order: stepInfo.order,
+      };
+
+      return mappedStep;
+    }).sort((a, b) => a.order - b.order);
+
+    return mappedSteps;
   };
 
   useEffect(() => {
@@ -132,93 +150,50 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
       return;
     }
 
-    const loadInitialData = async () => {
-      try {
-        // Fetch Assigned Persons
-        await fetchAssignMission(
-          setAssignedPersons,
-          setIsLoading,
-          setTotalEntries,
-          { missionId },
-          currentPage,
-          pageSize,
-          handleError
-        );
-      } catch (error) {
-        handleError({
-          isOpen: true,
-          type: "error",
-          message: "Erreur lors du chargement des assignations.",
-        });
-      }
-    };
-
-    loadInitialData();
+    // Fetch Assigned Persons
+    fetchAssignMission(
+      setAssignedPersons,
+      setIsLoading,
+      setTotalEntries,
+      { missionId },
+      currentPage,
+      pageSize,
+      handleError
+    );
   }, [missionId, currentPage, pageSize]);
 
-  // Effet pour récupérer le supérieur et DRH une fois qu'on a les personnes assignées
+  // Effet pour récupérer les validations une fois qu'on a les personnes assignées
   useEffect(() => {
-    if (assignedPersons.length > 0 && assignedPersons[0]?.matricule) {
-      const matricule = assignedPersons[0].matricule;
-      
-      const loadValidators = async () => {
+    if (assignedPersons.length > 0) {
+      const fetchValidations = async () => {
         try {
-          // Fetch Superior
-          setIsLoading((prev) => ({ ...prev, superior: true }));
-          const superiorData = await fetchSuperior(
-            matricule,
-            setSuperior,
-            setIsLoading,
-            handleError
-          );
-          
-          // Fetch DRH
-          setIsLoading((prev) => ({ ...prev, drh: true }));
-          await fetchDrh(
-            (data) => {
-              setDrh(data);
-              setIsLoading((prev) => ({ ...prev, drh: false }));
-            },
-            setIsLoading,
-            handleError
-          );
-          
-          setIsLoading((prev) => ({ ...prev, superior: false }));
+          setIsLoading((prev) => ({ ...prev, validations: true }));
+
+          // Prendre la première assignation pour récupérer les validations
+          const firstAssignation = assignedPersons[0];
+          const assignationId = firstAssignation.assignationId;
+
+          if (assignationId) {
+            const validations = await getMissionValidations(assignationId);
+            const mappedSteps = mapValidationsToSteps(validations);
+            setValidationSteps(mappedSteps);
+            // Debug: Log validation steps to verify status
+            console.log("Validation Steps:", mappedSteps);
+          }
         } catch (error) {
-          setIsLoading((prev) => ({ ...prev, superior: false, drh: false }));
           handleError({
             isOpen: true,
             type: "error",
-            message: "Erreur lors du chargement des validateurs.",
+            message: "Erreur lors de la récupération des validations de mission.",
           });
+        } finally {
+          setIsLoading((prev) => ({ ...prev, validations: false }));
         }
       };
 
-      loadValidators();
+      fetchValidations();
     }
-  }, [assignedPersons]);
-
-  // Effet pour mettre à jour les validationSteps et vérifier si toutes les données sont chargées
-  useEffect(() => {
-    if (superior && drh && assignedPersons.length > 0) {
-      const formattedSuperior = formatValidatorData(superior, "Manager");
-      const formattedDrh = formatValidatorData(drh, "Directrice RH");
-      
-      setValidationSteps((prevSteps) =>
-        prevSteps.map((step) => {
-          if (step.order === 1) {
-            return { ...step, validator: formattedSuperior };
-          } else if (step.order === 2) {
-            return { ...step, validator: formattedDrh };
-          }
-          return step;
-        })
-      );
-
-      // Marquer les données comme chargées
-      setDataLoaded(true);
-    }
-  }, [superior, drh, assignedPersons]);
+  }, [assignedPersons, getMissionValidations]);
 
   const handleClose = () => {
     if (onClose) {
@@ -284,12 +259,11 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
   if (!isOpen) return null;
 
   const currentStepData = validationSteps[currentStep] || validationSteps[0];
+  // Select the assigned person corresponding to the current step, or the first one
   const currentAssignedPerson = assignedPersons[currentStep] || assignedPersons[0];
   const formattedAssignedPerson = currentAssignedPerson
     ? formatValidatorData(currentAssignedPerson, "Collaborateur")
     : null;
-
-  const isLoadingData = isLoading.assignMissions || isLoading.superior || isLoading.drh || !dataLoaded;
 
   return (
     <PopupOverlay role="dialog" aria-labelledby="mission-details-title" aria-modal="true">
@@ -306,7 +280,7 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
           </PopupTitle>
           <CloseButton
             onClick={handleClose}
-            disabled={isLoadingData}
+            disabled={isLoading.mission || isLoading.assignMissions || isLoading.validations}
             aria-label="Fermer la fenêtre"
           >
             <X size={24} />
@@ -324,84 +298,61 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
 
           <ValidationStepper steps={validationSteps} currentStep={currentStep} />
 
-          {isLoadingData ? (
+          {(isLoading.assignMissions || isLoading.validations) ? (
             <LoadingContainer>Chargement des informations de la mission...</LoadingContainer>
           ) : (
             <ContentArea>
               {/* Validator Details */}
-              {validationSteps.some((step) => step.validator) ? (
+              {validationSteps.length > 0 ? (
                 <ValidatorCard>
                   <ValidatorGrid>
                     <ValidatorSection>
                       <SectionTitle>Validateurs</SectionTitle>
-                      {/* N+1 Validator */}
-                      {validationSteps[0].validator ? (
-                        <ValidatorItem>
-                          <Avatar size="40px">{validationSteps[0].validator.initials}</Avatar>
+                      {validationSteps.map((step, index) => (
+                        <ValidatorItem key={step.id}>
+                          <Avatar size="40px">{step.validator?.initials || "NA"}</Avatar>
                           <ValidatorInfo>
-                            <ValidatorName>{validationSteps[0].validator.name}</ValidatorName>
-                            <ValidatorRole>Validation Supérieur Hiérarchique (N+1)</ValidatorRole>
+                            <ValidatorName>{step.validator?.name || "Non spécifié"}</ValidatorName>
+                            <ValidatorRole>
+                              {step.title} {step.subtitle}
+                            </ValidatorRole>
                           </ValidatorInfo>
                         </ValidatorItem>
-                      ) : (
-                        <ValidatorItem>
-                          <div
-                            style={{
-                              textAlign: "center",
-                              padding: "var(--spacing-md)",
-                              color: "var(--text-secondary)",
-                            }}
-                          >
-                            Validateur N+1 non disponible
-                          </div>
-                        </ValidatorItem>
-                      )}
-                      {/* DRH Validator */}
-                      {validationSteps[1].validator ? (
-                        <ValidatorItem>
-                          <Avatar size="40px">{validationSteps[1].validator.initials}</Avatar>
-                          <ValidatorInfo>
-                            <ValidatorName>{validationSteps[1].validator.name}</ValidatorName>
-                            <ValidatorRole>Validation RH Ressources Humaines (DRH)</ValidatorRole>
-                          </ValidatorInfo>
-                        </ValidatorItem>
-                      ) : (
-                        <ValidatorItem>
-                          <div
-                            style={{
-                              textAlign: "center",
-                              padding: "var(--spacing-md)",
-                              color: "var(--text-secondary)",
-                            }}
-                          >
-                            Validateur DRH non disponible
-                          </div>
-                        </ValidatorItem>
-                      )}
+                      ))}
                     </ValidatorSection>
                     <ValidatorSection>
                       <SectionTitle>Personnes Assignées à la Mission</SectionTitle>
-                      {assignedPersons.length > 0 ? (
+                      {isLoading.assignMissions ? (
+                        <ValidatorItem>
+                          <div
+                            style={{
+                              textAlign: "center",
+                              padding: "var(--spacing-md)",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            Chargement des assignations...
+                          </div>
+                        </ValidatorItem>
+                      ) : assignedPersons.length > 0 ? (
                         assignedPersons.map((assignment, index) => (
-                          <ValidatorItem 
+                          <ValidatorItem
                             key={`${assignment.employeeId}-${missionId}-${index}`}
                             onClick={() => handleCardClick(assignment.employeeId)}
                             style={{ cursor: "pointer", marginBottom: "var(--spacing-md)" }}
                           >
                             <Avatar size="40px">
-                              {assignment.beneficiary 
-                                ? assignment.beneficiary.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-                                : 'NA'
-                              }
+                              {assignment.beneficiary
+                                ? assignment.beneficiary
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .substring(0, 2)
+                                    .toUpperCase()
+                                : "NA"}
                             </Avatar>
                             <ValidatorInfo>
-                              {/* Correction : utiliser des props transient avec $ pour éviter qu'elles soient passées au DOM */}
-                              <ValidatorName 
-                                style={{ 
-                                  fontWeight: 'bold',
-                                  fontSize: '1.1em'
-                                }}
-                              >
+                              <ValidatorName>
                                 {assignment.beneficiary && assignment.directionAcronym
                                   ? `${assignment.beneficiary} (${assignment.directionAcronym})`
                                   : assignment.beneficiary || "Non spécifié"}
@@ -422,24 +373,29 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
                           </div>
                         </ValidatorItem>
                       )}
-                      
+
                       {assignedPersons.length > 0 && (
-                        <InfoGrid style={{ 
-                          marginTop: "var(--spacing-lg)",
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                          gap: "var(--spacing-md)"
-                        }}>
+                        <InfoGrid
+                          style={{
+                            marginTop: "var(--spacing-lg)",
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                            gap: "var(--spacing-md)",
+                          }}
+                        >
                           {assignedPersons.map((assignment, index) => (
-                            <div key={`info-${assignment.employeeId}-${index}`} style={{
-                              display: "grid",
-                              gridTemplateColumns: "repeat(2, 1fr)",
-                              gap: "var(--spacing-sm)",
-                              padding: "var(--spacing-md)",
-                              border: "1px solid var(--border-light)",
-                              borderRadius: "var(--border-radius)",
-                              backgroundColor: "var(--background-light)"
-                            }}>
+                            <div
+                              key={`info-${assignment.employeeId}-${index}`}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(2, 1fr)",
+                                gap: "var(--spacing-sm)",
+                                padding: "var(--spacing-md)",
+                                border: "1px solid var(--border-light)",
+                                borderRadius: "var(--border-radius)",
+                                backgroundColor: "var(--background-light)",
+                              }}
+                            >
                               <InfoItem>
                                 <InfoLabel>N° Assignation</InfoLabel>
                                 <InfoValue>{assignment.assignationId || "Non spécifié"}</InfoValue>
@@ -471,12 +427,14 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
                     color: "var(--text-secondary)",
                   }}
                 >
-                  Aucune information de validateur disponible
+                  {isLoading.validations
+                    ? "Chargement des validations..."
+                    : "Aucune information de validateur disponible"}
                 </div>
               )}
 
               {/* Comments and Date */}
-              {(currentStepData.comment || currentStepData.validatedAt) && (
+              {currentStepData && (currentStepData.comment || currentStepData.validatedAt) && (
                 <CommentCard>
                   {currentStepData.comment && (
                     <>
@@ -502,7 +460,7 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
                 </CommentCard>
               )}
 
-              {currentStepData.status === "in-progress" && (
+              {currentStepData && currentStepData.status === "in-progress" && (
                 <InfoAlert>
                   <span style={{ fontSize: "1.2rem" }}>🔄</span>
                   <AlertText>Validation en cours d'examen...</AlertText>

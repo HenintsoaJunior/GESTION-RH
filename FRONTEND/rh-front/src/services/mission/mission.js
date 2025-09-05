@@ -701,10 +701,16 @@ export const fetchMissionById = async (
 };
 
 // Fonction pour récupérer les statistiques des missions
-export const fetchMissionStats = async (setStats, setIsLoading, onError) => {
+export const fetchMissionStats = async (setStats, setIsLoading, onError, matricules = null) => {
   try {
     setIsLoading((prev) => ({ ...prev, stats: true }));
-    const data = await apiGet("/api/Mission/stats");
+
+    // Build query string for matricule filter if provided
+    const query = matricules && matricules.length > 0 
+      ? `?${matricules.map(m => `matricule=${encodeURIComponent(m)}`).join('&')}` 
+      : '';
+    
+    const data = await apiGet(`/api/Mission/stats${query}`);
     setStats(data);
   } catch (error) {
     // Gestion des erreurs
@@ -714,7 +720,7 @@ export const fetchMissionStats = async (setStats, setIsLoading, onError) => {
       type: "error",
       message: `Erreur lors du chargement des statistiques: ${error.message}`,
     });
-    setStats({ total: 0, enCours: 0, terminee: 0, annulee: 0 });
+    setStats({ total: 0, enCours: 0, planifiee: 0, terminee: 0, annulee: 0 });
   } finally {
     setIsLoading((prev) => ({ ...prev, stats: false }));
   }

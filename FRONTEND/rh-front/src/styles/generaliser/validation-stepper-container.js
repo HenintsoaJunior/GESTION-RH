@@ -1,4 +1,4 @@
-import styled from "styled-components"
+import styled from "styled-components";
 
 export const StepperContainer = styled.div`
   display: flex;
@@ -9,7 +9,7 @@ export const StepperContainer = styled.div`
   background-color: var(--bg-primary);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
-`
+`;
 
 export const StepItem = styled.div`
   display: flex;
@@ -17,8 +17,8 @@ export const StepItem = styled.div`
   align-items: center;
   position: relative;
   flex: 1;
-  cursor: ${(props) => (props.clickable ? "pointer" : "default")};
-  
+  cursor: ${({ $isActive }) => ($isActive ? "pointer" : "default")};
+
   &:not(:last-child)::after {
     content: '';
     position: absolute;
@@ -26,10 +26,11 @@ export const StepItem = styled.div`
     right: -50%;
     width: 100%;
     height: 2px;
-    background-color: ${(props) => (props.completed ? "var(--success-color)" : "var(--border-color)")};
+    background-color: ${({ $status }) =>
+      $status === "approved" ? "var(--success-color)" : "var(--border-color)"};
     z-index: 1;
   }
-`
+`;
 
 export const StepCircle = styled.div`
   width: 40px;
@@ -43,17 +44,17 @@ export const StepCircle = styled.div`
   position: relative;
   z-index: 2;
   margin-bottom: 0.5rem;
-  
-  background-color: ${(props) => {
-    if (props.status === "approved") return "var(--success-color)"
-    if (props.status === "in-progress") return "var(--erp-primary)"
-    return "var(--text-muted)"
+
+  background-color: ${({ $status }) => {
+    if ($status === "approved") return "var(--success-color)";
+    if ($status === "in-progress" || $status === "pending") return "var(--pending-color)";
+    return "var(--text-muted)";
   }};
-  
+
   color: white;
-  
-  ${(props) =>
-    props.hasIndicator &&
+
+  ${({ $hasIndicator }) =>
+    $hasIndicator &&
     `
     &::after {
       content: '✓';
@@ -61,7 +62,7 @@ export const StepCircle = styled.div`
       font-size: 0.8rem;
     }
   `}
-`
+`;
 
 export const StepLabel = styled.div`
   text-align: center;
@@ -69,10 +70,10 @@ export const StepLabel = styled.div`
   font-weight: 500;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
-`
+`;
 
 export const StepSubtitle = styled.div`
   text-align: center;
   font-size: 0.8rem;
   color: var(--text-muted);
-`
+`;

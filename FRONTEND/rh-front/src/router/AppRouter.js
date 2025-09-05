@@ -16,7 +16,7 @@ import MissionAssignationFormExcel from 'pages/mission/excel/mission-assign-form
 import ShortcutsDashboard from 'pages/system/entite/shortcuts';
 import EmployeeList from 'pages/employee/employee-list';
 import EmployeeForm from 'pages/employee/employee-fom';
-import BeneficiaryMissionList from 'pages/mission/benificiary/benificary-mission-list';
+import CollaboratorMissionList from 'pages/mission/collaborator/list/collaborator-mission-list';
 import ProcessValidationPage from 'pages/mission/validation/mission-process-validation';
 import MissionValidationPage from 'pages/mission/validation/mission-validation';
 import ProfilePage from 'layouts/profil-page';
@@ -57,7 +57,7 @@ function AppRouter() {
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
           <Route path="/assignments/details" element={<AssignmentDetails />} />
           <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />
-          <Route path="/mission/beneficiary" element={<BeneficiaryMissionList />} />
+          <Route path="/mission/beneficiary" element={<CollaboratorMissionList />} />
 
           
           {/* Transport */}
