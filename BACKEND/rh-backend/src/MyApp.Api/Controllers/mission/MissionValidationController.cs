@@ -25,7 +25,7 @@ namespace MyApp.Api.Controllers.mission
         {
             try
             {
-                var pdfBytes = new PdfGenerator().GenerateEmploymentCertificate(employeeCertificate, _configuration.GetSection("Company:Name").Value, null,"Antananarivo");
+                var pdfBytes = new PdfGenerator().GenerateEmploymentCertificate(employeeCertificate, _configuration.GetSection("Company:Name").Value);
                 var pdfName = $"Attestation de travail-{employeeCertificate.EmployeeName}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
                 return File(pdfBytes, "application/pdf", pdfName);
             }
