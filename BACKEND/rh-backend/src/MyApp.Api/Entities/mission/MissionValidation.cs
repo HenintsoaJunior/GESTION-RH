@@ -50,7 +50,7 @@ namespace MyApp.Api.Entities.mission
         public MissionAssignation? MissionAssignation { get; set; }
         
         [Required]
-        [Column("dhr_id")]
+        [Column("drh_id")]
         [MaxLength(250)]
         public string? DrhId {  get; set; }
         

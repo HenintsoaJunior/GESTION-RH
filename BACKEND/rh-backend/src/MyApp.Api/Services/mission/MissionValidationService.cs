@@ -44,12 +44,13 @@ namespace MyApp.Api.Services.mission
         {
             try
             {
-                _logger.LogInformation("Récupération de toutes les demandes de validation de mission");
-                return await _repository.GetRequestAsync(userId,  page, pageSize);
+                var (results, totalCount) = await _repository.GetRequestAsync(userId, page, pageSize);
+                
+                return (results, totalCount);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des demandes");
+                _logger.LogError(ex, "Erreur lors de la récupération des demandes pour userId: {userId}", userId);
                 throw;
             }
         }

@@ -68,19 +68,18 @@ namespace MyApp.Api.Controllers.mission
         }
 
         
-        // GET: api/MissionValidation/requests
         [HttpPost("requests/{userId}")]
         public async Task<IActionResult> GetRequests(string userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
-                _logger.LogInformation("Récupération des demandes de validation de mission");
-                var result = await _missionValidationService.GetRequestAsync(userId,  page, pageSize);
-                return Ok(result);
+                var (results, totalCount) = await _missionValidationService.GetRequestAsync(userId, page, pageSize);
+                
+                return Ok(new { Results = results, TotalCount = totalCount });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des demandes de validation de mission");
+                _logger.LogError(ex, "Erreur lors de la récupération des demandes de validation de mission pour userId: {userId}", userId);
                 return StatusCode(500, new { message = "Une erreur est survenue lors de la récupération des demandes." });
             }
         }
