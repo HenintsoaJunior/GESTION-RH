@@ -7,7 +7,7 @@ namespace MyApp.Api.Repositories.mission
 {
     public interface IMissionValidationRepository
     {
-        Task<IEnumerable<MissionValidation>> GetRequestAsync(string userId);
+        Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize);
         Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<MissionValidation>> GetAllAsync();
@@ -30,17 +30,27 @@ namespace MyApp.Api.Repositories.mission
         }
         
         //prendre les demandes validations
-        public async Task<IEnumerable<MissionValidation>> GetRequestAsync(string userId)
+        public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize)
         {
-            return await _context.MissionValidations
+            var query = _context.MissionValidations
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
                 .Include(mv => mv.User)
                 .Where(mv => mv.DrhId == userId || mv.SuperiorId == userId)
                 .Where(mv => mv.Status == "En Attente")
+                .AsQueryable();
+
+            var totalCount = await query.CountAsync();
+
+            var results = await query
                 .OrderByDescending(mv => mv.ValidationDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            return (results, totalCount);
         }
+
         
         //valider une demande 
         public async Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId)

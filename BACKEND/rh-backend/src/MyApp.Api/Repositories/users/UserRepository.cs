@@ -235,16 +235,14 @@ namespace MyApp.Api.Repositories.users
 
         public async Task AddAsync(User user)
         {
-            if (user == null)
-                throw new ArgumentNullException(nameof(user));
+            ArgumentNullException.ThrowIfNull(user);
 
             await _context.Users.AddAsync(user);
         }
 
         public async Task UpdateAsync(User user)
         {
-            if (user == null)
-                throw new ArgumentNullException(nameof(user));
+            ArgumentNullException.ThrowIfNull(user);
 
             _context.Users.Update(user);
             await Task.CompletedTask;
@@ -252,8 +250,7 @@ namespace MyApp.Api.Repositories.users
 
         public async Task DeleteAsync(User user)
         {
-            if (user == null)
-                throw new ArgumentNullException(nameof(user));
+            ArgumentNullException.ThrowIfNull(user);
 
             _context.Users.Remove(user);
             await Task.CompletedTask;
