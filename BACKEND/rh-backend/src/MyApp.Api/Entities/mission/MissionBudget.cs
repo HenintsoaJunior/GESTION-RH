@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Entities.users;
+using MyApp.Api.Models.dto.mission;
 
 namespace MyApp.Api.Entities.mission
 {
@@ -28,5 +29,14 @@ namespace MyApp.Api.Entities.mission
 
         [ForeignKey("UserId")]
         public User? User { get; set; }
+        
+        public MissionBudget(){}
+
+        public MissionBudget(MissionBudgetDTOForm dto)
+        {
+            Budget = dto.Budget;
+            DirectionName = dto.DirectionName;
+            UserId = dto.UserId;
+        }
     }
 }
