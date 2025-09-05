@@ -524,7 +524,7 @@ CREATE TABLE mission_validation(
    FOREIGN KEY(mission_creator) REFERENCES users(user_id),
    FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
    FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id),
-   FOREIGN KEY(user_id_to_whom) REFERENCES users(user_id)
+   FOREIGN KEY(to_whom) REFERENCES users(user_id)
 );
 
 
