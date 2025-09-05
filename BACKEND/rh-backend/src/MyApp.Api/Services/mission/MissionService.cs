@@ -155,15 +155,11 @@ namespace MyApp.Api.Services.mission
                                 MissionAssignationId = assignation.assignationId,
                                 MissionCreator = missionDto.UserId,
                                 Status = "En attente",
-                                ToWhom = "Directeur de tutelle",
-                                DhrId = drh?.UserId,
-                                SuperiorId = superior?.UserId
+                                ToWhom = superior?.UserId
                             };
                             await _validationService.CreateAsync(missionValidationDtoForm, missionDto.UserId);
                             missionValidationDtoForm.Status = null;
-                            missionValidationDtoForm.ToWhom = "DRH";
-                            missionValidationDtoForm.SuperiorId = superior?.UserId;
-                            missionValidationDtoForm.DhrId = drh?.UserId;
+                            missionValidationDtoForm.ToWhom = drh?.UserId;
                             await _validationService.CreateAsync(missionValidationDtoForm, missionDto.UserId);
                         }
 

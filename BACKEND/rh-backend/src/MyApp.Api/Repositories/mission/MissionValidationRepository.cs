@@ -35,8 +35,8 @@ namespace MyApp.Api.Repositories.mission
             var query = _context.MissionValidations
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.User)
-                .Where(mv => mv.DrhId == userId || mv.SuperiorId == userId)
+                .Include(mv => mv.Creator)
+                .Where(mv => mv.ToWhom == userId)
                 .Where(mv => mv.Status == "En attente")
                 .AsQueryable();
 
@@ -91,7 +91,8 @@ namespace MyApp.Api.Repositories.mission
             var query = _context.MissionValidations
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.User)
+                .Include(mv => mv.Creator)
+                .Include(mv => mv.Validator)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(filters.MissionId))
@@ -140,7 +141,8 @@ namespace MyApp.Api.Repositories.mission
             return await _context.MissionValidations
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.User)
+                .Include(mv => mv.Creator)
+                .Include(mv => mv.Validator)
                 .OrderByDescending(mv => mv.CreatedAt)
                 .ToListAsync();
         }
@@ -153,27 +155,10 @@ namespace MyApp.Api.Repositories.mission
             }
 
             var missionValidations = await _context.MissionValidations
-                .Include(mv => mv.Drh)
-                .Include(mv => mv.Superior)
-                .Where(mv => mv.MissionAssignationId == assignationId 
-                             && (mv.ToWhom == "DRH" || mv.ToWhom == "Directeur de tutelle"))
+                .Include(mv => mv.ToWhom)
+                .Where(mv => mv.MissionAssignationId == assignationId)
                 .OrderByDescending(mv => mv.CreatedAt)
                 .ToListAsync();
-
-            foreach (var mv in missionValidations)
-            {
-                if (mv.ToWhom == "DRH")
-                {
-                    mv.Superior = null;
-                    mv.SuperiorId = null;
-                }
-                else if (mv.ToWhom == "Directeur de tutelle")
-                {
-                    mv.Drh = null;
-                    mv.DrhId = null;
-                }
-            }
-
             return missionValidations;
         }
 
@@ -183,7 +168,8 @@ namespace MyApp.Api.Repositories.mission
                 .AsNoTracking()
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.User)
+                .Include(mv => mv.Creator)
+                .Include(mv => mv.Validator)
                 .FirstOrDefaultAsync(mv => mv.MissionValidationId == id);
         }
 

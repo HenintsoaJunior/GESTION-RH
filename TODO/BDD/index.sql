@@ -513,21 +513,18 @@ CREATE TABLE mission_assignation (
 CREATE TABLE mission_validation(
    mission_validation_id VARCHAR(50),
    status VARCHAR(50),
-   to_whom VARCHAR(50),
    created_at DATETIME,
    updated_at DATETIME,
    validation_date DATETIME,
    mission_creator VARCHAR(250) NOT NULL,
    mission_id VARCHAR(50) NOT NULL,
    mission_assignation_id VARCHAR(50) NOT NULL,
-   drh_id VARCHAR(250),
-   superior_id VARCHAR(250),
+   to_whom VARCHAR(250) NOT NULL,
    PRIMARY KEY(mission_validation_id),
    FOREIGN KEY(mission_creator) REFERENCES users(user_id),
    FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
    FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id),
-   FOREIGN KEY (drh_id) REFERENCES users(user_id),
-   FOREIGN KEY (superior_id) REFERENCES users(user_id)
+   FOREIGN KEY(user_id_to_whom) REFERENCES users(user_id)
 );
 
 
