@@ -157,6 +157,7 @@ namespace MyApp.Api.Repositories.mission
 
             var missionValidations = await _context.MissionValidations
                 .Include(mv => mv.Validator)
+                .Include(mv => mv.MissionAssignation)
                 .Where(mv => mv.MissionAssignationId == assignationId)
                 .OrderByDescending(mv => mv.CreatedAt)
                 .ToListAsync();
