@@ -7,7 +7,7 @@ namespace MyApp.Api.Repositories.mission
 {
     public interface IMissionValidationRepository
     {
-        Task<IEnumerable<MissionValidation>> GetRequestAsync();
+        Task<IEnumerable<MissionValidation>> GetRequestAsync(string userId);
         Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<MissionValidation>> GetAllAsync();
@@ -30,12 +30,13 @@ namespace MyApp.Api.Repositories.mission
         }
         
         //prendre les demandes validations
-        public async Task<IEnumerable<MissionValidation>> GetRequestAsync()
+        public async Task<IEnumerable<MissionValidation>> GetRequestAsync(string userId)
         {
             return await _context.MissionValidations
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
                 .Include(mv => mv.User)
+                .Where(mv => mv.DrhId == userId || mv.SuperiorId == userId)
                 .Where(mv => mv.Status == "En Attente")
                 .OrderByDescending(mv => mv.ValidationDate)
                 .ToListAsync();
