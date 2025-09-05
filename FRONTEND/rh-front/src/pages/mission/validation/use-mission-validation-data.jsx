@@ -30,50 +30,50 @@ const useMissionValidationData = () => {
         // Appel du service pour récupérer les données
         const response = await validateMissionRequest();
         
-        // Vérification si la réponse est un tableau
-        if (!Array.isArray(response)) {
-          console.warn("La réponse n'est pas un tableau:", response);
+        // Vérification si la réponse contient un tableau de résultats
+        if (!response.results || !Array.isArray(response.results)) {
+          console.warn("La réponse ne contient pas un tableau de résultats:", response);
           setMissions([]);
           setFilteredMissions([]);
           return;
         }
 
         // Transformation des données JSON en format attendu par l'interface
-        const formattedMissions = response.map((validation) => {
+        const formattedMissions = response.results.map((validation) => {
           const mission = validation.mission || {};
           const user = validation.user || {};
           const missionAssignation = validation.missionAssignation || {};
           
           return {
-            id: validation.missionValidationId,
+            id: validation.missionValidationId || "N/A",
             title: mission.name || "Mission sans titre",
             description: mission.description || "Aucune description",
             requestedBy: user.name || "Demandeur inconnu",
             department: user.department || "Département non spécifié",
-            priority: "medium",
+            priority: "medium", // Valeur par défaut, car non présente dans le JSON
             status: validation.status || "En attente",
             requestDate: mission.startDate || new Date().toISOString(),
             dueDate: mission.endDate || new Date().toISOString(),
-            estimatedDuration: `${missionAssignation.duration || 0} jours`,
+            estimatedDuration: missionAssignation.duration ? `${missionAssignation.duration} jours` : "Non spécifié",
             location: mission.lieuId ? `Lieu ID: ${mission.lieuId}` : "Lieu non spécifié",
             comments: validation.comments || "",
-            signature: validation.signature || "",
+            signature: user.signature || "",
             matricule: user.matricule || "N/A",
             function: user.position || "Fonction non spécifiée",
-            transport: missionAssignation.transport || "Non spécifié",
+            transport: missionAssignation.transport ? missionAssignation.transport : "Non spécifié",
             departureTime: missionAssignation.departureTime || "Non spécifié",
-            departureDate: missionAssignation.departureDate || mission.startDate,
-            returnDate: missionAssignation.returnDate || mission.endDate,
+            departureDate: missionAssignation.departureDate || mission.startDate || "Non spécifié",
+            returnDate: missionAssignation.returnDate || mission.endDate || "Non spécifié",
             returnTime: missionAssignation.returnTime || "Non spécifié",
-            reference: validation.missionValidationId,
+            reference: validation.missionValidationId || "N/A",
             toWhom: validation.toWhom || "Non spécifié",
-            validationDate: validation.validationDate,
-            missionCreator: validation.missionCreator,
+            validationDate: validation.validationDate || null,
+            missionCreator: validation.missionCreator || "N/A",
             superiorName: user.superiorName || "Supérieur non spécifié",
             email: user.email || "",
-            createdAt: validation.createdAt,
-            updatedAt: validation.updatedAt,
-            missionAssignationId: validation.missionAssignationId,
+            createdAt: validation.createdAt || new Date().toISOString(),
+            updatedAt: validation.updatedAt || null,
+            missionAssignationId: validation.missionAssignationId || "N/A",
           };
         });
 

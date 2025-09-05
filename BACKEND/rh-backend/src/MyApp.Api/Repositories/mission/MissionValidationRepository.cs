@@ -37,7 +37,7 @@ namespace MyApp.Api.Repositories.mission
                 .Include(mv => mv.MissionAssignation)
                 .Include(mv => mv.User)
                 .Where(mv => mv.DrhId == userId || mv.SuperiorId == userId)
-                .Where(mv => mv.Status == "En Attente")
+                .Where(mv => mv.Status == "En attente")
                 .AsQueryable();
 
             var totalCount = await query.CountAsync();
@@ -76,7 +76,7 @@ namespace MyApp.Api.Repositories.mission
 
             if (nextValidation != null)
             {
-                nextValidation.Status = "En Attente";
+                nextValidation.Status = "En attente";
                 _context.MissionValidations.Update(nextValidation);
                 isFinished = false;
             }
