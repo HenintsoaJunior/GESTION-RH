@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { apiGet, apiPost, apiPut, apiDelete } from "utils/apiUtils";
+import { apiGet, apiPost } from "utils/apiUtils";
 import { handleValidationError } from "utils/validation";
 
 // Generate initials for avatar
@@ -26,21 +26,15 @@ export const formatValidatorData = (validator, role) => {
 // Fetch mission validations by assignation ID
 export const useGetMissionValidationsByAssignationId = () => {
   return useCallback(async (assignationId) => {
-    
     if (!assignationId) {
-
       throw new Error("Assignation ID is required");
     }
     
     try {
-
       const response = await apiGet(`/api/MissionValidation/by-assignation-id/${assignationId}`);
-      // L'API retourne directement un tableau, pas un objet avec une propriété data
       const data = Array.isArray(response) ? response : [];
       
-      // Format the response to include only relevant validator data
       const formattedData = data.map((validation, index) => {
-        
         const formattedValidation = {
           missionValidationId: validation.missionValidationId,
           status: validation.status || "Non défini",
@@ -56,6 +50,64 @@ export const useGetMissionValidationsByAssignationId = () => {
       });
       
       return formattedData;
+    } catch (error) {
+      handleValidationError(error);
+      throw error;
+    }
+  }, []);
+};
+
+// Validate mission request using userId from localStorage
+export const useValidateMissionRequest = () => {
+  return useCallback(async () => {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const userId = userData?.userId;
+
+    if (!userId) {
+      throw new Error("User ID is required. Please ensure you are logged in.");
+    }
+
+    try {
+      const response = await apiPost(`/api/MissionValidation/requests/${userId}`, {});
+      return response;
+    } catch (error) {
+      handleValidationError(error);
+      throw error;
+    }
+  }, []);
+};
+
+// Validate a mission using missionValidationId, missionAssignationId, and userId
+export const useValidateMission = () => {
+  return useCallback(async (missionValidationId, missionAssignationId, action, comment = "", signature = "") => {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const userId = userData?.userId;
+
+    if (!missionValidationId || !missionAssignationId) {
+      throw new Error("Mission Validation ID and Mission Assignation ID are required");
+    }
+
+    if (!userId) {
+      throw new Error("User ID is required. Please ensure you are logged in.");
+    }
+
+    if (!["validate", "reject"].includes(action)) {
+      throw new Error("Invalid action. Must be 'validate' or 'reject'");
+    }
+
+    try {
+      const payload = {
+        action,
+        comment,
+        signature,
+      };
+
+      const response = await apiPost(
+        `/api/MissionValidation/validate/${missionValidationId}/${missionAssignationId}?userId=${userId}`,
+        payload
+      );
+
+      return response;
     } catch (error) {
       handleValidationError(error);
       throw error;

@@ -5,7 +5,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, FileText, Download, ArrowLeft } from "lucide-react";
-import ValidationStepper from "../../validation/validation-stepper";
+import ValidationStepper from "../list/validation-stepper";
 import Pagination from "components/pagination";
 import Alert from "components/alert";
 import {
