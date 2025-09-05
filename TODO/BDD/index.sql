@@ -535,9 +535,9 @@ CREATE TABLE mission_budget(
    mission_budget_id VARCHAR(50),
    direction_name VARCHAR(50),
    budget DECIMAL(15,2),
-   created_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
-   user_id VARCHAR(50) NOT NULL,
+   user_id VARCHAR(250) NOT NULL,
    PRIMARY KEY(mission_budget_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id)
 );

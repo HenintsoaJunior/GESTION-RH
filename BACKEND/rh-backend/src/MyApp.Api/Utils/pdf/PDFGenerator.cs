@@ -2,6 +2,7 @@ using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
 using iText.IO.Font.Constants;
+using iText.IO.Image;
 using iText.Kernel.Font;
 using iText.Layout.Properties;
 using iText.Layout.Borders;
@@ -44,7 +45,7 @@ namespace MyApp.Api.Utils.pdf
 
                 if (includeDescription && description != null)
                 {
-                    GenerateDescription(document, description, font, boldFont);
+                    GenerateDescription(document, font, boldFont);
                 }
 
                 if (includeTable && tables != null && tables.Count != 0)
@@ -67,7 +68,7 @@ namespace MyApp.Api.Utils.pdf
         }
     
         // attestation d'emploi
-        public byte[] GenerateEmploymentCertificate(EmployeeCertificate employeeCertificate, string? companyName, string? issueDate, string issuePlace)
+        public byte[] GenerateEmploymentCertificate(EmployeeCertificate employeeCertificate, string? companyName)
         {
             try
             {
@@ -82,8 +83,20 @@ namespace MyApp.Api.Utils.pdf
                 var font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
                 var boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
 
-                // En-tête avec logo et titre
-                GenerateHeader(document, boldFont, "ATTESTATION D’EMPLOI");
+                // var logo = ImageDataFactory.Create(ImagePath);
+                // var logoImage = new Image(logo)
+                //     .SetWidth(100)
+                //     .SetHorizontalAlignment(HorizontalAlignment.CENTER)
+                //     .SetMarginBottom(20);
+                // document.Add(logoImage);
+                
+                // Titre centré et en gras
+                var title = new Paragraph("ATTESTATION D'EMPLOI")
+                    .SetFont(boldFont)
+                    .SetFontSize(16)
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetMarginBottom(30);
+                document.Add(title);
 
                 // Contenu principal
                 var content = new Paragraph()
@@ -92,49 +105,63 @@ namespace MyApp.Api.Utils.pdf
                     .SetTextAlignment(TextAlignment.JUSTIFIED)
                     .SetMarginTop(20)
                     .SetMarginBottom(20);
+                
+                // Déterminer le genre et les accords
+                var civilite = employeeCertificate.Gender.Equals("masculin", StringComparison.CurrentCultureIgnoreCase) ? "Monsieur" : "Madame";
+                var participeNaissance = employeeCertificate.Gender.Equals("masculin", StringComparison.CurrentCultureIgnoreCase) ? "né" : "née";
+                var participe = employeeCertificate.Gender.Equals("masculin", StringComparison.CurrentCultureIgnoreCase) ? "Il" : "Elle";
 
-                content.Add($"Nous, soussigné, {companyName}, attestons que Monsieur/Madame {employeeCertificate.EmployeeName}, ");
-                content.Add($"né(e) le {employeeCertificate.BirthDate} à {employeeCertificate.BirthPlace}, titulaire CIN n°{employeeCertificate.CinNumber}, ");
+                content.Add($"Nous, soussigné, {companyName}, attestons que {civilite + employeeCertificate.EmployeeName}, ");
+                content.Add($"{participeNaissance} le {employeeCertificate.BirthDate} à {employeeCertificate.BirthPlace}, titulaire CIN n°{employeeCertificate.CinNumber}, ");
                 content.Add($"délivrée le {employeeCertificate.CinIssueDate} à {employeeCertificate.CinIssuePlace}, fait partie de notre Société ");
                 content.Add($"en qualité de {employeeCertificate.JobTitle} du 1er janvier 2017 jusqu’à ce jour, ");
                 content.Add($"Catégorie professionnelle {employeeCertificate.ProfessionalCategory} ;\n\n");
-                content.Add("Il est lié à la société par un contrat de travail à durée indéterminée.\n\n");
+                content.Add($"{participe} est lié à la société par un contrat de travail à durée indéterminée.\n\n");
                 content.Add("En foi de quoi, la présente attestation est établie pour servir et valoir ce que de droit.");
 
                 document.Add(content);
 
                 // Pied de page avec lieu, date et signatures
-                var footer = new Paragraph()
+                // Pied de page avec lieu, date et signatures
+                var footer = new Div()
+                    .SetMarginTop(40);
+
+                // Date et lieu
+                {
+                    var dateEmission = DateTime.Now.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("fr-FR"));
+                    var dateLocation = new Paragraph()
+                        .SetFont(font)
+                        .SetFontSize(12)
+                        .SetTextAlignment(TextAlignment.RIGHT)
+                        .SetMarginBottom(20);
+
+                    dateLocation.Add($"{employeeCertificate.IssuePlace}, le {dateEmission}");
+                    footer.Add(dateLocation);
+                }
+
+                // Bloc signature à droite
+                var signatureBlock = new Paragraph()
                     .SetFont(font)
                     .SetFontSize(12)
-                    .SetMarginTop(30);
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetMarginBottom(10);
 
-                issueDate = issueDate ?? DateTime.Now.ToString("dd MMMM yyyy");
-                footer.Add($"{issuePlace}, le {issueDate}\n");
-                footer.Add("Pour la Directrice des Ressources Humaines\n");
-                footer.Add(new Text("Le Chef de Département Développement RH et Rémunération")
-                    .SetFont(boldFont));
+                signatureBlock.Add(new Text("Pour la Directrice des Ressources Humaines").SetFont(boldFont));
+                signatureBlock.Add("\n\n");
+                signatureBlock.Add(new Text(employeeCertificate.Service).SetFont(boldFont));
+                footer.Add(signatureBlock);
+
+                // Espace pour signature + nom du signataire
+                var signatureName = new Paragraph()
+                    .SetFont(boldFont)
+                    .SetFontSize(12)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetMarginTop(40);
+
+                signatureName.Add(employeeCertificate.Signatory);
+                footer.Add(signatureName);
 
                 document.Add(footer);
-
-                // Signature placeholder
-                var signatureTable = new Table(1)
-                    .UseAllAvailableWidth()
-                    .SetMarginTop(20)
-                    .SetMarginBottom(20);
-
-                var signatureCell = new Cell()
-                    .Add(new Paragraph("(signature)")
-                        .SetFont(font)
-                        .SetFontSize(9)
-                        .SetFontColor(_darkGray)
-                        .SetTextAlignment(TextAlignment.CENTER))
-                    .SetBorder(Border.NO_BORDER)
-                    .SetPadding(20)
-                    .SetMinHeight(40);
-
-                signatureTable.AddCell(signatureCell);
-                document.Add(signatureTable);
 
                 document.Close();
                 return memoryStream.ToArray();
@@ -414,7 +441,7 @@ namespace MyApp.Api.Utils.pdf
             document.Add(fieldsTable);
         }
 
-        private void GenerateMissionOrderSections(Document document, PdfFont font, PdfFont boldFont, string lieuEmission, string dateEmission)
+        private static void GenerateMissionOrderSections(Document document, PdfFont font, PdfFont boldFont, string lieuEmission, string dateEmission)
         {
             // Date et lieu d'émission
             var dateEmissionText = new Paragraph($"{lieuEmission}, le {dateEmission}")
@@ -587,7 +614,7 @@ namespace MyApp.Api.Utils.pdf
 
             if (File.Exists(ImagePath))
             {
-                var imageData = iText.IO.Image.ImageDataFactory.Create(ImagePath);
+                var imageData = ImageDataFactory.Create(ImagePath);
                 var image = new Image(imageData)
                     .SetHeight(50)
                     .SetAutoScaleWidth(true);
@@ -648,7 +675,7 @@ namespace MyApp.Api.Utils.pdf
             document.Add(separator);
         }
 
-        private void GenerateDescription(Document document, object description, PdfFont font, PdfFont boldFont)
+        private void GenerateDescription(Document document, PdfFont font, PdfFont boldFont)
         {
             // Titre de section
             var sectionTitle = new Paragraph("INFORMATIONS DÉTAILLÉES")
@@ -658,7 +685,8 @@ namespace MyApp.Api.Utils.pdf
                 .SetMarginBottom(15);
             document.Add(sectionTitle);
 
-            var props = description.GetType().GetProperties();
+            var props = description?.GetType().GetProperties();
+            if (props == null) return;
             var list = props.Select(p => new { Name = FormatPropertyName(p.Name), Value = p.GetValue(description)?.ToString() ?? "N/A" }).ToList();
 
             var table = new Table(UnitValue.CreatePercentArray([1, 2]))
