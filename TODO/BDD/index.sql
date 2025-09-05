@@ -1,5 +1,6 @@
 -- Dropping tables in reverse order of dependency
 DROP TABLE IF EXISTS logs;
+DROP TABLE IF EXISTS mission_budget;
 DROP TABLE IF EXISTS mission_validation;
 DROP TABLE IF EXISTS mission_assignation;
 DROP TABLE IF EXISTS mission;
@@ -530,6 +531,18 @@ CREATE TABLE mission_validation(
 );
 
 
+CREATE TABLE mission_budget(
+   mission_budget_id VARCHAR(50),
+   direction_name VARCHAR(50),
+   budget DECIMAL(15,2),
+   created_at DATETIME,
+   updated_at DATETIME,
+   user_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(mission_budget_id),
+   FOREIGN KEY(user_id) REFERENCES users(user_id)
+);
+
+
 CREATE TABLE logs(
    log_id VARCHAR(50),
    action VARCHAR(100) NOT NULL,
@@ -542,6 +555,8 @@ CREATE TABLE logs(
    PRIMARY KEY(log_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id)
 );
+
+
 
 
 

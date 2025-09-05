@@ -69,13 +69,13 @@ namespace MyApp.Api.Controllers.mission
 
         
         // GET: api/MissionValidation/requests
-        [HttpGet("requests")]
-        public async Task<IActionResult> GetRequests()
+        [HttpPost("requests/{userId}")]
+        public async Task<IActionResult> GetRequests(string userId)
         {
             try
             {
                 _logger.LogInformation("Récupération des demandes de validation de mission");
-                var result = await _missionValidationService.GetRequestAsync();
+                var result = await _missionValidationService.GetRequestAsync(userId);
                 return Ok(result);
             }
             catch (Exception ex)
