@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MyApp.Api.Entities.employee;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Services.mission;
-using MyApp.Api.Utils.pdf;
 
 namespace MyApp.Api.Controllers.mission
 {
@@ -19,25 +17,6 @@ namespace MyApp.Api.Controllers.mission
         private readonly IMissionAssignationService _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
         private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         private readonly ILogger<MissionValidationController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    
-        [HttpPost("generate-employment-certificate")]
-        public IActionResult GenerateEmploymentCertificate([FromBody] EmployeeCertificate employeeCertificate)
-        {
-            try
-            {
-                var pdfBytes = new PdfGenerator().GenerateEmploymentCertificate(employeeCertificate, _configuration.GetSection("Company:Name").Value);
-                var pdfName = $"Attestation de travail-{employeeCertificate.EmployeeName}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
-                return File(pdfBytes, "application/pdf", pdfName);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"An error occurred while generating the employment certificate: {ex.Message}");
-            }
-        }
         
         //prendre l'évolution de ma demande
         // GET: api/MissionValidation/assignation/{assignationId}
