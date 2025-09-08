@@ -36,7 +36,7 @@ namespace MyApp.Api.Entities.mission
         public string LieuId { get; set; } = null!;
         
         [ForeignKey("LieuId")]
-        public Lieu? Lieu { get; set; }
+        public Lieu? Lieu { get; set; } 
         
         public Mission()
         {

@@ -148,18 +148,21 @@ namespace MyApp.Api.Services.mission
                                 throw new InvalidOperationException($"Employé avec ID {assignation.EmployeeId} introuvable.");
                             }
                             var superior = await _userService.GetSuperiorAsync(employee.EmployeeCode);
-                            
+                            _logger.LogInformation("Mission creator est balbalbal {UserId} ", missionDto.UserId);
+
                             var missionValidationDtoForm = new MissionValidationDTOForm
                             {
                                 MissionId = missionId,
                                 MissionAssignationId = assignation.assignationId,
                                 MissionCreator = missionDto.UserId,
                                 Status = "En attente",
-                                ToWhom = superior?.UserId
+                                ToWhom = superior?.UserId,
+                                Type = "Directeur de tutelle"
                             };
                             await _validationService.CreateAsync(missionValidationDtoForm, missionDto.UserId);
                             missionValidationDtoForm.Status = null;
                             missionValidationDtoForm.ToWhom = drh?.UserId;
+                            missionValidationDtoForm.Type = "DRH";
                             await _validationService.CreateAsync(missionValidationDtoForm, missionDto.UserId);
                         }
 

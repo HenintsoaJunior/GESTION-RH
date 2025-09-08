@@ -23,6 +23,7 @@ import {
   GenericForm,
 } from "styles/generaliser/form-container";
 import Alert from "components/alert";
+import Modal from "components/modal"; // Import Modal component
 import MissionInfoStep from "./mission-info-step";
 import BeneficiaryStep from "./collaborator-step";
 import { fetchAllRegions } from "services/lieu/lieu";
@@ -62,7 +63,9 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
     lieuId: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasClickedSubmit, setHasClickedSubmit] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
+  const [errorModal, setErrorModal] = useState({ isOpen: false, message: "" }); // New state for error modal
   const [regions, setRegions] = useState([]);
   const [regionNames, setRegionNames] = useState([]);
   const [regionDisplayNames, setRegionDisplayNames] = useState([]);
@@ -280,7 +283,11 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
   }, [alert.isOpen]);
 
   const showAlert = (type, message) => {
-    setAlert({ isOpen: true, type, message });
+    if (type === "error") {
+      setErrorModal({ isOpen: true, message }); // Show error in modal
+    } else {
+      setAlert({ isOpen: true, type, message }); // Show success/info in alert
+    }
   };
 
   const handleAddNewSuggestion = (field, value) => {
@@ -428,8 +435,16 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    // Guard to prevent multiple submissions
+    if (hasClickedSubmit || isSubmitting) {
+      console.warn("Submission already in progress. Ignoring additional submit.");
+      return;
+    }
+
     if (!validateStep2()) return;
 
+    setHasClickedSubmit(true);
     setIsSubmitting(true);
     setFieldErrors({});
 
@@ -437,22 +452,25 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
     const selectedRegion = regions.find((region) => region.nom === locationName);
 
     if (formData.location && !selectedRegion) {
-      showAlert("error", "Veuillez sélectionner un lieu valide parmi les régions de Madagascar.");
+      setErrorModal({ isOpen: true, message: "Veuillez sélectionner un lieu valide parmi les régions." });
       setIsSubmitting(false);
+      setHasClickedSubmit(false);
       return;
     }
 
     const beneficiary = formData.beneficiary;
     if (!beneficiary.beneficiary) {
-      showAlert("error", "Veuillez ajouter un bénéficiaire pour la mission.");
+      setErrorModal({ isOpen: true, message: "Veuillez ajouter un bénéficiaire pour la mission." });
       setIsSubmitting(false);
+      setHasClickedSubmit(false);
       return;
     }
 
     const selectedEmployee = suggestions.beneficiary.find((emp) => emp.id === beneficiary.employeeId);
     if (!selectedEmployee && beneficiary.employeeId) {
-      showAlert("error", "Veuillez sélectionner un employé valide pour le bénéficiaire.");
+      setErrorModal({ isOpen: true, message: "Veuillez sélectionner un employé valide pour le bénéficiaire." });
       setIsSubmitting(false);
+      setHasClickedSubmit(false);
       return;
     }
 
@@ -461,13 +479,15 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
       const returnD = new Date(beneficiary.returnDate);
       const missionStartDate = new Date(formData.startDate);
       if (departure < missionStartDate) {
-        showAlert("error", "La date de départ du bénéficiaire doit être supérieure ou égale à la date de début de la mission.");
+        setErrorModal({ isOpen: true, message: "La date de départ du bénéficiaire doit être supérieure ou égale à la date de début de la mission." });
         setIsSubmitting(false);
+        setHasClickedSubmit(false);
         return;
       }
       if (returnD < departure) {
-        showAlert("error", "La date de retour du bénéficiaire doit être postérieure ou égale à la date de départ.");
+        setErrorModal({ isOpen: true, message: "La date de retour du bénéficiaire doit être postérieure ou égale à la date de départ." });
         setIsSubmitting(false);
+        setHasClickedSubmit(false);
         return;
       }
     }
@@ -488,7 +508,7 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
           (loading) => setIsSubmitting(loading.mission),
           (alert) => showAlert(alert.type, alert.message),
           (error) => {
-            showAlert("error", error.message);
+            setErrorModal({ isOpen: true, message: error.message });
             setFieldErrors(error.fieldErrors || {});
             throw error;
           }
@@ -519,7 +539,7 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
               (loading) => setIsSubmitting(loading.missionAssignation),
               (alert) => showAlert(alert.type, alert.message),
               (error) => {
-                showAlert("error", error.message);
+                setErrorModal({ isOpen: true, message: error.message });
                 setFieldErrors(error.fieldErrors || {});
                 throw error;
               }
@@ -546,7 +566,7 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
               (loading) => setIsSubmitting(loading.missionAssignation),
               (alert) => showAlert(alert.type, alert.message),
               (error) => {
-                showAlert("error", error.message);
+                setErrorModal({ isOpen: true, message: error.message });
                 setFieldErrors(error.fieldErrors || {});
                 throw error;
               }
@@ -573,8 +593,6 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
         onFormSuccess("success", "Mission mise à jour et bénéficiaire assigné avec succès.");
         showAlert("success", "Mission mise à jour et bénéficiaire assigné avec succès.");
         onClose();
-
-        
       } else {
         const missionData = {
           name: formData.missionTitle,
@@ -603,7 +621,7 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
           (loading) => setIsSubmitting(loading.mission),
           (alert) => showAlert(alert.type, alert.message),
           (error) => {
-            showAlert("error", error.message);
+            setErrorModal({ isOpen: true, message: error.message });
             setFieldErrors(error.fieldErrors || {});
             throw error;
           }
@@ -616,6 +634,7 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
       console.error("Erreur dans handleSubmit :", error);
     } finally {
       setIsSubmitting(false);
+      setHasClickedSubmit(false);
     }
   };
 
@@ -682,6 +701,19 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
               onClose={() => setAlert({ ...alert, isOpen: false })}
             />
           )}
+          <Modal
+            type="error"
+            message={errorModal.message}
+            isOpen={errorModal.isOpen}
+            onClose={() => setErrorModal({ isOpen: false, message: "" })}
+            title="Erreur de validation"
+          >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <ButtonPrimary onClick={() => setErrorModal({ isOpen: false, message: "" })}>
+                OK
+              </ButtonPrimary>
+            </div>
+          </Modal>
           <FormContainer>
             <StepperWrapper>
               <StepItem active={currentStep === 1}>
@@ -733,7 +765,7 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
                   </PreviousButton>
                   <ButtonPrimary
                     type="submit"
-                    disabled={isSubmitting || isLoading.regions || isLoading.employees || isLoading.transports}
+                    disabled={isSubmitting || hasClickedSubmit || isLoading.regions || isLoading.employees || isLoading.transports}
                     title={missionId ? "Mettre à jour la mission" : "Créer et assigner la mission"}
                   >
                     <Save size={16} />
