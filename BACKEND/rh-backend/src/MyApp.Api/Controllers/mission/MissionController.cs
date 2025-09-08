@@ -80,12 +80,12 @@ namespace MyApp.Api.Controllers.mission
         }
 
         // Supprime une mission par son identifiant
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        [HttpDelete("{id}/{userId}")]
+        public async Task<IActionResult> Delete(string id, string userId)
         {
             try
             {
-                var deleted = await missionService.DeleteAsync(id);
+                var deleted = await missionService.DeleteAsync(id, userId);
                 if (!deleted) return NotFound();
                 return Ok(new { message = $"Mission with ID {id} successfully deleted" });
             }
@@ -127,10 +127,10 @@ namespace MyApp.Api.Controllers.mission
             }
         }
         // Annule une mission (change son statut à "Annulé")
-        [HttpPut("{id}/cancel")]
-        public async Task<IActionResult> CancelMission(string id)
+        [HttpPut("{id}/cancel/{userId}")]
+        public async Task<IActionResult> CancelMission(string id, string userId)
         {
-            var cancelled = await missionService.CancelAsync(id);
+            var cancelled = await missionService.CancelAsync(id, userId);
             if (!cancelled) 
             {
                 return NotFound(new { error = $"Mission with ID {id} not found" });
