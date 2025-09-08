@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
+using MyApp.Api.Models.dto.users;
 
 namespace MyApp.Api.Entities.users
 {
@@ -24,5 +25,13 @@ namespace MyApp.Api.Entities.users
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 
         public ICollection<RoleHabilitation> RoleHabilitations { get; set; } = new List<RoleHabilitation>();
+        
+        public Role(){}
+
+        public Role(RoleDTOForm dto)
+        {
+            if (dto.Name != null) Name = dto.Name;
+            Description = dto.Description;
+        }
     }
 }

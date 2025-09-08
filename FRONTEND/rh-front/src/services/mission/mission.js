@@ -1,7 +1,11 @@
 import { apiGet, apiPost, apiPut,apiDelete } from "utils/apiUtils";
 import { handleValidationError } from "utils/validation";
 
+// Récupérer userId depuis localStorage
+const userData = JSON.parse(localStorage.getItem("user"));
+const userId = userData?.userId;
 
+// Fonction pour mettre à jour une mission
 export const updateMission = async (
   missionId,
   missionData,
@@ -11,7 +15,20 @@ export const updateMission = async (
 ) => {
   try {
     setIsLoading((prev) => ({ ...prev, mission: true }));
-    const updatedMission = await apiPut(`/api/Mission/${missionId}`, missionData);
+
+    
+
+    if (!userId) {
+      throw new Error("Utilisateur non authentifié. Veuillez vous connecter.");
+    }
+
+    // Ajouter userId aux données de la mission
+    const missionDataWithUser = {
+      ...missionData,
+      userId: userId.trim(),
+    };
+
+    const updatedMission = await apiPut(`/api/Mission/${missionId}`, missionDataWithUser);
     onSuccess({
       isOpen: true,
       type: "success",
@@ -32,17 +49,15 @@ export const updateMission = async (
   }
 };
 
-
 export const deleteMissionAssignation = async (
-  employeeId,
-  missionId,
+  assignationId,
   setIsLoading,
   onSuccess,
   onError
 ) => {
   try {
     setIsLoading((prev) => ({ ...prev, missionAssignation: true }));
-    await apiDelete(`/api/MissionAssignation/${employeeId}/${missionId}`);
+    await apiDelete(`/api/MissionAssignation/${assignationId}`);
     onSuccess({
       isOpen: true,
       type: "success",
@@ -64,10 +79,8 @@ export const deleteMissionAssignation = async (
   }
 };
 
-
 export const updateMissionAssignation = async (
-  employeeId,
-  missionId,
+  assignationId,
   assignationData,
   setIsLoading,
   onSuccess,
@@ -76,15 +89,12 @@ export const updateMissionAssignation = async (
   try {
     setIsLoading((prev) => ({ ...prev, missionAssignation: true }));
 
-    // Vérifie que employeeId et missionId sont fournis et cohérents avec assignationData
-    if (!employeeId || !missionId) {
-      throw new Error("Les identifiants de l'employé et de la mission sont requis.");
-    }
-    if (assignationData.employeeId !== employeeId || assignationData.missionId !== missionId) {
-      throw new Error("Les identifiants dans les paramètres doivent correspondre à ceux des données d'assignation.");
+    // Vérifie que assignationId et missionId sont fournis
+    if (!assignationId) {
+      throw new Error("Les identifiants de l'assignation et de la mission sont requis.");
     }
 
-    const updatedAssignation = await apiPut(`/api/MissionAssignation/${employeeId}/${missionId}`, assignationData);
+    const updatedAssignation = await apiPut(`/api/MissionAssignation/${assignationId}`, assignationData);
     
     onSuccess({
       isOpen: true,
@@ -391,9 +401,19 @@ export const createMission = async (
   onError
 ) => {
   try {
-    setIsLoading((prev) => ({ ...prev, mission: true })); // Indique le chargement
-    
-    const newMission = await apiPost("/api/Mission", missionData);
+    setIsLoading((prev) => ({ ...prev, mission: true }));
+
+    if (!userId) {
+      throw new Error("Utilisateur non authentifié. Veuillez vous connecter.");
+    }
+
+    // Ajouter userId aux données de la mission
+    const missionDataWithUser = {
+      ...missionData,
+      userId: userId.trim(),
+    };
+
+    const newMission = await apiPost("/api/Mission", missionDataWithUser);
 
     // Affiche un message de succès
     onSuccess({
@@ -409,9 +429,10 @@ export const createMission = async (
     onError(handleValidationError(error, "MESSGA"));
     throw error;
   } finally {
-    setIsLoading((prev) => ({ ...prev, mission: false })); // Fin du chargement
+    setIsLoading((prev) => ({ ...prev, mission: false }));
   }
 };
+
 
 // Fonction pour récupérer les paiements liés à une mission
 export const fetchMissionPayment = async (
@@ -508,23 +529,25 @@ export const fetchAssignMission = async (
       page,
       pageSize,
     }).toString();
-    
+
+    // Include matricule as an array in the requestBody
     const requestBody = {
       employeeId: filters.employeeId || "",
       missionId: filters.missionId || "",
       transportId: filters.transportId || "",
       lieuId: filters.lieuId || "",
-      departureDate: filters.startDate && !isNaN(new Date(filters.startDate).getTime())
+      matricule: Array.isArray(filters.matricule) ? filters.matricule : filters.matricule ? [filters.matricule] : [],
+      minDepartureDate: filters.startDate && !isNaN(new Date(filters.startDate).getTime())
         ? new Date(filters.startDate).toISOString()
         : null,
-      returnDate: filters.endDate && !isNaN(new Date(filters.endDate).getTime())
+      maxDepartureDate: filters.endDate && !isNaN(new Date(filters.endDate).getTime())
         ? new Date(filters.endDate).toISOString()
         : null,
       status: filters.status || "",
     };
-    
+
     console.log("Request Body:", requestBody);
-    
+
     // Appel API pour récupérer les assignations
     const data = await apiPost(`/api/MissionAssignation/search?${queryParams}`, requestBody);
     console.log("API Response (Mission Assignations):", data);
@@ -545,7 +568,7 @@ export const fetchAssignMission = async (
           missionTitle: item.mission?.name || "Non spécifié",
           startDate: item.mission?.startDate || "Non spécifié",
           endDate: item.mission?.endDate || "Non spécifié",
-          lieu: item.mission?.lieu?.nom || "Non spécifié", // ✅ CORRIGÉ: ajout du ? pour lieu
+          lieu: item.mission?.lieu?.nom || "Non spécifié",
           function: item.employee?.jobTitle || "Non spécifié",
           base: item.employee?.site?.siteName || "Non spécifié",
           status: item.mission?.status || "Non spécifié",
@@ -555,7 +578,7 @@ export const fetchAssignMission = async (
           transport: item.transport,
         }))
       : [];
-      
+
     setAssignMissions(assignMissionsData);
     setTotalEntries(data.totalCount || assignMissionsData.length || 0);
   } catch (error) {
@@ -571,7 +594,6 @@ export const fetchAssignMission = async (
     setIsLoading((prev) => ({ ...prev, assignMissions: false }));
   }
 };
-
 // Fonction pour récupérer toutes les missions
 export const fetchAllMissions = async (
   setMissions,
@@ -679,10 +701,16 @@ export const fetchMissionById = async (
 };
 
 // Fonction pour récupérer les statistiques des missions
-export const fetchMissionStats = async (setStats, setIsLoading, onError) => {
+export const fetchMissionStats = async (setStats, setIsLoading, onError, matricules = null) => {
   try {
     setIsLoading((prev) => ({ ...prev, stats: true }));
-    const data = await apiGet("/api/Mission/stats");
+
+    // Build query string for matricule filter if provided
+    const query = matricules && matricules.length > 0 
+      ? `?${matricules.map(m => `matricule=${encodeURIComponent(m)}`).join('&')}` 
+      : '';
+    
+    const data = await apiGet(`/api/Mission/stats${query}`);
     setStats(data);
   } catch (error) {
     // Gestion des erreurs
@@ -692,7 +720,7 @@ export const fetchMissionStats = async (setStats, setIsLoading, onError) => {
       type: "error",
       message: `Erreur lors du chargement des statistiques: ${error.message}`,
     });
-    setStats({ total: 0, enCours: 0, terminee: 0, annulee: 0 });
+    setStats({ total: 0, enCours: 0, planifiee: 0, terminee: 0, annulee: 0 });
   } finally {
     setIsLoading((prev) => ({ ...prev, stats: false }));
   }

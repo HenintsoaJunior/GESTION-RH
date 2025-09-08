@@ -1,29 +1,30 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Services.ldap.user;
 using MyApp.Api.Services.users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MyApp.Api.Data;
+using MyApp.Api.Services.logs;
 
 namespace MyApp.Api.Controllers.ldap.user;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AuthController : ControllerBase
+public class AuthController(
+    ILdapService ldapService,
+    IAuthService authService,
+    ILogService logService,
+    IConfiguration configuration,
+    AppDbContext context)
+    : ControllerBase
 {
-    private readonly ILdapService _ldapService;
-    private readonly IAuthService _authService;
-    private readonly IConfiguration _configuration;
-    private readonly AppDbContext _context;
+    private readonly ILdapService _ldapService = ldapService ?? throw new ArgumentNullException(nameof(ldapService));
+    private readonly IAuthService _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+    private readonly ILogService _logService = logService ?? throw new ArgumentNullException(nameof(logService));
+    private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+    private readonly AppDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
 
-    public AuthController(ILdapService ldapService, IAuthService authService, IConfiguration configuration, AppDbContext context)
-    {
-        _ldapService = ldapService ?? throw new ArgumentNullException(nameof(ldapService));
-        _authService = authService ?? throw new ArgumentNullException(nameof(authService));
-        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-    }
-    
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenModel model)
     {
@@ -82,6 +83,9 @@ public class AuthController : ControllerBase
 
             var token = await _authService.GenerateJwtTokenAsync(result.User);
 
+            // Log successful authentication, explicitly specifying T as object
+            await _logService.LogAsync<object>("AUTHENTICATION", null, null, result.User.UserId.ToString());
+
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
@@ -96,6 +100,7 @@ public class AuthController : ControllerBase
             var userResponse = new
             {
                 result.User.UserId,
+                result.User.Matricule,
                 result.User.Email,
                 result.User.Name,
                 result.User.Department,
@@ -116,7 +121,12 @@ public class AuthController : ControllerBase
     {
         try
         {
+            // var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
             Response.Cookies.Delete("AuthToken");
+
+            // _logService.LogAsync<object>("LOGOUT", null, null, userId!).GetAwaiter().GetResult();
+
             return Ok(new { Message = "Logged out successfully" });
         }
         catch (Exception ex)
@@ -124,15 +134,15 @@ public class AuthController : ControllerBase
             return StatusCode(500, new { Message = $"An error occurred during logout: {ex.Message}", Type = "error" });
         }
     }
-    
+
     public class LoginModel
     {
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
+
     public class RefreshTokenModel
     {
         public string RefreshToken { get; set; } = string.Empty;
     }
-    
 }

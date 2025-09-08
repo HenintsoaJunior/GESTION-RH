@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.mission;
-using MyApp.Api.Models.search.mission;
+using MyApp.Api.Models.dto.mission;
 
 namespace MyApp.Api.Repositories.mission
 {
@@ -13,6 +13,7 @@ namespace MyApp.Api.Repositories.mission
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId);
+        Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId);
         Task<IEnumerable<MissionAssignation>> GetFilteredAssignationsAsync(string? employeeId, string? missionId, string? lieuId, DateTime? departureDate, DateTime? departureArrive, string? status);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
         Task AddAsync(MissionAssignation missionAssignation);
@@ -90,6 +91,23 @@ namespace MyApp.Api.Repositories.mission
                 .FirstOrDefaultAsync(ma => 
                     ma.EmployeeId == employeeId && 
                     ma.MissionId == missionId);
+        }
+        
+        public async Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId)
+        {
+            return await _context.MissionAssignations
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Direction)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Department)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Service)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Site)
+                .Include(ma => ma.Mission!)
+                .ThenInclude(m => m.Lieu)
+                .Include(ma => ma.Transport)
+                .FirstOrDefaultAsync(ma => ma.AssignationId == assignationId);
         }
 
         public async Task<IEnumerable<MissionAssignation>> GetFilteredAssignationsAsync(string? employeeId, string? missionId, string? lieuId, DateTime? departureDate, DateTime? departureArrive, string? status)
@@ -182,14 +200,29 @@ namespace MyApp.Api.Repositories.mission
                 query = query.Where(ma => ma.Mission != null && ma.Mission.LieuId.Contains(filters.LieuId));
             }
 
-            if (filters.DepartureDate.HasValue)
+            if (filters.Matricule.Any(m => !string.IsNullOrWhiteSpace(m)))
             {
-                query = query.Where(ma => ma.DepartureDate >= filters.DepartureDate.Value);
+                query = query.Where(ma => filters.Matricule.Contains(ma.Employee.EmployeeCode));
             }
 
-            if (filters.DepartureArrive.HasValue)
+            if (filters.MinDepartureDate.HasValue)
             {
-                query = query.Where(ma => ma.DepartureDate <= filters.DepartureArrive.Value);
+                query = query.Where(ma => ma.DepartureDate >= filters.MinDepartureDate.Value);
+            }
+            
+            if (filters.MaxDepartureDate.HasValue)
+            {
+                query = query.Where(ma => ma.DepartureDate <= filters.MaxDepartureDate.Value);
+            }
+            
+            if (filters.MinArrivalDate.HasValue)
+            {
+                query = query.Where(ma => ma.DepartureDate >= filters.MinArrivalDate.Value);
+            }
+
+            if (filters.MaxArrivalDate.HasValue)
+            {
+                query = query.Where(ma => ma.DepartureDate <= filters.MaxArrivalDate.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(filters.Status))

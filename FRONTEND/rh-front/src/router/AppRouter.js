@@ -2,27 +2,26 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 import Login from 'features/auth/login';
 import Template from 'layouts/template';
-import RecruitmentRequestForm from 'pages/recruitment/recruitments_request/recruitment-request-form';
-import RecruitmentRequestList from 'pages/recruitment/recruitments_request/recruitment-request-list';
-import RecruitmentRequestDetails from 'pages/recruitment/recruitments_request/recruitment-request-details';
-import ContractTypeForm from 'pages/recruitment/contract/contract-type-form';
 import DirectionForm from 'pages/direction/direction-form';
 import DepartmentForm from 'pages/direction/department-form';
 import ServiceForm from 'pages/direction/service-form';
-import ProcessWorkflow from 'pages/recruitment/recruitments_request/process';
-import MissionForm from 'pages/mission/mission-form';
-import MissionList from 'pages/mission/mission-list';
-import AssignedPersonsList from 'pages/mission/mission-assign-list';
-import AssignmentDetails from 'pages/mission/mission-assign-details';
+import MissionForm from 'pages/mission/form/mission-form';
+import MissionList from 'pages/mission/list/mission-list';
+import AssignedPersonsList from 'pages/mission/list/mission-assign-list';
+import AssignmentDetails from 'pages/mission/list/mission-assign-details';
 import TransportForm from 'pages/transport/transport-form';
 import DashboardHome from 'pages/dashboard';
 import LieuForm from 'pages/lieu/lieu-form';
-import MissionAssignationFormExcel from 'pages/mission/mission-assign-form-excel';
+import MissionAssignationFormExcel from 'pages/mission/excel/mission-assign-form-excel';
 import ShortcutsDashboard from 'pages/system/entite/shortcuts';
 import EmployeeList from 'pages/employee/employee-list';
 import EmployeeForm from 'pages/employee/employee-fom';
-import BeneficiaryMissionList from 'pages/mission/benificary-mission-list';
+import CollaboratorMissionList from 'pages/mission/collaborator/list/collaborator-mission-list';
+import MissionValidationPage from 'pages/mission/validation/mission-validation';
 import ProfilePage from 'layouts/profil-page';
+import UserList from 'pages/users/users-list';
+import RoleList from 'pages/roles/roles-list';
+import LogList from 'pages/logs/logs-list';
 
 function AppRouter() {
   return (
@@ -32,22 +31,18 @@ function AppRouter() {
         <Route element={<Template><Outlet /></Template>}>
           <Route path="/dashboard" element={<DashboardHome />} />
           <Route path="/profil-page" element={<ProfilePage />} />
-          
+          {/* logs */}
+          <Route path="/logs" element={<LogList />} />
+
+          {/* Utilisateur */}
+          <Route path="/utilisateur" element={<UserList />} />
+          <Route path="/role/list" element={<RoleList />} />
           
           {/* Employee */}
           <Route path="/employee/edit/:employeeId" element={<EmployeeForm />} />
           <Route path="/employee/list" element={<EmployeeList />} />
           <Route path="/employee/create" element={<EmployeeForm />} />
-          
 
-          {/* Recrutement */}
-          <Route path="/recruitment/recruitment-request/list" element={<RecruitmentRequestList />} />
-          <Route path="/recruitment/recruitment-request/create" element={<RecruitmentRequestForm />} />
-          <Route path="/recruitment/recruitment-request/details/:recruitmentRequestId" element={<RecruitmentRequestDetails />} />
-          <Route path="/recruitment/process/:recruitmentRequestId" element={<ProcessWorkflow />} />
-
-          {/* Entite */}
-          <Route path="/recruitment/contract-type-form" element={<ContractTypeForm />} />
           <Route path="/direction/direction-form" element={<DirectionForm />} />
           <Route path="/direction/department-form" element={<DepartmentForm />} />
           <Route path="/direction/service-form" element={<ServiceForm />} />
@@ -56,10 +51,11 @@ function AppRouter() {
           <Route path="/mission/form/:missionId" element={<MissionForm />} />
           <Route path="/mission/form" element={<MissionForm />} />
           <Route path="/mission/list" element={<MissionList />} />
+          <Route path="/mission/to-validate" element={<MissionValidationPage />} />
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
           <Route path="/assignments/details" element={<AssignmentDetails />} />
           <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />
-          <Route path="/mission/beneficiary" element={<BeneficiaryMissionList />} />
+          <Route path="/mission/beneficiary" element={<CollaboratorMissionList />} />
 
           
           {/* Transport */}

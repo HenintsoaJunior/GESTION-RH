@@ -1,30 +1,23 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
+using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Services.mission;
-using MyApp.Api.Models.form.mission;
 
 namespace MyApp.Api.Controllers.mission
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class MissionPaiementController : ControllerBase
+    public class MissionPaiementController(IMissionAssignationService missionAssignationService) : ControllerBase
     {
-        private readonly IMissionAssignationService _missionAssignationService;
-
-        public MissionPaiementController(
-            ICompensationScaleService compensationScaleService,
-            IMissionAssignationService missionAssignationService)
-        {
-            _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
-        }
+        private readonly IMissionAssignationService _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
 
         [HttpPost("generate-pdf")]
-        public async Task<IActionResult> GeneratePdf([FromBody] GeneratePaiementDTO generatePaiementDTO)
+        public async Task<IActionResult> GeneratePdf([FromBody] GeneratePaiementDTO generatePaiementDto)
         {
             try
             {
-                var pdfBytes = await _missionAssignationService.GeneratePdfReportAsync(generatePaiementDTO);
-                string pdfName = $"MissionPaymentReport-{generatePaiementDTO.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                var pdfBytes = await _missionAssignationService.GeneratePdfReportAsync(generatePaiementDto);
+                var pdfName = $"Indemnité de mission-{generatePaiementDto.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
                 return File(pdfBytes, "application/pdf", pdfName);
             }
             catch (InvalidOperationException ex)
@@ -38,9 +31,9 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpPost("generate")]
-        public async Task<ActionResult<IEnumerable<MissionPaiement>>> GeneratePaiements([FromBody] GeneratePaiementDTO generatePaiementDTO)
+        public async Task<ActionResult<IEnumerable<MissionPaiement>>> GeneratePaiements([FromBody] GeneratePaiementDTO generatePaiementDto)
         {
-            if (string.IsNullOrWhiteSpace(generatePaiementDTO.EmployeeId) || string.IsNullOrWhiteSpace(generatePaiementDTO.MissionId))
+            if (string.IsNullOrWhiteSpace(generatePaiementDto.EmployeeId) || string.IsNullOrWhiteSpace(generatePaiementDto.MissionId))
             {
                 return BadRequest("Valid EmployeeId and MissionId are required.");
             }
@@ -48,11 +41,11 @@ namespace MyApp.Api.Controllers.mission
             try
             {
                 var missionAssignation =
-                    await _missionAssignationService.GeneratePaiementsAsync(generatePaiementDTO.EmployeeId,
-                        generatePaiementDTO.MissionId,
-                        generatePaiementDTO.DirectionId,
-                        generatePaiementDTO.StartDate,
-                        generatePaiementDTO.EndDate);
+                    await _missionAssignationService.GeneratePaiementsAsync(generatePaiementDto.EmployeeId,
+                        generatePaiementDto.MissionId,
+                        generatePaiementDto.DirectionId,
+                        generatePaiementDto.StartDate,
+                        generatePaiementDto.EndDate);
 
                 return Ok(missionAssignation);
             }

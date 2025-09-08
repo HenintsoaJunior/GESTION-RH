@@ -1,16 +1,15 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Collections.Generic;
-using MyApp.Api.Models.form.users;
+using MyApp.Api.Models.dto.users;
 
 namespace MyApp.Api.Entities.users
 {
     public enum UserType
     {
-        Cadre,
-        NonCadre
+        Cadre = 1,
+        NonCadre = 0
     }
+
 
     [Table("users")]
     public class User : BaseEntity
@@ -55,7 +54,6 @@ namespace MyApp.Api.Entities.users
         public string? Status { get; set; }
 
         [Column("signature")]
-        [MaxLength(500)]
         public string? Signature { get; set; }
 
         [Column("user_type")]

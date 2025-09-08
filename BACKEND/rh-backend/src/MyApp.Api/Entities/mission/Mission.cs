@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using MyApp.Api.Models.form.mission;
+using MyApp.Api.Models.dto.mission;
 
 namespace MyApp.Api.Entities.mission
 {
@@ -36,7 +36,7 @@ namespace MyApp.Api.Entities.mission
         public string LieuId { get; set; } = null!;
         
         [ForeignKey("LieuId")]
-        public Lieu? Lieu { get; set; }
+        public Lieu? Lieu { get; set; } 
         
         public Mission()
         {

@@ -1,18 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.employee;
-using MyApp.Api.Models.search.employee;
+using MyApp.Api.Models.dto.employee;
 
 namespace MyApp.Api.Repositories.employee
 {
     public interface IEmployeeRepository
     {
-        public void Detach(Employee employee);
+        void Detach(Employee employee);
         Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Employee>> GetAllAsync();
         Task<Employee?> GetByIdAsync(string id);
         Task<IEnumerable<Employee>> GetByGenderAsync(string genderId);
-        Task<IEnumerable<Employee>> GetByStatusAsync(string status);
         Task AddAsync(Employee employee);
         Task UpdateAsync(Employee employee);
         Task DeleteAsync(string id);
@@ -28,11 +27,12 @@ namespace MyApp.Api.Repositories.employee
         {
             _context = context;
         }
+
         public void Detach(Employee employee)
         {
             _context.Entry(employee).State = EntityState.Detached;
         }
-        
+
         public async Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize)
         {
             var query = _context.Employees
@@ -40,10 +40,8 @@ namespace MyApp.Api.Repositories.employee
                 .Include(e => e.Service)
                 .Include(e => e.Department)
                 .Include(e => e.Direction)
-                .Include(e => e.WorkingTimeType)
                 .Include(e => e.ContractType)
                 .Include(e => e.Gender)
-                .Include(e => e.MaritalStatus)
                 .Include(e => e.Site)
                 .AsQueryable();
 
@@ -89,28 +87,10 @@ namespace MyApp.Api.Repositories.employee
                 query = query.Where(e => e.SiteId == filters.SiteId);
             }
 
-            // Filtre par statut (Status)
-            if (!string.IsNullOrWhiteSpace(filters.Status))
-            {
-                query = query.Where(e => e.Status != null && e.Status.Contains(filters.Status));
-            }
-
             // Filtre par genre (GenderId)
             if (!string.IsNullOrWhiteSpace(filters.GenderId))
             {
                 query = query.Where(e => e.GenderId == filters.GenderId);
-            }
-
-            // Filtre par date de départ minimum
-            if (filters.DepartureDateMin.HasValue)
-            {
-                query = query.Where(e => e.DepartureDate != null && e.DepartureDate >= filters.DepartureDateMin.Value);
-            }
-
-            // Filtre par date de départ maximum
-            if (filters.DepartureDateMax.HasValue)
-            {
-                query = query.Where(e => e.DepartureDate != null && e.DepartureDate <= filters.DepartureDateMax.Value);
             }
 
             var totalCount = await query.CountAsync();
@@ -132,10 +112,8 @@ namespace MyApp.Api.Repositories.employee
                 .Include(e => e.Service)
                 .Include(e => e.Department)
                 .Include(e => e.Direction)
-                .Include(e => e.WorkingTimeType)
                 .Include(e => e.ContractType)
                 .Include(e => e.Gender)
-                .Include(e => e.MaritalStatus)
                 .Include(e => e.Site)
                 .ToListAsync();
         }
@@ -147,10 +125,8 @@ namespace MyApp.Api.Repositories.employee
                 .Include(e => e.Service)
                 .Include(e => e.Department)
                 .Include(e => e.Direction)
-                .Include(e => e.WorkingTimeType)
                 .Include(e => e.ContractType)
                 .Include(e => e.Gender)
-                .Include(e => e.MaritalStatus)
                 .Include(e => e.Site)
                 .FirstOrDefaultAsync(e => e.EmployeeId == id);
         }
@@ -159,13 +135,6 @@ namespace MyApp.Api.Repositories.employee
         {
             return await _context.Employees
                 .Where(e => e.GenderId == genderId)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Employee>> GetByStatusAsync(string status)
-        {
-            return await _context.Employees
-                .Where(e => e.Status == status)
                 .ToListAsync();
         }
 
@@ -191,23 +160,14 @@ namespace MyApp.Api.Repositories.employee
         {
             await _context.SaveChangesAsync();
         }
-        
+
         public async Task<EmployeeStats> GetStatisticsAsync()
         {
             var total = await _context.Employees.CountAsync();
-            var actif = await _context.Employees
-                .CountAsync(e => e.Status == "Actif");
-            var inactif = await _context.Employees
-                .CountAsync(e => e.Status == "Inactif");
-            var departed = await _context.Employees
-                .CountAsync(e => e.DepartureDate != null);
 
             return new EmployeeStats
             {
-                Total = total,
-                Actif = actif,
-                Inactif = inactif,
-                Departed = departed
+                Total = total
             };
         }
     }

@@ -22,7 +22,6 @@ public class LdapService : ILdapService
     {
         _userService = userService ?? throw new ArgumentNullException(nameof(userService));
     }
-
     public List<UserAd>? BuildFullOrganisationHierarchy(string domainPath)
     {
         try
@@ -182,14 +181,36 @@ public class LdapService : ILdapService
         try
         {
             var adUsers = BuildFullOrganisationHierarchy(domainPath) ?? throw new InvalidOperationException("Failed to retrieve users from Active Directory");
-            var dbUsers = await _userService.GetAllUsersAsync();
-            var adUserDict = adUsers
+            var filteredAdUsers = adUsers
+                .Where(x => !string.IsNullOrEmpty(x.Email))
+                .ToList();
+
+            var filteredDbUsers = new List<User>();
+            await foreach (var batch in await _userService.GetAllInBatchesAsync(batchSize: 1000))
+            {
+                var users = await Task.Run(() => batch.Select(dto => new User
+                {
+                    UserId = dto.UserId,
+                    Email = dto.Email,
+                    Name = dto.Name,
+                    Department = dto.Department,
+                    Position = dto.Position,
+                    SuperiorId = dto.SuperiorId,
+                    SuperiorName = dto.SuperiorName
+                }).Where(u => !string.IsNullOrEmpty(u.Email)));
+
+                filteredDbUsers.AddRange(users);
+            }
+
+            var adUserDict = filteredAdUsers
                 .Where(x => !string.IsNullOrEmpty(x.UserId))
                 .ToDictionary(x => x.UserId!);
 
-            var dbUsersDict = dbUsers.ToDictionary(x => x.UserId);
-            var toAdd = GetUsersToAdd(adUsers, dbUsersDict);
-            var (toUpdate, toDelete) = GetUsersToUpdateOrDelete(dbUsers, adUserDict!);
+            var dbUsersDict = filteredDbUsers
+                .ToDictionary(x => x.UserId);
+
+            var toAdd = GetUsersToAdd(filteredAdUsers, dbUsersDict);
+            var (toUpdate, toDelete) = GetUsersToUpdateOrDelete(filteredDbUsers, adUserDict);
             await ApplyUserChanges(toAdd, toUpdate, toDelete);
             return (toAdd.Count, toUpdate.Count, toDelete.Count);
         }
@@ -199,7 +220,6 @@ public class LdapService : ILdapService
             throw new InvalidOperationException($"Failed to actualize users: {ex.Message}", ex);
         }
     }
-
     private List<User> GetUsersToAdd(List<UserAd> adUsers, Dictionary<string, User> dbUsersDict)
     {
         var usersToAdd = new List<User>();

@@ -9,7 +9,7 @@ namespace MyApp.Api.Utils.csv
         /// <summary>
         /// Lit un fichier CSV et retourne une liste de lignes, chaque ligne étant une liste de champs (séparés par dataSeparator).
         /// </summary>
-        /// <param name="filePath">Chemin vers le fichier CSV</param>
+        /// <param name="fileStream">le fichier CSV</param>
         /// <param name="dataSeparator">Caractère séparateur de colonnes (ex: ',' ou ';')</param>
         /// <returns>Liste de lignes, chaque ligne étant une liste de champs</returns>
 
@@ -108,7 +108,7 @@ namespace MyApp.Api.Utils.csv
             return blockCount;
         }
 
-       public static List<string>? CheckHour(List<List<string>> data)
+       public static List<string>? CheckHour(List<List<string>>? data)
         {
             if (data == null || data.Count < 2)
                 return null;
@@ -157,7 +157,7 @@ namespace MyApp.Api.Utils.csv
 
 
 
-        public static List<string>? CheckDate(List<List<string>> data)
+        public static List<string>? CheckDate(List<List<string>>? data)
         {
             if (data == null || data.Count < 2)
                 return null;
@@ -167,7 +167,7 @@ namespace MyApp.Api.Utils.csv
             var dateColIndex = GetColumnIndex(header, "date", "jour", "day");
 
             if (dateColIndex == -1)
-                return new List<string> { "Colonne de date introuvable." };
+                return ["Colonne de date introuvable."];
 
             DateTime? previousDate = null;
 
@@ -203,7 +203,7 @@ namespace MyApp.Api.Utils.csv
         {
             return TimeSpan.TryParseExact(
                 input.Trim(),
-                new[] { "hh\\:mm", "h\\:mm", "HH\\:mm", "H\\:mm" },
+                ["hh\\:mm", "h\\:mm", "HH\\:mm", "H\\:mm"],
                 CultureInfo.InvariantCulture,
                 out time
             );
@@ -241,10 +241,9 @@ namespace MyApp.Api.Utils.csv
             for (int i = 0; i < header.Count; i++)
             {
                 string column = header[i].Trim().ToLower();
-                foreach (var keyword in keywords)
+                if (keywords.Any(keyword => column.Contains(keyword.ToLower())))
                 {
-                    if (column.Contains(keyword.ToLower()))
-                        return i;
+                    return i;
                 }
             }
             return -1;

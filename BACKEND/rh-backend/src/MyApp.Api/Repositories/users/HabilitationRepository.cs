@@ -35,8 +35,7 @@ public class HabilitationRepository : IHabilitationRepository
     public async Task<Habilitation?> GetByIdAsync(string id)
     {
         return await _context.Habilitations
-            .Include(h => h.RoleHabilitations)
-            .ThenInclude(rh => rh.Role)
+            .AsNoTracking()
             .FirstOrDefaultAsync(h => h.HabilitationId == id);
     }
 

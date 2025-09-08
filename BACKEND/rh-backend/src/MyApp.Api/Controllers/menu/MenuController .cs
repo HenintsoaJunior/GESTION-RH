@@ -1,26 +1,19 @@
 using Microsoft.AspNetCore.Mvc;
-using MyApp.Api.Models.list.menu;
+using MyApp.Api.Models.dto.menu;
 using MyApp.Api.Services.menu;
 
 namespace MyApp.Api.Controllers.menu
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class MenuController : ControllerBase
+    public class MenuController(IMenuService menuService) : ControllerBase
     {
-        private readonly IMenuService _menuService;
-
-        public MenuController(IMenuService menuService)
-        {
-            _menuService = menuService;
-        }
-
         [HttpGet("hierarchy")]
         public async Task<ActionResult<IEnumerable<MenuHierarchyDto>>> GetMenuHierarchy([FromQuery] string[]? roleNames = null)
         {
             try
             {
-                var menuHierarchy = await _menuService.GetMenuHierarchyAsync(roleNames);
+                var menuHierarchy = await menuService.GetMenuHierarchyAsync(roleNames);
                 return Ok(menuHierarchy);
             }
             catch (Exception ex)
@@ -34,7 +27,7 @@ namespace MyApp.Api.Controllers.menu
         {
             try
             {
-                var modules = await _menuService.GetModulesAsync();
+                var modules = await menuService.GetModulesAsync();
                 return Ok(modules);
             }
             catch (Exception ex)

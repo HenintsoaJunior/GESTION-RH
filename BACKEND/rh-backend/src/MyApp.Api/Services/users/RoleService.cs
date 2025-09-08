@@ -1,139 +1,181 @@
 using MyApp.Api.Entities.users;
+using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.users;
+using MyApp.Api.Services.logs;
 using MyApp.Api.Utils.generator;
 
 namespace MyApp.Api.Services.users;
 
 public interface IRoleService
+{
+    Task<IEnumerable<Role>> GetAllAsync();
+    Task<Role?> GetByIdAsync(string id);
+    Task AddAsync(RoleDTOForm dto);
+    Task UpdateAsync(string id, RoleDTOForm role);
+    Task DeleteAsync(string id, string userId);
+}
+
+public class RoleService : IRoleService
+{
+    private readonly IRoleRepository _repository;
+    private readonly IRoleHabilitationRepository _roleHabilitationRepository;
+    private readonly ILogService _logService;
+    private readonly ISequenceGenerator _sequenceGenerator;
+    private readonly ILogger<RoleService> _logger;
+
+    public RoleService(
+        IRoleRepository repository,
+        IRoleHabilitationService roleHabilitationService,
+        ILogService logService,
+        ISequenceGenerator sequenceGenerator,
+        ILogger<RoleService> logger, IRoleHabilitationRepository roleHabilitationRepository)
     {
-        Task<IEnumerable<Role>> GetAllAsync();
-        Task<Role?> GetByIdAsync(string id);
-        Task AddAsync(Role role);
-        Task UpdateAsync(Role role);
-        Task DeleteAsync(string id);
+        _repository = repository;
+        _logService = logService;
+        _sequenceGenerator = sequenceGenerator;
+        _logger = logger;
+        _roleHabilitationRepository = roleHabilitationRepository;
     }
 
-    public class RoleService : IRoleService
+    public async Task<IEnumerable<Role>> GetAllAsync()
     {
-        private readonly IRoleRepository _repository;
-        private readonly ISequenceGenerator _sequenceGenerator;
-        private readonly ILogger<RoleService> _logger;
-
-        public RoleService(
-            IRoleRepository repository,
-            ISequenceGenerator sequenceGenerator,
-            ILogger<RoleService> logger)
+        try
         {
-            _repository = repository;
-            _sequenceGenerator = sequenceGenerator;
-            _logger = logger;
+            _logger.LogInformation("Récupération de tous les rôles");
+            return await _repository.GetAllAsync();
         }
-
-        public async Task<IEnumerable<Role>> GetAllAsync()
+        catch (Exception ex)
         {
-            try
-            {
-                _logger.LogInformation("Récupération de tous les rôles");
-                return await _repository.GetAllAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la récupération des rôles");
-                throw;
-            }
-        }
-
-        public async Task<Role?> GetByIdAsync(string id)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    _logger.LogWarning("Tentative de récupération d'un rôle avec un ID null ou vide");
-                    return null;
-                }
-
-                _logger.LogInformation("Récupération du rôle avec l'ID: {RoleId}", id);
-                return await _repository.GetByIdAsync(id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la récupération du rôle avec l'ID: {RoleId}", id);
-                throw;
-            }
-        }
-
-        public async Task AddAsync(Role role)
-        {
-            try
-            {
-                if (role == null)
-                {
-                    throw new ArgumentNullException(nameof(role), "Le rôle ne peut pas être null");
-                }
-
-                if (string.IsNullOrWhiteSpace(role.RoleId))
-                {
-                    role.RoleId = _sequenceGenerator.GenerateSequence("seq_role_id", "ROLE", 6, "-");
-                    _logger.LogInformation("ID généré pour le rôle: {RoleId}", role.RoleId);
-                }
-
-                await _repository.AddAsync(role);
-                await _repository.SaveChangesAsync();
-
-                _logger.LogInformation("Rôle ajouté avec succès avec l'ID: {RoleId}", role.RoleId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de l'ajout du rôle avec l'ID: {RoleId}", role?.RoleId);
-                throw;
-            }
-        }
-
-        public async Task UpdateAsync(Role role)
-        {
-            try
-            {
-                if (role == null)
-                {
-                    throw new ArgumentNullException(nameof(role), "Le rôle ne peut pas être null");
-                }
-
-                if (string.IsNullOrWhiteSpace(role.RoleId))
-                {
-                    throw new ArgumentException("L'ID du rôle ne peut pas être null ou vide", nameof(role.RoleId));
-                }
-
-                await _repository.UpdateAsync(role);
-                await _repository.SaveChangesAsync();
-
-                _logger.LogInformation("Rôle mis à jour avec succès pour l'ID: {RoleId}", role.RoleId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la mise à jour du rôle avec l'ID: {RoleId}", role?.RoleId);
-                throw;
-            }
-        }
-
-        public async Task DeleteAsync(string id)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    throw new ArgumentException("L'ID du rôle ne peut pas être null ou vide", nameof(id));
-                }
-
-                await _repository.DeleteAsync(id);
-                await _repository.SaveChangesAsync();
-
-                _logger.LogInformation("Rôle supprimé avec succès pour l'ID: {RoleId}", id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la suppression du rôle avec l'ID: {RoleId}", id);
-                throw;
-            }
+            _logger.LogError(ex, "Erreur lors de la récupération des rôles");
+            throw;
         }
     }
+
+    public async Task<Role?> GetByIdAsync(string id)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                _logger.LogWarning("Tentative de récupération d'un rôle avec un ID null ou vide");
+                return null;
+            }
+
+            _logger.LogInformation("Récupération du rôle avec l'ID: {RoleId}", id);
+            return await _repository.GetByIdAsync(id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération du rôle avec l'ID: {RoleId}", id);
+            throw;
+        }
+    }
+
+    public async Task AddAsync(RoleDTOForm dto)
+    {
+        try
+        {
+            var role = new Role(dto);
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role), "Le rôle ne peut pas être null");
+            }
+
+            if (string.IsNullOrWhiteSpace(role.RoleId))
+            {
+                role.RoleId = _sequenceGenerator.GenerateSequence("seq_role_id", "ROLE", 6, "-");
+                _logger.LogInformation("ID généré pour le rôle: {RoleId}", role.RoleId);
+            }
+
+            await _repository.AddAsync(role);
+            await _repository.SaveChangesAsync();
+
+            // Synchroniser les habilitations
+            if (dto.HabilitationIds.Any())
+            {
+                await _roleHabilitationRepository.SynchronizeHabilitationsAsync(role.RoleId, dto.HabilitationIds);
+                _logger.LogInformation("Habilitations synchronisées pour le rôle: {RoleId}", role.RoleId);
+            }
+
+            _logger.LogInformation("Rôle ajouté avec succès avec l'ID: {RoleId}", role.RoleId);
+
+            if (dto.UserId != null)
+                await _logService.LogAsync("INSERTION", null, role, dto.UserId, "Name,Description,HabilitationIds");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de l'ajout du rôle");
+            throw;
+        }
+    }
+
+    public async Task UpdateAsync(string id, RoleDTOForm? roleDto)
+    {
+        try
+        {
+            if (roleDto == null)
+            {
+                _logger.LogWarning("Tentative de mise à jour avec un RoleDTOForm null");
+                throw new ArgumentNullException(nameof(roleDto), "Les données du rôle ne peuvent pas être nulles");
+            }
+
+            var existingRole = await _repository.GetByIdAsync(id);
+            if (existingRole == null)
+            {
+                throw new InvalidOperationException($"Le rôle avec l'ID {id} n'existe pas");
+            }
+            
+            var newRole = new Role(roleDto)
+            {
+                RoleId = id
+            };
+
+            await _repository.UpdateAsync(newRole);
+            
+            // Synchroniser les habilitations
+            await _roleHabilitationRepository.SynchronizeHabilitationsAsync(id, roleDto.HabilitationIds);
+            _logger.LogInformation("Habilitations synchronisées pour le rôle: {RoleId}", id);
+
+            await _repository.SaveChangesAsync();
+
+            _logger.LogInformation("Rôle mis à jour avec succès avec l'ID: {RoleId}", id);
+
+            if (roleDto.UserId != null)
+                await _logService.LogAsync("MODIFICATION", existingRole, newRole, roleDto.UserId,
+                    "Name,Description,HabilitationIds");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la mise à jour du rôle avec l'ID: {RoleId}", id);
+            throw;
+        }
+    }
+                                                
+    public async Task DeleteAsync(string id, string userId)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentException("L'ID du rôle ne peut pas être null ou vide", nameof(id));
+            }
+            var existingRole = await _repository.GetByIdAsync(id);
+            if (existingRole == null)
+            {
+                throw new InvalidOperationException($"Le rôle avec l'ID {id} n'existe pas");
+            }
+
+            await _repository.DeleteAsync(id);
+            await _repository.SaveChangesAsync();
+
+            _logger.LogInformation("Rôle supprimé avec succès pour l'ID: {RoleId}", id);
+
+            await _logService.LogAsync("SUPPRESSION", existingRole, null, userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la suppression du rôle avec l'ID: {RoleId}", id);
+            throw;
+        }
+    }
+}

@@ -32,37 +32,96 @@
     DELETE FROM approval_flow;
 
     -- Insertion des directions
-    INSERT INTO direction (direction_id, direction_name, acronym, created_at, updated_at)
-    VALUES 
-        ('DR_0001', 'Direction Technique', 'DT', GETDATE(), NULL),
-        ('DR_0002', 'Direction Commerciale et Marketing', 'DCM', GETDATE(), NULL),
-        ('DR_0003', 'Direction Qualité, Risques, Sécurité et Environnement', 'DQRSE', GETDATE(), NULL),
-        ('DR_0004', 'Ressources Humaines', 'RH', GETDATE(), NULL),
-        ('DR_0005', 'Direction des Systèmes d''Information', 'DSI', GETDATE(), NULL),
-        ('DR_0006', 'Direction des Opérations', 'DOP', GETDATE(), NULL),
-        ('DR_0007', 'Direction Administrative et Financière', 'DAF', GETDATE(), NULL);
+INSERT INTO direction (direction_id, direction_name, acronym, created_at, updated_at)
+VALUES 
+    ('DR_0001', 'Direction Technique', 'DTE', GETDATE(), NULL),
+    ('DR_0002', 'Direction Commerciale et Marketing', 'DCM', GETDATE(), NULL),
+    ('DR_0003', 'Direction Qualité, Risques, Sécurité et Environnement', 'QRS', GETDATE(), NULL),
+    ('DR_0004', 'Direction Ressources Humaines', 'DRH', GETDATE(), NULL),
+    ('DR_0005', 'Direction des Systèmes d''Information', 'DSI', GETDATE(), NULL),
+    ('DR_0006', 'Direction des Opérations', 'DOP', GETDATE(), NULL),
+    ('DR_0007', 'Direction Administrative et Financière', 'DAF', GETDATE(), NULL),
+    ('DR_0008', 'Direction Juridique et Assurances', 'DJA', GETDATE(), NULL),
+    ('DR_0009', 'Direction Générale', 'DGE', GETDATE(), NULL),
+    ('DR_0010', 'Communication et Relations Publiques', 'COM', GETDATE(), NULL);
 
-    -- Insertion des départements
-    INSERT INTO department (department_id, department_name, direction_id, created_at, updated_at)
-    VALUES 
-        ('DP_0001', 'Bureau d''Études', 'DR_0001', GETDATE(), NULL),
-        ('DP_0002', 'Marketing Digital', 'DR_0002', GETDATE(), NULL),
-        ('DP_0003', 'Sécurité au Travail', 'DR_0003', GETDATE(), NULL),
-        ('DP_0004', 'Recrutement', 'DR_0004', GETDATE(), NULL),
-        ('DP_0005', 'Support Informatique', 'DR_0005', GETDATE(), NULL),
-        ('DP_0006', 'Logistique', 'DR_0006', GETDATE(), NULL),
-        ('DP_0007', 'Comptabilité', 'DR_0007', GETDATE(), NULL);
+-- Insertion des départements
+INSERT INTO department (department_id, department_name, direction_id, created_at, updated_at)
+VALUES 
+    ('DP_0001', 'Bâtiments et Génie Civil', 'DR_0001', GETDATE(), NULL),
+    ('DP_0002', 'Électricité et Mécanique', 'DR_0001', GETDATE(), NULL),
+    ('DP_0003', 'Maintenance', 'DR_0001', GETDATE(), NULL),
+    ('DP_0004', 'Maintenance Multi-Technique', 'DR_0001', GETDATE(), NULL),
+    ('DP_0005', 'Commercial', 'DR_0002', GETDATE(), NULL),
+    ('DP_0006', 'Frêt', 'DR_0002', GETDATE(), NULL),
+    ('DP_0007', 'Département Aéronautique', 'DR_0002', GETDATE(), NULL),
+    ('DP_0008', 'Département Non Aéronautique', 'DR_0002', GETDATE(), NULL),
+    ('DP_0009', 'Qualité et Gestion de Risques', 'DR_0003', GETDATE(), NULL),
+    ('DP_0010', 'Sécurité au Travail', 'DR_0003', GETDATE(), NULL),
+    ('DP_0011', 'Environnement', 'DR_0003', GETDATE(), NULL),
+    ('DP_0012', 'Responsabilité Sociétale des Entreprises', 'DR_0003', GETDATE(), NULL),
+    ('DP_0013', 'Ressources Humaines', 'DR_0004', GETDATE(), NULL),
+    ('DP_0014', 'Rémunération', 'DR_0004', GETDATE(), NULL),
+    ('DP_0015', 'Relations Sociales', 'DR_0004', GETDATE(), NULL),
+    ('DP_0016', 'Développement RH', 'DR_0004', GETDATE(), NULL),
+    ('DP_0017', 'Informatique', 'DR_0005', GETDATE(), NULL),
+    ('DP_0018', 'Infrastructures et Production IT', 'DR_0005', GETDATE(), NULL),
+    ('DP_0019', 'Transformation Digitale', 'DR_0005', GETDATE(), NULL),
+    ('DP_0020', 'Exploitation NOS', 'DR_0006', GETDATE(), NULL),
+    ('DP_0021', 'Exploitation TNR', 'DR_0006', GETDATE(), NULL),
+    ('DP_0022', 'Terminal et Landside', 'DR_0006', GETDATE(), NULL),
+    ('DP_0023', 'Airside', 'DR_0006', GETDATE(), NULL),
+    ('DP_0024', 'Méthodes-Documents et Suivi', 'DR_0006', GETDATE(), NULL),
+    ('DP_0025', 'SCAI', 'DR_0006', GETDATE(), NULL),
+    ('DP_0026', 'Comptabilité', 'DR_0007', GETDATE(), NULL),
+    ('DP_0027', 'Finances et Comptabilité', 'DR_0007', GETDATE(), NULL),
+    ('DP_0028', 'Achats', 'DR_0007', GETDATE(), NULL),
+    ('DP_0029', 'Facturation et Statistiques', 'DR_0007', GETDATE(), NULL),
+    ('DP_0030', 'Ingénierie & Contrôle Financier', 'DR_0007', GETDATE(), NULL),
+    ('DP_0031', 'Trésorerie', 'DR_0007', GETDATE(), NULL),
+    ('DP_0032', 'Juridique', 'DR_0008', GETDATE(), NULL),
+    ('DP_0033', 'Secrétariat Général', 'DR_0008', GETDATE(), NULL),
+    ('DP_0034', 'Direction Générale', 'DR_0009', GETDATE(), NULL),
+    ('DP_0035', 'Communication', 'DR_0010', GETDATE(), NULL);
 
-    -- Insertion des services
-    INSERT INTO service (service_id, service_name, department_id, created_at, updated_at)
-    VALUES 
-        ('SR_0001', 'Conception Technique', 'DP_0001', GETDATE(), NULL),
-        ('SR_0002', 'Campagnes Publicitaires', 'DP_0002', GETDATE(), NULL),
-        ('SR_0003', 'Contrôle Qualité', 'DP_0003', GETDATE(), NULL),
-        ('SR_0004', 'Formation Interne', 'DP_0004', GETDATE(), NULL),
-        ('SR_0005', 'Maintenance Réseau', 'DP_0005', GETDATE(), NULL),
-        ('SR_0006', 'Gestion des Stocks', 'DP_0006', GETDATE(), NULL),
-        ('SR_0007', 'Audit Financier', 'DP_0007', GETDATE(), NULL);
+-- Insertion des services
+INSERT INTO service (service_id, service_name, department_id, created_at, updated_at)
+VALUES 
+    ('SR_0001', 'Conception Technique', 'DP_0001', GETDATE(), NULL),
+    ('SR_0002', 'Maintenance Électrique', 'DP_0002', GETDATE(), NULL),
+    ('SR_0003', 'Maintenance Générale', 'DP_0003', GETDATE(), NULL),
+    ('SR_0004', 'Maintenance Multi-Technique', 'DP_0004', GETDATE(), NULL),
+    ('SR_0005', 'Ventes Commerciales', 'DP_0005', GETDATE(), NULL),
+    ('SR_0006', 'Gestion du Frêt', 'DP_0006', GETDATE(), NULL),
+    ('SR_0007', 'Opérations Aéronautiques', 'DP_0007', GETDATE(), NULL),
+    ('SR_0008', 'Opérations Non Aéronautiques', 'DP_0008', GETDATE(), NULL),
+    ('SR_0009', 'Contrôle Qualité', 'DP_0009', GETDATE(), NULL),
+    ('SR_0010', 'Sécurité au Travail', 'DP_0010', GETDATE(), NULL),
+    ('SR_0011', 'Gestion Environnementale', 'DP_0011', GETDATE(), NULL),
+    ('SR_0012', 'RSE', 'DP_0012', GETDATE(), NULL),
+    ('SR_0013', 'Recrutement', 'DP_0013', GETDATE(), NULL),
+    ('SR_0014', 'Gestion des Rémunérations', 'DP_0014', GETDATE(), NULL),
+    ('SR_0015', 'Relations Sociales', 'DP_0015', GETDATE(), NULL),
+    ('SR_0016', 'Formation et Développement', 'DP_0016', GETDATE(), NULL),
+    ('SR_0017', 'Support Informatique', 'DP_0017', GETDATE(), NULL),
+    ('SR_0018', 'Gestion des Infrastructures IT', 'DP_0018', GETDATE(), NULL),
+    ('SR_0019', 'Transformation Numérique', 'DP_0019', GETDATE(), NULL),
+    ('SR_0020', 'Opérations NOS', 'DP_0020', GETDATE(), NULL),
+    ('SR_0021', 'Opérations TNR', 'DP_0021', GETDATE(), NULL),
+    ('SR_0022', 'Gestion Terminal et Landside', 'DP_0022', GETDATE(), NULL),
+    ('SR_0023', 'Opérations Airside', 'DP_0023', GETDATE(), NULL),
+    ('SR_0024', 'Méthodes et Suivi', 'DP_0024', GETDATE(), NULL),
+    ('SR_0025', 'SCAI', 'DP_0025', GETDATE(), NULL),
+    ('SR_0026', 'Comptabilité Générale', 'DP_0026', GETDATE(), NULL),
+    ('SR_0027', 'Finances', 'DP_0027', GETDATE(), NULL),
+    ('SR_0028', 'Achats', 'DP_0028', GETDATE(), NULL),
+    ('SR_0029', 'Facturation', 'DP_0029', GETDATE(), NULL),
+    ('SR_0030', 'Contrôle Financier', 'DP_0030', GETDATE(), NULL),
+    ('SR_0031', 'Trésorerie', 'DP_0031', GETDATE(), NULL),
+    ('SR_0032', 'Conseil Juridique', 'DP_0032', GETDATE(), NULL),
+    ('SR_0033', 'Secrétariat Général', 'DP_0033', GETDATE(), NULL),
+    ('SR_0034', 'Administration Générale', 'DP_0034', GETDATE(), NULL),
+    ('SR_0035', 'Communication Interne et Externe', 'DP_0035', GETDATE(), NULL);
 
     -- Insertion des unités
     INSERT INTO units (unit_id, unit_name, service_id, created_at, updated_at)
@@ -165,35 +224,7 @@
         0, '2025-01-09', NULL, NULL, NULL,
         1, NULL, 'Actif', GETDATE(), NULL,
         'ST_0001', 'MS_0002', 'GEN_0001', 'CT_0002', 'WTT_0001',
-        'DR_0001', 'DP_0001', 'SR_0001', 'UN_0001'),
-        ('EMP_0002', '155', 'Rakoto', 'Marie', '1990-07-22', 'Nosy Be', 0,
-        'CIN987654321', '2015-09-10', 'Nosy Be', 'CNAPS123456789', 'Lot 456, Hell-Ville', 'Apt 12',
-        'BFV002', '67890', '98765432109876543210', '02', '2024-03-01', 'Analyste Financier', 'Junior',
-        0, NULL, NULL, NULL, NULL,
-        1, NULL, 'Actif', GETDATE(), NULL,
-        'ST_0002', 'MS_0001', 'GEN_0002', 'CT_0001', 'WTT_0001',
-        'DR_0007', 'DP_0007', 'SR_0007', 'UN_0003'),
-        ('EMP_0003', '156', 'Lefèvre', 'Sophie', '1978-11-30', 'Antananarivo', 3,
-        'CIN456789123', '2000-12-15', 'Antananarivo', 'CNAPS456123789', 'Lot 789, Ankadivato', NULL,
-        'SGM003', '54321', '45678912345678912345', '03', '2022-06-15', 'Responsable RH', 'Manager',
-        1, NULL, '2025-04-30', 'RPR_0004', 'Retraite',
-        1, NULL, 'Inactif', GETDATE(), NULL,
-        'ST_0001', 'MS_0002', 'GEN_0002', 'CT_0001', 'WTT_0001',
-        'DR_0004', 'DP_0004', 'SR_0004', 'UN_0002'),
-        ('EMP_0004', '157', 'Bernard', 'Luc', '1995-04-12', 'Tamatave', 1,
-        'CIN789123456', '2018-03-25', 'Tamatave', 'CNAPS789456123', 'Lot 101, Ambatomanga', NULL,
-        'BOA004', '98765', '78912345678912345678', '04', '2024-01-20', 'Technicien de Maintenance', 'Technicien',
-        0, '2024-07-19', NULL, NULL, NULL,
-        1, NULL, 'Actif', GETDATE(), NULL,
-        'ST_0001', 'MS_0003', 'GEN_0001', 'CT_0002', 'WTT_0002',
-        'DR_0005', 'DP_0005', 'SR_0005', 'UN_0001'),
-        ('EMP_0005', '158', 'Rabe', 'Andriana', '1988-09-05', 'Antananarivo', 2,
-        'CIN321654987', '2012-11-11', 'Antananarivo', 'CNAPS321654987', 'Lot 202, Ivandry', NULL,
-        'BFV005', '11223', '32165498732165498732', '05', '2023-09-01', 'Assistant Commercial', 'Assistant',
-        0, '2024-03-31', NULL, NULL, NULL,
-        1, NULL, 'Actif', GETDATE(), NULL,
-        'ST_0001', 'MS_0002', 'GEN_0002', 'CT_0003', 'WTT_0003',
-        'DR_0002', 'DP_0002', 'SR_0002', 'UN_0002');
+        'DR_0001', 'DP_0001', 'SR_0001', 'UN_0001');
 
     -- categorie d'employee
     INSERT INTO categories_of_employee (employee_id, employee_category_id, created_at, updated_at)
@@ -202,7 +233,7 @@
         ('EMP_0002', 'EC_0002', '2024-03-01', NULL), -- Marie Rakoto -> Employé
         ('EMP_0003', 'EC_0001', '2022-06-15', NULL), -- Sophie Lefèvre -> Cadre
         ('EMP_0004', 'EC_0003', '2024-01-20', NULL), -- Luc Bernard -> Technicien
-        ('EMP_0005', 'EC_0002', '2023-09-01', NULL); -- Andriana Rabe -> Employé
+        ('EMP_0005', 'EC_0002', '2023-09-01', NULL); 
 
     INSERT INTO approval_flow_employee(approval_flow_id,employee_id)
     VALUES
@@ -217,74 +248,6 @@
         ('ROLE_002', 'rh', 'Human Resources role', CURRENT_TIMESTAMP, NULL),
         ('ROLE_003', 'collaborateur', 'Standard employee role', CURRENT_TIMESTAMP, NULL);
 
-
-    -- INSERT INTO users (user_id, matricule, email, name, position, department, superior_id, superior_name, status, signature, user_type, created_at, updated_at)
-    -- VALUES
-    --     ('USR_0001', 'ST_0001', 'jean.dupont@company.com', 'Jean Dupont', 'Développeur Full Stack', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL),
-    --     ('USR_0002', 'ST_0002', 'marie.rakoto@company.com', 'Marie Rakoto', 'Analyste Financier', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL),
-    --     ('USR_0003', 'ST_0003', 'sophie.lefevre@company.com', 'Sophie Lefevre', 'Responsable RH', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL),
-    --     ('USR_0004', 'ST_0004', 'luc.bernard@company.com', 'Luc Bernard', 'Technicien de Maintenance', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL),
-    --     ('USR_0005', 'ST_0005', 'andriana.rabe@company.com', 'Andriana Rabe', 'Assistant Commercial', NULL, NULL, NULL, 'Active', NULL, NULL, CURRENT_TIMESTAMP, NULL);
-
-
-    -- -- Insertion des demandes de recrutement
-    -- INSERT INTO recruitment_requests (
-    --     recruitment_request_id, position_title, position_count, contract_duration, 
-    --     former_employee_name, replacement_date, new_position_explanation, 
-    --     desired_start_date, created_at, updated_at, status, files, 
-    --     requester_id, recruitment_reason_id, site_id, contract_type_id
-    -- )
-    -- VALUES 
-    --     ('RRQ_0001', 'Développeur Full Stack', 2, '12 mois', 'Jean Dupont', '2025-06-01', NULL, '2025-08-01', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0001', 'RR_0001', 'ST_0001', 'CT_0001'),
-    --     ('RRQ_0002', 'Analyste Financier', 1, 'CDI', NULL, NULL, 'Nouveau poste pour expansion', '2025-09-01', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0002', 'RR_0002', 'ST_0002', 'CT_0002'),
-    --     ('RRQ_0003', 'Technicien de Maintenance', 3, '6 mois', 'Marie Lefèvre', '2025-05-15', NULL, '2025-07-15', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0004', 'RR_0001', 'ST_0001', 'CT_0003'),
-    --     ('RRQ_0004', 'Responsable RH', 1, 'CDI', 'Luc Martin', '2025-04-30', NULL, '2025-06-30', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0003', 'RR_0001', 'ST_0001', 'CT_0002'),
-    --     ('RRQ_0005', 'Assistant Commercial', 2, '3 mois', NULL, NULL, 'Projet temporaire', '2025-07-01', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0005', 'RR_0002', 'ST_0001', 'CT_0003'),
-    --     ('RRQ_0006', 'Chef de Projet', 1, '18 mois', 'Sophie Bernard', '2025-06-10', NULL, '2025-08-15', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0003', 'RR_0001', 'ST_0002', 'CT_0001'),
-    --     ('RRQ_0007', 'Agent de Sécurité', 4, 'CDD 6 mois', NULL, NULL, 'Renforcement équipe', '2025-07-10', GETDATE(), NULL, 'BROUILLON', NULL, 'USR_0003', 'RR_0002', 'ST_0002', 'CT_0003');
-
-    -- -- Insertion des détails des demandes de recrutement
-    -- INSERT INTO recruitment_request_details (
-    --     recruitment_request_detail_id, supervisor_position, created_at, updated_at,
-    --     recruitment_request_id, direction_id, department_id, service_id, direct_supervisor_id
-    -- )
-    -- VALUES
-    --     ('RRD_0001', 'Lead Développeur', GETDATE(), NULL, 'RRQ_0001', 'DR_0001', 'DP_0001', 'SR_0001', 'EMP_0001'),
-    --     ('RRD_0002', 'Manager Financier', GETDATE(), NULL, 'RRQ_0002', 'DR_0007', 'DP_0007', 'SR_0007', 'EMP_0002'),
-    --     ('RRD_0003', 'Chef d''Équipe Maintenance', GETDATE(), NULL, 'RRQ_0003', 'DR_0005', 'DP_0005', 'SR_0005', 'EMP_0004'),
-    --     ('RRD_0004', 'Directeur RH', GETDATE(), NULL, 'RRQ_0004', 'DR_0004', 'DP_0004', 'SR_0004', 'EMP_0003'),
-    --     ('RRD_0005', 'Responsable Commercial', GETDATE(), NULL, 'RRQ_0005', 'DR_0002', 'DP_0002', 'SR_0002', 'EMP_0005'),
-    --     ('RRD_0006', 'Manager de Projet', GETDATE(), NULL, 'RRQ_0006', 'DR_0001', 'DP_0001', 'SR_0001', 'EMP_0001'),
-    --     ('RRD_0007', 'Superviseur Sécurité', GETDATE(), NULL, 'RRQ_0007', 'DR_0003', 'DP_0003', 'SR_0003', 'EMP_0004');
-
-    -- -- Insertion des nationalités des employés
-    -- INSERT INTO employee_nationalities (employee_id, nationality_id)
-    -- VALUES
-    --     ('EMP_0001', 'NAT_0001'),
-    --     ('EMP_0001', 'NAT_0002'),
-    --     ('EMP_0002', 'NAT_0001'),
-    --     ('EMP_0003', 'NAT_0002'),
-    --     ('EMP_0004', 'NAT_0001'),
-    --     ('EMP_0005', 'NAT_0001');
-
-    -- -- Insertion des approbations de recrutement (CORRIGÉ)
-    -- INSERT INTO recruitment_approval (
-    --     recruitment_request_id, approver_id, status, approval_order,
-    --     approval_date, comment, signature, created_at, updated_at
-    -- )
-    -- VALUES
-    --     ('RRQ_0001', 'USR_0001', 'Approuvé', 2, '2025-07-12', 'Budget validé', NULL, GETDATE(), NULL),
-    --     ('RRQ_0002', 'USR_0002', 'En attente', 1, NULL, 'En revue financière', NULL, GETDATE(), NULL),
-    --     ('RRQ_0002', 'USR_0003', 'En attente', 2, NULL, NULL, NULL, GETDATE(), NULL),
-    --     ('RRQ_0003', 'USR_0004', 'Approuvé', 1, '2025-07-11', 'Remplacement urgent', NULL, GETDATE(), NULL),
-    --     ('RRQ_0003', 'USR_0003', 'Approuvé', 2, '2025-07-12', 'Validé par DSI', NULL, GETDATE(), NULL),
-    --     ('RRQ_0004', 'USR_0003', 'En attente', 1, NULL, 'En attente de validation RH', NULL, GETDATE(), NULL),
-    --     ('RRQ_0005', 'USR_0005', 'Approuvé', 1, '2025-07-11', 'Projet temporaire approuvé', NULL, GETDATE(), NULL),
-    --     ('RRQ_0005', 'USR_0003', 'Approuvé', 2, '2025-07-12', 'Budget marketing validé', NULL, GETDATE(), NULL),
-    --     ('RRQ_0006', 'USR_0001', 'En attente', 1, NULL, 'En revue par superviseur', NULL, GETDATE(), NULL),
-    --     ('RRQ_0006', 'USR_0002', 'En attente', 2, NULL, NULL, NULL, GETDATE(), NULL),
-    --     ('RRQ_0007', 'USR_0004', 'Approuvé', 1, '2025-07-11', 'Renforcement sécurité validé', NULL, GETDATE(), NULL),
-    --     ('RRQ_0007', 'USR_0003', 'Approuvé', 2, '2025-07-12', 'Conforme aux normes DQRSE', NULL, GETDATE(), NULL);
 
 
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '000465d0-0530-41d9-872f-d6012418ba7e', '00298', 'Safidy RAKOTONDRAJOA (DSI)', 'safidy.rakotondrajoa@ravinala-airports.aero', 'Responsable des applications IT', 'DSI', '83dc05fd-0e42-43f5-b0e0-1567df7647b1', 'Vonjimampianina RAKOTOARISOA (DSI)', null, null, 0);
@@ -540,10 +503,30 @@ VALUES
     ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_003');
 
 
-
-INSERT INTO habilitations (habilitation_id,label)
+INSERT INTO habilitations (habilitation_id, label)
 VALUES
-    ('HAB_001','mission_insertion')
+    ('HAB_001','mission_insertion'),
+    ('HAB_002','mission_consultation'),
+    ('HAB_003','mission_modification'),
+    ('HAB_004','mission_suppression'),
+    ('HAB_005','mission_validation'),
+    ('HAB_006','utilisateur_consultation'),
+    ('HAB_007','utilisateur_creation'),
+    ('HAB_008','utilisateur_modification'),
+    ('HAB_009','utilisateur_suppression'),
+    ('HAB_010','role_consultation'),
+    ('HAB_011','role_creation'),
+    ('HAB_012','role_modification'),
+    ('HAB_013','role_suppression'),
+    ('HAB_014','rapport_consultation'),
+    ('HAB_015','rapport_export'),
+    ('HAB_016','parametre_systeme'),
+    ('HAB_017','journal_audit_consultation'),
+    ('HAB_018','journal_audit_export'),
+    ('HAB_019','tableau_de_bord_consultation'),
+    ('HAB_020','statistique_export'),
+    ('HAB_021','administration_generale');
+
 
 
 INSERT INTO role_habilitation (habilitation_id, role_id)

@@ -1,42 +1,30 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.recruitment;
-using MyApp.Api.Models.form.recruitment;
+using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Services.recruitment;
-using MyApp.Api.Models.search;
-using MyApp.Api.Models.search.recruitment;
 
 namespace MyApp.Api.Controllers.recruitment
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class RecruitmentRequestController : ControllerBase
+    public class RecruitmentRequestController(
+        IRecruitmentRequestService service,
+        IRecruitmentRequestDetailService serviceDetails,
+        ILogger<RecruitmentRequestController> logger)
+        : ControllerBase
     {
-        private readonly IRecruitmentRequestService _service;
-        private readonly IRecruitmentRequestDetailService _service_details;
-        private readonly ILogger<RecruitmentRequestController> _logger;
-
-        public RecruitmentRequestController(
-            IRecruitmentRequestService service,
-            IRecruitmentRequestDetailService service_details,
-            ILogger<RecruitmentRequestController> logger)
-        {
-            _service = service;
-            _service_details = service_details;
-            _logger = logger;
-        }
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RecruitmentRequestDetail>>> GetAll()
         {
             try
             {
-                _logger.LogInformation("Récupération de toutes les demandes de recrutement");
-                var result = await _service_details.GetAllAsync();
+                logger.LogInformation("Récupération de toutes les demandes de recrutement");
+                var result = await serviceDetails.GetAllAsync();
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération de toutes les demandes de recrutement");
+                logger.LogError(ex, "Erreur lors de la récupération de toutes les demandes de recrutement");
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des demandes de recrutement.");
             }
         }
@@ -46,13 +34,13 @@ namespace MyApp.Api.Controllers.recruitment
         {
             try
             {
-                _logger.LogInformation("Récupération des statistiques des demandes de recrutement");
-                var stats = await _service_details.GetStatisticsAsync();
+                logger.LogInformation("Récupération des statistiques des demandes de recrutement");
+                var stats = await serviceDetails.GetStatisticsAsync();
                 return Ok(stats);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des statistiques des demandes de recrutement");
+                logger.LogError(ex, "Erreur lors de la récupération des statistiques des demandes de recrutement");
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des statistiques des demandes de recrutement.");
             }
         }
@@ -65,30 +53,30 @@ namespace MyApp.Api.Controllers.recruitment
         {
             try
             {
-                _logger.LogInformation("Recherche des demandes de recrutement avec filtres");
+                logger.LogInformation("Recherche des demandes de recrutement avec filtres");
 
                 if (!string.IsNullOrWhiteSpace(filters.RequestDateMin?.ToString()) && !DateTime.TryParse(filters.RequestDateMin.ToString(), out _))
                 {
-                    _logger.LogWarning("Format de date invalide pour RequestDateMin");
+                    logger.LogWarning("Format de date invalide pour RequestDateMin");
                     return BadRequest("Format de date invalide pour RequestDateMin.");
                 }
                 if (!string.IsNullOrWhiteSpace(filters.RequestDateMax?.ToString()) && !DateTime.TryParse(filters.RequestDateMax.ToString(), out _))
                 {
-                    _logger.LogWarning("Format de date invalide pour RequestDateMax");
+                    logger.LogWarning("Format de date invalide pour RequestDateMax");
                     return BadRequest("Format de date invalide pour RequestDateMax.");
                 }
 
-                var (results, totalCount) = await _service_details.SearchAsync(filters, page, pageSize);
+                var (results, totalCount) = await serviceDetails.SearchAsync(filters, page, pageSize);
                 return Ok(new { Results = results, TotalCount = totalCount });
             }
             catch (FormatException ex)
             {
-                _logger.LogWarning(ex, "Format de date invalide dans les paramètres de recherche");
+                logger.LogWarning(ex, "Format de date invalide dans les paramètres de recherche");
                 return BadRequest("Format de date invalide.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la recherche des demandes de recrutement");
+                logger.LogError(ex, "Erreur lors de la recherche des demandes de recrutement");
                 return StatusCode(500, "Une erreur est survenue lors de la recherche des demandes de recrutement.");
             }
         }
@@ -100,23 +88,20 @@ namespace MyApp.Api.Controllers.recruitment
             {
                 if (string.IsNullOrWhiteSpace(id))
                 {
-                    _logger.LogWarning("Tentative de récupération d'une demande de recrutement avec un ID null ou vide");
+                    logger.LogWarning("Tentative de récupération d'une demande de recrutement avec un ID null ou vide");
                     return BadRequest("L'ID de la demande de recrutement ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Récupération de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
-                var request = await _service.GetByRequestIdAsync(id);
-                if (request == null)
-                {
-                    _logger.LogWarning("Demande de recrutement non trouvée pour l'ID: {RecruitmentRequestId}", id);
-                    return NotFound();
-                }
+                logger.LogInformation("Récupération de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                var request = await service.GetByRequestIdAsync(id);
+                if (request != null) return Ok(request);
+                logger.LogWarning("Demande de recrutement non trouvée pour l'ID: {RecruitmentRequestId}", id);
+                return NotFound();
 
-                return Ok(request);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                logger.LogError(ex, "Erreur lors de la récupération de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la récupération de la demande de recrutement.");
             }
         }
@@ -128,23 +113,20 @@ namespace MyApp.Api.Controllers.recruitment
             {
                 if (string.IsNullOrWhiteSpace(recruitmentRequestId))
                 {
-                    _logger.LogWarning("Tentative de récupération du détail d'une demande de recrutement avec un ID null ou vide");
+                    logger.LogWarning("Tentative de récupération du détail d'une demande de recrutement avec un ID null ou vide");
                     return BadRequest("L'ID de la demande de recrutement ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Récupération du détail de la demande de recrutement avec l'ID: {RecruitmentRequestId}", recruitmentRequestId);
-                var detail = await _service_details.GetSingleByRequestIdAsync(recruitmentRequestId);
-                if (detail == null)
-                {
-                    _logger.LogWarning("Détail de demande de recrutement non trouvé pour l'ID: {RecruitmentRequestId}", recruitmentRequestId);
-                    return NotFound();
-                }
+                logger.LogInformation("Récupération du détail de la demande de recrutement avec l'ID: {RecruitmentRequestId}", recruitmentRequestId);
+                var detail = await serviceDetails.GetSingleByRequestIdAsync(recruitmentRequestId);
+                if (detail != null) return Ok(detail);
+                logger.LogWarning("Détail de demande de recrutement non trouvé pour l'ID: {RecruitmentRequestId}", recruitmentRequestId);
+                return NotFound();
 
-                return Ok(detail);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération du détail de la demande de recrutement avec l'ID: {RecruitmentRequestId}", recruitmentRequestId);
+                logger.LogError(ex, "Erreur lors de la récupération du détail de la demande de recrutement avec l'ID: {RecruitmentRequestId}", recruitmentRequestId);
                 return StatusCode(500, "Une erreur est survenue lors de la récupération du détail de la demande de recrutement.");
             }
         }
@@ -156,17 +138,17 @@ namespace MyApp.Api.Controllers.recruitment
             {
                 if (string.IsNullOrWhiteSpace(requesterId))
                 {
-                    _logger.LogWarning("Tentative de récupération des demandes de recrutement avec un ID de demandeur null ou vide");
+                    logger.LogWarning("Tentative de récupération des demandes de recrutement avec un ID de demandeur null ou vide");
                     return BadRequest("L'ID du demandeur ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Récupération des demandes de recrutement pour le demandeur: {RequesterId}", requesterId);
-                var result = await _service.GetByRequesterIdAsync(requesterId);
+                logger.LogInformation("Récupération des demandes de recrutement pour le demandeur: {RequesterId}", requesterId);
+                var result = await service.GetByRequesterIdAsync(requesterId);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des demandes de recrutement pour le demandeur: {RequesterId}", requesterId);
+                logger.LogError(ex, "Erreur lors de la récupération des demandes de recrutement pour le demandeur: {RequesterId}", requesterId);
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des demandes de recrutement par demandeur.");
             }
         }
@@ -178,17 +160,17 @@ namespace MyApp.Api.Controllers.recruitment
             {
                 if (string.IsNullOrWhiteSpace(requesterId))
                 {
-                    _logger.LogWarning("Tentative de récupération des demandes de recrutement validées avec un ID de demandeur null ou vide");
+                    logger.LogWarning("Tentative de récupération des demandes de recrutement validées avec un ID de demandeur null ou vide");
                     return BadRequest("L'ID du demandeur ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Récupération des demandes de recrutement validées pour le demandeur: {RequesterId}", requesterId);
-                var result = await _service.GetByRequesterIdAndValidatedAsync(requesterId);
+                logger.LogInformation("Récupération des demandes de recrutement validées pour le demandeur: {RequesterId}", requesterId);
+                var result = await service.GetByRequesterIdAndValidatedAsync(requesterId);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des demandes de recrutement validées pour le demandeur: {RequesterId}", requesterId);
+                logger.LogError(ex, "Erreur lors de la récupération des demandes de recrutement validées pour le demandeur: {RequesterId}", requesterId);
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des demandes de recrutement validées.");
             }
         }
@@ -200,7 +182,7 @@ namespace MyApp.Api.Controllers.recruitment
             {
                 if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning("Données invalides lors de la création d'une demande de recrutement: {ModelStateErrors}", ModelState);
+                    logger.LogWarning("Données invalides lors de la création d'une demande de recrutement: {ModelStateErrors}", ModelState);
                     return BadRequest(ModelState);
                 }
 
@@ -208,22 +190,22 @@ namespace MyApp.Api.Controllers.recruitment
                 var details = new RecruitmentRequestDetail(requestForm);
                 var requestReplacementReasons = RecruitmentRequestReplacementReason.FromForm(requestForm);
 
-                _logger.LogInformation("Création d'une nouvelle demande de recrutement pour le poste: {PositionTitle}", request.PositionTitle);
+                logger.LogInformation("Création d'une nouvelle demande de recrutement pour le poste: {PositionTitle}", request.PositionTitle);
 
-                var requestId = await _service.CreateRequest(request, details, requestReplacementReasons);
+                var requestId = await service.CreateRequest(request, details, requestReplacementReasons);
 
-                _logger.LogInformation("Demande de recrutement créée avec succès avec l'ID: {RecruitmentRequestId}", requestId);
+                logger.LogInformation("Demande de recrutement créée avec succès avec l'ID: {RecruitmentRequestId}", requestId);
 
                 return CreatedAtAction(nameof(GetById), new { id = requestId }, new { Id = requestId, Message = "Demande de recrutement créée avec succès" });
             }
             catch (ArgumentNullException ex)
             {
-                _logger.LogError(ex, "Argument null lors de la création de la demande de recrutement");
+                logger.LogError(ex, "Argument null lors de la création de la demande de recrutement");
                 return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la création de la demande de recrutement pour le poste: {PositionTitle}", requestForm?.PositionTitle ?? "Inconnu");
+                logger.LogError(ex, "Erreur lors de la création de la demande de recrutement pour le poste: {PositionTitle}", requestForm.PositionTitle);
                 return StatusCode(500, "Une erreur est survenue lors de la création de la demande de recrutement.");
             }
         }
@@ -235,25 +217,25 @@ namespace MyApp.Api.Controllers.recruitment
             {
                 if (id != updatedRequest.RecruitmentRequestId)
                 {
-                    _logger.LogWarning("L'ID dans l'URL ({Id}) ne correspond pas à l'ID de la demande de recrutement ({RecruitmentRequestId})", id, updatedRequest.RecruitmentRequestId);
+                    logger.LogWarning("L'ID dans l'URL ({Id}) ne correspond pas à l'ID de la demande de recrutement ({RecruitmentRequestId})", id, updatedRequest.RecruitmentRequestId);
                     return BadRequest("L'ID dans l'URL ne correspond pas à l'ID de la demande de recrutement.");
                 }
 
                 if (string.IsNullOrWhiteSpace(id))
                 {
-                    _logger.LogWarning("Tentative de mise à jour d'une demande de recrutement avec un ID null ou vide");
+                    logger.LogWarning("Tentative de mise à jour d'une demande de recrutement avec un ID null ou vide");
                     return BadRequest("L'ID de la demande de recrutement ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Mise à jour de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
-                await _service.UpdateAsync(updatedRequest);
+                logger.LogInformation("Mise à jour de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                await service.UpdateAsync(updatedRequest);
 
-                _logger.LogInformation("Demande de recrutement mise à jour avec succès pour l'ID: {RecruitmentRequestId}", id);
+                logger.LogInformation("Demande de recrutement mise à jour avec succès pour l'ID: {RecruitmentRequestId}", id);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                logger.LogError(ex, "Erreur lors de la mise à jour de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la mise à jour de la demande de recrutement.");
             }
         }
@@ -265,19 +247,19 @@ namespace MyApp.Api.Controllers.recruitment
             {
                 if (string.IsNullOrWhiteSpace(id))
                 {
-                    _logger.LogWarning("Tentative de suppression d'une demande de recrutement avec un ID null ou vide");
+                    logger.LogWarning("Tentative de suppression d'une demande de recrutement avec un ID null ou vide");
                     return BadRequest("L'ID de la demande de recrutement ne peut pas être null ou vide.");
                 }
 
-                _logger.LogInformation("Suppression de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
-                await _service.DeleteAsync(id);
+                logger.LogInformation("Suppression de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                await service.DeleteAsync(id);
 
-                _logger.LogInformation("Demande de recrutement supprimée avec succès pour l'ID: {RecruitmentRequestId}", id);
+                logger.LogInformation("Demande de recrutement supprimée avec succès pour l'ID: {RecruitmentRequestId}", id);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la suppression de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
+                logger.LogError(ex, "Erreur lors de la suppression de la demande de recrutement avec l'ID: {RecruitmentRequestId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la suppression de la demande de recrutement.");
             }
         }

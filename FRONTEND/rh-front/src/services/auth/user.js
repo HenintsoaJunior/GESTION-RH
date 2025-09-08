@@ -30,6 +30,7 @@ export const loginUser = async (username, password, setIsLoading, onSuccess, onE
       const userData = {
         userId: data.user.userId,
         email: data.user.email,
+        matricule: data.user.matricule,
         name: data.user.name,
         department: data.user.department,
         userType: data.user.userType,

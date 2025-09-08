@@ -1,14 +1,13 @@
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Utils.generator;
-using MyApp.Api.Models.search.mission;
 using MyApp.Api.Services.employee;
 using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.employee;
-using MyApp.Api.Models.form.lieu;
-using MyApp.Api.Models.form.mission;
+using MyApp.Api.Models.dto.lieu;
+using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Utils.csv;
 using MyApp.Api.Utils.exception;
 using MyApp.Api.Utils.pdf;
@@ -17,16 +16,17 @@ namespace MyApp.Api.Services.mission
     public interface IMissionAssignationService
     {
         Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator, MissionService missionService);
-        Task<int> calculateDuration(DateTime Start, DateTime End);
-        Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO);
+        Task<int> CalculateDuration(DateTime start, DateTime end);
+        Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDto);
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
+        Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId);
         Task<MissionAssignation?> GetByEmployeeIdMissionIdAsync(string employeeId, string missionId);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
-        Task<(string EmployeeId, string MissionId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation);
-        Task<bool> UpdateAsync(MissionAssignation missionAssignation);
-        Task<bool> DeleteAsync(string employeeId, string missionId);
+        Task<(string EmployeeId, string MissionId, string assignationId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation);
+        Task<bool> UpdateAsync(string assignationId, MissionAssignation missionAssignation);
+        Task<bool> DeleteAsync(string assignationId);
         Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
         Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
     }
@@ -86,7 +86,7 @@ namespace MyApp.Api.Services.mission
                 var mission = await GetOrCreateMissionAsync(data, lieu.LieuId, missionService);
                 // si transport n'existe pas => throws
                 var transport = await _transportService.VerifyTransportByTypeAsync(data[1][10]);
-                // si mission assignation n'existe pas => insetion
+                // si mission assignation n'existe pas => insertion
                 if(transport != null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, transport.TransportId);
                 if(transport == null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, null);
 
@@ -114,15 +114,15 @@ namespace MyApp.Api.Services.mission
                 DepartureTime = TimeSpan.TryParse(data[1][6], out var depTime) ? depTime : (TimeSpan?)null,
                 ReturnDate = mission.EndDate,
                 ReturnTime = TimeSpan.TryParse(data[1][8], out var retTime) ? retTime : (TimeSpan?)null,
-                Duration = (mission.StartDate.HasValue && mission.EndDate.HasValue)
-                    ? await calculateDuration(mission.StartDate.Value, mission.EndDate.Value)
+                Duration = mission is { StartDate: not null, EndDate: not null }
+                    ? await CalculateDuration(mission.StartDate.Value, mission.EndDate.Value)
                     : 0
             });
 
             await CreateAsync(assignation);
         }
 
-        private async Task<Mission> GetOrCreateMissionAsync(List<List<string>> data, string lieuId, MissionService missionService)
+        private static async Task<Mission> GetOrCreateMissionAsync(List<List<string>> data, string lieuId, MissionService missionService)
         {
             var missionName = data[1][4];
             var startDate = DateTime.Parse(data[1][9]);
@@ -152,7 +152,7 @@ namespace MyApp.Api.Services.mission
         {
             var parts = lieuData.Split("/");
             var nom = parts[0];
-            string? pays = parts.Length == 2 ? parts[1] : null;
+            var pays = parts.Length == 2 ? parts[1] : null;
 
             var lieu = await _lieuService.VerifyLieuExistsAsync(nom, pays);
             if (lieu != null) return lieu;
@@ -168,16 +168,16 @@ namespace MyApp.Api.Services.mission
             var employeeErrors = await _employeeService.CheckNameAndCode(data);
             if (employeeErrors != null) errors.AddRange(employeeErrors);
 
-            var dateErrors = CSVReader.CheckDate(data);
-            if (dateErrors != null) errors.AddRange(dateErrors);
-
-            var hourErrors = CSVReader.CheckHour(data);
-            if (hourErrors != null) errors.AddRange(hourErrors);
+            // var dateErrors = CSVReader.CheckDate(data);
+            // if (dateErrors != null) errors.AddRange(dateErrors);
+            //
+            // var hourErrors = CSVReader.CheckHour(data);
+            // if (hourErrors != null) errors.AddRange(hourErrors);
 
             return errors;
         }
 
-        public async Task<MissionAssignation?> VerifyMissionAssignationByNameAsync(string employeeId, string missionId)
+        private async Task<MissionAssignation?> VerifyMissionAssignationByNameAsync(string employeeId, string missionId)
         {
             var filters = new MissionAssignationSearchFiltersDTO
             {
@@ -189,30 +189,30 @@ namespace MyApp.Api.Services.mission
             return assignation;
         }
 
-        public Task<int> calculateDuration(DateTime Start, DateTime End)
+        public Task<int> CalculateDuration(DateTime start, DateTime end)
         {
-            if (End < Start)
+            if (end < start)
                 throw new ArgumentException("La date de fin ne peut pas être antérieure à la date de début.");
 
-            TimeSpan duration = End.Date - Start.Date;
+            TimeSpan duration = end.Date - start.Date;
             return Task.FromResult(duration.Days);
         }
         
 
-        public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDTO)
+        public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDto)
         {
             try
             {
-                MissionPaiementResult paiements = await GeneratePaiementsAsync(
-                    generatePaiementDTO.EmployeeId,
-                    generatePaiementDTO.MissionId,
-                    generatePaiementDTO.LieuId,
-                    generatePaiementDTO.StartDate,
-                    generatePaiementDTO.EndDate,
-                    generatePaiementDTO.Status
+                var paiements = await GeneratePaiementsAsync(
+                    generatePaiementDto.EmployeeId,
+                    generatePaiementDto.MissionId,
+                    generatePaiementDto.LieuId,
+                    generatePaiementDto.StartDate,
+                    generatePaiementDto.EndDate,
+                    generatePaiementDto.Status
                 );
 
-                PdfGenerator pdf = new PdfGenerator(paiements.GetDescriptionForPdf(), paiements.GetTablesForPdf());
+                var pdf = new PdfGenerator(paiements.GetDescriptionForPdf(), paiements.GetTablesForPdf());
                 return pdf.GeneratePdf("Mission");
             }
             catch (Exception ex)
@@ -275,6 +275,18 @@ namespace MyApp.Api.Services.mission
             catch (Exception ex)
             {
                 throw new Exception($"Error retrieving mission assignation: {ex.Message}", ex);
+            }
+        }
+        
+        public async Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId)
+        {
+            try
+            {
+                return await _repository.GetByAssignationIdAsync(assignationId); // New repository method
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving mission assignation : {ex.Message}", ex);
             }
         }
 
@@ -351,11 +363,7 @@ namespace MyApp.Api.Services.mission
         private async Task<MissionAssignation> GetMissionAssignationAsync(string employeeId, string missionId)
         {
             var missionAssignation = await GetByEmployeeIdMissionIdAsync(employeeId, missionId);
-            if (missionAssignation == null)
-            {
-                throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
-            }
-            return missionAssignation;
+            return missionAssignation ?? throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
         }
 
         private async Task<MissionPaiementResult> GeneratePaymentsForAssignation(MissionAssignation missionAssignation)
@@ -364,12 +372,12 @@ namespace MyApp.Api.Services.mission
             return await missionPaiement.GeneratePaiement(missionAssignation, _compensationScaleService);
         }
 
-        private void LogPaymentGenerationResult(MissionPaiementResult paiementResult, string employeeId, string missionId)
+        private static void LogPaymentGenerationResult(MissionPaiementResult paiementResult, string employeeId, string missionId)
         {
             // Méthode conservée pour compatibilité mais sans logs
         }
 
-        private MissionPaiementResult CombinePaiementResults(List<MissionPaiementResult> results)
+        private static MissionPaiementResult CombinePaiementResults(List<MissionPaiementResult> results)
         {
             if (results.Count == 1)
                 return results[0];
@@ -605,12 +613,11 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<(string EmployeeId, string MissionId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation)
+        public async Task<(string EmployeeId, string MissionId, string assignationId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation)
         {
             // Validation des paramètres d'entrée
-            if (missionAssignation == null)
-                throw new ArgumentNullException(nameof(missionAssignation));
-            
+            ArgumentNullException.ThrowIfNull(missionAssignation);
+
             if (string.IsNullOrWhiteSpace(missionAssignation.EmployeeId))
                 throw new ArgumentException("L'ID de l'employé ne peut pas être vide.", nameof(missionAssignation.EmployeeId));
             
@@ -647,7 +654,7 @@ namespace MyApp.Api.Services.mission
                 _logger.LogInformation("Assignation créée avec succès pour EmployeeId={EmployeeId}, MissionId={MissionId}, AssignationId={AssignationId}",
                     missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.AssignationId);
 
-                return (missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.TransportId);
+                return (missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.AssignationId, missionAssignation.TransportId);
             }
             catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx && (sqlEx.Number == 2601 || sqlEx.Number == 2627))
             {
@@ -697,16 +704,16 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<bool> UpdateAsync(MissionAssignation missionAssignation)
+        public async Task<bool> UpdateAsync(string assignationId, MissionAssignation missionAssignation)
         {
             try
             {
-                var existing = await GetExistingAssignationForUpdateAsync(missionAssignation);
+                var existing = await _repository.GetByAssignationIdAsync(assignationId); // New repository method
                 if (existing == null) return false;
 
                 UpdateAssignationFields(existing, missionAssignation);
                 await SaveUpdatedAssignationAsync(existing);
-                
+                _logger.LogInformation("Assignation mise à jour avec succès pour AssignationId: {AssignationId}", assignationId);
                 return true;
             }
             catch (Exception ex)
@@ -714,7 +721,6 @@ namespace MyApp.Api.Services.mission
                 throw new Exception($"Error updating mission assignation: {ex.Message}", ex);
             }
         }
-
         private async Task<MissionAssignation?> GetExistingAssignationForUpdateAsync(MissionAssignation missionAssignation)
         {
             return await _repository.GetByIdAsync(missionAssignation.EmployeeId,
@@ -723,6 +729,9 @@ namespace MyApp.Api.Services.mission
 
         private static void UpdateAssignationFields(MissionAssignation existing, MissionAssignation updated)
         {
+            existing.EmployeeId = updated.EmployeeId;
+            existing.MissionId = updated.MissionId;
+            existing.TransportId = updated.TransportId;
             existing.DepartureDate = updated.DepartureDate;
             existing.DepartureTime = updated.DepartureTime;
             existing.ReturnDate = updated.ReturnDate;
@@ -737,11 +746,11 @@ namespace MyApp.Api.Services.mission
             await _repository.SaveChangesAsync();
         }
 
-        public async Task<bool> DeleteAsync(string employeeId, string missionId)
+        public async Task<bool> DeleteAsync(string assignationId)
         {
             try
             {
-                var existing = await _repository.GetByIdAsync(employeeId, missionId);
+                var existing = await _repository.GetByAssignationIdAsync(assignationId); // New repository method
                 if (existing == null)
                 {
                     return false;

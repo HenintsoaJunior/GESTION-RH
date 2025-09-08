@@ -18,6 +18,14 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = 
+            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
+
+
 // Register services and database context
 builder.Services.AddScoped<ISequenceGenerator, SequenceGenerator>();
 builder.Services.AddDbContext<AppDbContext>(options =>

@@ -50,7 +50,7 @@ public class AuthService : IAuthService
                 var dbUser = await GetUserFromDatabaseAsync(ldapResult.EmailAddress);
                 return ValidateUserAccess(dbUser);
             }
-            else if (ldapResult.Type == "ldap_unavailable")
+            else if (ldapResult.Type == "ldap_unavailable" || ldapResult.Type == "ldap_error")
             {
                 return await FallbackValidateAsync(username, password);
             }
@@ -70,7 +70,9 @@ public class AuthService : IAuthService
         var hardcodedUsers = new Dictionary<string, (string Password, string Email)>
         {
             ["testuser"] = ("Carasco@22", "miantsafitia.rakotoarimanana@ravinala-airports.aero"),
-            ["st154"] = ("Carasco@22", "miantsafitia.rakotoarimanana@ravinala-airports.aero")
+            ["st154"] = ("Carasco@22", "miantsafitia.rakotoarimanana@ravinala-airports.aero"),
+            ["00358"] = ("Carasco@22", "hery.rasolofondramanambe@ravinala-airports.aero"),
+            ["00182"] = ("Carasco@22", "sedera.rasolomanana@ravinala-airports.aero")
         };
 
         if (hardcodedUsers.TryGetValue(username, out var info) && info.Password == password)
@@ -288,7 +290,6 @@ public class AuthService : IAuthService
             throw new Exception($"Error refreshing token: {ex.Message}", ex);
         }
     }
-
     private Claim[] CreateUserClaims(User user)
     {
         var claims = new List<Claim>
@@ -297,7 +298,7 @@ public class AuthService : IAuthService
             new Claim(JwtRegisteredClaimNames.Name, user.Name ?? ""),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-            new Claim("user_type", user.UserType?.ToString() ?? "Unknown")
+            new Claim("user_type", user.UserType.ToString() ?? string.Empty)
         };
 
         var roleClaims = user.UserRoles

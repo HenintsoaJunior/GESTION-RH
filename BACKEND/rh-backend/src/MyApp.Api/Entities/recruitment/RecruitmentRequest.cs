@@ -4,7 +4,7 @@ using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.users;
-using MyApp.Api.Models.form.recruitment;
+using MyApp.Api.Models.dto.recruitment;
 
 namespace MyApp.Api.Entities.recruitment
 {

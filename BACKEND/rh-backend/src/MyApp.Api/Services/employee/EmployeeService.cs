@@ -1,6 +1,5 @@
 using MyApp.Api.Entities.employee;
-using MyApp.Api.Models.form.employee;
-using MyApp.Api.Models.search.employee;
+using MyApp.Api.Models.dto.employee;
 using MyApp.Api.Repositories.employee;
 using MyApp.Api.Utils.csv;
 using MyApp.Api.Utils.generator;
@@ -15,7 +14,6 @@ namespace MyApp.Api.Services.employee
         Task<IEnumerable<Employee>> GetAllAsync();
         Task<Employee?> GetByIdAsync(string id);
         Task<IEnumerable<Employee>> GetByGenderAsync(string genderId);
-        Task<IEnumerable<Employee>> GetByStatusAsync(string status);
         Task AddAsync(EmployeeFormDTO employeeForm);
         Task UpdateAsync(string id, EmployeeFormDTO employeeForm);
         Task DeleteAsync(string id);
@@ -45,13 +43,10 @@ namespace MyApp.Api.Services.employee
             {
                 EmployeeCode = code
             };
-            var (result, total) = await _repository.SearchAsync(filters, 1, 1);
+            Console.WriteLine("Code "+ filters.EmployeeCode);
+            var (result, _) = await _repository.SearchAsync(filters, 1, 1);
             var employee = result?.FirstOrDefault();
-            if (employee == null)
-            {
-                throw new Exception("Employee inexistant");
-            }
-            return employee;
+            return employee ?? throw new Exception("Employee inexistant");
         }
 
         // check si le nom et le matricule sont tous les meme pour chaque ligne
@@ -163,26 +158,6 @@ namespace MyApp.Api.Services.employee
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la récupération des employés par genre: {GenderId}", genderId);
-                throw;
-            }
-        }
-
-        public async Task<IEnumerable<Employee>> GetByStatusAsync(string status)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(status))
-                {
-                    _logger.LogWarning("Tentative de récupération des employés avec un statut null ou vide");
-                    return Enumerable.Empty<Employee>();
-                }
-
-                _logger.LogInformation("Récupération des employés par statut: {Status}", status);
-                return await _repository.GetByStatusAsync(status);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la récupération des employés par statut: {Status}", status);
                 throw;
             }
         }

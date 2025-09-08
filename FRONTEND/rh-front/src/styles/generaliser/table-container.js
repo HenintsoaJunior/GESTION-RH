@@ -572,12 +572,12 @@ export const ButtonUpdate = styled.button`
   height: 32px;
   line-height: 1;
   transition: all 0.2s ease;
-  background-color: #3b82f6;
+  background-color: var(--primary-color);
   color: #ffffff;
   min-width: 70px;
 
   &:hover {
-    background-color: #2563eb;
+    background-color: var(--primary-hover);
     transform: translateY(-1px);
   }
 
@@ -589,7 +589,7 @@ export const ButtonUpdate = styled.button`
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
-    background-color: #3b82f6;
+    background-color: var(-primary-dark);
   }
 
   @media (max-width: 768px) {
@@ -639,19 +639,20 @@ export const ButtonConfirm = styled.button`
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-xl);
+  padding: var(--spacing-xs) var(--spacing-md); /* Réduit par rapport à var(--spacing-sm) var(--spacing-xl) */
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
   font-weight: 600;
   font-family: var(--font-family);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs); /* Réduit par rapport à var(--font-size-sm) */
   box-shadow: var(--shadow-sm);
-  height: 40px;
+  height: 32px; /* Réduit de 40px à 32px */
   line-height: 1;
   transition: all 0.2s ease;
   background-color: var(--primary-color);
   color: #ffffff;
+  min-width: 70px; /* Ajouté pour correspondre à ButtonUpdate/ButtonCancel, ajustez si nécessaire */
 
   &:hover {
     background-color: var(--primary-hover);
@@ -665,9 +666,9 @@ export const ButtonConfirm = styled.button`
 
   @media (max-width: 768px) {
     width: 100%;
+    min-width: unset;
   }
 `;
-
 export const FiltersToggle = styled.div`
   margin-bottom: var(--spacing-lg);
 `;

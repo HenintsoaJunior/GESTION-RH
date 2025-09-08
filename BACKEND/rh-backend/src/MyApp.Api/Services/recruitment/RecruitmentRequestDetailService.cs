@@ -1,5 +1,5 @@
 using MyApp.Api.Entities.recruitment;
-using MyApp.Api.Models.search.recruitment;
+using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Repositories.recruitment;
 using MyApp.Api.Utils.generator;
 

@@ -6,29 +6,23 @@ namespace MyApp.Api.Controllers.recruitment
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class RecruitmentApprovalController : ControllerBase
+    public class RecruitmentApprovalController(
+        IRecruitmentApprovalService service,
+        ILogger<RecruitmentApprovalController> logger)
+        : ControllerBase
     {
-        private readonly IRecruitmentApprovalService _service;
-        private readonly ILogger<RecruitmentApprovalController> _logger;
-
-        public RecruitmentApprovalController(IRecruitmentApprovalService service, ILogger<RecruitmentApprovalController> logger)
-        {
-            _service = service;
-            _logger = logger;
-        }
-
         [HttpPost("validate")]
         public async Task<IActionResult> Validate([FromQuery] string recruitmentRequestId, [FromQuery] string approverId)
         {
             try
             {
-                await _service.ValidateAsync(recruitmentRequestId, approverId);
-                _logger.LogInformation("Demande validée par l'approbateur {ApproverId}", approverId);
+                await service.ValidateAsync(recruitmentRequestId, approverId);
+                logger.LogInformation("Demande validée par l'approbateur {ApproverId}", approverId);
                 return Ok("Demande validée avec succès");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la validation de la demande");
+                logger.LogError(ex, "Erreur lors de la validation de la demande");
                 return StatusCode(500, "Erreur lors de la validation");
             }
         }
@@ -38,13 +32,13 @@ namespace MyApp.Api.Controllers.recruitment
         {
             try
             {
-                await _service.RecommendAsync(recruitmentRequestId, approverId, comment);
-                _logger.LogInformation("Recommandation ajoutée pour la demande {RecruitmentRequestId}", recruitmentRequestId);
+                await service.RecommendAsync(recruitmentRequestId, approverId, comment);
+                logger.LogInformation("Recommandation ajoutée pour la demande {RecruitmentRequestId}", recruitmentRequestId);
                 return Ok("Recommandation enregistrée avec succès");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la recommandation");
+                logger.LogError(ex, "Erreur lors de la recommandation");
                 return StatusCode(500, "Erreur lors de la recommandation");
             }
         }
@@ -52,14 +46,14 @@ namespace MyApp.Api.Controllers.recruitment
         [HttpGet("byApprover/{approverId}")]
         public async Task<IActionResult> GetByApprover(string approverId)
         {
-            var approvals = await _service.GetByApproverIdAsync(approverId);
+            var approvals = await service.GetByApproverIdAsync(approverId);
             return Ok(approvals);
         }
 
         [HttpGet("byStatus")]
         public async Task<IActionResult> GetByStatusAndApprover([FromQuery] string status, [FromQuery] string approverId)
         {
-            var approvals = await _service.GetByStatusAndApproverIdAsync(status, approverId);
+            var approvals = await service.GetByStatusAndApproverIdAsync(status, approverId);
             return Ok(approvals);
         }
 
@@ -68,19 +62,19 @@ namespace MyApp.Api.Controllers.recruitment
         {
             try
             {
-                var approvals = await _service.GetByRecruitmentRequestIdAsync(recruitmentRequestId);
+                var approvals = await service.GetByRecruitmentRequestIdAsync(recruitmentRequestId);
                 if (!approvals.Any())
                 {
-                    _logger.LogInformation("Aucune approbation trouvée pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                    logger.LogInformation("Aucune approbation trouvée pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
                     return NotFound("Aucune approbation trouvée");
                 }
                 
-                _logger.LogInformation("Approbations récupérées pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                logger.LogInformation("Approbations récupérées pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
                 return Ok(approvals);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des approbations pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
+                logger.LogError(ex, "Erreur lors de la récupération des approbations pour RecruitmentRequestId: {RecruitmentRequestId}", recruitmentRequestId);
                 return StatusCode(500, "Erreur lors de la récupération des approbations");
             }
         }
@@ -88,7 +82,7 @@ namespace MyApp.Api.Controllers.recruitment
         [HttpGet("detail")]
         public async Task<IActionResult> GetDetail([FromQuery] string recruitmentRequestId, [FromQuery] string approverId, [FromQuery] string flowId)
         {
-            var approval = await _service.GetAsync(recruitmentRequestId, approverId, flowId);
+            var approval = await service.GetAsync(recruitmentRequestId, approverId, flowId);
             if (approval == null)
                 return NotFound("Approbation non trouvée");
 
@@ -100,12 +94,12 @@ namespace MyApp.Api.Controllers.recruitment
         {
             try
             {
-                await _service.UpdateAsync(approval);
+                await service.UpdateAsync(approval);
                 return Ok("Approbation mise à jour avec succès");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour");
+                logger.LogError(ex, "Erreur lors de la mise à jour");
                 return StatusCode(500, "Erreur lors de la mise à jour");
             }
         }
