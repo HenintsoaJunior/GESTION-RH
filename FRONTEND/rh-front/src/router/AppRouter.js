@@ -22,6 +22,7 @@ import ProfilePage from 'layouts/profil-page';
 import UserList from 'pages/users/users-list';
 import RoleList from 'pages/roles/roles-list';
 import LogList from 'pages/logs/logs-list';
+import RecruitmentRequestList from "../pages/recruitment/recruitments_request/list/recruitment-request-list";
 
 function AppRouter() {
   return (
@@ -58,8 +59,10 @@ function AppRouter() {
           <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />
           <Route path="/mission/beneficiary" element={<CollaboratorMissionList />} />
 
-          
-          {/* Transport */}
+            {/* Recruitment */}
+            <Route path="/recrutement/demande" element={<RecruitmentRequestList />} />
+
+            {/* Transport */}
           <Route path="/transport/create" element={<TransportForm />} />
 
           {/* Lieu */}
