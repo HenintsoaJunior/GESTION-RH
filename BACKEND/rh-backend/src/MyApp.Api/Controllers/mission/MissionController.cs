@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
@@ -112,7 +113,7 @@ namespace MyApp.Api.Controllers.mission
 
         // Récupère des statistiques sur les missions
         [HttpGet("stats")]
-//[Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<MissionStats>> GetStatistics([FromQuery] string[]? matricule = null)
         {
             try
