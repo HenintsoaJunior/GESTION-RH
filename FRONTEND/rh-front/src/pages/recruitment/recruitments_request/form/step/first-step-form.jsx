@@ -19,7 +19,6 @@ export default function FirstStepForm({
   suggestions,
   isLoading,
   isSubmitting,
-  handleFileChange,
   handleAddNewSuggestion,
 }) {
   return (
@@ -222,13 +221,13 @@ export default function FirstStepForm({
                 }}
                 suggestions={suggestions.superieurHierarchique}
                 placeholder={
-                  isLoading.employees
+                  isLoading.users
                     ? "Chargement..."
                     : suggestions.superieurHierarchique.length === 0
                     ? "Aucun supérieur disponible"
                     : "Saisir ou sélectionner..."
                 }
-                disabled={isSubmitting || isLoading.employees || !formData.attachment.service}
+                disabled={isSubmitting || isLoading.users || !formData.attachment.service}
                 showAddOption={false}
                 fieldType="superieurHierarchique"
                 fieldLabel="supérieur hiérarchique"
@@ -284,23 +283,6 @@ export default function FirstStepForm({
                 className={errors.selectedSite ? "error" : ""}
               />
               {errors.selectedSite && <ErrorMessage>Veuillez sélectionner un site.</ErrorMessage>}
-            </FormFieldCell>
-          </FormRow>
-        </tbody>
-      </FormTable>
-
-      <FormSectionTitle>Pièces jointes</FormSectionTitle>
-      <FormTable>
-        <tbody>
-          <FormRow>
-            <FormFieldCell colSpan="2">
-              <FormLabel>Fichiers</FormLabel>
-              <FormInput
-                type="file"
-                onChange={handleFileChange}
-                disabled={isSubmitting}
-                multiple
-              />
             </FormFieldCell>
           </FormRow>
         </tbody>

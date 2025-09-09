@@ -180,3 +180,8 @@ export const fetchCollaborators = async (userId, setCollaborators, setIsLoading,
     setIsLoading((prev) => ({ ...prev, collaborators: false }));
   }
 };
+
+export const getUserId = (userName, usersList) => {
+  const user = usersList.find((u) => u.name === userName);
+  return user ? user.id : "";
+};
