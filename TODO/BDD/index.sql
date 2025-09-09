@@ -1,5 +1,6 @@
 -- Dropping tables in reverse order of dependency
 DROP TABLE IF EXISTS logs;
+DROP TABLE IF EXISTS mission_report;
 DROP TABLE IF EXISTS expense_report;
 DROP TABLE IF EXISTS expense_report_type;
 DROP TABLE IF EXISTS mission_budget;
@@ -568,6 +569,20 @@ CREATE TABLE expense_report(
    FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id),
    FOREIGN KEY(expense_report_type_id) REFERENCES expense_report_type(expense_report_type_id)
 );
+
+-- compte rendu mission
+CREATE TABLE mission_report(
+   mission_report_id VARCHAR(50),
+   text TEXT,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   user_id VARCHAR(50) NOT NULL,
+   assignation_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(mission_report_id),
+   FOREIGN KEY(user_id) REFERENCES users(user_id),
+   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id)
+);
+
 
 CREATE TABLE logs(
    log_id VARCHAR(50),
