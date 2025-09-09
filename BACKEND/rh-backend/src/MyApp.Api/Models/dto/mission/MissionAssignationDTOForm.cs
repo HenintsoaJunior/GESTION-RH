@@ -24,6 +24,10 @@ public class MissionAssignationDTOForm
     public TimeSpan? ReturnTime { get; set; }
 
     public int? Duration { get; set; }
+    
+    public string Type { get; set; } = null!;
+
+    public decimal AllocatedFund { get; set; } = 0;
 }
 
 public class MissionAssignationSearchFiltersDTO
