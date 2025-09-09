@@ -53,6 +53,7 @@ namespace MyApp.Api.Entities.mission
         [ForeignKey("TransportId")]
         public Transport? Transport { get; set; }
         
+        //si le type est note de frais 
         [Required]
         [Column("allocated_fund", TypeName = "decimal(15,2)")]
         public decimal AllocatedFund { get; set; }
