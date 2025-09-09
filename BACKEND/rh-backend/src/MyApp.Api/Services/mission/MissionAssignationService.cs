@@ -213,7 +213,7 @@ namespace MyApp.Api.Services.mission
                 );
 
                 var pdf = new PdfGenerator(paiements.GetDescriptionForPdf(), paiements.GetTablesForPdf());
-                return pdf.GeneratePdf("Mission");
+                return pdf.GenerateMissionPaiementPdf("Indemnité de mission");
             }
             catch (Exception ex)
             {

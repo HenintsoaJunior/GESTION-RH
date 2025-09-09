@@ -110,6 +110,7 @@ namespace MyApp.Api.Repositories.mission
         public async Task<Mission?> GetByIdAsync(string id)
         {
             return await _context.Missions
+                .AsNoTracking()
                 .Include(m => m.Lieu)
                 .FirstOrDefaultAsync(m => m.MissionId == id);
         }

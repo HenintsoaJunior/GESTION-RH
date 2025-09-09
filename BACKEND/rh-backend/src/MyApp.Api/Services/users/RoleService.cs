@@ -91,7 +91,7 @@ public class RoleService : IRoleService
             await _repository.SaveChangesAsync();
 
             // Synchroniser les habilitations
-            if (dto.HabilitationIds.Any())
+            if (dto.HabilitationIds.Count != 0)
             {
                 await _roleHabilitationRepository.SynchronizeHabilitationsAsync(role.RoleId, dto.HabilitationIds);
                 _logger.LogInformation("Habilitations synchronisées pour le rôle: {RoleId}", role.RoleId);
