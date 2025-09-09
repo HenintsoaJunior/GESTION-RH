@@ -29,6 +29,7 @@ function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route element={<Template><Outlet /></Template>}>
           <Route path="/dashboard" element={<DashboardHome />} />
           <Route path="/profil-page" element={<ProfilePage />} />
