@@ -1,25 +1,46 @@
 -- Dropping tables in reverse order of dependency
 DROP TABLE IF EXISTS logs;
+DROP TABLE IF EXISTS expense_report;
+DROP TABLE IF EXISTS expense_report_type;
+DROP TABLE IF EXISTS mission_budget;
 DROP TABLE IF EXISTS mission_validation;
 DROP TABLE IF EXISTS mission_assignation;
 DROP TABLE IF EXISTS mission;
 DROP TABLE IF EXISTS lieu;
 DROP TABLE IF EXISTS compensation_scale;
-DROP TABLE IF EXISTS transport;
-DROP TABLE IF EXISTS expense_type;
+DROP TABLE IF EXISTS approval_flow_employee;
+DROP TABLE IF EXISTS recruitment_request_replacement_reasons;
+DROP TABLE IF EXISTS recruitment_approval;
+DROP TABLE IF EXISTS recruitment_request_details;
+DROP TABLE IF EXISTS recruitment_requests;
+DROP TABLE IF EXISTS application_comments;
+DROP TABLE IF EXISTS cv_details;
+DROP TABLE IF EXISTS applications;
+DROP TABLE IF EXISTS job_offers;
+DROP TABLE IF EXISTS job_descriptions;
+DROP TABLE IF EXISTS candidates;
+DROP TABLE IF EXISTS recruitment_reasons;
+DROP TABLE IF EXISTS replacement_reasons;
 DROP TABLE IF EXISTS employee_nationalities;
 DROP TABLE IF EXISTS role_habilitation;
-DROP TABLE IF EXISTS habilitations;
+DROP TABLE IF EXISTS menu_hierarchy;
+DROP TABLE IF EXISTS menu_role;
+DROP TABLE IF EXISTS menu;
+DROP TABLE IF EXISTS module;
 DROP TABLE IF EXISTS user_role;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS role;
 DROP TABLE IF EXISTS categories_of_employee;
 DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS habilitations;
+DROP TABLE IF EXISTS role;
 DROP TABLE IF EXISTS employee_categories;
 DROP TABLE IF EXISTS contract_types;
 DROP TABLE IF EXISTS genders;
 DROP TABLE IF EXISTS nationalities;
 DROP TABLE IF EXISTS site;
+DROP TABLE IF EXISTS approval_flow;
+DROP TABLE IF EXISTS transport;
+DROP TABLE IF EXISTS expense_type;
 DROP TABLE IF EXISTS units;
 DROP TABLE IF EXISTS service;
 DROP TABLE IF EXISTS department;
@@ -62,6 +83,15 @@ CREATE TABLE units(
    service_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(unit_id),
    FOREIGN KEY(service_id) REFERENCES service(service_id)
+);
+
+CREATE TABLE approval_flow(
+   approval_flow_id VARCHAR(50),
+   approval_order INT NOT NULL,
+   approver_role VARCHAR(50),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(approval_flow_id)
 );
 
 CREATE TABLE site(
@@ -113,6 +143,73 @@ CREATE TABLE employee_categories(
    UNIQUE(code)
 );
 
+CREATE TABLE recruitment_reasons(
+   recruitment_reason_id VARCHAR(50),
+   name VARCHAR(255) NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(recruitment_reason_id)
+);
+
+CREATE TABLE replacement_reasons(
+   replacement_reason_id VARCHAR(50),
+   name VARCHAR(255) NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(replacement_reason_id)
+);
+
+CREATE TABLE job_descriptions(
+   description_id VARCHAR(50),
+   title VARCHAR(200) NOT NULL,
+   description TEXT,
+   attributions TEXT,
+   required_education VARCHAR(200),
+   required_experience TEXT,
+   required_personal_qualities TEXT,
+   required_skills TEXT,
+   required_languages TEXT,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   organigram VARCHAR(50) NOT NULL,
+   hierarchical_attachment VARCHAR(50) NOT NULL,
+   site_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(description_id),
+   FOREIGN KEY(organigram) REFERENCES service(service_id),
+   FOREIGN KEY(hierarchical_attachment) REFERENCES service(service_id),
+   FOREIGN KEY(site_id) REFERENCES site(site_id)
+);
+
+CREATE TABLE job_offers(
+   offer_id VARCHAR(50),
+   status VARCHAR(20),
+   publication_date DATETIME,
+   deadline_date DATETIME,
+   duration INT,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   contract_type_id VARCHAR(50) NOT NULL,
+   site_id VARCHAR(50) NOT NULL,
+   description_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(offer_id),
+   FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id),
+   FOREIGN KEY(site_id) REFERENCES site(site_id),
+   FOREIGN KEY(description_id) REFERENCES job_descriptions(description_id)
+);
+
+CREATE TABLE candidates(
+   candidate_id VARCHAR(50),
+   last_name VARCHAR(100) NOT NULL,
+   first_name VARCHAR(100) NOT NULL,
+   birth_date DATE,
+   address VARCHAR(255),
+   email VARCHAR(100) NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(candidate_id),
+   UNIQUE(email)
+);
+
 CREATE TABLE employees(
    employee_id VARCHAR(50),
    employee_code VARCHAR(50),
@@ -122,6 +219,7 @@ CREATE TABLE employees(
    hire_date DATE NOT NULL,
    job_title VARCHAR(100) NULL,
    contract_end_date DATE NULL,
+   status VARCHAR(50) DEFAULT 'Actif',
    site_id VARCHAR(50) NOT NULL,
    gender_id VARCHAR(50) NOT NULL,
    contract_type_id VARCHAR(50) NOT NULL,
@@ -212,6 +310,104 @@ CREATE TABLE role_habilitation(
    FOREIGN KEY(role_id) REFERENCES role(role_id)
 );
 
+CREATE TABLE applications(
+   application_id VARCHAR(50),
+   application_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+   cv VARBINARY(250) NOT NULL,
+   motivation_letter VARBINARY(250) NOT NULL,
+   matching_score SMALLINT,
+   status VARCHAR(20) DEFAULT 'SOUMIS' CHECK(status IN('SOUMIS', 'EN_REVUE', 'ACCEPTÉ', 'REJETÉ')),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   offer_id VARCHAR(50),
+   candidate_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(application_id),
+   FOREIGN KEY(offer_id) REFERENCES job_offers(offer_id),
+   FOREIGN KEY(candidate_id) REFERENCES candidates(candidate_id)
+);
+
+CREATE TABLE cv_details(
+   cv_detail_id VARCHAR(50),
+   extracted_skills TEXT,
+   extracted_experience TEXT,
+   extracted_education TEXT,
+   extracted_languages TEXT,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   application_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(cv_detail_id),
+   FOREIGN KEY(application_id) REFERENCES applications(application_id)
+);
+
+
+CREATE TABLE application_comments(
+   comment_id VARCHAR(50),
+   comment_text TEXT,
+   created_at DATETIME NOT NULL,
+   updated_at DATETIME,
+   application_id VARCHAR(50) NOT NULL,
+   user_id VARCHAR(250) NOT NULL,
+   PRIMARY KEY(comment_id),
+   FOREIGN KEY(application_id) REFERENCES applications(application_id),
+   FOREIGN KEY(user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE recruitment_requests(
+   recruitment_request_id VARCHAR(50),
+   position_title VARCHAR(255) NOT NULL,
+   position_count INT DEFAULT 1,
+   contract_duration VARCHAR(100) NULL,
+   former_employee_name VARCHAR(255) NULL,
+   replacement_date DATE NULL,
+   new_position_explanation VARCHAR(250),
+   desired_start_date DATE NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   status VARCHAR(10) DEFAULT 'BROUILLON',
+   files VARBINARY(250),
+   requester_id VARCHAR(250) NOT NULL,
+   contract_type_id VARCHAR(50) NOT NULL,
+   site_id VARCHAR(50) NOT NULL,
+   recruitment_reason_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(recruitment_request_id),
+   FOREIGN KEY(requester_id) REFERENCES users(user_id),
+   FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id),
+   FOREIGN KEY(site_id) REFERENCES site(site_id),
+   FOREIGN KEY(recruitment_reason_id) REFERENCES recruitment_reasons(recruitment_reason_id)
+);
+
+CREATE TABLE recruitment_request_details(
+   recruitment_request_detail_id VARCHAR(50),
+   supervisor_position VARCHAR(255) NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   recruitment_request_id VARCHAR(50) NOT NULL,
+   direction_id VARCHAR(50) NOT NULL,
+   department_id VARCHAR(50) NOT NULL,
+   service_id VARCHAR(50) NOT NULL,
+   direct_supervisor_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(recruitment_request_detail_id),
+   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
+   FOREIGN KEY(direction_id) REFERENCES direction(direction_id),
+   FOREIGN KEY(department_id) REFERENCES department(department_id),
+   FOREIGN KEY(service_id) REFERENCES service(service_id),
+   FOREIGN KEY(direct_supervisor_id) REFERENCES employees(employee_id)
+);
+
+CREATE TABLE recruitment_approval(
+   recruitment_request_id VARCHAR(50),
+   approver_id VARCHAR(250),
+   status VARCHAR(50),
+   approval_order INT,
+   approval_date DATE,
+   comment TEXT,
+   signature VARBINARY(250),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(recruitment_request_id, approver_id),
+   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
+   FOREIGN KEY(approver_id) REFERENCES users(user_id)
+);
 
 CREATE TABLE employee_nationalities(
    employee_id VARCHAR(50),
@@ -220,6 +416,24 @@ CREATE TABLE employee_nationalities(
    FOREIGN KEY(employee_id) REFERENCES employees(employee_id),
    FOREIGN KEY(nationality_id) REFERENCES nationalities(nationality_id)
 );
+
+CREATE TABLE recruitment_request_replacement_reasons(
+   recruitment_request_id VARCHAR(50),
+   replacement_reason_id VARCHAR(50),
+   description VARCHAR(250),
+   PRIMARY KEY(recruitment_request_id, replacement_reason_id),
+   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
+   FOREIGN KEY(replacement_reason_id) REFERENCES replacement_reasons(replacement_reason_id)
+);
+
+CREATE TABLE approval_flow_employee(
+   employee_id VARCHAR(50),
+   approval_flow_id VARCHAR(50),
+   PRIMARY KEY(employee_id, approval_flow_id),
+   FOREIGN KEY(employee_id) REFERENCES employees(employee_id),
+   FOREIGN KEY(approval_flow_id) REFERENCES approval_flow(approval_flow_id)
+);
+
 
 CREATE TABLE expense_type (
    expense_type_id VARCHAR(50),
@@ -292,6 +506,8 @@ CREATE TABLE mission_assignation (
    mission_id VARCHAR(50) NOT NULL,
    employee_id VARCHAR(50) NOT NULL,
    is_validated INT DEFAULT 0,
+   type VARCHAR(50) NOT NULL CHECK(type IN('Indemnité', 'Note de frais')),
+   allocated_fund DECIMAL(15,2)
    PRIMARY KEY (assignation_id),
    FOREIGN KEY (transport_id) REFERENCES transport(transport_id),
    FOREIGN KEY (mission_id) REFERENCES mission(mission_id),
@@ -301,18 +517,58 @@ CREATE TABLE mission_assignation (
 CREATE TABLE mission_validation(
    mission_validation_id VARCHAR(50),
    status VARCHAR(50),
-   to_whom VARCHAR(50),
-   created_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    validation_date DATETIME,
    mission_creator VARCHAR(250) NOT NULL,
    mission_id VARCHAR(50) NOT NULL,
    mission_assignation_id VARCHAR(50) NOT NULL,
+   to_whom VARCHAR(250) NOT NULL,
    PRIMARY KEY(mission_validation_id),
    FOREIGN KEY(mission_creator) REFERENCES users(user_id),
    FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
-   FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id)
+   FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id),
+   FOREIGN KEY(to_whom) REFERENCES users(user_id)
 );
+
+
+CREATE TABLE mission_budget(
+   mission_budget_id VARCHAR(50),
+   direction_name VARCHAR(50),
+   budget DECIMAL(15,2),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   user_id VARCHAR(250) NOT NULL,
+   PRIMARY KEY(mission_budget_id),
+   FOREIGN KEY(user_id) REFERENCES users(user_id)
+);
+
+
+CREATE TABLE expense_report_type(
+   expense_report_type_id VARCHAR(50),
+   type VARCHAR(250),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(expense_report_type_id)
+);
+
+CREATE TABLE expense_report(
+   expense_report_id VARCHAR(50),
+   titled VARCHAR(250),
+   description TEXT,
+   type VARCHAR(50) CHECK(type IN('CB', 'ESP')),
+   currency_unit VARCHAR(50),
+   amount DECIMAL(15,2),
+   rate DECIMAL(15,2),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   assignation_id VARCHAR(50) NOT NULL,
+   expense_report_type_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(expense_report_id),
+   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id),
+   FOREIGN KEY(expense_report_type_id) REFERENCES expense_report_type(expense_report_type_id)
+);
+
 
 
 CREATE TABLE logs(
@@ -327,6 +583,8 @@ CREATE TABLE logs(
    PRIMARY KEY(log_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id)
 );
+
+
 
 
 

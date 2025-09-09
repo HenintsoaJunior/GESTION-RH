@@ -8,11 +8,12 @@ namespace MyApp.Api.Services.mission
 {
     public interface IMissionValidationService
     {
-        Task<IEnumerable<MissionValidation>> GetRequestAsync();
+        Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize);
         Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId, string userId);
         Task<MissionValidation?> VerifyMissionValidationByMissionIdAsync(string missionId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<MissionValidation>> GetAllAsync();
+        Task<IEnumerable<MissionValidation?>?> GetByAssignationIdAsync(string assignationId);
         Task<MissionValidation?> GetByIdAsync(string id);
         Task<string> CreateAsync(MissionValidationDTOForm missionValidation, string userId); // Modified to include userId
         Task<bool> UpdateAsync(string id, MissionValidationDTOForm missionValidation, string userId); // Modified to include userId
@@ -39,16 +40,17 @@ namespace MyApp.Api.Services.mission
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
-        public async Task<IEnumerable<MissionValidation>> GetRequestAsync()
+        public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize)
         {
             try
             {
-                _logger.LogInformation("Récupération de toutes les demandes de validation de mission");
-                return await _repository.GetRequestAsync();
+                var (results, totalCount) = await _repository.GetRequestAsync(userId, page, pageSize);
+                
+                return (results, totalCount);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des demandes");
+                _logger.LogError(ex, "Erreur lors de la récupération des demandes pour userId: {userId}", userId);
                 throw;
             }
         }
@@ -58,7 +60,6 @@ namespace MyApp.Api.Services.mission
             try
             {
                 var result = await _repository.ValidateAsync(missionValidationId, missionAssignationId);
-                if (!result) return result;
                 _logger.LogInformation(
                     "Validation effectuée pour missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}",
                     missionValidationId, missionAssignationId);
@@ -121,7 +122,19 @@ namespace MyApp.Api.Services.mission
                 throw;
             }
         }
-
+        
+        public async Task<IEnumerable<MissionValidation?>?> GetByAssignationIdAsync(string assignationId)
+        {
+            try
+            {
+                return await _repository.GetByAssignationIdAsync(assignationId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de la validation de mission avec assignationId={AssignationId}", assignationId);
+                throw;
+            }
+        }
         public async Task<MissionValidation?> GetByIdAsync(string id)
         {
             try

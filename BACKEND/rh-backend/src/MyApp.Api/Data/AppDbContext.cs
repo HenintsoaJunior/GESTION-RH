@@ -16,6 +16,7 @@ namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
+        public DbSet<MissionBudget>  MissionBudgets { get; set; }
         public DbSet<Log>  Logs { get; set; }
         public DbSet<MissionValidation>  MissionValidations { get; set; }
         public DbSet<CvDetail> CvDetails { get; set; }
@@ -60,12 +61,32 @@ namespace MyApp.Api.Data
         
         public DbSet<MenuRole> MenuRoles { get; set; }
         public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
+        
+        public DbSet<RecruitmentApproval> RecruitmentApprovals { get; set; }
+        public DbSet<RecruitmentRequestDetail> RecruitmentRequestDetails { get; set; } 
+        public DbSet<RecruitmentRequest> RecruitmentRequests { get; set; } 
+        public DbSet<RecruitmentRequestReplacementReason> RecruitmentRequestReplacementReasons { get; set; } 
+        public DbSet<ReplacementReason> ReplacementReasons { get; set; }  
+        public DbSet<RecruitmentReason> RecruitmentReasons { get; set; }  
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Menu>()
                 .HasIndex(m => m.MenuKey)
                 .IsUnique();
+            
+            modelBuilder.Entity<RoleHabilitation>()
+                .HasOne(rh => rh.Role)
+                .WithMany(r => r.RoleHabilitations)
+                .HasForeignKey(rh => rh.RoleId)
+                .OnDelete(DeleteBehavior.ClientCascade);
+            
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.Role)
+                .WithMany(r => r.UserRoles)
+                .HasForeignKey(ur => ur.RoleId)
+                .OnDelete(DeleteBehavior.ClientCascade);
         }
     }
 }

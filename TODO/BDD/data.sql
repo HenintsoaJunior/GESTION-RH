@@ -213,7 +213,7 @@ INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superi
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '06549ecf-3dbd-448d-a90d-55ac12005e72', '00162', 'Gilbert RAHERISOA (DOP)', 'gilbert.raherisoa@ravinala-airports.aero', 'Caissier Parking', 'DOP', '20fff662-51ee-4fc4-99ae-dc7a9c361cbd', 'Fanjanirina RAFANILONIAINA (DOP)', null, null, null);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '0692e9fe-e27b-4686-b658-ae81b861bc0f', '00403', 'Rivo Arilala RAMANANTSOA (DT)', 'rivo.ramanantsoa@ravinala-airports.aero', 'Superviseur Maintenance', 'DT', 'ee6cb78f-98c3-46c5-b178-e946005f8918', 'Rindra Clark RAKOTOZANANY (DT)', null, null, null);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '071e2782-cdec-4119-bdb0-177e399fbb50', '00016', 'Cathia Vololomanana RAHARIMANANTSOA (DAF)', 'cathia.raharimanantsoa@ravinala-airports.aero', 'Comptable Fournisseurs', 'DAF', '9c2ac066-01de-49a4-86a1-0d1153cb14e8', 'Andrianantenaina RAMAROLAHY (DAF)', null, null, null);
-INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '07e12d3a-8606-424e-9baf-fbe6f797af63', 'ST155', 'Mandaniaina ANDRIAMBOLOLONA (DRH)', 'mandaniaina.andriambololona@ravinala-airports.aero', 'Stagiaire DRH', 'DRH', '76c25f37-2089-4e81-8329-1b63d880b71a', 'Herinomenjanaharilala Sedera RASOLOFONDRAMANAMBE (DRH)', null, null, null);
+INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '07e12d3a-8606-424e-9baf-fbe6f797af63', 'ST155','Mandaniaina ANDRIAMBOLOLONA (DRH)', 'mandaniaina.andriambololona@ravinala-airports.aero', 'Stagiaire DRH', 'DRH', 'ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'MiantsaFitia RAKOTOARIMANANA (DRH)', null, null, null);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '0856afd4-4692-465f-8b80-69fd1ff1a894', '00451', 'Johannot ANDRIATIANA (DAF)', 'johannot.andriatiana@ravinala-airports.aero', 'Responsable Fiscalités', 'DAF', '7b2ef755-f135-4ae8-8f4d-b9fdbe2e32ad', 'Rado RAFANOMEZANTSOA (DAF)', null, null, null);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '08d33006-34ac-4da9-9910-4463821bd22b', '00119', 'Rantoanina Toavina RATSIMBA  (DRH)', 'toavina.rantoanina@ravinala-airports.aero', 'Chef de Service Relations Sociales', 'DRH', 'd054c552-5c38-41d2-ae50-13805364fb99', 'Tanjona RIVONIRINA (DRH)', null, null, 0);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '090979ec-bd46-4b3f-a7ab-394b8c4c0192', '00356', 'Mialy RAHARIVELO(DAF)', 'mialy.raharivelo@ravinala-airports.aero', 'Facturière Extra Aéroportuaire', 'DAF', '7a1865b2-fae2-41f0-b045-1db2c4d80727', 'Herimboahary Dinarisoa ANDRIANTOLOTIANA RAVONIRINA (DAF)', null, null, null);
@@ -522,8 +522,16 @@ INSERT INTO expense_type (expense_type_id, type, time_start, time_end, created_a
 VALUES 
 ('exp001', 'Petit Déjeuner', '06:30:00', '08:00:00', GETDATE(), GETDATE()),
 ('exp002', 'Déjeuner',        '12:00:00', '13:30:00', GETDATE(), GETDATE()),
-('exp003', 'Dinner',           '18:30:00', '20:00:00', GETDATE(), GETDATE()),
+('exp003', 'Diner',           '18:30:00', '20:00:00', GETDATE(), GETDATE()),
 ('exp004', 'Hébergement',     '21:00:00', '05:00:00', GETDATE(), GETDATE());
+
+
+INSERT INTO expense_report_type (expense_report_type_id, type, created_at, updated_at)
+VALUES 
+('ex_rep001', 'Frais de transport/mission', GETDATE(), GETDATE()),
+('ex_rep002', 'Frais de restauration/recéption', GETDATE(), GETDATE()),
+('ex_rep003', 'Autres dépenses', GETDATE(), GETDATE());
+
 INSERT INTO transport (transport_id, type, created_at, updated_at)
 VALUES 
 ('tr001', 'Voiture', GETDATE(), GETDATE()),

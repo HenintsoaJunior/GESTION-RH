@@ -1,7 +1,11 @@
 import { apiGet, apiPost, apiPut,apiDelete } from "utils/apiUtils";
 import { handleValidationError } from "utils/validation";
 
+// Récupérer userId depuis localStorage
+const userData = JSON.parse(localStorage.getItem("user"));
+const userId = userData?.userId;
 
+// Fonction pour mettre à jour une mission
 export const updateMission = async (
   missionId,
   missionData,
@@ -11,7 +15,20 @@ export const updateMission = async (
 ) => {
   try {
     setIsLoading((prev) => ({ ...prev, mission: true }));
-    const updatedMission = await apiPut(`/api/Mission/${missionId}`, missionData);
+
+    
+
+    if (!userId) {
+      throw new Error("Utilisateur non authentifié. Veuillez vous connecter.");
+    }
+
+    // Ajouter userId aux données de la mission
+    const missionDataWithUser = {
+      ...missionData,
+      userId: userId.trim(),
+    };
+
+    const updatedMission = await apiPut(`/api/Mission/${missionId}`, missionDataWithUser);
     onSuccess({
       isOpen: true,
       type: "success",
@@ -31,7 +48,6 @@ export const updateMission = async (
     setIsLoading((prev) => ({ ...prev, mission: false }));
   }
 };
-
 
 export const deleteMissionAssignation = async (
   assignationId,
@@ -385,9 +401,19 @@ export const createMission = async (
   onError
 ) => {
   try {
-    setIsLoading((prev) => ({ ...prev, mission: true })); // Indique le chargement
-    
-    const newMission = await apiPost("/api/Mission", missionData);
+    setIsLoading((prev) => ({ ...prev, mission: true }));
+
+    if (!userId) {
+      throw new Error("Utilisateur non authentifié. Veuillez vous connecter.");
+    }
+
+    // Ajouter userId aux données de la mission
+    const missionDataWithUser = {
+      ...missionData,
+      userId: userId.trim(),
+    };
+
+    const newMission = await apiPost("/api/Mission", missionDataWithUser);
 
     // Affiche un message de succès
     onSuccess({
@@ -403,9 +429,10 @@ export const createMission = async (
     onError(handleValidationError(error, "MESSGA"));
     throw error;
   } finally {
-    setIsLoading((prev) => ({ ...prev, mission: false })); // Fin du chargement
+    setIsLoading((prev) => ({ ...prev, mission: false }));
   }
 };
+
 
 // Fonction pour récupérer les paiements liés à une mission
 export const fetchMissionPayment = async (
@@ -674,10 +701,16 @@ export const fetchMissionById = async (
 };
 
 // Fonction pour récupérer les statistiques des missions
-export const fetchMissionStats = async (setStats, setIsLoading, onError) => {
+export const fetchMissionStats = async (setStats, setIsLoading, onError, matricules = null) => {
   try {
     setIsLoading((prev) => ({ ...prev, stats: true }));
-    const data = await apiGet("/api/Mission/stats");
+
+    // Build query string for matricule filter if provided
+    const query = matricules && matricules.length > 0 
+      ? `?${matricules.map(m => `matricule=${encodeURIComponent(m)}`).join('&')}` 
+      : '';
+    
+    const data = await apiGet(`/api/Mission/stats${query}`);
     setStats(data);
   } catch (error) {
     // Gestion des erreurs
@@ -687,7 +720,7 @@ export const fetchMissionStats = async (setStats, setIsLoading, onError) => {
       type: "error",
       message: `Erreur lors du chargement des statistiques: ${error.message}`,
     });
-    setStats({ total: 0, enCours: 0, terminee: 0, annulee: 0 });
+    setStats({ total: 0, enCours: 0, planifiee: 0, terminee: 0, annulee: 0 });
   } finally {
     setIsLoading((prev) => ({ ...prev, stats: false }));
   }

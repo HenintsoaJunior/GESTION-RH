@@ -70,12 +70,12 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpGet("{userId}/superior")]
-    public async Task<ActionResult<UserDto>> GetSuperior(string userId)
+    [HttpGet("{matricule}/superior")]
+    public async Task<ActionResult<UserDto>> GetSuperior(string matricule)
     {
         try
         {
-            var superior = await _userService.GetSuperiorAsync(userId);
+            var superior = await _userService.GetSuperiorAsync(matricule);
             if (superior == null)
                 return NotFound("No superior found for the specified user.");
 

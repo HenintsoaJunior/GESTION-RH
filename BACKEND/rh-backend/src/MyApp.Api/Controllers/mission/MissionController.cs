@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
@@ -80,12 +81,12 @@ namespace MyApp.Api.Controllers.mission
         }
 
         // Supprime une mission par son identifiant
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        [HttpDelete("{id}/{userId}")]
+        public async Task<IActionResult> Delete(string id, string userId)
         {
             try
             {
-                var deleted = await missionService.DeleteAsync(id);
+                var deleted = await missionService.DeleteAsync(id, userId);
                 if (!deleted) return NotFound();
                 return Ok(new { message = $"Mission with ID {id} successfully deleted" });
             }
@@ -112,17 +113,25 @@ namespace MyApp.Api.Controllers.mission
 
         // Récupère des statistiques sur les missions
         [HttpGet("stats")]
-        //[Authorize(Roles = "admin")]
-        public async Task<ActionResult<MissionStats>> GetStatistics()
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult<MissionStats>> GetStatistics([FromQuery] string[]? matricule = null)
         {
-            var stats = await missionService.GetStatisticsAsync();
-            return Ok(stats);
+            try
+            {
+                var stats = await missionService.GetStatisticsAsync(matricule);
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving mission statistics with matricule filter: {Matricule}", matricule != null ? string.Join(", ", matricule) : "none");
+                return StatusCode(500, "An error occurred while retrieving mission statistics.");
+            }
         }
         // Annule une mission (change son statut à "Annulé")
-        [HttpPut("{id}/cancel")]
-        public async Task<IActionResult> CancelMission(string id)
+        [HttpPut("{id}/cancel/{userId}")]
+        public async Task<IActionResult> CancelMission(string id, string userId)
         {
-            var cancelled = await missionService.CancelAsync(id);
+            var cancelled = await missionService.CancelAsync(id, userId);
             if (!cancelled) 
             {
                 return NotFound(new { error = $"Mission with ID {id} not found" });

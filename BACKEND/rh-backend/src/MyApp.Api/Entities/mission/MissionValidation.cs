@@ -17,10 +17,7 @@ namespace MyApp.Api.Entities.mission
         [Column("status")]
         [MaxLength(50)]
         public string? Status { get; set; }
-
-        [Column("to_whom")]
-        [MaxLength(50)]
-        public string? ToWhom { get; set; }
+        
 
         [Column("validation_date")]
         public DateTime? ValidationDate { get; set; }
@@ -31,7 +28,7 @@ namespace MyApp.Api.Entities.mission
         public string MissionCreator { get; set; } = null!;
 
         [ForeignKey("MissionCreator")]
-        public User? User { get; set; }   
+        public User? Creator { get; set; }   
 
         [Required]
         [Column("mission_id")]
@@ -48,7 +45,16 @@ namespace MyApp.Api.Entities.mission
 
         [ForeignKey("MissionAssignationId")]
         public MissionAssignation? MissionAssignation { get; set; }
-
+        
+        [Column("to_whom")]
+        [MaxLength(250)]
+        public string? ToWhom { get; set; }
+        [ForeignKey("ToWhom")]
+        public User? Validator { get; set; }
+        
+        [Column("type")]
+        [MaxLength(50)]
+        public string? Type { get; set; }
         public MissionValidation()
         {
         }
@@ -60,6 +66,7 @@ namespace MyApp.Api.Entities.mission
             MissionCreator = dto.MissionCreator;
             Status = dto.Status;
             ToWhom = dto.ToWhom;
+            Type = dto.Type;
             ValidationDate = dto.ValidationDate;
         }
     }

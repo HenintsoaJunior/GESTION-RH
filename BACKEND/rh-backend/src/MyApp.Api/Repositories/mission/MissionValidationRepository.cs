@@ -7,10 +7,11 @@ namespace MyApp.Api.Repositories.mission
 {
     public interface IMissionValidationRepository
     {
-        Task<IEnumerable<MissionValidation>> GetRequestAsync();
+        Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize);
         Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<MissionValidation>> GetAllAsync();
+        Task<IEnumerable<MissionValidation?>?> GetByAssignationIdAsync(string assignationId);
         Task<MissionValidation?> GetByIdAsync(string id);
         Task AddAsync(MissionValidation missionValidation);
         Task UpdateAsync(MissionValidation missionValidation);
@@ -29,16 +30,32 @@ namespace MyApp.Api.Repositories.mission
         }
         
         //prendre les demandes validations
-        public async Task<IEnumerable<MissionValidation>> GetRequestAsync()
+        public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize)
         {
-            return await _context.MissionValidations
+            var query = _context.MissionValidations
                 .Include(mv => mv.Mission)
+                #pragma warning disable CS8602 
+                .ThenInclude(m => m.Lieu) 
+                #pragma warning restore CS8602 
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.User)
-                .Where(mv => mv.Status == "En Attente")
+                .Include(mv => mv.Creator)
+                .Include(mv => mv.Validator)
+                .Where(mv => mv.ToWhom == userId)
+                .Where(mv => mv.Status == "En attente")
+                .AsQueryable();
+
+            var totalCount = await query.CountAsync();
+
+            var results = await query
                 .OrderByDescending(mv => mv.ValidationDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            return (results, totalCount);
         }
+
+
         
         //valider une demande 
         public async Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId)
@@ -46,15 +63,17 @@ namespace MyApp.Api.Repositories.mission
             var missionValidation = await _context.MissionValidations
                 .FirstOrDefaultAsync(mv => mv.MissionValidationId == missionValidationId 
                                            && mv.MissionAssignationId == missionAssignationId);
-
-            if (missionValidation == null) return false;
-
+            
             // Valider la ligne courante
-            missionValidation.Status = "Validé";
-            missionValidation.ValidationDate = DateTime.UtcNow;
-            _context.MissionValidations.Update(missionValidation);
+            if (missionValidation != null)
+            {
+                missionValidation.Status = "Validé";
+                missionValidation.ValidationDate = DateTime.UtcNow;
+                _context.MissionValidations.Update(missionValidation);
+            }
 
             // Chercher la prochaine ligne pour ce MissionAssignationId
+            var isFinished = true;
             var nextValidation = await _context.MissionValidations
                 .Where(mv => mv.MissionAssignationId == missionAssignationId && mv.Status == null)
                 .OrderBy(mv => mv.CreatedAt) // ordre logique (ex : chronologique)
@@ -62,12 +81,13 @@ namespace MyApp.Api.Repositories.mission
 
             if (nextValidation != null)
             {
-                nextValidation.Status = "En Attente";
+                nextValidation.Status = "En attente";
                 _context.MissionValidations.Update(nextValidation);
+                isFinished = false;
             }
 
             await _context.SaveChangesAsync();
-            return true;
+            return isFinished;
         }
 
 
@@ -76,7 +96,8 @@ namespace MyApp.Api.Repositories.mission
             var query = _context.MissionValidations
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.User)
+                .Include(mv => mv.Creator)
+                .Include(mv => mv.Validator)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(filters.MissionId))
@@ -125,9 +146,26 @@ namespace MyApp.Api.Repositories.mission
             return await _context.MissionValidations
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.User)
+                .Include(mv => mv.Creator)
+                .Include(mv => mv.Validator)
                 .OrderByDescending(mv => mv.CreatedAt)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<MissionValidation?>?> GetByAssignationIdAsync(string? assignationId)
+        {
+            if (string.IsNullOrEmpty(assignationId))
+            {
+                return null;
+            }
+
+            var missionValidations = await _context.MissionValidations
+                .Include(mv => mv.Validator)
+                .Include(mv => mv.MissionAssignation)
+                .Where(mv => mv.MissionAssignationId == assignationId)
+                .OrderByDescending(mv => mv.CreatedAt)
+                .ToListAsync();
+            return missionValidations;
         }
 
         public async Task<MissionValidation?> GetByIdAsync(string id)
@@ -136,7 +174,8 @@ namespace MyApp.Api.Repositories.mission
                 .AsNoTracking()
                 .Include(mv => mv.Mission)
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.User)
+                .Include(mv => mv.Creator)
+                .Include(mv => mv.Validator)
                 .FirstOrDefaultAsync(mv => mv.MissionValidationId == id);
         }
 

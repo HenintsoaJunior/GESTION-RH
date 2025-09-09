@@ -30,7 +30,7 @@ namespace MyApp.Api.Entities.users
 
         public Role(RoleDTOForm dto)
         {
-            Name = dto.Name;
+            if (dto.Name != null) Name = dto.Name;
             Description = dto.Description;
         }
     }

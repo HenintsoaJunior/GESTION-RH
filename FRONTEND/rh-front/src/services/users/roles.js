@@ -14,11 +14,12 @@ export const createRole = async (
   try {
     setIsLoading((prev) => ({ ...prev, roles: true }));
 
-    // Préparation du corps de la requête
+    // Préparation du corps de la requête avec HabilitationIds
     const requestBody = {
       name: roleData.name.trim(),
       description: roleData.description?.trim() || "",
-      userId, // Ajout du userId dans le corps de la requête
+      userId,
+      habilitationIds: roleData.habilitationIds || [], // Support des habilitations
     };
 
     // Appel API pour créer le rôle
@@ -84,7 +85,7 @@ export const fetchRoleById = async (
       setIsLoading(true);
     }
 
-    // Utilisation de apiGet pour récupérer un rôle spécifique sans userId
+    // Utilisation de apiGet pour récupérer un rôle spécifique
     const data = await apiGet(`/api/Role/${roleId}`);
     setRole(data);
   } catch (error) {
@@ -112,12 +113,12 @@ export const updateRole = async (
   try {
     setIsLoading((prev) => ({ ...prev, roles: true }));
 
-    // Préparation du corps de la requête
+    // Préparation du corps de la requête avec HabilitationIds
     const requestBody = {
-      roleId: roleData.roleId,
       name: roleData.name.trim(),
       description: roleData.description?.trim() || "",
-      userId, // Ajout du userId dans le corps de la requête
+      userId,
+      habilitationIds: roleData.habilitationIds || [], // Support des habilitations
     };
 
     // Appel API pour mettre à jour le rôle
@@ -141,6 +142,7 @@ export const updateRole = async (
 // Service pour supprimer un rôle
 export const deleteRole = async (
   roleId,
+  userId,
   setIsLoading,
   onSuccess,
   onError
@@ -148,8 +150,8 @@ export const deleteRole = async (
   try {
     setIsLoading((prev) => ({ ...prev, roles: true }));
 
-    // Appel API pour supprimer le rôle sans userId
-    await apiDelete(`/api/Role/${roleId}`);
+    // Appel API pour supprimer le rôle avec userId (selon votre controller)
+    await apiDelete(`/api/Role/${roleId}/${userId}`);
 
     // Affiche un message de succès
     onSuccess({
@@ -169,3 +171,67 @@ export const deleteRole = async (
 // Service pour récupérer un rôle par son nom
 export const getRoleId = (name, roles) =>
   roles.find((role) => role.name === name)?.roleId || "";
+
+// Nouveau service pour créer un rôle avec des habilitations spécifiques
+export const createRoleWithHabilitations = async (
+  userId,
+  roleData,
+  selectedHabilitations,
+  setIsLoading,
+  onSuccess,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, roles: true }));
+
+    // Création du rôle avec les habilitations sélectionnées
+    const roleDataWithHabilitations = {
+      ...roleData,
+      habilitationIds: selectedHabilitations.map(h => h.habilitationId || h.id),
+    };
+
+    const newRole = await createRole(
+      userId,
+      roleDataWithHabilitations,
+      setIsLoading,
+      onSuccess,
+      onError
+    );
+
+    return newRole;
+  } catch (error) {
+    console.error("Erreur lors de la création du rôle avec habilitations:", error);
+    throw error;
+  }
+};
+
+// Service pour mettre à jour un rôle avec des habilitations spécifiques
+export const updateRoleWithHabilitations = async (
+  userId,
+  roleData,
+  selectedHabilitations,
+  setIsLoading,
+  onSuccess,
+  onError
+) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, roles: true }));
+
+    // Mise à jour du rôle avec les habilitations sélectionnées
+    const roleDataWithHabilitations = {
+      ...roleData,
+      habilitationIds: selectedHabilitations.map(h => h.habilitationId || h.id),
+    };
+
+    await updateRole(
+      userId,
+      roleDataWithHabilitations,
+      setIsLoading,
+      onSuccess,
+      onError
+    );
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du rôle avec habilitations:", error);
+    throw error;
+  }
+};

@@ -18,20 +18,23 @@ public interface IRoleService
 public class RoleService : IRoleService
 {
     private readonly IRoleRepository _repository;
+    private readonly IRoleHabilitationRepository _roleHabilitationRepository;
     private readonly ILogService _logService;
     private readonly ISequenceGenerator _sequenceGenerator;
     private readonly ILogger<RoleService> _logger;
 
     public RoleService(
         IRoleRepository repository,
+        IRoleHabilitationService roleHabilitationService,
         ILogService logService,
         ISequenceGenerator sequenceGenerator,
-        ILogger<RoleService> logger)
+        ILogger<RoleService> logger, IRoleHabilitationRepository roleHabilitationRepository)
     {
         _repository = repository;
         _logService = logService;
         _sequenceGenerator = sequenceGenerator;
         _logger = logger;
+        _roleHabilitationRepository = roleHabilitationRepository;
     }
 
     public async Task<IEnumerable<Role>> GetAllAsync()
@@ -87,9 +90,17 @@ public class RoleService : IRoleService
             await _repository.AddAsync(role);
             await _repository.SaveChangesAsync();
 
+            // Synchroniser les habilitations
+            if (dto.HabilitationIds.Count != 0)
+            {
+                await _roleHabilitationRepository.SynchronizeHabilitationsAsync(role.RoleId, dto.HabilitationIds);
+                _logger.LogInformation("Habilitations synchronisées pour le rôle: {RoleId}", role.RoleId);
+            }
+
             _logger.LogInformation("Rôle ajouté avec succès avec l'ID: {RoleId}", role.RoleId);
-            
-            await _logService.LogAsync("INSERTION", null, role, dto.UserId, "Name,Description");
+
+            if (dto.UserId != null)
+                await _logService.LogAsync("INSERTION", null, role, dto.UserId, "Name,Description,HabilitationIds");
         }
         catch (Exception ex)
         {
@@ -120,13 +131,18 @@ public class RoleService : IRoleService
             };
 
             await _repository.UpdateAsync(newRole);
+            
+            // Synchroniser les habilitations
+            await _roleHabilitationRepository.SynchronizeHabilitationsAsync(id, roleDto.HabilitationIds);
+            _logger.LogInformation("Habilitations synchronisées pour le rôle: {RoleId}", id);
+
             await _repository.SaveChangesAsync();
 
             _logger.LogInformation("Rôle mis à jour avec succès avec l'ID: {RoleId}", id);
 
-            // === Ajout dans les logs - CORRIGÉ ===
-            // Passer les objets réels au lieu des chaînes littérales
-            await _logService.LogAsync("MODIFICATION", existingRole, newRole, roleDto.UserId, "Name,Description");
+            if (roleDto.UserId != null)
+                await _logService.LogAsync("MODIFICATION", existingRole, newRole, roleDto.UserId,
+                    "Name,Description,HabilitationIds");
         }
         catch (Exception ex)
         {
@@ -144,13 +160,16 @@ public class RoleService : IRoleService
                 throw new ArgumentException("L'ID du rôle ne peut pas être null ou vide", nameof(id));
             }
             var existingRole = await _repository.GetByIdAsync(id);
+            if (existingRole == null)
+            {
+                throw new InvalidOperationException($"Le rôle avec l'ID {id} n'existe pas");
+            }
 
             await _repository.DeleteAsync(id);
             await _repository.SaveChangesAsync();
 
             _logger.LogInformation("Rôle supprimé avec succès pour l'ID: {RoleId}", id);
 
-            // === Ajout dans les logs ===
             await _logService.LogAsync("SUPPRESSION", existingRole, null, userId);
         }
         catch (Exception ex)

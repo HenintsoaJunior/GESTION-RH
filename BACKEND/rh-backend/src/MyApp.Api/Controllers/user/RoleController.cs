@@ -7,15 +7,27 @@ namespace MyApp.Api.Controllers.user
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class RoleController(
-        IRoleService roleService,
-        IRoleHabilitationService roleHabilitationService,
-        IHabilitationService habilitationService,
-        IUserRoleService userRoleService,
-        ILogger<RoleController> logger)
-        : ControllerBase
+    public class RoleController : ControllerBase
     {
-        private readonly ILogger<RoleController> _logger = logger;
+        private readonly IRoleService _roleService;
+        private readonly IRoleHabilitationService _roleHabilitationService;
+        private readonly IHabilitationService _habilitationService;
+        private readonly IUserRoleService _userRoleService;
+        private readonly ILogger<RoleController> _logger;
+
+        public RoleController(
+            IRoleService roleService,
+            IRoleHabilitationService roleHabilitationService,
+            IHabilitationService habilitationService,
+            IUserRoleService userRoleService,
+            ILogger<RoleController> logger)
+        {
+            _roleService = roleService;
+            _roleHabilitationService = roleHabilitationService;
+            _habilitationService = habilitationService;
+            _userRoleService = userRoleService;
+            _logger = logger;
+        }
 
         // -------------------- RÔLES --------------------
         [HttpGet]
@@ -23,7 +35,7 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var roles = await roleService.GetAllAsync();
+                var roles = await _roleService.GetAllAsync();
                 return Ok(roles);
             }
             catch (Exception ex)
@@ -38,7 +50,7 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var role = await roleService.GetByIdAsync(id);
+                var role = await _roleService.GetByIdAsync(id);
                 if (role != null) return Ok(role);
                 _logger.LogWarning("Rôle avec ID {RoleId} non trouvé", id);
                 return NotFound();
@@ -58,8 +70,8 @@ namespace MyApp.Api.Controllers.user
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                await roleService.AddAsync(role);
-                return Ok(role);
+                await _roleService.AddAsync(role);
+                return CreatedAtAction(nameof(GetRoleById), new { id = role.UserId }, role);
             }
             catch (Exception ex)
             {
@@ -76,15 +88,15 @@ namespace MyApp.Api.Controllers.user
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                var existing = await roleService.GetByIdAsync(id);
+                var existing = await _roleService.GetByIdAsync(id);
                 if (existing == null)
                 {
                     _logger.LogWarning("Échec de la mise à jour, rôle avec ID {RoleId} introuvable", id);
                     return NotFound();
                 }
 
-                await roleService.UpdateAsync(id ,role);
-                return Ok(role);
+                await _roleService.UpdateAsync(id, role);
+                return Ok(new { message = "Rôle mis à jour avec succès", roleId = id });
             }
             catch (Exception ex)
             {
@@ -98,20 +110,20 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var existing = await roleService.GetByIdAsync(id);
+                var existing = await _roleService.GetByIdAsync(id);
                 if (existing == null)
                 {
                     _logger.LogWarning("Échec de suppression, rôle avec ID {RoleId} introuvable", id);
-                    return NotFound();
+                    return NotFound(new { Message = $"Rôle avec ID {id} introuvable" });
                 }
 
-                await roleService.DeleteAsync(id, userId);
-                return NoContent();
+                await _roleService.DeleteAsync(id, userId);
+                return Ok(new { Message = $"Rôle avec ID {id} supprimé avec succès" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la suppression du rôle avec ID {RoleId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la suppression du rôle");
+                return StatusCode(500, new { Message = "Une erreur est survenue lors de la suppression du rôle", Error = ex.Message });
             }
         }
 
@@ -121,7 +133,7 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var habilitations = await habilitationService.GetAllAsync();
+                var habilitations = await _habilitationService.GetAllAsync();
                 return Ok(habilitations);
             }
             catch (Exception ex)
@@ -136,7 +148,7 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var habilitation = await habilitationService.GetByIdAsync(id);
+                var habilitation = await _habilitationService.GetByIdAsync(id);
                 if (habilitation != null) return Ok(habilitation);
                 _logger.LogWarning("Habilitation avec ID {HabilitationId} non trouvée", id);
                 return NotFound();
@@ -156,7 +168,7 @@ namespace MyApp.Api.Controllers.user
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                await habilitationService.AddAsync(habilitation, userId);
+                await _habilitationService.AddAsync(habilitation, userId);
                 return Ok(habilitation);
             }
             catch (Exception ex)
@@ -174,14 +186,14 @@ namespace MyApp.Api.Controllers.user
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
                 
-                var existing = await habilitationService.GetByIdAsync(id);
+                var existing = await _habilitationService.GetByIdAsync(id);
                 if (existing == null)
                 {
                     _logger.LogWarning("Échec de la mise à jour, habilitation avec ID {HabilitationId} introuvable", id);
                     return NotFound();
                 }
 
-                await habilitationService.UpdateAsync(id, habilitation, userId);
+                await _habilitationService.UpdateAsync(id, habilitation, userId);
                 return NoContent();
             }
             catch (Exception ex)
@@ -196,14 +208,14 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var existing = await habilitationService.GetByIdAsync(id);
+                var existing = await _habilitationService.GetByIdAsync(id);
                 if (existing == null)
                 {
                     _logger.LogWarning("Échec de suppression, habilitation avec ID {HabilitationId} introuvable", id);
                     return NotFound();
                 }
 
-                await habilitationService.DeleteAsync(id, userId);
+                await _habilitationService.DeleteAsync(id, userId);
                 return NoContent();
             }
             catch (Exception ex)
@@ -219,7 +231,7 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var roleHabilitations = await roleHabilitationService.GetAllAsync();
+                var roleHabilitations = await _roleHabilitationService.GetAllAsync();
                 return Ok(roleHabilitations);
             }
             catch (Exception ex)
@@ -234,7 +246,7 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var roleHabilitation = await roleHabilitationService.GetByKeysAsync(habilitationId, roleId);
+                var roleHabilitation = await _roleHabilitationService.GetByKeysAsync(habilitationId, roleId);
                 if (roleHabilitation == null)
                 {
                     _logger.LogWarning("Relation rôle-habilitation avec HabilitationId {HabilitationId} et RoleId {RoleId} non trouvée", habilitationId, roleId);
@@ -257,7 +269,7 @@ namespace MyApp.Api.Controllers.user
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                await roleHabilitationService.AddAsync(roleHabilitation);
+                await _roleHabilitationService.AddAsync(roleHabilitation);
                 return CreatedAtAction(nameof(GetRoleHabilitation), new { habilitationId = roleHabilitation.HabilitationIds.FirstOrDefault(), roleId = roleHabilitation.RoleIds.FirstOrDefault() }, roleHabilitation);
             }
             catch (Exception ex)
@@ -275,14 +287,14 @@ namespace MyApp.Api.Controllers.user
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                var existing = await roleHabilitationService.GetByKeysAsync(roleHabilitation.HabilitationId, roleHabilitation.RoleId);
+                var existing = await _roleHabilitationService.GetByKeysAsync(roleHabilitation.HabilitationId, roleHabilitation.RoleId);
                 if (existing == null)
                 {
                     _logger.LogWarning("Échec de la mise à jour, relation rôle-habilitation avec HabilitationId {HabilitationId} et RoleId {RoleId} introuvable", roleHabilitation.HabilitationId, roleHabilitation.RoleId);
                     return NotFound();
                 }
 
-                await roleHabilitationService.UpdateAsync(roleHabilitation);
+                await _roleHabilitationService.UpdateAsync(roleHabilitation);
                 return NoContent();
             }
             catch (Exception ex)
@@ -297,14 +309,14 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var existing = await roleHabilitationService.GetByKeysAsync(habilitationId, roleId);
+                var existing = await _roleHabilitationService.GetByKeysAsync(habilitationId, roleId);
                 if (existing == null)
                 {
                     _logger.LogWarning("Échec de suppression, relation rôle-habilitation avec HabilitationId {HabilitationId} et RoleId {RoleId} introuvable", habilitationId, roleId);
                     return NotFound();
                 }
 
-                await roleHabilitationService.DeleteAsync(habilitationId, roleId);
+                await _roleHabilitationService.DeleteAsync(habilitationId, roleId);
                 return NoContent();
             }
             catch (Exception ex)
@@ -320,7 +332,7 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var userRoles = await userRoleService.GetAllAsync();
+                var userRoles = await _userRoleService.GetAllAsync();
                 return Ok(userRoles);
             }
             catch (Exception ex)
@@ -335,7 +347,7 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var userRole = await userRoleService.GetByKeysAsync(userId, roleId);
+                var userRole = await _userRoleService.GetByKeysAsync(userId, roleId);
                 if (userRole == null)
                 {
                     _logger.LogWarning("Relation utilisateur-rôle avec UserId {UserId} et RoleId {RoleId} non trouvée", userId, roleId);
@@ -358,7 +370,7 @@ namespace MyApp.Api.Controllers.user
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                var created = await userRoleService.CreateAsync(userRole);
+                var created = await _userRoleService.CreateAsync(userRole);
                 return CreatedAtAction(nameof(GetUserRole), new { userId = created.UserId, roleId = created.RoleId }, created);
             }
             catch (Exception ex)
@@ -376,14 +388,14 @@ namespace MyApp.Api.Controllers.user
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                var existing = await userRoleService.GetByKeysAsync(userRole.UserId, userRole.RoleId);
+                var existing = await _userRoleService.GetByKeysAsync(userRole.UserId, userRole.RoleId);
                 if (existing == null)
                 {
                     _logger.LogWarning("Échec de la mise à jour, relation utilisateur-rôle avec UserId {UserId} et RoleId {RoleId} introuvable", userRole.UserId, userRole.RoleId);
                     return NotFound();
                 }
 
-                await userRoleService.UpdateAsync(userRole);
+                await _userRoleService.UpdateAsync(userRole);
                 return NoContent();
             }
             catch (Exception ex)
@@ -398,14 +410,14 @@ namespace MyApp.Api.Controllers.user
         {
             try
             {
-                var existing = await userRoleService.GetByKeysAsync(userId, roleId);
+                var existing = await _userRoleService.GetByKeysAsync(userId, roleId);
                 if (existing == null)
                 {
                     _logger.LogWarning("Échec de suppression, relation utilisateur-rôle avec UserId {UserId} et RoleId {RoleId} introuvable", userId, roleId);
                     return NotFound();
                 }
 
-                await userRoleService.DeleteAsync(userId, roleId);
+                await _userRoleService.DeleteAsync(userId, roleId);
                 return NoContent();
             }
             catch (Exception ex)

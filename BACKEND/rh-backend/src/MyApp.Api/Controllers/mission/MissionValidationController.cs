@@ -1,33 +1,64 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Services.mission;
 
-namespace MyApp.Api.Controllers
+namespace MyApp.Api.Controllers.mission
 {
     [ApiController]
     [Route("api/[controller]")]
     public class MissionValidationController(
         IMissionValidationService missionValidationService,
-        ILogger<MissionValidationController> logger)
+        IConfiguration configuration,
+        ILogger<MissionValidationController> logger,
+        IMissionAssignationService missionAssignationService)
         : ControllerBase
     {
         private readonly IMissionValidationService _missionValidationService = missionValidationService ?? throw new ArgumentNullException(nameof(missionValidationService));
+        private readonly IMissionAssignationService _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
+        private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         private readonly ILogger<MissionValidationController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-        // GET: api/MissionValidation/requests
-        [HttpGet("requests")]
-        public async Task<IActionResult> GetRequests()
+        
+        //prendre l'évolution de ma demande
+        // GET: api/MissionValidation/assignation/{assignationId}
+        [HttpGet("by-assignation-id/{assignationId}")]
+        public async Task<IActionResult> GetByAssignationId(string assignationId)
         {
             try
             {
-                _logger.LogInformation("Récupération des demandes de validation de mission");
-                var result = await _missionValidationService.GetRequestAsync();
-                return Ok(result);
+                if (string.IsNullOrWhiteSpace(assignationId))
+                {
+                    _logger.LogWarning("Tentative de récupération avec un assignationId null ou vide");
+                    return BadRequest(new { message = "L'assignationId ne peut pas être null ou vide." });
+                }
+
+                _logger.LogInformation("Récupération de la validation de mission pour assignationId={AssignationId}", assignationId);
+                var entity = await _missionValidationService.GetByAssignationIdAsync(assignationId);
+
+                if (entity != null) return Ok(entity);
+
+                _logger.LogWarning("Validation de mission non trouvée pour assignationId={AssignationId}", assignationId);
+                return NotFound(new { message = $"Validation de mission pour assignationId {assignationId} non trouvée." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des demandes de validation de mission");
+                _logger.LogError(ex, "Erreur lors de la récupération de la validation de mission avec assignationId={AssignationId}", assignationId);
+                return StatusCode(500, new { message = "Une erreur est survenue lors de la récupération de la validation." });
+            }
+        }
+
+        
+        [HttpPost("requests/{userId}")]
+        public async Task<IActionResult> GetRequests(string userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var (results, totalCount) = await _missionValidationService.GetRequestAsync(userId, page, pageSize);
+                
+                return Ok(new { Results = results, TotalCount = totalCount });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des demandes de validation de mission pour userId: {userId}", userId);
                 return StatusCode(500, new { message = "Une erreur est survenue lors de la récupération des demandes." });
             }
         }
@@ -40,12 +71,13 @@ namespace MyApp.Api.Controllers
             {
                 _logger.LogInformation("Validation de missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}", missionValidationId, missionAssignationId);
                 var result = await _missionValidationService.ValidateAsync(missionValidationId, missionAssignationId, userId);
-                if (!result)
-                {
-                    _logger.LogWarning("Validation impossible pour missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}", missionValidationId, missionAssignationId);
-                    return NotFound(new { message = "Validation impossible." });
-                }
-                return Ok(new { message = "Validation effectuée avec succès." });
+                if (!result) return Ok(new { message = "Validation effectuée avec succès." });
+                var missionAssignation = await _missionAssignationService.GetByAssignationIdAsync(missionAssignationId);
+                if (missionAssignation == null) return Ok(new { message = "Aucune validation à faire." });
+                missionAssignation.IsValidated = 1;
+                //changer le isValidated de ce mission assignation en 1
+                await _missionAssignationService.UpdateAsync(missionAssignationId, missionAssignation);
+                return Ok(new { message = "La mission a été validée" });
             }
             catch (Exception ex)
             {

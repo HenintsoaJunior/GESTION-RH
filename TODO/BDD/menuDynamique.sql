@@ -1,9 +1,3 @@
--- Drop tables if they exist
-DROP TABLE IF EXISTS menu_hierarchy;
-DROP TABLE IF EXISTS menu_role;
-DROP TABLE IF EXISTS menu;
-DROP TABLE IF EXISTS module;
-
 -- Create table module
 CREATE TABLE module (
    module_id VARCHAR(50) PRIMARY KEY,
@@ -65,7 +59,7 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 -- Administration: habilitation
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu_hab', 'habilitation', 'fa-shield-alt', '/habilitation', 1, 2, 'habilitation', 'administration', GETDATE(), GETDATE()),
-('menu_hab_2', 'habilitation-liste', 'fa-list', '/role/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
+('menu_hab_2', 'liste', 'fa-list', '/role/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
 
 -- Administration: logs
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
@@ -75,10 +69,8 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_0', 'mission-a-valider', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_1', 'processus-validation', 'fa-check', '/mission/process-validation', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_2', 'mission-liste', 'fa-list', '/mission/list', 1, 3, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_3', 'beneficiaire-liste', 'fa-users', '/mission/beneficiary', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_4', 'mission-excel', 'fa-file-excel', '/assignments/excel', 1, 5, 'mission', 'navigation', GETDATE(), GETDATE());
+('menu2_3', 'collaborateur', 'fa-users', '/mission/beneficiary', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
+('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 5, 'mission', 'navigation', GETDATE(), GETDATE());
 
 -- Insert menu hierarchy
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
@@ -88,8 +80,6 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),
 ('h4', NULL, 'menu2', GETDATE(), GETDATE()),
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
-('h2_1', 'menu2', 'menu2_1', GETDATE(), GETDATE()),
-('h5', 'menu2', 'menu2_2', GETDATE(), GETDATE()),
 ('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
 ('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE());
 
@@ -105,7 +95,5 @@ INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
 -- Mission
 ('menu2', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_0', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2_1', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2_2', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_3', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_4', 'ROLE_001', GETDATE(), GETDATE());

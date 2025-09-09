@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, X, List } from "lucide-react";
-import { formatDate } from "utils/dateConverter";
+import { formatDateTime } from "utils/dateConverter";
 import Alert from "components/alert";
 import Pagination from "components/pagination";
 import { fetchLogs } from "services/logs/logs";
@@ -404,7 +404,7 @@ const LogList = () => {
               <TableHeadCell>Nom de la table</TableHeadCell>
               <TableHeadCell>Utilisateur</TableHeadCell>
               
-              <TableHeadCell>Date de création</TableHeadCell>
+              <TableHeadCell>Date</TableHeadCell>
               <TableHeadCell>Actions</TableHeadCell>
             </tr>
           </thead>
@@ -424,7 +424,7 @@ const LogList = () => {
                   <TableCell>{log.action || "Non spécifié"}</TableCell>
                   <TableCell>{log.tableName || "Non spécifié"}</TableCell>
                   <TableCell>{log.user.name || "Non spécifié"}</TableCell>
-                  <TableCell>{formatDate(log.createdAt) || "Non spécifié"}</TableCell>
+                  <TableCell>{formatDateTime(log.createdAt) || "Non spécifié"}</TableCell>
                   <TableCell>
                     {(log.oldValues || log.newValues) && (
                       <ButtonPrimary

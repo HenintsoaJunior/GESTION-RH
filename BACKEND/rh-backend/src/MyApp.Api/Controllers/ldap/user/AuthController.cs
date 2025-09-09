@@ -91,7 +91,7 @@ public class AuthController(
                 HttpOnly = true,
                 Secure = true, // Ensure HTTPS in production
                 SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddHours(1),
+                Expires = DateTime.UtcNow.AddMinutes(1) ,
                 Path = "/"
             };
 

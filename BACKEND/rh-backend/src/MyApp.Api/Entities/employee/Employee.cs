@@ -44,6 +44,10 @@ namespace MyApp.Api.Entities.employee
 
         [Column("contract_end_date")]
         public DateTime? ContractEndDate { get; set; }
+        
+        [Column("status")]
+        [MaxLength(50)]
+        public string? Status { get; set; }
 
         [Required]
         [Column("site_id")]

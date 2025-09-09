@@ -24,7 +24,7 @@ namespace MyApp.Api.Repositories.users
         Task DeleteUsersAsync(List<User> users);
         Task SaveChangesAsync();
         Task<IEnumerable<User>> GetCollaboratorsAsync(string userId);
-        Task<User?> GetSuperiorAsync(string userId);
+        Task<User?> GetSuperiorAsync(string matricule);
         Task<User?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
     }
@@ -52,14 +52,14 @@ namespace MyApp.Api.Repositories.users
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<User?> GetSuperiorAsync(string userId)
+        public async Task<User?> GetSuperiorAsync(string matricule)
         {
-            if (string.IsNullOrWhiteSpace(userId))
-                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+            if (string.IsNullOrWhiteSpace(matricule))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(matricule));
 
             var user = await _context.Users
                 .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.UserId == userId);
+                .FirstOrDefaultAsync(u => u.Matricule == matricule);
 
             if (user == null || string.IsNullOrWhiteSpace(user.SuperiorId))
                 return null;
@@ -235,16 +235,14 @@ namespace MyApp.Api.Repositories.users
 
         public async Task AddAsync(User user)
         {
-            if (user == null)
-                throw new ArgumentNullException(nameof(user));
+            ArgumentNullException.ThrowIfNull(user);
 
             await _context.Users.AddAsync(user);
         }
 
         public async Task UpdateAsync(User user)
         {
-            if (user == null)
-                throw new ArgumentNullException(nameof(user));
+            ArgumentNullException.ThrowIfNull(user);
 
             _context.Users.Update(user);
             await Task.CompletedTask;
@@ -252,8 +250,7 @@ namespace MyApp.Api.Repositories.users
 
         public async Task DeleteAsync(User user)
         {
-            if (user == null)
-                throw new ArgumentNullException(nameof(user));
+            ArgumentNullException.ThrowIfNull(user);
 
             _context.Users.Remove(user);
             await Task.CompletedTask;

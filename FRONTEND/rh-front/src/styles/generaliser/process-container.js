@@ -5,7 +5,6 @@ export const ValidationContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--spacing-lg);
@@ -25,17 +24,18 @@ export const ValidationTimeline = styled.div`
   &::before {
     content: '';
     position: absolute;
-    left: 32px;
+    left: 28px;
     top: 0;
     bottom: 0;
-    width: 2px;
-    background: var(--border-light);
+    width: 4px;
+    background: linear-gradient(to bottom, var(--primary-color) 0%, var(--border-light) 100%);
+    border-radius: 2px;
     z-index: 1;
   }
 
   @media (max-width: 768px) {
     &::before {
-      left: 24px;
+      left: 20px;
     }
   }
 `;
@@ -45,68 +45,100 @@ export const ValidationStep = styled.div`
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-md);
-  padding: var(--spacing-lg) 0;
+  padding: var(--spacing-md) 0;
   position: relative;
-
-  &:not(:last-child) {
-    border-bottom: 1px solid var(--border-light);
-  }
+  z-index: 2;
 
   @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
     gap: var(--spacing-sm);
-    padding: var(--spacing-md) 0;
+    padding: var(--spacing-sm) 0;
+  }
+`;
+
+// Conteneur pour l'icône et le numéro d'étape
+export const StepIndicator = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    flex-direction: row;
+    gap: var(--spacing-sm);
+  }
+`;
+
+// Numéro de l'étape
+export const StepNumber = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: 50%;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border: 2px solid var(--border-light);
+  transition: all 0.3s ease;
+
+  @media (max-width: 768px) {
+    width: 20px;
+    height: 20px;
+    font-size: var(--font-size-xs);
   }
 `;
 
 // Icône de statut de validation
 export const ValidationStatusIcon = styled.div`
-  width: 64px;
-  height: 64px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: bold;
   position: relative;
   z-index: 2;
   flex-shrink: 0;
+  transition: all 0.3s ease;
   
   &.pending {
-    background: var(--bg-secondary);
-    border: 3px solid var(--border-light);
-    color: var(--text-secondary);
+    background: var(--neutral-light);
+    color: var(--neutral);
   }
   
   &.in-progress {
-    background: #fff3cd;
-    border: 3px solid #ffc107;
-    color: #856404;
+    background: var(--warning-light);
+    color: var(--warning);
     animation: pulse 2s infinite;
   }
   
   &.approved {
-    background: #d4edda;
-    border: 3px solid #28a745;
-    color: #155724;
+    background: var(--success-light);
+    color: var(--success);
   }
   
   &.rejected {
-    background: #f8d7da;
-    border: 3px solid #dc3545;
-    color: #721c24;
+    background: var(--danger-light);
+    color: var(--danger);
   }
 
   @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
   }
 
   @media (max-width: 768px) {
-    width: 48px;
-    height: 48px;
-    font-size: var(--font-size-md);
+    width: 32px;
+    height: 32px;
+    font-size: var(--font-size-sm);
   }
 `;
 
@@ -118,10 +150,11 @@ export const ValidationStepContent = styled.div`
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 
   &:hover {
     box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
   }
 `;
 
@@ -144,7 +177,7 @@ export const ValidationStepHeader = styled.div`
 
 // Titre de l'étape
 export const ValidationStepTitle = styled.h3`
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
@@ -160,27 +193,27 @@ export const ValidationStatusBadge = styled.span`
   letter-spacing: 0.5px;
   
   &.pending {
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
+    background: var(--neutral-light);
+    color: var(--neutral);
     border: 1px solid var(--border-light);
   }
   
   &.in-progress {
-    background: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffc107;
+    background: var(--warning-light);
+    color: var(--warning);
+    border: 1px solid var(--warning);
   }
   
   &.approved {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #28a745;
+    background: var(--success-light);
+    color: var(--success);
+    border: 1px solid var(--success);
   }
   
   &.rejected {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #dc3545;
+    background: var(--danger-light);
+    color: var(--danger);
+    border: 1px solid var(--danger);
   }
 `;
 
@@ -240,7 +273,6 @@ export const ValidationComment = styled.div`
   border-left: 4px solid var(--primary-color);
   font-size: var(--font-size-sm);
   color: var(--text-primary);
-  font-style: italic;
   line-height: 1.4;
 `;
 
@@ -250,6 +282,24 @@ export const ValidationDateTime = styled.div`
   color: var(--text-secondary);
   text-align: right;
   margin-top: var(--spacing-xs);
+`;
+
+// Message pour absence de validateur
+export const NoValidatorMessage = styled.div`
+  text-align: center;
+  padding: var(--spacing-md);
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: var(--font-size-sm);
+`;
+
+// Message pour validation en cours
+export const InProgressMessage = styled.div`
+  text-align: center;
+  padding: var(--spacing-sm);
+  color: var(--warning);
+  font-style: italic;
+  font-size: var(--font-size-sm);
 `;
 
 // État de chargement pour les validations
@@ -308,7 +358,7 @@ export const ValidationProgressHeader = styled.div`
   margin-bottom: var(--spacing-sm);
   
   h2 {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-md);
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
@@ -323,16 +373,16 @@ export const ValidationProgressHeader = styled.div`
 
 export const ValidationProgressBar = styled.div`
   width: 100%;
-  height: 8px;
+  height: 10px;
   background: var(--border-light);
-  border-radius: 4px;
+  border-radius: 5px;
   overflow: hidden;
   
   .fill {
     height: 100%;
     background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
-    border-radius: 4px;
-    transition: width 0.3s ease;
+    border-radius: 5px;
+    transition: width 0.5s ease-in-out;
   }
 `;
 

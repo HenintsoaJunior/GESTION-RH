@@ -19,6 +19,8 @@ namespace MyApp.Api.Models.dto.mission
         [Required(ErrorMessage = "Le lieu est requis")]
         [StringLength(50, ErrorMessage = "L'identifiant du lieu ne peut pas dépasser 50 caractères.")]
         public string LieuId { get; set; } = null!;
+        
+        public string UserId { get; set; } = null!;
 
         public List<MissionAssignationDTOForm> Assignations { get; set; } = new List<MissionAssignationDTOForm>();
     }
