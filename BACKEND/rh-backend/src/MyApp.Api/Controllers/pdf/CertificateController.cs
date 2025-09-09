@@ -29,10 +29,7 @@ namespace MyApp.Api.Controllers.pdf
                 return StatusCode(500, new { message = ex.Message });
             }
         }
-
-        /// <summary>
-        /// Générer une attestation d'emploi
-        /// </summary>
+        
         [HttpPost("employment")]
         public IActionResult GenerateEmploymentCertificate([FromBody] EmployeeCertificate employeeCertificate)
         {

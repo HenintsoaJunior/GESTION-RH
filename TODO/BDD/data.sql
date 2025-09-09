@@ -522,8 +522,16 @@ INSERT INTO expense_type (expense_type_id, type, time_start, time_end, created_a
 VALUES 
 ('exp001', 'Petit Déjeuner', '06:30:00', '08:00:00', GETDATE(), GETDATE()),
 ('exp002', 'Déjeuner',        '12:00:00', '13:30:00', GETDATE(), GETDATE()),
-('exp003', 'Dinner',           '18:30:00', '20:00:00', GETDATE(), GETDATE()),
+('exp003', 'Diner',           '18:30:00', '20:00:00', GETDATE(), GETDATE()),
 ('exp004', 'Hébergement',     '21:00:00', '05:00:00', GETDATE(), GETDATE());
+
+
+INSERT INTO expense_report_type (expense_report_type_id, type, created_at, updated_at)
+VALUES 
+('ex_rep001', 'Frais de transport/mission', GETDATE(), GETDATE()),
+('ex_rep002', 'Frais de restauration/recéption', GETDATE(), GETDATE()),
+('ex_rep003', 'Autres dépenses', GETDATE(), GETDATE());
+
 INSERT INTO transport (transport_id, type, created_at, updated_at)
 VALUES 
 ('tr001', 'Voiture', GETDATE(), GETDATE()),
