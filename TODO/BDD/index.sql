@@ -569,8 +569,6 @@ CREATE TABLE expense_report(
    FOREIGN KEY(expense_report_type_id) REFERENCES expense_report_type(expense_report_type_id)
 );
 
-
-
 CREATE TABLE logs(
    log_id VARCHAR(50),
    action VARCHAR(100) NOT NULL,
