@@ -1,5 +1,7 @@
 -- Dropping tables in reverse order of dependency
 DROP TABLE IF EXISTS logs;
+DROP TABLE IF EXISTS expense_report;
+DROP TABLE IF EXISTS expense_report_type;
 DROP TABLE IF EXISTS mission_budget;
 DROP TABLE IF EXISTS mission_validation;
 DROP TABLE IF EXISTS mission_assignation;
@@ -504,6 +506,8 @@ CREATE TABLE mission_assignation (
    mission_id VARCHAR(50) NOT NULL,
    employee_id VARCHAR(50) NOT NULL,
    is_validated INT DEFAULT 0,
+   type VARCHAR(50) NOT NULL CHECK(type IN('Indemnité', 'Note de frais')),
+   allocated_fund DECIMAL(15,2)
    PRIMARY KEY (assignation_id),
    FOREIGN KEY (transport_id) REFERENCES transport(transport_id),
    FOREIGN KEY (mission_id) REFERENCES mission(mission_id),
@@ -513,14 +517,13 @@ CREATE TABLE mission_assignation (
 CREATE TABLE mission_validation(
    mission_validation_id VARCHAR(50),
    status VARCHAR(50),
-   created_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    validation_date DATETIME,
    mission_creator VARCHAR(250) NOT NULL,
    mission_id VARCHAR(50) NOT NULL,
    mission_assignation_id VARCHAR(50) NOT NULL,
    to_whom VARCHAR(250) NOT NULL,
-   type VARCHAR(50) NOT NULL,
    PRIMARY KEY(mission_validation_id),
    FOREIGN KEY(mission_creator) REFERENCES users(user_id),
    FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
@@ -539,6 +542,33 @@ CREATE TABLE mission_budget(
    PRIMARY KEY(mission_budget_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id)
 );
+
+
+CREATE TABLE expense_report_type(
+   expense_report_type_id VARCHAR(50),
+   type VARCHAR(250),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(expense_report_type_id)
+);
+
+CREATE TABLE expense_report(
+   expense_report_id VARCHAR(50),
+   titled VARCHAR(250),
+   description TEXT,
+   type VARCHAR(50) CHECK(type IN('CB', 'ESP')),
+   currency_unit VARCHAR(50),
+   amount DECIMAL(15,2),
+   rate DECIMAL(15,2),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   assignation_id VARCHAR(50) NOT NULL,
+   expense_report_type_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(expense_report_id),
+   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id),
+   FOREIGN KEY(expense_report_type_id) REFERENCES expense_report_type(expense_report_type_id)
+);
+
 
 
 CREATE TABLE logs(
