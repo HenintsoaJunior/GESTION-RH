@@ -7,7 +7,7 @@ using MyApp.Api.Models.dto.mission;
 namespace MyApp.Api.Entities.mission
 {
     [Table("mission_assignation")]
-    public class MissionAssignation
+    public class MissionAssignation : Types
     {
         [Key]
         [Column("assignation_id")]
@@ -40,12 +40,6 @@ namespace MyApp.Api.Entities.mission
 
         [Column("duration")]
         public int? Duration { get; set; }
-
-        [Column("created_at")]
-        public DateTime? CreatedAt { get; set; }
-
-        [Column("updated_at")]
-        public DateTime? UpdatedAt { get; set; }
         
         [Column("is_validated")]
         public int? IsValidated { get; set; }
@@ -58,6 +52,10 @@ namespace MyApp.Api.Entities.mission
 
         [ForeignKey("TransportId")]
         public Transport? Transport { get; set; }
+        
+        [Required]
+        [Column("allocated_fund", TypeName = "decimal(15,2)")]
+        public decimal AllocatedFund { get; set; }
 
         public MissionAssignation()
         {
@@ -74,6 +72,8 @@ namespace MyApp.Api.Entities.mission
             ReturnTime = dto.ReturnTime;
             Duration = dto.Duration;
             IsValidated = 0;
+            Type = dto.Type;
+            // AllocatedFund = dto.AllocatedFund;
         }
 
         public MissionAssignation(string missionId, MissionAssignationDTOForm assignationDto)
@@ -86,6 +86,8 @@ namespace MyApp.Api.Entities.mission
             ReturnDate = assignationDto.ReturnDate;
             ReturnTime = assignationDto.ReturnTime;
             Duration = assignationDto.Duration;
+            Type = assignationDto.Type;
+            // AllocatedFund = assignationDto.AllocatedFund;
         }
     }
 }
