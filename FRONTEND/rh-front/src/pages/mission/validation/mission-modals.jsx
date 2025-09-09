@@ -1,7 +1,19 @@
 ﻿import React, { useState } from 'react';
-import { CheckCircle, XCircle } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Calendar, MapPin, User, ArrowLeft } from "lucide-react";
 import Alert from "components/alert";
+import Modal from "components/modal";
 import styled from "styled-components";
+import {
+  DashboardContainer,
+  TableHeader,
+  TableTitle,
+  ButtonAdd,
+  Loading,
+  NoDataMessage,
+  ButtonCancel,
+  ButtonConfirm,
+  ModalActions,
+} from "styles/generaliser/table-container";
 
 // Styled components pour la page complète
 const PageContainer = styled.div`
@@ -312,6 +324,9 @@ const BackButton = styled.button`
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   
   &:hover {
     background-color: #5a6268;
@@ -332,7 +347,10 @@ const MissionModals = ({
 }) => {
   const [comment, setComment] = useState('');
   const [signature, setSignature] = useState(null);
-  
+  const [showValidateModal, setShowValidateModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showSignatureErrorModal, setShowSignatureErrorModal] = useState(false); // New state for error modal
+
   const selectedMission = missions.find((mission) => mission.id === selectedMissionId);
 
   const handleFileUpload = (file) => {
@@ -349,29 +367,35 @@ const MissionModals = ({
   const handleAction = (action) => {
     if (action === 'validate') {
       if (!signature) {
-        setAlert({
-          type: 'error',
-          message: 'Une signature est requise pour valider la mission.',
-          isOpen: true,
-        });
+        setShowSignatureErrorModal(true); // Show error modal instead of alert
         return;
       }
-      handleValidate(selectedMissionId, action, comment, signature.preview);
-      setAlert({
-        type: 'success',
-        message: 'Mission approuvée avec succès',
-        isOpen: true,
-      });
+      setShowValidateModal(true);
     } else if (action === 'reject') {
-      setSignature(null);
-      handleUpdateSignature(selectedMissionId, '');
-      handleValidate(selectedMissionId, action, comment, '');
-      setAlert({
-        type: 'success',
-        message: 'Mission rejetée avec succès',
-        isOpen: true,
-      });
+      setShowRejectModal(true);
     }
+  };
+
+  const confirmValidate = () => {
+    handleValidate(selectedMissionId, 'validate', comment, signature.preview);
+    setAlert({
+      type: 'success',
+      message: 'Mission approuvée avec succès',
+      isOpen: true,
+    });
+    setShowValidateModal(false);
+  };
+
+  const confirmReject = () => {
+    setSignature(null);
+    handleUpdateSignature(selectedMissionId, '');
+    handleValidate(selectedMissionId, 'reject', comment, '');
+    setAlert({
+      type: 'success',
+      message: 'Mission rejetée avec succès',
+      isOpen: true,
+    });
+    setShowRejectModal(false);
   };
 
   const handleCommentChange = (e) => {
@@ -390,8 +414,47 @@ const MissionModals = ({
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
       
+      <Modal
+        type="warning"
+        message="Êtes-vous sûr de vouloir valider cette mission ? Cette action est irréversible."
+        isOpen={showValidateModal}
+        onClose={() => setShowValidateModal(false)}
+        title="Confirmer la validation"
+      >
+        <ModalActions>
+          <ButtonCancel onClick={() => setShowValidateModal(false)}>Annuler</ButtonCancel>
+          <ButtonConfirm onClick={confirmValidate}>Confirmer</ButtonConfirm>
+        </ModalActions>
+      </Modal>
+
+      <Modal
+        type="warning"
+        message="Êtes-vous sûr de vouloir rejeter cette mission ? Cette action est irréversible."
+        isOpen={showRejectModal}
+        onClose={() => setShowRejectModal(false)}
+        title="Confirmer le rejet"
+      >
+        <ModalActions>
+          <ButtonCancel onClick={() => setShowRejectModal(false)}>Annuler</ButtonCancel>
+          <ButtonConfirm onClick={confirmReject}>Confirmer</ButtonConfirm>
+        </ModalActions>
+      </Modal>
+
+      <Modal
+        type="error"
+        message="Une signature est requise pour valider la mission."
+        isOpen={showSignatureErrorModal}
+        onClose={() => setShowSignatureErrorModal(false)}
+        title="Erreur de validation"
+      >
+        <ModalActions>
+          <ButtonConfirm onClick={() => setShowSignatureErrorModal(false)}>OK</ButtonConfirm>
+        </ModalActions>
+      </Modal>
+
       <BackButton onClick={() => setShowDetailsMission(false)}>
-        ← Retour à la liste
+        <ArrowLeft size={16} />
+        Retour à la liste
       </BackButton>
       
       <OrderPageWrapper>

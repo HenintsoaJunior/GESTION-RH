@@ -26,10 +26,10 @@ const useMissionValidationData = () => {
     const fetchMissions = async () => {
       try {
         setIsLoading((prev) => ({ ...prev, missions: true }));
-        
+
         // Appel du service pour récupérer les données
         const response = await validateMissionRequest();
-        
+
         // Vérification si la réponse contient un tableau de résultats
         if (!response.results || !Array.isArray(response.results)) {
           console.warn("La réponse ne contient pas un tableau de résultats:", response);
@@ -41,36 +41,39 @@ const useMissionValidationData = () => {
         // Transformation des données JSON en format attendu par l'interface
         const formattedMissions = response.results.map((validation) => {
           const mission = validation.mission || {};
-          const user = validation.user || {};
+          const creator = validation.creator || {};
+          const validator = validation.validator || {};
           const missionAssignation = validation.missionAssignation || {};
-          
+
           return {
             id: validation.missionValidationId || "N/A",
             title: mission.name || "Mission sans titre",
             description: mission.description || "Aucune description",
-            requestedBy: user.name || "Demandeur inconnu",
-            department: user.department || "Département non spécifié",
+            requestedBy: creator.name || "Demandeur inconnu",
+            department: creator.department || "Département non spécifié",
             priority: "medium", // Valeur par défaut, car non présente dans le JSON
             status: validation.status || "En attente",
             requestDate: mission.startDate || new Date().toISOString(),
             dueDate: mission.endDate || new Date().toISOString(),
-            estimatedDuration: missionAssignation.duration ? `${missionAssignation.duration} jours` : "Non spécifié",
-            location: mission.lieuId ? `Lieu ID: ${mission.lieuId}` : "Lieu non spécifié",
+            estimatedDuration: missionAssignation.duration
+              ? `${missionAssignation.duration} jour${missionAssignation.duration > 1 ? "s" : ""}`
+              : "Non spécifié",
+            location: mission.lieu ? `${mission.lieu.nom}/${mission.lieu.pays}` : "Lieu non spécifié",
             comments: validation.comments || "",
-            signature: user.signature || "",
-            matricule: user.matricule || "N/A",
-            function: user.position || "Fonction non spécifiée",
-            transport: missionAssignation.transport ? missionAssignation.transport : "Non spécifié",
+            signature: validator.signature || "",
+            matricule: creator.matricule || "N/A",
+            function: creator.position || "Fonction non spécifiée",
+            transport: missionAssignation.transport?.type || "Non spécifié",
             departureTime: missionAssignation.departureTime || "Non spécifié",
             departureDate: missionAssignation.departureDate || mission.startDate || "Non spécifié",
             returnDate: missionAssignation.returnDate || mission.endDate || "Non spécifié",
             returnTime: missionAssignation.returnTime || "Non spécifié",
             reference: validation.missionValidationId || "N/A",
-            toWhom: validation.toWhom || "Non spécifié",
+            toWhom: validator.name || "Non spécifié",
             validationDate: validation.validationDate || null,
             missionCreator: validation.missionCreator || "N/A",
-            superiorName: user.superiorName || "Supérieur non spécifié",
-            email: user.email || "",
+            superiorName: creator.superiorName || "Supérieur non spécifié",
+            email: creator.email || "",
             createdAt: validation.createdAt || new Date().toISOString(),
             updatedAt: validation.updatedAt || null,
             missionAssignationId: validation.missionAssignationId || "N/A",
@@ -79,7 +82,6 @@ const useMissionValidationData = () => {
 
         setMissions(formattedMissions);
         setFilteredMissions(formattedMissions);
-        
       } catch (error) {
         console.error("Erreur lors du chargement des missions:", error);
         setAlert({
@@ -254,6 +256,10 @@ const useMissionValidationData = () => {
     missions,
     filteredMissions,
     setMissions,
+    filters,
+    setFilters,
+    appliedFilters,
+    setAppliedFilters,
     isLoading,
     alert,
     setAlert,
@@ -265,6 +271,8 @@ const useMissionValidationData = () => {
     isHidden,
     setIsHidden,
     handleRowClick,
+    handleFilterSubmit,
+    handleResetFilters,
     handleValidate,
     handleUpdateComments,
     handleUpdateSignature,

@@ -1,5 +1,3 @@
-// Fichier : details/mission-details.jsx (version modifiée : ajouter un log pour confirmer le rendu)
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -66,8 +64,8 @@ import {
 import { useGetMissionValidationsByAssignationId } from "services/mission/validator-utils";
 import { formatDate } from "utils/dateConverter";
 
-const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
-    console.log("DetailsMission - Rendering with props:", { missionId, isOpen }); // Log ajouté pour débogage
+const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
+    console.log("DetailsMission - Rendering with props:", { missionId, isOpen });
 
     const navigate = useNavigate();
     const getMissionValidations = useGetMissionValidationsByAssignationId();
@@ -92,8 +90,9 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
         setError(error);
     };
 
-    // Fonction pour mapper les validations vers les steps
     const mapValidationsToSteps = (validations) => {
+        console.log("Raw validations received:", validations);
+
         const stepMapping = {
             "Directeur de tutelle": {
                 title: "Validation Supérieur",
@@ -108,13 +107,20 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
         };
 
         const mappedSteps = validations.map((validation) => {
-            const stepInfo = stepMapping[validation.toWhom] || {
-                title: validation.toWhom,
-                subtitle: "",
-                order: validation.toWhom === "DRH" ? 2 : 1,
+            const validationType = validation.type || "Directeur de tutelle";
+            console.log("Processing validation:", { 
+                id: validation.missionValidationId, 
+                type: validationType, 
+                status: validation.status,
+                validator: validation.validator?.name
+            });
+            
+            const stepInfo = stepMapping[validationType] || {
+                title: validationType === "DRH" ? "Validation RH" : "Validation Supérieur",
+                subtitle: validationType === "DRH" ? "Ressources Humaines" : "Hiérarchique",
+                order: validationType === "DRH" ? 2 : 1,
             };
 
-            // Déterminer le statut
             let status;
             if (validation.status === "En attente") {
                 status = "in-progress";
@@ -128,19 +134,33 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
 
             const mappedStep = {
                 id: validation.missionValidationId,
-                title: stepInfo.title,
-                subtitle: stepInfo.subtitle,
+                title: validation.validator.title || stepInfo.title,
+                subtitle: validation.validator.subtitle || stepInfo.subtitle,
                 status: status,
                 hasIndicator: true,
-                validator: validation.validator,
+                validator: {
+                    name: validation.validator?.name || "Non spécifié",
+                    initials: validation.validator?.initials || "NA",
+                    email: validation.validator?.email || "Non spécifié",
+                    department: validation.validator?.department || "Non spécifié",
+                    position: validation.validator?.position || stepInfo.title,
+                },
                 validatedAt: validation.createdAt,
-                comment: "Mission approuvée. Les objectifs sont clairs et réalisables.", // Commentaire à la dur comme demandé
+                comment: validation.comment || "Mission en attente de validation.",
                 order: stepInfo.order,
             };
 
+            console.log("Mapped step:", {
+                id: mappedStep.id,
+                title: mappedStep.title,
+                status: mappedStep.status,
+                validatorName: mappedStep.validator.name,
+                validatorInitials: mappedStep.validator.initials
+            });
             return mappedStep;
         }).sort((a, b) => a.order - b.order);
 
+        console.log("Final mapped steps:", mappedSteps);
         return mappedSteps;
     };
 
@@ -154,7 +174,6 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
             return;
         }
 
-        // Fetch Assigned Persons
         fetchAssignMission(
             setAssignedPersons,
             setIsLoading,
@@ -166,25 +185,25 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
         );
     }, [missionId, currentPage, pageSize]);
 
-    // Effet pour récupérer les validations une fois qu'on a les personnes assignées
     useEffect(() => {
         if (assignedPersons.length > 0) {
             const fetchValidations = async () => {
                 try {
                     setIsLoading((prev) => ({ ...prev, validations: true }));
 
-                    // Prendre la première assignation pour récupérer les validations
                     const firstAssignation = assignedPersons[0];
                     const assignationId = firstAssignation.assignationId;
 
                     if (assignationId) {
+                        console.log("Fetching validations for assignation ID:", assignationId);
                         const validations = await getMissionValidations(assignationId);
+                        console.log("Validations fetched:", validations);
                         const mappedSteps = mapValidationsToSteps(validations);
                         setValidationSteps(mappedSteps);
-                        // Debug: Log validation steps to verify status
-                        console.log("Validation Steps:", mappedSteps);
+                        console.log("Final Validation Steps set:", mappedSteps);
                     }
                 } catch (error) {
+                    console.error("Error fetching validations:", error);
                     handleError({
                         isOpen: true,
                         type: "error",
@@ -263,7 +282,6 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
     if (!isOpen) return null;
 
     const currentStepData = validationSteps[currentStep] || validationSteps[0];
-    // Select the assigned person corresponding to the current step, or the first one
     const currentAssignedPerson = assignedPersons[currentStep] || assignedPersons[0];
     const formattedAssignedPerson = currentAssignedPerson
         ? formatValidatorData(currentAssignedPerson, "Collaborateur")
@@ -272,14 +290,13 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
     return (
         <PopupOverlay role="dialog" aria-labelledby="mission-details-title" aria-modal="true">
             <PopupContainer>
-                {/* Header */}
                 <PopupHeader>
                     <PopupTitle id="mission-details-title">
-                        Détails de la Mission {missionId}
+                        Détails de la Mission {missionId || "Inconnue"}
                         {assignedPersons.length > 0 && (
                             <span className="assignments-count">
-                ({assignedPersons.length} assignation{assignedPersons.length > 1 ? "s" : ""})
-              </span>
+                                ({assignedPersons.length} assignation{assignedPersons.length > 1 ? "s" : ""})
+                            </span>
                         )}
                     </PopupTitle>
                     <CloseButton
@@ -291,7 +308,6 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
                     </CloseButton>
                 </PopupHeader>
 
-                {/* Content */}
                 <PopupContent>
                     <Alert
                         type={error.type}
@@ -306,7 +322,6 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
                         <LoadingContainer>Chargement des informations de la mission...</LoadingContainer>
                     ) : (
                         <ContentArea>
-                            {/* Validator Details */}
                             {validationSteps.length > 0 ? (
                                 <ValidatorCard>
                                     <ValidatorGrid>
@@ -318,7 +333,7 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
                                                     <ValidatorInfo>
                                                         <ValidatorName>{step.validator?.name || "Non spécifié"}</ValidatorName>
                                                         <ValidatorRole>
-                                                            {step.title} {step.subtitle}
+                                                            {step.title} - {step.subtitle}
                                                         </ValidatorRole>
                                                     </ValidatorInfo>
                                                 </ValidatorItem>
@@ -437,7 +452,6 @@ const DetailsMission = ({ missionId = "001", onClose, isOpen = true }) => {
                                 </div>
                             )}
 
-                            {/* Comments and Date */}
                             {currentStepData && (currentStepData.comment || currentStepData.validatedAt) && (
                                 <CommentCard>
                                     {currentStepData.comment && (
