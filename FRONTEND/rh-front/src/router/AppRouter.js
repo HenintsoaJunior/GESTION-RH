@@ -22,7 +22,7 @@ import ProfilePage from 'layouts/profil-page';
 import UserList from 'pages/users/users-list';
 import RoleList from 'pages/roles/roles-list';
 import LogList from 'pages/logs/logs-list';
-import RecruitmentRequestList from "../pages/recruitment/list/recruitment-request-list";
+import RecruitmentRequestList from "../pages/recruitment/recruitments_request/list/recruitment-request-list";
 
 function AppRouter() {
   return (
