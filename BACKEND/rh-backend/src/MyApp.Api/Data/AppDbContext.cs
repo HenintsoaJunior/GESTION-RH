@@ -16,6 +16,8 @@ namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
+        public DbSet<ExpenseReport>  ExpenseReports { get; set; }
+        public DbSet<ExpenseReportType>  ExpenseReportTypes { get; set; }
         public DbSet<MissionBudget>  MissionBudgets { get; set; }
         public DbSet<Log>  Logs { get; set; }
         public DbSet<MissionValidation>  MissionValidations { get; set; }
