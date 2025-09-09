@@ -31,7 +31,7 @@ import { fetchDirections, getDirectionId } from "services/direction/direction";
 import { fetchDepartments, getDepartmentId } from "services/direction/department";
 import { fetchServices, getServiceId } from "services/direction/service";
 import { fetchSites, getSiteId } from "services/site/site";
-import { fetchEmployees, getSupervisorId } from "services/employee/employee";
+import { fetchAllUsers } from "services/users/users";
 import { fetchRecruitmentReasons, getRecruitmentReasonId } from "services/recruitment/recruitment-reason/recruitment-reason";
 import { fetchReplacementReasons, getReplacementReasonId } from "services/recruitment/recruitment-reason/replacement-reason";
 import { validateFirstStep, validateSecondStep } from "services/recruitment/recruitment-request-service/form-utils";
@@ -79,21 +79,21 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
       datePriseService: "",
     },
     description: "",
-    selectedFiles: [],
   });
   const [contractTypes, setContractTypes] = useState([]);
   const [directions, setDirections] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [employees, setEmployees] = useState([]);
+  const [users, setUsers] = useState([]);
   const [sites, setSites] = useState([]);
   const [services, setServices] = useState([]);
   const [recruitmentReasons, setRecruitmentReasons] = useState([]);
   const [replacementReasons, setReplacementReasons] = useState([]);
+  const [totalEntries, setTotalEntries] = useState(0);
   const [isLoading, setIsLoading] = useState({
     contractTypes: true,
     directions: true,
     departments: true,
-    employees: true,
+    users: true,
     sites: true,
     services: true,
     recruitmentReasons: true,
@@ -134,7 +134,6 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
           datePriseService: "",
         },
         description: "",
-        selectedFiles: [],
       });
       setErrors({
         intitule: false,
@@ -160,7 +159,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     fetchContractTypes(setContractTypes, setIsLoading, setSuggestions, setAlert);
     fetchDirections(setDirections, setIsLoading, setSuggestions, setAlert);
     fetchDepartments(setDepartments, setIsLoading, setSuggestions, setAlert);
-    fetchEmployees(setEmployees, setIsLoading, setSuggestions, setAlert);
+    fetchAllUsers(setUsers, setIsLoading, setTotalEntries, (error) => setAlert(error));
     fetchSites(setSites, setIsLoading, setSuggestions, setAlert);
     fetchServices(setServices, setIsLoading, setSuggestions, setAlert);
     fetchRecruitmentReasons(setRecruitmentReasons, setIsLoading, setAlert);
@@ -179,8 +178,6 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
           ...prev,
           departement: filteredDepartments.map((dept) => dept.departmentName),
           service: [],
-          superieurHierarchique: [],
-          fonctionSuperieur: [],
         }));
       }
     } else {
@@ -188,28 +185,22 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
         ...prev,
         departement: [],
         service: [],
-        superieurHierarchique: [],
-        fonctionSuperieur: [],
       }));
     }
 
-    if (formData.attachment.departement || formData.attachment.service || formData.attachment.superieurHierarchique) {
+    if (formData.attachment.departement || formData.attachment.service) {
       setFormData((prev) => ({
         ...prev,
         attachment: {
           ...prev.attachment,
           departement: "",
           service: "",
-          superieurHierarchique: "",
-          fonctionSuperieur: "",
         },
       }));
       setErrors((prev) => ({
         ...prev,
         departement: false,
         service: false,
-        superieurHierarchique: false,
-        fonctionSuperieur: false,
       }));
     }
   }, [formData.attachment.direction, departments, directions]);
@@ -227,106 +218,52 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
         setSuggestions((prev) => ({
           ...prev,
           service: filteredServices.map((service) => service.serviceName),
-          superieurHierarchique: [],
-          fonctionSuperieur: [],
         }));
       }
     } else {
       setSuggestions((prev) => ({
         ...prev,
         service: [],
-        superieurHierarchique: [],
-        fonctionSuperieur: [],
       }));
     }
 
-    if (formData.attachment.service || formData.attachment.superieurHierarchique) {
+    if (formData.attachment.service) {
       setFormData((prev) => ({
         ...prev,
         attachment: {
           ...prev.attachment,
           service: "",
-          superieurHierarchique: "",
-          fonctionSuperieur: "",
         },
       }));
       setErrors((prev) => ({
         ...prev,
         service: false,
-        superieurHierarchique: false,
-        fonctionSuperieur: false,
       }));
     }
   }, [formData.attachment.departement, departments, services]);
 
-  // Effet pour filtrer les employés quand le service change
+  // Effet pour afficher tous les utilisateurs dans les suggestions du supérieur hiérarchique
   useEffect(() => {
-    if (
-      formData.attachment.service &&
-      services.length > 0 &&
-      employees.length > 0 &&
-      departments.length > 0 &&
-      directions.length > 0
-    ) {
-      const selectedService = services.find(
-        (service) => service.serviceName === formData.attachment.service
-      );
-      const selectedDepartment = departments.find(
-        (dept) => dept.departmentName === formData.attachment.departement
-      );
-      const selectedDirection = directions.find(
-        (dir) => dir.directionName === formData.attachment.direction
-      );
-
-      if (selectedService && selectedDepartment && selectedDirection) {
-        const filteredEmployees = employees.filter(
-          (employee) =>
-            employee.serviceId === selectedService.serviceId &&
-            employee.departmentId === selectedDepartment.departmentId &&
-            employee.directionId === selectedDirection.directionId
-        );
-
-        setSuggestions((prev) => ({
-          ...prev,
-          superieurHierarchique: filteredEmployees.map(
-            (employee) => `${employee.lastName} ${employee.firstName}`
-          ),
-          fonctionSuperieur: [],
-        }));
-      }
-    } else {
+    if (users.length > 0) {
       setSuggestions((prev) => ({
         ...prev,
-        superieurHierarchique: [],
-        fonctionSuperieur: [],
+        superieurHierarchique: users.map((user) => user.name),
       }));
     }
-
-    if (formData.attachment.superieurHierarchique) {
-      setFormData((prev) => ({
-        ...prev,
-        attachment: {
-          ...prev.attachment,
-          superieurHierarchique: "",
-          fonctionSuperieur: "",
-        },
-      }));
-      setErrors((prev) => ({ ...prev, superieurHierarchique: false, fonctionSuperieur: false }));
-    }
-  }, [formData.attachment.service, services, employees, departments, directions]);
+  }, [users]);
 
   // Effet pour mettre à jour la fonction du supérieur
   useEffect(() => {
-    if (formData.attachment.superieurHierarchique && employees.length > 0) {
-      const selectedEmployee = employees.find(
-        (employee) => `${employee.lastName} ${employee.firstName}` === formData.attachment.superieurHierarchique
+    if (formData.attachment.superieurHierarchique && users.length > 0) {
+      const selectedUser = users.find(
+        (user) => user.name === formData.attachment.superieurHierarchique
       );
-      if (selectedEmployee) {
+      if (selectedUser) {
         setFormData((prev) => ({
           ...prev,
           attachment: {
             ...prev.attachment,
-            fonctionSuperieur: selectedEmployee.jobTitle,
+            fonctionSuperieur: selectedUser.position,
           },
         }));
         setErrors((prev) => ({ ...prev, fonctionSuperieur: false }));
@@ -341,13 +278,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
       }));
       setErrors((prev) => ({ ...prev, fonctionSuperieur: false }));
     }
-  }, [formData.attachment.superieurHierarchique, employees]);
-
-  // Handle file change
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setFormData((prev) => ({ ...prev, selectedFiles: files }));
-  };
+  }, [formData.attachment.superieurHierarchique, users]);
 
   // Handle new suggestion
   const handleAddNewSuggestion = (field, value) => {
@@ -419,6 +350,12 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     setErrorModal({ isOpen: true, type, message });
   };
 
+  // Fonction pour récupérer l'ID d'un utilisateur par son nom
+  const getUserId = (userName, usersList) => {
+    const user = usersList.find((u) => u.name === userName);
+    return user ? user.id : "";
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (hasClickedSubmit || isSubmitting) {
@@ -434,9 +371,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     setIsSubmitting(true);
 
     try {
-      const { positionInfo, contractType, attachment, workSite, recruitmentMotive, replacementDetails, description, selectedFiles } = formData;
-
-      const filesString = selectedFiles.map((file) => file.name).join(", ");
+      const { positionInfo, contractType, attachment, workSite, recruitmentMotive, replacementDetails, description } = formData;
 
       const requestData = {
         positionTitle: positionInfo.intitule,
@@ -453,7 +388,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         status: "En Cours",
-        files: filesString,
+        files: "",
         requesterId: "USR_0001",
         contractTypeId: getContractTypeId(attachment.typeContrat, contractTypes) || "",
         siteId: getSiteId(workSite.selectedSite, sites) || "",
@@ -464,7 +399,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
           directionId: getDirectionId(attachment.direction, directions) || "",
           departmentId: getDepartmentId(attachment.departement, departments) || "",
           serviceId: getServiceId(attachment.service, services) || "",
-          directSupervisorId: getSupervisorId(attachment.superieurHierarchique, employees) || "",
+          directSupervisorId: getUserId(attachment.superieurHierarchique, users) || "",
         },
         replacementReasons: replacementDetails.motifs
           .filter((motif) => motif.motifRemplacement && motif.detail)
@@ -523,7 +458,6 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
         datePriseService: "",
       },
       description: "",
-      selectedFiles: [],
     });
     setErrors({
       intitule: false,
@@ -610,7 +544,6 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
                   suggestions={suggestions}
                   isLoading={isLoading}
                   isSubmitting={isSubmitting}
-                  handleFileChange={handleFileChange}
                   handleAddNewSuggestion={handleAddNewSuggestion}
                 />
                 <StepNavigation>
