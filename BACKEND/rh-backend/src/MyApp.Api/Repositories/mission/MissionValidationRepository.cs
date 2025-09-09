@@ -34,6 +34,9 @@ namespace MyApp.Api.Repositories.mission
         {
             var query = _context.MissionValidations
                 .Include(mv => mv.Mission)
+                #pragma warning disable CS8602 
+                .ThenInclude(m => m.Lieu) 
+                #pragma warning restore CS8602 
                 .Include(mv => mv.MissionAssignation)
                 .Include(mv => mv.Creator)
                 .Include(mv => mv.Validator)
@@ -51,6 +54,7 @@ namespace MyApp.Api.Repositories.mission
 
             return (results, totalCount);
         }
+
 
         
         //valider une demande 

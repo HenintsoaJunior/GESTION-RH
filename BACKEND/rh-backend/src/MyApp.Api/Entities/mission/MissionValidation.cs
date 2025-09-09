@@ -51,6 +51,10 @@ namespace MyApp.Api.Entities.mission
         public string? ToWhom { get; set; }
         [ForeignKey("ToWhom")]
         public User? Validator { get; set; }
+        
+        [Column("type")]
+        [MaxLength(50)]
+        public string? Type { get; set; }
         public MissionValidation()
         {
         }
@@ -62,6 +66,7 @@ namespace MyApp.Api.Entities.mission
             MissionCreator = dto.MissionCreator;
             Status = dto.Status;
             ToWhom = dto.ToWhom;
+            Type = dto.Type;
             ValidationDate = dto.ValidationDate;
         }
     }

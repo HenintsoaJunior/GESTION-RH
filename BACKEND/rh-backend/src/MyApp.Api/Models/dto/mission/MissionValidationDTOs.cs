@@ -16,6 +16,8 @@
         public string MissionCreator { get; set; } = null!;
         public string? Status { get; set; }
         public string? ToWhom { get; set; }
+        
+        public string? Type { get; set; }
         public DateTime? ValidationDate { get; set; }
     }
     
