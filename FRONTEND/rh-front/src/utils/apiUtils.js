@@ -10,13 +10,32 @@ const defaultHeaders = {
 };
 
 /**
+ * Fonction pour récupérer le token depuis localStorage
+ */
+const getAuthToken = () => {
+  const token = localStorage.getItem("token");
+  return token ? JSON.parse(token).accessToken : null;
+};
+
+/**
  * Fonction centrale de gestion des réponses HTTP.
  * - Gère les erreurs HTTP (status non-OK)
  * - Tente de parser le corps de la réponse en JSON pour extraire le message d'erreur
+ * - Redirige vers "/login" en cas d'erreur d'autorisation (401 ou 403)
  * - Retourne le contenu selon le type de réponse attendu (json ou blob)
  */
 const handleResponse = async (response, responseType = 'json') => {
   if (!response.ok) {
+    // Gestion des erreurs d'autorisation
+    if (response.status === 401 || response.status === 403) {
+      // Supprimer les données stockées en cas d'erreur d'autorisation
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      // Rediriger vers la page de connexion
+      window.location.href = "/login";
+      throw new Error("Accès non autorisé. Redirection vers la page de connexion.");
+    }
+
     // Construction du message d'erreur par défaut
     let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
     let errorData = null;
@@ -60,7 +79,7 @@ const handleResponse = async (response, responseType = 'json') => {
 /**
  * Fonction générique pour effectuer une requête HTTP.
  * - Construit l'URL avec les paramètres de requête
- * - Fusionne les headers par défaut et personnalisés
+ * - Fusionne les headers par défaut, ajoute le token Bearer, et inclut les headers personnalisés
  * - Sérialise le corps en JSON si présent
  * - Utilise fetch pour envoyer la requête
  * - Gère la réponse via handleResponse
@@ -75,8 +94,12 @@ const apiRequest = async ({ endpoint, method = 'GET', body = null, headers = {},
       }
     });
 
+    // Récupération du token Bearer
+    const accessToken = getAuthToken();
+    const authHeader = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+
     // Fusion des headers
-    const requestHeaders = { ...defaultHeaders, ...headers };
+    const requestHeaders = { ...defaultHeaders, ...authHeader, ...headers };
 
     // Préparation des options pour fetch
     const options = {
