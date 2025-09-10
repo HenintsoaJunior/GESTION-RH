@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore.Storage;
+﻿using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Repositories.employee;
 using MyApp.Api.Repositories.recruitment;
@@ -25,8 +25,6 @@ namespace MyApp.Api.Services.recruitment
         private readonly IRecruitmentRequestRepository _requestRepository;
         private readonly IRecruitmentRequestDetailService _requestDetailService;
         private readonly IRecruitmentRequestReplacementReasonService _replacementReasonService;
-        private readonly IApprovalFlowEmployeeRepository _approvalFlowRepository;
-        private readonly IRecruitmentApprovalService _approvalService;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<RecruitmentRequestService> _logger;
 
@@ -34,16 +32,12 @@ namespace MyApp.Api.Services.recruitment
             IRecruitmentRequestRepository requestRepository,
             IRecruitmentRequestDetailService requestDetailService,
             IRecruitmentRequestReplacementReasonService replacementReasonService,
-            IApprovalFlowEmployeeRepository approvalFlowRepository,
-            IRecruitmentApprovalService approvalService,
             ISequenceGenerator sequenceGenerator,
             ILogger<RecruitmentRequestService> logger)
         {
             _requestRepository = requestRepository;
             _requestDetailService = requestDetailService;
             _replacementReasonService = replacementReasonService;
-            _approvalFlowRepository = approvalFlowRepository;
-            _approvalService = approvalService;
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
         }
@@ -82,11 +76,11 @@ namespace MyApp.Api.Services.recruitment
                     _logger.LogInformation("Raisons du remplacement de la demande de recrutement créées");
                 }
 
-                var approvalFlowEmployees = await _approvalFlowRepository.GetAllGroupedByApproverRoleWithActiveEmployeesAsync();
-                await _approvalService.AddAsync(request.RecruitmentRequestId, approvalFlowEmployees);
-                _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", request.RecruitmentRequestId);
-
-                await transaction.CommitAsync(); // Valider les opérations
+                // var approvalFlowEmployees = await _approvalFlowRepository.GetAllGroupedByApproverRoleWithActiveEmployeesAsync();
+                // await _approvalService.AddAsync(request.RecruitmentRequestId, approvalFlowEmployees);
+                // _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", request.RecruitmentRequestId);
+                //
+                // await transaction.CommitAsync(); // Valider les opérations
                 return request.RecruitmentRequestId;
             }
             catch (Exception ex)
