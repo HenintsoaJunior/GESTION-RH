@@ -31,7 +31,7 @@ import { fetchDirections, getDirectionId } from "services/direction/direction";
 import { fetchDepartments, getDepartmentId } from "services/direction/department";
 import { fetchServices, getServiceId } from "services/direction/service";
 import { fetchSites, getSiteId } from "services/site/site";
-import { fetchAllUsers } from "services/users/users";
+import { fetchAllEmployees } from "services/employee/employee";
 import { fetchRecruitmentReasons, getRecruitmentReasonId } from "services/recruitment/recruitment-reason/recruitment-reason";
 import { fetchReplacementReasons, getReplacementReasonId } from "services/recruitment/recruitment-reason/replacement-reason";
 import { validateFirstStep, validateSecondStep } from "services/recruitment/recruitment-request-service/form-utils";
@@ -83,7 +83,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
   const [contractTypes, setContractTypes] = useState([]);
   const [directions, setDirections] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [sites, setSites] = useState([]);
   const [services, setServices] = useState([]);
   const [recruitmentReasons, setRecruitmentReasons] = useState([]);
@@ -93,7 +93,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     contractTypes: true,
     directions: true,
     departments: true,
-    users: true,
+    employees: true,
     sites: true,
     services: true,
     recruitmentReasons: true,
@@ -110,10 +110,8 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     site: [],
   });
 
-  // Load all data when popup opens
   useEffect(() => {
     if (!isOpen) {
-      // Clear form data and errors when popup closes, but don't show alert
       setFormData({
         positionInfo: { intitule: "", effectif: 1 },
         contractType: { selectedType: "", duree: "", autreDetail: "" },
@@ -155,18 +153,16 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
       return;
     }
 
-    // Fetch data when popup opens
     fetchContractTypes(setContractTypes, setIsLoading, setSuggestions, setAlert);
     fetchDirections(setDirections, setIsLoading, setSuggestions, setAlert);
     fetchDepartments(setDepartments, setIsLoading, setSuggestions, setAlert);
-    fetchAllUsers(setUsers, setIsLoading, setTotalEntries, (error) => setAlert(error));
+    fetchAllEmployees(setEmployees, setIsLoading, setSuggestions, setAlert);
     fetchSites(setSites, setIsLoading, setSuggestions, setAlert);
     fetchServices(setServices, setIsLoading, setSuggestions, setAlert);
     fetchRecruitmentReasons(setRecruitmentReasons, setIsLoading, setAlert);
     fetchReplacementReasons(setReplacementReasons, setIsLoading, setSuggestions, setAlert);
   }, [isOpen]);
 
-  // Effet pour filtrer les départements quand la direction change
   useEffect(() => {
     if (formData.attachment.direction && departments.length > 0 && directions.length > 0) {
       const selectedDirection = directions.find((dir) => dir.directionName === formData.attachment.direction);
@@ -205,7 +201,6 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     }
   }, [formData.attachment.direction, departments, directions]);
 
-  // Effet pour filtrer les services quand le département change
   useEffect(() => {
     if (formData.attachment.departement && departments.length > 0 && services.length > 0) {
       const selectedDepartment = departments.find(
@@ -242,28 +237,26 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     }
   }, [formData.attachment.departement, departments, services]);
 
-  // Effet pour afficher tous les utilisateurs dans les suggestions du supérieur hiérarchique
   useEffect(() => {
-    if (users.length > 0) {
+    if (employees.length > 0) {
       setSuggestions((prev) => ({
         ...prev,
-        superieurHierarchique: users.map((user) => user.name),
+        superieurHierarchique: employees.map((employee) => `${employee.lastName} ${employee.firstName}`),
       }));
     }
-  }, [users]);
+  }, [employees]);
 
-  // Effet pour mettre à jour la fonction du supérieur
   useEffect(() => {
-    if (formData.attachment.superieurHierarchique && users.length > 0) {
-      const selectedUser = users.find(
-        (user) => user.name === formData.attachment.superieurHierarchique
+    if (formData.attachment.superieurHierarchique && employees.length > 0) {
+      const selectedEmployee = employees.find(
+        (employee) => `${employee.lastName} ${employee.firstName}` === formData.attachment.superieurHierarchique
       );
-      if (selectedUser) {
+      if (selectedEmployee) {
         setFormData((prev) => ({
           ...prev,
           attachment: {
             ...prev.attachment,
-            fonctionSuperieur: selectedUser.position,
+            fonctionSuperieur: selectedEmployee.jobTitle || "",
           },
         }));
         setErrors((prev) => ({ ...prev, fonctionSuperieur: false }));
@@ -278,9 +271,8 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
       }));
       setErrors((prev) => ({ ...prev, fonctionSuperieur: false }));
     }
-  }, [formData.attachment.superieurHierarchique, users]);
+  }, [formData.attachment.superieurHierarchique, employees]);
 
-  // Handle new suggestion
   const handleAddNewSuggestion = (field, value) => {
     setSuggestions((prev) => ({
       ...prev,
@@ -289,7 +281,6 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     setAlert({ isOpen: true, type: "success", message: `"${value}" ajouté aux suggestions pour ${field}` });
   };
 
-  // Handle navigation
   const handleNext = () => {
     if (validateFirstStep(formData, setErrors, showValidationModal)) {
       setCurrentStep(2);
@@ -300,7 +291,6 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     setCurrentStep(1);
   };
 
-  // Handle adding/removing motifs
   const handleAddMotif = () => {
     setFormData((prev) => ({
       ...prev,
@@ -345,18 +335,19 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     });
   };
 
-  // Form validation
   const showValidationModal = (type, message) => {
     setErrorModal({ isOpen: true, type, message });
   };
 
-  // Fonction pour récupérer l'ID d'un utilisateur par son nom
-  const getUserId = (userName, usersList) => {
-    const user = usersList.find((u) => u.name === userName);
-    return user ? user.id : "";
+  const getEmployeeId = (employeeName, employeesList) => {
+    const employee = employeesList.find((emp) => `${emp.lastName} ${emp.firstName}` === employeeName);
+    return employee ? employee.employeeId : "";
   };
 
   const handleSubmit = async (event) => {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const userId = userData?.userId;
+
     event.preventDefault();
     if (hasClickedSubmit || isSubmitting) {
       console.warn("Submission already in progress. Ignoring additional submit.");
@@ -389,7 +380,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
         updatedAt: new Date().toISOString(),
         status: "En Cours",
         files: "",
-        requesterId: "USR_0001",
+        requesterId: userId,
         contractTypeId: getContractTypeId(attachment.typeContrat, contractTypes) || "",
         siteId: getSiteId(workSite.selectedSite, sites) || "",
         recruitmentReasonId: getRecruitmentReasonId(recruitmentMotive, recruitmentReasons) || "",
@@ -399,7 +390,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
           directionId: getDirectionId(attachment.direction, directions) || "",
           departmentId: getDepartmentId(attachment.departement, departments) || "",
           serviceId: getServiceId(attachment.service, services) || "",
-          directSupervisorId: getUserId(attachment.superieurHierarchique, users) || "",
+          directSupervisorId: getEmployeeId(attachment.superieurHierarchique, employees) || "",
         },
         replacementReasons: replacementDetails.motifs
           .filter((motif) => motif.motifRemplacement && motif.detail)
@@ -421,7 +412,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
 
       if (response.ok) {
         setAlert({ isOpen: true, type: "success", message: "Demande de recrutement soumise avec succès !" });
-        handleReset(false); // Reset without showing alert
+        handleReset(false);
         onClose();
       } else {
         const errorData = await response.text();
@@ -435,7 +426,6 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     }
   };
 
-  // Reset form, with option to suppress alert
   const handleReset = (showAlert = true) => {
     setCurrentStep(1);
     setFormData({
@@ -448,7 +438,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
         service: "",
         superieurHierarchique: "",
         fonctionSuperieur: "",
-        },
+      },
       workSite: { selectedSite: "" },
       recruitmentMotive: "",
       replacementDetails: {
@@ -480,10 +470,9 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     }
   };
 
-  // Handle cancel (close popup without saving)
   const handleCancel = () => {
-    handleReset(true); // Reset with alert
-    onClose(); // Close the popup
+    handleReset(true);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -526,70 +515,74 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
           </Modal>
           <FormContainer>
             <StepperWrapper>
-              <StepItem active={currentStep === 1}>
+              <StepItem active={currentStep === 1 ? "true" : "false"}>
                 <span>1</span> Informations du Poste
               </StepItem>
-              <StepItem active={currentStep === 2}>
+              <StepItem active={currentStep === 2 ? "true" : "false"}>
                 <span>2</span> Motif et Planification
               </StepItem>
             </StepperWrapper>
 
             <GenericForm id="recruitmentRequestForm" onSubmit={handleSubmit}>
-              <StepContent active={currentStep === 1}>
-                <FirstStepForm
-                  formData={formData}
-                  setFormData={setFormData}
-                  errors={errors}
-                  setErrors={setErrors}
-                  suggestions={suggestions}
-                  isLoading={isLoading}
-                  isSubmitting={isSubmitting}
-                  handleAddNewSuggestion={handleAddNewSuggestion}
-                />
-                <StepNavigation>
-                  <NextButton
-                    type="button"
-                    onClick={handleNext}
-                    disabled={isSubmitting || Object.values(isLoading).some((loading) => loading)}
-                  >
-                    Suivant <FaIcons.FaArrowRight className="w-4 h-4" />
-                  </NextButton>
-                </StepNavigation>
-              </StepContent>
+              {currentStep === 1 && (
+                <StepContent active="true">
+                  <FirstStepForm
+                    formData={formData}
+                    setFormData={setFormData}
+                    errors={errors}
+                    setErrors={setErrors}
+                    suggestions={suggestions}
+                    isLoading={isLoading}
+                    isSubmitting={isSubmitting}
+                    handleAddNewSuggestion={handleAddNewSuggestion}
+                  />
+                  <StepNavigation>
+                    <NextButton
+                      type="button"
+                      onClick={handleNext}
+                      disabled={isSubmitting || Object.values(isLoading).some((loading) => loading)}
+                    >
+                      Suivant <FaIcons.FaArrowRight className="w-4 h-4" />
+                    </NextButton>
+                  </StepNavigation>
+                </StepContent>
+              )}
 
-              <StepContent active={currentStep === 2}>
-                <SecondStepForm
-                  formData={formData}
-                  setFormData={setFormData}
-                  errors={errors}
-                  setErrors={setErrors}
-                  recruitmentReasons={recruitmentReasons}
-                  suggestions={suggestions}
-                  isLoading={isLoading}
-                  isSubmitting={isSubmitting}
-                  handleMotifChange={handleMotifChange}
-                  handleAddMotif={handleAddMotif}
-                  handleRemoveMotif={handleRemoveMotif}
-                  handleAddNewSuggestion={handleAddNewSuggestion}
-                />
-                <StepNavigation>
-                  <PreviousButton
-                    type="button"
-                    onClick={handlePrevious}
-                    disabled={isSubmitting}
-                  >
-                    <FaIcons.FaArrowLeft className="w-4 h-4" /> Précédent
-                  </PreviousButton>
-                  <ButtonPrimary
-                    type="submit"
-                    disabled={isSubmitting || hasClickedSubmit}
-                    title="Valider la demande"
-                  >
-                    <Save size={16} />
-                    <span>{isSubmitting ? "Envoi en cours..." : "Valider"}</span>
-                  </ButtonPrimary>
-                </StepNavigation>
-              </StepContent>
+              {currentStep === 2 && (
+                <StepContent active="true">
+                  <SecondStepForm
+                    formData={formData}
+                    setFormData={setFormData}
+                    errors={errors}
+                    setErrors={setErrors}
+                    recruitmentReasons={recruitmentReasons}
+                    suggestions={suggestions}
+                    isLoading={isLoading}
+                    isSubmitting={isSubmitting}
+                    handleMotifChange={handleMotifChange}
+                    handleAddMotif={handleAddMotif}
+                    handleRemoveMotif={handleRemoveMotif}
+                    handleAddNewSuggestion={handleAddNewSuggestion}
+                  />
+                  <StepNavigation>
+                    <PreviousButton
+                      type="button"
+                      onClick={handlePrevious}
+                      disabled={isSubmitting}
+                    >
+                      <FaIcons.FaArrowLeft className="w-4 h-4" /> Précédent
+                    </PreviousButton>
+                    <ButtonPrimary
+                      type="submit"
+                      disabled={isSubmitting || hasClickedSubmit}
+                      title="Valider la demande"
+                    >
+                      <Save size={16} />
+                      <span>{isSubmitting ? "Envoi en cours..." : "Valider"}</span>
+                    </ButtonPrimary>
+                  </StepNavigation>
+                </StepContent>
+              )}
             </GenericForm>
           </FormContainer>
         </PopupContent>

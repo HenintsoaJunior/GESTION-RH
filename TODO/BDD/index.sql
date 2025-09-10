@@ -9,9 +9,7 @@ DROP TABLE IF EXISTS mission_assignation;
 DROP TABLE IF EXISTS mission;
 DROP TABLE IF EXISTS lieu;
 DROP TABLE IF EXISTS compensation_scale;
-DROP TABLE IF EXISTS approval_flow_employee;
 DROP TABLE IF EXISTS recruitment_request_replacement_reasons;
-DROP TABLE IF EXISTS recruitment_approval;
 DROP TABLE IF EXISTS recruitment_request_details;
 DROP TABLE IF EXISTS recruitment_requests;
 DROP TABLE IF EXISTS application_comments;
@@ -39,7 +37,6 @@ DROP TABLE IF EXISTS contract_types;
 DROP TABLE IF EXISTS genders;
 DROP TABLE IF EXISTS nationalities;
 DROP TABLE IF EXISTS site;
-DROP TABLE IF EXISTS approval_flow;
 DROP TABLE IF EXISTS transport;
 DROP TABLE IF EXISTS expense_type;
 DROP TABLE IF EXISTS units;
@@ -84,15 +81,6 @@ CREATE TABLE units(
    service_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(unit_id),
    FOREIGN KEY(service_id) REFERENCES service(service_id)
-);
-
-CREATE TABLE approval_flow(
-   approval_flow_id VARCHAR(50),
-   approval_order INT NOT NULL,
-   approver_role VARCHAR(50),
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   PRIMARY KEY(approval_flow_id)
 );
 
 CREATE TABLE site(
@@ -395,19 +383,19 @@ CREATE TABLE recruitment_request_details(
    FOREIGN KEY(direct_supervisor_id) REFERENCES employees(employee_id)
 );
 
-CREATE TABLE recruitment_approval(
-   recruitment_request_id VARCHAR(50),
-   approver_id VARCHAR(250),
+CREATE TABLE recruitment_validation(
+   recruitment_validation_id VARCHAR(50),
    status VARCHAR(50),
-   approval_order INT,
-   approval_date DATE,
-   comment TEXT,
-   signature VARBINARY(250),
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
-   PRIMARY KEY(recruitment_request_id, approver_id),
+   validation_date DATETIME,
+   recruitment_creator VARCHAR(250) NOT NULL,
+   recruitment_request_id VARCHAR(50) NOT NULL,
+   to_whom VARCHAR(250) NOT NULL,
+   PRIMARY KEY(recruitment_validation_id),
+   FOREIGN KEY(recruitment_creator) REFERENCES users(user_id),
    FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
-   FOREIGN KEY(approver_id) REFERENCES users(user_id)
+   FOREIGN KEY(to_whom) REFERENCES users(user_id)
 );
 
 CREATE TABLE employee_nationalities(
@@ -425,14 +413,6 @@ CREATE TABLE recruitment_request_replacement_reasons(
    PRIMARY KEY(recruitment_request_id, replacement_reason_id),
    FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
    FOREIGN KEY(replacement_reason_id) REFERENCES replacement_reasons(replacement_reason_id)
-);
-
-CREATE TABLE approval_flow_employee(
-   employee_id VARCHAR(50),
-   approval_flow_id VARCHAR(50),
-   PRIMARY KEY(employee_id, approval_flow_id),
-   FOREIGN KEY(employee_id) REFERENCES employees(employee_id),
-   FOREIGN KEY(approval_flow_id) REFERENCES approval_flow(approval_flow_id)
 );
 
 
