@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
@@ -7,6 +8,7 @@ namespace MyApp.Api.Repositories.mission
 {
     public interface IMissionValidationRepository
     {
+        Task<IDbContextTransaction> BeginTransactionAsync();
         Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize);
         Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
@@ -27,6 +29,11 @@ namespace MyApp.Api.Repositories.mission
         public MissionValidationRepository(AppDbContext context)
         {
             _context = context;
+        }
+        
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
         }
         
         //prendre les demandes validations
