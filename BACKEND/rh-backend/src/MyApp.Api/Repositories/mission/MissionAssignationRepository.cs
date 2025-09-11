@@ -57,6 +57,7 @@ namespace MyApp.Api.Repositories.mission
         public async Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId)
         {
             return await _context.MissionAssignations
+                .AsNoTracking()
                 .Include(ma => ma.Employee)
                 .ThenInclude(e => e.Direction)
                 .Include(ma => ma.Employee)
@@ -77,6 +78,7 @@ namespace MyApp.Api.Repositories.mission
         public async Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId)
         {
             return await _context.MissionAssignations
+                .AsNoTracking()
                 .Include(ma => ma.Employee)
                 .ThenInclude(e => e.Direction)
                 .Include(ma => ma.Employee)
