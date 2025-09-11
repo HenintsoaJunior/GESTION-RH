@@ -27,8 +27,8 @@ namespace MyApp.Api.Services.mission
         Task<(string EmployeeId, string MissionId, string assignationId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation);
         Task<bool> UpdateAsync(string assignationId, MissionAssignation missionAssignation);
         Task<bool> DeleteAsync(string assignationId);
-        Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
-        Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
+        Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? returnDate = null, string? status = null);
+        Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? returnDate = null, string? status = null);
     }
 
     public class MissionAssignationService : IMissionAssignationService
@@ -324,17 +324,17 @@ namespace MyApp.Api.Services.mission
             };
         }
 
-        public async Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null)
+        public async Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? returnDate = null, string? status = null)
         {
             try
             {
-                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, departureArrive, status);
+                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, returnDate, status);
 
                 var assignations = missionAssignations as MissionAssignation[] ?? missionAssignations.ToArray();
-                if (!assignations.Any())
+                if (assignations.Length == 0)
                 {
-                    _logger.LogWarning("Aucune affectation de mission trouvée pour les filtres fournis : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, departureArrive={DepartureArrive}, status={Status}",
-                        employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", departureArrive?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
+                    _logger.LogWarning("Aucune affectation de mission trouvée pour les filtres fournis : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, returnDate={DepartureArrive}, status={Status}",
+                        employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", returnDate?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
                     return new MissionPaiementResult
                     {
                         DailyPaiements = new List<DailyPaiement>(),
@@ -392,17 +392,17 @@ namespace MyApp.Api.Services.mission
             };
         }
 
-        public async Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null)
+        public async Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? returnDate = null, string? status = null)
         {
             try
             {
-                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, departureArrive, status);
+                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, returnDate, status);
 
                 var assignations = missionAssignations as MissionAssignation[] ?? missionAssignations.ToArray();
                 if (!assignations.Any())
                 {
-                    _logger.LogWarning("Aucune affectation trouvée pour la génération du rapport Excel avec les filtres : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, departureArrive={DepartureArrive}, status={Status}", 
-                        employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", departureArrive?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
+                    _logger.LogWarning("Aucune affectation trouvée pour la génération du rapport Excel avec les filtres : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, returnDate={DepartureArrive}, status={Status}", 
+                        employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", returnDate?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
                     return CreateEmptyExcelReport();
                 }
 
