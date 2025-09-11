@@ -23,15 +23,16 @@ import {
   GenericForm,
 } from "styles/generaliser/form-container";
 import Alert from "components/alert";
-import Modal from "components/modal"; // Import Modal component
+import Modal from "components/modal";
 import MissionInfoStep from "./mission-info-step";
 import BeneficiaryStep from "./collaborator-step";
+import CompensationStep from "./compensation-step";
 import { fetchAllRegions } from "services/lieu/lieu";
-import { createMission, fetchMissionById, createMissionAssignation, fetchAssignMission, updateMission, updateMissionAssignation } from "services/mission/mission";
+import { createMission } from "services/mission/mission";
 import { fetchAllTransports } from "services/transport/transport";
 import { fetchEmployees } from "services/employee/employee";
 
-const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSuccess }) => {
+const MissionForm = ({ isOpen, onClose, initialStartDate, onFormSuccess }) => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -40,9 +41,7 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
     location: "",
     startDate: initialStartDate || null,
     endDate: null,
-    missionId: missionId || "",
     beneficiary: {
-      assignationId: "",
       beneficiary: "",
       employeeId: "",
       matricule: "",
@@ -61,11 +60,12 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
       returnTime: "",
     },
     lieuId: "",
+    type: "Indemnité",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasClickedSubmit, setHasClickedSubmit] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  const [errorModal, setErrorModal] = useState({ isOpen: false, message: "" }); // New state for error modal
+  const [errorModal, setErrorModal] = useState({ isOpen: false, message: "" });
   const [regions, setRegions] = useState([]);
   const [regionNames, setRegionNames] = useState([]);
   const [regionDisplayNames, setRegionDisplayNames] = useState([]);
@@ -79,8 +79,6 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
     employees: true,
     transports: true,
     missions: true,
-    mission: false,
-    assignMissions: false,
   });
   const [fieldErrors, setFieldErrors] = useState({});
 
@@ -117,65 +115,6 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
 
     return { missionDuration: durationDays.toString(), error: null };
   }, []);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    if (missionId) {
-      fetchMissionById(
-        missionId,
-        (mission) => {
-          setFormData((prev) => ({
-            ...prev,
-            missionId,
-            missionTitle: mission.name || "",
-            description: mission.description || "",
-            location: mission.lieu?.nom ? `${mission.lieu.nom}${mission.lieu.pays ? `/${mission.lieu.pays}` : ""}` : "",
-            startDate: mission.startDate ? new Date(mission.startDate).toISOString().split("T")[0] : null,
-            endDate: mission.endDate ? new Date(mission.endDate).toISOString().split("T")[0] : null,
-            lieuId: mission.lieuId || "",
-          }));
-          setIsLoading((prev) => ({ ...prev, mission: false }));
-        },
-        setIsLoading,
-        (error) => console.error("Erreur lors de la récupération de la mission:", error.message)
-      );
-
-      fetchAssignMission(
-        (assignMissions) => {
-          const beneficiary = assignMissions[0]
-            ? {
-                assignationId: assignMissions[0].assignationId || `temp-${Date.now()}`,
-                beneficiary: assignMissions[0].beneficiary || `${assignMissions[0].employee?.lastName} ${assignMissions[0].employee?.firstName} (${assignMissions[0].directionAcronym || "N/A"})`,
-                employeeId: assignMissions[0].employeeId || "",
-                matricule: assignMissions[0].matricule || "",
-                function: assignMissions[0].function || "",
-                base: assignMissions[0].base || "",
-                direction: assignMissions[0].directionAcronym || "",
-                department: assignMissions[0].employee?.department?.departmentName || "",
-                service: assignMissions[0].employee?.service?.serviceName || "",
-                costCenter: assignMissions[0].employee?.costCenter || "",
-                transport: assignMissions[0].transport?.type || "",
-                transportId: assignMissions[0].transportId || null,
-                departureDate: assignMissions[0].departureDate ? new Date(assignMissions[0].departureDate).toISOString().split("T")[0] : "",
-                departureTime: assignMissions[0].departureTime || "",
-                missionDuration: assignMissions[0].duration ? assignMissions[0].duration.toString() : "",
-                returnDate: assignMissions[0].returnDate ? new Date(assignMissions[0].returnDate).toISOString().split("T")[0] : "",
-                returnTime: assignMissions[0].returnTime || "",
-              }
-            : { ...formData.beneficiary };
-          setFormData((prev) => ({ ...prev, beneficiary }));
-          setIsLoading((prev) => ({ ...prev, assignMissions: false }));
-        },
-        setIsLoading,
-        () => {},
-        { missionId },
-        1,
-        100,
-        (error) => console.error("Erreur lors de la récupération des assignations:", error.message)
-      );
-    }
-  }, [missionId, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -277,16 +216,16 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
     if (alert.isOpen) {
       const timer = setTimeout(() => {
         setAlert({ ...alert, isOpen: false });
-      }, 5000); // Alert auto-closes after 5 seconds
-      return () => clearTimeout(timer); // Cleanup timer on unmount or alert change
+      }, 5000);
+      return () => clearTimeout(timer);
     }
   }, [alert.isOpen]);
 
   const showAlert = (type, message) => {
     if (type === "error") {
-      setErrorModal({ isOpen: true, message }); // Show error in modal
+      setErrorModal({ isOpen: true, message });
     } else {
-      setAlert({ isOpen: true, type, message }); // Show success/info in alert
+      setAlert({ isOpen: true, type, message });
     }
   };
 
@@ -358,6 +297,15 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
         ...prev,
         [`beneficiary.${name}`]: undefined,
       }));
+    } else if (section === "compensation") {
+      setFormData((prev) => ({
+        ...prev,
+        type: value,
+      }));
+      setFieldErrors((prev) => ({
+        ...prev,
+        type: undefined,
+      }));
     } else {
       setFormData((prev) => {
         const updatedFormData = {
@@ -423,26 +371,40 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
     return Object.keys(errors).length === 0;
   };
 
+  const validateStep3 = () => {
+    let errors = {};
+    if (!formData.type) {
+      errors.type = ["Le type de compensation est requis."];
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleNext = () => {
-    if (validateStep1()) {
+    if (currentStep === 1 && validateStep1()) {
       setCurrentStep(2);
+    } else if (currentStep === 2 && validateStep2()) {
+      setCurrentStep(3);
     }
   };
 
   const handlePrevious = () => {
-    setCurrentStep(1);
+    if (currentStep === 2) {
+      setCurrentStep(1);
+    } else if (currentStep === 3) {
+      setCurrentStep(2);
+    }
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Guard to prevent multiple submissions
     if (hasClickedSubmit || isSubmitting) {
       console.warn("Submission already in progress. Ignoring additional submit.");
       return;
     }
 
-    if (!validateStep2()) return;
+    if (!validateStep3()) return;
 
     setHasClickedSubmit(true);
     setIsSubmitting(true);
@@ -493,143 +455,42 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
     }
 
     try {
-      if (missionId) {
-        const missionData = {
-          name: formData.missionTitle,
-          description: formData.description,
-          startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
-          endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-          lieuId: selectedRegion ? selectedRegion.lieuId : formData.lieuId,
-        };
+      const missionData = {
+        name: formData.missionTitle,
+        description: formData.description,
+        startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+        endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
+        lieuId: selectedRegion ? selectedRegion.lieuId : formData.lieuId,
+        type: formData.type,
+        assignations: [
+          {
+            employeeId: selectedEmployee?.id || "",
+            transportId: beneficiary.transport
+              ? suggestions.transport.find((t) => t.type === beneficiary.transport)?.id
+              : null,
+            departureDate: beneficiary.departureDate ? new Date(beneficiary.departureDate).toISOString() : null,
+            departureTime: beneficiary.departureTime || null,
+            returnDate: beneficiary.returnDate ? new Date(beneficiary.returnDate).toISOString() : null,
+            returnTime: beneficiary.returnTime || null,
+            duration: parseInt(beneficiary.missionDuration, 10) || null,
+            type: formData.type,
+          },
+        ],
+      };
 
-        await updateMission(
-          missionId,
-          missionData,
-          (loading) => setIsSubmitting(loading.mission),
-          (alert) => showAlert(alert.type, alert.message),
-          (error) => {
-            setErrorModal({ isOpen: true, message: error.message });
-            setFieldErrors(error.fieldErrors || {});
-            throw error;
-          }
-        );
-
-        const selectedTransport = beneficiary.transport
-          ? suggestions.transport.find((t) => t.type === beneficiary.transport)
-          : null;
-
-        const assignationData = {
-          employeeId: selectedEmployee?.id || "",
-          missionId: missionId,
-          transportId: selectedTransport ? selectedTransport.id : null,
-          departureDate: beneficiary.departureDate ? new Date(beneficiary.departureDate).toISOString() : null,
-          departureTime: beneficiary.departureTime || null,
-          returnDate: beneficiary.returnDate ? new Date(beneficiary.returnDate).toISOString() : null,
-          returnTime: beneficiary.returnTime || null,
-          duration: parseInt(beneficiary.missionDuration, 10) || null,
-        };
-
-        if (selectedEmployee) {
-          const isNewBeneficiary = !beneficiary.assignationId || beneficiary.assignationId.startsWith("temp-");
-
-          if (!isNewBeneficiary) {
-            const updatedAssignation = await updateMissionAssignation(
-              beneficiary.assignationId,
-              assignationData,
-              (loading) => setIsSubmitting(loading.missionAssignation),
-              (alert) => showAlert(alert.type, alert.message),
-              (error) => {
-                setErrorModal({ isOpen: true, message: error.message });
-                setFieldErrors(error.fieldErrors || {});
-                throw error;
-              }
-            );
-
-            setFormData((prev) => ({
-              ...prev,
-              beneficiary: {
-                ...prev.beneficiary,
-                assignationId: updatedAssignation.assignationId,
-                employeeId: updatedAssignation.employeeId || "",
-                departureDate: updatedAssignation.departureDate ? new Date(updatedAssignation.departureDate).toISOString().split("T")[0] : "",
-                departureTime: updatedAssignation.departureTime || "",
-                returnDate: updatedAssignation.returnDate ? new Date(updatedAssignation.returnDate).toISOString().split("T")[0] : "",
-                returnTime: updatedAssignation.returnTime || "",
-                missionDuration: updatedAssignation.duration ? updatedAssignation.duration.toString() : "",
-                transport: updatedAssignation.transport?.type || prev.beneficiary.transport,
-                transportId: updatedAssignation.transportId || prev.beneficiary.transportId,
-              },
-            }));
-          } else {
-            const newAssignation = await createMissionAssignation(
-              assignationData,
-              (loading) => setIsSubmitting(loading.missionAssignation),
-              (alert) => showAlert(alert.type, alert.message),
-              (error) => {
-                setErrorModal({ isOpen: true, message: error.message });
-                setFieldErrors(error.fieldErrors || {});
-                throw error;
-              }
-            );
-
-            setFormData((prev) => ({
-              ...prev,
-              beneficiary: {
-                ...prev.beneficiary,
-                assignationId: newAssignation.assignationId,
-                employeeId: newAssignation.employeeId || "",
-                departureDate: newAssignation.departureDate ? new Date(newAssignation.departureDate).toISOString().split("T")[0] : "",
-                departureTime: newAssignation.departureTime || "",
-                returnDate: newAssignation.returnDate ? new Date(newAssignation.returnDate).toISOString().split("T")[0] : "",
-                returnTime: newAssignation.returnTime || "",
-                missionDuration: newAssignation.duration ? newAssignation.duration.toString() : "",
-                transport: newAssignation.transport?.type || prev.beneficiary.transport,
-                transportId: newAssignation.transportId || prev.beneficiary.transportId,
-              },
-            }));
-          }
+      await createMission(
+        missionData,
+        (loading) => setIsSubmitting(loading.mission),
+        (alert) => showAlert(alert.type, alert.message),
+        (error) => {
+          setErrorModal({ isOpen: true, message: error.message });
+          setFieldErrors(error.fieldErrors || {});
+          throw error;
         }
-
-        onFormSuccess("success", "Mission mise à jour et bénéficiaire assigné avec succès.");
-        showAlert("success", "Mission mise à jour et bénéficiaire assigné avec succès.");
-        onClose();
-      } else {
-        const missionData = {
-          name: formData.missionTitle,
-          description: formData.description,
-          startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
-          endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-          lieuId: selectedRegion ? selectedRegion.lieuId : formData.lieuId,
-          assignations: [
-            {
-              employeeId: selectedEmployee?.id || "",
-              missionId: formData.missionId,
-              transportId: beneficiary.transport
-                ? suggestions.transport.find((t) => t.type === beneficiary.transport)?.id
-                : null,
-              departureDate: beneficiary.departureDate ? new Date(beneficiary.departureDate).toISOString() : null,
-              departureTime: beneficiary.departureTime || null,
-              returnDate: beneficiary.returnDate ? new Date(beneficiary.returnDate).toISOString() : null,
-              returnTime: beneficiary.returnTime || null,
-              duration: parseInt(beneficiary.missionDuration, 10) || null,
-            },
-          ],
-        };
-
-        await createMission(
-          missionData,
-          (loading) => setIsSubmitting(loading.mission),
-          (alert) => showAlert(alert.type, alert.message),
-          (error) => {
-            setErrorModal({ isOpen: true, message: error.message });
-            setFieldErrors(error.fieldErrors || {});
-            throw error;
-          }
-        );
-        onFormSuccess("success", "Mission créée et assignée avec succès.");
-        showAlert("success", "Mission créée et assignée avec succès.");
-        onClose();
-      }
+      );
+      onFormSuccess("success", "Mission créée et assignée avec succès.");
+      showAlert("success", "Mission créée et assignée avec succès.");
+      onClose();
     } catch (error) {
       console.error("Erreur dans handleSubmit :", error);
     } finally {
@@ -645,9 +506,7 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
       location: "",
       startDate: initialStartDate || null,
       endDate: null,
-      missionId: missionId || "",
       beneficiary: {
-        assignationId: "",
         beneficiary: "",
         employeeId: "",
         matricule: "",
@@ -666,6 +525,7 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
         returnTime: "",
       },
       lieuId: "",
+      type: "Indemnité",
     });
     setFieldErrors({});
     setCurrentStep(1);
@@ -683,7 +543,7 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
     <PopupOverlay>
       <PagePopup>
         <PopupHeader>
-          <PopupTitle>{missionId ? "Modifier la Mission" : "Création et Assignation d'une Mission"}</PopupTitle>
+          <PopupTitle>Création et Assignation d'une Mission</PopupTitle>
           <PopupClose
             onClick={handleCancel}
             disabled={isSubmitting || isLoading.regions || isLoading.employees || isLoading.transports}
@@ -721,6 +581,9 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
               </StepItem>
               <StepItem active={currentStep === 2}>
                 <span>2</span> Détails du Collaborateur
+              </StepItem>
+              <StepItem active={currentStep === 3}>
+                <span>3</span> Type de Compensation
               </StepItem>
             </StepperWrapper>
 
@@ -763,13 +626,38 @@ const MissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSucce
                   >
                     <FaIcons.FaArrowLeft className="w-4 h-4" /> Précédent
                   </PreviousButton>
+                  <NextButton
+                    type="button"
+                    onClick={handleNext}
+                    disabled={isSubmitting || isLoading.regions || isLoading.employees || isLoading.transports}
+                  >
+                    Suivant <FaIcons.FaArrowRight className="w-4 h-4" />
+                  </NextButton>
+                </StepNavigation>
+              </StepContent>
+
+              <StepContent active={currentStep === 3}>
+                <CompensationStep
+                  formData={formData}
+                  fieldErrors={fieldErrors}
+                  isSubmitting={isSubmitting}
+                  handleInputChange={handleInputChange}
+                />
+                <StepNavigation>
+                  <PreviousButton
+                    type="button"
+                    onClick={handlePrevious}
+                    disabled={isSubmitting}
+                  >
+                    <FaIcons.FaArrowLeft className="w-4 h-4" /> Précédent
+                  </PreviousButton>
                   <ButtonPrimary
                     type="submit"
                     disabled={isSubmitting || hasClickedSubmit || isLoading.regions || isLoading.employees || isLoading.transports}
-                    title={missionId ? "Mettre à jour la mission" : "Créer et assigner la mission"}
+                    title="Créer et assigner la mission"
                   >
                     <Save size={16} />
-                    <span>{isSubmitting ? "Envoi en cours..." : missionId ? "Mettre à jour" : "Créer et Assigner"}</span>
+                    <span>{isSubmitting ? "Envoi en cours..." : "Créer et Assigner"}</span>
                   </ButtonPrimary>
                 </StepNavigation>
               </StepContent>
