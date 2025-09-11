@@ -63,6 +63,7 @@ namespace MyApp.Api.Services.mission
 
         public async Task<string?> ValidateAsync(Validation validation, MissionBudgetDTOForm missionBudget)
         {
+            await using var transaction = await _repository.BeginTransactionAsync();
             try
             {
                 string?  result= null;
@@ -91,7 +92,8 @@ namespace MyApp.Api.Services.mission
                             missionAssignation.ReturnDate)).TotalAmount;
                         if (expense > missionBudget.Budget && !validation.IsSureToConfirm)
                         {
-                            result = "Attention Budget insuffisant!!!!";
+                            // result = "Attention Budget insuffisant!!!!";
+                            throw new Exception("Budget insuffisant!!!!");
                         }
                         
                         //mis à jour du budget
@@ -113,12 +115,15 @@ namespace MyApp.Api.Services.mission
                 
                 //mis a jour du budget de mission 
                 await _logService.LogAsync("VALIDATION DE MISSION", null, missionValidation, validation.UserId);
+                
+                await transaction.CommitAsync();
                 return result;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la validation de mission missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}",
                     validation.MissionValidationId, validation.MissionAssignationId);
+                await transaction.RollbackAsync();
                 throw;
             }
         }

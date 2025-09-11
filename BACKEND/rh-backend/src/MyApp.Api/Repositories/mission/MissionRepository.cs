@@ -124,7 +124,18 @@ namespace MyApp.Api.Repositories.mission
         // Met à jour une mission existante
         public Task UpdateAsync(Mission mission)
         {
-            _context.Missions.Update(mission);
+            var existingMission = _context.Missions.Local.FirstOrDefault(m => m.MissionId == mission.MissionId);
+            if (existingMission != null)
+            {
+                // Update properties of the already tracked entity
+                _context.Entry(existingMission).CurrentValues.SetValues(mission);
+            }
+            else
+            {
+                // Attach and mark as modified if not tracked
+                _context.Missions.Update(mission);
+            }
+
             return Task.CompletedTask;
         }
 

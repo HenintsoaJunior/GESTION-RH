@@ -505,6 +505,7 @@ CREATE TABLE mission_validation(
    mission_id VARCHAR(50) NOT NULL,
    mission_assignation_id VARCHAR(50) NOT NULL,
    to_whom VARCHAR(250) NOT NULL,
+   type VARCHAR(50) NOT NULL,
    PRIMARY KEY(mission_validation_id),
    FOREIGN KEY(mission_creator) REFERENCES users(user_id),
    FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
