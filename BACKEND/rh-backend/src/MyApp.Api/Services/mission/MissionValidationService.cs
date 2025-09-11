@@ -9,7 +9,7 @@ namespace MyApp.Api.Services.mission
     public interface IMissionValidationService
     {
         Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize);
-        Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId, string userId);
+        Task<string?> ValidateAsync(Validation validation, MissionBudgetDTOForm missionBudget);
         Task<MissionValidation?> VerifyMissionValidationByMissionIdAsync(string missionId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<MissionValidation>> GetAllAsync();
@@ -24,17 +24,23 @@ namespace MyApp.Api.Services.mission
     public class MissionValidationService : IMissionValidationService
     {
         private readonly IMissionValidationRepository _repository;
+        private readonly IMissionAssignationService _missionAssignationService;
+        private readonly IMissionBudgetService _missionBudgetService;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<MissionValidationService> _logger; // Updated to use MissionValidationService
         private readonly ILogService _logService; // Added ILogService
 
         public MissionValidationService(
             IMissionValidationRepository repository,
+            IMissionAssignationService missionAssignationService,
+            IMissionBudgetService missionBudgetService,
             ISequenceGenerator sequenceGenerator,
             ILogger<MissionValidationService> logger,
             ILogService logService) // Added ILogService to constructor
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
+            _missionBudgetService = missionBudgetService ?? throw new ArgumentNullException(nameof(missionBudgetService));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
@@ -55,23 +61,64 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId, string userId)
+        public async Task<string?> ValidateAsync(Validation validation, MissionBudgetDTOForm missionBudget)
         {
             try
             {
-                var result = await _repository.ValidateAsync(missionValidationId, missionAssignationId);
+                string?  result= null;
+                var lastValidation = await _repository.ValidateAsync(validation.MissionValidationId, validation.MissionAssignationId);
+                // valider les demandes 
+                if (!lastValidation) result = "Validation effectuée avec succès.";
+                var missionAssignation = await _missionAssignationService.GetByAssignationIdAsync(validation.MissionAssignationId);
+                if (missionAssignation == null) result = "Aucune validation à faire.";
+                
+                //si validation par DRH
+                if (lastValidation && missionAssignation != null)
+                {
+                    missionAssignation.IsValidated = 1;
+                    //changer le isValidated de ce mission assignation en 1
+                    await _missionAssignationService.UpdateAsync(validation.MissionAssignationId, missionAssignation);
+                    result = "Validation effectuée avec succès et mission validée";
+                        
+                    //check si budget mission est suffisant
+                    if (validation.Type.Equals("Indemnité"))
+                    {
+                        var expense = (await _missionAssignationService.GeneratePaiementsAsync(
+                            missionAssignation.EmployeeId,
+                            missionAssignation.MissionId,
+                            missionAssignation.Mission?.LieuId,
+                            missionAssignation.DepartureDate,
+                            missionAssignation.ReturnDate)).TotalAmount;
+                        if (expense > missionBudget.Budget && !validation.IsSureToConfirm)
+                        {
+                            result = "Attention Budget insuffisant!!!!";
+                        }
+                        
+                        //mis à jour du budget
+                        await _missionBudgetService.AddAsync(new MissionBudgetDTOForm
+                        {
+                            DirectionName = missionBudget.DirectionName,
+                            Budget = missionBudget.Budget - expense,
+                            UserId = missionBudget.UserId
+                        });
+                    }
+                }
+                
                 _logger.LogInformation(
                     "Validation effectuée pour missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}",
-                    missionValidationId, missionAssignationId);
+                    validation.MissionValidationId, validation.MissionAssignationId);
+                
                 // Log the creation
-                var missionValidation = await _repository.GetByIdAsync(missionValidationId);
-                await _logService.LogAsync("VALIDATION DE MISSION", null, missionValidation, userId);
+                var missionValidation = await _repository.GetByIdAsync(validation.MissionValidationId);
+                
+                //mis a jour du budget de mission 
+                await _logService.LogAsync("VALIDATION DE MISSION", null, missionValidation, validation.UserId);
                 return result;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la validation de mission missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}",
-                    missionValidationId, missionAssignationId);
+                    validation.MissionValidationId, validation.MissionAssignationId);
                 throw;
             }
         }

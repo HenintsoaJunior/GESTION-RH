@@ -64,24 +64,19 @@ namespace MyApp.Api.Controllers.mission
         }
 
         // POST: api/MissionValidation/validate/{missionValidationId}/{missionAssignationId}
-        [HttpPost("validate/{missionValidationId}/{missionAssignationId}")]
-        public async Task<IActionResult> Validate(string missionValidationId, string missionAssignationId, [FromQuery] string userId)
+        [HttpPost("validate")]
+        public async Task<IActionResult> Validate([FromBody]Validation validation)
         {
             try
             {
-                _logger.LogInformation("Validation de missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}", missionValidationId, missionAssignationId);
-                var result = await _missionValidationService.ValidateAsync(missionValidationId, missionAssignationId, userId);
-                if (!result) return Ok(new { message = "Validation effectuée avec succès." });
-                var missionAssignation = await _missionAssignationService.GetByAssignationIdAsync(missionAssignationId);
-                if (missionAssignation == null) return Ok(new { message = "Aucune validation à faire." });
-                missionAssignation.IsValidated = 1;
-                //changer le isValidated de ce mission assignation en 1
-                await _missionAssignationService.UpdateAsync(missionAssignationId, missionAssignation);
-                return Ok(new { message = "La mission a été validée" });
+                _logger.LogInformation("Validation de missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}", validation.MissionValidationId, validation.MissionAssignationId);
+                var result =
+                    await _missionValidationService.ValidateAsync(validation, validation.MissionBudget);
+                return Ok(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la validation de missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}", missionValidationId, missionAssignationId);
+                _logger.LogError(ex, "Erreur lors de la validation de missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}", validation.MissionValidationId, validation.MissionAssignationId);
                 return StatusCode(500, new { message = "Une erreur est survenue lors de la validation." });
             }
         }
