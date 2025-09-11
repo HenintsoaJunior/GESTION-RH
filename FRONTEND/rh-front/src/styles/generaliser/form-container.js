@@ -282,6 +282,10 @@ export const FormRadio = styled.input.attrs({ type: "radio" })`
   background-color: #f5f5f5;
   cursor: pointer;
   vertical-align: middle;
+  margin: 0 4px 0 0; /* Add consistent margin for better spacing */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
   &:checked {
     border-color: var(--primary-color);

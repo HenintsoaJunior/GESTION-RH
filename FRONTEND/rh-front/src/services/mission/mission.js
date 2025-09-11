@@ -4,7 +4,6 @@ import { handleValidationError } from "utils/validation";
 // Récupérer userId depuis localStorage
 const userData = JSON.parse(localStorage.getItem("user"));
 const userId = userData?.userId;
-
 // Fonction pour mettre à jour une mission
 export const updateMission = async (
   missionId,
@@ -369,7 +368,7 @@ export const createMissionAssignation = async (
       departureTime: assignationData.departureTime || null,
       returnDate: assignationData.returnDate ? new Date(assignationData.returnDate).toISOString() : null,
       returnTime: assignationData.returnTime || null,
-      duration: parseInt(assignationData.duration, 10) || null,
+      duration: parseInt(assignationData.duration, 10) || null
     };
 
     // Appel API pour créer l'assignation de mission
@@ -402,6 +401,10 @@ export const createMission = async (
 ) => {
   try {
     setIsLoading((prev) => ({ ...prev, mission: true }));
+
+    // Récupérer userId depuis localStorage
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const userId = userData?.userId;
 
     if (!userId) {
       throw new Error("Utilisateur non authentifié. Veuillez vous connecter.");
@@ -701,16 +704,10 @@ export const fetchMissionById = async (
 };
 
 // Fonction pour récupérer les statistiques des missions
-export const fetchMissionStats = async (setStats, setIsLoading, onError, matricules = null) => {
+export const fetchMissionStats = async (setStats, setIsLoading, onError) => {
   try {
     setIsLoading((prev) => ({ ...prev, stats: true }));
-
-    // Build query string for matricule filter if provided
-    const query = matricules && matricules.length > 0 
-      ? `?${matricules.map(m => `matricule=${encodeURIComponent(m)}`).join('&')}` 
-      : '';
-    
-    const data = await apiGet(`/api/Mission/stats${query}`);
+    const data = await apiGet("/api/Mission/stats");
     setStats(data);
   } catch (error) {
     // Gestion des erreurs
@@ -720,7 +717,7 @@ export const fetchMissionStats = async (setStats, setIsLoading, onError, matricu
       type: "error",
       message: `Erreur lors du chargement des statistiques: ${error.message}`,
     });
-    setStats({ total: 0, enCours: 0, planifiee: 0, terminee: 0, annulee: 0 });
+    setStats({ total: 0, enCours: 0, terminee: 0, annulee: 0 });
   } finally {
     setIsLoading((prev) => ({ ...prev, stats: false }));
   }
