@@ -1,48 +1,48 @@
--- Dropping tables in reverse order of dependency
 DROP TABLE IF EXISTS logs;
 DROP TABLE IF EXISTS mission_report;
 DROP TABLE IF EXISTS expense_report;
-DROP TABLE IF EXISTS expense_report_type;
 DROP TABLE IF EXISTS mission_budget;
 DROP TABLE IF EXISTS mission_validation;
 DROP TABLE IF EXISTS mission_assignation;
-DROP TABLE IF EXISTS mission;
-DROP TABLE IF EXISTS lieu;
 DROP TABLE IF EXISTS compensation_scale;
 DROP TABLE IF EXISTS recruitment_request_replacement_reasons;
+DROP TABLE IF EXISTS employee_nationalities;
+DROP TABLE IF EXISTS recruitment_validation;
 DROP TABLE IF EXISTS recruitment_request_details;
-DROP TABLE IF EXISTS recruitment_requests;
 DROP TABLE IF EXISTS application_comments;
 DROP TABLE IF EXISTS cv_details;
 DROP TABLE IF EXISTS applications;
+DROP TABLE IF EXISTS role_habilitation;
+DROP TABLE IF EXISTS user_role;
+DROP TABLE IF EXISTS categories_of_employee;
+DROP TABLE IF EXISTS recruitment_requests;
+DROP TABLE IF EXISTS mission;
+DROP TABLE IF EXISTS employees;
 DROP TABLE IF EXISTS job_offers;
 DROP TABLE IF EXISTS job_descriptions;
-DROP TABLE IF EXISTS candidates;
-DROP TABLE IF EXISTS recruitment_reasons;
-DROP TABLE IF EXISTS replacement_reasons;
-DROP TABLE IF EXISTS employee_nationalities;
-DROP TABLE IF EXISTS role_habilitation;
+DROP TABLE IF EXISTS units;
+DROP TABLE IF EXISTS service;
+DROP TABLE IF EXISTS department;
 DROP TABLE IF EXISTS menu_hierarchy;
 DROP TABLE IF EXISTS menu_role;
 DROP TABLE IF EXISTS menu;
 DROP TABLE IF EXISTS module;
-DROP TABLE IF EXISTS user_role;
-DROP TABLE IF EXISTS categories_of_employee;
-DROP TABLE IF EXISTS employees;
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS direction;
+DROP TABLE IF EXISTS site;
+DROP TABLE IF EXISTS lieu;
+DROP TABLE IF EXISTS transport;
+DROP TABLE IF EXISTS expense_type;
+DROP TABLE IF EXISTS expense_report_type;
 DROP TABLE IF EXISTS habilitations;
 DROP TABLE IF EXISTS role;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS candidates;
+DROP TABLE IF EXISTS replacement_reasons;
+DROP TABLE IF EXISTS recruitment_reasons;
 DROP TABLE IF EXISTS employee_categories;
 DROP TABLE IF EXISTS contract_types;
 DROP TABLE IF EXISTS genders;
 DROP TABLE IF EXISTS nationalities;
-DROP TABLE IF EXISTS site;
-DROP TABLE IF EXISTS transport;
-DROP TABLE IF EXISTS expense_type;
-DROP TABLE IF EXISTS units;
-DROP TABLE IF EXISTS service;
-DROP TABLE IF EXISTS department;
-DROP TABLE IF EXISTS direction;
 
 CREATE TABLE direction(
    direction_id VARCHAR(50),
@@ -556,7 +556,7 @@ CREATE TABLE mission_report(
    text TEXT,
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
-   user_id VARCHAR(50) NOT NULL,
+   user_id VARCHAR(250) NOT NULL,
    assignation_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(mission_report_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id),
