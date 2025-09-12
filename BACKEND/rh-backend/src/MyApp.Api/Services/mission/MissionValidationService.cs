@@ -114,7 +114,7 @@ namespace MyApp.Api.Services.mission
                 var missionValidation = await _repository.GetByIdAsync(validation.MissionValidationId);
                 
                 //mis a jour du budget de mission 
-                await _logService.LogAsync("VALIDATION DE MISSION", null, missionValidation, validation.UserId);
+                await _logService.LogAsync("VALIDATION DE MISSION", null, missionValidation, validation.UserId, "ValidationDate");
                 
                 await transaction.CommitAsync();
                 return result;

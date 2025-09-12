@@ -21,15 +21,15 @@ import {
 } from "styles/generaliser/table-container";
 
 const MissionFilters = ({
-                            isHidden,
-                            setIsHidden,
-                            filters,
-                            setFilters,
-                            suggestions,
-                            isLoading,
-                            handleFilterSubmit,
-                            handleResetFilters,
-                        }) => {
+    isHidden,
+    setIsHidden,
+    filters,
+    setFilters,
+    suggestions,
+    isLoading,
+    handleFilterSubmit,
+    handleResetFilters,
+}) => {
     const [isMinimized, setIsMinimized] = useState(false);
 
     const handleFilterChange = (name, value) => {
@@ -178,22 +178,42 @@ const MissionFilters = ({
                                                 <option value="Annulé">Annulé</option>
                                             </FormInputSearch>
                                         </FormFieldCell>
+                                    </FormRow>
+                                    <FormRow>
                                         <FormFieldCell>
-                                            <FormLabelSearch>Date début</FormLabelSearch>
+                                            <FormLabelSearch>Date de départ min</FormLabelSearch>
                                             <FormInputSearch
-                                                name="startDate"
-                                                type="date"
-                                                value={filters.startDate}
-                                                onChange={(e) => handleFilterChange("startDate", e.target.value)}
+                                                name="minDepartureDate"
+                                                type="datetime-local"
+                                                value={filters.minDepartureDate || ""}
+                                                onChange={(e) => handleFilterChange("minDepartureDate", e.target.value)}
                                             />
                                         </FormFieldCell>
                                         <FormFieldCell>
-                                            <FormLabelSearch>Date fin</FormLabelSearch>
+                                            <FormLabelSearch>Date de départ max</FormLabelSearch>
                                             <FormInputSearch
-                                                name="endDate"
-                                                type="date"
-                                                value={filters.endDate}
-                                                onChange={(e) => handleFilterChange("endDate", e.target.value)}
+                                                name="maxDepartureDate"
+                                                type="datetime-local"
+                                                value={filters.maxDepartureDate || ""}
+                                                onChange={(e) => handleFilterChange("maxDepartureDate", e.target.value)}
+                                            />
+                                        </FormFieldCell>
+                                        <FormFieldCell>
+                                            <FormLabelSearch>Date d'arrivée min</FormLabelSearch>
+                                            <FormInputSearch
+                                                name="minArrivalDate"
+                                                type="datetime-local"
+                                                value={filters.minArrivalDate || ""}
+                                                onChange={(e) => handleFilterChange("minArrivalDate", e.target.value)}
+                                            />
+                                        </FormFieldCell>
+                                        <FormFieldCell>
+                                            <FormLabelSearch>Date d'arrivée max</FormLabelSearch>
+                                            <FormInputSearch
+                                                name="maxArrivalDate"
+                                                type="datetime-local"
+                                                value={filters.maxArrivalDate || ""}
+                                                onChange={(e) => handleFilterChange("maxArrivalDate", e.target.value)}
                                             />
                                         </FormFieldCell>
                                     </FormRow>
