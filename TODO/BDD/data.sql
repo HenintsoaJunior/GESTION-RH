@@ -219,8 +219,6 @@ VALUES
     ('ROLE_003', 'collaborateur', 'Standard employee role', CURRENT_TIMESTAMP, NULL);
 
 
-
-
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '000465d0-0530-41d9-872f-d6012418ba7e', '00298', 'Safidy RAKOTONDRAJOA (DSI)', 'safidy.rakotondrajoa@ravinala-airports.aero', 'Responsable des applications IT', 'DSI', '83dc05fd-0e42-43f5-b0e0-1567df7647b1', 'Vonjimampianina RAKOTOARISOA (DSI)', null, null, 0);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '002b1f12-e8c5-4a30-81ca-e8532855de71', '00182', 'Dealilalaina Sedera RASOLOMANANA (DRH)', 'sedera.rasolomanana@ravinala-airports.aero', 'Directrice des Ressources Humaines', 'DRH', 'ec738732-6e94-4288-be4a-c098408d199d', 'Daniel LEFEBVRE (DGE)', null, null, null);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '00b58219-2f52-470d-b48f-383c8fd9ba23', '00174', 'Andry Lova Tiana RAJERISON RASAONA (DT)', 'andry.rajerison@ravinala-airports.aero', 'Chef de Département Maintenance Multi-technique', 'DT', '1a0f5dab-9ad7-4a30-b73c-842f54ba6a9a', 'Rova RAHERIJAONA (DT)', null, null, null);
