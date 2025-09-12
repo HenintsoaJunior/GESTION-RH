@@ -1,6 +1,4 @@
-﻿// Fichier : mission-table.jsx (version modifiée avec logs de débogage supplémentaires)
-
-import { formatDate } from "utils/dateConverter";
+﻿import { formatDate } from "utils/dateConverter";
 import {
     TableContainer,
     DataTable,
@@ -17,19 +15,19 @@ import {
 import Pagination from "components/pagination";
 
 const MissionTable = ({
-                          assignedPersons,
-                          isLoading,
-                          permissions,
-                          handleRowClick,
-                          handleEditMission,
-                          handleShowCancelModal,
-                          currentPage,
-                          pageSize,
-                          totalEntries,
-                          handlePageChange,
-                          handlePageSizeChange,
-                          appliedFilters,
-                      }) => {
+    assignedPersons,
+    isLoading,
+    permissions,
+    handleRowClick,
+    handleEditMission,
+    handleShowCancelModal,
+    currentPage,
+    pageSize,
+    totalEntries,
+    handlePageChange,
+    handlePageSizeChange,
+    appliedFilters,
+}) => {
     const getStatusBadge = (status) => {
         const statusClass =
             status === "En Cours"
@@ -89,8 +87,8 @@ const MissionTable = ({
                         <TableHeadCell>Mission</TableHeadCell>
                         <TableHeadCell>Fonction</TableHeadCell>
                         <TableHeadCell>Lieu</TableHeadCell>
-                        <TableHeadCell>Date début</TableHeadCell>
-                        <TableHeadCell>Date Fin</TableHeadCell>
+                        <TableHeadCell>Date dépard</TableHeadCell>
+                        <TableHeadCell>Date Arrivée</TableHeadCell>
                         <TableHeadCell>Statut</TableHeadCell>
                         <TableHeadCell>Action</TableHeadCell>
                     </tr>
@@ -108,7 +106,7 @@ const MissionTable = ({
                                 key={`${assignment.employeeId}-${assignment.missionId}-${assignment.transportId}-${index}`}
                                 $clickable
                                 onClick={(e) => {
-                                    console.log("Row clicked - missionId:", assignment.missionId); // Log existant pour débogage
+                                    console.log("Row clicked - missionId:", assignment.missionId);
                                     handleRowClick(assignment.missionId);
                                 }}
                             >
@@ -135,9 +133,12 @@ const MissionTable = ({
                                     {appliedFilters.employeeId ||
                                     appliedFilters.missionId ||
                                     appliedFilters.status ||
-                                    appliedFilters.startDate ||
-                                    appliedFilters.endDate ||
-                                    appliedFilters.matricule.length > 0
+                                    appliedFilters.minDepartureDate ||
+                                    appliedFilters.maxDepartureDate ||
+                                    appliedFilters.minArrivalDate ||
+                                    appliedFilters.maxArrivalDate ||
+                                    appliedFilters.lieuId ||
+                                    appliedFilters.matricule?.length > 0
                                         ? "Aucune assignation de mission ne correspond aux critères de recherche."
                                         : "Aucune assignation de mission trouvée."}
                                 </NoDataMessage>

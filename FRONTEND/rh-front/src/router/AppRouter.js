@@ -57,7 +57,7 @@ function AppRouter() {
           <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
           <Route path="/assignments/details" element={<AssignmentDetails />} />
           <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />
-          <Route path="/mission/beneficiary" element={<CollaboratorMissionList />} />
+          <Route path="/mission/collaborateur" element={<CollaboratorMissionList />} />
 
             {/* Recruitment */}
             <Route path="/recrutement/demande" element={<RecruitmentRequestList />} />
