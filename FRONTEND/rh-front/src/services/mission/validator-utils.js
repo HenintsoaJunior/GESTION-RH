@@ -72,6 +72,7 @@ export const useGetMissionValidationsByAssignationId = () => {
     }
   }, []);
 };
+
 // Validate mission request using userId from localStorage
 export const useValidateMissionRequest = () => {
   return useCallback(async () => {
@@ -94,34 +95,38 @@ export const useValidateMissionRequest = () => {
 
 // Validate a mission using missionValidationId, missionAssignationId, and userId
 export const useValidateMission = () => {
-  return useCallback(async (missionValidationId, missionAssignationId, action, comment = "", signature = "") => {
+  return useCallback(async (missionValidationId, missionAssignationId, action, comment = "", signature = "", missionBudget = 20000) => {
     const userData = JSON.parse(localStorage.getItem("user"));
     const userId = userData?.userId;
-
+    
     if (!missionValidationId || !missionAssignationId) {
       throw new Error("Mission Validation ID and Mission Assignation ID are required");
     }
-
     if (!userId) {
       throw new Error("User ID is required. Please ensure you are logged in.");
     }
-
     if (!["validate", "reject"].includes(action)) {
       throw new Error("Invalid action. Must be 'validate' or 'reject'");
     }
 
     try {
+      // Nouveau format de payload selon les spécifications
       const payload = {
-        action,
-        comment,
-        signature,
+        missionValidationId,
+        missionAssignationId,
+        isSureToConfirm: true, // Toujours true car l'utilisateur a confirmé via le modal
+        type: action, // "validate" ou "reject"
+        userId,
+        // Inclure le budget de mission si fourni
+        ...(missionBudget && { missionBudget })
       };
 
+      // Mise à jour de l'endpoint pour utiliser une route POST simple
       const response = await apiPost(
-        `/api/MissionValidation/validate/${missionValidationId}/${missionAssignationId}?userId=${userId}`,
+        `/api/MissionValidation/validate`,
         payload
       );
-
+      
       return response;
     } catch (error) {
       handleValidationError(error);

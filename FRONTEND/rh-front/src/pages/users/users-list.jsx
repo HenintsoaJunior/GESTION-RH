@@ -275,13 +275,13 @@ const UserList = () => {
         </FiltersToggle>
       )}
 
-      <TableHeader>
+      {/*<TableHeader>
         <TableTitle>Liste des Utilisateurs</TableTitle>
         <ButtonSearch onClick={handleSync} disabled={isLoading.sync}>
           <RefreshCw size={16} style={{ marginRight: "var(--spacing-sm)" }} />
           {isLoading.sync ? "Synchronisation..." : "Synchroniser"}
         </ButtonSearch>
-      </TableHeader>
+      </TableHeader>*/}
 
       <TableContainer>
         <DataTable>
