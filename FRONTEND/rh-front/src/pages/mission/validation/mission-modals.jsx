@@ -21,7 +21,6 @@ const PageContainer = styled.div`
   background: #f5f5f5;
   padding: 20px;
 `;
-
 const OrderPageWrapper = styled.div`
   max-width: 900px;
   margin: 0 auto;
@@ -30,7 +29,6 @@ const OrderPageWrapper = styled.div`
   border-radius: 8px;
   overflow: hidden;
 `;
-
 const OrderContainer = styled.div`
   font-family: 'Arial', sans-serif;
   background: white;
@@ -38,12 +36,11 @@ const OrderContainer = styled.div`
   border: 2px solid #000;
   margin: 20px;
 `;
-
 const HeaderTable = styled.table`
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 20px;
-  
+ 
   td {
     border: 1px solid #000;
     padding: 10px;
@@ -51,124 +48,108 @@ const HeaderTable = styled.table`
     text-align: center;
   }
 `;
-
 const LogoCell = styled.td`
   width: 25%;
   height: 100px;
-  font-weight: bold;
-  font-size: 18px;
+  img {
+    max-width: 100%;
+    max-height: 100px;
+    object-fit: contain;
+  }
 `;
-
 const TitleCell = styled.td`
   width: 50%;
   font-size: 24px;
   font-weight: bold;
 `;
-
 const ReferenceCell = styled.td`
   width: 25%;
   text-align: left;
   line-height: 1.5;
 `;
-
 const OrderNumber = styled.div`
   text-align: center;
   font-size: 18px;
   font-weight: bold;
   margin: 20px 0;
 `;
-
 const OrderContent = styled.div`
   margin: 20px 0;
   line-height: 1.8;
 `;
-
 const OrderLine = styled.div`
   margin: 8px 0;
   display: flex;
 `;
-
 const OrderLineDouble = styled.div`
   margin: 8px 0;
   display: flex;
   justify-content: space-between;
 `;
-
 const Label = styled.span`
   font-weight: bold;
   min-width: 180px;
   display: inline-block;
 `;
-
 const Value = styled.span`
   flex: 1;
   border-bottom: 1px solid #000;
   min-height: 20px;
   padding-left: 10px;
 `;
-
 const ValueHalf = styled.span`
   width: 45%;
   border-bottom: 1px solid #000;
   min-height: 20px;
   padding-left: 10px;
 `;
-
 const SignatureSection = styled.div`
   margin-top: 40px;
   text-align: center;
 `;
-
 const SignatureBox = styled.div`
   width: 100%;
   text-align: center;
   line-height: 2;
 `;
-
 const SectionTitle = styled.div`
   text-decoration: underline;
   font-weight: bold;
   margin: 30px 0 15px 0;
 `;
-
 const SignatureTable = styled.table`
   width: 100%;
   margin-top: 20px;
   border-collapse: collapse;
-  
+ 
   td {
     padding: 8px;
     border-bottom: 1px solid #000;
     vertical-align: top;
   }
 `;
-
 const DateLocation = styled.div`
   text-align: right;
   margin: 20px 0;
   font-style: italic;
 `;
-
 const ActionSection = styled.div`
   background: #f8f9fa;
   padding: 30px;
   border-top: 1px solid #dee2e6;
 `;
-
 const ActionHeader = styled.h3`
   color: #495057;
   margin-bottom: 20px;
   font-size: 18px;
   font-weight: 600;
 `;
-
 const ActionButtons = styled.div`
   display: flex;
   gap: 15px;
   margin-bottom: 30px;
   flex-wrap: wrap;
 `;
-
 const ActionButton = styled.button`
   padding: 12px 24px;
   border: none;
@@ -181,42 +162,39 @@ const ActionButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  
+ 
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
-  
+ 
   &.validate {
     background-color: #28a745;
     color: white;
-    
+   
     &:hover {
       background-color: #218838;
     }
   }
-  
+ 
   &.reject {
     background-color: #dc3545;
     color: white;
-    
+   
     &:hover {
       background-color: #c82333;
     }
   }
 `;
-
 const CommentSection = styled.div`
   margin-bottom: 30px;
 `;
-
 const CommentLabel = styled.label`
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
   color: #495057;
 `;
-
 const CommentTextarea = styled.textarea`
   width: 100%;
   min-height: 120px;
@@ -226,28 +204,24 @@ const CommentTextarea = styled.textarea`
   font-family: inherit;
   font-size: 14px;
   resize: vertical;
-  
+ 
   &:focus {
     outline: none;
     border-color: #80bdff;
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
   }
 `;
-
 const SignatureUploadSection = styled.div`
   margin-bottom: 30px;
 `;
-
 const SignatureUpload = styled.div`
   flex: 1;
 `;
-
 const FileInputWrapper = styled.div`
   position: relative;
   display: inline-block;
   width: 100%;
 `;
-
 const FileInput = styled.input`
   position: absolute;
   opacity: 0;
@@ -255,7 +229,6 @@ const FileInput = styled.input`
   height: 100%;
   cursor: pointer;
 `;
-
 const FileInputLabel = styled.label`
   display: flex;
   align-items: center;
@@ -268,23 +241,22 @@ const FileInputLabel = styled.label`
   transition: all 0.2s ease;
   text-align: center;
   color: #6c757d;
-  
+ 
   &:hover {
     border-color: #80bdff;
     background-color: #e3f2fd;
   }
-  
+ 
   &.has-file {
     border-color: #28a745;
     background-color: #d4edda;
     color: #155724;
   }
 `;
-
 const SignaturePreview = styled.div`
   margin-top: 10px;
   text-align: center;
-  
+ 
   img {
     max-width: 200px;
     max-height: 100px;
@@ -292,29 +264,27 @@ const SignaturePreview = styled.div`
     border-radius: 4px;
   }
 `;
-
 const StatusBadge = styled.span`
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  
+ 
   &.pending {
     background-color: #fff3cd;
     color: #856404;
   }
-  
+ 
   &.validated {
     background-color: #d4edda;
     color: #155724;
   }
-  
+ 
   &.rejected {
     background-color: #f8d7da;
     color: #721c24;
   }
 `;
-
 const BackButton = styled.button`
   margin-bottom: 20px;
   padding: 10px 20px;
@@ -327,12 +297,11 @@ const BackButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  
+ 
   &:hover {
     background-color: #5a6268;
   }
 `;
-
 const MissionModals = ({
   alert,
   setAlert,
@@ -349,10 +318,7 @@ const MissionModals = ({
   const [signature, setSignature] = useState(null);
   const [showValidateModal, setShowValidateModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [showSignatureErrorModal, setShowSignatureErrorModal] = useState(false); // New state for error modal
-
   const selectedMission = missions.find((mission) => mission.id === selectedMissionId);
-
   const handleFileUpload = (file) => {
     if (file) {
       const reader = new FileReader();
@@ -363,48 +329,38 @@ const MissionModals = ({
       reader.readAsDataURL(file);
     }
   };
-
   const handleAction = (action) => {
     if (action === 'validate') {
-      if (!signature) {
-        setShowSignatureErrorModal(true); // Show error modal instead of alert
-        return;
-      }
       setShowValidateModal(true);
     } else if (action === 'reject') {
       setShowRejectModal(true);
     }
   };
-
   const confirmValidate = () => {
-    handleValidate(selectedMissionId, 'validate', comment, signature.preview);
-    setAlert({
-      type: 'success',
-      message: 'Mission approuvée avec succès',
-      isOpen: true,
-    });
+    const missionBudget = {
+      directionName: "DRH",
+      budget: 1000000000,
+      userId: JSON.parse(localStorage.getItem("user"))?.userId || "N/A",
+    };
+    handleValidate(selectedMissionId, 'validate', comment, signature ? signature.preview : '');
     setShowValidateModal(false);
   };
-
   const confirmReject = () => {
+    const missionBudget = {
+      directionName: "DRH",
+      budget: 1000000000,
+      userId: JSON.parse(localStorage.getItem("user"))?.userId || "N/A",
+    };
     setSignature(null);
     handleUpdateSignature(selectedMissionId, '');
     handleValidate(selectedMissionId, 'reject', comment, '');
-    setAlert({
-      type: 'success',
-      message: 'Mission rejetée avec succès',
-      isOpen: true,
-    });
     setShowRejectModal(false);
   };
-
   const handleCommentChange = (e) => {
     setComment(e.target.value);
     handleUpdateComments(selectedMissionId, e.target.value);
   };
-
   if (!showDetailsMission || !selectedMission) return null;
-
   return (
     <PageContainer>
       <Alert
@@ -413,7 +369,7 @@ const MissionModals = ({
         isOpen={alert.isOpen}
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
-      
+     
       <Modal
         type="warning"
         message="Êtes-vous sûr de vouloir valider cette mission ? Cette action est irréversible."
@@ -426,7 +382,6 @@ const MissionModals = ({
           <ButtonConfirm onClick={confirmValidate}>Confirmer</ButtonConfirm>
         </ModalActions>
       </Modal>
-
       <Modal
         type="warning"
         message="Êtes-vous sûr de vouloir rejeter cette mission ? Cette action est irréversible."
@@ -439,30 +394,19 @@ const MissionModals = ({
           <ButtonConfirm onClick={confirmReject}>Confirmer</ButtonConfirm>
         </ModalActions>
       </Modal>
-
-      <Modal
-        type="error"
-        message="Une signature est requise pour valider la mission."
-        isOpen={showSignatureErrorModal}
-        onClose={() => setShowSignatureErrorModal(false)}
-        title="Erreur de validation"
-      >
-        <ModalActions>
-          <ButtonConfirm onClick={() => setShowSignatureErrorModal(false)}>OK</ButtonConfirm>
-        </ModalActions>
-      </Modal>
-
       <BackButton onClick={() => setShowDetailsMission(false)}>
         <ArrowLeft size={16} />
         Retour à la liste
       </BackButton>
-      
+     
       <OrderPageWrapper>
         <OrderContainer>
           <HeaderTable>
             <tbody>
               <tr>
-                <LogoCell>LOGO</LogoCell>
+                <LogoCell>
+                  <img src="/Logo.png" alt="Company Logo" />
+                </LogoCell>
                 <TitleCell>Ordre de Mission</TitleCell>
                 <ReferenceCell>
                   Référence: {selectedMission.reference || 'RHS-ENR-037'}<br/>
@@ -475,17 +419,14 @@ const MissionModals = ({
               </tr>
             </tbody>
           </HeaderTable>
-
           <OrderNumber>N° {selectedMission.reference || selectedMission.id}</OrderNumber>
-
           <OrderContent>
             <div style={{ fontWeight: 'bold', marginBottom: '15px' }}>Il est ordonné à :</div>
-            
+           
             <OrderLine>
               <Label>Nom et prénoms :</Label>
               <Value>{selectedMission.requestedBy}</Value>
             </OrderLine>
-
             <OrderLineDouble>
               <div style={{ width: '48%', display: 'flex' }}>
                 <Label style={{ minWidth: '80px' }}>Fonction :</Label>
@@ -496,7 +437,6 @@ const MissionModals = ({
                 <ValueHalf>{selectedMission.matricule || 'N/A'}</ValueHalf>
               </div>
             </OrderLineDouble>
-
             <OrderLineDouble>
               <div style={{ width: '48%', display: 'flex' }}>
                 <Label style={{ minWidth: '80px' }}>Direction :</Label>
@@ -507,29 +447,23 @@ const MissionModals = ({
                 <ValueHalf>{selectedMission.department}</ValueHalf>
               </div>
             </OrderLineDouble>
-
             <OrderLine>
               <Label>De se rendre à :</Label>
               <Value>{selectedMission.location}</Value>
             </OrderLine>
-
             <OrderLine>
               <Label>Motif :</Label>
               <Value>{selectedMission.description}</Value>
             </OrderLine>
-
             <OrderLine>
               <Label>Moyen de transport :</Label>
               <Value>{selectedMission.transport || 'Non spécifié'}</Value>
             </OrderLine>
-
             <OrderLine>
               <Label>Date et heure de départ :</Label>
               <Value>{formatDate(selectedMission.requestDate)} - {selectedMission.departureTime || 'Non spécifié'}</Value>
             </OrderLine>
-
             <DateLocation>Antananarivo, le {formatDate(new Date())}</DateLocation>
-
             <SignatureSection>
               <SignatureBox>
                 <strong>Signature de {selectedMission.toWhom}</strong>
@@ -538,7 +472,6 @@ const MissionModals = ({
                 </div>
               </SignatureBox>
             </SignatureSection>
-
             <SectionTitle>ARRIVEE SUR LE LIEU DE REALISATION DE LA MISSION :</SectionTitle>
             <SignatureTable>
               <tbody>
@@ -554,7 +487,6 @@ const MissionModals = ({
                 </tr>
               </tbody>
             </SignatureTable>
-
             <SectionTitle>DEPART DU LIEU DE REALISATION DE LA MISSION :</SectionTitle>
             <SignatureTable>
               <tbody>
@@ -570,7 +502,6 @@ const MissionModals = ({
                 </tr>
               </tbody>
             </SignatureTable>
-
             <SectionTitle>ARRIVEE SUR LE LIEU DE TRAVAIL HABITUEL :</SectionTitle>
             <SignatureTable>
               <tbody>
@@ -584,27 +515,25 @@ const MissionModals = ({
             </SignatureTable>
           </OrderContent>
         </OrderContainer>
-
         <ActionSection>
           <ActionHeader>Actions et Validation</ActionHeader>
-          
+         
           <ActionButtons>
-            <ActionButton 
-              className="validate" 
+            <ActionButton
+              className="validate"
               onClick={() => handleAction('validate')}
             >
               <CheckCircle size={16} />
               Valider
             </ActionButton>
-            <ActionButton 
-              className="reject" 
+            <ActionButton
+              className="reject"
               onClick={() => handleAction('reject')}
             >
               <XCircle size={16} />
               Rejeter
             </ActionButton>
           </ActionButtons>
-
           <CommentSection>
             <CommentLabel>Commentaire de validation</CommentLabel>
             <CommentTextarea
@@ -613,7 +542,6 @@ const MissionModals = ({
               placeholder="Ajoutez un commentaire sur cette mission..."
             />
           </CommentSection>
-
           <SignatureUploadSection>
             <SignatureUpload>
               <CommentLabel>Signature de {selectedMission.toWhom}</CommentLabel>
@@ -639,5 +567,4 @@ const MissionModals = ({
     </PageContainer>
   );
 };
-
 export default MissionModals;

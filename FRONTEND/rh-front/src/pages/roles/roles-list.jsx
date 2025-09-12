@@ -10,9 +10,6 @@ import {
   ButtonAdd,
   Loading,
   NoDataMessage,
-  ButtonCancel,
-  ButtonConfirm,
-  ModalActions,
 } from "styles/generaliser/table-container";
 import {
   CardsContainer,
@@ -46,8 +43,6 @@ const RoleList = () => {
   const [role, setRole] = useState({ name: "", description: "", habilitations: [], habilitationIds: [] });
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [roleToDelete, setRoleToDelete] = useState(null);
   const navigate = useNavigate();
 
   // Récupérer userId depuis localStorage
@@ -155,7 +150,7 @@ const RoleList = () => {
   };
 
   // Gestion de la suppression d'un rôle
-  const handleDelete = async () => {
+  const handleDelete = async (roleId) => {
     if (!userId) {
       setAlert({
         isOpen: true,
@@ -168,7 +163,7 @@ const RoleList = () => {
     setIsSubmitting(true);
     try {
       await deleteRole(
-        roleToDelete,
+        roleId,
         userId,
         setIsLoading,
         (successAlert) => {
@@ -191,15 +186,7 @@ const RoleList = () => {
       console.error("Erreur dans handleDelete:", error);
     } finally {
       setIsSubmitting(false);
-      setShowDeleteModal(false);
-      setRoleToDelete(null);
     }
-  };
-
-  // Afficher la modale de confirmation de suppression
-  const handleShowDeleteModal = (roleId) => {
-    setRoleToDelete(roleId);
-    setShowDeleteModal(true);
   };
 
   // Fonction pour réinitialiser le formulaire
@@ -279,19 +266,6 @@ const RoleList = () => {
         />
       )}
 
-      <Modal
-        type="warning"
-        message="Êtes-vous sûr de vouloir supprimer ce rôle ? Cette action est irréversible."
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="Confirmer la suppression"
-      >
-        <ModalActions>
-          <ButtonCancel onClick={() => setShowDeleteModal(false)}>Annuler</ButtonCancel>
-          <ButtonConfirm onClick={handleDelete}>Confirmer</ButtonConfirm>
-        </ModalActions>
-      </Modal>
-
       <TableHeader>
         <TableTitle>Liste des Rôles ({totalEntries})</TableTitle>
         <div style={{ display: "flex", gap: "var(--spacing-sm)" }}>
@@ -311,8 +285,8 @@ const RoleList = () => {
       {/* Container avec espacement réduit */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-        gap: "var(--spacing-xs)", // Espacement réduit entre les cartes
+        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+        gap: "8px", // Espacement très réduit entre les cartes
         padding: "0"
       }}>
         {isLoading.roles ? (
@@ -329,50 +303,118 @@ const RoleList = () => {
             <Card 
               key={role.roleId}
               style={{
-                margin: "0", // Supprime les marges par défaut
-                height: "fit-content" // Ajuste la hauteur au contenu
+                margin: "0",
+                height: "fit-content",
+                padding: "8px" // Padding très réduit pour toute la carte
               }}
             >
-              <CardHeader>
-                <CardTitle>{role.name || "Non spécifié"}</CardTitle>
+              <CardHeader style={{ 
+                padding: "0 0 4px 0", // Padding minimal pour l'en-tête
+                margin: "0"
+              }}>
+                <CardTitle style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  margin: "0",
+                  lineHeight: "1.2"
+                }}>
+                  {role.name || "Non spécifié"}
+                </CardTitle>
               </CardHeader>
+              
               <CardBody style={{ 
-                padding: "var(--spacing-xs)", // Padding réduit pour compacter
+                padding: "0",
                 display: "flex",
                 flexDirection: "column",
-                gap: "var(--spacing-xs)" // Espacement réduit entre les champs
+                gap: "0" // Pas de gap, on utilise marginBottom sur les CardField
               }}>
                 <CardField style={{ margin: "0" }}>
-                  <CardLabel>Description</CardLabel>
-                  <CardValue>{role.description || "Non spécifié"}</CardValue>
+                  <CardLabel style={{ 
+                    fontSize: "11px", 
+                    margin: "0 0 1px 0",
+                    lineHeight: "1.1"
+                  }}>
+                    Description
+                  </CardLabel>
+                  <CardValue style={{
+                    fontSize: "12px",
+                    margin: "0",
+                    lineHeight: "1.2",
+                    maxHeight: "32px", // Limite la hauteur pour éviter les textes trop longs
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical"
+                  }}>
+                    {role.description || "Non spécifié"}
+                  </CardValue>
                 </CardField>
+                
                 <CardField style={{ margin: "0" }}>
-                  <CardLabel>Habilitations</CardLabel>
-                  <CardValue>
+                  <CardLabel style={{ 
+                    fontSize: "11px", 
+                    margin: "0 0 1px 0",
+                    lineHeight: "1.1"
+                  }}>
+                    Habilitations
+                  </CardLabel>
+                  <CardValue style={{
+                    fontSize: "12px",
+                    margin: "0",
+                    lineHeight: "1.2"
+                  }}>
                     {getHabilitationCount(role)} habilitation{getHabilitationCount(role) > 1 ? 's' : ''} associée{getHabilitationCount(role) > 1 ? 's' : ''}
                   </CardValue>
                 </CardField>
+                
                 <CardField style={{ margin: "0" }}>
-                  <CardLabel>Date de création</CardLabel>
-                  <CardValue>{formatDate(role.createdAt) || "Non spécifié"}</CardValue>
+                  <CardLabel style={{ 
+                    fontSize: "11px", 
+                    margin: "0 0 1px 0",
+                    lineHeight: "1.1"
+                  }}>
+                    Date de création
+                  </CardLabel>
+                  <CardValue style={{
+                    fontSize: "12px",
+                    margin: "0",
+                    lineHeight: "1.2"
+                  }}>
+                    {formatDate(role.createdAt) || "Non spécifié"}
+                  </CardValue>
                 </CardField>
               </CardBody>
+              
               <CardFooter style={{ 
-                padding: "var(--spacing-xs)", // Padding réduit
-                gap: "var(--spacing-xs)" // Espacement réduit entre les boutons
+                padding: "6px 0 0 0", // Padding minimal en haut seulement
+                gap: "4px", // Espacement réduit entre les boutons
+                marginTop: "4px"
               }}>
                 <CardActionButton
                   className="edit"
                   onClick={() => handleEdit(role)}
                   disabled={isSubmitting}
+                  style={{
+                    fontSize: "11px",
+                    padding: "4px 8px",
+                    height: "auto",
+                    minHeight: "24px"
+                  }}
                 >
                   Modifier
                 </CardActionButton>
                 
                 <CardActionButton
                   className="delete"
-                  onClick={() => handleShowDeleteModal(role.roleId)}
+                  onClick={() => handleDelete(role.roleId)}
                   disabled={isSubmitting}
+                  style={{
+                    fontSize: "11px",
+                    padding: "4px 8px",
+                    height: "auto",
+                    minHeight: "24px"
+                  }}
                 >
                   Supprimer
                 </CardActionButton>

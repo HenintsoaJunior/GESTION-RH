@@ -31,6 +31,7 @@ export const fetchLogs = async (
     }).toString();
 
     const data = await apiPost(`/api/Log/search?${queryParams}`, requestBody);
+    // Ensure logs is an array and handle response
     const logsData = Array.isArray(data.logs) ? data.logs : [];
     setLogs(logsData);
     setTotalEntries(data.totalCount || logsData.length || 0);

@@ -58,12 +58,12 @@ const useMissionValidationData = () => {
             estimatedDuration: missionAssignation.duration
               ? `${missionAssignation.duration} jour${missionAssignation.duration > 1 ? "s" : ""}`
               : "Non spécifié",
-            location: mission.lieu ? `${mission.lieu.nom}/${mission.lieu.pays}` : "Lieu non spécifié",
+            location: mission.lieu ? `${mission.lieu.nom}, ${mission.lieu.pays}` : "Lieu non spécifié",
             comments: validation.comments || "",
             signature: validator.signature || "",
             matricule: creator.matricule || "N/A",
             function: creator.position || "Fonction non spécifiée",
-            transport: missionAssignation.transport?.type || "Non spécifié",
+            transport: missionAssignation.transport?.name || "Non spécifié",
             departureTime: missionAssignation.departureTime || "Non spécifié",
             departureDate: missionAssignation.departureDate || mission.startDate || "Non spécifié",
             returnDate: missionAssignation.returnDate || mission.endDate || "Non spécifié",
@@ -187,8 +187,14 @@ const useMissionValidationData = () => {
       return;
     }
 
+    const missionBudget = {
+      directionName: "DRH",
+      budget: 1000000000,
+      userId: JSON.parse(localStorage.getItem("user"))?.userId || "N/A",
+    };
+
     try {
-      await validateMission(missionId, mission.missionAssignationId, action, comment, signature);
+      await validateMission(missionId, mission.missionAssignationId, action, comment, signature, missionBudget);
 
       setMissions((prevMissions) =>
         prevMissions.map((m) => {
