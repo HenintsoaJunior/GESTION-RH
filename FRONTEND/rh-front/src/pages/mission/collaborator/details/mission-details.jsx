@@ -146,7 +146,7 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                     position: validation.validator?.position || stepInfo.title,
                 },
                 validatedAt: validation.createdAt,
-                comment: validation.comment || "Mission en attente de validation.",
+                comment: validation.comment || ".",
                 order: stepInfo.order,
             };
 

@@ -65,7 +65,7 @@ namespace MyApp.Api.Entities.mission
         public MissionAssignation(MissionAssignationDTOForm dto)
         {
             EmployeeId = dto.EmployeeId;
-            MissionId = dto.MissionId;
+            if (dto.MissionId != null) MissionId = dto.MissionId;
             TransportId = dto.TransportId;
             DepartureDate = dto.DepartureDate ?? DateTime.Now;
             DepartureTime = dto.DepartureTime;

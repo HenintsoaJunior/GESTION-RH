@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, X, List } from "lucide-react";
 import { formatDateTime } from "utils/dateConverter";
@@ -46,11 +45,9 @@ import {
   ButtonPrimary,
   PopupActions
 } from "styles/generaliser/popup-container";
-
 // New LogDetailsPopup Component
 const LogDetailsPopup = ({ isOpen, onClose, oldValues, newValues }) => {
   if (!isOpen) return null;
-
   // Parse JSON strings to objects, handling potential errors
   const parseJson = (value) => {
     try {
@@ -59,13 +56,10 @@ const LogDetailsPopup = ({ isOpen, onClose, oldValues, newValues }) => {
       return {};
     }
   };
-
   const oldData = parseJson(oldValues);
   const newData = parseJson(newValues);
-
   // Combine keys from both old and new values for consistent table rendering
   const allKeys = [...new Set([...Object.keys(oldData), ...Object.keys(newData)])];
-
   return (
     <PopupOverlay>
       <PagePopup>
@@ -112,7 +106,6 @@ const LogDetailsPopup = ({ isOpen, onClose, oldValues, newValues }) => {
     </PopupOverlay>
   );
 };
-
 const LogList = () => {
   const [logs, setLogs] = useState([]);
   const [filters, setFilters] = useState({
@@ -138,7 +131,6 @@ const LogList = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null); // State for popup
-
   // Fetch users for autocomplete suggestions
   useEffect(() => {
     fetchAllUsers(
@@ -157,7 +149,6 @@ const LogList = () => {
       (error) => setAlert(error)
     );
   }, []);
-
   // Fetch logs when filters or pagination change
   useEffect(() => {
     fetchLogs(
@@ -176,17 +167,14 @@ const LogList = () => {
       (error) => setAlert(error)
     );
   }, [appliedFilters, currentPage, pageSize]);
-
   // Handle filter input changes
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
-
   // Handle filter form submission
   const handleFilterSubmit = (event) => {
     event.preventDefault();
     let updatedFilters = { ...filters };
-
     // Validate and set userId based on userName
     if (filters.userName && !filters.userId) {
       const selectedUser = suggestions.users.find(
@@ -203,12 +191,10 @@ const LogList = () => {
       updatedFilters.userId = selectedUser.id;
       updatedFilters.userName = selectedUser.displayName;
     }
-
     setFilters(updatedFilters);
     setAppliedFilters(updatedFilters);
     setCurrentPage(1);
   };
-
   // Reset filters
   const handleResetFilters = () => {
     const resetFilters = {
@@ -224,33 +210,26 @@ const LogList = () => {
     setCurrentPage(1);
     setAlert({ isOpen: true, type: "info", message: "Filtres réinitialisés." });
   };
-
   // Handle pagination changes
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
-
   const handlePageSizeChange = (event) => {
     setPageSize(Number(event.target.value));
     setCurrentPage(1);
   };
-
   // Toggle filter section minimize state
   const toggleMinimize = () => setIsMinimized((prev) => !prev);
-
   // Toggle filter section visibility
   const toggleHide = () => setIsHidden((prev) => !prev);
-
   // Handle details button click
   const handleDetailsClick = (log) => {
     setSelectedLog(log);
   };
-
   // Close popup
   const handleClosePopup = () => {
     setSelectedLog(null);
   };
-
   return (
     <DashboardContainer>
       <Alert
@@ -259,7 +238,6 @@ const LogList = () => {
         isOpen={alert.isOpen}
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
-
       {!isHidden && (
         <FiltersContainer $isMinimized={isMinimized}>
           <FiltersHeader>
@@ -277,7 +255,6 @@ const LogList = () => {
               </FilterControlButton>
             </FiltersControls>
           </FiltersHeader>
-
           {!isMinimized && (
             <FiltersSection>
               <form onSubmit={handleFilterSubmit}>
@@ -295,7 +272,6 @@ const LogList = () => {
                           disabled={isLoading.logs}
                         />
                       </FormFieldCell>
-
                       <FormFieldCell>
                         <FormLabelSearch>Nom de la table</FormLabelSearch>
                         <FormInputSearch
@@ -307,7 +283,6 @@ const LogList = () => {
                           disabled={isLoading.logs}
                         />
                       </FormFieldCell>
-
                       <FormFieldCell>
                         <FormLabelSearch>Utilisateur</FormLabelSearch>
                         <StyledAutoCompleteInput
@@ -342,7 +317,6 @@ const LogList = () => {
                           showAddOption={false}
                         />
                       </FormFieldCell>
-
                       <FormFieldCell>
                         <FormLabelSearch>Date de création min</FormLabelSearch>
                         <FormInputSearch
@@ -353,7 +327,6 @@ const LogList = () => {
                           disabled={isLoading.logs}
                         />
                       </FormFieldCell>
-
                       <FormFieldCell>
                         <FormLabelSearch>Date de création max</FormLabelSearch>
                         <FormInputSearch
@@ -367,7 +340,6 @@ const LogList = () => {
                     </FormRow>
                   </tbody>
                 </FormTableSearch>
-
                 <FiltersActions>
                   <ButtonReset type="button" onClick={handleResetFilters} disabled={isLoading.logs}>
                     Réinitialiser
@@ -381,7 +353,6 @@ const LogList = () => {
           )}
         </FiltersContainer>
       )}
-
       {isHidden && (
         <FiltersToggle>
           <ButtonShowFilters type="button" onClick={toggleHide}>
@@ -390,11 +361,9 @@ const LogList = () => {
           </ButtonShowFilters>
         </FiltersToggle>
       )}
-
       <TableHeader>
         <TableTitle>Liste des Logs</TableTitle>
       </TableHeader>
-
       <TableContainer>
         <DataTable>
           <thead>
@@ -403,7 +372,7 @@ const LogList = () => {
               <TableHeadCell>Action</TableHeadCell>
               <TableHeadCell>Nom de la table</TableHeadCell>
               <TableHeadCell>Utilisateur</TableHeadCell>
-              
+             
               <TableHeadCell>Date</TableHeadCell>
               <TableHeadCell>Actions</TableHeadCell>
             </tr>
@@ -411,7 +380,7 @@ const LogList = () => {
           <tbody>
             {isLoading.logs ? (
               <TableRow>
-                <TableCell colSpan={8}>
+                <TableCell colSpan={6}>
                   <Loading>Chargement des données...</Loading>
                 </TableCell>
               </TableRow>
@@ -423,7 +392,7 @@ const LogList = () => {
                   <TableCell>{log.logId || "Non spécifié"}</TableCell>
                   <TableCell>{log.action || "Non spécifié"}</TableCell>
                   <TableCell>{log.tableName || "Non spécifié"}</TableCell>
-                  <TableCell>{log.user.name || "Non spécifié"}</TableCell>
+                  <TableCell>{log.user?.name || log.user?.Name || "Non spécifié"}</TableCell>
                   <TableCell>{formatDateTime(log.createdAt) || "Non spécifié"}</TableCell>
                   <TableCell>
                     {(log.oldValues || log.newValues) && (
@@ -439,7 +408,7 @@ const LogList = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={8}>
+                <TableCell colSpan={6}>
                   <NoDataMessage>
                     {appliedFilters.action ||
                     appliedFilters.tableName ||
@@ -455,14 +424,12 @@ const LogList = () => {
           </tbody>
         </DataTable>
       </TableContainer>
-
       <LogDetailsPopup
         isOpen={!!selectedLog}
         onClose={handleClosePopup}
         oldValues={selectedLog?.oldValues}
         newValues={selectedLog?.newValues}
       />
-
       <Pagination
         currentPage={currentPage}
         pageSize={pageSize}
@@ -474,5 +441,4 @@ const LogList = () => {
     </DashboardContainer>
   );
 };
-
 export default LogList;

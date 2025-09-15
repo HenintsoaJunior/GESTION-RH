@@ -18,8 +18,10 @@ const useMissionData = () => {
         status: "",
         employeeId: "",
         employeeName: "",
-        startDate: "",
-        endDate: "",
+        minDepartureDate: "",
+        maxDepartureDate: "",
+        minArrivalDate: "",
+        maxArrivalDate: "",
         transportId: "",
         missionId: "",
         missionName: "",
@@ -57,12 +59,27 @@ const useMissionData = () => {
     const [showMissionForm, setShowMissionForm] = useState(false);
     const [selectedMissionIdForEdit, setSelectedMissionIdForEdit] = useState(null);
     const [stats, setStats] = useState({ total: 0, enCours: 0, planifiee: 0, terminee: 0, annulee: 0 });
+    
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = userData?.userId || "";
     const userMatricule = userData?.matricule || "";
 
     useEffect(() => {
-        const defaultFilters = { ...filters, matricule: [], employeeId: "", employeeName: "" };
+        const defaultFilters = {
+            status: "",
+            employeeId: "",
+            employeeName: "",
+            minDepartureDate: "",
+            maxDepartureDate: "",
+            minArrivalDate: "",
+            maxArrivalDate: "",
+            transportId: "",
+            missionId: "",
+            missionName: "",
+            lieuId: "",
+            location: "",
+            matricule: [],
+        };
         setFilters(defaultFilters);
         setAppliedFilters(defaultFilters);
         setViewMode("all");
@@ -120,12 +137,11 @@ const useMissionData = () => {
         if (userId) {
             fetchCollaborators(userId, setCollaborators, setIsLoading, (error) => setAlert(error));
         }
-        // Récupération des statistiques au chargement initial avec matricule vide
         fetchMissionStats(setStats, setIsLoading, (error) => setAlert(error), []);
     }, [userId]);
 
     useEffect(() => {
-        console.log("assignedPersons:", assignedPersons); // Log pour débogage
+        console.log("assignedPersons:", assignedPersons);
         fetchAssignMission(
             setAssignedPersons,
             setIsLoading,
@@ -133,8 +149,10 @@ const useMissionData = () => {
             {
                 employeeId: appliedFilters.employeeId || "",
                 transportId: appliedFilters.transportId || "",
-                startDate: appliedFilters.startDate || "",
-                endDate: appliedFilters.endDate || "",
+                minDepartureDate: appliedFilters.minDepartureDate || "",
+                maxDepartureDate: appliedFilters.maxDepartureDate || "",
+                minArrivalDate: appliedFilters.minArrivalDate || "",
+                maxArrivalDate: appliedFilters.maxArrivalDate || "",
                 status: appliedFilters.status || "",
                 missionId: appliedFilters.missionId || "",
                 lieuId: appliedFilters.lieuId || "",
@@ -144,7 +162,6 @@ const useMissionData = () => {
             pageSize,
             (error) => setAlert(error)
         );
-        // Récupérer les statistiques à chaque changement de filtres avec matricule
         fetchMissionStats(setStats, setIsLoading, (error) => setAlert(error), appliedFilters.matricule);
     }, [appliedFilters, currentPage, pageSize]);
 
@@ -173,8 +190,10 @@ const useMissionData = () => {
             {
                 employeeId: appliedFilters.employeeId || "",
                 transportId: appliedFilters.transportId || "",
-                startDate: appliedFilters.startDate || "",
-                endDate: appliedFilters.endDate || "",
+                minDepartureDate: appliedFilters.minDepartureDate || "",
+                maxDepartureDate: appliedFilters.maxDepartureDate || "",
+                minArrivalDate: appliedFilters.minArrivalDate || "",
+                maxArrivalDate: appliedFilters.maxArrivalDate || "",
                 status: appliedFilters.status || "",
                 missionId: appliedFilters.missionId || "",
                 lieuId: appliedFilters.lieuId || "",
@@ -184,7 +203,6 @@ const useMissionData = () => {
             pageSize,
             (error) => setAlert(error)
         );
-        // Rafraîchir les statistiques avec matricule
         fetchMissionStats(setStats, setIsLoading, (error) => setAlert(error), appliedFilters.matricule);
     };
 
@@ -246,8 +264,10 @@ const useMissionData = () => {
             status: "",
             employeeId: "",
             employeeName: "",
-            startDate: "",
-            endDate: "",
+            minDepartureDate: "",
+            maxDepartureDate: "",
+            minArrivalDate: "",
+            maxArrivalDate: "",
             transportId: "",
             missionId: "",
             missionName: "",
@@ -263,7 +283,16 @@ const useMissionData = () => {
     };
 
     const handleAllMissions = () => {
-        const allMissionsFilters = { ...filters, matricule: [], employeeId: "", employeeName: "" };
+        const allMissionsFilters = { 
+            ...filters, 
+            matricule: [], 
+            employeeId: "", 
+            employeeName: "",
+            minDepartureDate: "",
+            maxDepartureDate: "",
+            minArrivalDate: "",
+            maxArrivalDate: "",
+        };
         setFilters(allMissionsFilters);
         setAppliedFilters(allMissionsFilters);
         setCurrentPage(1);
@@ -279,6 +308,10 @@ const useMissionData = () => {
             matricule: collaboratorMatricules,
             employeeId: "",
             employeeName: "",
+            minDepartureDate: "",
+            maxDepartureDate: "",
+            minArrivalDate: "",
+            maxArrivalDate: "",
         };
         setFilters(collaboratorsMissionsFilters);
         setAppliedFilters(collaboratorsMissionsFilters);
@@ -292,6 +325,10 @@ const useMissionData = () => {
             matricule: [userMatricule],
             employeeId: "",
             employeeName: "",
+            minDepartureDate: "",
+            maxDepartureDate: "",
+            minArrivalDate: "",
+            maxArrivalDate: "",
         };
         setFilters(myMissionsFilters);
         setAppliedFilters(myMissionsFilters);

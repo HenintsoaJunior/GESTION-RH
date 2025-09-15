@@ -73,7 +73,7 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 -- Administration: habilitation
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu_hab', 'habilitation', 'fa-shield-alt', '/habilitation', 1, 2, 'habilitation', 'administration', GETDATE(), GETDATE()),
-('menu_hab_2', 'liste', 'fa-list', '/role/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
+('menu_hab_2', 'role', 'fa-list', '/role/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
 
 -- Administration: logs
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
@@ -83,7 +83,7 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_0', 'mission-a-valider', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_3', 'collaborateur', 'fa-users', '/mission/beneficiary', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
+('menu2_3', 'collaborateur', 'fa-users', '/mission/collaborateur', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 5, 'mission', 'navigation', GETDATE(), GETDATE());
 
 -- Navigation: recrutement

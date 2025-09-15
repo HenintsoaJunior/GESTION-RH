@@ -516,7 +516,6 @@ export const fetchMissionPayment = async (
   }
 };
 
-// Fonction pour récupérer les assignations de mission avec filtres et pagination
 export const fetchAssignMission = async (
   setAssignMissions,
   setIsLoading,
@@ -532,29 +531,31 @@ export const fetchAssignMission = async (
       page,
       pageSize,
     }).toString();
-
-    // Include matricule as an array in the requestBody
+    // Include matricule as an array and new date filters in the requestBody
     const requestBody = {
       employeeId: filters.employeeId || "",
       missionId: filters.missionId || "",
       transportId: filters.transportId || "",
       lieuId: filters.lieuId || "",
       matricule: Array.isArray(filters.matricule) ? filters.matricule : filters.matricule ? [filters.matricule] : [],
-      minDepartureDate: filters.startDate && !isNaN(new Date(filters.startDate).getTime())
-        ? new Date(filters.startDate).toISOString()
+      minDepartureDate: filters.minDepartureDate && !isNaN(new Date(filters.minDepartureDate).getTime())
+        ? new Date(filters.minDepartureDate).toISOString()
         : null,
-      maxDepartureDate: filters.endDate && !isNaN(new Date(filters.endDate).getTime())
-        ? new Date(filters.endDate).toISOString()
+      maxDepartureDate: filters.maxDepartureDate && !isNaN(new Date(filters.maxDepartureDate).getTime())
+        ? new Date(filters.maxDepartureDate).toISOString()
+        : null,
+      minArrivalDate: filters.minArrivalDate && !isNaN(new Date(filters.minArrivalDate).getTime())
+        ? new Date(filters.minArrivalDate).toISOString()
+        : null,
+      maxArrivalDate: filters.maxArrivalDate && !isNaN(new Date(filters.maxArrivalDate).getTime())
+        ? new Date(filters.maxArrivalDate).toISOString()
         : null,
       status: filters.status || "",
     };
-
     console.log("Request Body:", requestBody);
-
     // Appel API pour récupérer les assignations
     const data = await apiPost(`/api/MissionAssignation/search?${queryParams}`, requestBody);
     console.log("API Response (Mission Assignations):", data);
-
     const assignMissionsData = Array.isArray(data.data)
       ? data.data.map((item) => ({
           assignationId: item.assignationId,
@@ -581,7 +582,6 @@ export const fetchAssignMission = async (
           transport: item.transport,
         }))
       : [];
-
     setAssignMissions(assignMissionsData);
     setTotalEntries(data.totalCount || assignMissionsData.length || 0);
   } catch (error) {
