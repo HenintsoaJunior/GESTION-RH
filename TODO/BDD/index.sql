@@ -481,14 +481,14 @@ CREATE TABLE mission_assignation (
    return_date DATE,
    return_time TIME,
    duration INT,
+   is_validated INT DEFAULT 0, -- 0 si non validée, 1 si validée
+   type VARCHAR(50) NOT NULL CHECK(type IN('Indemnité', 'Note de frais')),
+   allocated_fund DECIMAL(15,2)
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    transport_id VARCHAR(50),
    mission_id VARCHAR(50) NOT NULL,
    employee_id VARCHAR(50) NOT NULL,
-   is_validated INT DEFAULT 0,
-   type VARCHAR(50) NOT NULL CHECK(type IN('Indemnité', 'Note de frais')),
-   allocated_fund DECIMAL(15,2)
    PRIMARY KEY (assignation_id),
    FOREIGN KEY (transport_id) REFERENCES transport(transport_id),
    FOREIGN KEY (mission_id) REFERENCES mission(mission_id),
@@ -496,21 +496,21 @@ CREATE TABLE mission_assignation (
 );
 
 CREATE TABLE mission_validation(
-   mission_validation_id VARCHAR(50),
+   id_mission_validation VARCHAR(50),
    status VARCHAR(50),
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
    validation_date DATETIME,
-   mission_creator VARCHAR(250) NOT NULL,
+   type VARCHAR(50),
+   created_at DATETIME,
+   updated_at DATETIME,
+   to_whom VARCHAR(50) NOT NULL,
+   mission_creator VARCHAR(50) NOT NULL,
    mission_id VARCHAR(50) NOT NULL,
    mission_assignation_id VARCHAR(50) NOT NULL,
-   to_whom VARCHAR(250) NOT NULL,
-   type VARCHAR(50) NOT NULL,
-   PRIMARY KEY(mission_validation_id),
+   PRIMARY KEY(id_mission_validation),
+   FOREIGN KEY(to_whom) REFERENCES users(user_id),
    FOREIGN KEY(mission_creator) REFERENCES users(user_id),
    FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
-   FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id),
-   FOREIGN KEY(to_whom) REFERENCES users(user_id)
+   FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id)
 );
 
 
