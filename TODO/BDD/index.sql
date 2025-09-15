@@ -438,6 +438,7 @@ CREATE TABLE transport(
 CREATE TABLE compensation_scale(
    compensation_scale_id VARCHAR(50),
    amount DECIMAL(15,2),
+   place VARCHAR(150) DEFAULT 'National', --National, Afrique, Europe, ...
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    transport_id VARCHAR(50),
@@ -497,14 +498,14 @@ CREATE TABLE mission_assignation (
 );
 
 CREATE TABLE mission_validation(
-   id_mission_validation VARCHAR(50),
+   mission_validation_id VARCHAR(50),
    status VARCHAR(50),
    validation_date DATETIME,
    type VARCHAR(50),
    created_at DATETIME,
    updated_at DATETIME,
-   to_whom VARCHAR(50) NOT NULL,
-   mission_creator VARCHAR(50) NOT NULL,
+   to_whom VARCHAR(250) NOT NULL,
+   mission_creator VARCHAR(250) NOT NULL,
    mission_id VARCHAR(50) NOT NULL,
    mission_assignation_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(id_mission_validation),
@@ -539,7 +540,7 @@ CREATE TABLE expense_report(
    expense_report_id VARCHAR(50),
    titled VARCHAR(250),
    description TEXT,
-   type VARCHAR(50) CHECK(type IN('CB', 'ESP')),
+   type VARCHAR(50) CHECK(type IN('CB', 'ESP')), --carte bancaire ou espèces
    currency_unit VARCHAR(50),
    amount DECIMAL(15,2),
    rate DECIMAL(15,2),

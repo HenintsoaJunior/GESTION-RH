@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
@@ -7,6 +8,7 @@ namespace MyApp.Api.Repositories.mission
 {
     public interface ICompensationScaleRepository
     {
+        Task<IDbContextTransaction> BeginTransactionAsync();
         Task<IEnumerable<CompensationScale>> GetAllAsync();
         Task<CompensationScale?> GetByIdAsync(string id);
         Task<IEnumerable<CompensationScale>> GetByEmployeeCategoryAsync(string employeeCategoryId);
@@ -25,7 +27,12 @@ namespace MyApp.Api.Repositories.mission
         {
             _context = context;
         }
-
+        
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
+        }
+        
         public async Task<IEnumerable<CompensationScale>> GetAllAsync()
         {
             return await _context.CompensationScales
@@ -38,6 +45,7 @@ namespace MyApp.Api.Repositories.mission
         public async Task<CompensationScale?> GetByIdAsync(string id)
         {
             return await _context.CompensationScales
+                .AsNoTracking()
                 .Include(c => c.Transport)
                 .Include(c => c.ExpenseType)
                 .Include(c => c.EmployeeCategory)

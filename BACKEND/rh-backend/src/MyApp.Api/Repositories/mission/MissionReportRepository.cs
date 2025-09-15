@@ -36,6 +36,7 @@ namespace MyApp.Api.Repositories.mission
         public async Task<MissionReport?> GetByIdAsync(string id)
         {
             return await _context.MissionReports
+                .AsNoTracking()
                 .Include(mr => mr.User)
                 .Include(mr => mr.MissionAssignation)
                 .FirstOrDefaultAsync(mr => mr.MissionReportId == id);

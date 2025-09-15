@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.dto.mission;
 
 namespace MyApp.Api.Entities.mission
 {
@@ -14,6 +15,10 @@ namespace MyApp.Api.Entities.mission
 
         [Column("amount", TypeName = "decimal(15,2)")]
         public decimal Amount { get; set; }
+        
+        [Column("place")]
+        [MaxLength(150)]
+        public string Place { get; set; } = null!;
         
         [Column("transport_id")]
         [MaxLength(50)]
@@ -36,5 +41,16 @@ namespace MyApp.Api.Entities.mission
 
         [ForeignKey("EmployeeCategoryId")]
         public EmployeeCategory? EmployeeCategory { get; set; }
+        
+        public CompensationScale(){}
+
+        public CompensationScale(CompensationScaleDTOForm compensationScaleDtoForm)
+        {
+            Amount = compensationScaleDtoForm.Amount;
+            Place = compensationScaleDtoForm.Place;
+            TransportId = compensationScaleDtoForm.TransportId;
+            ExpenseTypeId = compensationScaleDtoForm.ExpenseTypeId;
+            EmployeeCategoryId = compensationScaleDtoForm.EmployeeCategoryId;
+        }
     }
 }

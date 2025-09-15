@@ -84,12 +84,9 @@ namespace MyApp.Api.Services.mission
 
                 _logger.LogInformation("Récupération du rapport de frais avec l'ID: {ExpenseReportId}", id);
                 var report = await _repository.GetByIdAsync(id);
-                if (report == null)
-                {
-                    _logger.LogWarning("Rapport de frais avec l'ID {ExpenseReportId} n'existe pas", id);
-                    throw new InvalidOperationException($"Le rapport de frais avec l'ID {id} n'existe pas");
-                }
-                return report;
+                if (report != null) return report;
+                _logger.LogWarning("Rapport de frais avec l'ID {ExpenseReportId} n'existe pas", id);
+                throw new InvalidOperationException($"Le rapport de frais avec l'ID {id} n'existe pas");
             }
             catch (Exception ex)
             {
@@ -150,13 +147,7 @@ namespace MyApp.Api.Services.mission
                     _logger.LogWarning("Rapport de frais avec l'ID {ExpenseReportId} n'existe pas", id);
                     return false;
                 }
-
-                var old = new ExpenseReport
-                {
-                    ExpenseReportId = existing.ExpenseReportId,
-                    // Copy other properties as needed
-                };
-
+                
                 var updated = new ExpenseReport(dto)
                 {
                     ExpenseReportId = existing.ExpenseReportId,
@@ -166,7 +157,7 @@ namespace MyApp.Api.Services.mission
                 await _repository.SaveChangesAsync();
 
                 _logger.LogInformation("Rapport de frais mis à jour avec succès avec l'ID: {ExpenseReportId}", id);
-                await _logService.LogAsync("MODIFICATION", old, updated, dto.UserId);
+                await _logService.LogAsync("MODIFICATION", existing, updated, dto.UserId);
 
                 return true;
             }
