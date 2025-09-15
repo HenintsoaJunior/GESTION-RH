@@ -73,18 +73,16 @@ export const useGetMissionValidationsByAssignationId = () => {
   }, []);
 };
 
-// Validate mission request using userId from localStorage
+// Validate mission request using userId from localStorage with pagination support
 export const useValidateMissionRequest = () => {
-  return useCallback(async () => {
+  return useCallback(async ({ page = 1, pageSize = 3 } = {}) => {
     const userData = JSON.parse(localStorage.getItem("user"));
     const userId = userData?.userId;
-
     if (!userId) {
       throw new Error("User ID is required. Please ensure you are logged in.");
     }
-
     try {
-      const response = await apiPost(`/api/MissionValidation/requests/${userId}`, {});
+      const response = await apiPost(`/api/MissionValidation/requests/${userId}`, { page, pageSize });
       return response;
     } catch (error) {
       handleValidationError(error);

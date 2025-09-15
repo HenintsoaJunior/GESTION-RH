@@ -32,9 +32,14 @@ const MissionValidationPage = () => {
     handleRowClick,
     formatDate,
     getDaysUntilDue,
+    currentPage,
+    pageSize,
+    totalEntries,
+    handlePageChange,
+    handlePageSizeChange,
+    appliedFilters,
   } = useMissionValidationData();
 
-  // Si une mission est sélectionnée pour affichage détaillé, on affiche uniquement MissionModals
   if (showDetailsMission) {
     return (
       <MissionModals
@@ -52,7 +57,6 @@ const MissionValidationPage = () => {
     );
   }
 
-  // Affichage normal de la page de validation des missions
   return (
     <DashboardContainer>
       <TableHeader>
@@ -61,7 +65,7 @@ const MissionValidationPage = () => {
           Tableau de bord moderne pour la gestion des missions
         </p>
       </TableHeader>
-      
+    
       <StatsContainer>
         <StatsGrid>
           <StatCard className="stat-card-total">
@@ -73,7 +77,7 @@ const MissionValidationPage = () => {
               <StatLabel>Total des missions</StatLabel>
             </StatContent>
           </StatCard>
-          
+        
           <StatCard className="stat-card-pending">
             <StatIcon>
               <Clock size={24} />
@@ -83,7 +87,7 @@ const MissionValidationPage = () => {
               <StatLabel>En attente</StatLabel>
             </StatContent>
           </StatCard>
-          
+        
           <StatCard className="stat-card-approved">
             <StatIcon>
               <CheckCircle size={24} />
@@ -93,7 +97,7 @@ const MissionValidationPage = () => {
               <StatLabel>Approuvées</StatLabel>
             </StatContent>
           </StatCard>
-          
+        
           <StatCard className="stat-card-cancelled">
             <StatIcon>
               <XCircle size={24} />
@@ -105,13 +109,19 @@ const MissionValidationPage = () => {
           </StatCard>
         </StatsGrid>
       </StatsContainer>
-      
+    
       <MissionCards
         missions={missions}
         isLoading={isLoading}
         handleRowClick={handleRowClick}
         formatDate={formatDate}
         getDaysUntilDue={getDaysUntilDue}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        totalEntries={totalEntries}
+        handlePageChange={handlePageChange}
+        handlePageSizeChange={handlePageSizeChange}
+        appliedFilters={appliedFilters}
       />
     </DashboardContainer>
   );

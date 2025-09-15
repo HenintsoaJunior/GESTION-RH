@@ -392,6 +392,7 @@ CREATE TABLE recruitment_validation(
    recruitment_creator VARCHAR(250) NOT NULL,
    recruitment_request_id VARCHAR(50) NOT NULL,
    to_whom VARCHAR(250) NOT NULL,
+   type VARCHAR(50) NOT NULL,
    PRIMARY KEY(recruitment_validation_id),
    FOREIGN KEY(recruitment_creator) REFERENCES users(user_id),
    FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),

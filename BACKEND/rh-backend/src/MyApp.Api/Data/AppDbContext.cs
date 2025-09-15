@@ -62,12 +62,14 @@ namespace MyApp.Api.Data
         
         public DbSet<MenuRole> MenuRoles { get; set; }
         public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
-        public DbSet<RecruitmentRequestDetail> RecruitmentRequestDetails { get; set; } 
+        public DbSet<RecruitmentRequestDetail> RecruitmentRequestDetails { get; set; }
+
+        //RECRUTMENT
         public DbSet<RecruitmentRequest> RecruitmentRequests { get; set; } 
         public DbSet<RecruitmentRequestReplacementReason> RecruitmentRequestReplacementReasons { get; set; } 
         public DbSet<ReplacementReason> ReplacementReasons { get; set; }  
         public DbSet<RecruitmentReason> RecruitmentReasons { get; set; }  
-
+        public DbSet<RecruitmentValidation> RecruitmentValidations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

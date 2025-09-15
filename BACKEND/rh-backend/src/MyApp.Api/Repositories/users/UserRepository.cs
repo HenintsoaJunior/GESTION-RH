@@ -27,6 +27,7 @@ namespace MyApp.Api.Repositories.users
         Task<User?> GetSuperiorAsync(string matricule);
         Task<User?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
+        Task<User?> GetDirectorByDepartmentAsync(string department);
     }
 
     public class UserRepository : IUserRepository
@@ -69,6 +70,25 @@ namespace MyApp.Api.Repositories.users
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.UserId == user.SuperiorId);
+        }
+
+        public async Task<User?> GetDirectorByDepartmentAsync(string department)
+        {
+            if (string.IsNullOrWhiteSpace(department))
+                throw new ArgumentException("Department cannot be null or empty.", nameof(department));
+
+            return await _context.Users
+                .AsNoTracking()
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .Where(u => u.Department == department &&
+                            u.Position != null &&
+                            (u.Position.Contains("Directeur") ||
+                            u.Position.Contains("Directrice") ||
+                            u.Position.Contains("Director") ||
+                            u.Position.Contains("Manager")))
+                .OrderBy(u => u.Name)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)

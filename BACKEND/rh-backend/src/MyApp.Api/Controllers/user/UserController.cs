@@ -111,6 +111,28 @@ public class UserController : ControllerBase
         }
     }
 
+    [HttpGet("director/{department}")]
+    public async Task<ActionResult<UserDto>> GetDirectorByDepartment(string department)
+    {
+        try
+        {
+            var director = await _userService.GetDirectorByDepartmentAsync(department);
+            if (director == null)
+                return NotFound($"No director found for the department: {department}");
+
+            return Ok(director);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
     [HttpPost("search")]
     public async Task<ActionResult<(IEnumerable<User>, int)>> Search([FromQuery] UserSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
@@ -134,7 +156,7 @@ public class UserController : ControllerBase
             var habilitations = await _roleHabilitationService.GetHabilitationsByUserIdAsync(userId);
             if (!habilitations.Any())
             {
-                return Ok(new List<Habilitation>()); // Return empty list instead of NotFound for consistency
+                return Ok(new List<Habilitation>());
             }
             return Ok(habilitations);
         }

@@ -4,7 +4,8 @@ import {
   NoDataMessage,
   StatusBadge,
 } from "styles/generaliser/table-container";
-import { Clock, CheckCircle, XCircle, Calendar, MapPin, User } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Calendar, MapPin, User, FileText, Clock as ClockIcon } from "lucide-react";
+import Pagination from "components/pagination";
 
 const CardsContainer = styled.div`
   display: grid;
@@ -90,12 +91,24 @@ const ReferenceText = styled.div`
   font-style: italic;
 `;
 
+const CardsPaginationContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+`;
+
 const MissionCards = ({
   missions,
   isLoading,
   handleRowClick,
   formatDate,
   getDaysUntilDue,
+  currentPage,
+  pageSize,
+  totalEntries,
+  handlePageChange,
+  handlePageSizeChange,
+  appliedFilters,
 }) => {
   const getStatusBadge = (status) => {
     const statusClass =
@@ -121,65 +134,103 @@ const MissionCards = ({
     );
   };
 
-  return (
-    <CardsContainer>
-      {isLoading.missions ? (
-        <Loading>Chargement des missions...</Loading>
-      ) : missions && missions.length > 0 ? (
-        missions.map((mission) => {
-          const daysUntilDue = getDaysUntilDue(mission.dueDate);
-          const isUrgent = daysUntilDue <= 3 && daysUntilDue >= 0;
-          
-          return (
-            <Card key={mission.id} onClick={() => handleRowClick(mission.id)}>
-              <CardHeader>
-                <CardTitle>{mission.title}</CardTitle>
-                {getStatusBadge(mission.status)}
-              </CardHeader>
-              
-              <CardInfo>
-                <InfoLine>
-                  <InfoLabel>
-                    <User size={14} />
-                    Demandeur
-                  </InfoLabel>
-                  <InfoValue>{mission.requestedBy || "Non spécifié"}</InfoValue>
-                </InfoLine>
-                
-                <InfoLine>
-                  <InfoLabel>
-                    <MapPin size={14} />
-                    Destination
-                  </InfoLabel>
-                  <InfoValue>{mission.location || "Non spécifié"}</InfoValue>
-                </InfoLine>
-                
-                <InfoLine>
-                  <InfoLabel>
-                    <Calendar size={14} />
-                    Échéance
-                  </InfoLabel>
-                  <InfoValue>
-                    {formatDate(mission.dueDate)}
-                    {isUrgent && (
-                      <UrgentIndicator> (Urgent - {daysUntilDue}j)</UrgentIndicator>
-                    )}
-                  </InfoValue>
-                </InfoLine>
-              </CardInfo>
+  const hasFilters =
+    appliedFilters.search ||
+    appliedFilters.status ||
+    appliedFilters.department ||
+    appliedFilters.priority ||
+    appliedFilters.dateRange?.start ||
+    appliedFilters.dateRange?.end;
 
-              <ReferenceText>
-                Réf: {mission.reference}
-              </ReferenceText>
-            </Card>
-          );
-        })
-      ) : (
-        <NoDataMessage>
-          Aucune mission trouvée.
-        </NoDataMessage>
+  return (
+    <CardsPaginationContainer>
+      <CardsContainer>
+        {isLoading.missions ? (
+          <Loading>Chargement des missions...</Loading>
+        ) : missions && missions.length > 0 ? (
+          missions.map((mission) => {
+            const daysUntilDue = getDaysUntilDue(mission.dueDate);
+            const isUrgent = daysUntilDue <= 3 && daysUntilDue >= 0;
+            
+            return (
+              <Card key={mission.id} onClick={() => handleRowClick(mission.id)}>
+                <CardHeader>
+                  <CardTitle>{mission.title}</CardTitle>
+                  {getStatusBadge(mission.status)}
+                </CardHeader>
+                <CardInfo>
+                  <InfoLine>
+                    <InfoLabel>
+                      <User size={14} />
+                      Demandeur
+                    </InfoLabel>
+                    <InfoValue>{mission.requestedBy || "Non spécifié"}</InfoValue>
+                  </InfoLine>
+                  <InfoLine>
+                    <InfoLabel>
+                      <FileText size={14} />
+                      Matricule
+                    </InfoLabel>
+                    <InfoValue>{mission.matricule || "Non spécifié"}</InfoValue>
+                  </InfoLine>
+                  <InfoLine>
+                    <InfoLabel>
+                      <MapPin size={14} />
+                      Destination
+                    </InfoLabel>
+                    <InfoValue>{mission.location || "Non spécifié"}</InfoValue>
+                  </InfoLine>
+                  <InfoLine>
+                    <InfoLabel>
+                      <Calendar size={14} />
+                      Date de départ
+                    </InfoLabel>
+                    <InfoValue>{formatDate(mission.departureDate)}</InfoValue>
+                  </InfoLine>
+                  <InfoLine>
+                    <InfoLabel>
+                      <Calendar size={14} />
+                      Date de retour
+                    </InfoLabel>
+                    <InfoValue>{formatDate(mission.returnDate)}</InfoValue>
+                  </InfoLine>
+                  <InfoLine>
+                    <InfoLabel>
+                      <ClockIcon size={14} />
+                      Échéance
+                    </InfoLabel>
+                    <InfoValue>
+                      {formatDate(mission.dueDate)}
+                      {isUrgent && (
+                        <UrgentIndicator> (Urgent - {daysUntilDue}j)</UrgentIndicator>
+                      )}
+                    </InfoValue>
+                  </InfoLine>
+                </CardInfo>
+                <ReferenceText>Réf: {mission.reference}</ReferenceText>
+              </Card>
+            );
+          })
+        ) : (
+          <NoDataMessage>
+            {hasFilters
+              ? "Aucune mission ne correspond aux critères de recherche."
+              : "Aucune mission trouvée."}
+          </NoDataMessage>
+        )}
+      </CardsContainer>
+      
+      {totalEntries > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalEntries={totalEntries}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          disabled={isLoading.missions}
+        />
       )}
-    </CardsContainer>
+    </CardsPaginationContainer>
   );
 };
 
