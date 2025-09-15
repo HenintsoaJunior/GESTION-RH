@@ -4,5 +4,5 @@ sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i data.sql
 
 
 
-00182
-00358
+00182 (DRH)
+00358 (DT)

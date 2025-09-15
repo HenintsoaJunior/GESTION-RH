@@ -16,6 +16,7 @@ const Pagination = ({ currentPage, pageSize, totalEntries, onPageChange, onPageS
           onChange={onPageSizeChange}
           className="pagination-select"
         >
+          <option value="3">3</option>
           <option value="10">10</option>
           <option value="25">25</option>
           <option value="50">50</option>

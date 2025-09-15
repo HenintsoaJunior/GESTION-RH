@@ -69,12 +69,7 @@ function LoginPage() {
           </div>
 
           <div className="form-group">
-            <div className="password-header">
-              <label className="form-label">Mot de passe</label>
-              <a href="#" className="forgot-password">
-                Mot de passe oublié?
-              </a>
-            </div>
+            
             <div className="password-input-container">
               <input
                 type={showPassword ? "text" : "password"}
@@ -112,9 +107,7 @@ function LoginPage() {
             {isLoading.login ? "Connexion..." : "Se connecter"}
           </button>
 
-          <div className="signup-container">
-            Vous n'avez pas encore de compte? <a href="#" className="signup-link">S'inscrire</a>
-          </div>
+         
         </form>
       </div>
     </div>

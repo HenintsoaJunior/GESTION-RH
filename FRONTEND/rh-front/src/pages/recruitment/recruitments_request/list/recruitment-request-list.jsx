@@ -16,7 +16,6 @@ import { fetchServices } from "services/direction/service";
 import { fetchRecruitmentRequests, fetchRecruitmentRequestStats } from "services/recruitment/recruitment-request-service/recruitment-request-service";
 import Modal from "components/modal";
 import Pagination from "components/pagination";
-import DetailsRecruitmentRequest from "./recruitment-request-details";
 import RecruitmentRequestForm from "../form/recruitment-request-form"; // Import the RecruitmentRequestForm
 import {
     DashboardContainer,
@@ -326,14 +325,6 @@ const RecruitmentRequestList = () => {
                 onClose={() => setAlert({ ...alert, isOpen: false })}
                 title="Notification"
             />
-
-            {showDetailsPopup && (
-                <DetailsRecruitmentRequest
-                    requestId={selectedRequestId}
-                    isOpen={showDetailsPopup}
-                    onClose={() => setShowDetailsPopup(false)}
-                />
-            )}
 
             {/* Render the RecruitmentRequestForm as a popup */}
             <RecruitmentRequestForm isOpen={isFormOpen} onClose={handleCloseForm} />

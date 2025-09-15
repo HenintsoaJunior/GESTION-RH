@@ -3,8 +3,10 @@ using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Repositories.employee;
 using MyApp.Api.Repositories.recruitment;
 using MyApp.Api.Services.employee;
+using MyApp.Api.Services.users;
 using MyApp.Api.Utils.generator;
 using Newtonsoft.Json;
+using static MyApp.Api.Models.dto.recruitment.RecruitmentValidationDTO;
 
 namespace MyApp.Api.Services.recruitment
 {
@@ -25,6 +27,8 @@ namespace MyApp.Api.Services.recruitment
         private readonly IRecruitmentRequestRepository _requestRepository;
         private readonly IRecruitmentRequestDetailService _requestDetailService;
         private readonly IRecruitmentRequestReplacementReasonService _replacementReasonService;
+        private readonly IRecruitmentValidationService _validationService;  
+        private readonly IUserService _userService;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<RecruitmentRequestService> _logger;
 
@@ -32,19 +36,23 @@ namespace MyApp.Api.Services.recruitment
             IRecruitmentRequestRepository requestRepository,
             IRecruitmentRequestDetailService requestDetailService,
             IRecruitmentRequestReplacementReasonService replacementReasonService,
+            IRecruitmentValidationService validationService,
+            IUserService userService,
             ISequenceGenerator sequenceGenerator,
             ILogger<RecruitmentRequestService> logger)
         {
             _requestRepository = requestRepository;
             _requestDetailService = requestDetailService;
             _replacementReasonService = replacementReasonService;
+            _validationService = validationService;
+            _userService = userService;
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
         }
 
         public async Task<string> CreateRequest(RecruitmentRequest request, RecruitmentRequestDetail detail, IEnumerable<RecruitmentRequestReplacementReason> requestReplacementReasons)
         {
-            using var transaction = await _requestRepository.BeginTransactionAsync(); // tu dois exposer cette méthode dans ton repository
+            using var transaction = await _requestRepository.BeginTransactionAsync();
             try
             {
                 if (string.IsNullOrWhiteSpace(request.RecruitmentRequestId))
@@ -54,13 +62,11 @@ namespace MyApp.Api.Services.recruitment
 
                 await _requestRepository.AddAsync(request);
                 await _requestRepository.SaveChangesAsync();
-                _logger.LogInformation("Demande de recrutement créée avec l'ID: {RequestId}", request.RecruitmentRequestId);
 
                 if (detail != null)
                 {
                     detail.RecruitmentRequestId = request.RecruitmentRequestId;
                     await _requestDetailService.AddAsync(detail);
-                    _logger.LogInformation("Détail de la demande de recrutement créé avec l'ID: {DetailId}", detail.RecruitmentRequestDetailId);
                 }
 
                 if (requestReplacementReasons != null && requestReplacementReasons.Any())
@@ -73,20 +79,51 @@ namespace MyApp.Api.Services.recruitment
                     }).ToList();
 
                     await _replacementReasonService.AddRangeAsync(reasonsToAdd);
-                    _logger.LogInformation("Raisons du remplacement de la demande de recrutement créées");
+                }
+                var requester = await GetByRequesterIdAsync(request.RequesterId);
+                var firstRequester = requester.FirstOrDefault();
+
+                var superior = await _userService.GetSuperiorAsync(firstRequester?.Requester?.Matricule);
+
+                var departments = new List<string>();
+                if (!string.IsNullOrWhiteSpace(superior?.Department) && !departments.Contains(superior.Department))
+                {
+                    departments.Add(superior.Department);
+                }
+                
+                var fixedDepartments = new[] { "DRH", "DAF", "DGE" };
+                departments.AddRange(fixedDepartments.Where(dept => !departments.Contains(dept)));
+
+                foreach (var department in departments)
+                {
+                    var director = await _userService.GetDirectorByDepartmentAsync(department);
+                    if (director != null)
+                    {
+                        var validationDto = new RecruitmentValidationDTOForm
+                        {
+                            RecruitmentRequestId = request.RecruitmentRequestId,
+                            RecruitmentCreator = request.RequesterId,
+                            Status = department == superior?.Department ? "En attente" : "Brouillon",
+                            ToWhom = director.UserId,
+                            Type = department,
+                            ValidationDate = null
+                        };
+
+                        await _validationService.CreateAsync(validationDto, request.RequesterId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No director found for department: {Department}", department);
+                    }
                 }
 
-                // var approvalFlowEmployees = await _approvalFlowRepository.GetAllGroupedByApproverRoleWithActiveEmployeesAsync();
-                // await _approvalService.AddAsync(request.RecruitmentRequestId, approvalFlowEmployees);
-                // _logger.LogInformation("Approbation de la demande de recrutement créée pour l'ID: {RequestId}", request.RecruitmentRequestId);
-                //
-                // await transaction.CommitAsync(); // Valider les opérations
+                await transaction.CommitAsync();
                 return request.RecruitmentRequestId;
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync(); // Annuler si erreur
-                _logger.LogError(ex, ex.Message);
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error creating recruitment request with ID: {RequestId}", request.RecruitmentRequestId);
                 throw;
             }
         }
@@ -110,7 +147,6 @@ namespace MyApp.Api.Services.recruitment
             {
                 if (string.IsNullOrWhiteSpace(requestId))
                 {
-                    _logger.LogWarning("Tentative de récupération d'une demande avec un ID null ou vide");
                     return null;
                 }
 
@@ -129,7 +165,6 @@ namespace MyApp.Api.Services.recruitment
             {
                 if (string.IsNullOrWhiteSpace(requesterId))
                 {
-                    _logger.LogWarning("Tentative de récupération des demandes avec un ID demandeur null ou vide");
                     return Enumerable.Empty<RecruitmentRequest>();
                 }
 
@@ -148,7 +183,6 @@ namespace MyApp.Api.Services.recruitment
             {
                 if (string.IsNullOrWhiteSpace(requesterId))
                 {
-                    _logger.LogWarning("Tentative de récupération des demandes validées avec un ID demandeur null ou vide");
                     return Enumerable.Empty<RecruitmentRequest>();
                 }
 
@@ -178,7 +212,6 @@ namespace MyApp.Api.Services.recruitment
                 await _requestRepository.AddAsync(request);
                 await _requestRepository.SaveChangesAsync();
                 
-                _logger.LogInformation("Demande de recrutement ajoutée avec succès avec l'ID: {RequestId}", request.RecruitmentRequestId);
             }
             catch (Exception ex)
             {
@@ -199,7 +232,6 @@ namespace MyApp.Api.Services.recruitment
                 await _requestRepository.UpdateAsync(request);
                 await _requestRepository.SaveChangesAsync();
                 
-                _logger.LogInformation("Demande de recrutement mise à jour avec succès pour l'ID: {RequestId}", request.RecruitmentRequestId);
             }
             catch (Exception ex)
             {
@@ -220,7 +252,6 @@ namespace MyApp.Api.Services.recruitment
                 await _requestRepository.DeleteAsync(requestId);
                 await _requestRepository.SaveChangesAsync();
                 
-                _logger.LogInformation("Demande de recrutement supprimée avec succès pour l'ID: {RequestId}", requestId);
             }
             catch (Exception ex)
             {

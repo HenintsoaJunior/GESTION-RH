@@ -63,6 +63,10 @@ IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_recruitment_request_det
     DROP SEQUENCE seq_recruitment_request_detail_id;
 GO
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_recruitment_validation_id')
+    DROP SEQUENCE seq_recruitment_validation_id;
+GO
+
 IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_approval_flow_id')
     DROP SEQUENCE seq_approval_flow_id;
 GO
@@ -249,6 +253,16 @@ CREATE SEQUENCE seq_recruitment_request_detail_id
     NO CYCLE
     CACHE 50;
 GO
+
+CREATE SEQUENCE seq_recruitment_validation_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+    
 
 CREATE SEQUENCE seq_approval_flow_id
     AS INT
