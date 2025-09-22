@@ -2,6 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.recruitment;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using static MyApp.Api.Models.dto.recruitment.RecruitmentValidationDTO;
 
 namespace MyApp.Api.Repositories.recruitment
@@ -20,6 +24,8 @@ namespace MyApp.Api.Repositories.recruitment
         Task DeleteAsync(RecruitmentValidation recruitmentValidation);
         Task SaveChangesAsync();
         Task<bool> UpdateStatusAsync(string id, string status);
+        Task<RecruitmentValidation?> GetCurrentValidationAsync(string recruitmentRequestId, string validatorUserId);
+        Task<RecruitmentValidation?> GetNextPendingValidationAsync(string recruitmentRequestId);
     }
 
     public class RecruitmentValidationRepository : IRecruitmentValidationRepository
@@ -40,10 +46,19 @@ namespace MyApp.Api.Repositories.recruitment
         {
             var query = _context.RecruitmentValidations
                 .Include(rv => rv.RecruitmentRequest)
+                    .ThenInclude(rr => rr!.Requester)
+                .Include(rv => rv.RecruitmentRequest)
+                    .ThenInclude(rr => rr!.ContractType)
+                .Include(rv => rv.RecruitmentRequest)
+                    .ThenInclude(rr => rr!.Site)
+                .Include(rv => rv.RecruitmentRequest)
+                    .ThenInclude(rr => rr!.RecruitmentReason)
+                .Include(rv => rv.RecruitmentRequest)
+                    .ThenInclude(rr => rr!.RecruitmentRequestReplacementReasons)
+                        .ThenInclude(rrr => rrr!.ReplacementReason)
                 .Include(rv => rv.Creator)
                 .Include(rv => rv.Validator)
                 .Where(rv => rv.ToWhom == userId)
-                .Where(rv => rv.Status == "En attente")
                 .AsQueryable();
             var totalCount = await query.CountAsync();
             var results = await query
@@ -138,7 +153,7 @@ namespace MyApp.Api.Repositories.recruitment
                 .Include(rv => rv.Validator)
                 .Include(rv => rv.RecruitmentRequest)
                 .Where(rv => rv.RecruitmentRequestId == recruitmentRequestId)
-                .OrderByDescending(rv => rv.CreatedAt)
+                .OrderBy(rv => rv.CreatedAt)
                 .ToListAsync();
             return recruitmentValidations;
         }
@@ -185,6 +200,23 @@ namespace MyApp.Api.Repositories.recruitment
             _context.RecruitmentValidations.Update(recruitmentValidation);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<RecruitmentValidation?> GetCurrentValidationAsync(string recruitmentRequestId, string validatorUserId)
+        {
+            return await _context.RecruitmentValidations
+                .FirstOrDefaultAsync(rv => 
+                    rv.RecruitmentRequestId == recruitmentRequestId && 
+                    rv.ToWhom == validatorUserId && 
+                    rv.Status == "En attente");
+        }
+
+        public async Task<RecruitmentValidation?> GetNextPendingValidationAsync(string recruitmentRequestId)
+        {
+            return await _context.RecruitmentValidations
+                .Where(rv => rv.RecruitmentRequestId == recruitmentRequestId && rv.Status == "Brouillon")
+                .OrderBy(rv => rv.CreatedAt) // Prendre la plus ancienne en brouillon
+                .FirstOrDefaultAsync();
         }
     }
 }

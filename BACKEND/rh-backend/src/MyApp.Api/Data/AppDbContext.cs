@@ -11,6 +11,7 @@ using MyApp.Api.Entities.mission;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.users;
+using MyApp.Api.Entities.users_simple;
 
 namespace MyApp.Api.Data
 {
@@ -70,19 +71,28 @@ namespace MyApp.Api.Data
         public DbSet<ReplacementReason> ReplacementReasons { get; set; }  
         public DbSet<RecruitmentReason> RecruitmentReasons { get; set; }  
         public DbSet<RecruitmentValidation> RecruitmentValidations { get; set; }
+        public DbSet<Comments> Comments { get; set; }
+        public DbSet<RecruitmentRequestComments> RecruitmentRequestComments { get; set; }
 
+        //USERS SIMPLE
+        public DbSet<UserSimple> UsersSimple { get; set; }
+        public DbSet<Education> Educations { get; set; }
+        public DbSet<Experience> Experiences { get; set; }
+        public DbSet<Skill> Skills { get; set; }
+        public DbSet<PersonalQuality> PersonalQualities { get; set; }
+        public DbSet<Language> Languages { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Menu>()
                 .HasIndex(m => m.MenuKey)
                 .IsUnique();
-            
+
             modelBuilder.Entity<RoleHabilitation>()
                 .HasOne(rh => rh.Role)
                 .WithMany(r => r.RoleHabilitations)
                 .HasForeignKey(rh => rh.RoleId)
                 .OnDelete(DeleteBehavior.ClientCascade);
-            
+
             modelBuilder.Entity<UserRole>()
                 .HasOne(ur => ur.Role)
                 .WithMany(r => r.UserRoles)

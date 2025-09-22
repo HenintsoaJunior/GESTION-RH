@@ -4,8 +4,6 @@ namespace MyApp.Api.Models.dto.jobs
 {
     public class JobDescriptionDTO
     {
-        [MaxLength(50)]
-        public string DescriptionId { get; set; } = null!;
 
         [Required]
         [MaxLength(200)]
@@ -27,19 +25,5 @@ namespace MyApp.Api.Models.dto.jobs
 
         public DateTime? UpdatedAt { get; set; }
 
-    }
-    public class JobDescriptionDTOForm : JobDescriptionDTO
-    {
-        [Required]
-        [MaxLength(50)]
-        public string OrganigramId { get; set; } = null!;
-
-        [Required]
-        [MaxLength(50)]
-        public string HierarchicalAttachmentId { get; set; } = null!;
-
-        [Required]
-        [MaxLength(50)]
-        public string SiteId { get; set; } = null!;
     }
 }

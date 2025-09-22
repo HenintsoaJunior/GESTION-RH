@@ -26,19 +26,7 @@ namespace MyApp.Api.Repositories.jobs
         public async Task<IEnumerable<JobDescription>> GetAllByCriteriaAsync(JobDescription criteria)
         {
             var query = _context.JobDescriptions
-                .Include(j => j.Site)
-                .Include(j => j.Organigram)
-                .Include(j => j.HierarchicalAttachment)
                 .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(criteria.SiteId))
-                query = query.Where(j => j.SiteId == criteria.SiteId);
-
-            if (!string.IsNullOrWhiteSpace(criteria.OrganigramId))
-                query = query.Where(j => j.OrganigramId == criteria.OrganigramId);
-
-            if (!string.IsNullOrWhiteSpace(criteria.HierarchicalAttachmentId))
-                query = query.Where(j => j.HierarchicalAttachmentId == criteria.HierarchicalAttachmentId);
 
             if (!string.IsNullOrWhiteSpace(criteria.Title))
                 query = query.Where(j => j.Title.Contains(criteria.Title));
@@ -51,9 +39,6 @@ namespace MyApp.Api.Repositories.jobs
         public async Task<IEnumerable<JobDescription>> GetAllAsync()
         {
             return await _context.JobDescriptions
-                .Include(j => j.Site)
-                .Include(j => j.Organigram)
-                .Include(j => j.HierarchicalAttachment)
                 .OrderByDescending(j => j.CreatedAt)
                 .ToListAsync();
         }
@@ -61,9 +46,6 @@ namespace MyApp.Api.Repositories.jobs
         public async Task<JobDescription?> GetByIdAsync(string id)
         {
             return await _context.JobDescriptions
-                .Include(j => j.Site)
-                .Include(j => j.Organigram)
-                .Include(j => j.HierarchicalAttachment)
                 .FirstOrDefaultAsync(j => j.DescriptionId == id);
         }
 

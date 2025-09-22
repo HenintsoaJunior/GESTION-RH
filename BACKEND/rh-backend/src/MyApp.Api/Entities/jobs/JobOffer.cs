@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using MyApp.Api.Entities.contract;
-using MyApp.Api.Entities.site;
+using MyApp.Api.Entities.recruitment;
+using MyApp.Api.Entities.users;
 using MyApp.Api.Models.dto.jobs;
 
 namespace MyApp.Api.Entities.jobs
@@ -28,40 +28,37 @@ namespace MyApp.Api.Entities.jobs
         public int? Duration { get; set; }
 
         [Required]
-        [Column("contract_type_id")]
-        [MaxLength(50)]
-        public string ContractTypeId { get; set; } = null!;
-
-        [Required]
-        [Column("site_id")]
-        [MaxLength(50)]
-        public string SiteId { get; set; } = null!;
-
-        [Required]
         [Column("description_id")]
         [MaxLength(50)]
         public string DescriptionId { get; set; } = null!;
 
-        [ForeignKey("ContractTypeId")]
-        public ContractType? ContractType { get; set; }
-
-        [ForeignKey("SiteId")]
-        public Site? Site { get; set; }
-
         [ForeignKey("DescriptionId")]
         public JobDescription? JobDescription { get; set; }
 
+        [Required]
+        [Column("recruitment_request_id")]
+        [MaxLength(50)]
+        public string RecruitmentRequestId { get; set; } = null!;
+
+        [ForeignKey("RecruitmentRequestId")]
+        public RecruitmentRequest? RecruitmentRequest { get; set; }
+
+        [Column("requester_id")]
+        public string? RequesterId { get; set; }
+
+        [ForeignKey("RequesterId")]
+        public User? Requester { get; set; }
         public JobOffer() { }
         public JobOffer(JobOfferDTOForm jobOfferDTOForm)
         {
-            OfferId = jobOfferDTOForm.OfferId;
             Status = jobOfferDTOForm.Status;
             PublicationDate = jobOfferDTOForm.PublicationDate;
             DeadlineDate = jobOfferDTOForm.DeadlineDate;
             Duration = jobOfferDTOForm.Duration;
-            ContractTypeId = jobOfferDTOForm.ContractTypeId;
-            SiteId = jobOfferDTOForm.SiteId;
-            DescriptionId = jobOfferDTOForm.DescriptionId;
+            RecruitmentRequestId = jobOfferDTOForm.RecruitmentRequestId;
+            RequesterId = jobOfferDTOForm.RequesterId;
+            CreatedAt = DateTime.UtcNow;
+
         }
     }
 }

@@ -14,12 +14,14 @@ DROP TABLE IF EXISTS cv_details;
 DROP TABLE IF EXISTS applications;
 DROP TABLE IF EXISTS role_habilitation;
 DROP TABLE IF EXISTS user_role;
+DROP TABLE IF EXISTS recruitment_request_comments;
+DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS categories_of_employee;
+DROP TABLE IF EXISTS job_offers;
+DROP TABLE IF EXISTS job_descriptions;
 DROP TABLE IF EXISTS recruitment_requests;
 DROP TABLE IF EXISTS mission;
 DROP TABLE IF EXISTS employees;
-DROP TABLE IF EXISTS job_offers;
-DROP TABLE IF EXISTS job_descriptions;
 DROP TABLE IF EXISTS units;
 DROP TABLE IF EXISTS service;
 DROP TABLE IF EXISTS department;
@@ -43,6 +45,14 @@ DROP TABLE IF EXISTS employee_categories;
 DROP TABLE IF EXISTS contract_types;
 DROP TABLE IF EXISTS genders;
 DROP TABLE IF EXISTS nationalities;
+DROP TABLE IF EXISTS educations;
+DROP TABLE IF EXISTS experiences;
+DROP TABLE IF EXISTS skills;
+DROP TABLE IF EXISTS personal_qualities;
+DROP TABLE IF EXISTS languages;
+DROP TABLE IF EXISTS users_simple;
+
+
 
 CREATE TABLE direction(
    direction_id VARCHAR(50),
@@ -146,44 +156,6 @@ CREATE TABLE replacement_reasons(
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    PRIMARY KEY(replacement_reason_id)
-);
-
-CREATE TABLE job_descriptions(
-   description_id VARCHAR(50),
-   title VARCHAR(200) NOT NULL,
-   description TEXT,
-   attributions TEXT,
-   required_education VARCHAR(200),
-   required_experience TEXT,
-   required_personal_qualities TEXT,
-   required_skills TEXT,
-   required_languages TEXT,
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   organigram VARCHAR(50) NOT NULL,
-   hierarchical_attachment VARCHAR(50) NOT NULL,
-   site_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(description_id),
-   FOREIGN KEY(organigram) REFERENCES service(service_id),
-   FOREIGN KEY(hierarchical_attachment) REFERENCES service(service_id),
-   FOREIGN KEY(site_id) REFERENCES site(site_id)
-);
-
-CREATE TABLE job_offers(
-   offer_id VARCHAR(50),
-   status VARCHAR(20),
-   publication_date DATETIME,
-   deadline_date DATETIME,
-   duration INT,
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   contract_type_id VARCHAR(50) NOT NULL,
-   site_id VARCHAR(50) NOT NULL,
-   description_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(offer_id),
-   FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id),
-   FOREIGN KEY(site_id) REFERENCES site(site_id),
-   FOREIGN KEY(description_id) REFERENCES job_descriptions(description_id)
 );
 
 CREATE TABLE candidates(
@@ -299,6 +271,116 @@ CREATE TABLE role_habilitation(
    FOREIGN KEY(role_id) REFERENCES role(role_id)
 );
 
+
+
+CREATE TABLE recruitment_requests(
+   recruitment_request_id VARCHAR(50),
+   position_title VARCHAR(255) NOT NULL,
+   position_count INT DEFAULT 1,
+   contract_duration VARCHAR(100) NULL,
+   former_employee_name VARCHAR(255) NULL,
+   replacement_date DATE NULL,
+   new_position_explanation VARCHAR(250),
+   desired_start_date DATE NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   status VARCHAR(10) DEFAULT 'BROUILLON',
+   files VARBINARY(250),
+   requester_id VARCHAR(250) NOT NULL,
+   contract_type_id VARCHAR(50) NOT NULL,
+   site_id VARCHAR(50) NOT NULL,
+   recruitment_reason_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(recruitment_request_id),
+   FOREIGN KEY(requester_id) REFERENCES users(user_id),
+   FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id),
+   FOREIGN KEY(site_id) REFERENCES site(site_id),
+   FOREIGN KEY(recruitment_reason_id) REFERENCES recruitment_reasons(recruitment_reason_id)
+);
+
+CREATE TABLE comments(
+   comment_id VARCHAR(50),
+   comment_text TEXT,
+   user_id VARCHAR(250),
+   created_at DATETIME NOT NULL,
+   updated_at DATETIME,
+   PRIMARY KEY(comment_id),
+   FOREIGN KEY(user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE recruitment_request_comments(
+   recruitment_request_id VARCHAR(50),
+   comment_id VARCHAR(50),
+   PRIMARY KEY(recruitment_request_id, comment_id),
+   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
+   FOREIGN KEY(comment_id) REFERENCES comments(comment_id)
+);
+
+CREATE TABLE recruitment_request_details(
+   recruitment_request_detail_id VARCHAR(50),
+   supervisor_position VARCHAR(255) NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   recruitment_request_id VARCHAR(50) NOT NULL,
+   direction_id VARCHAR(50) NOT NULL,
+   department_id VARCHAR(50) NOT NULL,
+   service_id VARCHAR(50) NOT NULL,
+   direct_supervisor_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(recruitment_request_detail_id),
+   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
+   FOREIGN KEY(direction_id) REFERENCES direction(direction_id),
+   FOREIGN KEY(department_id) REFERENCES department(department_id),
+   FOREIGN KEY(service_id) REFERENCES service(service_id),
+   FOREIGN KEY(direct_supervisor_id) REFERENCES employees(employee_id)
+);
+
+CREATE TABLE recruitment_validation(
+   recruitment_validation_id VARCHAR(50),
+   status VARCHAR(50),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   validation_date DATETIME,
+   recruitment_creator VARCHAR(250) NOT NULL,
+   recruitment_request_id VARCHAR(50) NOT NULL,
+   to_whom VARCHAR(250) NOT NULL,
+   type VARCHAR(50) NOT NULL,
+   PRIMARY KEY(recruitment_validation_id),
+   FOREIGN KEY(recruitment_creator) REFERENCES users(user_id),
+   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
+   FOREIGN KEY(to_whom) REFERENCES users(user_id)
+);
+
+CREATE TABLE job_descriptions(
+   description_id VARCHAR(50),
+   title VARCHAR(200) NOT NULL,
+   description TEXT,
+   attributions TEXT,
+   required_education VARCHAR(200),
+   required_experience TEXT,
+   required_personal_qualities TEXT,
+   required_skills TEXT,
+   required_languages TEXT,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(description_id)
+);
+
+CREATE TABLE job_offers(
+   offer_id VARCHAR(50),
+   status VARCHAR(20),
+   publication_date DATETIME,
+   deadline_date DATETIME,
+   duration INT,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   description_id VARCHAR(50) NOT NULL,
+   recruitment_request_id VARCHAR(50) NOT NULL,
+   requester_id VARCHAR(250) NOT NULL,
+   PRIMARY KEY(offer_id),
+   FOREIGN KEY(requester_id) REFERENCES users(user_id),
+   FOREIGN KEY(description_id) REFERENCES job_descriptions(description_id),
+   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id)
+);
+
 CREATE TABLE applications(
    application_id VARCHAR(50),
    application_date DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -339,64 +421,6 @@ CREATE TABLE application_comments(
    PRIMARY KEY(comment_id),
    FOREIGN KEY(application_id) REFERENCES applications(application_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id)
-);
-
-CREATE TABLE recruitment_requests(
-   recruitment_request_id VARCHAR(50),
-   position_title VARCHAR(255) NOT NULL,
-   position_count INT DEFAULT 1,
-   contract_duration VARCHAR(100) NULL,
-   former_employee_name VARCHAR(255) NULL,
-   replacement_date DATE NULL,
-   new_position_explanation VARCHAR(250),
-   desired_start_date DATE NULL,
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   status VARCHAR(10) DEFAULT 'BROUILLON',
-   files VARBINARY(250),
-   requester_id VARCHAR(250) NOT NULL,
-   contract_type_id VARCHAR(50) NOT NULL,
-   site_id VARCHAR(50) NOT NULL,
-   recruitment_reason_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(recruitment_request_id),
-   FOREIGN KEY(requester_id) REFERENCES users(user_id),
-   FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id),
-   FOREIGN KEY(site_id) REFERENCES site(site_id),
-   FOREIGN KEY(recruitment_reason_id) REFERENCES recruitment_reasons(recruitment_reason_id)
-);
-
-CREATE TABLE recruitment_request_details(
-   recruitment_request_detail_id VARCHAR(50),
-   supervisor_position VARCHAR(255) NOT NULL,
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   recruitment_request_id VARCHAR(50) NOT NULL,
-   direction_id VARCHAR(50) NOT NULL,
-   department_id VARCHAR(50) NOT NULL,
-   service_id VARCHAR(50) NOT NULL,
-   direct_supervisor_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(recruitment_request_detail_id),
-   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
-   FOREIGN KEY(direction_id) REFERENCES direction(direction_id),
-   FOREIGN KEY(department_id) REFERENCES department(department_id),
-   FOREIGN KEY(service_id) REFERENCES service(service_id),
-   FOREIGN KEY(direct_supervisor_id) REFERENCES employees(employee_id)
-);
-
-CREATE TABLE recruitment_validation(
-   recruitment_validation_id VARCHAR(50),
-   status VARCHAR(50),
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   validation_date DATETIME,
-   recruitment_creator VARCHAR(250) NOT NULL,
-   recruitment_request_id VARCHAR(50) NOT NULL,
-   to_whom VARCHAR(250) NOT NULL,
-   type VARCHAR(50) NOT NULL,
-   PRIMARY KEY(recruitment_validation_id),
-   FOREIGN KEY(recruitment_creator) REFERENCES users(user_id),
-   FOREIGN KEY(recruitment_request_id) REFERENCES recruitment_requests(recruitment_request_id),
-   FOREIGN KEY(to_whom) REFERENCES users(user_id)
 );
 
 CREATE TABLE employee_nationalities(
@@ -584,5 +608,76 @@ CREATE TABLE logs(
 
 
 
+-- ============================
+-- User Simple
+-- ============================
 
 
+CREATE TABLE users_simple (
+    user_id VARCHAR(250) NOT NULL PRIMARY KEY,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    first_name VARCHAR(150) NOT NULL,
+    last_name VARCHAR(150) NULL,
+    phone_number VARCHAR(50) NULL,
+    password VARCHAR(250) NOT NULL,
+    refresh_token VARCHAR(MAX) NULL,
+    refresh_token_expiry DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME NULL DEFAULT GETDATE()
+);
+
+-- Table for Education
+CREATE TABLE educations (
+    education_id VARCHAR(250) NOT NULL PRIMARY KEY,
+    utilisateur_id VARCHAR(250) NOT NULL,
+    etablissement VARCHAR(250) NOT NULL,
+    diplome VARCHAR(250) NOT NULL,
+    annee VARCHAR(50) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME NULL DEFAULT GETDATE(),
+    FOREIGN KEY (utilisateur_id) REFERENCES users_simple(user_id) ON DELETE CASCADE
+);
+
+-- Table for Experience
+CREATE TABLE experiences (
+    experience_id VARCHAR(250) NOT NULL PRIMARY KEY,
+    utilisateur_id VARCHAR(250) NOT NULL,
+    entreprise VARCHAR(250) NOT NULL,
+    poste VARCHAR(250) NOT NULL,
+    duree VARCHAR(100) NOT NULL,
+    description TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME NULL DEFAULT GETDATE(),
+    FOREIGN KEY (utilisateur_id) REFERENCES users_simple(user_id) ON DELETE CASCADE
+);
+
+-- Table for Skills
+CREATE TABLE skills (
+    skill_id VARCHAR(250) NOT NULL PRIMARY KEY,
+    utilisateur_id VARCHAR(250) NOT NULL,
+    competence VARCHAR(250) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME NULL DEFAULT GETDATE(),
+    FOREIGN KEY (utilisateur_id) REFERENCES users_simple(user_id) ON DELETE CASCADE
+);
+
+-- Table for Personal Qualities
+CREATE TABLE personal_qualities (
+    quality_id VARCHAR(250) NOT NULL PRIMARY KEY,
+    utilisateur_id VARCHAR(250) NOT NULL,
+    qualite VARCHAR(250) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME NULL DEFAULT GETDATE(),
+    FOREIGN KEY (utilisateur_id) REFERENCES users_simple(user_id) ON DELETE CASCADE
+);
+
+-- Table for Languages
+CREATE TABLE languages (
+    language_id VARCHAR(250) NOT NULL PRIMARY KEY,
+    utilisateur_id VARCHAR(250) NOT NULL,
+    langue VARCHAR(150) NOT NULL,
+    niveau VARCHAR(50) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME NULL DEFAULT GETDATE(),
+    FOREIGN KEY (utilisateur_id) REFERENCES users_simple(user_id) ON DELETE CASCADE
+);

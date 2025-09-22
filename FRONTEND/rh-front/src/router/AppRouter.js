@@ -22,7 +22,10 @@ import ProfilePage from 'layouts/profil-page';
 import UserList from 'pages/users/users-list';
 import RoleList from 'pages/roles/roles-list';
 import LogList from 'pages/logs/logs-list';
-import RecruitmentRequestList from "../pages/recruitment/recruitments_request/list/recruitment-request-list";
+import RecruitmentRequest from "../pages/recruitment/recruitments_request/list/page";
+import RecruitmentValidationPage from "../pages/recruitment/recruitments_request/validation/page";
+import JobOffer from "../pages/recruitment/job/job-offers/list/page";
+
 
 function AppRouter() {
   return (
@@ -59,8 +62,13 @@ function AppRouter() {
           <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />
           <Route path="/mission/collaborateur" element={<CollaboratorMissionList />} />
 
-            {/* Recruitment */}
-            <Route path="/recrutement/demande" element={<RecruitmentRequestList />} />
+          {/* Recruitment */}
+          <Route path="/recrutement/demande" element={<RecruitmentRequest />} />
+          <Route path="/recrutement/validation" element={<RecruitmentValidationPage />} />
+          
+
+          <Route path="/recrutement/job/job-offer" element={<JobOffer />} />
+          
 
             {/* Transport */}
           <Route path="/transport/create" element={<TransportForm />} />

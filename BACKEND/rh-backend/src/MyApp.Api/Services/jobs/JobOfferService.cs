@@ -7,44 +7,76 @@ namespace MyApp.Api.Services.jobs
 {
     public interface IJobOfferService
     {
-        Task<IEnumerable<JobOffer>> GetAllByCriteriaAsync(JobOfferDTOForm criteria);
+        Task<(IEnumerable<JobOffer>, int)> GetAllByCriteriaAsync(JobOfferSearchDTO criteria, int page, int pageSize);
         Task<IEnumerable<JobOffer>> GetAllAsync();
         Task<JobOffer?> GetByIdAsync(string id);
-        Task<string> CreateAsync(JobOfferDTOForm dto);
+        Task<string> CreateAsync(JobOfferDTOForm dtoOffer, JobDescriptionDTO dtoDescription);
         Task<JobOffer?> UpdateAsync(string id, JobOfferDTOForm dto);
         Task<bool> DeleteAsync(string id);
+        Task<JobOfferStats> GetStatisticsAsync();
+
+        Task<IEnumerable<JobOffer>> GetLastThreeNonClosedAsync();
     }
 
     public class JobOfferService : IJobOfferService
     {
         private readonly IJobOfferRepository _repository;
+        private readonly IJobDescriptionRepository _repositoryDescription;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<JobOfferService> _logger;
 
         public JobOfferService(
             IJobOfferRepository repository,
+            IJobDescriptionRepository repositoryDescription,
             ISequenceGenerator sequenceGenerator,
             ILogger<JobOfferService> logger)
         {
             _repository = repository;
+            _repositoryDescription = repositoryDescription;
             _sequenceGenerator = sequenceGenerator;
             _logger = logger;
         }
 
-        public async Task<IEnumerable<JobOffer>> GetAllByCriteriaAsync(JobOfferDTOForm criteria)
+
+        public async Task<IEnumerable<JobOffer>> GetLastThreeNonClosedAsync()
         {
             try
             {
-                var search = new JobOffer(criteria);
-                return await _repository.GetAllByCriteriaAsync(search);
+                return await _repository.GetLastThreeNonClosedAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des offres avec critères");
+                _logger.LogError(ex, "Erreur lors de la récupération des 3 dernières offres non clôturées");
                 throw;
             }
         }
 
+        public async Task<JobOfferStats> GetStatisticsAsync()
+        {
+            try
+            {
+                return await _repository.GetStatisticsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des statistiques des offres d'emploie");
+                throw;
+            }
+        }
+
+        public async Task<(IEnumerable<JobOffer>, int)> GetAllByCriteriaAsync(JobOfferSearchDTO criteria, int page, int pageSize)
+        {
+            try
+            {
+                var (jobOffers, totalCount) = await _repository.GetAllByCriteriaAsync(criteria, page, pageSize);
+                return (jobOffers, totalCount);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des offres avec critères pour page {Page} et pageSize {PageSize}", page, pageSize);
+                throw;
+            }
+        }
         public async Task<IEnumerable<JobOffer>> GetAllAsync()
         {
             try
@@ -71,23 +103,42 @@ namespace MyApp.Api.Services.jobs
             }
         }
 
-        public async Task<string> CreateAsync(JobOfferDTOForm dto)
+        public async Task<string> CreateAsync(JobOfferDTOForm dtoOffer, JobDescriptionDTO dtoDescription)
         {
             try
             {
-                var jobOffer = new JobOffer(dto);
-
-                if (string.IsNullOrWhiteSpace(jobOffer.OfferId))
+                using var transaction = await _repository.BeginTransactionAsync();
+                try
                 {
-                    jobOffer.OfferId = _sequenceGenerator.GenerateSequence("seq_job_offer_id", "JOF", 6, "-");
+                    var jobDescriptionId = _sequenceGenerator.GenerateSequence("seq_job_description_id", "JOB", 6, "-");
+                    var jobDescription = new JobDescription(dtoDescription)
+                    {
+                        DescriptionId = jobDescriptionId
+                    };
+
+                    var jobOfferId = _sequenceGenerator.GenerateSequence("seq_job_offer_id", "JOF", 6, "-");
+
+                    var jobOffer = new JobOffer(dtoOffer)
+                    {
+                        OfferId = jobOfferId,
+                        DescriptionId = jobDescriptionId
+                    };
+
+                    await _repositoryDescription.AddAsync(jobDescription);
+                    await _repositoryDescription.SaveChangesAsync();
+                    await _repository.AddAsync(jobOffer);
+                    await _repository.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+
+                    return jobOffer.OfferId;
                 }
-
-                await _repository.AddAsync(jobOffer);
-                await _repository.SaveChangesAsync();
-
-                _logger.LogInformation("JobOffer créé avec l'ID: {JobOfferId}", jobOffer.OfferId);
-
-                return jobOffer.OfferId;
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Erreur lors de la création d'une offre d'emploi, transaction annulée");
+                    throw;
+                }
             }
             catch (Exception ex)
             {
@@ -103,7 +154,6 @@ namespace MyApp.Api.Services.jobs
                 var existing = await _repository.GetByIdAsync(id);
                 if (existing == null) return null;
 
-                // Re-crée l’objet avec le DTO mais garde l’ID existant
                 var updated = new JobOffer(dto)
                 {
                     OfferId = existing.OfferId

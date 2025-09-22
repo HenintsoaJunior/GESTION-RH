@@ -1,31 +1,4 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { Check, X, Save } from "lucide-react";
-import * as FaIcons from "react-icons/fa";
-import {
-  PopupOverlay,
-  PagePopup,
-  PopupHeader,
-  PopupTitle,
-  PopupClose,
-  PopupContent,
-  ButtonPrimary,
-} from "styles/generaliser/popup-container";
-import {
-  FormContainer,
-  StepperWrapper,
-  StepItem,
-  StepContent,
-  StepNavigation,
-  NextButton,
-  PreviousButton,
-  GenericForm,
-} from "styles/generaliser/form-container";
-import Alert from "components/alert";
-import Modal from "components/modal";
-import FirstStepForm from "./step/first-step-form";
-import SecondStepForm from "./step/second-step-form";
+import { useState, useEffect, useCallback } from "react";
 import { fetchContractTypes, getContractTypeId } from "services/contract/contract-type";
 import { fetchDirections, getDirectionId } from "services/direction/direction";
 import { fetchDepartments, getDepartmentId } from "services/direction/department";
@@ -34,52 +7,68 @@ import { fetchSites, getSiteId } from "services/site/site";
 import { fetchAllEmployees } from "services/employee/employee";
 import { fetchRecruitmentReasons, getRecruitmentReasonId } from "services/recruitment/recruitment-reason/recruitment-reason";
 import { fetchReplacementReasons, getReplacementReasonId } from "services/recruitment/recruitment-reason/replacement-reason";
-import { validateFirstStep, validateSecondStep } from "services/recruitment/recruitment-request-service/form-utils";
+import { validateFirstStep, validateSecondStep } from "services/recruitment/recruitment-request/form-utils";
 import { BASE_URL } from "config/apiConfig";
 
-export default function RecruitmentRequestForm({ isOpen, onClose }) {
+const initialFormData = {
+  positionInfo: { intitule: "", effectif: 1 },
+  contractType: { selectedType: "", duree: "", autreDetail: "" },
+  attachment: {
+    typeContrat: "",
+    direction: "",
+    departement: "",
+    service: "",
+    superieurHierarchique: "",
+    fonctionSuperieur: "",
+  },
+  workSite: { selectedSite: "" },
+  recruitmentMotive: "",
+  replacementDetails: {
+    motifs: [{ motifRemplacement: "", detail: "" }],
+    dateSurvenance: "",
+    nomPrenomsTitulaire: "",
+    datePriseService: "",
+  },
+  description: "",
+};
+
+const initialErrors = {
+  intitule: false,
+  effectif: false,
+  typeContrat: false,
+  direction: false,
+  departement: false,
+  service: false,
+  superieurHierarchique: false,
+  fonctionSuperieur: false,
+  selectedSite: false,
+  recruitmentMotive: false,
+  description: false,
+  nomPrenomsTitulaire: false,
+  datePriseService: false,
+  motifs: [],
+};
+
+const initialSuggestions = {
+  typeContrat: [],
+  direction: [],
+  departement: [],
+  service: [],
+  superieurHierarchique: [],
+  fonctionSuperieur: [],
+  motifRemplacement: [],
+  site: [],
+};
+
+export const useRecruitmentRequestForm = (isOpen) => {
+  // Form state management
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasClickedSubmit, setHasClickedSubmit] = useState(false);
-  const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  const [errorModal, setErrorModal] = useState({ isOpen: false, message: "" });
-  const [errors, setErrors] = useState({
-    intitule: false,
-    effectif: false,
-    typeContrat: false,
-    direction: false,
-    departement: false,
-    service: false,
-    superieurHierarchique: false,
-    fonctionSuperieur: false,
-    selectedSite: false,
-    recruitmentMotive: false,
-    description: false,
-    nomPrenomsTitulaire: false,
-    datePriseService: false,
-    motifs: [],
-  });
-  const [formData, setFormData] = useState({
-    positionInfo: { intitule: "", effectif: 1 },
-    contractType: { selectedType: "", duree: "", autreDetail: "" },
-    attachment: {
-      typeContrat: "",
-      direction: "",
-      departement: "",
-      service: "",
-      superieurHierarchique: "",
-      fonctionSuperieur: "",
-    },
-    workSite: { selectedSite: "" },
-    recruitmentMotive: "",
-    replacementDetails: {
-      motifs: [{ motifRemplacement: "", detail: "" }],
-      dateSurvenance: "",
-      nomPrenomsTitulaire: "",
-      datePriseService: "",
-    },
-    description: "",
-  });
+  const [formData, setFormData] = useState(initialFormData);
+  const [errors, setErrors] = useState(initialErrors);
+
+  // Reference data
   const [contractTypes, setContractTypes] = useState([]);
   const [directions, setDirections] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -88,7 +77,9 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
   const [services, setServices] = useState([]);
   const [recruitmentReasons, setRecruitmentReasons] = useState([]);
   const [replacementReasons, setReplacementReasons] = useState([]);
-  const [totalEntries, setTotalEntries] = useState(0);
+  const [suggestions, setSuggestions] = useState(initialSuggestions);
+
+  // Loading states
   const [isLoading, setIsLoading] = useState({
     contractTypes: true,
     directions: true,
@@ -99,60 +90,34 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     recruitmentReasons: true,
     replacementReasons: true,
   });
-  const [suggestions, setSuggestions] = useState({
-    typeContrat: [],
-    direction: [],
-    departement: [],
-    service: [],
-    superieurHierarchique: [],
-    fonctionSuperieur: [],
-    motifRemplacement: [],
-    site: [],
-  });
 
+  // Alert and modal states
+  const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
+  const [errorModal, setErrorModal] = useState({ isOpen: false, message: "" });
+
+  // Helper function to get employee ID
+  const getEmployeeId = useCallback((employeeName, employeesList) => {
+    const employee = employeesList.find((emp) => `${emp.lastName} ${emp.firstName}` === employeeName);
+    return employee ? employee.employeeId : "";
+  }, []);
+
+  // Reset form to initial state
+  const resetForm = useCallback(() => {
+    setFormData({ ...initialFormData });
+    setErrors({ ...initialErrors });
+    setSuggestions({ ...initialSuggestions });
+    setCurrentStep(1);
+    setHasClickedSubmit(false);
+    setIsSubmitting(false);
+  }, []);
+
+  // Initialize data when popup opens
   useEffect(() => {
     if (!isOpen) {
-      setFormData({
-        positionInfo: { intitule: "", effectif: 1 },
-        contractType: { selectedType: "", duree: "", autreDetail: "" },
-        attachment: {
-          typeContrat: "",
-          direction: "",
-          departement: "",
-          service: "",
-          superieurHierarchique: "",
-          fonctionSuperieur: "",
-        },
-        workSite: { selectedSite: "" },
-        recruitmentMotive: "",
-        replacementDetails: {
-          motifs: [{ motifRemplacement: "", detail: "" }],
-          dateSurvenance: "",
-          nomPrenomsTitulaire: "",
-          datePriseService: "",
-        },
-        description: "",
-      });
-      setErrors({
-        intitule: false,
-        effectif: false,
-        typeContrat: false,
-        direction: false,
-        departement: false,
-        service: false,
-        superieurHierarchique: false,
-        fonctionSuperieur: false,
-        selectedSite: false,
-        recruitmentMotive: false,
-        description: false,
-        nomPrenomsTitulaire: false,
-        datePriseService: false,
-        motifs: [],
-      });
-      setCurrentStep(1);
+      resetForm();
       return;
     }
-
+    // Fetch all reference data
     fetchContractTypes(setContractTypes, setIsLoading, setSuggestions, setAlert);
     fetchDirections(setDirections, setIsLoading, setSuggestions, setAlert);
     fetchDepartments(setDepartments, setIsLoading, setSuggestions, setAlert);
@@ -161,8 +126,9 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     fetchServices(setServices, setIsLoading, setSuggestions, setAlert);
     fetchRecruitmentReasons(setRecruitmentReasons, setIsLoading, setAlert);
     fetchReplacementReasons(setReplacementReasons, setIsLoading, setSuggestions, setAlert);
-  }, [isOpen]);
+  }, [isOpen, resetForm]);
 
+  // Filter departments based on selected direction
   useEffect(() => {
     if (formData.attachment.direction && departments.length > 0 && directions.length > 0) {
       const selectedDirection = directions.find((dir) => dir.directionName === formData.attachment.direction);
@@ -183,7 +149,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
         service: [],
       }));
     }
-
+    // Reset department and service when direction changes
     if (formData.attachment.departement || formData.attachment.service) {
       setFormData((prev) => ({
         ...prev,
@@ -201,6 +167,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     }
   }, [formData.attachment.direction, departments, directions]);
 
+  // Filter services based on selected department
   useEffect(() => {
     if (formData.attachment.departement && departments.length > 0 && services.length > 0) {
       const selectedDepartment = departments.find(
@@ -221,7 +188,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
         service: [],
       }));
     }
-
+    // Reset service when department changes
     if (formData.attachment.service) {
       setFormData((prev) => ({
         ...prev,
@@ -237,6 +204,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     }
   }, [formData.attachment.departement, departments, services]);
 
+  // Update employee suggestions
   useEffect(() => {
     if (employees.length > 0) {
       setSuggestions((prev) => ({
@@ -246,6 +214,7 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     }
   }, [employees]);
 
+  // Auto-fill supervisor function based on selected employee
   useEffect(() => {
     if (formData.attachment.superieurHierarchique && employees.length > 0) {
       const selectedEmployee = employees.find(
@@ -273,25 +242,30 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
     }
   }, [formData.attachment.superieurHierarchique, employees]);
 
-  const handleAddNewSuggestion = (field, value) => {
+  // Form handlers
+  const handleAddNewSuggestion = useCallback((field, value) => {
     setSuggestions((prev) => ({
       ...prev,
       [field]: [...new Set([...prev[field], value])],
     }));
     setAlert({ isOpen: true, type: "success", message: `"${value}" ajouté aux suggestions pour ${field}` });
-  };
+  }, []);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
+    const showValidationModal = (type, message) => {
+      setErrorModal({ isOpen: true, type, message });
+    };
+
     if (validateFirstStep(formData, setErrors, showValidationModal)) {
       setCurrentStep(2);
     }
-  };
+  }, [formData]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     setCurrentStep(1);
-  };
+  }, []);
 
-  const handleAddMotif = () => {
+  const handleAddMotif = useCallback(() => {
     setFormData((prev) => ({
       ...prev,
       replacementDetails: {
@@ -303,9 +277,9 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
       ...prev,
       motifs: [...prev.motifs, { motifRemplacement: false, detail: false }],
     }));
-  };
+  }, []);
 
-  const handleRemoveMotif = (index) => {
+  const handleRemoveMotif = useCallback((index) => {
     setFormData((prev) => ({
       ...prev,
       replacementDetails: {
@@ -317,9 +291,9 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
       ...prev,
       motifs: prev.motifs.filter((_, i) => i !== index),
     }));
-  };
+  }, []);
 
-  const handleMotifChange = (index, field, value) => {
+  const handleMotifChange = useCallback((index, field, value) => {
     setFormData((prev) => {
       const updatedMotifs = [...prev.replacementDetails.motifs];
       updatedMotifs[index] = { ...updatedMotifs[index], [field]: value };
@@ -333,37 +307,31 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
       updatedMotifs[index] = { ...updatedMotifs[index], [field]: false };
       return { ...prev, motifs: updatedMotifs };
     });
-  };
+  }, []);
 
-  const showValidationModal = (type, message) => {
-    setErrorModal({ isOpen: true, type, message });
-  };
-
-  const getEmployeeId = (employeeName, employeesList) => {
-    const employee = employeesList.find((emp) => `${emp.lastName} ${emp.firstName}` === employeeName);
-    return employee ? employee.employeeId : "";
-  };
-
-  const handleSubmit = async (event) => {
-    const userData = JSON.parse(localStorage.getItem("user"));
-    const userId = userData?.userId;
-
+  const handleSubmit = useCallback(async (event) => {
     event.preventDefault();
+
     if (hasClickedSubmit || isSubmitting) {
       console.warn("Submission already in progress. Ignoring additional submit.");
       return;
     }
 
+    const showValidationModal = (type, message) => {
+      setErrorModal({ isOpen: true, type, message });
+    };
+
     if (!validateSecondStep(formData, setErrors, showValidationModal)) {
       return;
     }
 
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const userId = userData?.userId;
     setHasClickedSubmit(true);
     setIsSubmitting(true);
 
     try {
       const { positionInfo, contractType, attachment, workSite, recruitmentMotive, replacementDetails, description } = formData;
-
       const requestData = {
         positionTitle: positionInfo.intitule,
         positionCount: positionInfo.effectif,
@@ -412,181 +380,107 @@ export default function RecruitmentRequestForm({ isOpen, onClose }) {
 
       if (response.ok) {
         setAlert({ isOpen: true, type: "success", message: "Demande de recrutement soumise avec succès !" });
-        handleReset(false);
-        onClose();
+        // Auto-dismiss the alert after 1.5 seconds
+        setTimeout(() => {
+          closeAlert();
+        }, 1500);
+        resetForm();
+        return { success: true };
       } else {
         const errorData = await response.text();
-        setErrorModal({ isOpen: true, type: "error", message: `Erreur lors de la soumission: ${errorData || response.statusText}` });
+        setErrorModal({
+          isOpen: true,
+          type: "error",
+          message: `Erreur lors de la soumission: ${errorData || response.statusText}`,
+        });
+        return { success: false, error: errorData || response.statusText };
       }
     } catch (error) {
-      setErrorModal({ isOpen: true, type: "error", message: `Erreur de connexion: ${error.message}` });
+      setErrorModal({
+        isOpen: true,
+        type: "error",
+        message: `Erreur de connexion: ${error.message}`,
+      });
+      return { success: false, error: error.message };
     } finally {
       setIsSubmitting(false);
       setHasClickedSubmit(false);
     }
-  };
+  }, [
+    formData,
+    hasClickedSubmit,
+    isSubmitting,
+    contractTypes,
+    sites,
+    recruitmentReasons,
+    directions,
+    departments,
+    services,
+    employees,
+    replacementReasons,
+    getEmployeeId,
+    resetForm,
+  ]);
 
-  const handleReset = (showAlert = true) => {
-    setCurrentStep(1);
-    setFormData({
-      positionInfo: { intitule: "", effectif: 1 },
-      contractType: { selectedType: "", duree: "", autreDetail: "" },
-      attachment: {
-        typeContrat: "",
-        direction: "",
-        departement: "",
-        service: "",
-        superieurHierarchique: "",
-        fonctionSuperieur: "",
-      },
-      workSite: { selectedSite: "" },
-      recruitmentMotive: "",
-      replacementDetails: {
-        motifs: [{ motifRemplacement: "", detail: "" }],
-        dateSurvenance: "",
-        nomPrenomsTitulaire: "",
-        datePriseService: "",
-      },
-      description: "",
-    });
-    setErrors({
-      intitule: false,
-      effectif: false,
-      typeContrat: false,
-      direction: false,
-      departement: false,
-      service: false,
-      superieurHierarchique: false,
-      fonctionSuperieur: false,
-      selectedSite: false,
-      recruitmentMotive: false,
-      description: false,
-      nomPrenomsTitulaire: false,
-      datePriseService: false,
-      motifs: [],
-    });
+  const handleReset = useCallback((showAlert = true) => {
+    resetForm();
     if (showAlert) {
       setAlert({ isOpen: true, type: "info", message: "Formulaire réinitialisé." });
     }
+  }, [resetForm]);
+
+  // Alert handlers
+  const closeAlert = useCallback(() => {
+    setAlert((prev) => ({ ...prev, isOpen: false }));
+  }, []);
+
+  const closeErrorModal = useCallback(() => {
+    setErrorModal({ isOpen: false, message: "" });
+  }, []);
+
+  return {
+    // Form state
+    currentStep,
+    formData,
+    setFormData,
+    errors,
+    setErrors,
+    isSubmitting,
+    hasClickedSubmit,
+
+    // Reference data
+    contractTypes,
+    directions,
+    departments,
+    employees,
+    sites,
+    services,
+    recruitmentReasons,
+    replacementReasons,
+    suggestions,
+
+    // Loading states
+    isLoading,
+
+    // Alert and modal states
+    alert,
+    errorModal,
+
+    // Form handlers
+    handleNext,
+    handlePrevious,
+    handleAddMotif,
+    handleRemoveMotif,
+    handleMotifChange,
+    handleAddNewSuggestion,
+    handleSubmit,
+    handleReset,
+
+    // Alert handlers
+    closeAlert,
+    closeErrorModal,
+
+    // Utility functions
+    resetForm,
   };
-
-  const handleCancel = () => {
-    handleReset(true);
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <PopupOverlay>
-      <PagePopup>
-        <PopupHeader>
-          <PopupTitle>Demande de Recrutement</PopupTitle>
-          <PopupClose
-            onClick={handleCancel}
-            disabled={isSubmitting}
-            title={isSubmitting ? "Impossible de fermer pendant la soumission" : "Fermer"}
-          >
-            ×
-          </PopupClose>
-        </PopupHeader>
-
-        <PopupContent>
-          {alert.isOpen && (
-            <Alert
-              type={alert.type}
-              message={alert.message}
-              isOpen={alert.isOpen}
-              onClose={() => setAlert({ ...alert, isOpen: false })}
-            />
-          )}
-          <Modal
-            type={errorModal.type}
-            message={errorModal.message}
-            isOpen={errorModal.isOpen}
-            onClose={() => setErrorModal({ isOpen: false, message: "" })}
-            title="Erreur de validation"
-          >
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
-              <ButtonPrimary onClick={() => setErrorModal({ isOpen: false, message: "" })}>
-                OK
-              </ButtonPrimary>
-            </div>
-          </Modal>
-          <FormContainer>
-            <StepperWrapper>
-              <StepItem active={currentStep === 1 ? "true" : "false"}>
-                <span>1</span> Informations du Poste
-              </StepItem>
-              <StepItem active={currentStep === 2 ? "true" : "false"}>
-                <span>2</span> Motif et Planification
-              </StepItem>
-            </StepperWrapper>
-
-            <GenericForm id="recruitmentRequestForm" onSubmit={handleSubmit}>
-              {currentStep === 1 && (
-                <StepContent active="true">
-                  <FirstStepForm
-                    formData={formData}
-                    setFormData={setFormData}
-                    errors={errors}
-                    setErrors={setErrors}
-                    suggestions={suggestions}
-                    isLoading={isLoading}
-                    isSubmitting={isSubmitting}
-                    handleAddNewSuggestion={handleAddNewSuggestion}
-                  />
-                  <StepNavigation>
-                    <NextButton
-                      type="button"
-                      onClick={handleNext}
-                      disabled={isSubmitting || Object.values(isLoading).some((loading) => loading)}
-                    >
-                      Suivant <FaIcons.FaArrowRight className="w-4 h-4" />
-                    </NextButton>
-                  </StepNavigation>
-                </StepContent>
-              )}
-
-              {currentStep === 2 && (
-                <StepContent active="true">
-                  <SecondStepForm
-                    formData={formData}
-                    setFormData={setFormData}
-                    errors={errors}
-                    setErrors={setErrors}
-                    recruitmentReasons={recruitmentReasons}
-                    suggestions={suggestions}
-                    isLoading={isLoading}
-                    isSubmitting={isSubmitting}
-                    handleMotifChange={handleMotifChange}
-                    handleAddMotif={handleAddMotif}
-                    handleRemoveMotif={handleRemoveMotif}
-                    handleAddNewSuggestion={handleAddNewSuggestion}
-                  />
-                  <StepNavigation>
-                    <PreviousButton
-                      type="button"
-                      onClick={handlePrevious}
-                      disabled={isSubmitting}
-                    >
-                      <FaIcons.FaArrowLeft className="w-4 h-4" /> Précédent
-                    </PreviousButton>
-                    <ButtonPrimary
-                      type="submit"
-                      disabled={isSubmitting || hasClickedSubmit}
-                      title="Valider la demande"
-                    >
-                      <Save size={16} />
-                      <span>{isSubmitting ? "Envoi en cours..." : "Valider"}</span>
-                    </ButtonPrimary>
-                  </StepNavigation>
-                </StepContent>
-              )}
-            </GenericForm>
-          </FormContainer>
-        </PopupContent>
-      </PagePopup>
-    </PopupOverlay>
-  );
-}
+};

@@ -1,11 +1,10 @@
-import * as FaIcons from "react-icons/fa";
 import {
   FormSectionTitle,
   FormTable,
   FormRow,
   FormFieldCell,
-  FormLabel,
   FormLabelRequired,
+  FormLabel,
   FormInput,
   StyledAutoCompleteInput,
   ErrorMessage,
@@ -21,6 +20,18 @@ export default function FirstStepForm({
   isSubmitting,
   handleAddNewSuggestion,
 }) {
+  
+  const updateFormField = (section, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], [field]: value },
+    }));
+  };
+
+  const clearError = (field) => {
+    setErrors((prev) => ({ ...prev, [field]: false }));
+  };
+
   return (
     <>
       <FormSectionTitle>Informations du Poste</FormSectionTitle>
@@ -33,11 +44,8 @@ export default function FirstStepForm({
                 type="text"
                 value={formData.positionInfo.intitule}
                 onChange={(e) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    positionInfo: { ...prev.positionInfo, intitule: e.target.value },
-                  }));
-                  setErrors((prev) => ({ ...prev, intitule: false }));
+                  updateFormField('positionInfo', 'intitule', e.target.value);
+                  clearError('intitule');
                 }}
                 placeholder="Ex: Développeur Full Stack"
                 disabled={isSubmitting}
@@ -51,11 +59,8 @@ export default function FirstStepForm({
                 type="number"
                 value={formData.positionInfo.effectif}
                 onChange={(e) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    positionInfo: { ...prev.positionInfo, effectif: parseInt(e.target.value) || 1 },
-                  }));
-                  setErrors((prev) => ({ ...prev, effectif: false }));
+                  updateFormField('positionInfo', 'effectif', parseInt(e.target.value) || 1);
+                  clearError('effectif');
                 }}
                 min="1"
                 disabled={isSubmitting}
@@ -76,11 +81,8 @@ export default function FirstStepForm({
               <StyledAutoCompleteInput
                 value={formData.attachment.typeContrat}
                 onChange={(value) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    attachment: { ...prev.attachment, typeContrat: value },
-                  }));
-                  setErrors((prev) => ({ ...prev, typeContrat: false }));
+                  updateFormField('attachment', 'typeContrat', value);
+                  clearError('typeContrat');
                 }}
                 suggestions={suggestions.typeContrat}
                 placeholder={
@@ -104,12 +106,7 @@ export default function FirstStepForm({
               <FormInput
                 type="text"
                 value={formData.contractType.duree}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    contractType: { ...prev.contractType, duree: e.target.value },
-                  }))
-                }
+                onChange={(e) => updateFormField('contractType', 'duree', e.target.value)}
                 placeholder="Ex : 6 mois, 1 an"
                 disabled={isSubmitting}
               />
@@ -127,11 +124,8 @@ export default function FirstStepForm({
               <StyledAutoCompleteInput
                 value={formData.attachment.direction}
                 onChange={(value) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    attachment: { ...prev.attachment, direction: value },
-                  }));
-                  setErrors((prev) => ({ ...prev, direction: false }));
+                  updateFormField('attachment', 'direction', value);
+                  clearError('direction');
                 }}
                 suggestions={suggestions.direction}
                 placeholder={
@@ -155,11 +149,8 @@ export default function FirstStepForm({
               <StyledAutoCompleteInput
                 value={formData.attachment.departement}
                 onChange={(value) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    attachment: { ...prev.attachment, departement: value },
-                  }));
-                  setErrors((prev) => ({ ...prev, departement: false }));
+                  updateFormField('attachment', 'departement', value);
+                  clearError('departement');
                 }}
                 suggestions={suggestions.departement}
                 placeholder={
@@ -185,11 +176,8 @@ export default function FirstStepForm({
               <StyledAutoCompleteInput
                 value={formData.attachment.service}
                 onChange={(value) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    attachment: { ...prev.attachment, service: value },
-                  }));
-                  setErrors((prev) => ({ ...prev, service: false }));
+                  updateFormField('attachment', 'service', value);
+                  clearError('service');
                 }}
                 suggestions={suggestions.service}
                 placeholder={
@@ -213,21 +201,18 @@ export default function FirstStepForm({
               <StyledAutoCompleteInput
                 value={formData.attachment.superieurHierarchique}
                 onChange={(value) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    attachment: { ...prev.attachment, superieurHierarchique: value },
-                  }));
-                  setErrors((prev) => ({ ...prev, superieurHierarchique: false }));
+                  updateFormField('attachment', 'superieurHierarchique', value);
+                  clearError('superieurHierarchique');
                 }}
                 suggestions={suggestions.superieurHierarchique}
                 placeholder={
-                  isLoading.users
+                  isLoading.employees
                     ? "Chargement..."
                     : suggestions.superieurHierarchique.length === 0
                     ? "Aucun supérieur disponible"
                     : "Saisir ou sélectionner..."
                 }
-                disabled={isSubmitting || isLoading.users || !formData.attachment.service}
+                disabled={isSubmitting || isLoading.employees || !formData.attachment.service}
                 showAddOption={false}
                 fieldType="superieurHierarchique"
                 fieldLabel="supérieur hiérarchique"
@@ -262,11 +247,8 @@ export default function FirstStepForm({
               <StyledAutoCompleteInput
                 value={formData.workSite.selectedSite}
                 onChange={(value) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    workSite: { ...prev.workSite, selectedSite: value },
-                  }));
-                  setErrors((prev) => ({ ...prev, selectedSite: false }));
+                  updateFormField('workSite', 'selectedSite', value);
+                  clearError('selectedSite');
                 }}
                 suggestions={suggestions.site}
                 placeholder={
