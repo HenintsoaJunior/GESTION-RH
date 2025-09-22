@@ -80,6 +80,9 @@ namespace MyApp.Api.Repositories.recruitment
                     .ThenInclude(rr => rr!.Site)
                 .Include(r => r.RecruitmentRequest)
                     .ThenInclude(rr => rr!.RecruitmentReason)
+                .Include(r => r.RecruitmentRequest)
+                    .ThenInclude(rr => rr!.RecruitmentRequestReplacementReasons)
+                        .ThenInclude(rrr => rrr!.ReplacementReason)
                 .ToListAsync();
         }
 

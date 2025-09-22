@@ -28,17 +28,34 @@ namespace MyApp.Api.Controllers.jobs
         }
 
         [HttpPost("search")]
-        public async Task<IActionResult> GetAllByCriteria([FromBody] JobOfferDTOForm criteria)
+        public async Task<IActionResult> GetAllByCriteria(
+            [FromBody] JobOfferSearchDTO criteria,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             try
             {
-                var offers = await service.GetAllByCriteriaAsync(criteria);
-                return Ok(offers);
+                if (page < 1 || pageSize < 1)
+                {
+                    return BadRequest("Page and pageSize must be positive integers.");
+                }
+
+                var (offers, totalCount) = await service.GetAllByCriteriaAsync(criteria, page, pageSize);
+                
+                var response = new
+                {
+                    Data = offers,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize
+                };
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Erreur lors de la recherche des offres d'emploi par critères");
-                return StatusCode(500, "Une erreur est survenue lors de la recherche des offres d'emploi");
+                logger.LogError(ex, "Erreur lors de la recherche des offres d'emploi par critères pour page {Page} et pageSize {PageSize}", page, pageSize);
+                return StatusCode(500, new { Error = "Une erreur est survenue lors de la recherche des offres d'emploi" });
             }
         }
 
@@ -63,14 +80,14 @@ namespace MyApp.Api.Controllers.jobs
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] JobOfferDTOForm dto)
+        public async Task<IActionResult> Create([FromBody] CreateJobOfferRequest dtoOffer)
         {
             try
             {
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                var id = await service.CreateAsync(dto);
+                var id = await service.CreateAsync(dtoOffer.Offer, dtoOffer.Description);
                 return CreatedAtAction(nameof(GetById), new { id }, new { id });
             }
             catch (Exception ex)
@@ -120,6 +137,36 @@ namespace MyApp.Api.Controllers.jobs
             {
                 logger.LogError(ex, "Erreur lors de la suppression de l'offre d'emploi avec ID {JobOfferId}", id);
                 return StatusCode(500, "Une erreur est survenue lors de la suppression de l'offre d'emploi");
+            }
+        }
+
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetStatistics()
+        {
+            try
+            {
+                var stats = await service.GetStatisticsAsync();
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération des statistiques des offres d'emploi");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des statistiques des offres d'emploi");
+            }
+        }
+
+        [HttpGet("last-three-non-closed")]
+        public async Task<IActionResult> GetLastThreeNonClosed()
+        {
+            try
+            {
+                var offers = await service.GetLastThreeNonClosedAsync();
+                return Ok(offers);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération des 3 dernières offres d'emploi non clôturées");
+                return StatusCode(500, "Une erreur est survenue lors de la récupération des 3 dernières offres d'emploi non clôturées");
             }
         }
     }

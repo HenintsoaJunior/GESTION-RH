@@ -7,11 +7,11 @@ namespace MyApp.Api.Services.jobs
 {
     public interface IJobDescriptionService
     {
-        Task<IEnumerable<JobDescription>> GetAllByCriteriaAsync(JobDescriptionDTOForm criteria);
+        Task<IEnumerable<JobDescription>> GetAllByCriteriaAsync(JobDescriptionDTO criteria);
         Task<IEnumerable<JobDescription>> GetAllAsync();
         Task<JobDescription?> GetByIdAsync(string id);
-        Task<string> CreateAsync(JobDescriptionDTOForm dto);
-        Task<JobDescription?> UpdateAsync(string id, JobDescriptionDTOForm dto);
+        Task<string> CreateAsync(JobDescriptionDTO dto);
+        Task<JobDescription?> UpdateAsync(string id, JobDescriptionDTO dto);
         Task<bool> DeleteAsync(string id);
     }
 
@@ -31,7 +31,7 @@ namespace MyApp.Api.Services.jobs
             _logger = logger;
         }
 
-        public async Task<IEnumerable<JobDescription>> GetAllByCriteriaAsync(JobDescriptionDTOForm criteria)
+        public async Task<IEnumerable<JobDescription>> GetAllByCriteriaAsync(JobDescriptionDTO criteria)
         {
             try
             {
@@ -71,7 +71,7 @@ namespace MyApp.Api.Services.jobs
             }
         }
 
-        public async Task<string> CreateAsync(JobDescriptionDTOForm dto)
+        public async Task<string> CreateAsync(JobDescriptionDTO dto)
         {
             try
             {
@@ -93,7 +93,7 @@ namespace MyApp.Api.Services.jobs
             }
         }
 
-        public async Task<JobDescription?> UpdateAsync(string id, JobDescriptionDTOForm dto)
+        public async Task<JobDescription?> UpdateAsync(string id, JobDescriptionDTO dto)
         {
             try
             {

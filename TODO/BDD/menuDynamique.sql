@@ -20,7 +20,7 @@ CREATE TABLE menu (
    is_enabled BIT DEFAULT 1,
    position INT,
    module_id VARCHAR(50),
-   section VARCHAR(50) NOT NULL, -- ajout section obligatoire
+   section VARCHAR(50) NOT NULL,
    created_at DATETIME NOT NULL DEFAULT GETDATE(),
    updated_at DATETIME NOT NULL DEFAULT GETDATE(),
    FOREIGN KEY (module_id) REFERENCES module(module_id)
@@ -65,7 +65,6 @@ INSERT INTO module (module_id, module_name, description, created_at, updated_at)
 -- ============================
 -- Insert menus (avec section)
 -- ============================
-
 -- Administration: utilisateur
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu0', 'utilisateurs', 'fa-users', '/utilisateur', 1, 1, 'user', 'administration', GETDATE(), GETDATE());
@@ -89,7 +88,9 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 -- Navigation: recrutement
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu_recrutement', 'recrutement', 'fa-user-tie', '/recrutement', 1, 6, 'recrutement', 'navigation', GETDATE(), GETDATE()),
-('menu_recrutement_demande', 'demande', 'fa-file-signature', '/recrutement/demande', 1, 1, 'recrutement', 'navigation', GETDATE(), GETDATE());
+('menu_recrutement_validation', 'validation', 'fa-check-circle', '/recrutement/validation', 1, 1, 'recrutement', 'navigation', GETDATE(), GETDATE()),
+('menu_recrutement_demande', 'demande', 'fa-file-signature', '/recrutement/demande', 1, 2, 'recrutement', 'navigation', GETDATE(), GETDATE()),
+('menu_recrutement_fiche', 'fiche-de-poste', 'fa-id-card', '/recrutement/job/job-offer', 1, 3, 'recrutement', 'navigation', GETDATE(), GETDATE());
 
 -- ============================
 -- Insert menu hierarchy
@@ -104,10 +105,12 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
 ('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE()),
 ('h_recrutement', NULL, 'menu_recrutement', GETDATE(), GETDATE()),
-('h_recrutement_demande', 'menu_recrutement', 'menu_recrutement_demande', GETDATE(), GETDATE());
+('h_recrutement_validation', 'menu_recrutement', 'menu_recrutement_validation', GETDATE(), GETDATE()),
+('h_recrutement_demande', 'menu_recrutement', 'menu_recrutement_demande', GETDATE(), GETDATE()),
+('h_recrutement_fiche', 'menu_recrutement', 'menu_recrutement_fiche', GETDATE(), GETDATE());
 
 -- ============================
--- Roles associés
+-- Insert menu roles
 -- ============================
 INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
 -- Utilisateur
@@ -124,4 +127,6 @@ INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
 ('menu2_4', 'ROLE_001', GETDATE(), GETDATE()),
 -- Recrutement
 ('menu_recrutement', 'ROLE_001', GETDATE(), GETDATE()),
-('menu_recrutement_demande', 'ROLE_001', GETDATE(), GETDATE());
+('menu_recrutement_validation', 'ROLE_001', GETDATE(), GETDATE()),
+('menu_recrutement_demande', 'ROLE_001', GETDATE(), GETDATE()),
+('menu_recrutement_fiche', 'ROLE_001', GETDATE(), GETDATE());

@@ -12,7 +12,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // Match the audience from the token
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5432")
               .AllowAnyMethod()
               .AllowAnyHeader();
     });

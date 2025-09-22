@@ -69,7 +69,10 @@ function LoginPage() {
           </div>
 
           <div className="form-group">
-            
+            <div className="password-header">
+              <label className="form-label">Mot de passe</label>
+              
+            </div>
             <div className="password-input-container">
               <input
                 type={showPassword ? "text" : "password"}

@@ -18,8 +18,6 @@ namespace MyApp.Api.Controllers.mission
         private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         private readonly ILogger<MissionValidationController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         
-        //prendre l'évolution de ma demande
-        // GET: api/MissionValidation/assignation/{assignationId}
         [HttpGet("by-assignation-id/{assignationId}")]
         public async Task<IActionResult> GetByAssignationId(string assignationId)
         {
@@ -27,16 +25,13 @@ namespace MyApp.Api.Controllers.mission
             {
                 if (string.IsNullOrWhiteSpace(assignationId))
                 {
-                    _logger.LogWarning("Tentative de récupération avec un assignationId null ou vide");
                     return BadRequest(new { message = "L'assignationId ne peut pas être null ou vide." });
                 }
 
-                _logger.LogInformation("Récupération de la validation de mission pour assignationId={AssignationId}", assignationId);
                 var entity = await _missionValidationService.GetByAssignationIdAsync(assignationId);
 
                 if (entity != null) return Ok(entity);
 
-                _logger.LogWarning("Validation de mission non trouvée pour assignationId={AssignationId}", assignationId);
                 return NotFound(new { message = $"Validation de mission pour assignationId {assignationId} non trouvée." });
             }
             catch (Exception ex)

@@ -13,6 +13,7 @@ namespace MyApp.Api.Controllers.recruitment
         ILogger<RecruitmentRequestController> logger)
         : ControllerBase
     {
+        
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RecruitmentRequestDetail>>> GetAll()
         {
@@ -117,12 +118,11 @@ namespace MyApp.Api.Controllers.recruitment
                     return BadRequest("L'ID de la demande de recrutement ne peut pas être null ou vide.");
                 }
 
-                logger.LogInformation("Récupération du détail de la demande de recrutement avec l'ID: {RecruitmentRequestId}", recruitmentRequestId);
                 var detail = await serviceDetails.GetSingleByRequestIdAsync(recruitmentRequestId);
                 if (detail != null) return Ok(detail);
                 logger.LogWarning("Détail de demande de recrutement non trouvé pour l'ID: {RecruitmentRequestId}", recruitmentRequestId);
                 return NotFound();
-
+                
             }
             catch (Exception ex)
             {

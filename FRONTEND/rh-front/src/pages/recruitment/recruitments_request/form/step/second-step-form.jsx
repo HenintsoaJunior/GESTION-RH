@@ -26,6 +26,29 @@ export default function SecondStepForm({
   handleRemoveMotif,
   handleAddNewSuggestion,
 }) {
+
+  const clearError = (field) => {
+    setErrors((prev) => ({ ...prev, [field]: false }));
+  };
+
+  const updateRecruitmentMotive = (value) => {
+    setFormData((prev) => ({ ...prev, recruitmentMotive: value }));
+    clearError('recruitmentMotive');
+  };
+
+  const updateReplacementDetails = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      replacementDetails: { ...prev.replacementDetails, [field]: value },
+    }));
+    clearError(field);
+  };
+
+  const updateDescription = (value) => {
+    setFormData((prev) => ({ ...prev, description: value }));
+    clearError('description');
+  };
+
   return (
     <>
       <FormSectionTitle>Motif du Recrutement</FormSectionTitle>
@@ -42,17 +65,20 @@ export default function SecondStepForm({
                   name="recruitmentMotive"
                   value={reason.name}
                   checked={formData.recruitmentMotive === reason.name}
-                  onChange={(e) => {
-                    setFormData((prev) => ({ ...prev, recruitmentMotive: e.target.value }));
-                    setErrors((prev) => ({ ...prev, recruitmentMotive: false }));
-                  }}
+                  onChange={(e) => updateRecruitmentMotive(e.target.value)}
                   disabled={isSubmitting || isLoading.recruitmentReasons}
                   className={errors.recruitmentMotive ? "input-error" : ""}
                 />
-                {errors.recruitmentMotive && <ErrorMessage>Veuillez sélectionner un motif de recrutement.</ErrorMessage>}
               </FormFieldCell>
             </FormRow>
           ))}
+          {errors.recruitmentMotive && (
+            <FormRow>
+              <FormFieldCell colSpan="2">
+                <ErrorMessage>Veuillez sélectionner un motif de recrutement.</ErrorMessage>
+              </FormFieldCell>
+            </FormRow>
+          )}
         </tbody>
       </FormTable>
 
@@ -96,7 +122,9 @@ export default function SecondStepForm({
                       disabled={isSubmitting}
                       className={errors.motifs[index]?.detail ? "input-error" : ""}
                     />
-                    {errors.motifs[index]?.detail && <ErrorMessage>Veuillez fournir un détail pour le motif.</ErrorMessage>}
+                    {errors.motifs[index]?.detail && (
+                      <ErrorMessage>Veuillez fournir un détail pour le motif.</ErrorMessage>
+                    )}
                   </FormFieldCell>
                   <FormFieldCell>
                     <button
@@ -131,29 +159,20 @@ export default function SecondStepForm({
                   <FormInput
                     type="date"
                     value={formData.replacementDetails.dateSurvenance}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        replacementDetails: { ...prev.replacementDetails, dateSurvenance: e.target.value },
-                      }))
-                    }
+                    onChange={(e) => updateReplacementDetails('dateSurvenance', e.target.value)}
                     disabled={isSubmitting}
                     className={errors.dateSurvenance ? "input-error" : ""}
                   />
-                  {errors.dateSurvenance && <ErrorMessage>Veuillez sélectionner une date de survenance.</ErrorMessage>}
+                  {errors.dateSurvenance && (
+                    <ErrorMessage>Veuillez sélectionner une date de survenance.</ErrorMessage>
+                  )}
                 </FormFieldCell>
                 <FormFieldCell>
                   <FormLabelRequired>Nom et prénoms de l'ancien(ne) titulaire</FormLabelRequired>
                   <FormInput
                     type="text"
                     value={formData.replacementDetails.nomPrenomsTitulaire}
-                    onChange={(e) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        replacementDetails: { ...prev.replacementDetails, nomPrenomsTitulaire: e.target.value },
-                      }));
-                      setErrors((prev) => ({ ...prev, nomPrenomsTitulaire: false }));
-                    }}
+                    onChange={(e) => updateReplacementDetails('nomPrenomsTitulaire', e.target.value)}
                     placeholder="Entrer le nom"
                     disabled={isSubmitting}
                     className={errors.nomPrenomsTitulaire ? "input-error" : ""}
@@ -178,14 +197,13 @@ export default function SecondStepForm({
                   <FormLabelRequired>Description détaillée</FormLabelRequired>
                   <RichTextEditor
                     placeholder="Décrivez le poste en détail..."
-                    onChange={(value) => {
-                      setFormData((prev) => ({ ...prev, description: value }));
-                      setErrors((prev) => ({ ...prev, description: false }));
-                    }}
+                    onChange={(value) => updateDescription(value)}
                     disabled={isSubmitting}
                     className={errors.description ? "input-error" : ""}
                   />
-                  {errors.description && <ErrorMessage>Veuillez fournir une description détaillée.</ErrorMessage>}
+                  {errors.description && (
+                    <ErrorMessage>Veuillez fournir une description détaillée.</ErrorMessage>
+                  )}
                 </FormFieldCell>
               </FormRow>
             </tbody>
@@ -204,13 +222,7 @@ export default function SecondStepForm({
                   <FormInput
                     type="date"
                     value={formData.replacementDetails.datePriseService}
-                    onChange={(e) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        replacementDetails: { ...prev.replacementDetails, datePriseService: e.target.value },
-                      }));
-                      setErrors((prev) => ({ ...prev, datePriseService: false }));
-                    }}
+                    onChange={(e) => updateReplacementDetails('datePriseService', e.target.value)}
                     disabled={isSubmitting}
                     className={errors.datePriseService ? "input-error" : ""}
                   />

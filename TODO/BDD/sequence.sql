@@ -107,7 +107,10 @@ IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_application_comment_id'
     DROP SEQUENCE seq_user_id;
 GO
 
-
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_comments_id')
+    DROP SEQUENCE seq_user_id;
+GO
+    
 
 -- Create sequences
 CREATE SEQUENCE seq_direction_id
@@ -262,7 +265,17 @@ CREATE SEQUENCE seq_recruitment_validation_id
     NO CYCLE
     CACHE 50;
 GO
-    
+
+
+CREATE SEQUENCE seq_comments_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+ 
 
 CREATE SEQUENCE seq_approval_flow_id
     AS INT
@@ -509,6 +522,97 @@ CREATE SEQUENCE seq_mission_report_id
 GO
 
 CREATE SEQUENCE seq_log_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+
+-- ============================
+-- User Simple
+-- ============================
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_user_simple_id')
+    DROP SEQUENCE seq_user_simple_id;
+GO
+
+
+CREATE SEQUENCE seq_user_simple_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_education_id')
+    DROP SEQUENCE seq_education_id;
+GO
+
+
+CREATE SEQUENCE seq_education_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_experience_id')
+    DROP SEQUENCE seq_experience_id;
+GO
+
+
+CREATE SEQUENCE seq_experience_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_skill_id')
+    DROP SEQUENCE seq_skill_id;
+GO
+
+
+CREATE SEQUENCE seq_skill_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_quality_id')
+    DROP SEQUENCE seq_quality_id;
+GO
+
+
+CREATE SEQUENCE seq_quality_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_language_id')
+    DROP SEQUENCE seq_language_id;
+GO
+
+
+CREATE SEQUENCE seq_language_id
     AS INT
     START WITH 1
     INCREMENT BY 1

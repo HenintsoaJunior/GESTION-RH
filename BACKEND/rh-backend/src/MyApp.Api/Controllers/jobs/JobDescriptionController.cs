@@ -28,7 +28,7 @@ namespace MyApp.Api.Controllers.jobs
         }
 
         [HttpPost("search")]
-        public async Task<IActionResult> GetAllByCriteria([FromBody] JobDescriptionDTOForm criteria)
+        public async Task<IActionResult> GetAllByCriteria([FromBody] JobDescriptionDTO criteria)
         {
             try
             {
@@ -63,7 +63,7 @@ namespace MyApp.Api.Controllers.jobs
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] JobDescriptionDTOForm dto)
+        public async Task<IActionResult> Create([FromBody] JobDescriptionDTO dto)
         {
             try
             {
@@ -81,7 +81,7 @@ namespace MyApp.Api.Controllers.jobs
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] JobDescriptionDTOForm dto)
+        public async Task<IActionResult> Update(string id, [FromBody] JobDescriptionDTO dto)
         {
             try
             {

@@ -1,19 +1,25 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.jobs;
+using MyApp.Api.Models.dto.jobs;
 
 namespace MyApp.Api.Repositories.jobs
 {
     public interface IJobOfferRepository
     {
-        Task<IEnumerable<JobOffer>> GetAllByCriteriaAsync(JobOffer criteria);
+        Task<IDbContextTransaction> BeginTransactionAsync();
+        Task<(IEnumerable<JobOffer>, int)> GetAllByCriteriaAsync(JobOfferSearchDTO criteria, int page, int pageSize);
         Task<IEnumerable<JobOffer>> GetAllAsync();
         Task<JobOffer?> GetByIdAsync(string id);
         Task AddAsync(JobOffer offer);
         Task UpdateAsync(JobOffer offer);
         Task DeleteAsync(JobOffer offer);
         Task SaveChangesAsync();
+        Task<JobOfferStats> GetStatisticsAsync();
+        Task<IEnumerable<JobOffer>> GetLastThreeNonClosedAsync();
     }
+
     public class JobOfferRepository : IJobOfferRepository
     {
         private readonly AppDbContext _context;
@@ -23,60 +29,121 @@ namespace MyApp.Api.Repositories.jobs
             _context = context;
         }
 
-        public async Task<IEnumerable<JobOffer>> GetAllByCriteriaAsync(JobOffer criteria)
+        public async Task<IEnumerable<JobOffer>> GetLastThreeNonClosedAsync()
+        {
+            return await _context.JobOffers
+                .Include(o => o.JobDescription)
+                .Include(o => o.RecruitmentRequest)
+                    .ThenInclude(r => r!.Site)
+                .Include(o => o.RecruitmentRequest)
+                    .ThenInclude(r => r!.ContractType)
+                .Where(o => o.Status != "Clôturée")
+                .OrderByDescending(o => o.CreatedAt)
+                .Take(3)
+                .ToListAsync();
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
+        }
+
+        public async Task<JobOfferStats> GetStatisticsAsync()
+        {
+            var stats = await _context.JobOffers
+                .GroupBy(o => 1) // Single group to compute all aggregates
+                .Select(g => new JobOfferStats
+                {
+                    Total = g.Count(),
+                    Publiee = g.Count(o => o.Status == "Publiée"),
+                    EnCours = g.Count(o => o.Status == "En Cours"),
+                    Cloturee = g.Count(o => o.Status == "Clôturée"),
+                    Annulee = g.Count(o => o.Status == "Annulée")
+                })
+                .FirstOrDefaultAsync();
+
+            return stats ?? new JobOfferStats();
+        }
+
+        public async Task<(IEnumerable<JobOffer>, int)> GetAllByCriteriaAsync(JobOfferSearchDTO criteria, int page, int pageSize)
         {
             var query = _context.JobOffers
-                .Include(o => o.ContractType)
-                .Include(o => o.Site)
                 .Include(o => o.JobDescription)
+                .Include(o => o.RecruitmentRequest)
+                    .ThenInclude(r => r!.Site)
+                .Include(o => o.RecruitmentRequest)
+                    .ThenInclude(r => r!.ContractType)
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(criteria.Status))
+            if (!string.IsNullOrWhiteSpace(criteria.Status))
             {
                 query = query.Where(o => o.Status == criteria.Status);
             }
 
-            if (!string.IsNullOrEmpty(criteria.SiteId))
+            if (!string.IsNullOrWhiteSpace(criteria.JobTitleKeyword))
             {
-                query = query.Where(o => o.SiteId == criteria.SiteId);
+                query = query.Where(o => o.JobDescription != null && 
+                                        o.JobDescription.Title != null && 
+                                        o.JobDescription.Title.Contains(criteria.JobTitleKeyword));
             }
 
-            if (!string.IsNullOrEmpty(criteria.DescriptionId))
+            if (criteria.PublicationDateMin.HasValue)
             {
-                query = query.Where(o => o.DescriptionId == criteria.DescriptionId);
+                query = query.Where(o => o.CreatedAt >= criteria.PublicationDateMin.Value);
             }
 
-            if (!string.IsNullOrEmpty(criteria.ContractTypeId))
+            if (criteria.PublicationDateMax.HasValue)
             {
-                query = query.Where(o => o.ContractTypeId == criteria.ContractTypeId);
+                query = query.Where(o => o.CreatedAt <= criteria.PublicationDateMax.Value);
             }
 
-            if (criteria.CreatedAt != default(DateTime))
+            if (!string.IsNullOrWhiteSpace(criteria.SiteId))
             {
-                // Tu peux ajuster ce filtre pour comparer uniquement la date sans l'heure si besoin
-                query = query.Where(o => o.CreatedAt.Date == criteria.CreatedAt.Date);
+                query = query.Where(o => o.RecruitmentRequest != null && o.RecruitmentRequest.SiteId == criteria.SiteId);
             }
 
-            return await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+            if (!string.IsNullOrWhiteSpace(criteria.ContractTypeId))
+            {
+                query = query.Where(o => o.RecruitmentRequest != null && o.RecruitmentRequest.ContractTypeId == criteria.ContractTypeId);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var results = await query
+                .OrderByDescending(o => o.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (results, totalCount);
         }
-
 
         public async Task<IEnumerable<JobOffer>> GetAllAsync()
         {
             return await _context.JobOffers
-                .Include(o => o.ContractType)
-                .Include(o => o.Site)
                 .Include(o => o.JobDescription)
+                .Include(o => o.RecruitmentRequest)
+                    .ThenInclude(r => r!.Site)
+                .Include(o => o.RecruitmentRequest)
+                    .ThenInclude(r => r!.ContractType)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
         }
 
         public async Task<JobOffer?> GetByIdAsync(string id)
         {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentException("The ID cannot be null or empty.", nameof(id));
+            }
+
             return await _context.JobOffers
-                .Include(o => o.ContractType)
-                .Include(o => o.Site)
                 .Include(o => o.JobDescription)
+                .Include(o => o.RecruitmentRequest)
+                    .ThenInclude(r => r != null ? r.Site : null)
+                .Include(o => o.RecruitmentRequest)
+                    .ThenInclude(r => r != null ? r.ContractType : null)
+                .Include(o => o.Requester)
                 .FirstOrDefaultAsync(o => o.OfferId == id);
         }
 
@@ -85,16 +152,16 @@ namespace MyApp.Api.Repositories.jobs
             await _context.JobOffers.AddAsync(offer);
         }
 
-        public Task UpdateAsync(JobOffer offer)
+        public async Task UpdateAsync(JobOffer offer)
         {
             _context.JobOffers.Update(offer);
-            return Task.CompletedTask;
+            await Task.CompletedTask;
         }
 
-        public Task DeleteAsync(JobOffer offer)
+        public async Task DeleteAsync(JobOffer offer)
         {
             _context.JobOffers.Remove(offer);
-            return Task.CompletedTask;
+            await Task.CompletedTask;
         }
 
         public async Task SaveChangesAsync()
@@ -103,4 +170,3 @@ namespace MyApp.Api.Repositories.jobs
         }
     }
 }
-

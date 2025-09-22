@@ -1,7 +1,7 @@
 ﻿using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Repositories.mission;
-using MyApp.Api.Services.logs; // Add this for ILogService
+using MyApp.Api.Services.logs; 
 using MyApp.Api.Utils.generator;
 
 namespace MyApp.Api.Services.mission
@@ -36,7 +36,7 @@ namespace MyApp.Api.Services.mission
             IMissionBudgetService missionBudgetService,
             ISequenceGenerator sequenceGenerator,
             ILogger<MissionValidationService> logger,
-            ILogService logService) // Added ILogService to constructor
+            ILogService logService)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
