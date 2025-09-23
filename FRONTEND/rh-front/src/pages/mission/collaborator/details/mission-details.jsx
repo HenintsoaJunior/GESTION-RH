@@ -326,7 +326,7 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                                 <ValidatorCard>
                                     <ValidatorGrid>
                                         <ValidatorSection>
-                                            <SectionTitle>Validateurs</SectionTitle>
+                                            <SectionTitle>Valideur</SectionTitle>
                                             {validationSteps.map((step, index) => (
                                                 <ValidatorItem key={step.id}>
                                                     <Avatar size="40px">{step.validator?.initials || "NA"}</Avatar>

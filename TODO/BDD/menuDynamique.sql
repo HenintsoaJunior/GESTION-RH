@@ -59,8 +59,8 @@ INSERT INTO module (module_id, module_name, description, created_at, updated_at)
 ('user', 'Utilisateurs', 'Gestion des utilisateurs et rôles', GETDATE(), GETDATE()),
 ('habilitation', 'Habilitation', 'Gestion des habilitations et autorisations', GETDATE(), GETDATE()),
 ('mission', 'Suivi des Missions', 'Gestion des missions, assignations et paiements', GETDATE(), GETDATE()),
-('logs', 'Logs', 'Suivi et journalisation des actions utilisateurs et systèmes', GETDATE(), GETDATE()),
-('recrutement', 'Recrutement', 'Gestion du processus de recrutement et des demandes', GETDATE(), GETDATE());
+('logs', 'Logs', 'Suivi et journalisation des actions utilisateurs et systèmes', GETDATE(), GETDATE());
+-- ('recrutement', 'Recrutement', 'Gestion du processus de recrutement et des demandes', GETDATE(), GETDATE());
 
 -- ============================
 -- Insert menus (avec section)
@@ -86,11 +86,17 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 ('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 5, 'mission', 'navigation', GETDATE(), GETDATE());
 
 -- Navigation: recrutement
+<<<<<<< Updated upstream
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu_recrutement', 'recrutement', 'fa-user-tie', '/recrutement', 1, 6, 'recrutement', 'navigation', GETDATE(), GETDATE()),
 ('menu_recrutement_validation', 'validation', 'fa-check-circle', '/recrutement/validation', 1, 1, 'recrutement', 'navigation', GETDATE(), GETDATE()),
 ('menu_recrutement_demande', 'demande', 'fa-file-signature', '/recrutement/demande', 1, 2, 'recrutement', 'navigation', GETDATE(), GETDATE()),
 ('menu_recrutement_fiche', 'fiche-de-poste', 'fa-id-card', '/recrutement/job/job-offer', 1, 3, 'recrutement', 'navigation', GETDATE(), GETDATE());
+=======
+-- INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
+-- ('menu_recrutement', 'recrutement', 'fa-user-tie', '/recrutement', 1, 6, 'recrutement', 'navigation', GETDATE(), GETDATE()),
+-- ('menu_recrutement_demande', 'demande', 'fa-file-signature', '/recrutement/demande', 1, 1, 'recrutement', 'navigation', GETDATE(), GETDATE());
+>>>>>>> Stashed changes
 
 -- ============================
 -- Insert menu hierarchy
@@ -103,11 +109,17 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h4', NULL, 'menu2', GETDATE(), GETDATE()),
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
 ('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
+<<<<<<< Updated upstream
 ('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE()),
 ('h_recrutement', NULL, 'menu_recrutement', GETDATE(), GETDATE()),
 ('h_recrutement_validation', 'menu_recrutement', 'menu_recrutement_validation', GETDATE(), GETDATE()),
 ('h_recrutement_demande', 'menu_recrutement', 'menu_recrutement_demande', GETDATE(), GETDATE()),
 ('h_recrutement_fiche', 'menu_recrutement', 'menu_recrutement_fiche', GETDATE(), GETDATE());
+=======
+('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE());
+-- ('h_recrutement', NULL, 'menu_recrutement', GETDATE(), GETDATE()),
+-- ('h_recrutement_demande', 'menu_recrutement', 'menu_recrutement_demande', GETDATE(), GETDATE());
+>>>>>>> Stashed changes
 
 -- ============================
 -- Insert menu roles
@@ -126,7 +138,12 @@ INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
 ('menu2_3', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_4', 'ROLE_001', GETDATE(), GETDATE()),
 -- Recrutement
+<<<<<<< Updated upstream
 ('menu_recrutement', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu_recrutement_validation', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu_recrutement_demande', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu_recrutement_fiche', 'ROLE_001', GETDATE(), GETDATE());
+=======
+-- ('menu_recrutement', 'ROLE_001', GETDATE(), GETDATE()),
+-- ('menu_recrutement_demande', 'ROLE_001', GETDATE(), GETDATE());
+>>>>>>> Stashed changes

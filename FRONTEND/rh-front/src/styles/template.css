@@ -197,7 +197,7 @@ body {
 /* Sidebar styles */
 .sidebar {
   width: var(--sidebar-width);
-  background-color: var(--bg-sidebar); /* Ensures #9D9D9C */
+  background-color: var(--bg-primary); /* Ensures #9D9D9C */
   color: var(--text-sidebar);
   transition: width var(--transition-speed) ease;
   position: fixed;
