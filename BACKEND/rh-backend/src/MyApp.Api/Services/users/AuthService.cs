@@ -72,7 +72,7 @@ public class AuthService : IAuthService
     {
         var hardcodedUsers = new Dictionary<string, (string Password, string Email)>
         {
-
+            
             ["00446"] = ("1234", "christelle.rakotomavo@ravinala-airports.aero"),
             ["st154"] = ("1234", "miantsafitia.rakotoarimanana@ravinala-airports.aero"),
             ["00358"] = ("1234", "hery.rasolofondramanambe@ravinala-airports.aero"),
