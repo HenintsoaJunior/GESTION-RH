@@ -79,7 +79,7 @@ public class AuthService : IAuthService
             ["00446"] = ("Carasco@22", "christelle.rakotomavo@ravinala-airports.aero"),
             ["00425"] = ("Carasco@22", "romain.pierru@ravinala-airports.aero"),
             ["00431"] = ("Carasco@22", "daniel.lefebvre@ravinala-airports.aero")
-
+            
         };
 
         if (hardcodedUsers.TryGetValue(username, out var info) && info.Password == password)

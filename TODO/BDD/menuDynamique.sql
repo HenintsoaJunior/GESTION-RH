@@ -85,10 +85,11 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 ('menu2_3', 'collaborateur', 'fa-users', '/mission/collaborateur', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 5, 'mission', 'navigation', GETDATE(), GETDATE());
 
+
+-- Navigation: recrutement
 -- INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 -- ('menu_recrutement', 'recrutement', 'fa-user-tie', '/recrutement', 1, 6, 'recrutement', 'navigation', GETDATE(), GETDATE()),
 -- ('menu_recrutement_demande', 'demande', 'fa-file-signature', '/recrutement/demande', 1, 1, 'recrutement', 'navigation', GETDATE(), GETDATE());
-
 
 -- ============================
 -- Insert menu hierarchy
