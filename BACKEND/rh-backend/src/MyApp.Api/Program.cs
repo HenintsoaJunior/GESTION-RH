@@ -12,11 +12,8 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-<<<<<<< Updated upstream
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5432")
-=======
+
         policy.WithOrigins("http://10.0.104.215:3000") // Match the audience from the token
->>>>>>> Stashed changes
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
