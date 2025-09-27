@@ -5,10 +5,7 @@ import Template from 'layouts/template';
 import DirectionForm from 'pages/direction/direction-form';
 import DepartmentForm from 'pages/direction/department-form';
 import ServiceForm from 'pages/direction/service-form';
-import MissionForm from 'pages/mission/form/mission-form';
-import MissionList from 'pages/mission/list/mission-list';
-import AssignedPersonsList from 'pages/mission/list/mission-assign-list';
-import AssignmentDetails from 'pages/mission/list/mission-assign-details';
+import MissionForm from 'pages/mission/form/page';
 import TransportForm from 'pages/transport/transport-form';
 import DashboardHome from 'pages/dashboard';
 import LieuForm from 'pages/lieu/lieu-form';
@@ -16,17 +13,12 @@ import MissionAssignationFormExcel from 'pages/mission/excel/mission-assign-form
 import ShortcutsDashboard from 'pages/system/entite/shortcuts';
 import EmployeeList from 'pages/employee/employee-list';
 import EmployeeForm from 'pages/employee/employee-fom';
-import CollaboratorMissionList from 'pages/mission/collaborator/list/collaborator-mission-list';
-import MissionValidationPage from 'pages/mission/validation/mission-validation';
+import CollaboratorMissionList from 'pages/mission/collaborator/list/page';
+import MissionValidationPage from 'pages/mission/validation/page';
 import ProfilePage from 'layouts/profil-page';
 import UserList from 'pages/users/users-list';
 import RoleList from 'pages/roles/roles-list';
 import LogList from 'pages/logs/logs-list';
-import RecruitmentRequest from "../pages/recruitment/recruitments_request/list/page";
-import RecruitmentValidationPage from "../pages/recruitment/recruitments_request/validation/page";
-import JobOffer from "../pages/recruitment/job/job-offers/list/page";
-
-
 function AppRouter() {
   return (
     <BrowserRouter>
@@ -55,20 +47,9 @@ function AppRouter() {
           {/* Mission */}
           <Route path="/mission/form/:missionId" element={<MissionForm />} />
           <Route path="/mission/form" element={<MissionForm />} />
-          <Route path="/mission/list" element={<MissionList />} />
           <Route path="/mission/to-validate" element={<MissionValidationPage />} />
-          <Route path="/mission/assign-mission/:missionId" element={<AssignedPersonsList />} />
-          <Route path="/assignments/details" element={<AssignmentDetails />} />
           <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />
           <Route path="/mission/collaborateur" element={<CollaboratorMissionList />} />
-
-          {/* Recruitment */}
-          <Route path="/recrutement/demande" element={<RecruitmentRequest />} />
-          <Route path="/recrutement/validation" element={<RecruitmentValidationPage />} />
-          
-
-          <Route path="/recrutement/job/job-offer" element={<JobOffer />} />
-          
 
             {/* Transport */}
           <Route path="/transport/create" element={<TransportForm />} />

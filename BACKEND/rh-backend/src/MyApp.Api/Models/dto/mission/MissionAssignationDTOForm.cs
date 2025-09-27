@@ -14,12 +14,12 @@ public class MissionAssignationDTOForm
     public string? TransportId { get; set; }
 
     [Required(ErrorMessage = "La date de départ est requise.")]
-    public DateTime? DepartureDate { get; set; }
+    public DateTime DepartureDate { get; set; }
 
     // Optional fields – no validation attributes required unless needed
     public TimeSpan? DepartureTime { get; set; }
 
-    public DateTime? ReturnDate { get; set; }
+    public DateTime ReturnDate { get; set; }
 
     public TimeSpan? ReturnTime { get; set; }
 
@@ -36,6 +36,7 @@ public class MissionAssignationSearchFiltersDTO
     
     public string? [] Matricule { get; set; } = null!;
     public string? MissionId { get; set; }
+    public string? MissionType { get; set;  }
     public string? TransportId { get; set; }
     public string? LieuId { get; set; }
     public DateTime? MinDepartureDate { get; set; }

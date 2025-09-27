@@ -9,11 +9,11 @@ namespace MyApp.Api.Controllers.menu
     public class MenuController(IMenuService menuService) : ControllerBase
     {
         [HttpGet("hierarchy")]
-        public async Task<ActionResult<IEnumerable<MenuHierarchyDto>>> GetMenuHierarchy([FromQuery] string[]? roleNames = null)
+        public async Task<ActionResult<IEnumerable<MenuHierarchyDto>>> GetMenuHierarchy([FromQuery] string UserId)
         {
             try
             {
-                var menuHierarchy = await menuService.GetMenuHierarchyAsync(roleNames);
+                var menuHierarchy = await menuService.GetMenuHierarchyAsync(UserId);
                 return Ok(menuHierarchy);
             }
             catch (Exception ex)

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, FileText, Download, ArrowLeft } from "lucide-react";
-import ValidationStepper from "../list/validation-stepper";
+import ValidationStepper from "../list/components/validation-stepper";
 import Pagination from "components/pagination";
 import Alert from "components/alert";
 import {
@@ -54,14 +54,14 @@ import {
     EmptyCardsState,
 } from "styles/generaliser/card-container";
 import { NoDataMessage } from "styles/generaliser/table-container";
-import { formatValidatorData } from "services/mission/validator-utils";
+import { formatValidatorData } from "services/mission/validation";
 import {
     fetchAssignMission,
     fetchMissionById,
     exportMissionAssignationPDF,
     exportMissionAssignationExcel,
 } from "services/mission/mission";
-import { useGetMissionValidationsByAssignationId } from "services/mission/validator-utils";
+import { useGetMissionValidationsByAssignationId } from "services/mission/validation";
 import { formatDate } from "utils/dateConverter";
 
 const DetailsMission = ({ missionId, onClose, isOpen = true }) => {

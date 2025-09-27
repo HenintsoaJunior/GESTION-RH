@@ -190,34 +190,112 @@ namespace MyApp.Api.Services.mission
 
         public async Task<bool> UpdateAsync(string id, MissionDTOForm? mission)
         {
+            await using var transaction = await _repository.BeginTransactionAsync(); // Declare transaction outside try block
             try
             {
                 if (mission == null)
                     throw new ArgumentNullException(nameof(mission), "Les données de la mission ne peuvent pas être nulles");
 
-                var entity = await _repository.GetByIdAsync(id);
-                if (entity == null) return false;
+                if (string.IsNullOrWhiteSpace(id))
+                    throw new ArgumentException("L'ID de la mission ne peut pas être vide.", nameof(id));
 
-                var newEntity = new Mission
+                var entity = await _repository.GetByIdAsync(id);
+                if (entity == null)
                 {
-                    Name = mission.Name,
-                    Description = mission.Description,
-                    StartDate = mission.StartDate,
-                    EndDate = mission.EndDate,
-                    LieuId = mission.LieuId,
+                    _logger.LogWarning("Mission avec l'ID {MissionId} introuvable.", id);
+                    return false;
+                }
+
+                // Store the old entity for logging
+                var oldEntity = new Mission
+                {
+                    MissionId = entity.MissionId,
+                    MissionType = entity.MissionType,
+                    Name = entity.Name,
+                    Description = entity.Description,
+                    StartDate = entity.StartDate,
+                    EndDate = entity.EndDate,
+                    LieuId = entity.LieuId,
+                    Status = entity.Status,
+                    CreatedAt = entity.CreatedAt,
+                    UpdatedAt = entity.UpdatedAt
                 };
 
+                // Update mission fields
+                entity.MissionType = mission.MissionType;
+                entity.Name = mission.Name;
+                entity.Description = mission.Description;
+                entity.StartDate = mission.StartDate;
+                entity.EndDate = mission.EndDate;
+                entity.LieuId = mission.LieuId;
+                entity.UpdatedAt = DateTime.UtcNow;
+
+                // Update the mission in the repository
                 await _repository.UpdateAsync(entity);
                 await _repository.SaveChangesAsync();
 
-                // Log de mise à jour
-                await _logService.LogAsync("MODIFICATION MISSION",  entity, newEntity, mission.UserId, "Name,Description,StartDate,EndDate,LieuId");
+                // Handle mission assignations if provided
+                if (mission.Assignations != null && mission.Assignations.Any())
+                {
+                    foreach (var assignationDto in mission.Assignations)
+                    {
+                        // Retrieve the existing assignation by employeeId and missionId
+                        var existingAssignation = await _missionAssignationService.GetByEmployeeIdMissionIdAsync(
+                            assignationDto.EmployeeId, id);
 
+                        if (existingAssignation == null)
+                        {
+                            _logger.LogWarning("Aucune assignation existante trouvée pour EmployeeId={EmployeeId}, MissionId={MissionId}. Aucune nouvelle assignation ne sera créée.",
+                                assignationDto.EmployeeId, id);
+                            continue; // Skip if no existing assignation is found
+                        }
+
+                        // Update existing assignation
+                        var updatedAssignation = new MissionAssignation
+                        {
+                            AssignationId = existingAssignation.AssignationId,
+                            EmployeeId = assignationDto.EmployeeId,
+                            MissionId = id,
+                            TransportId = assignationDto.TransportId,
+                            DepartureDate = assignationDto.DepartureDate,
+                            DepartureTime = assignationDto.DepartureTime,
+                            ReturnDate = assignationDto.ReturnDate,
+                            ReturnTime = assignationDto.ReturnTime,
+                            Duration = await _missionAssignationService.CalculateDuration(
+                                assignationDto.DepartureDate,
+                                assignationDto.ReturnDate),
+                            UpdatedAt = DateTime.UtcNow
+                        };
+
+                        // Call UpdateAsync in MissionAssignationService
+                        var updateResult = await _missionAssignationService.UpdateAsync(
+                            existingAssignation.AssignationId, updatedAssignation);
+
+                        if (!updateResult)
+                        {
+                            _logger.LogWarning("Échec de la mise à jour de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}",
+                                assignationDto.EmployeeId, id);
+                            await transaction.RollbackAsync(); // Rollback transaction on failure
+                            return false;
+                        }
+
+                        _logger.LogInformation("Assignation mise à jour avec succès pour AssignationId={AssignationId}",
+                            existingAssignation.AssignationId);
+                    }
+                }
+
+                // Log mission update
+                await _logService.LogAsync("MODIFICATION MISSION", oldEntity, entity, mission.UserId,
+                    "Name,Description,StartDate,EndDate,LieuId");
+
+                // Commit the transaction
+                await transaction.CommitAsync();
                 return true;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la mise à jour de la mission {MissionId}", id);
+                await transaction.RollbackAsync(); // Rollback transaction on exception
                 throw;
             }
         }
@@ -246,23 +324,28 @@ namespace MyApp.Api.Services.mission
 
         public async Task<bool> CancelAsync(string id, string userId)
         {
+            await using var transaction = await _repository.BeginTransactionAsync();
             try
             {
                 var entity = await _repository.GetByIdAsync(id);
-                if (entity == null) return false;
+                if (entity == null)
+                {
+                    return false;
+                }
 
                 entity.Status = "Annulé";
                 await _repository.UpdateAsync(entity);
-                await _repository.SaveChangesAsync();
+                await _repository.SaveChangesAsync(); 
 
-                // Log d’annulation
-                await _logService.LogAsync("ANNULATION MISSION", entity.Description, "Annulation", userId);
+                var validationCancelSuccess = await _validationService.CancelValidationsByMissionIdAsync(id, userId);
 
+                await transaction.CommitAsync();
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de l'annulation de la mission {MissionId}", id);
+                _logger.LogError(ex, "Erreur lors de l'annulation de la mission {MissionId}. Rollback de la transaction.", id);
+                await transaction.RollbackAsync();
                 throw;
             }
         }

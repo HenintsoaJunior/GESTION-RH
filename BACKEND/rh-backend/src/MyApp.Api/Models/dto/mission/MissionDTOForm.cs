@@ -4,6 +4,14 @@ namespace MyApp.Api.Models.dto.mission
 {
     public class MissionDTOForm
     {
+        [Required(ErrorMessage = "Le type de la mission est requis.")]
+        [StringLength(50, ErrorMessage = "Le type de la mission ne peut pas dépasser 50 caractères.")]
+        public string MissionType { get; set; } = null!;
+
+
+        [Required(ErrorMessage = "Le type de la Compensation est requis.")]
+        public string Type { get; set; } = null!;
+
         [Required(ErrorMessage = "Le titre de la mission est requis.")]
         [StringLength(100, ErrorMessage = "Le titre de la mission ne peut pas dépasser 100 caractères.")]
         public string Name { get; set; } = null!;
@@ -11,10 +19,10 @@ namespace MyApp.Api.Models.dto.mission
         public string? Description { get; set; }
 
         [Required(ErrorMessage = "La date de début est requise.")]
-        public DateTime? StartDate { get; set; }
+        public DateTime StartDate { get; set; }
 
         [Required(ErrorMessage = "La date de fin est requise.")]
-        public DateTime? EndDate { get; set; }
+        public DateTime EndDate { get; set; }
 
         [Required(ErrorMessage = "Le lieu est requis")]
         [StringLength(50, ErrorMessage = "L'identifiant du lieu ne peut pas dépasser 50 caractères.")]

@@ -67,7 +67,7 @@ namespace MyApp.Api.Entities.mission
             EmployeeId = dto.EmployeeId;
             if (dto.MissionId != null) MissionId = dto.MissionId;
             TransportId = dto.TransportId;
-            DepartureDate = dto.DepartureDate ?? DateTime.Now;
+            DepartureDate = dto.DepartureDate;
             DepartureTime = dto.DepartureTime;
             ReturnDate = dto.ReturnDate;
             ReturnTime = dto.ReturnTime;
@@ -82,7 +82,7 @@ namespace MyApp.Api.Entities.mission
             EmployeeId = assignationDto.EmployeeId;
             MissionId = missionId;
             TransportId = assignationDto.TransportId;
-            DepartureDate = assignationDto.DepartureDate ?? DateTime.Now;
+            DepartureDate = assignationDto.DepartureDate;
             DepartureTime = assignationDto.DepartureTime;
             ReturnDate = assignationDto.ReturnDate;
             ReturnTime = assignationDto.ReturnTime;

@@ -43,7 +43,7 @@ function LoginPage() {
     <div className="login-container">
       <div className="login-card">
         <div className="logo-container">
-          <img src="Logo.png" alt="Logo" className="logo" />
+          <img src="Logo.JPG" alt="Logo" className="logo" />
         </div>
 
         <h2 className="login-title">Se connecter</h2>
