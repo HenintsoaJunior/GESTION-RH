@@ -11,12 +11,13 @@ using iText.Kernel.Events;
 using iText.Kernel.Pdf.Canvas;
 using MyApp.Api.Entities.certificate;
 using MyApp.Api.Entities.mission;
+using System.Globalization;
 
 namespace MyApp.Api.Utils.pdf
 {
     public class PdfGenerator(object? description = null, List<object>? tables = null)
     {
-        private const string ImagePath = @"F:\Stage-RH\Projet\GESTION-RH\FRONTEND\rh-front\public\Logo.png";
+        private const string ImagePath = @"F:\Stage-RH\Projet\GESTION-RH\Logo Ravinala Airports basse définition.JPG";
 
         // Palette de couleurs personnalisée
         private readonly DeviceRgb _primaryColor = new DeviceRgb(105, 180, 46);    // Vert principal
@@ -24,6 +25,8 @@ namespace MyApp.Api.Utils.pdf
         private readonly DeviceRgb _accentColor = new DeviceRgb(227, 6, 19);        // Rouge accent
         private readonly DeviceRgb _lightGray = new DeviceRgb(245, 245, 245);       // Gris très clair
         private readonly DeviceRgb _darkGray = new DeviceRgb(120, 120, 120);        // Gris foncé
+
+        private readonly CultureInfo _frenchCulture = new CultureInfo("fr-FR");
 
         // Attestation d'hébergement
         public byte[] GenerateHostingCertificatePdf(HostingCertificate hostingCertificate)
@@ -37,7 +40,7 @@ namespace MyApp.Api.Utils.pdf
                 var pdf = new PdfDocument(writer);
                 var document = new Document(pdf);
 
-                document.SetMargins(100, 30, 60, 30);
+                document.SetMargins(50, 30, 60, 30); // Adjusted margins
 
                 var font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
                 var boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
@@ -55,40 +58,51 @@ namespace MyApp.Api.Utils.pdf
 
                 var genderPrefix = hostingCertificate.Gender.Equals("masculin", StringComparison.CurrentCultureIgnoreCase) ? "Monsieur" : "Madame";
 
-                var bodyText = new Paragraph($"Nous, soussigné, {hostingCertificate.CompanyName}, attestons par la présente que nous prendrons en charge les frais d'hébergement ainsi que les frais de séjour d'un montant de {hostingCertificate.Amount} euros " +
-                                             $"de {genderPrefix} {hostingCertificate.EmployeeName}, employé au sein de notre Société en qualité de {hostingCertificate.JobTitle}.\n" +
-                                             $"Nous prendrons en charge, éventuellement en cas de besoin ses frais d'hospitalisation et son billet d'avion retour dans son pays d'origine, à l'issue du séjour accordé.")
+                var bodyText1 = new Paragraph($"Nous, soussigné, {hostingCertificate.CompanyName?.ToUpper()}, attestons par la présente que nous prendrons en charge les frais d'hébergement ainsi que les frais de séjour d'un montant de {hostingCertificate.Amount} euros " +
+                                              $"de {genderPrefix} {hostingCertificate.EmployeeName}, employé au sein de notre Société en qualité de {hostingCertificate.JobTitle}.")
                     .SetFont(font)
                     .SetFontSize(11)
                     .SetTextAlignment(TextAlignment.JUSTIFIED)
-                    .SetMarginBottom(20);
-                document.Add(bodyText);
+                    .SetMarginBottom(10);
+                document.Add(bodyText1);
 
-                var finalClause = new Paragraph("En foi de quoi, la présente attestation est établie pour servir et valoir ce que de droit.")
+                var bodyText2 = new Paragraph("Nous prendrons en charge, éventuellement en cas de besoin ses frais d'hospitalisation et son billet d'avion retour dans son pays d'origine, à l'issue du séjour accordé.")
+                    .SetFont(font)
+                    .SetFontSize(11)
+                    .SetTextAlignment(TextAlignment.JUSTIFIED)
+                    .SetMarginBottom(10);
+                document.Add(bodyText2);
+
+                var finalClause = new Paragraph("En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.")
                     .SetFont(font)
                     .SetFontSize(11)
                     .SetTextAlignment(TextAlignment.JUSTIFIED)
                     .SetMarginBottom(15);
                 document.Add(finalClause);
 
-                var placeDate = new Paragraph($"{hostingCertificate.IssuePlace}, le {DateTime.Now:dd MMMM yyyy}")
+                var currentDate = DateTime.Now;
+                var monthName = currentDate.ToString("MMMM", _frenchCulture);
+                monthName = char.ToUpper(monthName[0]) + monthName.Substring(1);
+                var formattedDate = $"{currentDate:dd} {monthName} {currentDate:yyyy}";
+
+                var placeDate = new Paragraph($"{hostingCertificate.IssuePlace}, le {formattedDate}")
                     .SetFont(font)
                     .SetFontSize(11)
                     .SetTextAlignment(TextAlignment.RIGHT)
                     .SetMarginBottom(20);
                 document.Add(placeDate);
 
-                var hrSignature = new Paragraph("Pour la Directrice des Ressources Humaines")
+                var hrSignature = new Paragraph("Pour le Directeur des Ressources Humaines")
                     .SetFont(boldFont)
                     .SetFontSize(11)
-                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetTextAlignment(TextAlignment.RIGHT)
                     .SetMarginBottom(10);
                 document.Add(hrSignature);
 
                 var signatory = new Paragraph($"{hostingCertificate.SignatoryName}")
                     .SetFont(boldFont)
                     .SetFontSize(11)
-                    .SetTextAlignment(TextAlignment.CENTER);
+                    .SetTextAlignment(TextAlignment.RIGHT);
                 document.Add(signatory);
 
                 document.Close();
@@ -113,7 +127,7 @@ namespace MyApp.Api.Utils.pdf
                 var pdf = new PdfDocument(writer);
                 var document = new Document(pdf);
 
-                document.SetMargins(100, 30, 60, 30);
+                document.SetMargins(50, 30, 60, 30); // Adjusted margins
 
                 var font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
                 var boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
@@ -133,18 +147,28 @@ namespace MyApp.Api.Utils.pdf
                 var birthPrefix = employeeCertificate.Gender.Equals("masculin", StringComparison.CurrentCultureIgnoreCase) ? "né" : "née";
                 var pronoun = employeeCertificate.Gender.Equals("masculin", StringComparison.CurrentCultureIgnoreCase) ? "Il" : "Elle";
 
+                var hiringDateStr = FormatDateWithOrdinal(employeeCertificate.HiringDate);
+                var cinIssueDateStr = FormatDateWithOrdinal(employeeCertificate.CinIssueDate);
+                var birthDateStr = FormatDateWithOrdinal(employeeCertificate.BirthDate);
+
                 var bodyText = new Paragraph($"Nous, soussigné, {employeeCertificate.CompanyName}, attestons que {genderPrefix} {employeeCertificate.EmployeeName}, " +
-                                             $"{birthPrefix} le {employeeCertificate.BirthDate} à {employeeCertificate.BirthPlace}, " +
+                                             $"{birthPrefix} le {birthDateStr} à {employeeCertificate.BirthPlace}, " +
                                              $"titulaire CIN n° {employeeCertificate.CinNumber}, " +
-                                             $"délivrée le {employeeCertificate.CinIssueDate} à {employeeCertificate.CinIssuePlace}, " +
-                                             $"fait partie de notre Société en qualité de {employeeCertificate.JobTitle} du {employeeCertificate.HiringDate} " +
-                                             $"jusqu’à ce jour, Catégorie professionnelle {employeeCertificate.ProfessionalCategory}" +
-                                             $"\n\n{pronoun} est lié à la société par un {employeeCertificate.ContractType}.")
+                                             $"délivrée le {cinIssueDateStr} à {employeeCertificate.CinIssuePlace}, " +
+                                             $"fait partie de notre Société en qualité de {employeeCertificate.JobTitle} du {hiringDateStr} " +
+                                             $"jusqu’à ce jour, Catégorie professionnelle {employeeCertificate.ProfessionalCategory} ;")
                     .SetFont(font)
                     .SetFontSize(11)
                     .SetTextAlignment(TextAlignment.JUSTIFIED)
-                    .SetMarginBottom(20);
+                    .SetMarginBottom(10);
                 document.Add(bodyText);
+
+                var contractParagraph = new Paragraph($"{pronoun} est lié à la société par un {employeeCertificate.ContractType}.")
+                    .SetFont(font)
+                    .SetFontSize(11)
+                    .SetTextAlignment(TextAlignment.JUSTIFIED)
+                    .SetMarginBottom(10);
+                document.Add(contractParagraph);
 
                 var finalClause = new Paragraph("En foi de quoi, la présente attestation est établie pour servir et valoir ce que de droit.")
                     .SetFont(font)
@@ -153,31 +177,35 @@ namespace MyApp.Api.Utils.pdf
                     .SetMarginBottom(15);
                 document.Add(finalClause);
 
-                var placeDate = new Paragraph($"{employeeCertificate.IssuePlace}, le {DateTime.Now:dd MMMM yyyy}")
+                var currentDate = DateTime.Now;
+                var monthName = currentDate.ToString("MMMM", _frenchCulture);
+                var formattedDate = $"{currentDate:dd} {monthName} {currentDate:yyyy}";
+
+                var placeDate = new Paragraph($"{employeeCertificate.IssuePlace}, le {formattedDate}")
                     .SetFont(font)
                     .SetFontSize(11)
                     .SetTextAlignment(TextAlignment.RIGHT)
                     .SetMarginBottom(20);
                 document.Add(placeDate);
 
-                var hrSignature = new Paragraph("Pour la Directrice des Ressources Humaines")
+                var hrSignature = new Paragraph("Pour le Directeur des Ressources Humaines")
                     .SetFont(boldFont)
                     .SetFontSize(11)
-                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetTextAlignment(TextAlignment.RIGHT)
                     .SetMarginBottom(10);
                 document.Add(hrSignature);
 
                 var serviceSignature = new Paragraph($"Le Chef de Département {employeeCertificate.Service}")
                     .SetFont(boldFont)
                     .SetFontSize(11)
-                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetTextAlignment(TextAlignment.RIGHT)
                     .SetMarginBottom(10);
                 document.Add(serviceSignature);
 
                 var signatory = new Paragraph($"{employeeCertificate.SignatoryName}")
                     .SetFont(boldFont)
                     .SetFontSize(11)
-                    .SetTextAlignment(TextAlignment.CENTER);
+                    .SetTextAlignment(TextAlignment.RIGHT);
                 document.Add(signatory);
 
                 document.Close();
@@ -203,7 +231,7 @@ namespace MyApp.Api.Utils.pdf
                 var pdf = new PdfDocument(writer);
                 var document = new Document(pdf);
 
-                document.SetMargins(100, 30, 60, 30);
+                document.SetMargins(50, 30, 60, 30); // Adjusted margins
 
                 var font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
                 var boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
@@ -232,7 +260,7 @@ namespace MyApp.Api.Utils.pdf
                 var functionLabel = new Paragraph($"Fonction : {missionAssignation.Employee.JobTitle}        Matricule : {missionAssignation.Employee.EmployeeCode}")
                     .SetFont(font)
                     .SetFontSize(11);
-                var departmentLabel = new Paragraph($"Direction : {missionAssignation.Employee.Department} / Service : {missionAssignation.Employee.Service}")
+                var departmentLabel = new Paragraph($"Direction : {missionAssignation.Employee.Department}						Département / Service : {missionAssignation.Employee.Service}")
                     .SetFont(font)
                     .SetFontSize(11);
 
@@ -265,16 +293,23 @@ namespace MyApp.Api.Utils.pdf
                 var departureLabel = new Paragraph($"Date et heure de départ : {missionAssignation.DepartureDate:dd/MM/yyyy} {missionAssignation.DepartureTime:HH:mm}")
                     .SetFont(boldFont)
                     .SetFontSize(11)
-                    .SetMarginBottom(5);
+                    .SetMarginBottom(20);
                 document.Add(departureLabel);
 
-                var visaLabel = new Paragraph("Visa Direction des Ressources Humaines           La Direction de tutelle")
+                var placeDate = new Paragraph("Antananarivo, le ")
+                    .SetFont(font)
+                    .SetFontSize(11)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetMarginBottom(20);
+                document.Add(placeDate);
+
+                var visaLabel = new Paragraph("Visa Direction des Ressources Humaines		           La Direction de tutelle")
                     .SetFont(boldFont)
                     .SetFontSize(11)
                     .SetMarginBottom(15);
                 document.Add(visaLabel);
 
-                var arrivalTitle = new Paragraph("__ARRIVEE SUR LE LIEU DE REALISATION DE LA MISSION__ :")
+                var arrivalTitle = new Paragraph("ARRIVEE SUR LE LIEU DE REALISATION DE LA MISSION :")
                     .SetFont(boldFont)
                     .SetFontSize(12)
                     .SetMarginBottom(5);
@@ -313,7 +348,7 @@ namespace MyApp.Api.Utils.pdf
                 var returnTable = new Table(UnitValue.CreatePercentArray([1]))
                     .UseAllAvailableWidth()
                     .SetMarginBottom(15);
-                returnTable.AddCell(new Cell().Add(new Paragraph("Date : Heure :").SetFont(boldFont).SetFontSize(11)).SetBorder(Border.NO_BORDER));
+                returnTable.AddCell(new Cell().Add(new Paragraph("Date :			Heure : ").SetFont(boldFont).SetFontSize(11)).SetBorder(Border.NO_BORDER));
                 document.Add(returnTable);
 
                 document.Close();
@@ -336,7 +371,7 @@ namespace MyApp.Api.Utils.pdf
                 var pdf = new PdfDocument(writer);
                 var document = new Document(pdf);
 
-                document.SetMargins(100, 30, 60, 30);
+                document.SetMargins(50, 30, 60, 30); // Adjusted margins
 
                 var font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
                 var boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
@@ -361,6 +396,38 @@ namespace MyApp.Api.Utils.pdf
             }
         }
 
+        private string FormatDateWithOrdinal(DateTime date)
+        {
+            var day = date.Day;
+            var ordinal = day == 1 ? "1er" : $"{day}";
+            var monthName = date.ToString("MMMM", _frenchCulture);
+            return $"{ordinal} {monthName} {date.Year}";
+        }
+
+        private static void AddLogo(Document document)
+        {
+            if (!File.Exists(ImagePath)) return;
+            var imageData = ImageDataFactory.Create(ImagePath);
+            var image = new Image(imageData)
+                .SetHeight(80) // Reduced height
+                .SetWidth(100)  // Added width to control aspect ratio
+                .SetHorizontalAlignment(HorizontalAlignment.LEFT)
+                .SetMarginTop(20)
+                .SetMarginRight(20);
+
+            var logoCell = new Cell()
+                .SetBorder(Border.NO_BORDER)
+                .SetPadding(0)
+                .Add(image);
+
+            var logoTable = new Table(UnitValue.CreatePercentArray([1]))
+                .UseAllAvailableWidth()
+                .SetMarginBottom(15);
+            logoTable.AddCell(logoCell);
+
+            document.Add(logoTable);
+        }
+
         private void AddTitle(Document document, PdfFont boldFont, string title)
         {
             var titleParagraph = new Paragraph(title)
@@ -370,28 +437,6 @@ namespace MyApp.Api.Utils.pdf
                 .SetTextAlignment(TextAlignment.CENTER)
                 .SetMarginBottom(20);
             document.Add(titleParagraph);
-        }
-
-        private static void AddLogo(Document document)
-        {
-            // if (!File.Exists(ImagePath)) return;
-            // var imageData = ImageDataFactory.Create(ImagePath);
-            // var image = new Image(imageData)
-            //     .SetHeight(50)
-            //     .SetAutoScaleWidth(true)
-            //     .SetHorizontalAlignment(HorizontalAlignment.LEFT);
-            //
-            // var logoCell = new Cell()
-            //     .SetBorder(Border.NO_BORDER)
-            //     .SetPadding(10)
-            //     .Add(image);
-            //
-            // var logoTable = new Table(UnitValue.CreatePercentArray([1]))
-            //     .UseAllAvailableWidth()
-            //     .SetMarginBottom(15);
-            // logoTable.AddCell(logoCell);
-            //
-            // document.Add(logoTable);
         }
 
         private void AddHeader(Canvas canvas, PdfFont boldFont, string? title, string? subTitle, string? reference, int currentPage, int totalPages)
@@ -412,14 +457,15 @@ namespace MyApp.Api.Utils.pdf
                 .SetPadding(10)
                 .SetVerticalAlignment(VerticalAlignment.MIDDLE);
 
-            // if (File.Exists(ImagePath))
-            // {
-            //     var imageData = ImageDataFactory.Create(ImagePath);
-            //     var image = new Image(imageData)
-            //         .SetHeight(50)
-            //         .SetAutoScaleWidth(true);
-            //     logoCell.Add(image);
-            // }
+            if (File.Exists(ImagePath))
+            {
+                var imageData = ImageDataFactory.Create(ImagePath);
+                var image = new Image(imageData)
+                    .SetHeight(40)
+                    .SetWidth(60)
+                    .SetAutoScaleWidth(true);
+                logoCell.Add(image);
+            }
 
             var titleCell = new Cell()
                 .SetBorder(Border.NO_BORDER)
