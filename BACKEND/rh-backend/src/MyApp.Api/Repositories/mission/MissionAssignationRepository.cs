@@ -13,6 +13,7 @@ namespace MyApp.Api.Repositories.mission
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId);
+        Task<MissionAssignation?> GetByIdMissionAsync(string missionId);
         Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId);
         Task<IEnumerable<MissionAssignation>> GetFilteredAssignationsAsync(string? employeeId, string? missionId, string? lieuId, DateTime? departureDate, DateTime? departureArrive, string? status);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
@@ -75,7 +76,7 @@ namespace MyApp.Api.Repositories.mission
                     ma.TransportId == transportId);
         }
         
-        public async Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId)
+        public async Task<MissionAssignation?> GetByIdMissionAsync(string missionId)
         {
             return await _context.MissionAssignations
                 .AsNoTracking()
@@ -91,7 +92,26 @@ namespace MyApp.Api.Repositories.mission
                 .ThenInclude(e => e.Lieu)
                 .Include(ma => ma.Transport)
                 .FirstOrDefaultAsync(ma => 
-                    ma.EmployeeId == employeeId && 
+                    ma.MissionId == missionId);
+        }
+        
+        public async Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId)
+        {
+            return await _context.MissionAssignations
+                .AsNoTracking()
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Direction)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Department)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Service)
+                .Include(ma => ma.Employee)
+                .ThenInclude(e => e.Site)
+                .Include(ma => ma.Mission!)
+                .ThenInclude(e => e.Lieu)
+                .Include(ma => ma.Transport)
+                .FirstOrDefaultAsync(ma =>
+                    ma.EmployeeId == employeeId &&
                     ma.MissionId == missionId);
         }
         
@@ -200,6 +220,11 @@ namespace MyApp.Api.Repositories.mission
             if (!string.IsNullOrWhiteSpace(filters.LieuId))
             {
                 query = query.Where(ma => ma.Mission != null && ma.Mission.LieuId.Contains(filters.LieuId));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filters.MissionType))
+            {
+                query = query.Where(ma => ma.Mission != null && ma.Mission.MissionType == filters.MissionType);
             }
 
             if (filters.Matricule.Any(m => !string.IsNullOrWhiteSpace(m)))

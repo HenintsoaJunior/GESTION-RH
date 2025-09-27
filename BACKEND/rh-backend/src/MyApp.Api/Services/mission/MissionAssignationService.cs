@@ -21,6 +21,7 @@ namespace MyApp.Api.Services.mission
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
+        Task<MissionAssignation?> GetByIdMissionAsync(string missionId);
         Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId);
         Task<MissionAssignation?> GetByEmployeeIdMissionIdAsync(string employeeId, string missionId);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
@@ -114,9 +115,9 @@ namespace MyApp.Api.Services.mission
                 DepartureTime = TimeSpan.TryParse(data[1][6], out var depTime) ? depTime : (TimeSpan?)null,
                 ReturnDate = mission.EndDate,
                 ReturnTime = TimeSpan.TryParse(data[1][8], out var retTime) ? retTime : (TimeSpan?)null,
-                Duration = mission is { StartDate: not null, EndDate: not null }
-                    ? await CalculateDuration(mission.StartDate.Value, mission.EndDate.Value)
-                    : 0
+                Duration = await CalculateDuration(
+                mission.StartDate,
+                mission.EndDate)
             });
 
             await CreateAsync(assignation);
@@ -262,6 +263,19 @@ namespace MyApp.Api.Services.mission
             catch (Exception ex)
             {
                 throw new Exception($"Error retrieving all mission assignations: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<MissionAssignation?> GetByIdMissionAsync(string missionId)
+        {
+            try
+            {
+                var missionAssignation = await _repository.GetByIdMissionAsync(missionId);
+                return missionAssignation;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving mission assignation: {ex.Message}", ex);
             }
         }
 

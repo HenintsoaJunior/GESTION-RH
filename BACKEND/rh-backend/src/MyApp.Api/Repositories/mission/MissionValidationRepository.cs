@@ -20,6 +20,8 @@ namespace MyApp.Api.Repositories.mission
         Task DeleteAsync(MissionValidation missionValidation);
         Task SaveChangesAsync();
         Task<bool> UpdateStatusAsync(string id, string status);
+        Task<IEnumerable<MissionValidation>> GetByMissionIdAsync(string missionId);
+        
     }
 
     public class MissionValidationRepository : IMissionValidationRepository
@@ -35,20 +37,36 @@ namespace MyApp.Api.Repositories.mission
         {
             return await _context.Database.BeginTransactionAsync();
         }
+
+
+        public async Task<IEnumerable<MissionValidation>> GetByMissionIdAsync(string missionId)
+        {
+            if (string.IsNullOrWhiteSpace(missionId))
+            {
+                return [];
+            }
+
+            return await _context.MissionValidations
+                .Where(mv => mv.MissionId == missionId)
+                .Include(mv => mv.Creator) 
+                .Include(mv => mv.Validator)
+                .OrderBy(mv => mv.CreatedAt)
+                .ToListAsync();
+        }
         
-        //prendre les demandes validations
         public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize)
         {
             var query = _context.MissionValidations
                 .Include(mv => mv.Mission)
-                #pragma warning disable CS8602 
-                .ThenInclude(m => m.Lieu) 
-                #pragma warning restore CS8602 
+#pragma warning disable CS8602
+                .ThenInclude(m => m.Lieu)
+#pragma warning restore CS8602
                 .Include(mv => mv.MissionAssignation)
                 .Include(mv => mv.Creator)
                 .Include(mv => mv.Validator)
                 .Where(mv => mv.ToWhom == userId)
-                .Where(mv => mv.Status == "En attente")
+                .Where(mv => mv.Status != "Annulé")
+
                 .AsQueryable();
 
             var totalCount = await query.CountAsync();

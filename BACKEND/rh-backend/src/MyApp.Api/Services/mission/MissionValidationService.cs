@@ -19,6 +19,8 @@ namespace MyApp.Api.Services.mission
         Task<bool> UpdateAsync(string id, MissionValidationDTOForm missionValidation, string userId); // Modified to include userId
         Task<bool> DeleteAsync(string id, string userId); // Modified to include userId
         Task<bool> UpdateStatusAsync(string id, string status, string userId); // Modified to include userId
+        Task<IEnumerable<MissionValidation>> GetByMissionIdAsync(string missionId);
+        Task<bool> CancelValidationsByMissionIdAsync(string missionId, string userId);
     }
 
     public class MissionValidationService : IMissionValidationService
@@ -45,13 +47,78 @@ namespace MyApp.Api.Services.mission
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
+        
+
+
+        public async Task<bool> CancelValidationsByMissionIdAsync(string missionId, string userId)
+        {
+            try
+            {
+                var validations = await _repository.GetByMissionIdAsync(missionId);
+
+                if (validations == null || !validations.Any())
+                {
+                    return true;
+                }
+
+                foreach (var validation in validations)
+                {
+                    var oldValidation = new MissionValidation
+                    {
+                        Status = validation.Status,
+                    };
+                    if (validation.Status != "Annulé") 
+                    {
+                        validation.Status = "Annulé";
+                        validation.UpdatedAt = DateTime.UtcNow;
+
+                        await _repository.UpdateAsync(validation);
+
+                        await _logService.LogAsync(
+                            "ANNULATION VALIDATION MISSION", 
+                            oldValidation, 
+                            validation, 
+                            userId, 
+                            "Status"
+                        );
+                    }
+                }
+                await _repository.SaveChangesAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur fatale lors de l'annulation des validations de la mission {MissionId}.", missionId);
+                throw; 
+            }
+        }
+        public async Task<IEnumerable<MissionValidation>> GetByMissionIdAsync(string missionId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(missionId))
+                {
+                    _logger.LogWarning("Tentative de récupération des validations de mission avec un ID de mission null ou vide");
+                    return [];
+                }
+
+                _logger.LogInformation("Récupération des validations de mission pour l'ID de mission: {MissionId}", missionId);
+                return await _repository.GetByMissionIdAsync(missionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des validations de mission pour l'ID de mission {MissionId}", missionId);
+                throw;
+            }
+        }
 
         public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize)
         {
             try
             {
                 var (results, totalCount) = await _repository.GetRequestAsync(userId, page, pageSize);
-                
+
                 return (results, totalCount);
             }
             catch (Exception ex)

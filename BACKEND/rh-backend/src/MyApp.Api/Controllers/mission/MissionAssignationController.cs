@@ -131,7 +131,6 @@ namespace MyApp.Api.Controllers.mission
         {
             if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
             {
-                _logger.LogWarning("Les identifiants de l'employé ou de la mission sont vides pour la récupération de l'assignation.");
                 return BadRequest("Les identifiants de l'employé et de la mission sont requis.");
             }
 
@@ -139,7 +138,6 @@ namespace MyApp.Api.Controllers.mission
             {
                 var missionAssignation = await _service.GetByIdAsync(employeeId, missionId, null);
                 if (missionAssignation != null) return Ok(missionAssignation);
-                _logger.LogWarning("Aucune assignation trouvée pour EmployeeId: {EmployeeId}, MissionId: {MissionId}", employeeId, missionId);
                 return NotFound("Aucune assignation trouvée pour ces identifiants.");
             }
             catch (Exception ex)
@@ -178,32 +176,16 @@ namespace MyApp.Api.Controllers.mission
         {
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Échec de la validation du modèle pour l'assignation ID: {AssignationId}. Erreurs: {Errors}", assignationId, string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
                 return BadRequest(ModelState);
             }
 
             if (string.IsNullOrWhiteSpace(assignationId))
             {
-                _logger.LogWarning("L'identifiant de l'assignation est vide ou null pour la mise à jour.");
                 return BadRequest("L'identifiant de l'assignation est requis.");
             }
 
             try
             {
-                // Log the values of MissionAssignationDTOForm
-                _logger.LogInformation(
-                    "MissionAssignationDTOForm Values for AssignationId: {AssignationId}: EmployeeId={EmployeeId}, MissionId={MissionId}, TransportId={TransportId}, DepartureDate={DepartureDate}, DepartureTime={DepartureTime}, ReturnDate={ReturnDate}, ReturnTime={ReturnTime}, Duration={Duration}",
-                    assignationId,
-                    dto.EmployeeId ?? "null",
-                    dto.MissionId ?? "null",
-                    dto.TransportId ?? "null",
-                    dto.DepartureDate?.ToString("yyyy-MM-dd") ?? "null",
-                    dto.DepartureTime?.ToString() ?? "null",
-                    dto.ReturnDate?.ToString("yyyy-MM-dd") ?? "null",
-                    dto.ReturnTime?.ToString() ?? "null",
-                    dto.Duration?.ToString() ?? "null"
-                );
-
                 var missionAssignation = new MissionAssignation(dto);
                 var success = await _service.UpdateAsync(assignationId, missionAssignation);
                 if (success) return Ok(missionAssignation);

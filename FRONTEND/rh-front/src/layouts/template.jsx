@@ -242,11 +242,8 @@ export default function Template({ children }) {
       }
       setIsMenuLoading(true);
       try {
-        const roleNames = user.roles?.map((role) => role.roleName) || [];
-        const queryString =
-          roleNames.length > 0
-            ? `?${roleNames.map((name) => `roleNames=${encodeURIComponent(name)}`).join("&")}`
-            : "";
+        const userId = user.userId;
+        const queryString = userId ? `?UserId=${encodeURIComponent(userId)}` : "";
         const response = await fetch(`${BASE_URL}/api/Menu/hierarchy${queryString}`);
         if (!response.ok) throw new Error("Erreur réseau");
         const data = await response.json();
@@ -279,13 +276,13 @@ export default function Template({ children }) {
     const matchedResult = findMenuItemByPath(menuData, currentPath);
 
     let staticRouteMatch = null;
-    if (currentPath === "/system") {
-      staticRouteMatch = { key: "system", title: "System" };
-    } else if (currentPath === "/entite") {
-      staticRouteMatch = { key: "entite", title: "Entite" };
-    } else if (currentPath === "/profil-page") {
-      staticRouteMatch = { key: "profile", title: "Mon profil" };
-    }
+    // if (currentPath === "/system") {
+    //   staticRouteMatch = { key: "system", title: "System" };
+    // } else if (currentPath === "/entite") {
+    //   staticRouteMatch = { key: "entite", title: "Entite" };
+    // } else if (currentPath === "/profil-page") {
+    //   staticRouteMatch = { key: "profile", title: "Mon profil" };
+    // }
 
     if (matchedResult) {
       const { item, parentKey, title } = matchedResult;
@@ -523,7 +520,7 @@ export default function Template({ children }) {
             )}
 
             {/* Éléments statiques dans la section Administration */}
-            <li className="nav-item">
+            {/* <li className="nav-item">
               <Link
                 to="/system"
                 className={`nav-button ${activeItem === "system" ? "active" : ""}`}
@@ -546,7 +543,7 @@ export default function Template({ children }) {
                 </div>
                 <span className="nav-text">Entite</span>
               </Link>
-            </li>
+            </li> */}
           </ul>
         )}
       </nav>
@@ -568,7 +565,7 @@ export default function Template({ children }) {
       <aside className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}>
         <div className="sidebar-header">
           <div className="logo-container">
-            <img src="/Logo.png" alt="Logo" className="logo-image" />
+            <img src="/Logo.JPG" alt="Logo" className="logo-image" />
           </div>
         </div>
 
@@ -620,7 +617,7 @@ export default function Template({ children }) {
                     </Link>
                   )}
                   {index < generateBreadcrumbs().length - 1 && (
-                    <span className="breadcrumb-separator">></span>
+                    <span className="breadcrumb-separator"><FaIcons.FaChevronRight size={14} /></span>
                   )}
                 </span>
               ))}

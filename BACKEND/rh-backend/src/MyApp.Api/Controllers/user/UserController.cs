@@ -70,6 +70,21 @@ public class UserController : ControllerBase
         }
     }
 
+    [HttpGet("{userId}/info")]
+    public async Task<ActionResult<IEnumerable<UserInfoDto>>> GetUserInfo(string userId)
+    {
+        try
+        {
+            var collaborators = await _userService.GetUserInfo(userId);
+            return Ok(collaborators);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
     [HttpGet("{matricule}/superior")]
     public async Task<ActionResult<UserDto>> GetSuperior(string matricule)
     {

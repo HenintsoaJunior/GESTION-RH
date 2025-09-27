@@ -9,12 +9,25 @@ namespace MyApp.Api.Controllers.mission
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class MissionController(IMissionService missionService, ILogger<MissionController> logger)
+    public class MissionController(IMissionService missionService,IMissionAssignationService missionAssignationService, ILogger<MissionController> logger)
         : ControllerBase
     {
-        // Constructeur avec injection du service mission et du logger
 
-        // Récupère toutes les missions
+        [HttpGet("{id}")]
+        public async Task<ActionResult<MissionAssignation>> GetByIdMissionAsync(string id)
+        {
+            try
+            {
+                var mission = await missionAssignationService.GetByIdMissionAsync(id);
+                if (mission == null) return NotFound();
+                return Ok(mission);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération de la mission {MissionId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération de la mission");
+            }
+        }
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Mission>>> GetAll()
         {
@@ -27,23 +40,6 @@ namespace MyApp.Api.Controllers.mission
             {
                 logger.LogError(ex, "Erreur lors de la récupération de toutes les missions");
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des missions");
-            }
-        }
-
-        // Récupère une mission par son identifiant
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Mission>> GetById(string id)
-        {
-            try
-            {
-                var mission = await missionService.GetByIdAsync(id);
-                if (mission == null) return NotFound();
-                return Ok(mission);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors de la récupération de la mission {MissionId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la récupération de la mission");
             }
         }
 
