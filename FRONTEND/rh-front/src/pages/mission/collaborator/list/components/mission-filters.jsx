@@ -95,6 +95,7 @@ const MissionFilters = ({
                                                 disabled={isLoading.employees || isLoading.assignMissions}
                                                 fieldType="beneficiary"
                                                 fieldLabel="bénéficiaire"
+                                                showAddOption={false}
                                             />
                                         </FormFieldCell>
                                         
@@ -140,10 +141,11 @@ const MissionFilters = ({
                                                 onChange={(e) => handleFilterChange("status", e.target.value)}
                                             >
                                                 <option value="">Tous les statuts</option>
-                                                <option value="En Cours">En Cours</option>
-                                                <option value="Planifié">Planifié</option>
-                                                <option value="Terminé">Terminé</option>
-                                                <option value="Annulé">Annulé</option>
+                                                
+                                                <option value="in progress">En Cours</option>
+                                                <option value="planned">Planifié</option>
+                                                <option value="completed">Terminé</option>
+                                                <option value="cancelled">Annulé</option>
                                             </FormInputSearch>
                                         </FormFieldCell>
                                         <FormFieldCell>

@@ -29,17 +29,29 @@ const MissionTable = ({
     appliedFilters,
 }) => {
     const getStatusBadge = (status) => {
-        const statusClass =
-            status === "En Cours"
+        const normalizedStatus = (status || "").toLowerCase().trim();
+
+        const statusTextMap = {
+            "in progress": "En Cours",
+            "planned": "Planifié",
+            "completed": "Terminé",
+            "cancelled": "Annulé",
+        };
+
+        const statusClassName =
+            normalizedStatus === "in progress"
                 ? "status-progress"
-                : status === "Planifié"
+                : normalizedStatus === "planned"
                     ? "status-pending"
-                    : status === "Terminé"
-                        ? "status-approved"
-                        : status === "Annulé"
+                    : normalizedStatus === "completed"
+                        ? "status-completed"
+                        : normalizedStatus === "cancelled"
                             ? "status-cancelled"
-                            : "status-pending";
-        return <StatusBadge className={statusClass}>{status || "Inconnu"}</StatusBadge>;
+                            : "status-unknown"; 
+
+        const displayText = statusTextMap[normalizedStatus] || "Inconnu";
+
+        return <StatusBadge className={statusClassName}>{displayText}</StatusBadge>;
     };
 
     const renderActionButtons = (assignment) => {

@@ -1,4 +1,8 @@
+DROP TABLE IF EXISTS notification_recipients;
+DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS logs;
+DROP TABLE IF EXISTS mission_comments;
+DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS mission_report;
 DROP TABLE IF EXISTS expense_report;
 DROP TABLE IF EXISTS mission_budget;
@@ -330,6 +334,24 @@ CREATE TABLE mission_validation(
 );
 
 
+CREATE TABLE comments(
+   comment_id VARCHAR(50),
+   comment_text TEXT,
+   user_id VARCHAR(250),
+   created_at DATETIME NOT NULL,
+   updated_at DATETIME,
+   PRIMARY KEY(comment_id),
+   FOREIGN KEY(user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE mission_comments(
+   mission_id VARCHAR(50),
+   comment_id VARCHAR(50),
+   PRIMARY KEY(mission_id, comment_id),
+   FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
+   FOREIGN KEY(comment_id) REFERENCES comments(comment_id)
+);
+
 CREATE TABLE mission_budget(
    mission_budget_id VARCHAR(50),
    direction_name VARCHAR(50),
@@ -439,4 +461,37 @@ CREATE TABLE menu_hierarchy (
    updated_at DATETIME NOT NULL DEFAULT GETDATE(),
    FOREIGN KEY (parent_menu_id) REFERENCES menu(menu_id),
    FOREIGN KEY (menu_id) REFERENCES menu(menu_id)
+);
+
+
+-- ============================
+-- NOTIFICATIONS
+-- ============================
+
+CREATE TABLE notifications (
+   notification_id VARCHAR(50),
+   title VARCHAR(255) NOT NULL, 
+   message TEXT NOT NULL, 
+   type VARCHAR(50) NOT NULL,
+   status VARCHAR(50) DEFAULT 'pending',
+   related_table VARCHAR(255), 
+   related_menu VARCHAR(100),
+   related_id VARCHAR(50), 
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   priority INT DEFAULT 1,
+   PRIMARY KEY(notification_id)
+);
+
+CREATE TABLE notification_recipients (
+   notification_id VARCHAR(50),
+   user_id VARCHAR(250),
+   status VARCHAR(50) DEFAULT 'pending',
+   sent_at DATETIME, 
+   read_at DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(notification_id, user_id),
+   FOREIGN KEY(notification_id) REFERENCES notifications(notification_id),
+   FOREIGN KEY(user_id) REFERENCES users(user_id)
 );

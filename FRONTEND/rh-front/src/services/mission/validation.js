@@ -16,7 +16,6 @@ export const getInitials = (name) => {
 export const formatValidatorData = (validator, role) => {
   if (!validator) return null;
   
-  // Définir le titre et le sous-titre en fonction du type
   const validatorTypes = {
     "Directeur de tutelle": {
       title: "Validation Supérieur",
@@ -62,7 +61,8 @@ export const useGetMissionValidationsByAssignationId = () => {
           createdAt: validation.createdAt,
           missionAssignationId: validation.missionAssignationId,
           validator: formatValidatorData(validation.validator, validation.type),
-          type: validation.type 
+          type: validation.type ,
+          validationDate: validation.validationDate || null,
         };
         
         return formattedValidation;
@@ -76,26 +76,45 @@ export const useGetMissionValidationsByAssignationId = () => {
   }, []);
 };
 
-// Validate mission request using userId from localStorage with pagination support
-export const MissionValidationRequests = () => {
-  return useCallback(async ({ page = 1, pageSize = 3 } = {}) => {
-    if (!userId) {
-      throw new Error("User ID is required. Please ensure you are logged in.");
-    }
-    try {
-      const response = await apiPost(`/api/MissionValidation/requests/${userId}`, { page, pageSize });
-      return response;
-    } catch (error) {
-      handleValidationError(error);
-      throw error;
-    }
-  }, []);
+export const MissionValidationRequests = (userId) => {
+  return useCallback(
+    async ({ page = 1, pageSize = 10, employeeId = null, status = null } = {}) => {
+      if (!userId) {
+        throw new Error("User ID is required. Please ensure you are logged in.");
+      }
+
+      try {
+        console.log("Paramètres reçus dans MissionValidationRequests:", {
+          page,
+          pageSize,
+          employeeId,
+          status,
+        });
+
+        const queryParams = new URLSearchParams({
+          page: page.toString(),
+          pageSize: pageSize.toString(),
+          ...(employeeId && { employeeId }),
+          ...(status && { status }),
+        });
+
+        const url = `/api/MissionValidation/requests/${userId}?${queryParams.toString()}`;
+        console.log("API URL:", url);
+        const response = await apiGet(url);
+        console.log("API response:", response);
+        return response;
+      } catch (error) {
+        console.error("Erreur dans MissionValidationRequests:", error);
+        handleValidationError(error);
+        throw error;
+      }
+    },
+    [userId]
+  );
 };
 
-// Validate a mission using missionValidationId, missionAssignationId, and userId
 export const ValidateMission = () => {
-  return useCallback(async (missionValidationId, missionAssignationId, action, comment = "", signature = "", missionBudget = 20000) => {
-    
+  return useCallback(async (missionValidationId, missionAssignationId, action,type, comment = "", signature = "", missionBudget = 20000) => {
     if (!missionValidationId || !missionAssignationId) {
       throw new Error("Mission Validation ID and Mission Assignation ID are required");
     }
@@ -107,22 +126,24 @@ export const ValidateMission = () => {
     }
 
     try {
-      // Nouveau format de payload selon les spécifications
+      // Prepare the payload
       const payload = {
         missionValidationId,
         missionAssignationId,
-        isSureToConfirm: true, // Toujours true car l'utilisateur a confirmé via le modal
-        type: action, // "validate" ou "reject"
         userId,
-        // Inclure le budget de mission si fourni
-        ...(missionBudget && { missionBudget })
+        // Include type, missionBudget, and isSureToConfirm only for validation
+        ...(action === "validate" && {
+          type: type, 
+          ...(missionBudget && { missionBudget }),
+          isSureToConfirm: true
+        })
       };
 
-      // Mise à jour de l'endpoint pour utiliser une route POST simple
-      const response = await apiPost(
-        `/api/MissionValidation/validate`,
-        payload
-      );
+      // Determine the endpoint based on the action
+      const endpoint = action === "validate" ? "/api/MissionValidation/validate" : "/api/MissionValidation/reject";
+
+      // Make the POST request
+      const response = await apiPost(endpoint, payload);
       
       return response;
     } catch (error) {
@@ -130,4 +151,32 @@ export const ValidateMission = () => {
       throw error;
     }
   }, []);
+};
+
+export const fetchMissionValidationStats = async (setStats, setIsLoading, onError, matricule = null) => {
+  try {
+    setIsLoading((prev) => ({ ...prev, stats: true }));
+    
+    const url = matricule ? `/api/MissionValidation/stats/${matricule}` : `/api/MissionValidation/stats`;
+    
+    const data = await apiGet(url);
+    
+    const transformedStats = {
+      total: data?.total ?? 0,
+      pending: data?.enAttente ?? 0,
+      approved: data?.approuvee ?? 0,
+      rejected: data?.rejetee ?? 0,
+    };
+    
+    setStats(transformedStats);
+  } catch (error) {
+    onError({
+      isOpen: true,
+      type: "error",
+      message: `Erreur lors du chargement des statistiques: ${error.message || "Une erreur inconnue s'est produite."}`,
+    });
+    setStats({ total: 0, pending: 0, approved: 0, rejected: 0 });
+  } finally {
+    setIsLoading((prev) => ({ ...prev, stats: false }));
+  }
 };

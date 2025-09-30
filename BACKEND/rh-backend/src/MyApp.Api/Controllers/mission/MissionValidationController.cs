@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Models.dto.mission;
+using MyApp.Api.Models.list.mission;
 using MyApp.Api.Services.mission;
 
 namespace MyApp.Api.Controllers.mission
@@ -17,7 +18,7 @@ namespace MyApp.Api.Controllers.mission
         private readonly IMissionAssignationService _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
         private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         private readonly ILogger<MissionValidationController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        
+
         [HttpGet("by-assignation-id/{assignationId}")]
         public async Task<IActionResult> GetByAssignationId(string assignationId)
         {
@@ -41,26 +42,78 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
-        
+
         [HttpPost("requests/{userId}")]
-        public async Task<IActionResult> GetRequests(string userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        [HttpGet("requests/{userId}")]
+        public async Task<IActionResult> GetRequests(
+            string userId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] RequestFilterDto? filter = null)
         {
             try
             {
-                var (results, totalCount) = await _missionValidationService.GetRequestAsync(userId, page, pageSize);
-                
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return BadRequest(new { message = "L'ID de l'utilisateur ne peut pas être null ou vide." });
+                }
+
+                if (page < 1 || pageSize < 1)
+                {
+                    return BadRequest(new { message = "Les paramètres de pagination doivent être supérieurs à 0." });
+                }
+
+                var (results, totalCount) = await _missionValidationService.GetRequestAsync(
+                    userId, 
+                    page, 
+                    pageSize, 
+                    filter?.EmployeeId, 
+                    filter?.Status);
+
                 return Ok(new { Results = results, TotalCount = totalCount });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des demandes de validation de mission pour userId: {userId}", userId);
+                _logger.LogError(ex, "Erreur lors de la récupération des demandes de validation de mission pour userId: {UserId}, employeeId: {EmployeeId}, status: {Status}",
+                    userId, filter?.EmployeeId ?? "none", filter?.Status ?? "none");
                 return StatusCode(500, new { message = "Une erreur est survenue lors de la récupération des demandes." });
+            }
+        }
+
+        [HttpPost("reject")]
+        public async Task<IActionResult> Reject([FromBody] MissionValidationRejectionDTO validation)
+        {
+            try
+            {
+                if (validation == null || string.IsNullOrWhiteSpace(validation.MissionValidationId) || string.IsNullOrWhiteSpace(validation.MissionAssignationId))
+                {
+                    return BadRequest(new { message = "Les données de validation (MissionValidationId et MissionAssignationId) sont requises." });
+                }
+
+                if (string.IsNullOrWhiteSpace(validation.UserId))
+                {
+                    return BadRequest(new { message = "L'ID de l'utilisateur est requis." });
+                }
+
+                var result = await _missionValidationService.RejectedAsync(validation.MissionValidationId, validation.MissionAssignationId, validation.UserId);
+                if (!result)
+                {
+                    return NotFound(new { message = "Validation de mission non trouvée." });
+                }
+
+                return Ok(new { message = "Validation de mission rejetée avec succès." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors du rejet de la validation de mission pour missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}",
+                    validation?.MissionValidationId, validation?.MissionAssignationId);
+                return StatusCode(500, new { message = "Une erreur est survenue lors du rejet de la validation." });
             }
         }
 
         // POST: api/MissionValidation/validate/{missionValidationId}/{missionAssignationId}
         [HttpPost("validate")]
-        public async Task<IActionResult> Validate([FromBody]Validation validation)
+        public async Task<IActionResult> Validate([FromBody] Validation validation)
         {
             try
             {
@@ -306,6 +359,22 @@ namespace MyApp.Api.Controllers.mission
             {
                 _logger.LogError(ex, "Erreur lors de la recherche des validations de mission");
                 return StatusCode(500, new { message = "Une erreur est survenue lors de la recherche des validations." });
+            }
+        }
+        
+        [HttpGet("stats/{matricule}")]
+        // [Authorize(Roles = "admin")]
+        public async Task<ActionResult<MissionStatsValidation>> GetStatistics(string matricule)
+        {
+            try
+            {
+                var stats = await _missionValidationService.GetStatisticsAsync(matricule);
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving mission statistics with matricule: {Matricule}", matricule);
+                return StatusCode(500, "An error occurred while retrieving mission statistics.");
             }
         }
     }

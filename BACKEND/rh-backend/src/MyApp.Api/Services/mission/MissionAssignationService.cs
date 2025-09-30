@@ -711,7 +711,7 @@ namespace MyApp.Api.Services.mission
             var mission = await _missionRepository.GetByIdAsync(missionId); // Use repository
             if (mission != null)
             {
-                mission.Status = "Planifié";
+                mission.Status = "planned ";
                 mission.UpdatedAt = DateTime.UtcNow;
                 await _missionRepository.UpdateAsync(mission);
                 await _missionRepository.SaveChangesAsync();
@@ -745,6 +745,7 @@ namespace MyApp.Api.Services.mission
         {
             existing.EmployeeId = updated.EmployeeId;
             existing.MissionId = updated.MissionId;
+            existing.Type = updated.Type;
             existing.TransportId = updated.TransportId;
             existing.DepartureDate = updated.DepartureDate;
             existing.DepartureTime = updated.DepartureTime;

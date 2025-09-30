@@ -1,7 +1,9 @@
 "use client";
+
 import { Clock, CheckCircle, XCircle } from "lucide-react";
 import useMissionValidationData from "./hooks/use-mission-validation-data";
 import MissionCards from "./components/mission-cards";
+import MissionFilters from "./components/mission-filters";
 import MissionModals from "./components/mission-modals";
 import {
   DashboardContainer,
@@ -19,6 +21,9 @@ import {
 const MissionValidationPage = () => {
   const {
     missions,
+    filters,
+    setFilters,
+    appliedFilters,
     isLoading,
     alert,
     setAlert,
@@ -37,7 +42,15 @@ const MissionValidationPage = () => {
     totalEntries,
     handlePageChange,
     handlePageSizeChange,
-    appliedFilters,
+    comments,
+    handleCreateComment,
+    handleUpdateComment,
+    handleDeleteComment,
+    isHidden,
+    setIsHidden,
+    suggestions,
+    handleFilterSubmit,
+    handleResetFilters,
   } = useMissionValidationData();
 
   if (showDetailsMission) {
@@ -53,6 +66,10 @@ const MissionValidationPage = () => {
         handleValidate={handleValidate}
         handleUpdateComments={handleUpdateComments}
         handleUpdateSignature={handleUpdateSignature}
+        comments={comments}
+        handleCreateComment={handleCreateComment}
+        handleUpdateComment={handleUpdateComment}
+        handleDeleteComment={handleDeleteComment}
       />
     );
   }
@@ -61,11 +78,8 @@ const MissionValidationPage = () => {
     <DashboardContainer>
       <TableHeader>
         <TableTitle>Validation des Missions</TableTitle>
-        <p style={{ color: "var(--text-muted)", fontSize: "var(--font-size-sm)" }}>
-          Tableau de bord moderne pour la gestion des missions
-        </p>
       </TableHeader>
-    
+
       <StatsContainer>
         <StatsGrid>
           <StatCard className="stat-card-total">
@@ -73,43 +87,54 @@ const MissionValidationPage = () => {
               <Clock size={24} />
             </StatIcon>
             <StatContent>
-              <StatNumber>{isLoading.missions ? "..." : stats.total}</StatNumber>
+              <StatNumber>{isLoading.stats ? "..." : stats.total}</StatNumber>
               <StatLabel>Total des missions</StatLabel>
             </StatContent>
           </StatCard>
-        
+
           <StatCard className="stat-card-pending">
             <StatIcon>
               <Clock size={24} />
             </StatIcon>
             <StatContent>
-              <StatNumber>{isLoading.missions ? "..." : stats.pending}</StatNumber>
+              <StatNumber>{isLoading.stats ? "..." : stats.pending}</StatNumber>
               <StatLabel>En attente</StatLabel>
             </StatContent>
           </StatCard>
-        
+
           <StatCard className="stat-card-approved">
             <StatIcon>
               <CheckCircle size={24} />
             </StatIcon>
             <StatContent>
-              <StatNumber>{isLoading.missions ? "..." : stats.approved}</StatNumber>
+              <StatNumber>{isLoading.stats ? "..." : stats.approved}</StatNumber>
               <StatLabel>Approuvées</StatLabel>
             </StatContent>
           </StatCard>
-        
-          <StatCard className="stat-card-cancelled">
+
+          <StatCard className="stat-card-rejected">
             <StatIcon>
               <XCircle size={24} />
             </StatIcon>
             <StatContent>
-              <StatNumber>{isLoading.missions ? "..." : stats.rejected}</StatNumber>
+              <StatNumber>{isLoading.stats ? "..." : stats.rejected}</StatNumber>
               <StatLabel>Rejetées</StatLabel>
             </StatContent>
           </StatCard>
         </StatsGrid>
       </StatsContainer>
-    
+
+      <MissionFilters
+        isHidden={isHidden}
+        setIsHidden={setIsHidden}
+        filters={filters}
+        setFilters={setFilters}
+        suggestions={suggestions}
+        isLoading={isLoading}
+        handleFilterSubmit={handleFilterSubmit}
+        handleResetFilters={handleResetFilters}
+      />
+
       <MissionCards
         missions={missions}
         isLoading={isLoading}

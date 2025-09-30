@@ -52,6 +52,9 @@ export const StatCard = styled.div`
   &.stat-card-approved {
     border-left-color: #10b981;
   }
+  &.stat-card-validate {
+    border-left-color: #10b981;
+  }
   &.stat-card-cancelled {
     border-left-color: #ef4444;
   }
