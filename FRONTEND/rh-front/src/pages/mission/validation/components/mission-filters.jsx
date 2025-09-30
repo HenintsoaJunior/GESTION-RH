@@ -1,4 +1,6 @@
-﻿import { useState } from "react";
+﻿"use client";
+
+import { useState } from "react";
 import {
   FiltersContainer,
   FiltersHeader,
@@ -11,6 +13,7 @@ import {
   FormFieldCell,
   FormLabelSearch,
   FormInputSearch,
+  StyledAutoCompleteInput,
   FiltersActions,
   ButtonReset,
   ButtonSearch,
@@ -24,6 +27,7 @@ const MissionFilters = ({
   setIsHidden,
   filters,
   setFilters,
+  suggestions,
   isLoading,
   handleFilterSubmit,
   handleResetFilters,
@@ -58,18 +62,50 @@ const MissionFilters = ({
           </FiltersHeader>
           {!isMinimized && (
             <FiltersSection>
-              <form onSubmit={handleFilterSubmit}>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleFilterSubmit();
+                }}
+              >
                 <FormTableSearch>
                   <tbody>
                     <FormRow>
                       <FormFieldCell>
-                        <FormLabelSearch>Rechercher</FormLabelSearch>
-                        <FormInputSearch
-                          type="text"
-                          placeholder="Rechercher une mission..."
-                          value={filters.searchTerm}
-                          onChange={(e) => handleFilterChange("searchTerm", e.target.value)}
-                          disabled={isLoading.missions}
+                        <FormLabelSearch>Collaborateur</FormLabelSearch>
+                        <StyledAutoCompleteInput
+                          value={filters.employeeName || ""}
+                          onChange={(value) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              employeeName: value,
+                              employeeId: value ? prev.employeeId : "",
+                            }))
+                          }
+                          onSelect={(value) => {
+                            const selectedEmployee = suggestions.beneficiary.find(
+                              (emp) => emp.displayName === value
+                            );
+                            console.log("Selected employee:", selectedEmployee); // Debug
+                            setFilters((prev) => ({
+                              ...prev,
+                              employeeId: selectedEmployee ? selectedEmployee.id : "",
+                              employeeName: selectedEmployee ? selectedEmployee.displayName : value,
+                            }));
+                          }}
+                          suggestions={suggestions.beneficiary
+                            .filter((emp) =>
+                              emp.displayName
+                                .toLowerCase()
+                                .includes((filters.employeeName || "").toLowerCase())
+                            )
+                            .map((emp) => emp.displayName)}
+                          maxVisibleItems={5}
+                          placeholder="Rechercher par nom collaborateur..."
+                          disabled={isLoading.employees || isLoading.missions}
+                          fieldType="beneficiary"
+                          fieldLabel="collaborateur"
+                          showAddOption={false}
                         />
                       </FormFieldCell>
                       <FormFieldCell>
@@ -81,25 +117,10 @@ const MissionFilters = ({
                           onChange={(e) => handleFilterChange("status", e.target.value)}
                           disabled={isLoading.missions}
                         >
-                          <option value="all">Tous les statuts</option>
+                          <option value="">Tous les statuts</option>
                           <option value="pending">En attente</option>
-                          <option value="approved">Approuvées</option>
-                          <option value="rejected">Rejetées</option>
-                        </FormInputSearch>
-                      </FormFieldCell>
-                      <FormFieldCell>
-                        <FormLabelSearch>Priorité</FormLabelSearch>
-                        <FormInputSearch
-                          as="select"
-                          name="priority"
-                          value={filters.priority}
-                          onChange={(e) => handleFilterChange("priority", e.target.value)}
-                          disabled={isLoading.missions}
-                        >
-                          <option value="all">Toutes priorités</option>
-                          <option value="high">Haute</option>
-                          <option value="medium">Moyenne</option>
-                          <option value="low">Basse</option>
+                          <option value="approved">Validé</option>
+                          <option value="rejected">Rejeté</option>
                         </FormInputSearch>
                       </FormFieldCell>
                     </FormRow>

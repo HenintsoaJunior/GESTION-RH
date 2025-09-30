@@ -7,6 +7,7 @@ import {
     updateMission, 
     fetchMissionById,
 } from "services/mission/mission"; 
+import { type } from "@testing-library/user-event/dist/type";
 
 const useMissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSuccess }) => {
     const [currentStep, setCurrentStep] = useState(1);
@@ -654,6 +655,7 @@ const useMissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSu
                                 missionDuration: assignationData.duration?.toString() || "",
                                 returnDate: assignationData.returnDate?.substring(0, 10) || "",
                                 returnTime: assignationData.returnTime || "",
+                                type: assignationData.type || "Indemnité",
                             } : prev.beneficiary;
 
                             return {

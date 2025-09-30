@@ -5,6 +5,7 @@ using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.logs;
 using MyApp.Api.Entities.menu;
 using MyApp.Api.Entities.mission;
+using MyApp.Api.Entities.notifications;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.users;
 
@@ -12,7 +13,11 @@ namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
-        public DbSet<MissionReport>  MissionReports { get; set; }
+        public DbSet<Notifications> Notifications { get; set; }
+        public DbSet<NotificationRecipients> NotificationRecipients { get; set; }
+        public DbSet<MissionComments> MissionComments { get; set; }
+        public DbSet<Comments> Comments { get; set; }
+        public DbSet<MissionReport> MissionReports { get; set; }
         public DbSet<ExpenseReport>  ExpenseReports { get; set; }
         public DbSet<ExpenseReportType>  ExpenseReportTypes { get; set; }
         public DbSet<MissionBudget>  MissionBudgets { get; set; }
@@ -41,11 +46,8 @@ namespace MyApp.Api.Data
         public DbSet<Direction> Directions { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<User> Users { get; set; }
-        
         public DbSet<Role>  Roles { get; set; }
-        
-        public DbSet<Habilitation> Habilitations { get; set; }
-        
+        public DbSet<Habilitation> Habilitations { get; set; }        
         public DbSet<RoleHabilitation> RoleHabilitations { get; set; }
         public DbSet<Module> Modules { get; set; }
         public DbSet<Menu> Menus { get; set; }

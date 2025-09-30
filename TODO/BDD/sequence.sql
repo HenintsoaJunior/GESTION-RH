@@ -346,3 +346,29 @@ CREATE SEQUENCE seq_log_id
     NO CYCLE
     CACHE 50;
 GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_comments_id')
+    DROP SEQUENCE seq_comments_id;
+GO
+CREATE SEQUENCE seq_comments_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_notifications_id')
+    DROP SEQUENCE seq_notifications_id;
+GO
+CREATE SEQUENCE seq_notifications_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+

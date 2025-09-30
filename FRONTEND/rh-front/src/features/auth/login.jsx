@@ -51,8 +51,7 @@ function LoginPage() {
         <div className="separator"></div>
 
         <p className="login-description">
-          Lorem ipsum dolor sit amet consectetur adipiscing elit. Hic sit impedit aspernatur nostrum! Consectetur
-          quidem mollitia itaque, eius atque eaque!
+          Une vision ambitieuse pour le développement aéroportuaire à Madagascar
         </p>
 
         <form className="login-form" onSubmit={handleSubmit}>

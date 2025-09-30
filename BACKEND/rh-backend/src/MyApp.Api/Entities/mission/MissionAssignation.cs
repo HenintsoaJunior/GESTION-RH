@@ -7,7 +7,7 @@ using MyApp.Api.Models.dto.mission;
 namespace MyApp.Api.Entities.mission
 {
     [Table("mission_assignation")]
-    public class MissionAssignation : Types
+    public class MissionAssignation :BaseEntity
     {
         [Key]
         [Column("assignation_id")]
@@ -52,6 +52,10 @@ namespace MyApp.Api.Entities.mission
 
         [ForeignKey("TransportId")]
         public Transport? Transport { get; set; }
+
+        [Column("type")]
+        [MaxLength(50)]
+        public string Type { get; set; } = string.Empty;
         
         //si le type est note de frais 
         [Required]

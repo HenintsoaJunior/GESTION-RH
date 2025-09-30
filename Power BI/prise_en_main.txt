@@ -1,3 +1,0 @@
-SOURCE DE DONNEES => SQL Server
-Comprendre les principes
-Donner à chat les tables et les resultats attendus => suivre ce qu'il dit
