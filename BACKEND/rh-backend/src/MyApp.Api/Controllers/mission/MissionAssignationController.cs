@@ -91,10 +91,7 @@ namespace MyApp.Api.Controllers.mission
             {
                 var excelBytes = await _service.GenerateExcelReportAsync(
                     generatePaiementDto.EmployeeId,
-                    generatePaiementDto.MissionId,
-                    generatePaiementDto.DirectionId,
-                    generatePaiementDto.StartDate,
-                    generatePaiementDto.EndDate);
+                    generatePaiementDto.MissionId);
 
                 var excelName = $"MissionPaymentReport-{generatePaiementDto.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.xlsx";
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);

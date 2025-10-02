@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Check, X, Save } from "lucide-react";
 import {
   PopupOverlay,
@@ -9,9 +9,6 @@ import {
   PopupTitle,
   PopupClose,
   PopupContent,
-  PopupActions,
-  ButtonPrimary,
-  ButtonSecondary,
 } from "styles/generaliser/popup-container";
 import {
   CardsContainer,
@@ -26,7 +23,7 @@ import {
 import { FormInputSearch, ActionButtons, ButtonUpdate, ButtonCancel, NoDataMessage } from "styles/generaliser/table-container";
 import { ErrorMessage } from "styles/generaliser/form-container";
 import AutoCompleteInput from "components/auto-complete-input";
-import { fetchAllUsers, fetchUserRoles, searchUsers } from "services/users/users";
+import { fetchAllUsers, fetchUserRoles } from "services/users/users";
 import { fetchAllRoles } from "services/users/roles";
 import { createUserRoleBulk } from "services/users/user_role";
 import Alert from "components/alert";

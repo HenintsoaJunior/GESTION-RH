@@ -5,7 +5,7 @@ export default function Footer({ collapsed, themes, theme, handleThemeChange }) 
         <>
           <div className="sidebar-footer-info">
             <div className="sidebar-footer-title">Ravinala Airports</div>
-            <div className="sidebar-footer-subtitle">Système de recrutement v2.1</div>
+            <div className="sidebar-footer-subtitle">Gestion de Mission</div>
           </div>
         </>
       ) : (

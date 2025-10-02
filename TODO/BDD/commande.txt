@@ -6,8 +6,7 @@ sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i data.sql
 
 00182 (DRH)
 00358 (DT)
-
-
+// "start": "set NODE_OPTIONS=--trace-deprecation && react-scripts start",
 
 {
   "offer": {

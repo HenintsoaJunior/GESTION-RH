@@ -87,7 +87,6 @@ export const CommentItem = styled.div`
     padding: var(--spacing-sm, 10px);
     border-bottom: 1px solid var(--border-light, #e0e0e0);
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
     gap: var(--spacing-sm, 10px);
 `;
@@ -107,19 +106,28 @@ export const CommentActions = styled.div`
 `;
 
 export const CommentActionButton = styled.button`
-    background: none;
-    border: none;
+    padding: 4px 8px;
+    background-color: var(--background-light, #f8f9fa);
+    border: 1px solid var(--border-light, #dee2e6);
+    border-radius: var(--radius-sm, 4px);
     cursor: pointer;
     color: var(--text-secondary, #6c757d);
-    transition: color 0.2s;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 
     &:hover {
-        color: var(--primary-color, #007bff);
+        background-color: var(--primary-color, #007bff);
+        color: white;
+        border-color: var(--primary-color, #007bff);
     }
 
     &.delete {
         &:hover {
-            color: var(--error-color, #dc3545);
+            background-color: var(--error-color, #dc3545);
+            color: white;
+            border-color: var(--error-color, #dc3545);
         }
     }
 `;

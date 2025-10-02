@@ -206,35 +206,32 @@ namespace MyApp.Api.Services.mission
                     await _missionAssignationService.UpdateAsync(validation.MissionAssignationId, missionAssignation);
                     result = "Validation effectuée avec succès et mission validée";
 
-                    //check si budget mission est suffisant
-                    if (validation.Type.Equals("Indemnité"))
-                    {
-                        var expense = (await _missionAssignationService.GeneratePaiementsAsync(
+                    await _missionAssignationService.GeneratePaiementsAsync(
                             missionAssignation.EmployeeId,
-                            missionAssignation.MissionId,
-                            missionAssignation.Mission?.LieuId,
-                            missionAssignation.DepartureDate,
-                            missionAssignation.ReturnDate)).TotalAmount;
-                        if (expense > missionBudget.Budget && !validation.IsSureToConfirm)
-                        {
-                            // result = "Attention Budget insuffisant!!!!";
-                            throw new Exception("Budget insuffisant!!!!");
-                        }
+                            missionAssignation.MissionId);
 
-                        //mis à jour du budget
-                        await _missionBudgetService.AddAsync(new MissionBudgetDTOForm
-                        {
-                            DirectionName = missionBudget.DirectionName,
-                            Budget = missionBudget.Budget - expense,
-                            UserId = missionBudget.UserId
-                        });
-                    }
+                    //check si budget mission est suffisant
+                    // if (validation.Type.Equals("Indemnité"))
+                    // {
+                    //     var expense = (await _missionAssignationService.GeneratePaiementsAsync(
+                    //         missionAssignation.EmployeeId,
+                    //         missionAssignation.MissionId)).TotalAmount;
+
+                    //     if (expense > missionBudget.Budget && !validation.IsSureToConfirm)
+                    //     {
+                    //         // result = "Attention Budget insuffisant!!!!";
+                    //         throw new Exception("Budget insuffisant!!!!");
+                    //     }
+
+                    //     //mis à jour du budget
+                    //     await _missionBudgetService.AddAsync(new MissionBudgetDTOForm
+                    //     {
+                    //         DirectionName = missionBudget.DirectionName,
+                    //         Budget = missionBudget.Budget - expense,
+                    //         UserId = missionBudget.UserId
+                    //     });
+                    // }
                 }
-
-                _logger.LogInformation(
-                    "Validation effectuée pour missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}",
-                    validation.MissionValidationId, validation.MissionAssignationId);
-
                 // Log the creation
                 var missionValidation = await _repository.GetByIdAsync(validation.MissionValidationId);
 

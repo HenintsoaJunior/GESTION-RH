@@ -372,3 +372,17 @@ CREATE SEQUENCE seq_notifications_id
     CACHE 50;
 GO
 
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_compensation_id')
+    DROP SEQUENCE seq_compensation_id;
+GO
+CREATE SEQUENCE seq_compensation_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+

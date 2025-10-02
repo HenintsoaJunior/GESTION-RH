@@ -1,6 +1,5 @@
 "use client";
 
-import { useNavigate } from "react-router-dom";
 import { List, Users, User, Plus, Clock, Calendar, CheckCircle, XCircle } from "lucide-react";
 import MissionFilters from "./components/mission-filters";
 import MissionTable from "./components/mission-table";
@@ -23,16 +22,13 @@ import {
 } from "styles/generaliser/table-container";
 
 const CollaboratorMissionList = () => {
-    const navigate = useNavigate();
     const {
         isHidden,
         setIsHidden,
         viewMode,
-        setViewMode,
         filters,
         setFilters,
         appliedFilters,
-        setAppliedFilters,
         suggestions,
         isLoading,
         alert,
@@ -40,9 +36,7 @@ const CollaboratorMissionList = () => {
         assignedPersons,
         totalEntries,
         currentPage,
-        setCurrentPage,
         pageSize,
-        setPageSize,
         permissions,
         canInsert,
         canViewAllMission,

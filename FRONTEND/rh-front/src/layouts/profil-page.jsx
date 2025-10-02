@@ -11,7 +11,6 @@ import {
   AvatarText,
   ProfileHeaderInfo,
   MainName,
-  MainEmail,
   ProfileContent,
   ProfileCard,
   KeyInfoCard,

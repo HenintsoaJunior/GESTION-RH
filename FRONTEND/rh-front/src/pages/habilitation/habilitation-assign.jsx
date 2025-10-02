@@ -26,7 +26,7 @@ const HabilitationAssign = ({ roleId, roleName, initialHabilitations = [], onHab
   const [filteredHabilitations, setFilteredHabilitations] = useState([]);
   const [isLoading, setIsLoading] = useState({ habilitations: false });
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
-  const [totalEntries, setTotalEntries] = useState(0);
+  const [, setTotalEntries] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
 
@@ -40,13 +40,13 @@ const HabilitationAssign = ({ roleId, roleName, initialHabilitations = [], onHab
   }, []);
 
   // Gestion du succès
-  const handleSuccess = useCallback((alertData) => {
-    setAlert({
-      isOpen: true,
-      type: "success",
-      message: alertData.message,
-    });
-  }, []);
+  // const handleSuccess = useCallback((alertData) => {
+  //   setAlert({
+  //     isOpen: true,
+  //     type: "success",
+  //     message: alertData.message,
+  //   });
+  // }, []);
 
   // Charger les habilitations
   useEffect(() => {

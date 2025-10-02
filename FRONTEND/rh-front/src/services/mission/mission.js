@@ -247,6 +247,7 @@ export const fetchAssignMission = async (
     const assignMissionsData = Array.isArray(data.data)
       ? data.data.map((item) => ({
           assignationId: item.assignationId,
+          type: item.type,
           employeeId: item.employeeId,
           missionId: item.missionId,
           transportId: item.transportId,
@@ -372,95 +373,6 @@ export const exportMissionAssignationPDF = async (
     });
   } finally {
     setIsLoading((prev) => ({ ...prev, exportPDF: false }));
-  }
-};
-
-/**
- * Exporte les assignations de mission au format Excel.
- * (Fonction existante - conservée)
- */
-export const exportMissionAssignationExcel = async (
-  filters,
-  setIsLoading,
-  onSuccess,
-  onError
-) => {
-  try {
-    setIsLoading((prev) => ({ ...prev, exportExcel: true }));
-
-    // Appeler l'API avec les filtres
-    const blob = await apiPost(
-      '/api/MissionAssignation/generate-excel',
-      {
-        missionId: filters.missionId || null,
-        employeeId: filters.employeeId || null,
-        transportId: filters.transportId || null,
-        lieuId: filters.lieuId || null,
-        departureDate: filters.departureDate || null,
-        departureArrive: filters.departureArrive || null,
-        status: filters.status || null,
-      },
-      {},
-      {
-        Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      },
-      'blob'
-    );
-
-    if (blob.size === 0) {
-      throw new Error('Le fichier Excel généré est vide');
-    }
-
-    // Créer l'URL de téléchargement
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-
-    // Nom du fichier avec timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const filename = `Mission_Assignations_${timestamp}.xlsx`;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-
-    // Nettoyage
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    // Succès
-    onSuccess({
-      isOpen: true,
-      type: 'success',
-      message: `Fichier Excel "${filename}" exporté avec succès !`,
-    });
-  } catch (error) {
-    // Gestion des erreurs
-    let userMessage = 'Erreur lors de l’exportation Excel';
-    if (error.message.includes('404')) {
-      userMessage = 'Service d’exportation non trouvé. Contactez l’administrateur.';
-    } else if (error.message.includes('500')) {
-      userMessage = 'Erreur interne du serveur. Réessayez plus tard.';
-    } else if (error.message.includes('403') || error.message.includes('401')) {
-      userMessage = 'Accès non autorisé. Vérifiez vos permissions.';
-    } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
-      userMessage = 'Erreur de connexion. Vérifiez votre connexion internet.';
-    } else if (error.message.includes('requis')) {
-      userMessage = error.message;
-    } else if (error.message.includes('JSON.parse')) {
-      userMessage = 'Réponse du serveur invalide. Le fichier Excel n’a pas pu être généré.';
-    }
-
-    onError({
-      isOpen: true,
-      type: 'error',
-      message: `${userMessage}: ${error.message}`,
-      details: {
-        ...filters,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  } finally {
-    setIsLoading((prev) => ({ ...prev, exportExcel: false }));
   }
 };
 

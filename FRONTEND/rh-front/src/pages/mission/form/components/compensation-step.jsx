@@ -1,4 +1,4 @@
-import { FormSectionTitle, ErrorMessage } from "styles/generaliser/form-container";
+import { ErrorMessage } from "styles/generaliser/form-container";
 import { CreditCard, FileText } from "lucide-react";
 
 const CompensationStep = ({ formData, fieldErrors, isSubmitting, handleInputChange }) => {

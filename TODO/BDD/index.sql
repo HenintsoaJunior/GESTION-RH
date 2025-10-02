@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS mission_report;
 DROP TABLE IF EXISTS expense_report;
 DROP TABLE IF EXISTS mission_budget;
 DROP TABLE IF EXISTS mission_validation;
+DROP TABLE IF EXISTS compensation;
 DROP TABLE IF EXISTS mission_assignation;
 DROP TABLE IF EXISTS compensation_scale;
 DROP TABLE IF EXISTS employee_nationalities;
@@ -363,6 +364,23 @@ CREATE TABLE mission_budget(
    FOREIGN KEY(user_id) REFERENCES users(user_id)
 );
 
+CREATE TABLE compensation(
+   compensation_id VARCHAR(50),
+   transport_amount DECIMAL(15,2),
+   breakfast_amount DECIMAL(15,2),
+   lunch_amount DECIMAL(15,2),
+   dinner_amount DECIMAL(15,2),
+   accommodation_amount DECIMAL(15,2),
+   status VARCHAR(50) DEFAULT 'not paid',
+   payment_date DATETIME,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   assignation_id VARCHAR(50) NOT NULL,
+   employee_id VARCHAR(50) NOT NULL,
+   PRIMARY KEY(compensation_id),
+   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id),
+   FOREIGN KEY(employee_id) REFERENCES employees(employee_id)
+);
 
 CREATE TABLE expense_report_type(
    expense_report_type_id VARCHAR(50),

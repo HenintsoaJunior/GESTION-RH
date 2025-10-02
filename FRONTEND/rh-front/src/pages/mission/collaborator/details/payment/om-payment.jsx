@@ -15,11 +15,17 @@ import {
     ActionButton,
 } from "styles/generaliser/details-mission-container";
 import { NoDataMessage } from "styles/generaliser/table-container";
+import { formatNumber } from "utils/format";
+// --- Import Chart.js Dependencies ---
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from "chart.js";
+import { Doughnut, Bar } from "react-chartjs-2";
+// -------------------------------------
+import styled from "styled-components";
+
+// Enregistrement des éléments Chart.js nécessaires
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
 const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, onExportExcel, isLoading, formatDate }) => {
-    const formatNumber = (num) => {
-        return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") : "0";
-    };
 
     const indemnityDetails = missionPayment.dailyPaiements.map((item) => {
         const amounts = {
@@ -34,7 +40,7 @@ const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, 
             const amount = scale.amount || 0;
             if (scale.expenseType?.type === "Petit Déjeuner") amounts.breakfast += amount;
             else if (scale.expenseType?.type === "Déjeuner") amounts.lunch += amount;
-            else if (scale.expenseType?.type === "Dinner") amounts.dinner += amount;
+            else if (scale.expenseType?.type === "Dîner") amounts.dinner += amount;
             else if (scale.expenseType?.type === "Hébergement") amounts.accommodation += amount;
             else if (scale.transportId) amounts.transport += amount;
         });
@@ -49,6 +55,168 @@ const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, 
             total: item.totalAmount,
         };
     });
+
+    const ChartGrid = styled.div`
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    `;
+
+    const ChartCard = styled.div`
+        padding: 20px;
+        background: var(--bg-primary, #ffffff);
+        border: 1px solid var(--border-light, #dee2e6);
+        min-height: 250px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            color: var(--text-color-primary, #333);
+            text-align: center;
+        }
+
+        .chart-content {
+            width: 100%;
+            max-width: 300px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    `;
+
+    const createTooltipCallback = (unit = ",00 ") => {
+        return {
+            label: function (tooltipItem) {
+                const label = tooltipItem.label || "";
+                const value = tooltipItem.raw;
+                return `${label}: ${formatNumber(value)}${unit} MGA`; 
+            },
+        };
+    };
+
+    /**
+     * Graphique 1 : Répartition des Montants par Catégorie (Doughnut)
+     */
+    const IndemnityDoughnutChart = ({ indemnityDetails }) => {
+        // Calcul des totaux par catégorie
+        const totalTransport = indemnityDetails.reduce((sum, item) => sum + (item.transport || 0), 0);
+        const totalRepas = indemnityDetails.reduce(
+            (sum, item) => sum + (item.breakfast || 0) + (item.lunch || 0) + (item.dinner || 0),
+            0
+        );
+        const totalHebergement = indemnityDetails.reduce((sum, item) => sum + (item.accommodation || 0), 0);
+
+        const data = [totalTransport, totalRepas, totalHebergement];
+        const hasData = data.some(val => val > 0);
+
+        if (!hasData) return <p>Données insuffisantes.</p>;
+
+        const chartData = {
+            labels: ["Transport", "Repas", "Hébergement"],
+            datasets: [
+                {
+                    data: data,
+                    backgroundColor: ["#007bff", "#28a745", "#ffc107"],
+                    hoverBackgroundColor: ["#0056b3", "#1e7e34", "#d39e00"],
+                    borderColor: ["#ffffff"],
+                    borderWidth: 2,
+                },
+            ],
+        };
+
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: "right",
+                    labels: { boxWidth: 10, padding: 10 },
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (tooltipItem) {
+                            const label = tooltipItem.label || "";
+                            const value = tooltipItem.raw;
+                            const total = tooltipItem.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1) + "%";
+                            return `${label}: ${formatNumber(value)},00 MGA (${percentage})`;
+                        },
+                    },
+                },
+            },
+            cutout: "70%",
+        };
+
+        return (
+            <ChartCard>
+                <h4>Répartition Globale des Coûts</h4>
+                <div className="chart-content">
+                    <Doughnut data={chartData} options={options} />
+                </div>
+            </ChartCard>
+        );
+    };
+
+    /**
+     * Graphique 2 : Total de Indemnité par Jour (Barres)
+     */
+    const DailyIndemnityBarChart = ({ indemnityDetails, formatDate }) => {
+        const dailyTotals = indemnityDetails.map(item => ({
+            date: formatDate(item.date),
+            amount: item.total || 0,
+        }));
+
+        const hasData = dailyTotals.some(item => item.amount > 0);
+        if (!hasData) return <p>Données journalières insuffisantes.</p>;
+
+        const chartData = {
+            labels: dailyTotals.map(item => item.date),
+            datasets: [
+                {
+                    label: "Montant par jour",
+                    data: dailyTotals.map(item => item.amount),
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                },
+            ],
+        };
+
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                title: { display: false },
+                tooltip: { callbacks: createTooltipCallback(" MGA") },
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Montant Total (MGA)' },
+                    ticks: { callback: (value) => formatNumber(value) },
+                },
+                x: {
+                    title: { display: true, text: 'Date' },
+                },
+            },
+        };
+
+        return (
+            <ChartCard>
+                <h4>Indemnité Totale par Jour</h4>
+                <div className="chart-content">
+                    <Bar data={chartData} options={options} />
+                </div>
+            </ChartCard>
+        );
+    };
 
     return (
         <>
@@ -74,6 +242,14 @@ const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, 
 
             {missionPayment.assignmentDetails ? (
                 <>
+                    <SectionTitle>Analyse Visuelle des Montants</SectionTitle>
+                    <DetailSection>
+                        <ChartGrid>
+                            <IndemnityDoughnutChart indemnityDetails={indemnityDetails} />
+                            <DailyIndemnityBarChart indemnityDetails={indemnityDetails} formatDate={formatDate} />
+                        </ChartGrid>
+                    </DetailSection>
+
                     <SectionTitle>Informations Générales</SectionTitle>
                     <DetailSection>
                         <InfoGrid>

@@ -1,6 +1,3 @@
-import { Link } from "react-router-dom";
-import * as FaIcons from "react-icons/fa";
-
 export default function Menu({ 
   menuData, 
   isMenuLoading, 

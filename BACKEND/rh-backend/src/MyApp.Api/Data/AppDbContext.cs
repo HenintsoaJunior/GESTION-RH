@@ -17,6 +17,7 @@ namespace MyApp.Api.Data
         public DbSet<NotificationRecipients> NotificationRecipients { get; set; }
         public DbSet<MissionComments> MissionComments { get; set; }
         public DbSet<Comments> Comments { get; set; }
+        public DbSet<Compensation> Compensations { get; set; }
         public DbSet<MissionReport> MissionReports { get; set; }
         public DbSet<ExpenseReport>  ExpenseReports { get; set; }
         public DbSet<ExpenseReportType>  ExpenseReportTypes { get; set; }

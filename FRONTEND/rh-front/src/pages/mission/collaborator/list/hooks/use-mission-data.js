@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { formatDate } from "utils/dateConverter";
 import { hasHabilitation } from "utils/authUtils";
 import {

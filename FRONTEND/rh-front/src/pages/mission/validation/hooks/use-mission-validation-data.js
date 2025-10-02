@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MissionValidationRequests, ValidateMission } from "services/mission/validation";
 import { CreateComment, GetCommentsByMission, UpdateComment, DeleteComment } from "services/mission/comments";
 import { fetchAllEmployees } from "services/employee/employee";
@@ -37,6 +37,7 @@ const useMissionValidationData = () => {
 
   const userId = JSON.parse(localStorage.getItem("user"))?.userId || null;
   const matricule = JSON.parse(localStorage.getItem("user"))?.matricule || null;
+
   // Initialize services
   const validateMissionRequest = MissionValidationRequests(userId);
   const validateMission = ValidateMission();
@@ -45,8 +46,8 @@ const useMissionValidationData = () => {
   const updateComment = UpdateComment();
   const deleteComment = DeleteComment();
 
-  // Fetch stats for mission validations
-  const fetchStats = async () => {
+  // Memoize fetchStats
+  const fetchStats = useCallback(async () => {
     try {
       setIsLoading((prev) => ({ ...prev, stats: true }));
       await fetchMissionValidationStats(
@@ -74,7 +75,124 @@ const useMissionValidationData = () => {
     } finally {
       setIsLoading((prev) => ({ ...prev, stats: false }));
     }
-  };
+  }, [matricule, setIsLoading, setAlert, setStats]);
+
+  // Memoize fetchMissions
+  const fetchMissions = useCallback(
+    async (page = currentPage, size = pageSize, filters = appliedFilters) => {
+      try {
+        setIsLoading((prev) => ({ ...prev, missions: true }));
+
+        if (!userId) {
+          throw new Error("Utilisateur non connecté. Veuillez vous connecter.");
+        }
+
+        console.log("Fetching missions with filters:", filters); // Debug
+        const response = await validateMissionRequest({
+          page,
+          pageSize: size,
+          employeeId: filters.employeeId,
+          status: filters.status,
+        });
+
+        if (!response.results || !Array.isArray(response.results)) {
+          console.warn("La réponse ne contient pas un tableau de résultats:", response);
+          setMissions([]);
+          setTotalEntries(0);
+          setAlert({
+            isOpen: true,
+            type: "error",
+            message: "La réponse de l'API ne contient pas de résultats valides.",
+          });
+          return;
+        }
+
+        const formattedMissions = response.results.map((validation) => {
+          const mission = validation.mission || {};
+          const creator = validation.creator || {};
+          const validator = validation.validator || {};
+          const missionAssignation = validation.missionAssignation || {};
+
+          return {
+            id: validation.missionValidationId || "N/A",
+            title: mission.name || "Mission sans titre",
+            description: mission.description || "Aucune description",
+            requestedBy: creator.name || "Demandeur inconnu",
+            department: creator.department || "Département non spécifié",
+            status: validation.status || "pending",
+            requestDate: mission.startDate || new Date().toISOString(),
+            dueDate: mission.endDate || new Date().toISOString(),
+            estimatedDuration: missionAssignation.duration
+              ? `${missionAssignation.duration} jour${missionAssignation.duration > 1 ? "s" : ""}`
+              : "Non spécifié",
+            location: mission.lieu ? `${mission.lieu.nom || "Inconnu"}, ${mission.lieu.pays || "Inconnu"}` : "Lieu non spécifié",
+            comments: validation.comments || "",
+            signature: validator.signature || "",
+            matricule: creator.matricule || "N/A",
+            function: creator.position || "Fonction non spécifiée",
+            transport: missionAssignation.transport?.name || "Non spécifié",
+            departureTime: missionAssignation.departureTime || "Non spécifié",
+            departureDate: missionAssignation.departureDate || mission.startDate || "Non spécifié",
+            returnDate: missionAssignation.returnDate || mission.endDate || "Non spécifié",
+            returnTime: missionAssignation.returnTime || "Non spécifié",
+            reference: validation.missionValidationId || "N/A",
+            toWhom: validator.name || "Non spécifié",
+            validationDate: validation.validationDate || null,
+            missionCreator: validation.missionCreator || "N/A",
+            superiorName: creator.superiorName || "Non spécifié",
+            email: creator.email || "",
+            createdAt: validation.createdAt || new Date().toISOString(),
+            updatedAt: validation.updatedAt || null,
+            missionAssignationId: validation.missionAssignationId || "N/A",
+            missionType: mission.missionType || "Non spécifié",
+            missionStatus: mission.status || "Non spécifié",
+            allocatedFund: missionAssignation.allocatedFund || 0,
+            type: missionAssignation.type || "Non spécifié",
+            assignationType: missionAssignation.type || "Non spécifié",
+            employeeId: missionAssignation.employeeId || "Non spécifié",
+            missionId: mission.missionId || "N/A",
+          };
+        });
+
+        setTotalEntries(response.totalCount || formattedMissions.length);
+        setMissions(formattedMissions);
+      } catch (error) {
+        console.error("Erreur lors du chargement des missions:", error);
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: `Erreur lors du chargement des missions: ${error.message || "Une erreur inconnue s'est produite."}`,
+        });
+        setMissions([]);
+        setTotalEntries(0);
+      } finally {
+        setIsLoading((prev) => ({ ...prev, missions: false }));
+      }
+    },
+    [userId, currentPage, pageSize, appliedFilters, validateMissionRequest, setIsLoading, setAlert, setMissions, setTotalEntries]
+  );
+
+  // Memoize fetchComments
+  const fetchComments = useCallback(
+    async (missionId) => {
+      try {
+        setIsLoading((prev) => ({ ...prev, comments: true }));
+        const commentsData = await getCommentsByMission(missionId);
+        setComments(commentsData || []);
+      } catch (error) {
+        console.error("Erreur lors du chargement des commentaires:", error);
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: `Erreur lors du chargement des commentaires: ${error.message || "Une erreur inconnue s'est produite."}`,
+        });
+        setComments([]);
+      } finally {
+        setIsLoading((prev) => ({ ...prev, comments: false }));
+      }
+    },
+    [getCommentsByMission, setIsLoading, setAlert, setComments]
+  );
 
   // Fetch collaborators (employees) for autocomplete suggestions
   useEffect(() => {
@@ -124,117 +242,6 @@ const useMissionValidationData = () => {
     }
   }, [userId]);
 
-  // Fetch missions
-  const fetchMissions = async (page = currentPage, size = pageSize, filters = appliedFilters) => {
-    try {
-      setIsLoading((prev) => ({ ...prev, missions: true }));
-
-      if (!userId) {
-        throw new Error("Utilisateur non connecté. Veuillez vous connecter.");
-      }
-
-      console.log("Fetching missions with filters:", filters); // Debug
-      const response = await validateMissionRequest({
-        page,
-        pageSize: size,
-        employeeId: filters.employeeId,
-        status: filters.status,
-      });
-
-      if (!response.results || !Array.isArray(response.results)) {
-        console.warn("La réponse ne contient pas un tableau de résultats:", response);
-        setMissions([]);
-        setTotalEntries(0);
-        setAlert({
-          isOpen: true,
-          type: "error",
-          message: "La réponse de l'API ne contient pas de résultats valides.",
-        });
-        return;
-      }
-
-      const formattedMissions = response.results.map((validation) => {
-        const mission = validation.mission || {};
-        const creator = validation.creator || {};
-        const validator = validation.validator || {};
-        const missionAssignation = validation.missionAssignation || {};
-
-        return {
-          id: validation.missionValidationId || "N/A",
-          title: mission.name || "Mission sans titre",
-          description: mission.description || "Aucune description",
-          requestedBy: creator.name || "Demandeur inconnu",
-          department: creator.department || "Département non spécifié",
-          status: validation.status || "pending",
-          requestDate: mission.startDate || new Date().toISOString(),
-          dueDate: mission.endDate || new Date().toISOString(),
-          estimatedDuration: missionAssignation.duration
-            ? `${missionAssignation.duration} jour${missionAssignation.duration > 1 ? "s" : ""}`
-            : "Non spécifié",
-          location: mission.lieu ? `${mission.lieu.nom || "Inconnu"}, ${mission.lieu.pays || "Inconnu"}` : "Lieu non spécifié",
-          comments: validation.comments || "",
-          signature: validator.signature || "",
-          matricule: creator.matricule || "N/A",
-          function: creator.position || "Fonction non spécifiée",
-          transport: missionAssignation.transport?.name || "Non spécifié",
-          departureTime: missionAssignation.departureTime || "Non spécifié",
-          departureDate: missionAssignation.departureDate || mission.startDate || "Non spécifié",
-          returnDate: missionAssignation.returnDate || mission.endDate || "Non spécifié",
-          returnTime: missionAssignation.returnTime || "Non spécifié",
-          reference: validation.missionValidationId || "N/A",
-          toWhom: validator.name || "Non spécifié",
-          validationDate: validation.validationDate || null,
-          missionCreator: validation.missionCreator || "N/A",
-          superiorName: creator.superiorName || "Non spécifié",
-          email: creator.email || "",
-          createdAt: validation.createdAt || new Date().toISOString(),
-          updatedAt: validation.updatedAt || null,
-          missionAssignationId: validation.missionAssignationId || "N/A",
-          missionType: mission.missionType || "Non spécifié",
-          missionStatus: mission.status || "Non spécifié",
-          allocatedFund: missionAssignation.allocatedFund || 0,
-          type: missionAssignation.type || "Non spécifié",
-          assignationType: missionAssignation.type || "Non spécifié",
-          employeeId: missionAssignation.employeeId || "Non spécifié",
-          missionId: mission.missionId || "N/A",
-        };
-      });
-
-      setTotalEntries(response.totalCount || formattedMissions.length);
-      setMissions(formattedMissions);
-    } catch (error) {
-      console.error("Erreur lors du chargement des missions:", error);
-      setAlert({
-        isOpen: true,
-        type: "error",
-        message: `Erreur lors du chargement des missions: ${error.message || "Une erreur inconnue s'est produite."}`,
-      });
-      setMissions([]);
-      setTotalEntries(0);
-    } finally {
-      setIsLoading((prev) => ({ ...prev, missions: false }));
-    }
-  };
-
-  // Fetch comments for the selected mission
-  const fetchComments = async (missionId) => {
-    try {
-      setIsLoading((prev) => ({ ...prev, comments: true }));
-      const commentsData = await getCommentsByMission(missionId);
-      setComments(commentsData || []);
-    } catch (error) {
-      console.error("Erreur lors du chargement des commentaires:", error);
-      setAlert({
-        isOpen: true,
-        type: "error",
-        message: `Erreur lors du chargement des commentaires: ${error.message || "Une erreur inconnue s'est produite."}`,
-      });
-      setComments([]);
-    } finally {
-      setIsLoading((prev) => ({ ...prev, comments: false }));
-    }
-  };
-
   // Fetch stats and missions on mount and when filters/page change
   useEffect(() => {
     if (userId) {
@@ -249,7 +256,7 @@ const useMissionValidationData = () => {
       });
       setIsLoading((prev) => ({ ...prev, missions: false, stats: false }));
     }
-  }, [appliedFilters, currentPage, pageSize, userId]);
+  }, [userId, appliedFilters, currentPage, pageSize, fetchStats, fetchMissions]);
 
   // Fetch comments when a mission is selected
   useEffect(() => {
@@ -266,7 +273,7 @@ const useMissionValidationData = () => {
         });
       }
     }
-  }, [selectedMissionId]);
+  }, [selectedMissionId, missions, fetchComments, setAlert]);
 
   const handleCreateComment = async (missionId, commentText) => {
     try {

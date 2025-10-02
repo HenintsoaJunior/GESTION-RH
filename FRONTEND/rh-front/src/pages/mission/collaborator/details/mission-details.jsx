@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { X, FileText, Download, ArrowLeft, CheckCircle, Send, Edit2, Trash2, User, Calendar, Clock, MapPin, Building, CreditCard } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { X, Download, CheckCircle, Send, Edit2, Trash2 } from "lucide-react";
 import ValidationStepper from "../list/components/validation-stepper";
-import Pagination from "components/pagination";
 import Alert from "components/alert";
 import OMPayment from "./payment/om-payment";
+import OMNoteDeFrais from "./expense/om-note-de-frais";
 import {
     PopupOverlay,
     PopupContainer,
@@ -16,11 +15,7 @@ import {
     PopupContent,
     LoadingContainer,
     ContentArea,
-    StepHeader,
-    StepTitle,
-    StatusBadge,
     ValidatorCard,
-    ValidatorTitle,
     ValidatorGrid,
     ValidatorSection,
     SectionTitle,
@@ -33,39 +28,17 @@ import {
     InfoItem,
     InfoLabel,
     InfoValue,
-    CommentCard,
-    CommentTitle,
     CommentText,
-    CommentDate,
-    InfoAlert,
-    AlertText,
-    PopupFooter,
-    FooterActions,
     ActionButton,
-    StepCounter,
-    ActionButtonPDF,
 } from "styles/generaliser/details-mission-container";
-import {
-    CardsContainer,
-    Card,
-    CardHeader,
-    CardTitle,
-    CardBody,
-    CardField,
-    CardLabel,
-    EmptyCardsState,
-} from "styles/generaliser/card-container";
-import { NoDataMessage } from "styles/generaliser/table-container";
-import { formatValidatorData } from "services/mission/validation";
+
 import {
     fetchAssignMission,
-    fetchMissionById,
     exportMissionAssignationPDF,
-    exportMissionAssignationExcel,
-    fetchMissionPayment,
 } from "services/mission/mission";
 import { useGetMissionValidationsByAssignationId } from "services/mission/validation";
 import { CreateComment, GetCommentsByMission, UpdateComment, DeleteComment } from "services/mission/comments";
+import { GetCompensationsByEmployeeAndMission,exportMissionAssignationExcel } from "services/mission/compensation"; 
 import { formatDate } from "utils/dateConverter";
 import styled from "styled-components";
 import "styles/mission/assignment-details-styles.css";
@@ -115,7 +88,7 @@ const ButtonContainer = styled.div`
 
 const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
 
-    const navigate = useNavigate();
+    const getCompensationsByEmployeeAndMission = GetCompensationsByEmployeeAndMission();
     const getMissionValidations = useGetMissionValidationsByAssignationId();
     const createComment = CreateComment();
     const getCommentsByMission = GetCommentsByMission();
@@ -133,11 +106,10 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
     });
     const [error, setError] = useState({ isOpen: false, type: "", message: "" });
     const [assignedPersons, setAssignedPersons] = useState([]);
-    const [missionDetails, setMissionDetails] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [totalEntries, setTotalEntries] = useState(0);
-    const [currentStep, setCurrentStep] = useState(0);
+    const [currentPage, ] = useState(1);
+    const [pageSize, ] = useState(10);
+    const [, setTotalEntries] = useState(0);
+    const [currentStep, ] = useState(0);
     const [validationSteps, setValidationSteps] = useState([]);
     const [comments, setComments] = useState([]);
     const [comment, setComment] = useState("");
@@ -148,8 +120,10 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         assignmentDetails: null,
         totalAmount: 0,
     });
-    const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+    const [showIndemnityDetails, setShowIndemnityDetails] = useState(false);
+    const [showExpenseDetails, setShowExpenseDetails] = useState(false);
     const [selectedAssignmentId, setSelectedAssignmentId] = useState(null);
+    const [detailsType, setDetailsType] = useState(null); // 'Indemnité' ou 'Note de frais'
     const userId = JSON.parse(localStorage.getItem("user"))?.userId || null;
 
     // Check if mission is fully validated
@@ -157,57 +131,15 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         return step.status === "approved";
     });
 
-    const handleError = (error) => {
+    const handleError = useCallback((error) => {
         setError({
             isOpen: true,
             type: "error",
             message: error.message || "Erreur inconnue lors du chargement des données",
         });
-    };
-
-    const getDetailIcon = (label) => {
-        switch (label) {
-            case "Bénéficiaire":
-            case "Matricule":
-            case "Fonction":
-                return <User className="detail-icon" />;
-            case "Date de départ":
-            case "Date de retour":
-            case "Date debut mission":
-                return <Calendar className="detail-icon" />;
-            case "Heure de départ":
-            case "Heure de retour":
-            case "Durée de la mission":
-                return <Clock className="detail-icon" />;
-            case "Site":
-                return <MapPin className="detail-icon" />;
-            case "Direction":
-            case "Département/Service":
-                return <Building className="detail-icon" />;
-            case "Centre de coût":
-                return <CreditCard className="detail-icon" />;
-            default:
-                return null;
-        }
-    };
-
-    const getStatusBadge = (status) => {
-        const statusClass =
-            status === "En Cours"
-                ? "status-progress"
-                : status === "Planifié"
-                ? "status-pending"
-                : status === "Terminé"
-                ? "status-approved"
-                : status === "Annulé"
-                ? "status-cancelled"
-                : status === "Validé"
-                ? "status-approved"
-                : "status-pending";
-        return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
-    };
-
-    const mapValidationsToSteps = (validations) => {
+    }, []);
+    
+    const mapValidationsToSteps = useCallback((validations) => {
         const stepMapping = {
             "Directeur de tutelle": {
                 title: "Validation Supérieur",
@@ -255,12 +187,13 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         }).sort((a, b) => a.order - b.order);
 
         return mappedSteps;
-    };
+    }, []);
 
-    const fetchComments = async (missionId) => {
+    // Utilisation de useCallback pour mémoriser fetchComments
+    const fetchComments = useCallback(async (id) => {
         try {
             setIsLoading((prev) => ({ ...prev, comments: true }));
-            const commentsData = await getCommentsByMission(missionId);
+            const commentsData = await getCommentsByMission(id);
             setComments(commentsData);
         } catch (error) {
             setError({
@@ -272,18 +205,18 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         } finally {
             setIsLoading((prev) => ({ ...prev, comments: false }));
         }
-    };
+    }, [getCommentsByMission]);
 
-    const handleCreateComment = async (missionId, commentText) => {
+    const handleCreateComment = useCallback(async (id, commentText) => {
         try {
             const commentData = {
-                missionId,
+                missionId: id,
                 userId,
                 commentText,
                 createdAt: new Date().toISOString(),
             };
             const response = await createComment(commentData);
-            await fetchComments(missionId);
+            await fetchComments(id);
             setComment("");
             return response;
         } catch (error) {
@@ -294,18 +227,18 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
             });
             throw error;
         }
-    };
+    }, [createComment, fetchComments, userId]);
 
-    const handleUpdateComment = async (commentId, missionId, commentText) => {
+    const handleUpdateComment = useCallback(async (commentId, id, commentText) => {
         try {
             const commentData = {
-                missionId,
+                missionId: id,
                 userId,
                 commentText,
                 createdAt: new Date().toISOString(),
             };
             const response = await updateComment(commentId, commentData);
-            await fetchComments(missionId);
+            await fetchComments(id);
             return response;
         } catch (error) {
             setError({
@@ -315,12 +248,12 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
             });
             throw error;
         }
-    };
+    }, [updateComment, fetchComments, userId]);
 
-    const handleDeleteComment = async (commentId, missionId) => {
+    const handleDeleteComment = useCallback(async (commentId, id) => {
         try {
-            const response = await deleteComment(commentId, missionId, userId);
-            await fetchComments(missionId);
+            const response = await deleteComment(commentId, id, userId);
+            await fetchComments(id);
             return response;
         } catch (error) {
             setError({
@@ -330,9 +263,9 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
             });
             throw error;
         }
-    };
+    }, [deleteComment, fetchComments, userId]);
 
-    const handleOMPaymentClick = async (employeeId) => {
+    const handleOMPaymentClick = useCallback(async (employeeId, assignmentType) => {
         if (!missionId || !employeeId) {
             setError({
                 isOpen: true,
@@ -341,16 +274,70 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
             });
             return;
         }
-        setSelectedAssignmentId(`${employeeId}-${missionId}`);
-        await fetchMissionPayment(missionId, employeeId, setMissionPayment, setIsLoading, handleError);
-        setShowPaymentDetails(true);
-    };
+        setIsLoading(prev => ({ ...prev, missionPayment: true }));
+        try {
+            const response = await getCompensationsByEmployeeAndMission(employeeId, missionId);
+            const { assignation, compensations, totalAmount } = response;
+            setSelectedAssignmentId(assignation.assignationId);
+            // Mapper les compensations vers le format dailyPaiements attendu
+            const dailyPaiements = compensations.map(comp => ({
+                date: comp.paymentDate,
+                totalAmount: comp.totalAmount,
+                compensationScales: [
+                    ...(comp.transportAmount > 0 ? [{ amount: comp.transportAmount, transportId: assignation.transportId }] : []),
+                    ...(comp.breakfastAmount > 0 ? [{ amount: comp.breakfastAmount, expenseType: { type: "Petit Déjeuner" } }] : []),
+                    ...(comp.lunchAmount > 0 ? [{ amount: comp.lunchAmount, expenseType: { type: "Déjeuner" } }] : []),
+                    ...(comp.dinnerAmount > 0 ? [{ amount: comp.dinnerAmount, expenseType: { type: "Dîner" } }] : []),
+                    ...(comp.accommodationAmount > 0 ? [{ amount: comp.accommodationAmount, expenseType: { type: "Hébergement" } }] : []),
+                ],
+            }));
 
-    const handleBackToAssignments = () => {
-        setShowPaymentDetails(false);
+            // Mapper l'assignation vers assignmentDetails
+            const assignmentDetails = {
+                beneficiary: `${assignation.employee.firstName} ${assignation.employee.lastName}`,
+                matricule: assignation.employee.employeeCode,
+                missionTitle: assignation.mission.name,
+                function: assignation.employee.jobTitle,
+                base: assignation.employee.siteName,
+                meansOfTransport: assignation.transport?.name || "Non spécifié",
+                direction: assignation.employee.directionName,
+                departmentService: `${assignation.employee.departmentName} / ${assignation.employee.serviceName}`,
+                costCenter: assignation.allocatedFund,
+                departureDate: assignation.departureDate,
+                departureTime: assignation.departureTime,
+                missionDuration: assignation.duration,
+                returnDate: assignation.returnDate,
+                returnTime: assignation.returnTime,
+                startDate: assignation.mission.startDate,
+            };
+
+            setMissionPayment({
+                dailyPaiements,
+                assignmentDetails,
+                totalAmount,
+            });
+            setDetailsType(assignmentType);
+            if (assignmentType === 'Indemnité') {
+                setShowIndemnityDetails(true);
+                setShowExpenseDetails(false);
+            } else if (assignmentType === 'Note de frais') {
+                setShowExpenseDetails(true);
+                setShowIndemnityDetails(false);
+            }
+        } catch (error) {
+            handleError(error);
+        } finally {
+            setIsLoading(prev => ({ ...prev, missionPayment: false }));
+        }
+    }, [missionId, getCompensationsByEmployeeAndMission, handleError]);
+
+    const handleBackToAssignments = useCallback(() => {
+        setShowIndemnityDetails(false);
+        setShowExpenseDetails(false);
         setMissionPayment({ dailyPaiements: [], assignmentDetails: null, totalAmount: 0 });
         setSelectedAssignmentId(null);
-    };
+        setDetailsType(null);
+    }, []);
 
     useEffect(() => {
         if (!missionId) {
@@ -373,7 +360,7 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         );
 
         fetchComments(missionId);
-    }, [missionId, currentPage, pageSize]);
+    }, [missionId, currentPage, pageSize, handleError, fetchComments]);
 
     useEffect(() => {
         if (assignedPersons.length > 0) {
@@ -403,21 +390,12 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
 
             fetchValidations();
         }
-    }, [assignedPersons, getMissionValidations]);
+    }, [assignedPersons, getMissionValidations, mapValidationsToSteps, handleError]);
 
     const handleClose = () => {
         if (onClose) {
             onClose();
         }
-    };
-
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
-    };
-
-    const handlePageSizeChange = (event) => {
-        setPageSize(Number(event.target.value));
-        setCurrentPage(1);
     };
 
     const handleExportPDF = () => {
@@ -489,12 +467,6 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
 
     if (!isOpen) return null;
 
-    const currentStepData = validationSteps[currentStep] || validationSteps[0];
-    const currentAssignedPerson = assignedPersons[currentStep] || assignedPersons[0];
-    const formattedAssignedPerson = currentAssignedPerson
-        ? formatValidatorData(currentAssignedPerson, "Collaborateur")
-        : null;
-
     return (
         <PopupOverlay role="dialog" aria-labelledby="mission-details-title" aria-modal="true">
             <PopupContainer>
@@ -524,16 +496,27 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                         onClose={() => setError({ ...error, isOpen: false })}
                     />
 
-                    {!showPaymentDetails && <ValidationStepper steps={validationSteps} currentStep={currentStep} />}
+                    {!(showIndemnityDetails || showExpenseDetails) && <ValidationStepper steps={validationSteps} currentStep={currentStep} />}
 
                     {(isLoading.assignMissions || isLoading.validations || isLoading.comments || isLoading.missionPayment) ? (
                         <LoadingContainer>Chargement des informations de la mission...</LoadingContainer>
                     ) : (
                         <ContentArea>
-                            {showPaymentDetails ? (
+                            {showIndemnityDetails ? (
                                 <OMPayment
                                     missionPayment={missionPayment}
                                     selectedAssignmentId={selectedAssignmentId}
+                                    onBack={handleBackToAssignments}
+                                    onExportPDF={handleExportPDF}
+                                    onExportExcel={handleExportExcel}
+                                    isLoading={isLoading}
+                                    formatDate={formatDate}
+                                />
+                            ) : showExpenseDetails ? (
+                                <OMNoteDeFrais
+                                    missionPayment={missionPayment}
+                                    selectedAssignmentId={selectedAssignmentId}
+                                    detailsType={detailsType}
                                     onBack={handleBackToAssignments}
                                     onExportPDF={handleExportPDF}
                                     onExportExcel={handleExportExcel}
@@ -650,7 +633,6 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                                                                         <InfoLabel>Site</InfoLabel>
                                                                         <InfoValue>{assignment.base || "Non spécifié"}</InfoValue>
                                                                     </InfoItem>
-                                                                    
                                                                 </div>
                                                             ))}
                                                         </InfoGrid>
@@ -665,49 +647,48 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                                                                 gap: "var(--spacing-md)",
                                                             }}
                                                         >
-                                                            {assignedPersons.map((assignment, index) => (
-                                                                <div
-                                                                    key={`info-${assignment.employeeId}-${index}`}
-                                                                    style={{
-                                                                        display: "grid",
-                                                                        gridTemplateColumns: "repeat(2, 1fr)",
-                                                                        gap: "var(--spacing-sm)",
-                                                                        padding: "var(--spacing-md)",
-                                                                        border: "1px solid var(--border-light)",
-                                                                        borderRadius: "var(--border-radius)",
-                                                                        backgroundColor: "var(--background-light)",
-                                                                    }}
-                                                                >
-                                                                    
-                                                                    <InfoItem>
-                                                                        {isMissionFullyValidated && (
-                                                                            <ButtonContainer>
-                                                                                <OMPaymentButton
-                                                                                    onClick={() => handleOMPaymentClick(assignment.employeeId)}
-                                                                                    disabled={isLoading.missionPayment}
-                                                                                >
-                                                                                    <FileText size={16} /> Paiement
-                                                                                </OMPaymentButton>
-                                                            
-                                                                            </ButtonContainer>
-                                                                        )}
-                                                                    </InfoItem>
-                                                                    <InfoItem>
-                                                                        {isMissionFullyValidated && (
-                                                                            <ButtonContainer>
-                                                                                <ButtonOMPDF onClick={handleExportPDF} disabled={isLoading.exportPDF}>
-                                                                                    <Download size={16} /> OM PDF
-                                                                                </ButtonOMPDF>
-                                                                            </ButtonContainer>
-                                                                        )}
-                                                                    </InfoItem>
-                                                                </div>
-                                                            ))}
+                                                            {assignedPersons.map((assignment, index) => {
+                                                                const buttonText = assignment.type === 'Indemnité' ? 'Indemnité' : 'Note de frais';
+                                                                const shouldShowButton = isMissionFullyValidated && (assignment.type === 'Indemnité' || assignment.type === 'Note de frais');
+                                                                return (
+                                                                    <div
+                                                                        key={`info-${assignment.employeeId}-${index}`}
+                                                                        style={{
+                                                                            display: "grid",
+                                                                            gridTemplateColumns: "repeat(2, 1fr)",
+                                                                            gap: "var(--spacing-sm)",
+                                                                            padding: "var(--spacing-md)",
+                                                                            border: "1px solid var(--border-light)",
+                                                                            borderRadius: "var(--border-radius)",
+                                                                            backgroundColor: "var(--background-light)",
+                                                                        }}
+                                                                    >
+                                                                        <InfoItem>
+                                                                            {shouldShowButton && (
+                                                                                <ButtonContainer>
+                                                                                    <OMPaymentButton
+                                                                                        onClick={() => handleOMPaymentClick(assignment.employeeId, assignment.type)}
+                                                                                        disabled={isLoading.missionPayment}
+                                                                                    >
+                                                                                        {buttonText}
+                                                                                    </OMPaymentButton>
+                                                                                </ButtonContainer>
+                                                                            )}
+                                                                        </InfoItem>
+                                                                        <InfoItem>
+                                                                            {isMissionFullyValidated && (
+                                                                                <ButtonContainer>
+                                                                                    <ButtonOMPDF onClick={handleExportPDF} disabled={isLoading.exportPDF}>
+                                                                                        <Download size={16} /> OM PDF
+                                                                                    </ButtonOMPDF>
+                                                                                </ButtonContainer>
+                                                                            )}
+                                                                        </InfoItem>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </InfoGrid>
                                                     )}
-
-                                                    
-                                                    
                                                 </ValidatorSection>
                                             </ValidatorGrid>
                                         </ValidatorCard>
@@ -739,59 +720,65 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                                         {comments.length === 0 ? (
                                             <CommentText>Aucun commentaire pour cette mission.</CommentText>
                                         ) : (
-                                            comments.map((comment) => (
-                                                <CommentItem key={comment.commentId}>
-                                                    <CommentContent>
-                                                        {editingCommentId === comment.commentId ? (
-                                                            <>
-                                                                <CommentTextarea
-                                                                    value={editCommentText}
-                                                                    onChange={(e) => setEditCommentText(e.target.value)}
-                                                                    placeholder="Modifiez votre commentaire..."
-                                                                />
-                                                                <CommentActions>
-                                                                    <CommentButton
-                                                                        onClick={() => handleSaveEditComment(comment.commentId)}
-                                                                        disabled={!editCommentText.trim()}
-                                                                    >
-                                                                        <CheckCircle size={14} /> Enregistrer
-                                                                    </CommentButton>
-                                                                    <CommentButton
-                                                                        onClick={() => setEditingCommentId(null)}
-                                                                    >
-                                                                        <X size={14} /> Annuler
-                                                                    </CommentButton>
-                                                                </CommentActions>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <CommentText>{comment.content}</CommentText>
-                                                                <CommentMeta>
-                                                                    Par {comment.creator.name} ({comment.creator.email}) le{" "}
-                                                                    {formatDate(comment.createdAt)}
-                                                                </CommentMeta>
-                                                            </>
+                                            comments.map((commentItem) => {
+                                                const initials = commentItem.creator.name 
+                                                    ? commentItem.creator.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() 
+                                                    : 'NA';
+                                                return (
+                                                    <CommentItem key={commentItem.commentId}>
+                                                        <Avatar size="32px">{initials}</Avatar>
+                                                        <CommentContent>
+                                                            {editingCommentId === commentItem.commentId ? (
+                                                                <>
+                                                                    <CommentTextarea
+                                                                        value={editCommentText}
+                                                                        onChange={(e) => setEditCommentText(e.target.value)}
+                                                                        placeholder="Modifiez votre commentaire..."
+                                                                    />
+                                                                    <CommentActions>
+                                                                        <CommentButton
+                                                                            onClick={() => handleSaveEditComment(commentItem.commentId)}
+                                                                            disabled={!editCommentText.trim()}
+                                                                        >
+                                                                            <CheckCircle size={14} /> Enregistrer
+                                                                        </CommentButton>
+                                                                        <CommentButton
+                                                                            onClick={() => setEditingCommentId(null)}
+                                                                        >
+                                                                            <X size={14} /> Annuler
+                                                                        </CommentButton>
+                                                                    </CommentActions>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <CommentText>{commentItem.content}</CommentText>
+                                                                    <CommentMeta>
+                                                                        Par {commentItem.creator.name} le{" "}
+                                                                        {formatDate(commentItem.createdAt)}:
+                                                                    </CommentMeta>
+                                                                </>
+                                                            )}
+                                                        </CommentContent>
+                                                        {commentItem.creator.userId === userId && (
+                                                            <CommentActions>
+                                                                <CommentActionButton
+                                                                    onClick={() => handleEditComment(commentItem.commentId, commentItem.content)}
+                                                                    title="Modifier le commentaire"
+                                                                >
+                                                                    <Edit2 size={16} />
+                                                                </CommentActionButton>
+                                                                <CommentActionButton
+                                                                    className="delete"
+                                                                    onClick={() => handleDeleteCommentAction(commentItem.commentId)}
+                                                                    title="Supprimer le commentaire"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </CommentActionButton>
+                                                            </CommentActions>
                                                         )}
-                                                    </CommentContent>
-                                                    {comment.creator.userId === userId && (
-                                                        <CommentActions>
-                                                            <CommentActionButton
-                                                                onClick={() => handleEditComment(comment.commentId, comment.content)}
-                                                                title="Modifier le commentaire"
-                                                            >
-                                                                <Edit2 size={16} />
-                                                            </CommentActionButton>
-                                                            <CommentActionButton
-                                                                className="delete"
-                                                                onClick={() => handleDeleteCommentAction(comment.commentId)}
-                                                                title="Supprimer le commentaire"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </CommentActionButton>
-                                                        </CommentActions>
-                                                    )}
-                                                </CommentItem>
-                                            ))
+                                                    </CommentItem>
+                                                );
+                                            })
                                         )}
                                     </CommentsList>
                                 </>

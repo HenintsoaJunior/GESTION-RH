@@ -13,6 +13,7 @@ import {
     Clock as ClockIcon,
     AlertTriangle,
     CheckCircle as ValidIcon,
+    DollarSign,
 } from "lucide-react";
 // Importations Styled-Components
 import styled, { css } from "styled-components";
@@ -214,11 +215,11 @@ const ReferenceText = styled.div`
 `;
 
 // ========================================================================================
-// COMPOSANT PRINCIPAL MISSIONCARDS
+// COMPOSANT PRINCIPAL COMPENSATIONCARDS
 // ========================================================================================
 
-const MissionCards = ({
-    missions,
+const CompensationCards = ({
+    compensations,
     isLoading,
     handleRowClick,
     formatDate,
@@ -235,9 +236,8 @@ const MissionCards = ({
      */
     const getStatusBadge = (status) => {
         const statusInfo = {
-            pending: { icon: Clock, text: "En attente", class: "status-pending" },
-            approved: { icon: CheckCircle, text: "Validé", class: "status-approved" },
-            rejected: { icon: XCircle, text: "Rejetée", class: "status-cancelled" },
+            "not paid": { icon: Clock, text: "Non payé", class: "status-pending" },
+            "paid": { icon: CheckCircle, text: "Payé", class: "status-approved" },
         }[status] || { icon: Clock, text: "Inconnu", class: "status-pending" };
 
         const Icon = statusInfo.icon;
@@ -249,14 +249,7 @@ const MissionCards = ({
     };
 
     // Vérifie si des filtres sont appliqués pour afficher le message "NoData" approprié
-    const hasFilters =
-        appliedFilters.search ||
-        appliedFilters.status ||
-        appliedFilters.department ||
-        appliedFilters.priority ||
-        appliedFilters.dateRange?.start ||
-        appliedFilters.dateRange?.end;
-
+    const hasFilters = appliedFilters.status;
     /**
      * Rendu du bloc indicateur d'urgence basé sur le nombre de jours avant l'échéance.
      */
@@ -299,51 +292,63 @@ const MissionCards = ({
         );
     };
 
+    // Pagination client-side
+    const startIndex = (currentPage - 1) * pageSize;
+    const paginatedCompensations = compensations.slice(startIndex, startIndex + pageSize);
+
     return (
         <CardsPaginationContainer>
             <CardsContainer>
                 {/* Affichage conditionnel du chargement, des données ou de l'absence de données */}
-                {isLoading.missions ? (
-                    <Loading>Chargement des missions...</Loading>
-                ) : missions && missions.length > 0 ? (
-                    missions.map((mission) => {
-                        // Calcul des jours restants avant l'échéance de validation (basé sur la date de début de mission)
-                        const daysUntilDue = getDaysUntilDue(mission.departureDate);
+                {isLoading.compensations ? (
+                    <Loading>Chargement des compensations...</Loading>
+                ) : paginatedCompensations.length > 0 ? (
+                    paginatedCompensations.map((item) => {
+                        const { assignation, compensations: comps, totalAmount } = item;
+                        // Calcul des jours restants avant la première date de paiement
+                        const minPaymentDate = comps.reduce((min, comp) => 
+                            new Date(comp.paymentDate) < new Date(min) ? comp.paymentDate : min, 
+                            comps[0]?.paymentDate
+                        );
+                        const daysUntilDue = minPaymentDate ? getDaysUntilDue(minPaymentDate) : 0;
 
                         return (
-                            <Card key={mission.id} onClick={() => handleRowClick(mission.id)}>
+                            <Card key={assignation.assignationId} onClick={() => handleRowClick(assignation.assignationId)}>
                                 
                                 {/* 1. Bloc Indicateur (Statut/Urgence) */}
                                 {renderDueIndicator(daysUntilDue)}
 
                                 {/* 2. En-tête (Titre & Badge Statut) */}
                                 <CardHeader>
-                                    <CardTitle title={mission.title}>{mission.title}</CardTitle>
-                                    {getStatusBadge(mission.status)}
+                                    <CardTitle title={`${assignation.employee.lastName} ${assignation.employee.firstName}`}>
+                                        {`${assignation.employee.lastName} ${assignation.employee.firstName}`}
+                                    </CardTitle>
+                                    
+                                    {getStatusBadge(comps?.[0]?.status || "not paid")}
                                 </CardHeader>
                                 
-                                {/* 3. Informations de la mission */}
+                                {/* 3. Informations de la compensation */}
                                 <CardInfo>
                                     <InfoLine>
                                         <InfoLabel>
                                             <User size={14} />
-                                            Demandeur
+                                            Mission
                                         </InfoLabel>
-                                        <InfoValue>{mission.requestedBy || "Non spécifié"}</InfoValue>
+                                        <InfoValue>{assignation.mission.name || "Non spécifié"}</InfoValue>
                                     </InfoLine>
                                     <InfoLine>
                                         <InfoLabel>
                                             <FileText size={14} />
                                             Matricule
                                         </InfoLabel>
-                                        <InfoValue>{mission.matricule || "Non spécifié"}</InfoValue>
+                                        <InfoValue>{assignation.employee.employeeCode || "Non spécifié"}</InfoValue>
                                     </InfoLine>
                                     <InfoLine>
                                         <InfoLabel>
                                             <MapPin size={14} />
-                                            Destination
+                                            Lieu
                                         </InfoLabel>
-                                        <InfoValue>{mission.location || "Non spécifié"}</InfoValue>
+                                        <InfoValue>{assignation.mission.lieu.nom || "Non spécifié"}</InfoValue>
                                     </InfoLine>
                                     <InfoLine>
                                         <InfoLabel>
@@ -351,28 +356,28 @@ const MissionCards = ({
                                             Départ/Retour
                                         </InfoLabel>
                                         <InfoValue>
-                                            {formatDate(mission.departureDate)} - {formatDate(mission.returnDate)}
+                                            {formatDate(assignation.departureDate)} - {formatDate(assignation.returnDate)}
                                         </InfoValue>
                                     </InfoLine>
                                     <InfoLine>
                                         <InfoLabel>
-                                            <ClockIcon size={14} />
-                                            Échéance
+                                            <DollarSign size={14} />
+                                            Total
                                         </InfoLabel>
-                                        <InfoValue>{formatDate(mission.dueDate)}</InfoValue>
+                                        <InfoValue>{totalAmount.toLocaleString()} MGA</InfoValue>
                                     </InfoLine>
                                 </CardInfo>
 
                                 {/* 4. Référence */}
-                                <ReferenceText>RÉFÉRENCE: {mission.reference || "N/A"}</ReferenceText>
+                                <ReferenceText>RÉFÉRENCE: {assignation.assignationId}</ReferenceText>
                             </Card>
                         );
                     })
                 ) : (
                     <NoDataMessage>
                         {hasFilters
-                            ? "Aucune mission ne correspond aux critères de recherche."
-                            : "Aucune mission trouvée."}
+                            ? "Aucune compensation ne correspond aux critères de recherche."
+                            : "Aucune compensation trouvée."}
                     </NoDataMessage>
                 )}
             </CardsContainer>
@@ -385,11 +390,11 @@ const MissionCards = ({
                     totalEntries={totalEntries}
                     onPageChange={handlePageChange}
                     onPageSizeChange={handlePageSizeChange}
-                    disabled={isLoading.missions}
+                    disabled={isLoading.compensations}
                 />
             )}
         </CardsPaginationContainer>
     );
 };
 
-export default MissionCards;
+export default CompensationCards;

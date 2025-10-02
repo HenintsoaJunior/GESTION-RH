@@ -50,7 +50,7 @@ export default function DirectionForm() {
       });
 
       if (response.ok) {
-        const result = await response.json();
+        // const result = await response.json();
         showAlert("success", "Direction créée avec succès !");
         
         if (returnUrl && fieldType) {

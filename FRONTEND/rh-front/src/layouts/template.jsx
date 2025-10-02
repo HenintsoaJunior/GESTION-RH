@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
-import ReactCountryFlag from "react-country-flag";
 import "styles/template.css";
 import { BASE_URL } from "config/apiConfig";
 import Header from "./header";
@@ -39,9 +38,6 @@ export default function Template({ children }) {
     name: "John Doe",
     roles: [{ roleName: "Administrateur" }],
   };
-
-  // Derive role for display by joining roleNames
-  const userRole = user.roles?.map((role) => role.roleName).join(", ") || "Administrateur";
 
   // Generate initials for avatar
   const getInitials = useCallback((name) => {
@@ -228,7 +224,7 @@ export default function Template({ children }) {
       }
     };
     fetchLanguages();
-  }, [selectedLanguage]);
+  }, [selectedLanguage, isLanguagesLoading]);
 
   // Fetch menu data from API with roleNames
   useEffect(() => {
@@ -259,7 +255,7 @@ export default function Template({ children }) {
       }
     };
     fetchMenuData();
-  }, [initializeExpandedMenus, user.roles]);
+  }, [initializeExpandedMenus, user.userId, isMenuLoading]);
 
   // Update active item, header title, and expanded menus based on route
   useEffect(() => {
@@ -343,6 +339,23 @@ export default function Template({ children }) {
       ...prev,
       [menuKey]: !prev[menuKey],
     }));
+  }, []);
+
+  const findParentKey = useCallback((items, targetKey) => {
+    for (const item of items) {
+      if (item.children && item.children.length > 0) {
+        for (const child of item.children) {
+          if (child.menu.menuKey === targetKey) {
+            return item.menu.menuKey;
+          }
+          if (child.children && child.children.length > 0) {
+            const deepParent = findParentKey([child], targetKey);
+            if (deepParent) return item.menu.menuKey;
+          }
+        }
+      }
+    }
+    return null;
   }, []);
 
   const setActive = useCallback(
@@ -443,25 +456,8 @@ export default function Template({ children }) {
         </li>
       );
     },
-    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel, menuData]
+    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel, menuData, findParentKey]
   );
-
-  const findParentKey = useCallback((items, targetKey) => {
-    for (const item of items) {
-      if (item.children && item.children.length > 0) {
-        for (const child of item.children) {
-          if (child.menu.menuKey === targetKey) {
-            return item.menu.menuKey;
-          }
-          if (child.children && child.children.length > 0) {
-            const deepParent = findParentKey([child], targetKey);
-            if (deepParent) return item.menu.menuKey;
-          }
-        }
-      }
-    }
-    return null;
-  }, []);
 
   return (
     <div className={`app theme-${theme}`}>

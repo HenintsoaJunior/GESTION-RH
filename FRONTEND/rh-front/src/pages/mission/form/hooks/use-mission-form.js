@@ -7,7 +7,6 @@ import {
     updateMission, 
     fetchMissionById,
 } from "services/mission/mission"; 
-import { type } from "@testing-library/user-event/dist/type";
 
 const useMissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSuccess }) => {
     const [currentStep, setCurrentStep] = useState(1);
@@ -134,7 +133,6 @@ const useMissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSu
             }
         }
 
-
         setFieldErrors((prev) => {
             const updatedErrors = { ...prev, ...errors };
             Object.keys(updatedErrors).forEach((key) => {
@@ -187,7 +185,6 @@ const useMissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSu
             }
         });
 
-
         setFieldErrors((prev) => {
             const updatedErrors = { ...prev, ...errors };
             Object.keys(updatedErrors).forEach((key) => {
@@ -205,7 +202,6 @@ const useMissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSu
         if (!formData.type) {
             errors.type = ["Le type de compensation est requis."];
         }
-
 
         setFieldErrors((prev) => {
             const updatedErrors = { ...prev, ...errors };
@@ -508,11 +504,10 @@ const useMissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSu
                 ],
             };
 
-            let resultMission;
             let successMessage;
 
             if (missionId) {
-                resultMission = await updateMission(
+                await updateMission(
                     missionId,
                     missionData,
                     (loading) => setIsLoading((prev) => ({ ...prev, mission: loading })),
@@ -525,7 +520,7 @@ const useMissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSu
                 );
                 successMessage = "Mission mise à jour avec succès.";
             } else {
-                resultMission = await createMission(
+                await createMission(
                     missionData,
                     (loading) => setIsLoading((prev) => ({ ...prev, mission: loading })),
                     (alert) => showAlert(alert.type, alert.message),
@@ -718,7 +713,7 @@ const useMissionForm = ({ isOpen, onClose, missionId, initialStartDate, onFormSu
             }, 5000);
             return () => clearTimeout(timer);
         }
-    }, [alert.isOpen]);
+    }, [alert]);
 
     return {
         currentStep,
