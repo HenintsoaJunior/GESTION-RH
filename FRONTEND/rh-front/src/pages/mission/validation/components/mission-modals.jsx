@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { CheckCircle, XCircle, FileText, X, Send, Edit2, Trash2 } from "lucide-react";
@@ -32,6 +32,7 @@ import {
     PopupActions,
     ButtonPrimary,
     ButtonSecondary,
+    Avatar,
 } from "styles/generaliser/details-mission-container";
 import {
     CommentSection,
@@ -323,59 +324,65 @@ const MissionModals = ({
                   {comments.length === 0 ? (
                     <CommentText>Aucun commentaire pour cette mission.</CommentText>
                   ) : (
-                    comments.map((comment) => (
-                      <CommentItem key={comment.commentId}>
-                        <CommentContent>
-                          {editingCommentId === comment.commentId ? (
-                            <>
-                              <CommentTextarea
-                                value={editCommentText}
-                                onChange={handleEditCommentChange}
-                                placeholder="Modifiez votre commentaire..."
-                              />
-                              <CommentActions>
-                                <CommentButton
-                                  onClick={() => handleSaveEditComment(comment.commentId)}
-                                  disabled={!editCommentText.trim()}
-                                >
-                                  <CheckCircle size={14} /> Enregistrer
-                                </CommentButton>
-                                <CommentButton
-                                  onClick={() => setEditingCommentId(null)}
-                                >
-                                  <X size={14} /> Annuler
-                                </CommentButton>
-                              </CommentActions>
-                            </>
-                          ) : (
-                            <>
-                              <CommentText>{comment.content}</CommentText>
-                              <CommentMeta>
-                                Par {comment.creator.name} ({comment.creator.email}) le{" "}
-                                {formatDate(comment.createdAt)}
-                              </CommentMeta>
-                            </>
+                    comments.map((commentItem) => {
+                      const initials = commentItem.creator.name 
+                          ? commentItem.creator.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() 
+                          : 'NA';
+                      return (
+                        <CommentItem key={commentItem.commentId}>
+                          <Avatar size="32px">{initials}</Avatar>
+                          <CommentContent>
+                            {editingCommentId === commentItem.commentId ? (
+                              <>
+                                <CommentTextarea
+                                  value={editCommentText}
+                                  onChange={handleEditCommentChange}
+                                  placeholder="Modifiez votre commentaire..."
+                                />
+                                <CommentActions>
+                                  <CommentButton
+                                    onClick={() => handleSaveEditComment(commentItem.commentId)}
+                                    disabled={!editCommentText.trim()}
+                                  >
+                                    <CheckCircle size={14} /> Enregistrer
+                                  </CommentButton>
+                                  <CommentButton
+                                    onClick={() => setEditingCommentId(null)}
+                                  >
+                                    <X size={14} /> Annuler
+                                  </CommentButton>
+                                </CommentActions>
+                              </>
+                            ) : (
+                              <>
+                                <CommentText>{commentItem.content}</CommentText>
+                                <CommentMeta>
+                                  Par {commentItem.creator.name}  le{" "}
+                                  {formatDate(commentItem.createdAt)}:
+                                </CommentMeta>
+                              </>
+                            )}
+                          </CommentContent>
+                          {editingCommentId !== commentItem.commentId && commentItem.creator.userId === userId && (
+                            <CommentActions>
+                              <CommentActionButton
+                                onClick={() => handleEditComment(commentItem.commentId, commentItem.content)}
+                                title="Modifier le commentaire"
+                              >
+                                <Edit2 size={16} />
+                              </CommentActionButton>
+                              <CommentActionButton
+                                className="delete"
+                                onClick={() => handleDeleteCommentAction(commentItem.commentId)}
+                                title="Supprimer le commentaire"
+                              >
+                                <Trash2 size={16} />
+                              </CommentActionButton>
+                            </CommentActions>
                           )}
-                        </CommentContent>
-                        {comment.creator.userId === userId && (
-                          <CommentActions>
-                            <CommentActionButton
-                              onClick={() => handleEditComment(comment.commentId, comment.content)}
-                              title="Modifier le commentaire"
-                            >
-                              <Edit2 size={16} />
-                            </CommentActionButton>
-                            <CommentActionButton
-                              className="delete"
-                              onClick={() => handleDeleteCommentAction(comment.commentId)}
-                              title="Supprimer le commentaire"
-                            >
-                              <Trash2 size={16} />
-                            </CommentActionButton>
-                          </CommentActions>
-                        )}
-                      </CommentItem>
-                    ))
+                        </CommentItem>
+                      );
+                    })
                   )}
                 </CommentsList>
               </DetailSection>

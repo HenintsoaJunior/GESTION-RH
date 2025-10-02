@@ -1,4 +1,4 @@
-﻿import { formatDate } from "utils/dateConverter";
+import { formatDate } from "utils/dateConverter";
 import {
     TableContainer,
     DataTable,

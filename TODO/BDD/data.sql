@@ -544,6 +544,13 @@ INSERT INTO compensation_scale (
 ('comp0017', 35000.00, GETDATE(), GETDATE(), NULL, 'exp003', 'EC_0003'),
 ('comp0018', 120000.00, GETDATE(), GETDATE(), NULL, 'exp004', 'EC_0003');
 
+
+INSERT INTO expense_report_type (expense_report_type_id, type) 
+VALUES 
+('ERT001', 'FRAIS DE TRANSPORT/MISSION'),
+('ERT002', 'FRAIS DE RESTAURATION/RECEPTION'),
+('ERT003', 'AUTRE DEPENSE');
+
 -- ============================
 -- MENU DYNAMIQUE
 -- ============================
@@ -551,7 +558,8 @@ INSERT INTO module (module_id, module_name, description, created_at, updated_at)
 ('user', 'Utilisateurs', 'Gestion des utilisateurs et rôles', GETDATE(), GETDATE()),
 ('habilitation', 'Habilitation', 'Gestion des habilitations et autorisations', GETDATE(), GETDATE()),
 ('mission', 'Suivi des Missions', 'Gestion des missions, assignations et paiements', GETDATE(), GETDATE()),
-('logs', 'Logs', 'Suivi et journalisation des actions utilisateurs et systèmes', GETDATE(), GETDATE());
+('logs', 'Logs', 'Suivi et journalisation des actions utilisateurs et systèmes', GETDATE(), GETDATE()),
+('treasury', 'Trésorerie', 'Gestion des flux financiers et de la trésorerie', GETDATE(), GETDATE()); 
 
 
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
@@ -569,7 +577,8 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 ('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_3', 'collaborateur', 'fa-users', '/mission/collaborateur', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 5, 'mission', 'navigation', GETDATE(), GETDATE());
+('menu2_5', 'treso', 'fa-money-bill-alt', '/treasury', 1, 5, 'treasury', 'navigation', GETDATE(), GETDATE()),
+('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 6, 'mission', 'navigation', GETDATE(), GETDATE()); 
 
 
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
@@ -580,6 +589,7 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h4', NULL, 'menu2', GETDATE(), GETDATE()),
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
 ('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
+('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE()),
 ('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE());
 
 
@@ -596,6 +606,9 @@ INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
 ('menu2_3', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_3', 'ROLE_002', GETDATE(), GETDATE()),
 ('menu2_3', 'ROLE_003', GETDATE(), GETDATE()),
+('menu2_5', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2_5', 'ROLE_002', GETDATE(), GETDATE()),
+('menu2_5', 'ROLE_003', GETDATE(), GETDATE()),
 ('menu2_4', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_4', 'ROLE_002', GETDATE(), GETDATE()),
 ('menu2_4', 'ROLE_003', GETDATE(), GETDATE());

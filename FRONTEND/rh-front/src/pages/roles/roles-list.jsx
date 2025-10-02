@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Users, Zap, Trash2, Edit } from "lucide-react"; // Ajout d'icônes pour les actions
-import { useNavigate } from "react-router-dom";
+import { Plus, Users, Zap, Trash2, Edit } from "lucide-react";
 import {
   DashboardContainer,
   TableHeader,
@@ -192,7 +191,6 @@ const RoleList = () => {
   const [role, setRole] = useState({ name: "", description: "", habilitations: [], habilitationIds: [] });
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
 
   // Récupérer userId depuis localStorage
   const [userId, setUserId] = useState(null);

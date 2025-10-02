@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react"; 
 import PropTypes from "prop-types";
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react";
 import "styles/alert.css";
@@ -8,7 +8,8 @@ const Alert = ({ type = "info", message, isOpen, onClose = () => {} }) => {
   const [visible, setVisible] = useState(isOpen);
   const [closing, setClosing] = useState(false);
 
-  const handleClose = () => {
+  // Wrap handleClose in useCallback to memoize it
+  const handleClose = useCallback(() => {
     setClosing(true);
     setTimeout(() => {
       setVisible(false);
@@ -16,7 +17,7 @@ const Alert = ({ type = "info", message, isOpen, onClose = () => {} }) => {
         onClose();
       }
     }, 300); // Delay for closing animation
-  };
+  }, [onClose]); // Add onClose as a dependency
 
   useEffect(() => {
     if (isOpen) {
@@ -29,7 +30,7 @@ const Alert = ({ type = "info", message, isOpen, onClose = () => {} }) => {
 
       return () => clearTimeout(timer);
     }
-  }, [isOpen, handleClose]);
+  }, [isOpen, handleClose]); // handleClose is now stable
 
   if (!visible) return null;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, X, RefreshCw, List } from "lucide-react";
+import { ChevronDown, ChevronUp,RefreshCw, X, List } from "lucide-react";
 import {
   DashboardContainer,
   FiltersContainer,
@@ -14,15 +14,14 @@ import {
   FormRow,
   FormFieldCell,
   FormLabelSearch,
-  FormInputSearch,
   StyledAutoCompleteInput,
   FiltersActions,
   ButtonReset,
   ButtonSearch,
-  TableHeader,
-  TableTitle,
   TableContainer,
   DataTable,
+  TableTitle,
+  TableHeader,
   TableHeadCell,
   TableRow,
   TableCell,
@@ -94,9 +93,9 @@ const UserList = () => {
   }, [appliedFilters, currentPage, pageSize]);
 
   // Handle filter input changes
-  const handleFilterChange = (name, value) => {
-    setFilters((prev) => ({ ...prev, [name]: value }));
-  };
+  // const handleFilterChange = (name, value) => {
+  //   setFilters((prev) => ({ ...prev, [name]: value }));
+  // };
 
   // Handle filter form submission
   const handleFilterSubmit = (event) => {
@@ -275,13 +274,13 @@ const UserList = () => {
         </FiltersToggle>
       )}
 
-      {/*<TableHeader>
+      <TableHeader>
         <TableTitle>Liste des Utilisateurs</TableTitle>
         <ButtonSearch onClick={handleSync} disabled={isLoading.sync}>
           <RefreshCw size={16} style={{ marginRight: "var(--spacing-sm)" }} />
           {isLoading.sync ? "Synchronisation..." : "Synchroniser"}
         </ButtonSearch>
-      </TableHeader>*/}
+      </TableHeader>
 
       <TableContainer>
         <DataTable>

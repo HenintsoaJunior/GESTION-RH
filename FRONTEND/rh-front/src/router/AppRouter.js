@@ -20,6 +20,7 @@ import UserList from 'pages/users/users-list';
 import RoleList from 'pages/roles/roles-list';
 import LogList from 'pages/logs/logs-list';
 import Notifications from 'pages/notifications/page';
+import CompensationPage from 'pages/mission/treso/page';
 
 function AppRouter() {
   return (
@@ -54,6 +55,7 @@ function AppRouter() {
           <Route path="/mission/to-validate" element={<MissionValidationPage />} />
           <Route path="/assignments/excel" element={<MissionAssignationFormExcel />} />
           <Route path="/mission/collaborateur" element={<CollaboratorMissionList />} />
+          <Route path="/treasury" element={<CompensationPage />} />
 
             {/* Transport */}
           <Route path="/transport/create" element={<TransportForm />} />

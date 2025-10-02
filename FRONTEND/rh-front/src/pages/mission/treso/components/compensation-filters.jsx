@@ -13,7 +13,6 @@ import {
   FormFieldCell,
   FormLabelSearch,
   FormInputSearch,
-  StyledAutoCompleteInput,
   FiltersActions,
   ButtonReset,
   ButtonSearch,
@@ -22,12 +21,11 @@ import {
 } from "styles/generaliser/table-container";
 import { X, List, ChevronDown, ChevronUp } from "lucide-react";
 
-const MissionFilters = ({
+const CompensationFilters = ({
   isHidden,
   setIsHidden,
   filters,
   setFilters,
-  suggestions,
   isLoading,
   handleFilterSubmit,
   handleResetFilters,
@@ -72,55 +70,17 @@ const MissionFilters = ({
                   <tbody>
                     <FormRow>
                       <FormFieldCell>
-                        <FormLabelSearch>Collaborateur</FormLabelSearch>
-                        <StyledAutoCompleteInput
-                          value={filters.employeeName || ""}
-                          onChange={(value) =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              employeeName: value,
-                              employeeId: value ? prev.employeeId : "",
-                            }))
-                          }
-                          onSelect={(value) => {
-                            const selectedEmployee = suggestions.beneficiary.find(
-                              (emp) => emp.displayName === value
-                            );
-                            console.log("Selected employee:", selectedEmployee); // Debug
-                            setFilters((prev) => ({
-                              ...prev,
-                              employeeId: selectedEmployee ? selectedEmployee.id : "",
-                              employeeName: selectedEmployee ? selectedEmployee.displayName : value,
-                            }));
-                          }}
-                          suggestions={suggestions.beneficiary
-                            .filter((emp) =>
-                              emp.displayName
-                                .toLowerCase()
-                                .includes((filters.employeeName || "").toLowerCase())
-                            )
-                            .map((emp) => emp.displayName)}
-                          maxVisibleItems={5}
-                          placeholder="Rechercher par nom collaborateur..."
-                          disabled={isLoading.employees || isLoading.missions}
-                          fieldType="beneficiary"
-                          fieldLabel="collaborateur"
-                          showAddOption={false}
-                        />
-                      </FormFieldCell>
-                      <FormFieldCell>
                         <FormLabelSearch>Statut</FormLabelSearch>
                         <FormInputSearch
                           as="select"
                           name="status"
                           value={filters.status}
                           onChange={(e) => handleFilterChange("status", e.target.value)}
-                          disabled={isLoading.missions}
+                          disabled={isLoading.compensations}
                         >
                           <option value="">Tous les statuts</option>
-                          <option value="pending">En attente</option>
-                          <option value="approved">Validé</option>
-                          <option value="rejected">Rejeté</option>
+                          <option value="not paid">Non payé</option>
+                          <option value="paid">Payé</option>
                         </FormInputSearch>
                       </FormFieldCell>
                     </FormRow>
@@ -130,12 +90,12 @@ const MissionFilters = ({
                   <ButtonReset
                     type="button"
                     onClick={handleResetFilters}
-                    disabled={isLoading.missions}
+                    disabled={isLoading.compensations}
                   >
                     Réinitialiser
                   </ButtonReset>
-                  <ButtonSearch type="submit" disabled={isLoading.missions}>
-                    {isLoading.missions ? "Recherche..." : "Rechercher"}
+                  <ButtonSearch type="submit" disabled={isLoading.compensations}>
+                    {isLoading.compensations ? "Recherche..." : "Rechercher"}
                   </ButtonSearch>
                 </FiltersActions>
               </form>
@@ -155,4 +115,4 @@ const MissionFilters = ({
   );
 };
 
-export default MissionFilters;
+export default CompensationFilters;

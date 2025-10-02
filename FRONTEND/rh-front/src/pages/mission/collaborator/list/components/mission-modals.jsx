@@ -1,4 +1,4 @@
-﻿// Fichier : mission-modals.jsx (version modifiée : supprimer les états locaux et utiliser les props)
+// Fichier : mission-modals.jsx (version modifiée : supprimer les états locaux et utiliser les props)
 
 import { Component } from "react";
 import Alert from "components/alert";
@@ -75,7 +75,7 @@ const MissionModals = ({
                         missionId={selectedMissionId}
                         isOpen={showDetailsMission}
                         onClose={() => {
-                            console.log("Closing DetailsMission"); // Debug close action
+                            console.log("Closing DetailsMission");
                             setShowDetailsMission(false);
                         }}
                     />

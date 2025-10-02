@@ -42,16 +42,12 @@ namespace MyApp.Api.Controllers.mission
             {
                 var missionAssignation =
                     await _missionAssignationService.GeneratePaiementsAsync(generatePaiementDto.EmployeeId,
-                        generatePaiementDto.MissionId,
-                        generatePaiementDto.DirectionId,
-                        generatePaiementDto.StartDate,
-                        generatePaiementDto.EndDate);
+                        generatePaiementDto.MissionId);
 
                 return Ok(missionAssignation);
             }
             catch (Exception ex)
             {
-                // Log the exception (logging not shown here, but recommended)
                 return StatusCode(500, $"An error occurred while generating payments: {ex.Message}");
             }
         }

@@ -1,5 +1,3 @@
-Absolument \! Voici l'ensemble du guide de lancement au format **Markdown** (`.md`), prêt à être copié et utilisé.
-
 ````markdown
 # 🚀 Guide de Lancement du Projet GESTION-RH
 
@@ -14,6 +12,7 @@ Assurez-vous que les environnements suivants sont installés et configurés sur 
 * **Runtime Backend :** **.NET 8+** (SDK)
 * **Base de Données :** **SQL Server**
 * **Runtime Frontend :** **Node.js 19+**
+* **Git**
 * **Gestionnaire de Paquets Frontend :** **npm** (inclus avec Node.js)
 
 ---
@@ -50,6 +49,9 @@ La base de données doit être initialisée et peuplée avant le lancement de l'
 
 1.  **Démarrage de SQL Server :** Assurez-vous que votre instance **SQL Server** est en cours d'exécution.
 2.  **Exécution des Scripts :** Connectez-vous à la base de données configurée (voir 1.1) et exécutez les scripts SQL **dans l'ordre strict suivant** :
+
+* **Fichier :** `TODO/BDD`
+
       * `index.sql` (Création des tables et index)
       * `sequence.sql` (Création des séquences, si nécessaire)
       * `data.sql` (Insertion des données initiales / de test)
@@ -96,6 +98,23 @@ Le client web écoute sur le **Port 3000**.
     *(Le Frontend se compilera et devrait ouvrir l'application dans votre navigateur sur `http://localhost:3000`.)*
 
 -----
+
+## Structure du projet
+
+# GESTION-RH
+
+- **FRONTEND**
+  - rh-front
+    - src
+- **BACKEND**
+  - rh-backend
+    - src
+      - MyApp.Api
+- **TODO**
+  - BDD
+- **README.md**
+
+
 
 ## ✅ Récapitulatif des Ports
 

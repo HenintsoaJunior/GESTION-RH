@@ -1,4 +1,4 @@
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 import AutoCompleteInput from "components/auto-complete-input";
 
 // Beneficiaries Table Container
