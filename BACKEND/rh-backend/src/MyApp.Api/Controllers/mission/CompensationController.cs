@@ -16,7 +16,7 @@ namespace MyApp.Api.Controllers.mission
             _compensationService = compensationService ?? throw new ArgumentNullException(nameof(compensationService));
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }
-        
+
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -93,7 +93,7 @@ namespace MyApp.Api.Controllers.mission
             {
                 return BadRequest(new { message = "Employee ID and Assignation ID must be provided." });
             }
-            
+
             if (string.IsNullOrEmpty(status))
             {
                 return BadRequest(new { message = "Status cannot be null or empty" });
@@ -102,15 +102,15 @@ namespace MyApp.Api.Controllers.mission
             try
             {
                 var updated = await _compensationService.UpdateStatusAsync(employeId, assignation_id, status);
-                
+
                 if (!updated)
                 {
                     return NotFound(new { message = $"Compensation for Employee ID {employeId} and Assignation ID {assignation_id} not found." });
                 }
-                
-                return Ok(new 
-                { 
-                    message = $"Compensation status for Employee ID {employeId} and Assignation ID {assignation_id} successfully updated to {status}" 
+
+                return Ok(new
+                {
+                    message = $"Compensation status for Employee ID {employeId} and Assignation ID {assignation_id} successfully updated to {status}"
                 });
             }
             catch (ArgumentException ex)
@@ -144,6 +144,20 @@ namespace MyApp.Api.Controllers.mission
             {
                 var totalAmount = await _compensationService.GetTotalPaidAmountAsync();
                 return Ok(new { TotalPaidAmount = totalAmount });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving total paid amount", Error = ex.Message });
+            }
+        }
+        
+        [HttpGet("total-notpaid")]
+        public async Task<IActionResult> GetTotalNotPaidAmount()
+        {
+            try
+            {
+                var totalAmount = await _compensationService.GetTotalNotPaidAmountAsync();
+                return Ok(new { TotalNotPaidAmount = totalAmount });
             }
             catch (Exception ex)
             {

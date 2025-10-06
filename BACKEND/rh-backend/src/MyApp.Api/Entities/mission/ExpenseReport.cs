@@ -15,7 +15,7 @@ namespace MyApp.Api.Entities.mission
         [Required]
         [Column("titled")]
         [MaxLength(250)]
-        public string? Titled { get; set; }
+        public string Titled { get; set; } = string.Empty;  // Corrigé : non-nullable avec initialisation pour cohérence avec [Required]
 
         [Column("description", TypeName = "text")]
         public string? Description { get; set; }
@@ -26,24 +26,28 @@ namespace MyApp.Api.Entities.mission
         public string Type { get; set; } = string.Empty; // CB / ESP
 
         [Required]
+        [Column("status")]
+        [MaxLength(50)]
+        public string? Status { get; set; }
+
+        [Required]
         [Column("currency_unit")]
         [MaxLength(50)]
         public string CurrencyUnit { get; set; } = string.Empty;
 
         [Required]
         [Column("amount", TypeName = "decimal(15,2)")]
-        public decimal Amount { get; set; }
+        public decimal Amount { get; set; } = 0m; 
 
         [Required]
         [Column("rate", TypeName = "decimal(15,2)")]
-        public decimal Rate { get; set; }
-        
+        public decimal Rate { get; set; } = 0m;
 
         // 🔑 Foreign Keys
         [Required]
         [Column("assignation_id")]
         [MaxLength(50)]
-        public string AssignationId { get; set; } = null!;
+        public string AssignationId { get; set; } = string.Empty;  
 
         [ForeignKey("AssignationId")]
         public MissionAssignation? MissionAssignation { get; set; }
@@ -51,22 +55,24 @@ namespace MyApp.Api.Entities.mission
         [Required]
         [Column("expense_report_type_id")]
         [MaxLength(50)]
-        public string ExpenseReportTypeId { get; set; } = null!;
+        public string ExpenseReportTypeId { get; set; } = string.Empty;  
 
         [ForeignKey("ExpenseReportTypeId")]
         public ExpenseReportType? ExpenseReportType { get; set; }
         
-        public ExpenseReport(){}
+        public ExpenseReport() { }
 
-        public ExpenseReport(ExpenseReportDTOForm dto)
+        public ExpenseReport(ExpenseLineDTO dto)
         {
-            Titled = dto.Titled;
+            Titled = dto.Titled ?? string.Empty;
             Description = dto.Description;
-            CurrencyUnit = dto.CurrencyUnit;
+            Type = dto.Type ?? string.Empty;
+            CurrencyUnit = dto.CurrencyUnit ?? string.Empty;
             Amount = dto.Amount;
             Rate = dto.Rate;
-            AssignationId = dto.AssignationId;
-            ExpenseReportTypeId = dto.ExpenseReportTypeId;
+            Status = "pending";
+            AssignationId = dto.AssignationId ?? string.Empty;
+            ExpenseReportTypeId = dto.ExpenseReportTypeId ?? string.Empty;
         }
     }
 }

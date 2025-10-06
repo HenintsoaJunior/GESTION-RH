@@ -108,6 +108,36 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
+
+        [HttpPost("OM")]
+        public async Task<IActionResult> GenerateOM([FromBody] GenerateOMDTO generateOM)
+        {
+            if (generateOM == null || string.IsNullOrWhiteSpace(generateOM.MissionId))
+            {
+                _logger.LogWarning("Les données ou l'identifiant de la mission sont absents pour la génération de l'ordre de mission.");
+                return BadRequest("Les données ou l'identifiant de la mission sont requis.");
+            }
+
+            try
+            {
+                var pdfBytes = await _service.GenerateMissionOrderPDFAsync(generateOM.EmployeeId, generateOM.MissionId);
+
+                var pdfName = $"OrdreMission-{generateOM.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                
+                return File(pdfBytes, "application/pdf", pdfName);
+            }
+            catch (FileNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Template file not found for mission {MissionId}", generateOM.MissionId);
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur serveur lors de la génération de l'ordre de mission pour la mission {MissionId}", generateOM.MissionId);
+                return StatusCode(500, $"Erreur lors de la génération de l'ordre de mission : {ex.Message}");
+            }
+        }
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MissionAssignation>>> GetAll()
         {
@@ -216,6 +246,26 @@ namespace MyApp.Api.Controllers.mission
             {
                 _logger.LogError(ex, "Erreur lors de la suppression de l'assignation ID: {AssignationId}", assignationId);
                 return StatusCode(500, $"Erreur lors de la suppression de l'assignation : {ex.Message}");
+            }
+        }
+
+        [HttpGet("{assignationId}")]
+        public async Task<IActionResult> GetByAssignationId(string assignationId)
+        {
+            try
+            {
+                var missionAssignation = await _service.GetByAssignationIdAsync(assignationId);
+                
+                if (missionAssignation == null)
+                {
+                    return NotFound(new { Message = $"No mission assignation found for AssignationId: {assignationId}" });
+                }
+
+                return Ok(missionAssignation);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = $"Error retrieving mission assignation: {ex.Message}" });
             }
         }
 

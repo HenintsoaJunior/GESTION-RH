@@ -11,7 +11,8 @@ namespace MyApp.Api.Repositories.mission
         Task<IEnumerable<Compensation>> GetByAssignationIdAsync(string assignationId);
         Task<Compensation?> GetByIdAsync(string compensationId);
         Task<List<Compensation>> GetByEmployeeAndAssignationIdAsync(string employeeId, string assignationId);
-        Task<decimal> GetTotalPaidAmountAsync(); // Méthode pour le total des montants payés
+        Task<decimal> GetTotalPaidAmountAsync();
+        Task<decimal> GetTotalNotPaidAmountAsync();
         Task AddAsync(Compensation compensation);
         Task UpdateAsync(Compensation compensation);
         Task SaveChangesAsync();
@@ -76,6 +77,15 @@ namespace MyApp.Api.Repositories.mission
                 .Where(c => c.Status == "paid")
                 .SumAsync(c => c.TransportAmount + c.BreakfastAmount + c.LunchAmount + c.DinnerAmount + c.AccommodationAmount);
         }
+
+        public async Task<decimal> GetTotalNotPaidAmountAsync()
+        {
+            return await _context.Compensations
+                .Where(c => c.Status == "not paid")
+                .SumAsync(c => c.TransportAmount + c.BreakfastAmount + c.LunchAmount + c.DinnerAmount + c.AccommodationAmount);
+        }
+
+        
 
         public async Task AddAsync(Compensation compensation)
         {

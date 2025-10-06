@@ -1,13 +1,8 @@
 "use client";
 
-import useCompensationStatusData from "./hooks/use-compensation-data";
-import CompensationCards from "./components/compensation-cards";
-import CompensationFilters from "./components/compensation-filters";
-import CompensationModals from "./components/compensation-modals";
-// --- Import Chart.js Dependencies ---
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { Doughnut } from "react-chartjs-2";
-// -------------------------------------
+import { useState, useEffect } from "react";
+import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from "chart.js"; 
+import { Bar } from "react-chartjs-2";
 import {
   DashboardContainer,
   TableHeader,
@@ -15,67 +10,76 @@ import {
   StatNumber,
   StatLabel,
 } from "styles/generaliser/table-container";
-
 import styled from "styled-components";
-// Assurez-vous d'avoir une fonction formatNumber (importée ici pour la démonstration)
-const formatNumber = (num) => new Intl.NumberFormat('fr-FR').format(num); 
+import { GetTotalPaidAmount, GetTotalNotPaidAmount } from "services/mission/compensation";
+import { GetTotalReimbursedAmount, GetTotalNotReimbursedAmount } from "services/mission/expense";
+import CompensationPage from "./components/compensation";
+import ExpenseReportPage from "./components/expense-report-page";
 
-// Enregistrement des éléments Chart.js nécessaires
-ChartJS.register(ArcElement, Tooltip, Legend);
+// Formatage du nombre sans symbole ni devise
+const formatNumber = (num) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0 }).format(num);
 
-// ========================================================================================
-// NOUVEAUX STYLES FLAT DESIGN
-// ========================================================================================
+ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
+
+// Styles
+const PageWrapper = styled.div`
+  background: var(--bg-secondary);
+  min-height: 100vh;
+  padding: 30px 20px;
+`;
 
 const ChartDashboard = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 30px;
-  padding: 20px;
-  background: white;
-  border: 1px solid #dee2e6; /* Nouvelle bordure pour délimiter */
-  /* border-radius: 0; <-- Supprimé */
-  /* box-shadow: none; <-- Supprimé */
+  flex-direction: column;
+  gap: 20px;
+  padding: 30px;
+  background: var(--bg-primary);
+  border: 1px solid #e0e0e0;
   margin-bottom: 20px;
+  border-radius: 8px;
 
   @media (max-width: 900px) {
-    flex-direction: column;
-    align-items: stretch;
+    padding: 20px;
+  }
+`;
+
+const ChartSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+
+  @media (max-width: 900px) {
+    gap: 25px;
   }
 `;
 
 const ChartWrapper = styled.div`
   width: 100%;
-  max-width: 300px;
-  min-height: 250px;
-
+  max-width: 100%;
+  height: 300px;
+  padding: 10px;
+  overflow: hidden;
+  
   @media (max-width: 900px) {
-    max-width: 100%;
-    margin: 0 auto;
+    height: 280px;
+  }
+
+  canvas {
+    max-height: 100% !important;
   }
 `;
 
 const ChartSummary = styled.div`
-  flex-grow: 1;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  padding: 20px;
-  background: #f8f9fa;
-  /* border-radius: 0; <-- Supprimé */
-  border-left: 1px solid #dee2e6; /* Séparateur visuel */
-  min-width: 450px;
 
-  @media (max-width: 900px) {
-    min-width: unset;
-    grid-template-columns: 1fr 1fr 1fr;
-    border-left: none; /* Retiré sur mobile */
-    border-top: 1px solid #dee2e6;
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
   }
+  
   @media (max-width: 600px) {
     grid-template-columns: 1fr;
-    text-align: center;
   }
 `;
 
@@ -84,41 +88,140 @@ const SummaryStatCard = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 10px;
-  /* border-radius: 0; <-- Supprimé */
-  border: 1px solid #dee2e6; /* Bordure ajoutée pour délimitation */
-  
-  &.total {
-    background: #e6f2ff;
+  padding: 24px;
+  background: var(--bg-tertiary);
+  border: 1px solid #e0e0e0;
+  border-left: 5px solid ${props => props.color || '#0052cc'};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+
+  &:hover {
+    background: var(--bg-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
   }
-  &.not-paid {
-    background: #f8d7da;
-  }
-  &.paid {
-    background: #d4edda;
-  }
-  
+
   ${StatNumber} {
-    font-size: 1.8rem;
+    font-size: 2rem;
     font-weight: 700;
+    color: ${props => props.color || '#003087'};
+    margin-bottom: 4px;
+    transition: color 0.2s ease;
+  }
+
+  ${StatLabel} {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-align: center;
   }
 `;
 
-/**
- * Composant de graphique en beignet pour visualiser la répartition Payé/Non Payé
- */
-const CompensationStatusChart = ({ stats, isLoading }) => {
-  if (isLoading) return <p>Chargement du graphique...</p>;
+const NavigationButtonGroup = styled.div`
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding-top: 10px;
+`;
+
+const NavigationButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 2px solid transparent;
+  background: var(--primary-color);
+  color: var(--text-white);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+
+  &:hover {
+    background: var(--primary-hover);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-dark);
+  }
+
+  &.secondary {
+    background: var(--bg-primary);
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+    
+    &:hover {
+      background: var(--primary-transparent);
+      color: var(--primary-dark);
+      border-color: var(--primary-dark);
+    }
+    
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+
+  span {
+    font-size: 1.1rem;
+  }
+`;
+
+const CompensationStatusChart = ({ totalPaidAmount, totalNotPaidAmount, totalReimbursedAmount, totalNotReimbursedAmount, isLoading }) => {
+  if (isLoading) return <p style={{ textAlign: 'center', color: '#666666' }}>Chargement du graphique...</p>;
+
+  // Hard-coded colors
+  const PAID_COLOR = "#03a9f4";
+  const NOT_PAID_COLOR = "#ef5350";
+  const REIMBURSED_COLOR = "#00e676";
+  const NOT_REIMBURSED_COLOR = "#ffca28";
+
+  const PAID_HOVER = "#0288d1";
+  const NOT_PAID_HOVER = "#d32f2f";
+  const REIMBURSED_HOVER = "#00bfa5";
+  const NOT_REIMBURSED_HOVER = "#ffb300";
 
   const data = {
-    labels: [`Non Payées: ${stats.notPaid}`, `Payées: ${stats.paid}`],
+    labels: ['Montants'],
     datasets: [
       {
-        data: [stats.notPaid, stats.paid],
-        backgroundColor: ["#dc3545", "#28a745"], // Rouge pour non payé, Vert pour payé
-        hoverBackgroundColor: ["#c82333", "#1e7e34"],
-        borderColor: "#ffffff",
-        borderWidth: 2,
+        label: 'Indemnités Payées',
+        data: [totalPaidAmount || 0],
+        backgroundColor: PAID_COLOR,
+        hoverBackgroundColor: PAID_HOVER,
+        borderColor: 'transparent',
+        borderWidth: 0,
+      },
+      {
+        label: 'Indemnités Non Payées',
+        data: [totalNotPaidAmount || 0],
+        backgroundColor: NOT_PAID_COLOR,
+        hoverBackgroundColor: NOT_PAID_HOVER,
+        borderColor: 'transparent',
+        borderWidth: 0,
+      },
+      {
+        label: 'Remboursements Effectués',
+        data: [totalReimbursedAmount || 0],
+        backgroundColor: REIMBURSED_COLOR,
+        hoverBackgroundColor: REIMBURSED_HOVER,
+        borderColor: 'transparent',
+        borderWidth: 0,
+      },
+      {
+        label: 'Remboursements Non Effectués',
+        data: [totalNotReimbursedAmount || 0],
+        backgroundColor: NOT_REIMBURSED_COLOR,
+        hoverBackgroundColor: NOT_REIMBURSED_HOVER,
+        borderColor: 'transparent',
+        borderWidth: 0,
       },
     ],
   };
@@ -128,139 +231,184 @@ const CompensationStatusChart = ({ stats, isLoading }) => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "bottom",
-        labels: { boxWidth: 10, padding: 15 },
+        position: 'bottom',
+        labels: {
+          boxWidth: 12,
+          padding: 18,
+          font: { size: 13, weight: '500' },
+          color: '#666666',
+        },
       },
       tooltip: {
         callbacks: {
           label: function (tooltipItem) {
-            const label = tooltipItem.label || "";
+            const label = tooltipItem.dataset.label || '';
             const value = tooltipItem.raw;
-            const total = tooltipItem.dataset.data.reduce((a, b) => a + b, 0);
-            const percentage = ((value / total) * 100).toFixed(1) + "%";
-            return `${label} (${percentage})`;
+            return `${label}: ${formatNumber(value)}`;
           },
         },
+        backgroundColor: '#ffffff',
+        titleColor: '#1a1a1a',
+        bodyColor: '#1a1a1a',
+        padding: 12,
+        cornerRadius: 4,
+        borderColor: '#cccccc',
+        borderWidth: 1,
       },
       title: {
         display: true,
-        text: 'Répartition par Statut',
-        font: { size: 16, weight: 'bold' }
-      }
+        text: 'Répartition des Montants',
+        font: { size: 18, weight: '700' },
+        color: '#1a1a1a',
+        padding: { bottom: 20 },
+      },
     },
-    cutout: "70%",
+    scales: {
+      x: {
+        stacked: false,
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: '#666666',
+        },
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: '#e0e0e0',
+        },
+        ticks: {
+          color: '#666666',
+          callback: function (value) {
+            return formatNumber(value);
+          },
+        },
+      },
+    },
   };
 
-  return (
-    <Doughnut data={data} options={options} />
-  );
+  return <Bar data={data} options={options} />;
 };
 
+const TresoPage = () => {
+  const [totalPaidAmount, setTotalPaidAmount] = useState(0);
+  const [totalNotPaidAmount, setTotalNotPaidAmount] = useState(0);
+  const [totalReimbursedAmount, setTotalReimbursedAmount] = useState(0);
+  const [totalNotReimbursedAmount, setTotalNotReimbursedAmount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState("dashboard");
 
-// ========================================================================================
-// COMPOSANT PRINCIPAL CompensationPage
-// ========================================================================================
+  const fetchTotalPaidAmount = GetTotalPaidAmount();
+  const fetchTotalNotPaidAmount = GetTotalNotPaidAmount();
+  const fetchTotalReimbursedAmount = GetTotalReimbursedAmount();
+  const fetchTotalNotReimbursedAmount = GetTotalNotReimbursedAmount();
 
-const CompensationPage = () => {
-  const {
-    compensationsData,
-    filters,
-    setFilters,
-    appliedFilters,
-    isLoading,
-    alert,
-    setAlert,
-    stats,
-    selectedAssignationId,
-    showDetailsCompensation,
-    setShowDetailsCompensation,
-    handleRowClick,
-    formatDate,
-    getDaysUntilDue,
-    currentPage,
-    pageSize,
-    totalEntries,
-    handlePageChange,
-    handlePageSizeChange,
-    isHidden,
-    setIsHidden,
-    handleFilterSubmit,
-    handleResetFilters,
-    fetchCompensations,
-  } = useCompensationStatusData();
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [paidAmount, notPaidAmount, reimbursedAmount, notReimbursedAmount] = await Promise.all([
+          fetchTotalPaidAmount(),
+          fetchTotalNotPaidAmount(),
+          fetchTotalReimbursedAmount(),
+          fetchTotalNotReimbursedAmount(),
+        ]);
+        setTotalPaidAmount(paidAmount || 0);
+        setTotalNotPaidAmount(notPaidAmount || 0);
+        setTotalReimbursedAmount(reimbursedAmount || 0);
+        setTotalNotReimbursedAmount(notReimbursedAmount || 0);
+      } catch (error) {
+        console.error("Failed to fetch amounts:", error);
+        setTotalPaidAmount(0);
+        setTotalNotPaidAmount(0);
+        setTotalReimbursedAmount(0);
+        setTotalNotReimbursedAmount(0);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [fetchTotalPaidAmount, fetchTotalNotPaidAmount, fetchTotalReimbursedAmount, fetchTotalNotReimbursedAmount]);
 
-  if (showDetailsCompensation) {
-    return (
-      <CompensationModals
-        alert={alert}
-        setAlert={setAlert}
-        showDetailsCompensation={showDetailsCompensation}
-        setShowDetailsCompensation={setShowDetailsCompensation}
-        selectedAssignationId={selectedAssignationId}
-        compensationsData={compensationsData}
-        formatDate={formatDate}
-        onPaymentSuccess={fetchCompensations}
-      />
-    );
+  if (currentPage === "compensation") {
+    return <CompensationPage setCurrentPage={setCurrentPage} />;
+  }
+
+  if (currentPage === "expense") {
+    return <ExpenseReportPage setCurrentPage={setCurrentPage} />;
   }
 
   return (
-    <DashboardContainer>
-      <TableHeader>
-        <TableTitle>Tableau de Bord des Compensations</TableTitle>
-      </TableHeader>
+    <PageWrapper>
+      <DashboardContainer>
+        <TableHeader>
+          <TableTitle>Tableau de Bord Trésorerie 💰</TableTitle>
+        </TableHeader>
 
-      <ChartDashboard>
-        <ChartWrapper>
-          <CompensationStatusChart stats={stats} isLoading={isLoading.compensations} />
-        </ChartWrapper>
-        
-        <ChartSummary>
-          {/* Total des Compensations (Montant Payé) */}
-          <SummaryStatCard className="total">
-            <StatNumber>{isLoading.stats ? "..." : formatNumber(stats.totalAmount)},00</StatNumber>
-            <StatLabel>Montant Total</StatLabel>
-          </SummaryStatCard>
+        <ChartDashboard>
+          <ChartSection>
+            <ChartSummary>
+              <SummaryStatCard 
+                color="#00c853"
+                onClick={() => setCurrentPage("compensation")}
+                title="Cliquez pour voir les détails des indemnités payées"
+              >
+                <StatNumber>{isLoading ? "..." : formatNumber(totalPaidAmount)}</StatNumber>
+                <StatLabel>Indemnités Payées</StatLabel>
+              </SummaryStatCard>
 
-          {/* Nombre de Compensations Non Payées */}
-          <SummaryStatCard className="not-paid">
-            <StatNumber>{isLoading.compensations ? "..." : stats.notPaid}</StatNumber>
-            <StatLabel>Dossiers Non Payés</StatLabel>
-          </SummaryStatCard>
+              <SummaryStatCard 
+                color="#ef5350"
+                onClick={() => setCurrentPage("compensation")}
+                title="Cliquez pour voir les détails des indemnités non payées"
+              >
+                <StatNumber>{isLoading ? "..." : formatNumber(totalNotPaidAmount)}</StatNumber>
+                <StatLabel>Indemnités Non Payées</StatLabel>
+              </SummaryStatCard>
 
-          {/* Nombre de Compensations Payées */}
-          <SummaryStatCard className="paid">
-            <StatNumber>{isLoading.compensations ? "..." : stats.paid}</StatNumber>
-            <StatLabel>Dossiers Payés</StatLabel>
-          </SummaryStatCard>
-        </ChartSummary>
-      </ChartDashboard>
+              <SummaryStatCard 
+                color="#0288d1"
+                onClick={() => setCurrentPage("expense")}
+                title="Cliquez pour voir les détails des remboursements effectués"
+              >
+                <StatNumber>{isLoading ? "..." : formatNumber(totalReimbursedAmount)}</StatNumber>
+                <StatLabel>Remboursements Effectués</StatLabel>
+              </SummaryStatCard>
 
-      <CompensationFilters
-        isHidden={isHidden}
-        setIsHidden={setIsHidden}
-        filters={filters}
-        setFilters={setFilters}
-        isLoading={isLoading}
-        handleFilterSubmit={handleFilterSubmit}
-        handleResetFilters={handleResetFilters}
-      />
+              <SummaryStatCard 
+                color="#ffca28"
+                onClick={() => setCurrentPage("expense")}
+                title="Cliquez pour voir les détails des remboursements non effectués"
+              >
+                <StatNumber>{isLoading ? "..." : formatNumber(totalNotReimbursedAmount)}</StatNumber>
+                <StatLabel>Remboursements Non Effectués</StatLabel>
+              </SummaryStatCard>
+            </ChartSummary>
 
-      <CompensationCards
-        compensations={compensationsData}
-        isLoading={isLoading}
-        handleRowClick={handleRowClick}
-        formatDate={formatDate}
-        getDaysUntilDue={getDaysUntilDue}
-        currentPage={currentPage}
-        pageSize={pageSize}
-        totalEntries={totalEntries}
-        handlePageChange={handlePageChange}
-        handlePageSizeChange={handlePageSizeChange}
-        appliedFilters={appliedFilters}
-      />
-    </DashboardContainer>
+            <ChartWrapper>
+              <CompensationStatusChart
+                totalPaidAmount={totalPaidAmount}
+                totalNotPaidAmount={totalNotPaidAmount}
+                totalReimbursedAmount={totalReimbursedAmount}
+                totalNotReimbursedAmount={totalNotReimbursedAmount}
+                isLoading={isLoading}
+              />
+            </ChartWrapper>
+          </ChartSection>
+
+          <NavigationButtonGroup>
+            <NavigationButton onClick={() => setCurrentPage("compensation")}>
+              <span>📋</span> Gérer les Indemnités
+            </NavigationButton>
+            <NavigationButton className="secondary" onClick={() => setCurrentPage("expense")}>
+              <span>🧾</span> Gérer les Notes de Frais
+            </NavigationButton>
+          </NavigationButtonGroup>
+        </ChartDashboard>
+      </DashboardContainer>
+    </PageWrapper>
   );
 };
 
-export default CompensationPage;
+export default TresoPage;

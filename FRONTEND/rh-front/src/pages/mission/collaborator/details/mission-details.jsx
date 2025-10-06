@@ -34,7 +34,7 @@ import {
 
 import {
     fetchAssignMission,
-    exportMissionAssignationPDF,
+    generateMissionOrder,
 } from "services/mission/mission";
 import { useGetMissionValidationsByAssignationId } from "services/mission/validation";
 import { CreateComment, GetCommentsByMission, UpdateComment, DeleteComment } from "services/mission/comments";
@@ -398,15 +398,53 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         }
     };
 
-    const handleExportPDF = () => {
-        const exportFilters = { missionId };
-        exportMissionAssignationPDF(
-            exportFilters,
-            setIsLoading,
-            (success) => setError(success),
-            handleError
+    const handleExportPDF = useCallback(
+        async (employeeId) => {
+            if (!missionId || !employeeId) {
+            setError({
+                isOpen: true,
+                type: "error",
+                message: "Mission ID et Employee ID sont requis pour générer l'ordre de mission.",
+            });
+            return;
+            }
+
+            try {
+            const data = {
+                missionId,
+                employeeId,
+            };
+
+            await generateMissionOrder(
+                data,
+                setIsLoading, // Pass the loading state setter
+                (success) => {
+                setError({
+                    isOpen: true,
+                    type: "success",
+                    message: success.message || "Ordre de mission généré et téléchargé avec succès.",
+                });
+                },
+                (error) => {
+                setError({
+                    isOpen: true,
+                    type: "error",
+                    berichten: error.message || "Erreur lors de la génération de l'ordre de mission.",
+                    details: error.details || { missionId, employeeId, timestamp: new Date().toISOString() },
+                });
+                }
+            );
+            } catch (error) {
+            setError({
+                isOpen: true,
+                type: "error",
+                message: `Erreur inattendue lors de la génération de l'ordre de mission : ${error.message}`,
+                details: { missionId, employeeId, timestamp: new Date().toISOString() },
+            });
+            }
+        },
+        [missionId, setError, setIsLoading]
         );
-    };
 
     const handleExportExcel = () => {
         const exportFilters = { missionId };
@@ -678,7 +716,10 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                                                                         <InfoItem>
                                                                             {isMissionFullyValidated && (
                                                                                 <ButtonContainer>
-                                                                                    <ButtonOMPDF onClick={handleExportPDF} disabled={isLoading.exportPDF}>
+                                                                                    <ButtonOMPDF
+                                                                                        onClick={() => handleExportPDF(assignment.employeeId)}
+                                                                                        disabled={isLoading.exportPDF}
+                                                                                    >
                                                                                         <Download size={16} /> OM PDF
                                                                                     </ButtonOMPDF>
                                                                                 </ButtonContainer>

@@ -13,7 +13,8 @@ namespace MyApp.Api.Services.mission
         Task<string> CreateAsync(ComposationDTO compensation);
         Task<bool> UpdateStatusAsync(string employeeId, string assignationId, string status);
         Task<IEnumerable<AssignationWithCompensationsDto>> GetCompensationsByStatusAsync(string? status);
-        Task<decimal> GetTotalPaidAmountAsync(); // Méthode pour le total des montants payés
+        Task<decimal> GetTotalPaidAmountAsync();
+        Task<decimal> GetTotalNotPaidAmountAsync();
     }
 
     public class CompensationService : ICompensationService
@@ -149,8 +150,20 @@ namespace MyApp.Api.Services.mission
         {
             try
             {
-                _logger.LogInformation("Récupération du total des montants payés");
                 return await _repository.GetTotalPaidAmountAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du total des montants payés");
+                throw;
+            }
+        }
+
+         public async Task<decimal> GetTotalNotPaidAmountAsync()
+        {
+            try
+            {
+                return await _repository.GetTotalNotPaidAmountAsync();
             }
             catch (Exception ex)
             {

@@ -8,7 +8,94 @@ const userId = userData?.userId;
 // ----------------------------------------------------------------------
 // SERVICES CRUD POUR MISSION ASSIGNATION (MissionAssignation)
 // ----------------------------------------------------------------------
+export async function generateMissionOrder(data, setIsLoading, onSuccess, onError) {
+  const url = "/api/MissionAssignation/OM";
 
+  try {
+    setIsLoading((prev) => ({ ...prev, exportPDF: true }));
+
+    const blob = await apiPost(
+      url,
+      {
+        missionId: data.missionId || null,
+        employeeId: data.employeeId || null,
+      },
+      {}, // Additional config (if needed)
+      {
+        Accept: "application/pdf",
+        "Content-Type": "application/json",
+      },
+      "blob" // Explicitly set response type to blob
+    );
+
+    // Check if the blob is valid
+    if (!blob || blob.size === 0) {
+      throw new Error("Le fichier PDF généré est vide");
+    }
+
+    // Extract filename from content-disposition header or generate a default
+    const contentDisposition = blob.headers?.get("content-disposition");
+    const extractFilename = (header) => {
+      if (!header) {
+        return `OrdreMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      }
+
+      const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+      if (utf8Match && utf8Match[1]) {
+        return decodeURIComponent(utf8Match[1]);
+      }
+
+      const standardMatch = header.match(/filename="([^"]+)"/i);
+      if (standardMatch && standardMatch[1]) {
+        return standardMatch[1];
+      }
+
+      return `OrdreMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+    };
+
+    const fileName = contentDisposition
+      ? extractFilename(contentDisposition)
+      : `OrdreMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+
+    // Create and trigger download
+    const urlBlob = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = urlBlob;
+    link.download = fileName;
+
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(urlBlob);
+
+    // Success callback
+    onSuccess({
+      isOpen: true,
+      type: "success",
+      message: `Fichier PDF "${fileName}" exporté avec succès !`,
+    });
+
+    return { fileName, status: "success" };
+  } catch (error) {
+    let userMessage = "Erreur lors de la génération de l'Ordre de Mission";
+    
+    onError({
+      isOpen: true,
+      type: "error",
+      message: `${userMessage}: ${error.message}`,
+      details: {
+        ...data,
+        timestamp: new Date().toISOString(),
+      },
+    });
+
+    throw new Error(`Failed to generate mission order: ${error.message}`);
+  } finally {
+    setIsLoading((prev) => ({ ...prev, exportPDF: false }));
+  }
+}
 /**
  * Fonction pour créer une nouvelle assignation de mission.
  * @param {object} assignationData - Les données de la nouvelle assignation (IDs et champs simples).

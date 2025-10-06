@@ -83,6 +83,18 @@ export const FormTable = styled.table`
   margin-top: var(--spacing-md);
   border-collapse: separate;
   border-spacing: 0 4px;
+  & th {
+    background-color: var(--bg-secondary);
+    font-weight: 700;
+    color: var(--text-primary);
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: 2px solid var(--border-light);
+    white-space: nowrap;
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
   @media (max-width: 480px) {
     display: block;
     & tr {
@@ -114,7 +126,7 @@ export const FormFieldCell = styled.td`
   font-weight: 600;
   color: var(--text-secondary);
   font-size: var(--font-size-md);
-  padding: var(--spacing-xs);
+  padding: var(--spacing-sm);
   vertical-align: top;
   @media (max-width: 480px) {
     display: block;
@@ -123,11 +135,13 @@ export const FormFieldCell = styled.td`
 `;
 
 export const FormLabel = styled.label`
-  margin-bottom: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
+  margin-bottom: var(--spacing-xxs);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
   color: var(--text-secondary);
   display: block;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
 `;
 
 export const FormLabelRequired = styled(FormLabel)`
@@ -423,6 +437,17 @@ export const ResetButton = styled(SubmitButton)`
 `;
 
 export const AddButton = styled(SubmitButton)`
+  margin-top: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  & svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
+
+export const Button = styled(SubmitButton)`
   margin-top: var(--spacing-md);
   display: flex;
   align-items: center;

@@ -11,6 +11,10 @@ using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Utils.csv;
 using MyApp.Api.Utils.exception;
 using MyApp.Api.Utils.pdf;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
+using SpireDoc = Spire.Doc;
 namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
@@ -30,6 +34,7 @@ namespace MyApp.Api.Services.mission
         Task<bool> DeleteAsync(string assignationId);
         Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null);
         Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null);
+        Task<byte[]> GenerateMissionOrderPDFAsync(string employeeId, string missionId);
     }
 
     public class MissionAssignationService : IMissionAssignationService
@@ -72,6 +77,152 @@ namespace MyApp.Api.Services.mission
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
+        public async Task<byte[]> GenerateMissionOrderPDFAsync(string employeeId, string missionId)
+        {
+            var missionAssignation = await _repository.GetByIdAsync(employeeId, missionId);
+
+            if (missionAssignation == null)
+            {
+                throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
+            }
+            
+            string templatePath = @"D:\Github\STAGE\GESTION-RH\BACKEND\rh-backend\src\MyApp.Api\File\OM.docx";
+            
+            if (!File.Exists(templatePath))
+            {
+                throw new FileNotFoundException("Le fichier modèle n'existe pas.", templatePath);
+            }
+
+            var replacements = new Dictionary<string, string>
+            {
+                { "${ref}",  missionAssignation.AssignationId ?? "" },
+                { "${date}", DateTime.Now.ToString("dd/MM/yyyy") },
+                { "${page}", "1" },
+                { "${titre_mission}", missionAssignation.Mission?.Name ?? "" },
+                { "${numero}",missionAssignation.AssignationId ?? "" },
+                { "${nom}", missionAssignation.Employee?.FirstName ?? "" },
+                { "${prenom}", missionAssignation.Employee?.LastName ?? "" },
+                { "${fonction}", missionAssignation.Employee?.JobTitle ?? "" },
+                { "${matricule}", missionAssignation.Employee?.EmployeeCode ?? "" },
+                { "${direction}", missionAssignation.Employee?.Direction?.DirectionName ?? "" },
+                { "${departement}", missionAssignation.Employee?.Department?.DepartmentName ??  "" },
+                { "${service}", missionAssignation.Employee?.Service?.ServiceName?? "" },
+                { "${lieu}", missionAssignation.Mission?.Lieu?.Nom ?? "" },
+                { "${motif}", missionAssignation.Mission?.Description ?? "" },
+                { "${transport}", missionAssignation.Transport != null ? missionAssignation.Transport.Type ?? "" : "" },
+                { "${date_heure_depart}", missionAssignation.DepartureDate.ToString("dd/MM/yyyy HH:mm") ?? "" }
+            };
+
+            using var memoryStream = new MemoryStream();
+            
+            using (var fileStream = new FileStream(templatePath, FileMode.Open, FileAccess.Read))
+            {
+                await fileStream.CopyToAsync(memoryStream);
+            }
+            
+            memoryStream.Position = 0;
+
+            using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(memoryStream, true))
+            {
+                if (wordDoc.MainDocumentPart == null || wordDoc.MainDocumentPart.Document == null)
+                {
+                    throw new InvalidOperationException("Le document Word ne contient pas de partie principale ou de document.");
+                }
+                var body = wordDoc.MainDocumentPart.Document.Body;
+
+                if (body != null)
+                {
+                    var textElements = body.Descendants<Text>().ToList();
+                    foreach (var text in textElements)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+
+                    var bodyRuns = body.Descendants<Run>().ToList();
+                    foreach (var run in bodyRuns)
+                    {
+                        string runText = string.Join("", run.Descendants<Text>().Select(t => t.Text));
+                        
+                        foreach (var replacement in replacements)
+                        {
+                            if (runText.Contains(replacement.Key))
+                            {
+                                run.RemoveAllChildren<Text>();
+                                string newText = runText.Replace(replacement.Key, replacement.Value);
+                                run.AppendChild(new Text(newText));
+                            }
+                        }
+                    }
+                }
+
+                foreach (var headerPart in wordDoc.MainDocumentPart.HeaderParts)
+                {
+                    var headerTexts = headerPart.Header.Descendants<Text>().ToList();
+                    foreach (var text in headerTexts)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+                }
+
+                foreach (var footerPart in wordDoc.MainDocumentPart.FooterParts)
+                {
+                    var footerTexts = footerPart.Footer.Descendants<Text>().ToList();
+                    foreach (var text in footerTexts)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+                }
+
+                if (body != null)
+                {
+                    var bodyRuns2 = body.Descendants<Run>().ToList();
+                    foreach (var run in bodyRuns2)
+                    {
+                        string runText = string.Join("", run.Descendants<Text>().Select(t => t.Text));
+                        
+                        foreach (var replacement in replacements)
+                        {
+                            if (runText.Contains(replacement.Key))
+                            {
+                                run.RemoveAllChildren<Text>();
+                                string newText = runText.Replace(replacement.Key, replacement.Value);
+                                run.AppendChild(new Text(newText));
+                            }
+                        }
+                    }
+                }
+
+                wordDoc.MainDocumentPart.Document.Save();
+            }
+
+            memoryStream.Position = 0;
+            using var PDFStream = new MemoryStream();
+            
+            SpireDoc.Document doc = new SpireDoc.Document();
+            doc.LoadFromStream(memoryStream, SpireDoc.FileFormat.Docx);
+            doc.SaveToStream(PDFStream, SpireDoc.FileFormat.PDF);
+
+            return PDFStream.ToArray();
+        }
+        
         public async Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator, MissionService missionService)
         {
             var errors = new List<string>();
@@ -91,8 +242,8 @@ namespace MyApp.Api.Services.mission
                 // si transport n'existe pas => throws
                 var transport = await _transportService.VerifyTransportByTypeAsync(data[1][10]);
                 // si mission assignation n'existe pas => insertion
-                if(transport != null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, transport.TransportId);
-                if(transport == null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, null);
+                if (transport != null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, transport.TransportId);
+                if (transport == null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, null);
 
                 await transaction.CommitAsync();
                 return errors;

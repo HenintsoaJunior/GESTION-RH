@@ -4,6 +4,7 @@ DROP TABLE IF EXISTS logs;
 DROP TABLE IF EXISTS mission_comments;
 DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS mission_report;
+DROP TABLE IF EXISTS expense_report_attachments;
 DROP TABLE IF EXISTS expense_report;
 DROP TABLE IF EXISTS mission_budget;
 DROP TABLE IF EXISTS mission_validation;
@@ -398,6 +399,7 @@ CREATE TABLE expense_report(
    currency_unit VARCHAR(50),
    amount DECIMAL(15,2),
    rate DECIMAL(15,2),
+   status VARCHAR(50) DEFAULT 'pending',
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    assignation_id VARCHAR(50) NOT NULL,
@@ -405,6 +407,18 @@ CREATE TABLE expense_report(
    PRIMARY KEY(expense_report_id),
    FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id),
    FOREIGN KEY(expense_report_type_id) REFERENCES expense_report_type(expense_report_type_id)
+);
+
+CREATE TABLE expense_report_attachments (
+   attachment_id VARCHAR(50),
+   assignation_id VARCHAR(50) NOT NULL,
+   file_name VARCHAR(255) NOT NULL,
+   file_content VARBINARY(MAX),
+   file_size INT,
+   file_type VARCHAR(100),
+   uploaded_at DATETIME DEFAULT GETDATE(),
+   PRIMARY KEY(attachment_id),
+   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE
 );
 
 -- compte rendu mission
