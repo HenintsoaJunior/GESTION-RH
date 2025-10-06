@@ -102,6 +102,19 @@ export const GetTotalPaidAmount = () => {
   }, []);
 };
 
+
+export const GetTotalNotPaidAmount = () => {
+  return useCallback(async () => {
+    try {
+      const response = await apiGet(`/api/Compensation/total-notpaid`);
+      return response.TotalNotPaidAmount || 0;
+    } catch (error) {
+      handleValidationError(error);
+      throw error;
+    }
+  }, []);
+};
+
 // Hook to get compensations by employee and mission
 /**
  * @returns {Function} - Function to fetch compensations by employee and mission

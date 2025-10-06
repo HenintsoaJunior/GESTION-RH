@@ -206,9 +206,13 @@ namespace MyApp.Api.Services.mission
                     await _missionAssignationService.UpdateAsync(validation.MissionAssignationId, missionAssignation);
                     result = "Validation effectuée avec succès et mission validée";
 
-                    await _missionAssignationService.GeneratePaiementsAsync(
-                            missionAssignation.EmployeeId,
-                            missionAssignation.MissionId);
+                    if (validation.Type.Equals("Indemnité"))
+                    {
+                        await _missionAssignationService.GeneratePaiementsAsync(
+                                missionAssignation.EmployeeId,
+                                missionAssignation.MissionId);
+                    }
+                    
 
                     //check si budget mission est suffisant
                     // if (validation.Type.Equals("Indemnité"))

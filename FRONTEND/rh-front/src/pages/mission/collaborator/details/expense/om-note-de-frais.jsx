@@ -1,54 +1,112 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import ExpenseReportStep from "./step/expense-report-step";
+import ExpenseReportList from "./step/expense-report-list";
+import { GetAllExpenseReportTypes } from "services/mission/expense";
+import { ClipboardList, Plus } from "lucide-react";
+
+// --- Variables de Couleur (Rappel) ---
+// --primary-color: #69b42e;
+// --primary-hover: #5a9625;
+
+// --- Styles ---
 
 const Container = styled.div`
     padding: var(--spacing-md);
-    background: var(--background-light);
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-light);
+    background: var(--background-light, #f8f9fa);
+    border-radius: var(--border-radius, 8px);
+    border: 1px solid var(--border-light, #e0e0e0);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 `;
 
 const SectionTitle = styled.h3`
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: var(--text-primary);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary, #333);
     margin-bottom: var(--spacing-sm);
-    border-bottom: 1px solid var(--border-light);
-    padding-bottom: 4px;
+    border-bottom: 2px solid var(--border-light, #e0e0e0);
+    padding-bottom: 8px;
 `;
 
-const ButtonContainer = styled.div`
+const LoadingContainer = styled.div`
     display: flex;
-    justify-content: flex-end;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-md);
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-lg);
 `;
 
-const NavButton = styled.button`
+// STYLES MISE À JOUR AVEC VOS COULEURS PERSONNALISÉES
+const SegmentedControl = styled.div`
+    display: flex;
+    /* Utilisation d'une bordure de couleur primaire plus douce */
+    border: 1px solid var(--primary-color, #69b42e);
+    border-radius: 20px;
+    overflow: hidden;
+    width: fit-content;
+    margin-bottom: var(--spacing-lg);
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const SegmentedButton = styled.button`
+    padding: 10px 20px;
+    border: none;
+    outline: none;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: var(--border-radius);
-    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.25s ease-in-out;
+    white-space: nowrap;
 
-    &:hover:not(:disabled) {
-        background: var(--primary-hover);
+    /* Styles pour le bouton actif (sélectionné) */
+    /* Utilise la --primary-color pour le fond actif */
+    background: ${(props) => (props.$active ? "var(--primary-color, #69b42e)" : "transparent")};
+    color: ${(props) => (props.$active ? "white" : "var(--text-secondary, #555)")};
+
+    &:not(:last-child) {
+        /* La bordure utilise également la couleur primaire */
+        border-right: ${(props) => (props.$active ? "none" : "1px solid var(--primary-color, #69b42e)")};
     }
-    &:disabled {
-        background: var(--disabled-color);
-        cursor: not-allowed;
+
+    /* Effet au survol (hover) pour les boutons non actifs */
+    &:not([data-active]) {
+        &:hover {
+            /* Utilise le --primary-hover pour le fond au survol */
+            background: var(--primary-hover, #5a9625);
+            color: white; /* Le texte devient blanc au survol pour le contraste */
+
+            & > svg {
+                color: white; /* L'icône devient blanche au survol */
+            }
+        }
+    }
+
+    /* Style de l'icône */
+    & > svg {
+        /* L'icône inactive utilise la couleur primaire, l'icône active est blanche */
+        color: ${(props) => (props.$active ? "white" : "var(--primary-color, #69b42e)")};
+        transition: color 0.25s;
     }
 `;
+// --- Fin Nouveaux Styles ---
 
-const OMNoteDeFrais = ({ selectedAssignmentId }) => {
-    // Form state for ExpenseReportStep
+// Fonction utilitaire pour formater les dates
+const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("fr-FR", {
+        day: "numeric",
+        month: "short",
+        year: "2-digit",
+    });
+};
+
+const OMNoteDeFrais = ({ selectedAssignmentId, onBack }) => {
+    // États du formulaire
     const [formData, setFormData] = useState({
         titled: "",
         description: "",
@@ -63,45 +121,49 @@ const OMNoteDeFrais = ({ selectedAssignmentId }) => {
     const [fieldErrors, setFieldErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Fictional expenseReportTypes data
-    const expenseReportTypes = [
-        {
-            "expenseReportTypeId": "ERT001",
-            "type": "FRAIS DE TRANSPORT/MISSION",
-            "createdAt": "2025-10-02T14:59:55.093",
-            "updatedAt": null
-        },
-        {
-            "expenseReportTypeId": "ERT002",
-            "type": "FRAIS DE RESTAURATION/RECEPTION",
-            "createdAt": "2025-10-02T14:59:55.093",
-            "updatedAt": null
-        },
-        {
-            "expenseReportTypeId": "ERT003",
-            "type": "AUTRE DEPENSE",
-            "createdAt": "2025-10-02T14:59:55.093",
-            "updatedAt": null
-        }
-    ];
+    // États pour les types de notes de frais
+    const [expenseReportTypes, setExpenseReportTypes] = useState([]);
+    const [isLoadingTypes, setIsLoadingTypes] = useState(true);
+    const [hasErrorLoadingTypes, setHasErrorLoadingTypes] = useState(false);
+
+    // État pour gérer l'affichage (formulaire ou liste)
+    // 💡 Affichage par défaut sur "list" (Liste des Paiements)
+    const [viewMode, setViewMode] = useState("list");
+
+    // Récupération des types de notes de frais
+    const fetchExpenseReportTypes = GetAllExpenseReportTypes();
+
+    useEffect(() => {
+        const loadTypes = async () => {
+            setIsLoadingTypes(true);
+            setHasErrorLoadingTypes(false);
+            try {
+                const types = await fetchExpenseReportTypes();
+                setExpenseReportTypes(types);
+            } catch (error) {
+                setHasErrorLoadingTypes(true);
+            } finally {
+                setIsLoadingTypes(false);
+            }
+        };
+
+        loadTypes();
+    }, [fetchExpenseReportTypes]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        // Clear error if value is provided
+        setFormData((prev) => ({ ...prev, [name]: value }));
         if (value) {
-            setFieldErrors(prev => ({ ...prev, [name]: [] }));
+            setFieldErrors((prev) => ({ ...prev, [name]: [] }));
         }
     };
 
     const handleFormSubmit = (e) => {
         e.preventDefault();
-        // Fictional submit logic
         setIsSubmitting(true);
-        // Simulate API call
+        // Simulation d'une soumission
         setTimeout(() => {
             setIsSubmitting(false);
-            // Reset form or add to list, etc.
             setFormData({
                 titled: "",
                 description: "",
@@ -116,23 +178,72 @@ const OMNoteDeFrais = ({ selectedAssignmentId }) => {
         }, 1000);
     };
 
+    // Gestion de l'exportation Excel
+    const handleExportExcel = () => {
+        console.log("Exportation des paiements en Excel...");
+    };
+
+    // Affichage conditionnel pour le chargement ou erreur
+    if (isLoadingTypes) {
+        return (
+            <Container>
+                <SectionTitle>{viewMode === "form" ? "Ajouter une Note de Frais" : "Liste des Paiements"}</SectionTitle>
+                <LoadingContainer>
+                    <p style={{ marginLeft: "10px" }}>Chargement des types de notes de frais...</p>
+                </LoadingContainer>
+            </Container>
+        );
+    }
+
+    if (hasErrorLoadingTypes || expenseReportTypes.length === 0) {
+        return (
+            <Container>
+                <SectionTitle>{viewMode === "form" ? "Ajouter une Note de Frais" : "Liste des Paiements"}</SectionTitle>
+                <p style={{ color: "var(--danger-color, #dc3545)", textAlign: "center", padding: "var(--spacing-md)" }}>
+                    ⚠️ Une erreur est survenue lors du chargement des types de notes de frais ou aucune donnée n'est disponible.
+                </p>
+            </Container>
+        );
+    }
+
+    // Rendu principal
     return (
         <Container>
-            <SectionTitle>Ajouter une Nouvelle Note de Frais</SectionTitle>
-            <form onSubmit={handleFormSubmit}>
-                <ExpenseReportStep
-                    formData={formData}
-                    fieldErrors={fieldErrors}
-                    isSubmitting={isSubmitting}
-                    handleInputChange={handleInputChange}
-                    expenseReportTypes={expenseReportTypes}
-                />
-                <ButtonContainer>
-                    <NavButton type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? "Enregistrement..." : "Enregistrer la Note de Frais"}
-                    </NavButton>
-                </ButtonContainer>
-            </form>
+            {/* Segmented Control avec les nouveaux labels et icônes */}
+            <SegmentedControl>
+                <SegmentedButton $active={viewMode === "list"} onClick={() => setViewMode("list")}>
+                    <ClipboardList size={16} /> Paiements
+                </SegmentedButton>
+                <SegmentedButton $active={viewMode === "form"} onClick={() => setViewMode("form")}>
+                    <Plus size={16} /> Note de Frais
+                </SegmentedButton>
+            </SegmentedControl>
+
+            {viewMode === "form" ? (
+                <>
+                    <SectionTitle>Ajouter une Nouvelle Note de Frais</SectionTitle>
+                    <form onSubmit={handleFormSubmit}>
+                        <ExpenseReportStep
+                            formData={formData}
+                            fieldErrors={fieldErrors}
+                            isSubmitting={isSubmitting}
+                            handleInputChange={handleInputChange}
+                            expenseReportTypes={expenseReportTypes}
+                        />
+                    </form>
+                </>
+            ) : (
+                <>
+                    <SectionTitle>Liste des Paiements Associés</SectionTitle>
+                    <ExpenseReportList
+                        selectedAssignmentId={selectedAssignmentId}
+                        onBack={onBack}
+                        onExportExcel={handleExportExcel}
+                        isLoading={{ exportExcel: false }}
+                        formatDate={formatDate}
+                    />
+                </>
+            )}
         </Container>
     );
 };

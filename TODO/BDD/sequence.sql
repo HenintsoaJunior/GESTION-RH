@@ -386,3 +386,31 @@ CREATE SEQUENCE seq_compensation_id
 GO
 
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_expense_report')
+    DROP SEQUENCE seq_expense_report;
+GO
+CREATE SEQUENCE seq_expense_report
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_expense_report_attachment')
+    DROP SEQUENCE seq_expense_report_attachment;
+GO
+CREATE SEQUENCE seq_expense_report_attachment
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+
+
+

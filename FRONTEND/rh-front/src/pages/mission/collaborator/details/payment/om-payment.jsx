@@ -16,17 +16,49 @@ import {
 } from "styles/generaliser/details-mission-container";
 import { NoDataMessage } from "styles/generaliser/table-container";
 import { formatNumber } from "utils/format";
-// --- Import Chart.js Dependencies ---
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
-// -------------------------------------
 import styled from "styled-components";
 
 // Enregistrement des éléments Chart.js nécessaires
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
-const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, onExportExcel, isLoading, formatDate }) => {
+// Define styled-components outside the component
+const ChartGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+`;
 
+const ChartCard = styled.div`
+    padding: 20px;
+    background: var(--bg-primary, #ffffff);
+    border: 1px solid var(--border-light, #dee2e6);
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+        color: var(--text-color-primary, #333);
+        text-align: center;
+    }
+
+    .chart-content {
+        width: 100%;
+        max-width: 300px;
+        flex-grow: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+`;
+
+const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, onExportExcel, isLoading, formatDate }) => {
     const indemnityDetails = missionPayment.dailyPaiements.map((item) => {
         const amounts = {
             breakfast: 0,
@@ -56,40 +88,6 @@ const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, 
         };
     });
 
-    const ChartGrid = styled.div`
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
-    `;
-
-    const ChartCard = styled.div`
-        padding: 20px;
-        background: var(--bg-primary, #ffffff);
-        border: 1px solid var(--border-light, #dee2e6);
-        min-height: 250px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-
-        h4 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-            color: var(--text-color-primary, #333);
-            text-align: center;
-        }
-
-        .chart-content {
-            width: 100%;
-            max-width: 300px;
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-    `;
-
     const createTooltipCallback = (unit = ",00 ") => {
         return {
             label: function (tooltipItem) {
@@ -104,7 +102,6 @@ const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, 
      * Graphique 1 : Répartition des Montants par Catégorie (Doughnut)
      */
     const IndemnityDoughnutChart = ({ indemnityDetails }) => {
-        // Calcul des totaux par catégorie
         const totalTransport = indemnityDetails.reduce((sum, item) => sum + (item.transport || 0), 0);
         const totalRepas = indemnityDetails.reduce(
             (sum, item) => sum + (item.breakfast || 0) + (item.lunch || 0) + (item.dinner || 0),
