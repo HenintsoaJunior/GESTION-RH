@@ -71,7 +71,7 @@ namespace MyApp.Api.Controllers.mission
             var updated = await _service.UpdateAsync(id, dto);
             if (!updated) return NotFound(new { message = $"Rapport de mission {id} non trouvé" });
 
-            return NoContent();
+            return Ok(new { message = $"Rapport de mission {id} mis à jour avec succès" });
         }
 
         // DELETE: api/MissionReport/{id}
@@ -81,7 +81,7 @@ namespace MyApp.Api.Controllers.mission
             var deleted = await _service.DeleteAsync(id, userId);
             if (!deleted) return NotFound(new { message = $"Rapport de mission {id} non trouvé" });
 
-            return NoContent();
+            return Ok(new { message = $"Rapport de mission {id} supprimé avec succès" });
         }
     }
 }

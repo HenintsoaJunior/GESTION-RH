@@ -410,6 +410,18 @@ CREATE SEQUENCE seq_expense_report_attachment
     CACHE 50;
 GO
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_mission_report')
+    DROP SEQUENCE seq_mission_report;
+GO
+CREATE SEQUENCE seq_mission_report
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
 
 
 

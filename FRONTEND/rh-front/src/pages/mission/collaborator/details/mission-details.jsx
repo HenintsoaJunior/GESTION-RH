@@ -6,6 +6,7 @@ import ValidationStepper from "../list/components/validation-stepper";
 import Alert from "components/alert";
 import OMPayment from "./payment/om-payment";
 import OMNoteDeFrais from "./expense/om-note-de-frais";
+import MissionReport from "./report/mission-report"; 
 import {
     PopupOverlay,
     PopupContainer,
@@ -31,14 +32,13 @@ import {
     CommentText,
     ActionButton,
 } from "styles/generaliser/details-mission-container";
-
 import {
     fetchAssignMission,
     generateMissionOrder,
 } from "services/mission/mission";
 import { useGetMissionValidationsByAssignationId } from "services/mission/validation";
 import { CreateComment, GetCommentsByMission, UpdateComment, DeleteComment } from "services/mission/comments";
-import { GetCompensationsByEmployeeAndMission,exportMissionAssignationExcel } from "services/mission/compensation"; 
+import { GetCompensationsByEmployeeAndMission, exportMissionAssignationExcel } from "services/mission/compensation";
 import { formatDate } from "utils/dateConverter";
 import styled from "styled-components";
 import "styles/mission/assignment-details-styles.css";
@@ -78,6 +78,18 @@ const ButtonOMPDF = styled(ActionButton)`
         border-color: var(--pdf-hover);
     }
 `;
+const MissionReportButton = styled(ActionButton)`
+    width:103px;
+    background-color: var(--success-color, #28a745);
+    border-color: var(--success-color, #28a745);
+
+    &:hover {
+        background-color: #ffffff;
+        color: var(--success-color, #28a745);
+        border-color: var(--success-color, #28a745);
+    }
+`;
+
 
 const ButtonContainer = styled.div`
     display: flex;
@@ -87,7 +99,6 @@ const ButtonContainer = styled.div`
 `;
 
 const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
-
     const getCompensationsByEmployeeAndMission = GetCompensationsByEmployeeAndMission();
     const getMissionValidations = useGetMissionValidationsByAssignationId();
     const createComment = CreateComment();
@@ -103,13 +114,14 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         validations: false,
         comments: false,
         missionPayment: false,
+        missionReport: false,
     });
     const [error, setError] = useState({ isOpen: false, type: "", message: "" });
     const [assignedPersons, setAssignedPersons] = useState([]);
-    const [currentPage, ] = useState(1);
-    const [pageSize, ] = useState(10);
+    const [currentPage] = useState(1);
+    const [pageSize] = useState(10);
     const [, setTotalEntries] = useState(0);
-    const [currentStep, ] = useState(0);
+    const [currentStep] = useState(0);
     const [validationSteps, setValidationSteps] = useState([]);
     const [comments, setComments] = useState([]);
     const [comment, setComment] = useState("");
@@ -122,11 +134,11 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
     });
     const [showIndemnityDetails, setShowIndemnityDetails] = useState(false);
     const [showExpenseDetails, setShowExpenseDetails] = useState(false);
+    const [showMissionReport, setShowMissionReport] = useState(false); // New state for MissionReport
     const [selectedAssignmentId, setSelectedAssignmentId] = useState(null);
-    const [detailsType, setDetailsType] = useState(null); // 'Indemnité' ou 'Note de frais'
+    const [detailsType, setDetailsType] = useState(null);
     const userId = JSON.parse(localStorage.getItem("user"))?.userId || null;
 
-    // Check if mission is fully validated
     const isMissionFullyValidated = validationSteps.every(step => {
         return step.status === "approved";
     });
@@ -138,7 +150,7 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
             message: error.message || "Erreur inconnue lors du chargement des données",
         });
     }, []);
-    
+
     const mapValidationsToSteps = useCallback((validations) => {
         const stepMapping = {
             "Directeur de tutelle": {
@@ -155,7 +167,6 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
 
         const mappedSteps = validations.map((validation) => {
             const validationType = validation.type || "Directeur de tutelle";
-            console.log("VALIDATION TEST VALUE", validation.validationDate);
             const stepInfo = stepMapping[validationType] || {
                 title: validationType === "DRH" ? "Validation RH" : "Validation Supérieur",
                 subtitle: validationType === "DRH" ? "Ressources Humaines" : "Hiérarchique",
@@ -189,7 +200,6 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         return mappedSteps;
     }, []);
 
-    // Utilisation de useCallback pour mémoriser fetchComments
     const fetchComments = useCallback(async (id) => {
         try {
             setIsLoading((prev) => ({ ...prev, comments: true }));
@@ -279,7 +289,6 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
             const response = await getCompensationsByEmployeeAndMission(employeeId, missionId);
             const { assignation, compensations, totalAmount } = response;
             setSelectedAssignmentId(assignation.assignationId);
-            // Mapper les compensations vers le format dailyPaiements attendu
             const dailyPaiements = compensations.map(comp => ({
                 date: comp.paymentDate,
                 totalAmount: comp.totalAmount,
@@ -292,7 +301,6 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                 ],
             }));
 
-            // Mapper l'assignation vers assignmentDetails
             const assignmentDetails = {
                 beneficiary: `${assignation.employee.firstName} ${assignation.employee.lastName}`,
                 matricule: assignation.employee.employeeCode,
@@ -320,9 +328,11 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
             if (assignmentType === 'Indemnité') {
                 setShowIndemnityDetails(true);
                 setShowExpenseDetails(false);
+                setShowMissionReport(false);
             } else if (assignmentType === 'Note de frais') {
                 setShowExpenseDetails(true);
                 setShowIndemnityDetails(false);
+                setShowMissionReport(false);
             }
         } catch (error) {
             handleError(error);
@@ -331,9 +341,25 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         }
     }, [missionId, getCompensationsByEmployeeAndMission, handleError]);
 
+    const handleMissionReportClick = useCallback((employeeId, assignationId) => {
+        if (!employeeId || !assignationId) {
+            setError({
+                isOpen: true,
+                type: "error",
+                message: "Employee ID et Assignation ID sont requis.",
+            });
+            return;
+        }
+        setSelectedAssignmentId(assignationId);
+        setShowMissionReport(true);
+        setShowIndemnityDetails(false);
+        setShowExpenseDetails(false);
+    }, []);
+
     const handleBackToAssignments = useCallback(() => {
         setShowIndemnityDetails(false);
         setShowExpenseDetails(false);
+        setShowMissionReport(false);
         setMissionPayment({ dailyPaiements: [], assignmentDetails: null, totalAmount: 0 });
         setSelectedAssignmentId(null);
         setDetailsType(null);
@@ -401,50 +427,50 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
     const handleExportPDF = useCallback(
         async (employeeId) => {
             if (!missionId || !employeeId) {
-            setError({
-                isOpen: true,
-                type: "error",
-                message: "Mission ID et Employee ID sont requis pour générer l'ordre de mission.",
-            });
-            return;
-            }
-
-            try {
-            const data = {
-                missionId,
-                employeeId,
-            };
-
-            await generateMissionOrder(
-                data,
-                setIsLoading, // Pass the loading state setter
-                (success) => {
-                setError({
-                    isOpen: true,
-                    type: "success",
-                    message: success.message || "Ordre de mission généré et téléchargé avec succès.",
-                });
-                },
-                (error) => {
                 setError({
                     isOpen: true,
                     type: "error",
-                    berichten: error.message || "Erreur lors de la génération de l'ordre de mission.",
-                    details: error.details || { missionId, employeeId, timestamp: new Date().toISOString() },
+                    message: "Mission ID et Employee ID sont requis pour générer l'ordre de mission.",
                 });
-                }
-            );
+                return;
+            }
+
+            try {
+                const data = {
+                    missionId,
+                    employeeId,
+                };
+
+                await generateMissionOrder(
+                    data,
+                    setIsLoading,
+                    (success) => {
+                        setError({
+                            isOpen: true,
+                            type: "success",
+                            message: success.message || "Ordre de mission généré et téléchargé avec succès.",
+                        });
+                    },
+                    (error) => {
+                        setError({
+                            isOpen: true,
+                            type: "error",
+                            message: error.message || "Erreur lors de la génération de l'ordre de mission.",
+                            details: error.details || { missionId, employeeId, timestamp: new Date().toISOString() },
+                        });
+                    }
+                );
             } catch (error) {
-            setError({
-                isOpen: true,
-                type: "error",
-                message: `Erreur inattendue lors de la génération de l'ordre de mission : ${error.message}`,
-                details: { missionId, employeeId, timestamp: new Date().toISOString() },
-            });
+                setError({
+                    isOpen: true,
+                    type: "error",
+                    message: `Erreur inattendue lors de la génération de l'ordre de mission : ${error.message}`,
+                    details: { missionId, employeeId, timestamp: new Date().toISOString() },
+                });
             }
         },
         [missionId, setError, setIsLoading]
-        );
+    );
 
     const handleExportExcel = () => {
         const exportFilters = { missionId };
@@ -519,7 +545,7 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                     </PopupTitle>
                     <CloseButton
                         onClick={handleClose}
-                        disabled={isLoading.mission || isLoading.assignMissions || isLoading.validations || isLoading.comments || isLoading.missionPayment}
+                        disabled={isLoading.mission || isLoading.assignMissions || isLoading.validations || isLoading.comments || isLoading.missionPayment || isLoading.missionReport}
                         aria-label="Fermer la fenêtre"
                     >
                         <X size={24} />
@@ -534,9 +560,9 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                         onClose={() => setError({ ...error, isOpen: false })}
                     />
 
-                    {!(showIndemnityDetails || showExpenseDetails) && <ValidationStepper steps={validationSteps} currentStep={currentStep} />}
+                    {!(showIndemnityDetails || showExpenseDetails || showMissionReport) && <ValidationStepper steps={validationSteps} currentStep={currentStep} />}
 
-                    {(isLoading.assignMissions || isLoading.validations || isLoading.comments || isLoading.missionPayment) ? (
+                    {(isLoading.assignMissions || isLoading.validations || isLoading.comments || isLoading.missionPayment || isLoading.missionReport) ? (
                         <LoadingContainer>Chargement des informations de la mission...</LoadingContainer>
                     ) : (
                         <ContentArea>
@@ -560,6 +586,12 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                                     onExportExcel={handleExportExcel}
                                     isLoading={isLoading}
                                     formatDate={formatDate}
+                                />
+                            ) : showMissionReport ? (
+                                <MissionReport
+                                    userId={userId}
+                                    assignationId={selectedAssignmentId}
+                                    onBack={handleBackToAssignments}
                                 />
                             ) : (
                                 <>
@@ -710,6 +742,7 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                                                                                     >
                                                                                         {buttonText}
                                                                                     </OMPaymentButton>
+                                                                                
                                                                                 </ButtonContainer>
                                                                             )}
                                                                         </InfoItem>
@@ -722,6 +755,19 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                                                                                     >
                                                                                         <Download size={16} /> OM PDF
                                                                                     </ButtonOMPDF>
+                                                                                </ButtonContainer>
+                                                                            )}
+                                                                        </InfoItem>
+                                                                        <InfoItem>
+                                                                            {shouldShowButton && (
+                                                                                <ButtonContainer>
+                                                                                   
+                                                                                    <MissionReportButton
+                                                                                        onClick={() => handleMissionReportClick(assignment.employeeId, assignment.assignationId)}
+                                                                                        disabled={isLoading.missionReport}
+                                                                                    >
+                                                                                    Rendu
+                                                                                    </MissionReportButton>
                                                                                 </ButtonContainer>
                                                                             )}
                                                                         </InfoItem>
@@ -827,7 +873,6 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                         </ContentArea>
                     )}
                 </PopupContent>
-
             </PopupContainer>
         </PopupOverlay>
     );
