@@ -30,9 +30,28 @@ Modifiez le fichier de configuration du **Backend** pour établir la connexion �
 Remplacez les placeholders dans la section `"ConnectionStrings"` par vos identifiants réels :
 
 ```json
-"ConnectionStrings": {
-  "DefaultConnection": "Server=votre server ;Database=votre database ;User ID=votre userId ;Password=votre password;TrustServerCertificate=True;"
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=RH;User ID=sa;Password=Carasco@20;TrustServerCertificate=True;"
+  },
+  "LdapSettings": {
+    "DomainPath": "LDAP://corp.ravinala",
+    "DomainPath1": "corp.ravinala"
+  },
+  "Jwt": {
+    "Issuer": "http://localhost:5183",
+    "Audience": "http://localhost:3000",
+    "Key": "VotreCléSecrèteTrèsLongueEtSûre1234567890!"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
 }
+
 ````
 
 ### 1.2 Configuration de l'API (Frontend)
