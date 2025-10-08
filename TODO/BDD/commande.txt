@@ -1,6 +1,8 @@
-sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i table.sql
-sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i sequence.sql
-sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i data.sql
+docker cp /home/dax/Documents/GitHub/GESTION-RH/TODO/BDD/. sqlserver2019:/BDD
+
+sqlcmd -S localhost -U sa -P Carasco@20 -d RH -i /BDD/table.sql
+sqlcmd -S localhost -U sa -P Carasco@20 -d RH -i /BDD/sequence.sql
+sqlcmd -S localhost -U sa -P Carasco@20 -d RH -i /BDD/data.sql
 
 
 

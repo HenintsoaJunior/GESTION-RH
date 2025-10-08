@@ -5,6 +5,12 @@ import styled from "styled-components";
 import isPropValid from "@emotion/is-prop-valid";
 import {
     SectionTitle,
+    DetailSection,
+    InfoGrid,
+    InfoItem,
+    InfoLabel,
+    InfoValue,
+    StatusBadge,
     IndemnityTable,
     TableHeader,
     TableCell,
@@ -13,7 +19,7 @@ import {
 import { NoDataMessage } from "styles/generaliser/table-container";
 import { formatNumber } from "utils/format";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { GetExpenseReportsByAssignationId } from "services/mission/expense";
+import { GetExpenseReportsByAssignationId, GetStatusByAssignationId } from "services/mission/expense";
 import { fetchMissionAssignationById } from "services/mission/mission";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
@@ -48,6 +54,16 @@ const ModernCard = styled.div`
     background: ${COLORS.cardBg};
     padding: 24px;
     margin-bottom: 24px;
+`;
+
+const ResponsiveTableWrapper = styled.div`
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+
+    @media (max-width: 768px) {
+        font-size: 0.875rem;
+    }
 `;
 
 const FolderContainer = styled.div`
@@ -477,13 +493,13 @@ const ExpenseTypeDoughnutChart = ({ expenseReports }) => {
                         const value = tooltipItem.raw || 0;
                         const total = tooltipItem.dataset.data.reduce((a, b) => a + b, 0);
                         const percentage = total ? ((value / total) * 100).toFixed(1) : 0;
-                        return `${label}: ${formatNumber(value)},00 (${percentage}%)`;
+                        return `${label}: ${formatNumber(value)},00 MGA (${percentage}%)`;
                     },
                 },
             },
             centerText: {
                 display: true,
-                text: `${formatNumber(totalAmount)},00`,
+                text: `${formatNumber(totalAmount)},00 MGA`,
             },
         },
         cutout: "65%",
@@ -509,8 +525,11 @@ const ExpenseReportList = ({ selectedAssignmentId, onBack, isLoading, formatDate
     const [openFolderId, setOpenFolderId] = useState(null);
     const [missionAssignation, setMissionAssignation] = useState(null);
     const [isLoadingAssignation, setIsLoadingAssignation] = useState({ missionAssignation: false });
+    const [statuses, setStatuses] = useState([]);
+    const [isLoadingStatuses, setIsLoadingStatuses] = useState(false);
 
     const getExpenseReports = GetExpenseReportsByAssignationId();
+    const getStatusByAssignationId = GetStatusByAssignationId();
 
     useEffect(() => {
         if (selectedAssignmentId) {
@@ -528,6 +547,36 @@ const ExpenseReportList = ({ selectedAssignmentId, onBack, isLoading, formatDate
             fullName: `${firstName || ""} ${lastName || ""}`.trim() || "N/A",
         };
     }, [missionAssignation]);
+
+    const fetchStatuses = useCallback(async () => {
+        if (!selectedAssignmentId) {
+            setStatuses([]);
+            return;
+        }
+
+        setIsLoadingStatuses(true);
+        try {
+            const response = await getStatusByAssignationId(selectedAssignmentId);
+            setStatuses(Array.isArray(response) ? response : []);
+        } catch (err) {
+            console.error("Error fetching statuses:", err);
+            setStatuses([]);
+        } finally {
+            setIsLoadingStatuses(false);
+        }
+    }, [selectedAssignmentId, getStatusByAssignationId]);
+
+    useEffect(() => {
+        fetchStatuses();
+    }, [fetchStatuses]);
+
+    const isReimbursed = useMemo(() => {
+        return statuses.length > 0 && statuses.every((status) => status.toLowerCase() === "reimbursed");
+    }, [statuses]);
+
+    const translateStatus = (isReimbursed) => {
+        return isReimbursed ? "Remboursé" : "En attente";
+    };
 
     const fetchExpenseReports = useCallback(async () => {
         if (!selectedAssignmentId) return;
@@ -583,7 +632,8 @@ const ExpenseReportList = ({ selectedAssignmentId, onBack, isLoading, formatDate
         setOpenFolderId((prevId) => (prevId === userId ? null : userId));
     };
 
-    const isTotalLoading = isLoadingReports || isLoadingAssignation.missionAssignation;
+    const isTotalLoading = isLoadingReports || isLoadingAssignation.missionAssignation || isLoadingStatuses;
+    const hasData = expenseReports.length > 0 || attachments.length > 0;
 
     return (
         <>
@@ -603,71 +653,114 @@ const ExpenseReportList = ({ selectedAssignmentId, onBack, isLoading, formatDate
             </div>
 
             {isTotalLoading ? (
-                <NoDataMessage>Chargement...</NoDataMessage>
+                <NoDataMessage>⏳ Chargement des données...</NoDataMessage>
             ) : error ? (
                 <NoDataMessage style={{ color: COLORS.danger }}>⚠️ {error}</NoDataMessage>
-            ) : expenseReports.length > 0 || attachments.length > 0 ? (
-                <>
-                    <SectionTitle>Analyse Visuelle</SectionTitle>
-                    <ChartGrid>
-                        <ExpenseTypeDoughnutChart expenseReports={expenseReports} />
-                    </ChartGrid>
-
-                    <SectionTitle>Pièces Jointes</SectionTitle>
-                    <ModernCard>
-                        {Object.keys(groupedData).map((userId) => {
-                            const employeeData = groupedData[userId];
-                            return (
-                                <EmployeeAttachments
-                                    key={userId}
-                                    userName={employeeData.userName}
-                                    attachments={employeeData.attachments}
-                                    isOpen={openFolderId === userId}
-                                    onToggle={() => handleToggleFolder(userId)}
-                                />
-                            );
-                        })}
-                    </ModernCard>
-
-                    <SectionTitle>Détail des Frais</SectionTitle>
-                    <IndemnityTable>
-                        <thead>
-                            <tr>
-                                <TableHeader>Titre</TableHeader>
-                                <TableHeader>Description</TableHeader>
-                                <TableHeader>Type</TableHeader>
-                                <TableHeader>Devise</TableHeader>
-                                <TableHeader>Montant</TableHeader>
-                                <TableHeader>Taux</TableHeader>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {expenseReports.map((report, index) => (
-                                <tr key={report.id || index}>
-                                    <TableCell>{report.titled || "-"}</TableCell>
-                                    <TableCell>{report.description || "-"}</TableCell>
-                                    <TableCell>
-                                        <Badge $type={report.type}>{report.type || "-"}</Badge>
-                                    </TableCell>
-                                    <TableCell>{report.currencyUnit || "-"}</TableCell>
-                                    <TableCell>{report.amount ? `${formatNumber(report.amount)},00` : "-"}</TableCell>
-                                    <TableCell>{report.rate ? `${formatNumber(report.rate)}` : "-"}</TableCell>
-                                </tr>
-                            ))}
-                            <TotalRow>
-                                <TableCell colSpan={4}>
-                                    <strong>Total</strong>
-                                </TableCell>
-                                <TableCell>
-                                    <strong>{formatNumber(totalAmount)},00</strong>
-                                </TableCell>
-                                <TableCell></TableCell>
-                            </TotalRow>
-                        </tbody>
-                    </IndemnityTable>
-                </>
             ) : (
-                <NoDataMessage>Aucune donnée disponible</NoDataMessage>
+                <>
+                    <DetailSection>
+                        <SectionTitle>Informations Générales</SectionTitle>
+                        <InfoGrid>
+                            <InfoItem><InfoLabel>ID Assignation</InfoLabel><InfoValue>{selectedAssignmentId}</InfoValue></InfoItem>
+                            <InfoItem>
+                                <InfoLabel>Statut</InfoLabel>
+                                <StatusBadge className={isReimbursed ? "success" : "pending"}>
+                                    {translateStatus(isReimbursed).toUpperCase()}
+                                </StatusBadge>
+                            </InfoItem>
+                            <InfoItem><InfoLabel>Employé</InfoLabel><InfoValue>{employeeInfo.fullName}</InfoValue></InfoItem>
+                            <InfoItem><InfoLabel>Matricule</InfoLabel><InfoValue>{missionAssignation?.employee?.employeeCode || ""}</InfoValue></InfoItem>
+                            <InfoItem><InfoLabel>Mission</InfoLabel><InfoValue>{missionAssignation?.mission?.name || ""}</InfoValue></InfoItem>
+                            <InfoItem><InfoLabel>Lieu</InfoLabel><InfoValue>{missionAssignation?.mission?.lieu?.nom || ""}</InfoValue></InfoItem>
+                            <InfoItem><InfoLabel>Date Départ</InfoLabel><InfoValue>{formatDate(missionAssignation?.departureDate)}</InfoValue></InfoItem>
+                            <InfoItem><InfoLabel>Date Retour</InfoLabel><InfoValue>{formatDate(missionAssignation?.returnDate)}</InfoValue></InfoItem>
+                            <InfoItem><InfoLabel>Durée</InfoLabel><InfoValue>{missionAssignation?.duration || 0} jours</InfoValue></InfoItem>
+                            <InfoItem><InfoLabel>Total Montant</InfoLabel><InfoValue><strong>{totalAmount ? `${formatNumber(totalAmount)},00 ` : "0,00 "} MGA</strong></InfoValue></InfoItem>
+                            <InfoItem><InfoLabel>Créée le</InfoLabel><InfoValue>{formatDate(missionAssignation?.createdAt)}</InfoValue></InfoItem>
+                        </InfoGrid>
+                    </DetailSection>
+
+                    {hasData ? (
+                        <>
+                            <SectionTitle>Analyse Visuelle</SectionTitle>
+                            <ChartGrid>
+                                <ExpenseTypeDoughnutChart expenseReports={expenseReports} />
+                            </ChartGrid>
+
+                            {attachments.length > 0 && (
+                                <>
+                                    <SectionTitle>Pièces Jointes</SectionTitle>
+                                    <ModernCard>
+                                        {Object.keys(groupedData).map((userId) => {
+                                            const employeeData = groupedData[userId];
+                                            return (
+                                                <EmployeeAttachments
+                                                    key={userId}
+                                                    userName={employeeData.userName}
+                                                    attachments={employeeData.attachments}
+                                                    isOpen={openFolderId === userId}
+                                                    onToggle={() => handleToggleFolder(userId)}
+                                                />
+                                            );
+                                        })}
+                                    </ModernCard>
+                                </>
+                            )}
+
+                            {expenseReports.length > 0 && (
+                                <>
+                                    <SectionTitle>Détail des Frais</SectionTitle>
+                                    <ResponsiveTableWrapper>
+                                        <IndemnityTable>
+                                            <thead>
+                                                <tr>
+                                                    <TableHeader>Titre</TableHeader>
+                                                    <TableHeader>Description</TableHeader>
+                                                    <TableHeader>Type</TableHeader>
+                                                    <TableHeader>Devise</TableHeader>
+                                                    <TableHeader>Montant</TableHeader>
+                                                    <TableHeader>Taux</TableHeader>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {expenseReports.map((report, index) => (
+                                                    <tr key={report.id || index}>
+                                                        <TableCell>{report.titled || "-"}</TableCell>
+                                                        <TableCell>{report.description || "-"}</TableCell>
+                                                        <TableCell>
+                                                            <Badge $type={report.type}>{report.type || "-"}</Badge>
+                                                        </TableCell>
+                                                        <TableCell>{report.currencyUnit || "MGA"}</TableCell>
+                                                        <TableCell>{report.amount ? `${formatNumber(report.amount)},00 MGA` : "-"}</TableCell>
+                                                        <TableCell>{report.rate ? `${formatNumber(report.rate)}` : "-"}</TableCell>
+                                                    </tr>
+                                                ))}
+                                                <TotalRow>
+                                                    <TableCell colSpan={4}>
+                                                        <strong>Total</strong>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <strong>{totalAmount ? `${formatNumber(totalAmount)},00 MGA` : "0,00 MGA"}</strong>
+                                                    </TableCell>
+                                                    <TableCell></TableCell>
+                                                </TotalRow>
+                                            </tbody>
+                                        </IndemnityTable>
+                                    </ResponsiveTableWrapper>
+                                </>
+                            )}
+                        </>
+                    ) : (
+                        <NoDataMessage>
+                            <div style={{ textAlign: "center", padding: "40px" }}>
+                                <div style={{ fontSize: "48px", marginBottom: "16px" }}>📭</div>
+                                <p style={{ margin: 0, color: COLORS.text.secondary }}>
+                                    Aucune note de frais disponible pour cette mission
+                                </p>
+                            </div>
+                        </NoDataMessage>
+                    )}
+                </>
             )}
         </>
     );

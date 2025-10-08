@@ -1,4 +1,3 @@
--- Drop sequences if they exist and create them
 IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_direction_id')
     DROP SEQUENCE seq_direction_id;
 GO
@@ -98,6 +97,7 @@ GO
 IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_employee_category_id')
     DROP SEQUENCE seq_employee_category_id;
 GO
+
 CREATE SEQUENCE seq_employee_category_id
     AS INT
     START WITH 1

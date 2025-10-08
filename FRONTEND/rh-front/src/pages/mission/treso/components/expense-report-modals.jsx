@@ -13,6 +13,11 @@ import {
   PopupContent,
   DetailSection,
   SectionTitle,
+  InfoGrid,
+  InfoItem,
+  InfoLabel,
+  InfoValue,
+  StatusBadge,
   IndemnityTable,
   TableHeader,
   TableCell,
@@ -558,6 +563,10 @@ const ExpenseReportModals = ({
     return statuses.length > 0 && statuses.every((status) => status.toLowerCase() === "reimbursed");
   }, [statuses]);
 
+  const translateStatus = (isReimbursed) => {
+    return isReimbursed ? "Remboursé" : "En attente";
+  };
+
   // Charger les notes de frais
   const fetchExpenseReports = useCallback(async () => {
     if (!selectedAssignationId) {
@@ -716,89 +725,115 @@ const ExpenseReportModals = ({
                 Fermer
               </button>
             </div>
-          ) : hasData ? (
+          ) : (
             <>
               <DetailSection>
-                <SectionTitle>Analyse Visuelle</SectionTitle>
-                <ChartGrid>
-                  <ExpenseTypeDoughnutChart expenseReports={expenseReports} />
-                </ChartGrid>
+                <SectionTitle>Informations Générales</SectionTitle>
+                <InfoGrid>
+                  <InfoItem><InfoLabel>ID Assignation</InfoLabel><InfoValue>{selectedAssignationId}</InfoValue></InfoItem>
+                  <InfoItem>
+                    <InfoLabel>Statut</InfoLabel>
+                    <StatusBadge className={isReimbursed ? "success" : "pending"}>
+                      {translateStatus(isReimbursed).toUpperCase()}
+                    </StatusBadge>
+                  </InfoItem>
+                  <InfoItem><InfoLabel>Employé</InfoLabel><InfoValue>{employeeInfo.fullName}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Matricule</InfoLabel><InfoValue>{missionAssignation?.employee?.employeeCode || ""}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Mission</InfoLabel><InfoValue>{missionAssignation?.mission?.name || ""}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Lieu</InfoLabel><InfoValue>{missionAssignation?.mission?.lieu?.nom || ""}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Date Départ</InfoLabel><InfoValue>{formatDate(missionAssignation?.departureDate)}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Date Retour</InfoLabel><InfoValue>{formatDate(missionAssignation?.returnDate)}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Durée</InfoLabel><InfoValue>{missionAssignation?.duration} jours</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Total Montant</InfoLabel><InfoValue><strong>{totalAmount ? `${formatNumber(totalAmount)},00 ` : "0,00 "}</strong></InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Créée le</InfoLabel><InfoValue>{formatDate(missionAssignation?.createdAt)}</InfoValue></InfoItem>
+                </InfoGrid>
               </DetailSection>
 
-              {attachments.length > 0 && (
-                <DetailSection>
-                  <SectionTitle>Pièces Jointes</SectionTitle>
-                  {Object.keys(groupedData).map((userId) => {
-                    const employeeData = groupedData[userId];
-                    return (
-                      <EmployeeAttachments
-                        key={userId}
-                        userName={employeeData.userName}
-                        attachments={employeeData.attachments}
-                        isOpen={openFolderId === userId}
-                        onToggle={() => handleToggleFolder(userId)}
-                      />
-                    );
-                  })}
-                </DetailSection>
-              )}
+              {hasData ? (
+                <>
+                  <DetailSection>
+                    <SectionTitle>Analyse Visuelle</SectionTitle>
+                    <ChartGrid>
+                      <ExpenseTypeDoughnutChart expenseReports={expenseReports} />
+                    </ChartGrid>
+                  </DetailSection>
 
-              {expenseReports.length > 0 && (
-                <DetailSection>
-                  <SectionTitle>Détail des Frais</SectionTitle>
-                  <ResponsiveTableWrapper>
-                    <IndemnityTable>
-                      <thead>
-                        <tr>
-                          <TableHeader>Titre</TableHeader>
-                          <TableHeader>Description</TableHeader>
-                          <TableHeader>Type</TableHeader>
-                          <TableHeader>Devise</TableHeader>
-                          <TableHeader>Montant</TableHeader>
-                          <TableHeader>Taux</TableHeader>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {expenseReports.map((report, index) => (
-                          <tr key={report?.id || index}>
-                            <TableCell>{report?.titled || "-"}</TableCell>
-                            <TableCell>{report?.description || "-"}</TableCell>
-                            <TableCell>
-                              <Badge $type={report?.type}>{report?.type || "Non spécifié"}</Badge>
-                            </TableCell>
-                            <TableCell>{report?.currencyUnit || "MGA"}</TableCell>
-                            <TableCell>
-                              {report?.amount ? `${formatNumber(Number(report.amount))},00` : "0,00"}
-                            </TableCell>
-                            <TableCell>
-                              {report?.rate ? formatNumber(Number(report.rate)) : "-"}
-                            </TableCell>
-                          </tr>
-                        ))}
-                        <TotalRow>
-                          <TableCell colSpan={4}>
-                            <strong>Total</strong>
-                          </TableCell>
-                          <TableCell>
-                            <strong>{formatNumber(totalAmount)},00</strong>
-                          </TableCell>
-                          <TableCell></TableCell>
-                        </TotalRow>
-                      </tbody>
-                    </IndemnityTable>
-                  </ResponsiveTableWrapper>
-                </DetailSection>
+                  {attachments.length > 0 && (
+                    <DetailSection>
+                      <SectionTitle>Pièces Jointes</SectionTitle>
+                      {Object.keys(groupedData).map((userId) => {
+                        const employeeData = groupedData[userId];
+                        return (
+                          <EmployeeAttachments
+                            key={userId}
+                            userName={employeeData.userName}
+                            attachments={employeeData.attachments}
+                            isOpen={openFolderId === userId}
+                            onToggle={() => handleToggleFolder(userId)}
+                          />
+                        );
+                      })}
+                    </DetailSection>
+                  )}
+
+                  {expenseReports.length > 0 && (
+                    <DetailSection>
+                      <SectionTitle>Détail des Frais</SectionTitle>
+                      <ResponsiveTableWrapper>
+                        <IndemnityTable>
+                          <thead>
+                            <tr>
+                              <TableHeader>Titre</TableHeader>
+                              <TableHeader>Description</TableHeader>
+                              <TableHeader>Type</TableHeader>
+                              <TableHeader>Devise</TableHeader>
+                              <TableHeader>Montant</TableHeader>
+                              <TableHeader>Taux</TableHeader>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {expenseReports.map((report, index) => (
+                              <tr key={report?.id || index}>
+                                <TableCell>{report?.titled || "-"}</TableCell>
+                                <TableCell>{report?.description || "-"}</TableCell>
+                                <TableCell>
+                                  <Badge $type={report?.type}>{report?.type || "Non spécifié"}</Badge>
+                                </TableCell>
+                                <TableCell>{report?.currencyUnit || "MGA"}</TableCell>
+                                <TableCell>
+                                  {report?.amount ? `${formatNumber(Number(report.amount))},00` : "0,00"}
+                                </TableCell>
+                                <TableCell>
+                                  {report?.rate ? formatNumber(Number(report.rate)) : "-"}
+                                </TableCell>
+                              </tr>
+                            ))}
+                            <TotalRow>
+                              <TableCell colSpan={4}>
+                                <strong>Total</strong>
+                              </TableCell>
+                              <TableCell>
+                                <strong>{totalAmount ? `${formatNumber(totalAmount)},00 ` : "0,00 "}</strong>
+                              </TableCell>
+                              <TableCell></TableCell>
+                            </TotalRow>
+                          </tbody>
+                        </IndemnityTable>
+                      </ResponsiveTableWrapper>
+                    </DetailSection>
+                  )}
+                </>
+              ) : (
+                <NoDataMessage>
+                  <div style={{ textAlign: "center", padding: "40px" }}>
+                    <div style={{ fontSize: "48px", marginBottom: "16px" }}>📭</div>
+                    <p style={{ margin: 0, color: COLORS.text.secondary }}>
+                      Aucune note de frais disponible pour cette mission
+                    </p>
+                  </div>
+                </NoDataMessage>
               )}
             </>
-          ) : (
-            <NoDataMessage>
-              <div style={{ textAlign: "center", padding: "40px" }}>
-                <div style={{ fontSize: "48px", marginBottom: "16px" }}>📭</div>
-                <p style={{ margin: 0, color: COLORS.text.secondary }}>
-                  Aucune note de frais disponible pour cette mission
-                </p>
-              </div>
-            </NoDataMessage>
           )}
         </PopupContent>
 
