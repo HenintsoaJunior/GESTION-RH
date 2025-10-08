@@ -51,7 +51,7 @@ const ChartWrapper = styled.div`
 const ChartSummary = styled.div`
   flex-grow: 1;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 20px;
   padding: 20px;
   background: #f8f9fa;
@@ -60,7 +60,7 @@ const ChartSummary = styled.div`
 
   @media (max-width: 900px) {
     min-width: unset;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     border-left: none;
     border-top: 1px solid #dee2e6;
   }
@@ -95,39 +95,46 @@ const SummaryStatCard = styled.div`
 `;
 
 const BackButton = styled.button`
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 32px;
-  font-size: 1rem;
-  font-weight: 600;
-  border: 2px solid #e2e8f0;
-  background: #f8f9fa;
-  color: #475569;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: none;
+  color: var(--primary-color);
   cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s ease;
+  border: none;
+  text-decoration: none;
+  border-radius: 6px;
 
   &:hover {
-    background: #ffffff;
-    color: #0f172a;
-    border-color: #cbd5e1;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    background: #eff6ff;
+    text-decoration: none;
+    color: var(--primary-color);
+    transform: translateX(-2px);
   }
 
   &:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    background: #dbeafe;
+    color: var(--primary-color);
+    transform: translateX(-1px);
   }
 
   &:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
   }
 
   span {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover span {
+    transform: translateX(-2px);
   }
 `;
 
@@ -190,7 +197,6 @@ const ExpenseReportPage = ({ setCurrentPage }) => {
     isLoading,
     alert,
     setAlert,
-    stats,
     selectedAssignationId,
     showDetailsExpenseReport,
     setShowDetailsExpenseReport,
@@ -261,11 +267,6 @@ const ExpenseReportPage = ({ setCurrentPage }) => {
         </ChartWrapper>
         
         <ChartSummary>
-          <SummaryStatCard className="total">
-            <StatNumber>{isLoading.stats ? "..." : formatNumber(stats.totalAmount)},00</StatNumber>
-            <StatLabel>Montant Total</StatLabel>
-          </SummaryStatCard>
-
           <SummaryStatCard className="pending">
             <StatNumber>{isLoadingCounts ? "..." : formatNumber(notReimbursedCount)}</StatNumber>
             <StatLabel>Rapports En Attente</StatLabel>

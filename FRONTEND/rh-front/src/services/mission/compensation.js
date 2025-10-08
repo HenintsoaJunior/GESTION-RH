@@ -107,7 +107,8 @@ export const GetTotalNotPaidAmount = () => {
   return useCallback(async () => {
     try {
       const response = await apiGet(`/api/Compensation/total-notpaid`);
-      return response.TotalNotPaidAmount || 0;
+
+      return response.totalNotPaidAmount || 0;
     } catch (error) {
       handleValidationError(error);
       throw error;
