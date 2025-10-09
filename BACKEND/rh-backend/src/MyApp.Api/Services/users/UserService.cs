@@ -28,6 +28,7 @@ namespace MyApp.Api.Services.users
         Task<UserDto?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
         Task<UserDto?> GetDirectorByDepartmentAsync(string department);
+        Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId);
     }
 
     public class UserService : IUserService
@@ -153,6 +154,15 @@ namespace MyApp.Api.Services.users
             return collaborators.Select(MapToDto);
         }
 
+        public async Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            var collaborators = await _repository.GetUserInfo(userId);
+            return collaborators.Select(Map2ToDto);
+        }
+
         public async Task<UserDto?> LoginAsync(string email, string password)
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
@@ -177,6 +187,22 @@ namespace MyApp.Api.Services.users
                 Position = user.Position,
                 SuperiorId = user.SuperiorId,
                 SuperiorName = user.SuperiorName
+            };
+        }
+
+        private static UserInfoDto Map2ToDto(User user)
+        {
+            return new UserInfoDto
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                Name = user.Name,
+                Matricule = user.Matricule,
+                Department = user.Department,
+                Position = user.Position,
+                SuperiorId = user.SuperiorId,
+                SuperiorName = user.SuperiorName,
+                Roles = user.UserRoles ?? new List<UserRole>()
             };
         }
     }

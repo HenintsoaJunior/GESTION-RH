@@ -1,32 +1,30 @@
 using Microsoft.EntityFrameworkCore;
-using MyApp.Api.Entities.application;
-using MyApp.Api.Entities.candidates;
 using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.direction;
 using MyApp.Api.Entities.employee;
-using MyApp.Api.Entities.jobs;
 using MyApp.Api.Entities.logs;
 using MyApp.Api.Entities.menu;
 using MyApp.Api.Entities.mission;
-using MyApp.Api.Entities.recruitment;
+using MyApp.Api.Entities.notifications;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.users;
-using MyApp.Api.Entities.users_simple;
 
 namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
-        public DbSet<MissionReport>  MissionReports { get; set; }
+        public DbSet<ExpenseReportAttachment> ExpenseReportAttachments { get; set; }
+        public DbSet<Notifications> Notifications { get; set; }
+        public DbSet<NotificationRecipients> NotificationRecipients { get; set; }
+        public DbSet<MissionComments> MissionComments { get; set; }
+        public DbSet<Comments> Comments { get; set; }
+        public DbSet<Compensation> Compensations { get; set; }
+        public DbSet<MissionReport> MissionReports { get; set; }
         public DbSet<ExpenseReport>  ExpenseReports { get; set; }
         public DbSet<ExpenseReportType>  ExpenseReportTypes { get; set; }
         public DbSet<MissionBudget>  MissionBudgets { get; set; }
         public DbSet<Log>  Logs { get; set; }
         public DbSet<MissionValidation>  MissionValidations { get; set; }
-        public DbSet<CvDetail> CvDetails { get; set; }
-        public DbSet<ApplicationComment> ApplicationComments { get; set; }
-        public DbSet<Application> Applications { get; set; }
-        public DbSet<Candidate> Candidates { get; set; }
         public DbSet<CategoriesOfEmployee> CategoriesOfEmployees { get; set; }
         public DbSet<MissionAssignation> MissionAssignations { get; set; }
         public DbSet<Lieu> Lieux { get; set; }
@@ -35,8 +33,6 @@ namespace MyApp.Api.Data
         public DbSet<Transport> Transports { get; set; } 
         public DbSet<ExpenseType> ExpenseTypes { get; set; } 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-        public DbSet<JobOffer> JobOffers { get; set; } 
-        public DbSet<JobDescription> JobDescriptions { get; set; } 
         public DbSet<EmployeeNationality> EmployeeNationalities { get; set; } 
         public DbSet<Employee> Employees { get; set; } 
         public DbSet<WorkingTimeType> WorkingTimeTypes { get; set; }  
@@ -52,35 +48,14 @@ namespace MyApp.Api.Data
         public DbSet<Direction> Directions { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<User> Users { get; set; }
-        
         public DbSet<Role>  Roles { get; set; }
-        
-        public DbSet<Habilitation> Habilitations { get; set; }
-        
+        public DbSet<Habilitation> Habilitations { get; set; }        
         public DbSet<RoleHabilitation> RoleHabilitations { get; set; }
         public DbSet<Module> Modules { get; set; }
         public DbSet<Menu> Menus { get; set; }
         
         public DbSet<MenuRole> MenuRoles { get; set; }
         public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
-        public DbSet<RecruitmentRequestDetail> RecruitmentRequestDetails { get; set; }
-
-        //RECRUTMENT
-        public DbSet<RecruitmentRequest> RecruitmentRequests { get; set; } 
-        public DbSet<RecruitmentRequestReplacementReason> RecruitmentRequestReplacementReasons { get; set; } 
-        public DbSet<ReplacementReason> ReplacementReasons { get; set; }  
-        public DbSet<RecruitmentReason> RecruitmentReasons { get; set; }  
-        public DbSet<RecruitmentValidation> RecruitmentValidations { get; set; }
-        public DbSet<Comments> Comments { get; set; }
-        public DbSet<RecruitmentRequestComments> RecruitmentRequestComments { get; set; }
-
-        //USERS SIMPLE
-        public DbSet<UserSimple> UsersSimple { get; set; }
-        public DbSet<Education> Educations { get; set; }
-        public DbSet<Experience> Experiences { get; set; }
-        public DbSet<Skill> Skills { get; set; }
-        public DbSet<PersonalQuality> PersonalQualities { get; set; }
-        public DbSet<Language> Languages { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Menu>()

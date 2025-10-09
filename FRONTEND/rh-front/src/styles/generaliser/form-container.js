@@ -83,6 +83,18 @@ export const FormTable = styled.table`
   margin-top: var(--spacing-md);
   border-collapse: separate;
   border-spacing: 0 4px;
+  & th {
+    background-color: var(--bg-secondary);
+    font-weight: 700;
+    color: var(--text-primary);
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: 2px solid var(--border-light);
+    white-space: nowrap;
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
   @media (max-width: 480px) {
     display: block;
     & tr {
@@ -114,7 +126,7 @@ export const FormFieldCell = styled.td`
   font-weight: 600;
   color: var(--text-secondary);
   font-size: var(--font-size-md);
-  padding: var(--spacing-xs);
+  padding: var(--spacing-sm);
   vertical-align: top;
   @media (max-width: 480px) {
     display: block;
@@ -123,11 +135,13 @@ export const FormFieldCell = styled.td`
 `;
 
 export const FormLabel = styled.label`
-  margin-bottom: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
+  margin-bottom: var(--spacing-xxs);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
   color: var(--text-secondary);
   display: block;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
 `;
 
 export const FormLabelRequired = styled(FormLabel)`
@@ -423,6 +437,17 @@ export const ResetButton = styled(SubmitButton)`
 `;
 
 export const AddButton = styled(SubmitButton)`
+  margin-top: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  & svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
+
+export const Button = styled(SubmitButton)`
   margin-top: var(--spacing-md);
   display: flex;
   align-items: center;
@@ -755,56 +780,58 @@ export const DurationBadge = styled.span`
   display: inline-block;
 `;
 
-// Stepper Styles
 export const StepperWrapper = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--spacing-lg);
-  position: relative;
-  &::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--border-light);
-    z-index: 1;
-  }
+ display: flex;
+ justify-content: space-between;
+ margin-bottom: var(--spacing-lg);
+ position: relative;
+ &::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border-light);
+  z-index: 1;
+ }
 `;
 
 export const StepItem = styled.div`
+ display: flex;
+ align-items: center;
+ font-size: var(--font-size-md);
+ font-weight: 500;
+ color: var(--text-muted);
+ position: relative;
+ z-index: 2;
+ padding: 0 var(--spacing-md);
+ background: var(--bg-primary);
+ span {
   display: flex;
   align-items: center;
-  font-size: var(--font-size-md);
-  font-weight: 500;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--border-light);
   color: var(--text-muted);
-  position: relative;
-  z-index: 2;
-  padding: 0 var(--spacing-md);
-  background: var(--bg-primary);
-  span {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--border-light);
-    color: var(--text-muted);
-    margin-right: var(--spacing-sm);
-    font-weight: 600;
-  }
-  ${({ active }) =>
-    active &&
-    css`
-      color: var(--primary-color);
-      span {
-        background: var(--primary-color);
-        color: #ffffff;
-      }
-    `}
+  margin-right: var(--spacing-sm);
+  font-weight: 600;
+ }
+ 
+ // Utilisez $active pour le style conditionnel
+ ${({ $active }) =>
+  $active &&
+  css`
+   color: var(--primary-color);
+   span {
+    background: var(--primary-color);
+    color: #ffffff;
+   }
+  `}
 `;
+
 
 export const StepContent = styled.div`
   display: ${({ active }) => (active ? "block" : "none")};

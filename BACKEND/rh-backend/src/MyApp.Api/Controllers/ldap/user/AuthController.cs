@@ -104,8 +104,7 @@ public class AuthController(
                 result.User.Email,
                 result.User.Name,
                 result.User.Department,
-                result.User.UserType,
-                Roles = _authService.GetUserRolesAndHabilitations(result.User)
+                result.User.UserType
             };
 
             return Ok(new { Token = token, User = userResponse, Message = result.Message, Type = result.Type });

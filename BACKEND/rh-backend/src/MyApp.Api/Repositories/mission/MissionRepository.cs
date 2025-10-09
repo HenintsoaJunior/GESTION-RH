@@ -159,7 +159,7 @@ namespace MyApp.Api.Repositories.mission
                 .FirstOrDefaultAsync(m => m.MissionId == id);
             if (mission == null) return false;
 
-            mission.Status = "Annulé";
+            mission.Status = "canceled";
             _context.Missions.Update(mission);
             await _context.SaveChangesAsync();
             return true;
@@ -198,10 +198,10 @@ namespace MyApp.Api.Repositories.mission
 
             // Calculate statistics
             var total = await query.CountAsync();
-            var enCours = await query.CountAsync(m => m.Status == "En Cours");
-            var planifiee = await query.CountAsync(m => m.Status == "Planifié");
-            var terminee = await query.CountAsync(m => m.Status == "Terminé");
-            var annulee = await query.CountAsync(m => m.Status == "Annulé");
+            var enCours = await query.CountAsync(m => m.Status == "In Progress");
+            var planifiee = await query.CountAsync(m => m.Status == "Planned");
+            var terminee = await query.CountAsync(m => m.Status == "Completed");
+            var annulee = await query.CountAsync(m => m.Status == "Cancelled");
 
             // Return the MissionStats object
             return new MissionStats

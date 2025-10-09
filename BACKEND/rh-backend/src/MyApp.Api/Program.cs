@@ -12,11 +12,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://10.0.104.215:3000") // Match the audience from the token
+
+        policy.AllowAnyOrigin()
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
 });
+
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

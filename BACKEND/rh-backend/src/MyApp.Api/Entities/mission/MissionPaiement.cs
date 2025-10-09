@@ -101,7 +101,6 @@ namespace MyApp.Api.Entities.mission
 
             return tables;
         }
-
     }
 
     // Classe pour représenter le paiement d'une journée

@@ -1,13 +1,14 @@
-sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i table.sql
-sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i sequence.sql
-sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i data.sql
+docker cp /home/dax/Documents/GitHub/GESTION-RH/TODO/BDD/. sqlserver2019:/BDD
+
+sqlcmd -S localhost -U sa -P Carasco@20 -d RH -i /BDD/table.sql
+sqlcmd -S localhost -U sa -P Carasco@20 -d RH -i /BDD/sequence.sql
+sqlcmd -S localhost -U sa -P Carasco@20 -d RH -i /BDD/data.sql
 
 
 
 00182 (DRH)
 00358 (DT)
-
-
+// "start": "set NODE_OPTIONS=--trace-deprecation && react-scripts start",
 
 {
   "offer": {
@@ -30,4 +31,12 @@ sqlcmd -S localhost -U sa -P Carasco@20 -d RH2 -i data.sql
     "createdAt": "2025-09-17T09:53:07.568Z",
     "updatedAt": null
   }
+}
+
+
+{
+  "missionId": "MIS-000001",
+  "userId": "76c25f37-2089-4e81-8329-1b63d880b71a",
+  "commentText": "Bonjour",
+  "createdAt": "2025-09-28T09:57:29.209Z"
 }

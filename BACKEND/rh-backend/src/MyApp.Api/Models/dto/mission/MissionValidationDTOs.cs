@@ -9,6 +9,19 @@
         public string? ToWhom { get; set; }
         public DateTime? ValidationDate { get; set; }
     }
+
+    public class RequestFilterDto
+    {
+        public string? EmployeeId { get; set; }
+        public string? Status { get; set; }
+    }
+
+    public class MissionValidationRejectionDTO
+    {
+        public string MissionValidationId { get; set; } = string.Empty;
+        public string MissionAssignationId { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
+    }
     public class MissionValidationDTOForm
     {
         public string MissionId { get; set; } = null!;
@@ -16,7 +29,7 @@
         public string MissionCreator { get; set; } = null!;
         public string? Status { get; set; }
         public string? ToWhom { get; set; }
-        
+
         public string? Type { get; set; }
         public DateTime? ValidationDate { get; set; }
     }

@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
-import ReactCountryFlag from "react-country-flag";
 import "styles/template.css";
 import { BASE_URL } from "config/apiConfig";
+import Header from "./header";
+import Footer from "./footer";
+import Menu from "./menu";
 
 export default function Template({ children }) {
   const location = useLocation();
@@ -36,9 +38,6 @@ export default function Template({ children }) {
     name: "John Doe",
     roles: [{ roleName: "Administrateur" }],
   };
-
-  // Derive role for display by joining roleNames
-  const userRole = user.roles?.map((role) => role.roleName).join(", ") || "Administrateur";
 
   // Generate initials for avatar
   const getInitials = useCallback((name) => {
@@ -123,14 +122,12 @@ export default function Template({ children }) {
     const currentPath = location.pathname === "/" ? "/" : location.pathname + location.hash;
     const breadcrumbs = [];
 
-    // Static breadcrumb for home
     breadcrumbs.push({
       title: "Accueil",
       path: "/",
       isActive: currentPath === "/",
     });
 
-    // Handle static routes
     if (currentPath === "/system") {
       breadcrumbs.push({
         title: "System",
@@ -150,12 +147,10 @@ export default function Template({ children }) {
         isActive: true,
       });
     } else {
-      // Dynamic menu-based breadcrumbs
       const matchedResult = findMenuItemByPath(menuData, currentPath);
       if (matchedResult) {
         const { item, parentKey, title } = matchedResult;
 
-        // Find parent item if exists
         if (parentKey) {
           const findParent = (items, key) => {
             for (const menuItem of items) {
@@ -180,7 +175,6 @@ export default function Template({ children }) {
           }
         }
 
-        // Add current item
         breadcrumbs.push({
           title,
           path: item.link,
@@ -230,7 +224,7 @@ export default function Template({ children }) {
       }
     };
     fetchLanguages();
-  }, [selectedLanguage]);
+  }, [selectedLanguage, isLanguagesLoading]);
 
   // Fetch menu data from API with roleNames
   useEffect(() => {
@@ -242,11 +236,8 @@ export default function Template({ children }) {
       }
       setIsMenuLoading(true);
       try {
-        const roleNames = user.roles?.map((role) => role.roleName) || [];
-        const queryString =
-          roleNames.length > 0
-            ? `?${roleNames.map((name) => `roleNames=${encodeURIComponent(name)}`).join("&")}`
-            : "";
+        const userId = user.userId;
+        const queryString = userId ? `?UserId=${encodeURIComponent(userId)}` : "";
         const response = await fetch(`${BASE_URL}/api/Menu/hierarchy${queryString}`);
         if (!response.ok) throw new Error("Erreur réseau");
         const data = await response.json();
@@ -264,7 +255,7 @@ export default function Template({ children }) {
       }
     };
     fetchMenuData();
-  }, [initializeExpandedMenus, user.roles]);
+  }, [initializeExpandedMenus, user.userId, isMenuLoading]);
 
   // Update active item, header title, and expanded menus based on route
   useEffect(() => {
@@ -278,15 +269,6 @@ export default function Template({ children }) {
 
     const matchedResult = findMenuItemByPath(menuData, currentPath);
 
-    let staticRouteMatch = null;
-    if (currentPath === "/system") {
-      staticRouteMatch = { key: "system", title: "System" };
-    } else if (currentPath === "/entite") {
-      staticRouteMatch = { key: "entite", title: "Entite" };
-    } else if (currentPath === "/profil-page") {
-      staticRouteMatch = { key: "profile", title: "Mon profil" };
-    }
-
     if (matchedResult) {
       const { item, parentKey, title } = matchedResult;
       if (activeItem !== item.menuKey) {
@@ -299,20 +281,6 @@ export default function Template({ children }) {
         const newExpanded = { ...prev };
         Object.keys(newExpanded).forEach((key) => {
           newExpanded[key] = key === parentKey;
-        });
-        return newExpanded;
-      });
-    } else if (staticRouteMatch) {
-      if (activeItem !== staticRouteMatch.key) {
-        setActiveItem(staticRouteMatch.key);
-      }
-      if (headerTitle !== staticRouteMatch.title) {
-        setHeaderTitle(staticRouteMatch.title);
-      }
-      setExpandedMenus((prev) => {
-        const newExpanded = { ...prev };
-        Object.keys(newExpanded).forEach((key) => {
-          newExpanded[key] = false;
         });
         return newExpanded;
       });
@@ -373,6 +341,23 @@ export default function Template({ children }) {
     }));
   }, []);
 
+  const findParentKey = useCallback((items, targetKey) => {
+    for (const item of items) {
+      if (item.children && item.children.length > 0) {
+        for (const child of item.children) {
+          if (child.menu.menuKey === targetKey) {
+            return item.menu.menuKey;
+          }
+          if (child.children && child.children.length > 0) {
+            const deepParent = findParentKey([child], targetKey);
+            if (deepParent) return item.menu.menuKey;
+          }
+        }
+      }
+    }
+    return null;
+  }, []);
+
   const setActive = useCallback(
     (itemId, title, parentMenuKey) => () => {
       navigationUpdateRef.current = true;
@@ -416,11 +401,10 @@ export default function Template({ children }) {
     };
 
     menuItems.forEach((item) => {
-      const section = item.menu.section || "navigation"; // Par défaut, navigation si non spécifié
+      const section = item.menu.section || "navigation";
       grouped[section].push(item);
     });
 
-    // Trier les éléments par position
     grouped.navigation.sort((a, b) => a.menu.position - b.menu.position);
     grouped.administration.sort((a, b) => a.menu.position - b.menu.position);
 
@@ -472,94 +456,8 @@ export default function Template({ children }) {
         </li>
       );
     },
-    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel, menuData]
+    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel, menuData, findParentKey]
   );
-
-  const findParentKey = useCallback((items, targetKey) => {
-    for (const item of items) {
-      if (item.children && item.children.length > 0) {
-        for (const child of item.children) {
-          if (child.menu.menuKey === targetKey) {
-            return item.menu.menuKey;
-          }
-          if (child.children && child.children.length > 0) {
-            const deepParent = findParentKey([child], targetKey);
-            if (deepParent) return item.menu.menuKey;
-          }
-        }
-      }
-    }
-    return null;
-  }, []);
-
-  // Rendu du menu avec sections
-  const renderMenu = useCallback(() => {
-    const groupedMenu = groupMenuBySection(menuData);
-
-    return (
-      <nav className="sidebar-nav">
-        {isMenuLoading ? (
-          <div className="menu-loading-dots">Chargement du menu ...</div>
-        ) : (
-          <ul>
-            {/* Section Navigation */}
-            {groupedMenu.navigation.length > 0 && (
-              <>
-                <div className="sidebar-divider">
-                  <span>{!collapsed && "NAVIGATION"}</span>
-                </div>
-                {groupedMenu.navigation.map((item) => renderMenuItem(item, 0))}
-              </>
-            )}
-
-            {/* Section Administration */}
-            {groupedMenu.administration.length > 0 && (
-              <>
-                <div className="sidebar-divider">
-                  <span>{!collapsed && "ADMINISTRATION"}</span>
-                </div>
-                {groupedMenu.administration.map((item) => renderMenuItem(item, 0))}
-              </>
-            )}
-
-            {/* Éléments statiques dans la section Administration */}
-            <li className="nav-item">
-              <Link
-                to="/system"
-                className={`nav-button ${activeItem === "system" ? "active" : ""}`}
-                onClick={setActive("system", "System", null)}
-              >
-                <div className="nav-icon-wrapper">
-                  <FaIcons.FaCogs className="nav-icon" />
-                </div>
-                <span className="nav-text">System</span>
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link
-                to="/entite"
-                className={`nav-button ${activeItem === "entite" ? "active" : ""}`}
-                onClick={setActive("entite", "Entite", null)}
-              >
-                <div className="nav-icon-wrapper">
-                  <FaIcons.FaBuilding className="nav-icon" />
-                </div>
-                <span className="nav-text">Entite</span>
-              </Link>
-            </li>
-          </ul>
-        )}
-      </nav>
-    );
-  }, [
-    menuData,
-    isMenuLoading,
-    collapsed,
-    activeItem,
-    renderMenuItem,
-    setActive,
-    groupMenuBySection,
-  ]);
 
   return (
     <div className={`app theme-${theme}`}>
@@ -568,118 +466,41 @@ export default function Template({ children }) {
       <aside className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}>
         <div className="sidebar-header">
           <div className="logo-container">
-            <img src="/Logo.png" alt="Logo" className="logo-image" />
+            <img src="/Logo.JPG" alt="Logo" className="logo-image" />
           </div>
         </div>
 
-        {renderMenu()}
+        <Menu 
+          menuData={menuData}
+          isMenuLoading={isMenuLoading}
+          collapsed={collapsed}
+          activeItem={activeItem}
+          renderMenuItem={renderMenuItem}
+          setActive={setActive}
+          groupMenuBySection={groupMenuBySection}
+        />
 
-        <div className="sidebar-footer">
-          {!collapsed ? (
-            <>
-              <div className="sidebar-footer-info">
-                <div className="sidebar-footer-title">Ravinala Airports</div>
-                <div className="sidebar-footer-subtitle">Système de recrutement v2.1</div>
-              </div>
-            </>
-          ) : (
-            <div className="theme-selector theme-selector-small">
-              <div className="theme-dots">
-                {themes.map((t) => (
-                  <button
-                    key={t.id}
-                    className={`theme-dot ${theme === t.id ? "active" : ""}`}
-                    style={{ backgroundColor: t.color }}
-                    onClick={() => handleThemeChange(t.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <Footer 
+          collapsed={collapsed}
+          themes={themes}
+          theme={theme}
+          handleThemeChange={handleThemeChange}
+        />
       </aside>
 
       <main className="main-content">
-        <header className="header">
-          <div className="header-left">
-            <button
-              className="menu-toggle"
-              onClick={toggleMobileSidebar}
-              aria-label={mobileOpen ? "Fermer le menu" : "Ouvrir le menu"}
-            >
-              <FaIcons.FaBars />
-            </button>
-            <nav className="breadcrumb">
-              {generateBreadcrumbs().map((crumb, index) => (
-                <span key={index} className="breadcrumb-item-wrapper">
-                  {crumb.isActive ? (
-                    <span className="breadcrumb-item active">{crumb.title}</span>
-                  ) : (
-                    <Link to={crumb.path} className="breadcrumb-item">
-                      {crumb.title}
-                    </Link>
-                  )}
-                  {index < generateBreadcrumbs().length - 1 && (
-                    <span className="breadcrumb-separator">></span>
-                  )}
-                </span>
-              ))}
-            </nav>
-          </div>
-
-          <div className="header-center">
-            <div className="search-container">
-              <FaIcons.FaSearch className="search-icon" />
-              <input type="text" placeholder="Rechercher..." className="search-input" />
-            </div>
-          </div>
-
-          <div className="header-right">
-            <div className="header-icons">
-              <div className="language-selector">
-                <ReactCountryFlag
-                  countryCode={languages.find((lang) => lang.languageId === selectedLanguage)?.countryCode || "US"}
-                  svg
-                  style={{
-                    width: "20px",
-                    height: "15px",
-                    marginRight: "8px",
-                  }}
-                />
-                <select
-                  value={selectedLanguage}
-                  onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="language-dropdown"
-                  disabled={isLanguagesLoading}
-                >
-                  {languages.map((lang) => (
-                    <option key={lang.languageId} value={lang.languageId}>
-                      {lang.abr} - {lang.languageName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="user-profile-dropdown">
-                <div className="user-profile">
-                  <div className="user-avatar">{getInitials(user.name)}</div>
-                  <FaIcons.FaChevronDown className="dropdown-arrow" />
-                </div>
-                <div className="user-dropdown-menu">
-                  <Link to="/profil-page" className="dropdown-item" onClick={setActive("profile", "Mon profil", null)}>
-                    <FaIcons.FaUser className="dropdown-icon" />
-                    <span>Mon profil</span>
-                  </Link>
-                  <div className="dropdown-divider" />
-                  <Link to="/" className="dropdown-item" onClick={setActive("logout", "Déconnexion", null)}>
-                    <FaIcons.FaSignOutAlt className="dropdown-icon" />
-                    <span>Déconnexion</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+        <Header
+          toggleMobileSidebar={toggleMobileSidebar}
+          mobileOpen={mobileOpen}
+          generateBreadcrumbs={generateBreadcrumbs}
+          languages={languages}
+          selectedLanguage={selectedLanguage}
+          handleLanguageChange={handleLanguageChange}
+          isLanguagesLoading={isLanguagesLoading}
+          user={user}
+          getInitials={getInitials}
+          setActive={setActive}
+        />
 
         <div className="content">{children}</div>
       </main>

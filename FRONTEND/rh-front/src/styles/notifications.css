@@ -1,0 +1,130 @@
+.notifications-page {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.notifications-page h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.notification-card {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  transition: box-shadow 0.2s;
+}
+
+.notification-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.notification-icon {
+  font-size: 24px;
+  color: #69B42E;
+  margin-right: 15px;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-content h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.notification-content p {
+  margin: 5px 0;
+  color: #666;
+}
+
+.notification-content small {
+  color: #999;
+}
+
+.notification-action {
+  color: #69B42E;
+  text-decoration: none;
+  font-size: 18px;
+}
+
+.no-notifications {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.no-notifications-icon {
+  font-size: 48px;
+  color: #ccc;
+  margin-bottom: 10px;
+}
+
+.notification-container {
+  position: relative;
+}
+
+.notification-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  padding: 8px;
+}
+
+.notification-icon {
+  font-size: 20px;
+  color: #333;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #e30613;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  min-width: 250px;
+  z-index: 1000;
+}
+
+.notification-item {
+  padding: 10px 15px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.notification-item span {
+  display: block;
+  font-size: 14px;
+  color: #333;
+}
+
+.notification-item small {
+  font-size: 12px;
+  color: #999;
+}

@@ -3,7 +3,7 @@
 public class Cerfificate
 {
     public string? EmployeeName {get; set;}
-    public string? BirthDate {get; set;} 
+    public DateTime BirthDate {get; set;} 
     public string? BirthPlace {get; set;} 
     public string Gender {get; set;} = null!;
     public string? JobTitle {get; set;}

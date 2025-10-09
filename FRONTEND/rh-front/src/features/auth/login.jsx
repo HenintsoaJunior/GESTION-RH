@@ -43,7 +43,7 @@ function LoginPage() {
     <div className="login-container">
       <div className="login-card">
         <div className="logo-container">
-          <img src="Logo.png" alt="Logo" className="logo" />
+          <img src="Logo.JPG" alt="Logo" className="logo" />
         </div>
 
         <h2 className="login-title">Se connecter</h2>
@@ -51,8 +51,7 @@ function LoginPage() {
         <div className="separator"></div>
 
         <p className="login-description">
-          Lorem ipsum dolor sit amet consectetur adipiscing elit. Hic sit impedit aspernatur nostrum! Consectetur
-          quidem mollitia itaque, eius atque eaque!
+          Une vision ambitieuse pour le développement aéroportuaire à Madagascar
         </p>
 
         <form className="login-form" onSubmit={handleSubmit}>

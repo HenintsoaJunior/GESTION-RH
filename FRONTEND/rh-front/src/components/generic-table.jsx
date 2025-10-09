@@ -64,9 +64,9 @@ export function GenericTable({
       return value ? new Date(value).toLocaleDateString("fr-FR") : "Non spécifié";
     }
 
-    if (column.type === "currency") {
-      return value ? `${value} ${column.currency || "€"}` : "Non spécifié";
-    }
+    // if (column.type === "currency") {
+    //   return value ? `${value} ${column.currency || "€"}` : "Non spécifié";
+    // }
 
     return value || column.defaultValue || "Non spécifié";
   };

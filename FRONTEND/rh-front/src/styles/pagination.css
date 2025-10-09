@@ -1,0 +1,167 @@
+/* styles/pagination.css - Corrigé et Amélioré */
+
+/* Conteneur principal */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: var(--bg-primary, #ffffff);
+  border-top: 1px solid var(--bg-light, #f5f5f5);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  color: var(--text-color, #333);
+}
+
+/* 1. Sélecteur de taille de page */
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-size-selector label {
+  font-size: 14px;
+  color: var(--text-color, #333);
+}
+
+.page-size-selector select {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 4px;
+  background-color: var(--bg-primary, #ffffff);
+  font-size: 14px;
+  color: var(--text-color, #333);
+  cursor: pointer;
+  appearance: none;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.page-size-selector select:focus {
+  outline: none;
+  border-color: var(--primary-color, #69b42e); /* Correction : Valeur par défaut explicite */
+  box-shadow: 0 0 0 2px var(--focus-ring-color, rgba(105, 180, 46, 0.4));
+}
+
+.page-size-selector select:disabled {
+  background-color: var(--bg-tertiary, #fafafa);
+  color: var(--text-disabled, #9ca3af);
+  cursor: not-allowed;
+}
+
+/* 2. Information sur les entrées */
+.pagination-info {
+  font-size: 14px;
+  color: var(--text-muted-color, #6b7280);
+}
+
+/* 3. Contrôles de pagination (Boutons) */
+.pagination-buttons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Style de base des boutons de pagination */
+.pagination-button {
+  min-width: 32px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color, #d1d5db);
+  background-color: var(--bg-primary, #ffffff);
+  color: var(--text-color, #333);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  user-select: none;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: var(--bg-secondary, #f8f9fa);
+  border-color: var(--border-hover-color, #b0b0b0);
+}
+
+.pagination-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-ring-color, rgba(105, 180, 46, 0.4));
+}
+
+.pagination-button:disabled {
+  background-color: var(--bg-tertiary, #fafafa);
+  color: var(--text-disabled, #9ca3af);
+  cursor: not-allowed;
+}
+
+/* Bouton actif (page courante) */
+.pagination-button.active {
+  background-color: var(--primary-color, #69b42e); /* Correction : Valeur par défaut explicite */
+  color: var(--text-on-primary, #ffffff);
+  border-color: var(--primary-color, #69b42e);
+  font-weight: 500;
+}
+
+.pagination-button.active:hover {
+  background-color: var(--primary-hover, #5a9b27); /* Ajout d'une couleur de survol explicite */
+  border-color: var(--primary-hover, #5a9b27);
+}
+
+/* Style pour les boutons Précédent/Suivant */
+.pagination-arrow-btn {
+  padding: 8px;
+  font-weight: bold;
+}
+
+/* Style pour les points de suspension '...' */
+.pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  color: var(--text-muted-color, #6b7280);
+  font-size: 16px;
+}
+
+/* --- Responsive adjustments --- */
+@media (max-width: 768px) {
+  .pagination-container {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .pagination-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .page-size-selector {
+    justify-content: center;
+  }
+
+  .pagination-info {
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .pagination-button {
+    min-width: 30px;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .pagination-arrow-btn {
+    padding: 6px;
+  }
+
+  .page-size-selector select {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .pagination-info {
+    font-size: 12px;
+  }
+}

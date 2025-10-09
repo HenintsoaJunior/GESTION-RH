@@ -24,6 +24,7 @@ namespace MyApp.Api.Repositories.users
         Task DeleteUsersAsync(List<User> users);
         Task SaveChangesAsync();
         Task<IEnumerable<User>> GetCollaboratorsAsync(string userId);
+        Task<IEnumerable<User>> GetUserInfo(string userId);
         Task<User?> GetSuperiorAsync(string matricule);
         Task<User?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
@@ -129,6 +130,22 @@ namespace MyApp.Api.Repositories.users
                 .ToListAsync();
 
             return (results, totalCount);
+        }
+
+
+        public async Task<IEnumerable<User>> GetUserInfo(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            return await _context.Users
+                .AsNoTracking()
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                    .ThenInclude(r => r!.RoleHabilitations)
+                        .ThenInclude(rh => rh.Habilitation)
+                .Where(u => u.UserId == userId)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<User>> GetCollaboratorsAsync(string userId)
