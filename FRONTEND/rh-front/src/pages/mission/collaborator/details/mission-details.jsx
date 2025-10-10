@@ -708,7 +708,7 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                                                         </InfoGrid>
                                                     )}
 
-                                                    {assignedPersons.length > 0 && (
+                                                    {assignedPersons.length > 0 && isMissionFullyValidated && (
                                                         <InfoGrid
                                                             style={{
                                                                 marginTop: "var(--spacing-lg)",
@@ -719,7 +719,7 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                                                         >
                                                             {assignedPersons.map((assignment, index) => {
                                                                 const buttonText = assignment.type === 'Indemnité' ? 'Indemnité' : 'Note de frais';
-                                                                const shouldShowButton = isMissionFullyValidated && (assignment.type === 'Indemnité' || assignment.type === 'Note de frais');
+                                                                const shouldShowButton = assignment.type === 'Indemnité' || assignment.type === 'Note de frais';
                                                                 return (
                                                                     <div
                                                                         key={`info-${assignment.employeeId}-${index}`}
@@ -747,16 +747,14 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                                                                             )}
                                                                         </InfoItem>
                                                                         <InfoItem>
-                                                                            {isMissionFullyValidated && (
-                                                                                <ButtonContainer>
-                                                                                    <ButtonOMPDF
-                                                                                        onClick={() => handleExportPDF(assignment.employeeId)}
-                                                                                        disabled={isLoading.exportPDF}
-                                                                                    >
-                                                                                        <Download size={16} /> OM PDF
-                                                                                    </ButtonOMPDF>
-                                                                                </ButtonContainer>
-                                                                            )}
+                                                                            <ButtonContainer>
+                                                                                <ButtonOMPDF
+                                                                                    onClick={() => handleExportPDF(assignment.employeeId)}
+                                                                                    disabled={isLoading.exportPDF}
+                                                                                >
+                                                                                    <Download size={16} /> OM PDF
+                                                                                </ButtonOMPDF>
+                                                                            </ButtonContainer>
                                                                         </InfoItem>
                                                                         <InfoItem>
                                                                             {shouldShowButton && (

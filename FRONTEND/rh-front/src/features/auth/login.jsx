@@ -56,7 +56,7 @@ function LoginPage() {
 
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Nom d'utilisateur</label>
+            <label className="form-label">Matricule</label>
             <input
               type="text"
               value={username}
