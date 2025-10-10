@@ -422,6 +422,38 @@ export const ActionButton = styled.button`
   }
 `
 
+export const RejectButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-xl);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  box-shadow: var(--shadow-sm);
+  background-color: var(--danger-color);
+  color: #ffffff;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: var(--danger-hover);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-size-xs);
+  }
+`
+
 export const ActionButtonPDF = styled.button`
   display: inline-flex;
   align-items: center;

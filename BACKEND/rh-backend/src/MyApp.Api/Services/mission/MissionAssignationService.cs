@@ -86,7 +86,8 @@ namespace MyApp.Api.Services.mission
                 throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
             }
             
-            string templatePath = @"D:\Github\STAGE\GESTION-RH\BACKEND\rh-backend\src\MyApp.Api\File\OM.docx";
+            string templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\File\OM.docx"));
+
             
             if (!File.Exists(templatePath))
             {

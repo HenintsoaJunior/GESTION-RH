@@ -33,6 +33,7 @@ import {
     ButtonPrimary,
     ButtonSecondary,
     Avatar,
+    RejectButton,
 } from "styles/generaliser/details-mission-container";
 import {
     CommentSection,
@@ -463,14 +464,14 @@ const MissionModals = ({
                 <CheckCircle size={16} />
                 Valider la Mission
               </ActionButton>
-              <ActionButton
+              <RejectButton
                 className="reject"
                 onClick={() => handleAction("reject")}
                 disabled={!isPending}
               >
                 <XCircle size={16} />
                 Rejeter la Mission
-              </ActionButton>
+              </RejectButton>
             </ActionButtons>
           </ActionSection>
         )}

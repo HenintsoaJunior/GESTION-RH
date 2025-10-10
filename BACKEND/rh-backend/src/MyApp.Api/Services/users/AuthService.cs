@@ -72,11 +72,13 @@ public class AuthService : IAuthService
     {
         var hardcodedUsers = new Dictionary<string, (string Password, string Email)>
         {
-            
+
             ["00446"] = ("1234", "christelle.rakotomavo@ravinala-airports.aero"),
             ["st154"] = ("1234", "miantsafitia.rakotoarimanana@ravinala-airports.aero"),
             ["00358"] = ("1234", "hery.rasolofondramanambe@ravinala-airports.aero"),
-            ["00182"] = ("1234", "sedera.rasolomanana@ravinala-airports.aero")
+            ["00182"] = ("1234", "sedera.rasolomanana@ravinala-airports.aero"),
+            ["00418"] = ("1234", "damien.andriantsilavina@ravinala-airports.aero"),
+
         };
 
         if (hardcodedUsers.TryGetValue(username, out var info) && info.Password == password)
