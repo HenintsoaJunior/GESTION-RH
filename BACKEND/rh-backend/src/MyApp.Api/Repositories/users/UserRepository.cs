@@ -111,11 +111,6 @@ namespace MyApp.Api.Repositories.users
                 .ThenInclude(ur => ur.Role)
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(filters.Matricule))
-            {
-                query = query.Where(u => u.Matricule == filters.Matricule);
-            }
-
             if (!string.IsNullOrWhiteSpace(filters.Name))
             {
                 var name = filters.Name.ToLower();
@@ -124,12 +119,14 @@ namespace MyApp.Api.Repositories.users
 
             if (!string.IsNullOrWhiteSpace(filters.Department))
             {
-                query = query.Where(u => u.Department != null && u.Department.Contains(filters.Department));
+                var department = filters.Department.ToLower();
+                query = query.Where(u => u.Department != null && u.Department.ToLower().Contains(department));
             }
 
-            if (!string.IsNullOrWhiteSpace(filters.Status))
+            if (!string.IsNullOrWhiteSpace(filters.Role))
             {
-                query = query.Where(u => u.Status != null && u.Status.Contains(filters.Status));
+                var role = filters.Role.ToLower();
+                query = query.Where(u => u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name.ToLower().Contains(role)));
             }
 
             var totalCount = await query.CountAsync();
