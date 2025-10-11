@@ -43,7 +43,7 @@ function LoginPage() {
     <div className="login-container">
       <div className="login-card">
         <div className="logo-container">
-          <img src="Logo.png" alt="Logo" className="logo" />
+          <img src="Logo.JPG" alt="Logo" className="logo" />
         </div>
 
         <h2 className="login-title">Se connecter</h2>
@@ -51,13 +51,12 @@ function LoginPage() {
         <div className="separator"></div>
 
         <p className="login-description">
-          Lorem ipsum dolor sit amet consectetur adipiscing elit. Hic sit impedit aspernatur nostrum! Consectetur
-          quidem mollitia itaque, eius atque eaque!
+          Une vision ambitieuse pour le développement aéroportuaire à Madagascar
         </p>
 
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Nom d'utilisateur</label>
+            <label className="form-label">Matricule</label>
             <input
               type="text"
               value={username}
@@ -71,9 +70,7 @@ function LoginPage() {
           <div className="form-group">
             <div className="password-header">
               <label className="form-label">Mot de passe</label>
-              <a href="#" className="forgot-password">
-                Mot de passe oublié?
-              </a>
+              
             </div>
             <div className="password-input-container">
               <input
@@ -112,9 +109,7 @@ function LoginPage() {
             {isLoading.login ? "Connexion..." : "Se connecter"}
           </button>
 
-          <div className="signup-container">
-            Vous n'avez pas encore de compte? <a href="#" className="signup-link">S'inscrire</a>
-          </div>
+         
         </form>
       </div>
     </div>

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Plus, Users, Zap, Trash2, Edit } from "lucide-react";
 import {
   DashboardContainer,
   TableHeader,
@@ -10,30 +9,176 @@ import {
   ButtonAdd,
   Loading,
   NoDataMessage,
-  ButtonCancel,
-  ButtonConfirm,
-  ModalActions,
 } from "styles/generaliser/table-container";
-import {
-  CardsContainer,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
-  CardField,
-  CardLabel,
-  CardValue,
-  CardFooter,
-  CardActionButton,
-  EmptyCardsState,
-  LoadingCardsState,
-} from "styles/generaliser/card-container";
 import Modal from "components/modal";
 import Alert from "components/alert";
 import RolePopupComponent from "./role-form";
 import UserListPopupComponent from "./user-form";
 import { fetchAllRoles, createRole, updateRole, deleteRole } from "services/users/roles";
 import { formatDate } from "utils/dateConverter";
+
+// --------------------------------------------------------------------------------
+// NOUVEAU COMPOSANT : ROLE INFO CARD (Carte d'Information de Rôle)
+// --------------------------------------------------------------------------------
+
+// Définition des couleurs personnalisées
+const COLORS = {
+    primary: "#69b42e", // Votre couleur primaire
+    primaryHover: "#5a9625",
+    danger: "#dc3545",
+    dangerLight: "#f8d7da",
+    textPrimary: "#333",
+    textSecondary: "#666",
+    background: "#ffffff",
+    border: "#e0e0e0",
+};
+
+const RoleCardStyle = {
+  display: "grid",
+  gridTemplateColumns: "100px 1fr auto", // Indicateur | Détails | Actions
+  alignItems: "center",
+  gap: "16px",
+  backgroundColor: COLORS.background,
+  border: `1px solid ${COLORS.border}`,
+  borderRadius: "8px",
+  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.05)",
+  padding: "12px 16px",
+  minHeight: "80px",
+};
+
+const IndicatorBlockStyle = (isCritical) => ({
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "8px",
+    borderRadius: "6px",
+    backgroundColor: isCritical ? COLORS.dangerLight : "#ebf5e3", // Vert très clair
+    color: isCritical ? COLORS.danger : COLORS.primary,
+    fontWeight: "bold",
+    height: "100%",
+});
+
+const DetailBlockTitleStyle = {
+    fontSize: "16px",
+    fontWeight: "700",
+    color: COLORS.textPrimary,
+    marginBottom: "4px",
+};
+
+const DetailBlockTextStyle = {
+    fontSize: "12px",
+    color: COLORS.textSecondary,
+    lineHeight: "1.4",
+};
+
+const ActionsBlockStyle = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    paddingLeft: "16px",
+    borderLeft: `1px solid ${COLORS.border}`,
+};
+
+const CardActionButtonStyle = (isPrimary) => ({
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "12px",
+    padding: "6px 10px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    transition: "all 0.2s",
+    border: isPrimary ? `1px solid ${COLORS.primary}` : `1px solid ${COLORS.border}`,
+    backgroundColor: isPrimary ? COLORS.primary : COLORS.background,
+    color: isPrimary ? COLORS.background : COLORS.textPrimary,
+    "&:hover": {
+        backgroundColor: isPrimary ? COLORS.primaryHover : COLORS.border,
+    },
+});
+
+const CardActionButtonDangerStyle = {
+    ...CardActionButtonStyle(false),
+    color: COLORS.danger,
+    border: `1px solid ${COLORS.danger}`,
+    "&:hover": {
+        backgroundColor: COLORS.dangerLight,
+    },
+};
+
+
+const RoleInfoCard = ({ role, onEdit, onDelete, onAssignUsers, getHabilitationCount, isSubmitting }) => {
+    const isCritical = role.name?.toLowerCase().includes("admin") || role.name?.toLowerCase().includes("root");
+    const habilitationCount = getHabilitationCount(role);
+    
+    // Style du bouton d'assignation
+    const AssignButtonStyle = {
+        ...CardActionButtonStyle(true),
+        backgroundColor: COLORS.primary,
+        color: COLORS.background,
+        border: `1px solid ${COLORS.primary}`,
+        // Note: Les pseudo-classes :hover ne sont pas supportées directement en style inline React
+    };
+
+    return (
+        <div style={RoleCardStyle}>
+            {/* BLOC INDICATEUR */}
+            <div style={IndicatorBlockStyle(isCritical)}>
+                <Zap size={20} />
+                <div style={{ fontSize: "20px", marginTop: "4px" }}>
+                    {habilitationCount}
+                </div>
+                <div style={{ fontSize: "10px", fontWeight: "normal", textAlign: "center" }}>
+                    Habilitation{habilitationCount > 1 ? 's' : ''}
+                </div>
+            </div>
+
+            {/* BLOC DÉTAILS */}
+            <div>
+                <div style={DetailBlockTitleStyle}>
+                    {role.name || "Rôle sans nom"}
+                </div>
+                <div style={DetailBlockTextStyle}>
+                    **Description:** {role.description ? role.description.substring(0, 80) + (role.description.length > 80 ? '...' : '') : "Non spécifiée"}
+                </div>
+                <div style={DetailBlockTextStyle}>
+                    **Création:** {formatDate(role.createdAt) || "Non spécifié"}
+                </div>
+            </div>
+            
+            {/* BLOC ACTIONS */}
+            <div style={ActionsBlockStyle}>
+                <button 
+                    onClick={() => onAssignUsers(role)}
+                    disabled={isSubmitting}
+                    style={AssignButtonStyle}
+                    title="Gérer l'assignation des utilisateurs à ce rôle"
+                >
+                    <Users size={14} style={{ marginRight: "4px" }}/> Assigner
+                </button>
+                <button
+                    onClick={() => onEdit(role)}
+                    disabled={isSubmitting}
+                    style={CardActionButtonStyle(false)}
+                >
+                    <Edit size={14} style={{ marginRight: "4px" }}/> Modifier
+                </button>
+                <button
+                    onClick={() => onDelete(role.roleId)}
+                    disabled={isSubmitting}
+                    style={CardActionButtonDangerStyle}
+                >
+                    <Trash2 size={14} style={{ marginRight: "4px" }}/> Supprimer
+                </button>
+            </div>
+        </div>
+    );
+};
+
+
+// --------------------------------------------------------------------------------
+// COMPOSANT PRINCIPAL : ROLE LIST
+// --------------------------------------------------------------------------------
 
 const RoleList = () => {
   const [roles, setRoles] = useState([]);
@@ -46,9 +191,6 @@ const RoleList = () => {
   const [role, setRole] = useState({ name: "", description: "", habilitations: [], habilitationIds: [] });
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [roleToDelete, setRoleToDelete] = useState(null);
-  const navigate = useNavigate();
 
   // Récupérer userId depuis localStorage
   const [userId, setUserId] = useState(null);
@@ -155,7 +297,7 @@ const RoleList = () => {
   };
 
   // Gestion de la suppression d'un rôle
-  const handleDelete = async () => {
+  const handleDelete = async (roleId) => {
     if (!userId) {
       setAlert({
         isOpen: true,
@@ -168,7 +310,7 @@ const RoleList = () => {
     setIsSubmitting(true);
     try {
       await deleteRole(
-        roleToDelete,
+        roleId,
         userId,
         setIsLoading,
         (successAlert) => {
@@ -191,15 +333,7 @@ const RoleList = () => {
       console.error("Erreur dans handleDelete:", error);
     } finally {
       setIsSubmitting(false);
-      setShowDeleteModal(false);
-      setRoleToDelete(null);
     }
-  };
-
-  // Afficher la modale de confirmation de suppression
-  const handleShowDeleteModal = (roleId) => {
-    setRoleToDelete(roleId);
-    setShowDeleteModal(true);
   };
 
   // Fonction pour réinitialiser le formulaire
@@ -214,7 +348,6 @@ const RoleList = () => {
 
   // Fonctions d'actions
   const handleEdit = (roleToEdit) => {
-    console.log("Modification du rôle:", roleToEdit);
     
     // Extraire les habilitations du rôle
     const existingHabilitations = roleToEdit.roleHabilitations || [];
@@ -233,7 +366,6 @@ const RoleList = () => {
   };
 
   const handleAssignUsers = (role) => {
-    console.log("Assigner des utilisateurs au rôle:", role?.roleId || "Aucun rôle sélectionné");
     setSelectedRole(role);
     setIsUserPopupOpen(true);
   };
@@ -262,6 +394,7 @@ const RoleList = () => {
 
   return (
     <DashboardContainer>
+      {/* Alertes et Modals */}
       {alert.type === "success" ? (
         <Alert
           type={alert.type}
@@ -279,19 +412,7 @@ const RoleList = () => {
         />
       )}
 
-      <Modal
-        type="warning"
-        message="Êtes-vous sûr de vouloir supprimer ce rôle ? Cette action est irréversible."
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="Confirmer la suppression"
-      >
-        <ModalActions>
-          <ButtonCancel onClick={() => setShowDeleteModal(false)}>Annuler</ButtonCancel>
-          <ButtonConfirm onClick={handleDelete}>Confirmer</ButtonConfirm>
-        </ModalActions>
-      </Modal>
-
+      {/* Entête du tableau de bord */}
       <TableHeader>
         <TableTitle>Liste des Rôles ({totalEntries})</TableTitle>
         <div style={{ display: "flex", gap: "var(--spacing-sm)" }}>
@@ -301,96 +422,50 @@ const RoleList = () => {
           >
             Assignation Utilisateur
           </ButtonAdd>
-          <ButtonAdd onClick={handleAddNew}>
+          <ButtonAdd onClick={handleAddNew} style={{ 
+            backgroundColor: COLORS.primary, 
+            borderColor: COLORS.primary,
+            color: COLORS.background
+          }}>
             <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Nouveau
           </ButtonAdd>
         </div>
       </TableHeader>
 
-      {/* Container avec espacement réduit */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-        gap: "var(--spacing-xs)", // Espacement réduit entre les cartes
-        padding: "0"
-      }}>
+      {/* AFFICHAGE DES CARTES D'INFORMATION */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px", // Espacement vertical entre les cartes
+          padding: "var(--spacing-md) 0 0 0",
+        }}
+      >
         {isLoading.roles ? (
-          <div style={{ 
-            gridColumn: "1 / -1",
-            display: "flex",
-            justifyContent: "center",
-            padding: "var(--spacing-xl)"
-          }}>
-            <Loading>Chargement...</Loading>
+          <div style={{ width: "100%", textAlign: "center", padding: "var(--spacing-xl)" }}>
+            <Loading>Chargement des rôles...</Loading>
           </div>
         ) : roles.length > 0 ? (
           roles.map((role) => (
-            <Card 
+            <RoleInfoCard
               key={role.roleId}
-              style={{
-                margin: "0", // Supprime les marges par défaut
-                height: "fit-content" // Ajuste la hauteur au contenu
-              }}
-            >
-              <CardHeader>
-                <CardTitle>{role.name || "Non spécifié"}</CardTitle>
-              </CardHeader>
-              <CardBody style={{ 
-                padding: "var(--spacing-xs)", // Padding réduit pour compacter
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--spacing-xs)" // Espacement réduit entre les champs
-              }}>
-                <CardField style={{ margin: "0" }}>
-                  <CardLabel>Description</CardLabel>
-                  <CardValue>{role.description || "Non spécifié"}</CardValue>
-                </CardField>
-                <CardField style={{ margin: "0" }}>
-                  <CardLabel>Habilitations</CardLabel>
-                  <CardValue>
-                    {getHabilitationCount(role)} habilitation{getHabilitationCount(role) > 1 ? 's' : ''} associée{getHabilitationCount(role) > 1 ? 's' : ''}
-                  </CardValue>
-                </CardField>
-                <CardField style={{ margin: "0" }}>
-                  <CardLabel>Date de création</CardLabel>
-                  <CardValue>{formatDate(role.createdAt) || "Non spécifié"}</CardValue>
-                </CardField>
-              </CardBody>
-              <CardFooter style={{ 
-                padding: "var(--spacing-xs)", // Padding réduit
-                gap: "var(--spacing-xs)" // Espacement réduit entre les boutons
-              }}>
-                <CardActionButton
-                  className="edit"
-                  onClick={() => handleEdit(role)}
-                  disabled={isSubmitting}
-                >
-                  Modifier
-                </CardActionButton>
-                
-                <CardActionButton
-                  className="delete"
-                  onClick={() => handleShowDeleteModal(role.roleId)}
-                  disabled={isSubmitting}
-                >
-                  Supprimer
-                </CardActionButton>
-              </CardFooter>
-            </Card>
+              role={role}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onAssignUsers={handleAssignUsers}
+              getHabilitationCount={getHabilitationCount}
+              isSubmitting={isSubmitting}
+            />
           ))
         ) : (
-          <div style={{ 
-            gridColumn: "1 / -1",
-            display: "flex",
-            justifyContent: "center",
-            padding: "var(--spacing-xl)"
-          }}>
+          <div style={{ width: "100%", textAlign: "center", padding: "var(--spacing-xl)" }}>
             <NoDataMessage>Aucun rôle trouvé.</NoDataMessage>
           </div>
         )}
       </div>
 
+      {/* Popups (inchangés) */}
       <RolePopupComponent
         isOpen={isRolePopupOpen}
         onClose={handleCloseRolePopup}
@@ -405,6 +480,7 @@ const RoleList = () => {
       <UserListPopupComponent
         isOpen={isUserPopupOpen}
         onClose={handleCloseUserPopup}
+        selectedRole={selectedRole}
       />
     </DashboardContainer>
   );

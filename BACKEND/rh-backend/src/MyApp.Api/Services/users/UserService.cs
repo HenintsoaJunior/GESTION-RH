@@ -27,6 +27,9 @@ namespace MyApp.Api.Services.users
         Task<UserDto?> GetSuperiorAsync(string? matricule);
         Task<UserDto?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
+        Task<UserDto?> GetDirectorByDepartmentAsync(string department);
+        Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId);
+        Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
     }
 
     public class UserService : IUserService
@@ -53,6 +56,15 @@ namespace MyApp.Api.Services.users
 
             var superior = await _repository.GetSuperiorAsync(matricule);
             return superior != null ? MapToDto(superior) : null;
+        }
+
+        public async Task<UserDto?> GetDirectorByDepartmentAsync(string department)
+        {
+            if (string.IsNullOrWhiteSpace(department))
+                throw new ArgumentException("Department cannot be null or empty.", nameof(department));
+
+            var director = await _repository.GetDirectorByDepartmentAsync(department);
+            return director != null ? MapToDto(director) : null;
         }
 
         public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)
@@ -92,7 +104,7 @@ namespace MyApp.Api.Services.users
         {
             return await _repository.GetByIdAsync(id);
         }
-    
+
         public async Task<User?> GetByEmailAsync(string email)
         {
             return await _repository.GetByEmailAsync(email);
@@ -143,6 +155,15 @@ namespace MyApp.Api.Services.users
             return collaborators.Select(MapToDto);
         }
 
+        public async Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            var collaborators = await _repository.GetUserInfo(userId);
+            return collaborators.Select(Map2ToDto);
+        }
+
         public async Task<UserDto?> LoginAsync(string email, string password)
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
@@ -155,6 +176,11 @@ namespace MyApp.Api.Services.users
             return MapToDto(user);
         }
 
+        public async Task<IEnumerable<string>> GetDistinctDepartmentsAsync()
+        {
+            return await _repository.GetDistinctDepartmentsAsync();
+        }
+        
         private static UserDto MapToDto(User user)
         {
             return new UserDto
@@ -167,6 +193,22 @@ namespace MyApp.Api.Services.users
                 Position = user.Position,
                 SuperiorId = user.SuperiorId,
                 SuperiorName = user.SuperiorName
+            };
+        }
+
+        private static UserInfoDto Map2ToDto(User user)
+        {
+            return new UserInfoDto
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                Name = user.Name,
+                Matricule = user.Matricule,
+                Department = user.Department,
+                Position = user.Position,
+                SuperiorId = user.SuperiorId,
+                SuperiorName = user.SuperiorName,
+                Roles = user.UserRoles ?? new List<UserRole>()
             };
         }
     }

@@ -1,75 +1,52 @@
-"use client"
-import { useState, useEffect, useCallback } from "react"
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react"
-import "styles/alert.css"
+"use client";
+import { useState, useEffect, useCallback } from "react"; 
+import PropTypes from "prop-types";
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react";
+import "styles/alert.css";
 
-const Alert = ({ type = "info", message, isOpen, onClose }) => {
-  const [visible, setVisible] = useState(isOpen)
-  const [closing, setClosing] = useState(false)
+const Alert = ({ type = "info", message, isOpen, onClose = () => {} }) => {
+  const [visible, setVisible] = useState(isOpen);
+  const [closing, setClosing] = useState(false);
 
-  // Fonction pour jouer le son de notification
-  const playNotificationSound = useCallback(() => {
-    // Chemins vers les fichiers audio selon le type d'alerte
-    const soundPaths = {
-      success: '/sounds/success.mp3',
-      error: '/sounds/notification.mp3',
-      warning: '/sounds/notification.mp3',
-      info: '/sounds/notification.mp3'
-    }
-    
-    const soundPath = soundPaths[type] || soundPaths.info
-    
-    // Création de l'élément audio
-    const audio = new Audio(soundPath)
-    audio.volume = 0.5 // Volume à 50%
-    audio.play().catch(error => {
-      console.warn('Impossible de jouer le son de notification:', error)
-    })
-  }, [type])
-
+  // Wrap handleClose in useCallback to memoize it
   const handleClose = useCallback(() => {
-    setClosing(true)
+    setClosing(true);
     setTimeout(() => {
-      setVisible(false)
-      onClose()
-    }, 300) // Délai pour l'animation de fermeture
-  }, [onClose])
+      setVisible(false);
+      if (typeof onClose === "function") {
+        onClose();
+      }
+    }, 300); // Delay for closing animation
+  }, [onClose]); // Add onClose as a dependency
 
   useEffect(() => {
     if (isOpen) {
-      setVisible(true)
-      setClosing(false)
-      
-      // Jouer le son de notification
-      try {
-        playNotificationSound()
-      } catch (error) {
-        console.warn('Impossible de jouer le son de notification:', error)
-      }
-      
-      const timer = setTimeout(() => {
-        handleClose()
-      }, 5000) // Auto-dismiss after 5 seconds
-      
-      return () => clearTimeout(timer)
-    }
-  }, [isOpen, handleClose, playNotificationSound])
+      setVisible(true);
+      setClosing(false);
 
-  if (!visible) return null
+      const timer = setTimeout(() => {
+        handleClose();
+      }, 5000); // Auto-dismiss after 5 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, handleClose]); // handleClose is now stable
+
+  if (!visible) return null;
 
   const getIcon = () => {
     switch (type) {
       case "success":
-        return <CheckCircle size={16} />
+        return <CheckCircle size={16} />;
       case "error":
-        return <AlertCircle size={16} />
+        return <AlertCircle size={16} />;
       case "warning":
-        return <AlertTriangle size={16} />
+        return <AlertTriangle size={16} />;
       case "info":
       default:
-        return <Info size={16} />
+        return <Info size={16} />;
     }
-  }
+  };
 
   return (
     <div className="alert-container">
@@ -84,7 +61,14 @@ const Alert = ({ type = "info", message, isOpen, onClose }) => {
         <div className="alert-progress"></div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Alert
+Alert.propTypes = {
+  type: PropTypes.oneOf(["success", "error", "warning", "info"]),
+  message: PropTypes.string.isRequired,
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func,
+};
+
+export default Alert;

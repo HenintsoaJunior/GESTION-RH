@@ -24,9 +24,12 @@ namespace MyApp.Api.Repositories.users
         Task DeleteUsersAsync(List<User> users);
         Task SaveChangesAsync();
         Task<IEnumerable<User>> GetCollaboratorsAsync(string userId);
+        Task<IEnumerable<User>> GetUserInfo(string userId);
         Task<User?> GetSuperiorAsync(string matricule);
         Task<User?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
+        Task<User?> GetDirectorByDepartmentAsync(string department);
+        Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
     }
 
     public class UserRepository : IUserRepository
@@ -38,6 +41,16 @@ namespace MyApp.Api.Repositories.users
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
+        public async Task<IEnumerable<string>> GetDistinctDepartmentsAsync()
+        {
+            return await _context.Users
+                .Where(u => !string.IsNullOrWhiteSpace(u.Department))
+                .Select(u => u.Department!)
+                .Distinct()
+                .OrderBy(d => d)
+                .ToListAsync();
+        }
+        
         public async Task<User?> GetDrhAsync()
         {
             return await _context.Users
@@ -69,6 +82,25 @@ namespace MyApp.Api.Repositories.users
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.UserId == user.SuperiorId);
+        }
+
+        public async Task<User?> GetDirectorByDepartmentAsync(string department)
+        {
+            if (string.IsNullOrWhiteSpace(department))
+                throw new ArgumentException("Department cannot be null or empty.", nameof(department));
+
+            return await _context.Users
+                .AsNoTracking()
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .Where(u => u.Department == department &&
+                            u.Position != null &&
+                            (u.Position.Contains("Directeur") ||
+                            u.Position.Contains("Directrice") ||
+                            u.Position.Contains("Director") ||
+                            u.Position.Contains("Manager")))
+                .OrderBy(u => u.Name)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)
@@ -109,6 +141,22 @@ namespace MyApp.Api.Repositories.users
                 .ToListAsync();
 
             return (results, totalCount);
+        }
+
+
+        public async Task<IEnumerable<User>> GetUserInfo(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            return await _context.Users
+                .AsNoTracking()
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                    .ThenInclude(r => r!.RoleHabilitations)
+                        .ThenInclude(rh => rh.Habilitation)
+                .Where(u => u.UserId == userId)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<User>> GetCollaboratorsAsync(string userId)

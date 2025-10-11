@@ -12,8 +12,8 @@ namespace MyApp.Api.Services.users
         Task<UserRole> CreateAsync(UserRoleDTOForm dto);
         Task<UserRole?> UpdateAsync(UserRoleDTOForm dto);
         Task<bool> DeleteAsync(string userId, string roleId);
-        
         Task AddAsync(UserRoleDtoFormBulk dto);
+        Task<string[]?> GetRoleNamesByUserIdAsync(string userId);
     }
 
     public class UserRoleService : IUserRoleService
@@ -27,6 +27,37 @@ namespace MyApp.Api.Services.users
             _logger = logger;
         }
 
+        public async Task<string[]?> GetRoleNamesByUserIdAsync(string userId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    _logger.LogWarning("L'ID de l'utilisateur est null ou vide");
+                    return null;
+                }
+
+                var userRoles = await _repository.GetAllAsync();
+                var roleNames = userRoles
+                    .Where(ur => ur.UserId == userId && ur.Role != null)
+                    .Select(ur => ur.Role!.Name)
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Distinct()
+                    .ToArray();
+
+                if (!roleNames.Any())
+                {
+                    return null;
+                }
+
+                return roleNames;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des noms des rôles pour UserId {UserId}", userId);
+                throw;
+            }
+        }
         public async Task<IEnumerable<UserRole>> GetAllAsync()
         {
             try

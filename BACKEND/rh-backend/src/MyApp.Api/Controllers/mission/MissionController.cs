@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
@@ -8,12 +9,25 @@ namespace MyApp.Api.Controllers.mission
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class MissionController(IMissionService missionService, ILogger<MissionController> logger)
+    public class MissionController(IMissionService missionService,IMissionAssignationService missionAssignationService, ILogger<MissionController> logger)
         : ControllerBase
     {
-        // Constructeur avec injection du service mission et du logger
 
-        // Récupère toutes les missions
+        [HttpGet("{id}")]
+        public async Task<ActionResult<MissionAssignation>> GetByIdMissionAsync(string id)
+        {
+            try
+            {
+                var mission = await missionAssignationService.GetByIdMissionAsync(id);
+                if (mission == null) return NotFound();
+                return Ok(mission);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération de la mission {MissionId}", id);
+                return StatusCode(500, "Une erreur est survenue lors de la récupération de la mission");
+            }
+        }
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Mission>>> GetAll()
         {
@@ -26,23 +40,6 @@ namespace MyApp.Api.Controllers.mission
             {
                 logger.LogError(ex, "Erreur lors de la récupération de toutes les missions");
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des missions");
-            }
-        }
-
-        // Récupère une mission par son identifiant
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Mission>> GetById(string id)
-        {
-            try
-            {
-                var mission = await missionService.GetByIdAsync(id);
-                if (mission == null) return NotFound();
-                return Ok(mission);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors de la récupération de la mission {MissionId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la récupération de la mission");
             }
         }
 
@@ -80,12 +77,12 @@ namespace MyApp.Api.Controllers.mission
         }
 
         // Supprime une mission par son identifiant
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        [HttpDelete("{id}/{userId}")]
+        public async Task<IActionResult> Delete(string id, string userId)
         {
             try
             {
-                var deleted = await missionService.DeleteAsync(id);
+                var deleted = await missionService.DeleteAsync(id, userId);
                 if (!deleted) return NotFound();
                 return Ok(new { message = $"Mission with ID {id} successfully deleted" });
             }
@@ -112,7 +109,7 @@ namespace MyApp.Api.Controllers.mission
 
         // Récupère des statistiques sur les missions
         [HttpGet("stats")]
-//[Authorize(Roles = "admin")]
+        // [Authorize(Roles = "admin")]
         public async Task<ActionResult<MissionStats>> GetStatistics([FromQuery] string[]? matricule = null)
         {
             try
@@ -127,10 +124,10 @@ namespace MyApp.Api.Controllers.mission
             }
         }
         // Annule une mission (change son statut à "Annulé")
-        [HttpPut("{id}/cancel")]
-        public async Task<IActionResult> CancelMission(string id)
+        [HttpPut("{id}/cancel/{userId}")]
+        public async Task<IActionResult> CancelMission(string id, string userId)
         {
-            var cancelled = await missionService.CancelAsync(id);
+            var cancelled = await missionService.CancelAsync(id, userId);
             if (!cancelled) 
             {
                 return NotFound(new { error = $"Mission with ID {id} not found" });

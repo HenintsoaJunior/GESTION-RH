@@ -15,21 +15,26 @@ const formInputBaseStyles = css`
   line-height: 1.2;
   padding: var(--spacing-xs);
   padding-right: var(--spacing-xl);
-
   &:hover {
     border: 1px solid var(--primary-color);
   }
-
   &:focus {
     border: 1px solid var(--primary-color);
     background-color: #ffffff;
     outline: none;
     box-shadow: inset 0 0 2px var(--primary-shadow);
   }
-
   &.input-error {
     border: 2px solid var(--error-color) !important;
   }
+`;
+
+// New container for input and button
+export const InputButtonContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
 `;
 
 // Main Container
@@ -43,7 +48,6 @@ export const FormContainer = styled.div`
   max-width: 1000px;
   position: relative;
   overflow: hidden;
-
   @media (max-width: 768px) {
     margin: var(--spacing-md);
     padding: var(--spacing-sm);
@@ -79,7 +83,18 @@ export const FormTable = styled.table`
   margin-top: var(--spacing-md);
   border-collapse: separate;
   border-spacing: 0 4px;
-
+  & th {
+    background-color: var(--bg-secondary);
+    font-weight: 700;
+    color: var(--text-primary);
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: 2px solid var(--border-light);
+    white-space: nowrap;
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
   @media (max-width: 480px) {
     display: block;
     & tr {
@@ -95,11 +110,10 @@ export const FormTable = styled.table`
 
 export const FormRow = styled.tr`
   margin-bottom: var(--spacing-sm);
-
+  display: table-row;
   &.dual-field-row td {
     width: 50%;
     padding: var(--spacing-sm);
-
     @media (max-width: 768px) {
       width: 100%;
       display: block;
@@ -112,9 +126,8 @@ export const FormFieldCell = styled.td`
   font-weight: 600;
   color: var(--text-secondary);
   font-size: var(--font-size-md);
-  padding: var(--spacing-xs);
+  padding: var(--spacing-sm);
   vertical-align: top;
-
   @media (max-width: 480px) {
     display: block;
     width: 100%;
@@ -122,11 +135,13 @@ export const FormFieldCell = styled.td`
 `;
 
 export const FormLabel = styled.label`
-  margin-bottom: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
+  margin-bottom: var(--spacing-xxs);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
   color: var(--text-secondary);
   display: block;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
 `;
 
 export const FormLabelRequired = styled(FormLabel)`
@@ -140,6 +155,7 @@ export const FormLabelRequired = styled(FormLabel)`
 // Input, Select, Textarea, and AutoCompleteInput Styles
 export const FormInput = styled.input`
   ${formInputBaseStyles}
+  flex: 1; /* Ensure input takes available space in flex container */
 `;
 
 export const FormSelect = styled.select`
@@ -152,7 +168,6 @@ export const FormSelect = styled.select`
     url("data:image/svg+xml;utf8,<svg fill='%2369B42E' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>")
     no-repeat right var(--spacing-sm) center;
   background-size: 16px;
-
   & option {
     padding: var(--spacing-md);
     line-height: 1.4;
@@ -168,11 +183,9 @@ export const FormTextarea = styled.textarea`
   min-height: 100px;
   height: auto;
   padding-top: var(--spacing-sm);
-
   &.input-error {
     border: 2px solid var(--error-color) !important;
   }
-
   @media (max-width: 480px) {
     min-height: 120px !important;
   }
@@ -199,11 +212,9 @@ export const StyledAutoCompleteInput = styled(AutoCompleteInput)`
   line-height: 1.2;
   padding: var(--spacing-xs);
   padding-right: var(--spacing-xl);
-
   &:hover {
     border: 1px solid var(--primary-color);
   }
-
   &:focus {
     border: 1px solid var(--primary-color);
     background-color: #ffffff;
@@ -231,7 +242,6 @@ export const AutoCompleteIcon = styled.div`
   justify-content: center;
   height: 100%;
   cursor: pointer;
-
   &:hover {
     color: var(--primary-color);
   }
@@ -260,11 +270,9 @@ export const AutoCompleteSuggestion = styled.div`
   cursor: pointer;
   border-bottom: 1px solid var(--border-light);
   color: var(--text-input);
-
   &:hover {
     background-color: var(--bg-secondary);
   }
-
   &:last-child {
     border-bottom: none;
   }
@@ -282,12 +290,14 @@ export const FormRadio = styled.input.attrs({ type: "radio" })`
   background-color: #f5f5f5;
   cursor: pointer;
   vertical-align: middle;
-
+  margin: 0 4px 0 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   &:checked {
     border-color: var(--primary-color);
     background-color: var(--primary-color);
     position: relative;
-
     &::after {
       content: "";
       width: 10px;
@@ -300,24 +310,20 @@ export const FormRadio = styled.input.attrs({ type: "radio" })`
       transform: translate(-50%, -50%);
     }
   }
-
   &:hover {
     border-color: var(--primary-color);
   }
-
   &:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 4px var(--primary-shadow);
   }
-
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     border-color: var(--border-light);
     background-color: #e0e0e0;
   }
-
   &.input-error {
     outline: 2px solid var(--error-color) !important;
   }
@@ -341,13 +347,11 @@ export const PositionsTable = styled.table`
     font-size: var(--font-size-md);
     padding: var(--spacing-xs);
   }
-
   & td {
     vertical-align: middle;
     font-size: var(--font-size-xs);
     padding: var(--spacing-xs);
   }
-
   & td input,
   & td select,
   & td textarea {
@@ -362,9 +366,22 @@ export const RemoveItem = styled.button`
   padding: var(--spacing-xs);
   border-radius: var(--radius-md);
   cursor: pointer;
-
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+  min-width: 32px;
   &:hover {
     background-color: var(--error-hover);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  & svg {
+    width: 16px;
+    height: 16px;
   }
 `;
 
@@ -376,13 +393,11 @@ export const FormActions = styled.div`
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--spacing-sm);
-
   @media (max-width: 768px) {
     display: flex;
     justify-content: center;
     gap: var(--spacing-sm);
   }
-
   @media (max-width: 480px) {
     & button {
       width: 100%;
@@ -405,11 +420,9 @@ export const SubmitButton = styled.button`
   box-shadow: var(--shadow-sm);
   background-color: var(--primary-color);
   color: #ffffff;
-
   &:hover {
     background-color: var(--primary-hover);
   }
-
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -418,7 +431,6 @@ export const SubmitButton = styled.button`
 
 export const ResetButton = styled(SubmitButton)`
   background-color: var(--error-color);
-
   &:hover {
     background-color: var(--error-hover);
   }
@@ -426,6 +438,24 @@ export const ResetButton = styled(SubmitButton)`
 
 export const AddButton = styled(SubmitButton)`
   margin-top: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  & svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
+
+export const Button = styled(SubmitButton)`
+  margin-top: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  & svg {
+    width: 16px;
+    height: 16px;
+  }
 `;
 
 // Rich Text Editor
@@ -452,12 +482,10 @@ export const QuillEditor = styled.div`
   font-family: var(--font-family);
   font-size: var(--font-size-xs);
   color: var(--text-input);
-
   &.ql-blank::before {
     color: var(--text-placeholder) !important;
     font-style: normal !important;
   }
-
   @media (max-width: 480px) {
     min-height: 120px !important;
   }
@@ -484,7 +512,6 @@ export const AutocompleteIcon = styled.div`
   height: 100%;
   cursor: pointer;
   pointer-events: all;
-
   &:hover {
     color: var(--primary-color);
   }
@@ -506,7 +533,6 @@ export const AutocompleteDropdown = styled.div`
 export const AutocompleteSuggestionsContainer = styled.div`
   max-height: 150px;
   overflow-y: auto;
-
   &.scrollable {
     max-height: 120px;
   }
@@ -518,11 +544,9 @@ export const AutocompleteSuggestion = styled.div`
   border-bottom: 1px solid #eee;
   font-size: 12px;
   color: var(--text-input);
-
   &:hover {
     background-color: #f5f5f5;
   }
-
   &:last-child {
     border-bottom: none;
   }
@@ -540,15 +564,12 @@ export const AutocompleteAddItem = styled.div`
   align-items: center;
   gap: 6px;
   font-size: 12px;
-
   &.enabled {
     color: #69b42e;
-
     &:hover {
       background-color: #e7f3ff;
     }
   }
-
   &.disabled {
     color: #6c757d;
     cursor: not-allowed;
@@ -576,21 +597,17 @@ export const BeneficiariesTableContainer = styled.div`
   max-height: 400px;
   margin-bottom: var(--spacing-lg);
   position: relative;
-
   &::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
-
   &::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: var(--radius-sm);
   }
-
   &::-webkit-scrollbar-thumb {
     background: var(--primary-color);
     border-radius: var(--radius-sm);
-
     &:hover {
       background: var(--primary-hover);
     }
@@ -603,7 +620,6 @@ export const BeneficiariesTable = styled.table`
   font-size: var(--font-size-xs);
   background-color: #ffffff;
   min-width: 1000px;
-
   & th {
     background-color: #f8f9fa;
     color: var(--text-secondary);
@@ -616,13 +632,11 @@ export const BeneficiariesTable = styled.table`
     position: sticky;
     top: 0;
     z-index: 10;
-
     @media (max-width: 768px) {
       padding: var(--spacing-xs) var(--spacing-sm);
       font-size: 11px;
     }
   }
-
   & td {
     padding: var(--spacing-sm) var(--spacing-md);
     border-bottom: 1px solid var(--border-light);
@@ -633,73 +647,58 @@ export const BeneficiariesTable = styled.table`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-
     @media (max-width: 768px) {
       padding: var(--spacing-xs) var(--spacing-sm);
       font-size: 11px;
     }
-
     &[title] {
       cursor: help;
     }
   }
-
   & tbody tr:hover {
     background-color: #f8f9fa;
   }
-
   & tbody tr:last-child td {
     border-bottom: none;
   }
-
   & .col-id {
     width: 60px;
     text-align: center;
     font-weight: 600;
   }
-
   & .col-beneficiary {
     min-width: 200px;
     max-width: 250px;
-
     @media (max-width: 768px) {
       min-width: 150px;
       max-width: 180px;
     }
   }
-
   & .col-matricule {
     width: 100px;
   }
-
   & .col-fonction {
     min-width: 150px;
     max-width: 200px;
-
     @media (max-width: 768px) {
       min-width: 120px;
       max-width: 150px;
     }
   }
-
   & .col-direction {
     min-width: 120px;
     max-width: 180px;
   }
-
   & .col-transport {
     width: 120px;
   }
-
   & .col-dates {
     width: 110px;
   }
-
   & .col-duree {
     width: 80px;
     text-align: center;
   }
-
   & .col-actions {
     width: 120px;
     text-align: center;
@@ -721,38 +720,30 @@ export const TableActionButton = styled.button`
   min-width: 32px;
   height: 32px;
   transform: scale(1);
-
   &:active {
     transform: scale(0.95);
   }
-
   &.edit-btn {
     background-color: #17a2b8;
     color: #ffffff;
-
     &:hover {
       background-color: #138496;
     }
   }
-
   &.delete-btn {
     background-color: var(--error-color);
     color: #ffffff;
-
     &:hover {
       background-color: var(--error-hover);
     }
   }
-
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
-
   & svg {
     width: 14px;
     height: 14px;
-
     @media (max-width: 768px) {
       width: 12px;
       height: 12px;
@@ -774,7 +765,6 @@ export const DateInfo = styled.div`
   display: block;
   font-size: 11px;
   color: var(--text-secondary);
-
   & + & {
     margin-top: 2px;
   }
@@ -790,60 +780,58 @@ export const DurationBadge = styled.span`
   display: inline-block;
 `;
 
-// Stepper Styles
 export const StepperWrapper = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--spacing-lg);
-  position: relative;
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--border-light);
-    z-index: 1;
-  }
+ display: flex;
+ justify-content: space-between;
+ margin-bottom: var(--spacing-lg);
+ position: relative;
+ &::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border-light);
+  z-index: 1;
+ }
 `;
 
 export const StepItem = styled.div`
+ display: flex;
+ align-items: center;
+ font-size: var(--font-size-md);
+ font-weight: 500;
+ color: var(--text-muted);
+ position: relative;
+ z-index: 2;
+ padding: 0 var(--spacing-md);
+ background: var(--bg-primary);
+ span {
   display: flex;
   align-items: center;
-  font-size: var(--font-size-md);
-  font-weight: 500;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--border-light);
   color: var(--text-muted);
-  position: relative;
-  z-index: 2;
-  padding: 0 var(--spacing-md);
-  background: var(--bg-primary);
-
-  span {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--border-light);
-    color: var(--text-muted);
-    margin-right: var(--spacing-sm);
-    font-weight: 600;
-  }
-
-  ${({ active }) =>
-    active &&
-    css`
-      color: var(--primary-color);
-
-      span {
-        background: var(--primary-color);
-        color: #ffffff;
-      }
-    `}
+  margin-right: var(--spacing-sm);
+  font-weight: 600;
+ }
+ 
+ // Utilisez $active pour le style conditionnel
+ ${({ $active }) =>
+  $active &&
+  css`
+   color: var(--primary-color);
+   span {
+    background: var(--primary-color);
+    color: #ffffff;
+   }
+  `}
 `;
+
 
 export const StepContent = styled.div`
   display: ${({ active }) => (active ? "block" : "none")};
@@ -858,7 +846,7 @@ export const NextButton = styled(SubmitButton)``;
 export const PreviousButton = styled(SubmitButton)`
   background-color: #6c757d;
   &:hover {
-    color:#000;
+    color: #000;
     background-color: var(--secondary-hover);
   }
 `;

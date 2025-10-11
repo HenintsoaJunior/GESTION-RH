@@ -36,6 +36,25 @@ public class UserController : ControllerBase
         }
     }
 
+    [HttpGet("departments")]
+    public async Task<ActionResult> GetDistinctDepartments()
+    {
+        try
+        {
+            var departments = await _userService.GetDistinctDepartmentsAsync();
+            return Ok(new { status = "success", data = departments });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { status = "error", message = ex.Message });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, new { status = "error", message = e.Message });
+        }
+    }
+
     [HttpGet("{userId}/roles")]
     public async Task<ActionResult<IEnumerable<string>>> GetUserRoles(string userId)
     {
@@ -61,6 +80,21 @@ public class UserController : ControllerBase
         try
         {
             var collaborators = await _userService.GetCollaboratorsAsync(userId);
+            return Ok(collaborators);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+    [HttpGet("{userId}/info")]
+    public async Task<ActionResult<IEnumerable<UserInfoDto>>> GetUserInfo(string userId)
+    {
+        try
+        {
+            var collaborators = await _userService.GetUserInfo(userId);
             return Ok(collaborators);
         }
         catch (Exception e)
@@ -111,6 +145,28 @@ public class UserController : ControllerBase
         }
     }
 
+    [HttpGet("director/{department}")]
+    public async Task<ActionResult<UserDto>> GetDirectorByDepartment(string department)
+    {
+        try
+        {
+            var director = await _userService.GetDirectorByDepartmentAsync(department);
+            if (director == null)
+                return NotFound($"No director found for the department: {department}");
+
+            return Ok(director);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
     [HttpPost("search")]
     public async Task<ActionResult<(IEnumerable<User>, int)>> Search([FromQuery] UserSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
@@ -134,7 +190,7 @@ public class UserController : ControllerBase
             var habilitations = await _roleHabilitationService.GetHabilitationsByUserIdAsync(userId);
             if (!habilitations.Any())
             {
-                return Ok(new List<Habilitation>()); // Return empty list instead of NotFound for consistency
+                return Ok(new List<Habilitation>());
             }
             return Ok(habilitations);
         }

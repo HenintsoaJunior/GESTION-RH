@@ -13,6 +13,11 @@ namespace MyApp.Api.Entities.mission
         public string MissionId { get; set; } = null!;
         
         [Required]
+        [Column("mission_type")]
+        [MaxLength(50)]
+        public string MissionType { get; set; } = string.Empty;
+
+        [Required]
         [Column("name")]
         [MaxLength(255)]
         public string Name { get; set; } = string.Empty;
@@ -26,10 +31,10 @@ namespace MyApp.Api.Entities.mission
         public string Status { get; set; } = "En Cours";
         
         [Column("start_date")]
-        public DateTime? StartDate { get; set; }
+        public DateTime StartDate { get; set; }
         
         [Column("end_date")]
-        public DateTime? EndDate { get; set; }
+        public DateTime EndDate { get; set; }
         
         [Column("lieu_id", Order = 0)]
         [MaxLength(50)]
@@ -43,6 +48,7 @@ namespace MyApp.Api.Entities.mission
         }
         public Mission(MissionDTOForm  mission)
         {
+            MissionType = mission.MissionType;
             Name = mission.Name;
             Description = mission.Description;
             StartDate = mission.StartDate;

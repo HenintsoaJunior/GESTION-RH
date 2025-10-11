@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 using System.Reflection;
 using MyApp.Api.Entities.logs;
 using MyApp.Api.Models.dto.logs;
@@ -93,8 +89,8 @@ namespace MyApp.Api.Services.logs
         {
             try
             {
-                string formattedOldValues = FormatValues(oldValues, fields);
-                string formattedNewValues = FormatValues(newValues, fields);
+                var formattedOldValues = FormatValues(oldValues, fields);
+                var formattedNewValues = FormatValues(newValues, fields);
 
                 await AddAsync(new LogDTOForm
                 {
@@ -118,11 +114,11 @@ namespace MyApp.Api.Services.logs
         {
             try
             {
-                string? formattedOldValues = oldEntity == null ? null : SerializeSpecificFields(oldEntity, fields);
-                string? formattedNewValues = newEntity == null ? null : SerializeSpecificFields(newEntity, fields);
+                var formattedOldValues = oldEntity == null ? null : SerializeSpecificFields(oldEntity, fields);
+                var formattedNewValues = newEntity == null ? null : SerializeSpecificFields(newEntity, fields);
 
                 // Extraire le nom de la table à partir du type générique
-                string tableName = typeof(T).Name.ToLower() + "s";
+                var tableName = typeof(T).Name.ToLower() + "s";
 
                 await AddAsync(new LogDTOForm
                 {
@@ -182,7 +178,6 @@ namespace MyApp.Api.Services.logs
                 catch (TargetParameterCountException)
                 {
                     // Ignorer les propriétés qui nécessitent des paramètres (comme les indexeurs)
-                    continue;
                 }
                 catch (Exception ex)
                 {
@@ -206,7 +201,7 @@ namespace MyApp.Api.Services.logs
                 try
                 {
                     // Gérer les noms de propriétés simples (ex: "Name" au lieu de "role.Name")
-                    var propName = field.Contains(".") ? field.Split('.').Last() : field;
+                    var propName = field.Contains('.') ? field.Split('.').Last() : field;
                     
                     var prop = typeof(T).GetProperty(propName, BindingFlags.Public | BindingFlags.Instance);
                     if (prop == null)

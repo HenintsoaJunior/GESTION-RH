@@ -11,6 +11,10 @@ using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Utils.csv;
 using MyApp.Api.Utils.exception;
 using MyApp.Api.Utils.pdf;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
+using SpireDoc = Spire.Doc;
 namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
@@ -21,38 +25,42 @@ namespace MyApp.Api.Services.mission
         Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetAllAsync();
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId);
+        Task<MissionAssignation?> GetByIdMissionAsync(string missionId);
         Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId);
         Task<MissionAssignation?> GetByEmployeeIdMissionIdAsync(string employeeId, string missionId);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
         Task<(string EmployeeId, string MissionId, string assignationId, string? TransportId)> CreateAsync(MissionAssignation missionAssignation);
         Task<bool> UpdateAsync(string assignationId, MissionAssignation missionAssignation);
         Task<bool> DeleteAsync(string assignationId);
-        Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
-        Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null);
+        Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null);
+        Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null);
+        Task<byte[]> GenerateMissionOrderPDFAsync(string employeeId, string missionId);
     }
 
     public class MissionAssignationService : IMissionAssignationService
     {
         private readonly IMissionAssignationRepository _repository;
-        private readonly IMissionRepository _missionRepository; // Replaced IMissionService
+        private readonly IMissionRepository _missionRepository; 
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ICompensationScaleService _compensationScaleService;
         private readonly ICategoriesOfEmployeeService _categoriesOfEmployeeService;
         private readonly IEmployeeService _employeeService;
         private readonly ILieuService _lieuService;
         private readonly ITransportService _transportService;
+        private readonly ICompensationService _compensationService;
         private readonly ILogger<MissionAssignationService> _logger;
         private readonly ILoggerFactory _loggerFactory;
 
         public MissionAssignationService(
             IMissionAssignationRepository repository,
-            IMissionRepository missionRepository, // Replaced IMissionService
+            IMissionRepository missionRepository, 
             ISequenceGenerator sequenceGenerator,
             ICompensationScaleService compensationScaleService,
             ICategoriesOfEmployeeService categoriesOfEmployeeService,
             IEmployeeService employeeService,
             ILieuService lieuService,
             ITransportService transportService,
+            ICompensationService compensationService,
             ILogger<MissionAssignationService> logger,
             ILoggerFactory loggerFactory)
         {
@@ -64,10 +72,158 @@ namespace MyApp.Api.Services.mission
             _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
             _lieuService = lieuService ?? throw new ArgumentNullException(nameof(lieuService));
             _transportService = transportService ?? throw new ArgumentNullException(nameof(transportService));
+            _compensationService = compensationService ?? throw new ArgumentNullException(nameof(compensationService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
+        public async Task<byte[]> GenerateMissionOrderPDFAsync(string employeeId, string missionId)
+        {
+            var missionAssignation = await _repository.GetByIdAsync(employeeId, missionId);
+
+            if (missionAssignation == null)
+            {
+                throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
+            }
+            
+            string templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\File\OM.docx"));
+
+            
+            if (!File.Exists(templatePath))
+            {
+                throw new FileNotFoundException("Le fichier modèle n'existe pas.", templatePath);
+            }
+
+            var replacements = new Dictionary<string, string>
+            {
+                { "${ref}",  missionAssignation.AssignationId ?? "" },
+                { "${date}", DateTime.Now.ToString("dd/MM/yyyy") },
+                { "${page}", "1" },
+                { "${titre_mission}", missionAssignation.Mission?.Name ?? "" },
+                { "${numero}",missionAssignation.AssignationId ?? "" },
+                { "${nom}", missionAssignation.Employee?.FirstName ?? "" },
+                { "${prenom}", missionAssignation.Employee?.LastName ?? "" },
+                { "${fonction}", missionAssignation.Employee?.JobTitle ?? "" },
+                { "${matricule}", missionAssignation.Employee?.EmployeeCode ?? "" },
+                { "${direction}", missionAssignation.Employee?.Direction?.DirectionName ?? "" },
+                { "${departement}", missionAssignation.Employee?.Department?.DepartmentName ??  "" },
+                { "${service}", missionAssignation.Employee?.Service?.ServiceName?? "" },
+                { "${lieu}", missionAssignation.Mission?.Lieu?.Nom ?? "" },
+                { "${motif}", missionAssignation.Mission?.Description ?? "" },
+                { "${transport}", missionAssignation.Transport != null ? missionAssignation.Transport.Type ?? "" : "" },
+                { "${date_heure_depart}", missionAssignation.DepartureDate.ToString("dd/MM/yyyy HH:mm") ?? "" }
+            };
+
+            using var memoryStream = new MemoryStream();
+            
+            using (var fileStream = new FileStream(templatePath, FileMode.Open, FileAccess.Read))
+            {
+                await fileStream.CopyToAsync(memoryStream);
+            }
+            
+            memoryStream.Position = 0;
+
+            using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(memoryStream, true))
+            {
+                if (wordDoc.MainDocumentPart == null || wordDoc.MainDocumentPart.Document == null)
+                {
+                    throw new InvalidOperationException("Le document Word ne contient pas de partie principale ou de document.");
+                }
+                var body = wordDoc.MainDocumentPart.Document.Body;
+
+                if (body != null)
+                {
+                    var textElements = body.Descendants<Text>().ToList();
+                    foreach (var text in textElements)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+
+                    var bodyRuns = body.Descendants<Run>().ToList();
+                    foreach (var run in bodyRuns)
+                    {
+                        string runText = string.Join("", run.Descendants<Text>().Select(t => t.Text));
+                        
+                        foreach (var replacement in replacements)
+                        {
+                            if (runText.Contains(replacement.Key))
+                            {
+                                run.RemoveAllChildren<Text>();
+                                string newText = runText.Replace(replacement.Key, replacement.Value);
+                                run.AppendChild(new Text(newText));
+                            }
+                        }
+                    }
+                }
+
+                foreach (var headerPart in wordDoc.MainDocumentPart.HeaderParts)
+                {
+                    var headerTexts = headerPart.Header.Descendants<Text>().ToList();
+                    foreach (var text in headerTexts)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+                }
+
+                foreach (var footerPart in wordDoc.MainDocumentPart.FooterParts)
+                {
+                    var footerTexts = footerPart.Footer.Descendants<Text>().ToList();
+                    foreach (var text in footerTexts)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+                }
+
+                if (body != null)
+                {
+                    var bodyRuns2 = body.Descendants<Run>().ToList();
+                    foreach (var run in bodyRuns2)
+                    {
+                        string runText = string.Join("", run.Descendants<Text>().Select(t => t.Text));
+                        
+                        foreach (var replacement in replacements)
+                        {
+                            if (runText.Contains(replacement.Key))
+                            {
+                                run.RemoveAllChildren<Text>();
+                                string newText = runText.Replace(replacement.Key, replacement.Value);
+                                run.AppendChild(new Text(newText));
+                            }
+                        }
+                    }
+                }
+
+                wordDoc.MainDocumentPart.Document.Save();
+            }
+
+            memoryStream.Position = 0;
+            using var PDFStream = new MemoryStream();
+            
+            SpireDoc.Document doc = new SpireDoc.Document();
+            doc.LoadFromStream(memoryStream, SpireDoc.FileFormat.Docx);
+            doc.SaveToStream(PDFStream, SpireDoc.FileFormat.PDF);
+
+            return PDFStream.ToArray();
+        }
+        
         public async Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator, MissionService missionService)
         {
             var errors = new List<string>();
@@ -87,8 +243,8 @@ namespace MyApp.Api.Services.mission
                 // si transport n'existe pas => throws
                 var transport = await _transportService.VerifyTransportByTypeAsync(data[1][10]);
                 // si mission assignation n'existe pas => insertion
-                if(transport != null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, transport.TransportId);
-                if(transport == null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, null);
+                if (transport != null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, transport.TransportId);
+                if (transport == null) await CreateMissionAssignationIfNotExists(data, employee.EmployeeId, mission, null);
 
                 await transaction.CommitAsync();
                 return errors;
@@ -114,9 +270,9 @@ namespace MyApp.Api.Services.mission
                 DepartureTime = TimeSpan.TryParse(data[1][6], out var depTime) ? depTime : (TimeSpan?)null,
                 ReturnDate = mission.EndDate,
                 ReturnTime = TimeSpan.TryParse(data[1][8], out var retTime) ? retTime : (TimeSpan?)null,
-                Duration = mission is { StartDate: not null, EndDate: not null }
-                    ? await CalculateDuration(mission.StartDate.Value, mission.EndDate.Value)
-                    : 0
+                Duration = await CalculateDuration(
+                mission.StartDate,
+                mission.EndDate)
             });
 
             await CreateAsync(assignation);
@@ -205,15 +361,11 @@ namespace MyApp.Api.Services.mission
             {
                 var paiements = await GeneratePaiementsAsync(
                     generatePaiementDto.EmployeeId,
-                    generatePaiementDto.MissionId,
-                    generatePaiementDto.LieuId,
-                    generatePaiementDto.StartDate,
-                    generatePaiementDto.EndDate,
-                    generatePaiementDto.Status
+                    generatePaiementDto.MissionId
                 );
 
                 var pdf = new PdfGenerator(paiements.GetDescriptionForPdf(), paiements.GetTablesForPdf());
-                return pdf.GeneratePdf("Mission");
+                return pdf.GenerateMissionPaiementPdf("Indemnité de mission");
             }
             catch (Exception ex)
             {
@@ -265,11 +417,37 @@ namespace MyApp.Api.Services.mission
             }
         }
 
+        public async Task<MissionAssignation?> GetByIdMissionAsync(string missionId)
+        {
+            try
+            {
+                var missionAssignation = await _repository.GetByIdMissionAsync(missionId);
+                return missionAssignation;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving mission assignation: {ex.Message}", ex);
+            }
+        }
+
         public async Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId, string? transportId)
         {
             try
             {
                 var missionAssignation = await _repository.GetByIdAsync(employeeId, missionId, transportId);
+                return missionAssignation == null ? null : CreateMissionAssignationFromEntity(missionAssignation);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving mission assignation: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId)
+        {
+            try
+            {
+                var missionAssignation = await _repository.GetByIdAsync(employeeId, missionId);
                 return missionAssignation == null ? null : CreateMissionAssignationFromEntity(missionAssignation);
             }
             catch (Exception ex)
@@ -320,21 +498,20 @@ namespace MyApp.Api.Services.mission
                 UpdatedAt = entity.UpdatedAt,
                 Employee = entity.Employee,
                 Mission = entity.Mission,
-                Transport = entity.Transport
+                Transport = entity.Transport,
+                Type = entity.Type
             };
         }
 
-        public async Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null)
+        public async Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null)
         {
             try
             {
-                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, departureArrive, status);
+                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId);
 
                 var assignations = missionAssignations as MissionAssignation[] ?? missionAssignations.ToArray();
-                if (!assignations.Any())
+                if (assignations.Length == 0)
                 {
-                    _logger.LogWarning("Aucune affectation de mission trouvée pour les filtres fournis : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, departureArrive={DepartureArrive}, status={Status}",
-                        employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", departureArrive?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
                     return new MissionPaiementResult
                     {
                         DailyPaiements = new List<DailyPaiement>(),
@@ -348,18 +525,78 @@ namespace MyApp.Api.Services.mission
                     var paiementResult = await GeneratePaymentsForAssignation(missionAssignation);
                     paiementResults.Add(paiementResult);
                     LogPaymentGenerationResult(paiementResult, missionAssignation.EmployeeId, missionAssignation.MissionId);
+
+                    await CreateCompensationsForResultAsync(paiementResult, missionAssignation);
                 }
 
                 return CombinePaiementResults(paiementResults);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la génération des paiements pour employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}", 
-                    employeeId ?? "null", missionId ?? "null", lieuId ?? "null");
                 throw new Exception($"Erreur lors de la génération des paiements : {ex.Message}", ex);
             }
         }
 
+        private async Task CreateCompensationsForResultAsync(MissionPaiementResult paiementResult, MissionAssignation missionAssignation)
+        {
+            if (paiementResult.DailyPaiements == null || !paiementResult.DailyPaiements.Any())
+            {
+                return;
+            }
+
+            foreach (var dailyPaiement in paiementResult.DailyPaiements)
+            {
+                var compensationDto = new ComposationDTO
+                {
+                    AssignationId = missionAssignation.AssignationId,
+                    EmployeeId = missionAssignation.EmployeeId,
+                    PaymentDate = dailyPaiement.Date,
+                    Status = "not paid",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = null,
+                    TransportAmount = CalculateTransportAmount(dailyPaiement.CompensationScales?.ToList() ?? new List<CompensationScale>(), missionAssignation.TransportId),
+                    BreakfastAmount = 0m,
+                    LunchAmount = 0m,
+                    DinnerAmount = 0m,
+                    AccommodationAmount = 0m
+                };
+
+                if (dailyPaiement.CompensationScales != null)
+                {
+                    foreach (var cs in dailyPaiement.CompensationScales)
+                    {
+                        if (cs?.ExpenseType?.Type == null) continue;
+
+                        var amount = cs.Amount;
+                        switch (cs.ExpenseType.Type)
+                        {
+                            case "Petit Déjeuner":
+                                compensationDto.BreakfastAmount += amount;
+                                break;
+                            case "Déjeuner":
+                                compensationDto.LunchAmount += amount;
+                                break;
+                            case "Dinner":
+                                compensationDto.DinnerAmount += amount;
+                                break;
+                            case "Hébergement":
+                                compensationDto.AccommodationAmount += amount;
+                                break;
+                        }
+                    }
+                }
+
+                try
+                {
+                    var compensationId = await _compensationService.CreateAsync(compensationDto);
+                    _logger.LogInformation("Compensation {CompensationId} créée pour la date {Date} de l'assignation {MissionId}", compensationId, dailyPaiement.Date, missionAssignation.MissionId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Erreur lors de la création de la compensation pour la date {Date} de l'assignation {MissionId}", dailyPaiement.Date, missionAssignation.MissionId);
+                }
+            }
+        }
         private async Task<MissionAssignation> GetMissionAssignationAsync(string employeeId, string missionId)
         {
             var missionAssignation = await GetByEmployeeIdMissionIdAsync(employeeId, missionId);
@@ -383,26 +620,38 @@ namespace MyApp.Api.Services.mission
                 return results[0];
 
             var combinedDailyPaiements = results.SelectMany(r => r.DailyPaiements).ToList();
-            var firstAssignation = results.First().MissionAssignation;
-
+            
             return new MissionPaiementResult
             {
-                DailyPaiements = combinedDailyPaiements,
-                MissionAssignation = firstAssignation
+                DailyPaiements = combinedDailyPaiements
             };
         }
 
-        public async Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null, string? lieuId = null, DateTime? departureDate = null, DateTime? departureArrive = null, string? status = null)
+        public async Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null)
         {
             try
             {
-                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId, lieuId, departureDate, departureArrive, status);
+                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId);
 
-                var assignations = missionAssignations as MissionAssignation[] ?? missionAssignations.ToArray();
-                if (!assignations.Any())
+                var allCompensations = new List<Compensation>();
+                foreach (var assignment in missionAssignations)
                 {
-                    _logger.LogWarning("Aucune affectation trouvée pour la génération du rapport Excel avec les filtres : employeeId={EmployeeId}, missionId={MissionId}, lieuId={LieuId}, departureDate={DepartureDate}, departureArrive={DepartureArrive}, status={Status}", 
-                        employeeId ?? "null", missionId ?? "null", lieuId ?? "null", departureDate?.ToString("yyyy-MM-dd") ?? "null", departureArrive?.ToString("yyyy-MM-dd") ?? "null", status ?? "null");
+                    try
+                    {
+                        var dto = await _compensationService.GetByEmployeeIdAsync(assignment.EmployeeId, assignment.MissionId);
+                        allCompensations.AddRange(dto.Compensations);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Erreur lors de la récupération des compensations pour EmployeeId={EmployeeId}, MissionId={MissionId}", 
+                            assignment.EmployeeId, assignment.MissionId);
+                        continue;
+                    }
+                }
+
+                var compensations = allCompensations.OrderBy(c => c.PaymentDate).ToList();
+                if (!compensations.Any())
+                {
                     return CreateEmptyExcelReport();
                 }
 
@@ -412,33 +661,19 @@ namespace MyApp.Api.Services.mission
 
                 var currentRow = 2;
                 
-                foreach (var assignment in assignations)
+                foreach (var compensation in compensations)
                 {
-                    try
-                    {
-                        var paiementResult = await GeneratePaymentsForAssignation(assignment);
-                        var missionPayments = ConvertToLegacyFormat(paiementResult);
-                        
-                        foreach (var payment in missionPayments)
-                        {
-                            WritePaymentRowToWorksheet(worksheet, payment, assignment, currentRow);
-                            currentRow++;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Erreur lors du traitement de l'affectation EmployeeId={EmployeeId}, MissionId={MissionId}", 
-                            assignment.EmployeeId, assignment.MissionId);
-                        continue;
-                    }
+                    WriteCompensationRowToWorksheet(worksheet, compensation, currentRow);
+                    currentRow++;
                 }
 
                 if (currentRow == 2)
                 {
-                    worksheet.Cell(2, 1).Value = "Aucune donnée de paiement générée pour les affectations trouvées";
+                    worksheet.Cell(2, 1).Value = "Aucune donnée de compensation trouvée pour les affectations filtrées";
                     worksheet.Range("A2:K2").Merge();
                 }
 
+                worksheet.Range(2, 7, currentRow - 1, 11).Style.NumberFormat.Format = "#,##0";
                 worksheet.Columns().AdjustToContents();
 
                 using var stream = new MemoryStream();
@@ -452,25 +687,24 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        private static void WritePaymentRowToWorksheet(IXLWorksheet worksheet, MissionPaiement payment, MissionAssignation assignment, int row)
+        private static void WriteCompensationRowToWorksheet(IXLWorksheet worksheet, Compensation compensation, int row)
         {
-            var employee = assignment.Employee;
-            var mission = assignment.Mission;
-            var compensationScales = payment.CompensationScales?.ToList() ?? new List<CompensationScale>();
+            var employee = compensation.Employee;
+            var assignation = compensation.Assignation;
+            var mission = assignation!.Mission;
+            var lieu = mission!.Lieu;
 
             worksheet.Cell(row, 1).Value = $"{employee?.FirstName} {employee?.LastName}";
             worksheet.Cell(row, 2).Value = employee?.EmployeeCode ?? string.Empty;
             worksheet.Cell(row, 3).Value = mission?.Name ?? string.Empty;
-            worksheet.Cell(row, 4).Value = mission?.Lieu != null ? $"{mission.Lieu.Nom}/{mission.Lieu.Pays}" : string.Empty;
+            worksheet.Cell(row, 4).Value = $"{lieu?.Nom}/{lieu?.Pays}";
             worksheet.Cell(row, 5).Value = FormatDate(mission?.StartDate);
-            worksheet.Cell(row, 6).Value = FormatDate(payment.Date);
-            worksheet.Cell(row, 7).Value = CalculateTransportAmount(compensationScales, assignment.TransportId);
-            worksheet.Cell(row, 8).Value = CalculateExpenseAmount(compensationScales, "Petit Déjeuner");
-            worksheet.Cell(row, 9).Value = CalculateExpenseAmount(compensationScales, "Déjeuner");
-            worksheet.Cell(row, 10).Value = CalculateExpenseAmount(compensationScales, "Dinner");
-            worksheet.Cell(row, 11).Value = CalculateExpenseAmount(compensationScales, "Hébergement");
-
-            worksheet.Range($"G{row}:K{row}").Style.NumberFormat.Format = "#,##0";
+            worksheet.Cell(row, 6).Value = FormatDate(compensation.PaymentDate);
+            worksheet.Cell(row, 7).Value = compensation.TransportAmount;
+            worksheet.Cell(row, 8).Value = compensation.BreakfastAmount;
+            worksheet.Cell(row, 9).Value = compensation.LunchAmount;
+            worksheet.Cell(row, 10).Value = compensation.DinnerAmount;
+            worksheet.Cell(row, 11).Value = compensation.AccommodationAmount;
         }
 
         private byte[] CreateEmptyExcelReport()
@@ -492,68 +726,6 @@ namespace MyApp.Api.Services.mission
             return stream.ToArray();
         }
 
-        private static IEnumerable<MissionPaiement> ConvertToLegacyFormat(MissionPaiementResult result)
-        {
-            if (result?.DailyPaiements == null || !result.DailyPaiements.Any())
-                return new List<MissionPaiement>();
-
-            return result.DailyPaiements.Select(daily => new MissionPaiement
-            {
-                Date = daily.Date,
-                CompensationScales = daily.CompensationScales?.Select(scale => new CompensationScale
-                {
-                    CompensationScaleId = scale.CompensationScaleId,
-                    Amount = scale.Amount,
-                    TransportId = scale.TransportId,
-                    ExpenseTypeId = scale.ExpenseTypeId,
-                    EmployeeCategoryId = scale.EmployeeCategoryId,
-                    Transport = scale.Transport != null ? new Transport
-                    {
-                        TransportId = scale.Transport.TransportId,
-                        Type = scale.Transport.Type,
-                        CreatedAt = scale.Transport.CreatedAt,
-                        UpdatedAt = scale.Transport.UpdatedAt
-                    } : null,
-                    ExpenseType = scale.ExpenseType != null ? new ExpenseType
-                    {
-                        ExpenseTypeId = scale.ExpenseType.ExpenseTypeId,
-                        TimeStart = scale.ExpenseType.TimeStart,
-                        TimeEnd = scale.ExpenseType.TimeEnd,
-                        Type = scale.ExpenseType.Type,
-                        CreatedAt = scale.ExpenseType.CreatedAt,
-                        UpdatedAt = scale.ExpenseType.UpdatedAt
-                    } : null,
-                    EmployeeCategory = scale.EmployeeCategory != null ? new EmployeeCategory
-                    {
-                        EmployeeCategoryId = scale.EmployeeCategory.EmployeeCategoryId,
-                        Code = scale.EmployeeCategory.Code,
-                        Label = scale.EmployeeCategory.Label,
-                        CreatedAt = scale.EmployeeCategory.CreatedAt,
-                        UpdatedAt = scale.EmployeeCategory.UpdatedAt
-                    } : null,
-                    CreatedAt = scale.CreatedAt,
-                    UpdatedAt = scale.UpdatedAt
-                }).ToList(),
-                TotalAmount = daily.TotalAmount,
-                MissionAssignation = result.MissionAssignation != null ? new MissionAssignation
-                {
-                    EmployeeId = result.MissionAssignation.EmployeeId,
-                    MissionId = result.MissionAssignation.MissionId,
-                    TransportId = result.MissionAssignation.TransportId,
-                    DepartureDate = result.MissionAssignation.DepartureDate,
-                    DepartureTime = result.MissionAssignation.DepartureTime,
-                    ReturnDate = result.MissionAssignation.ReturnDate,
-                    ReturnTime = result.MissionAssignation.ReturnTime,
-                    Duration = result.MissionAssignation.Duration,
-                    CreatedAt = result.MissionAssignation.CreatedAt,
-                    UpdatedAt = result.MissionAssignation.UpdatedAt,
-                    Employee = result.MissionAssignation.Employee,
-                    Mission = result.MissionAssignation.Mission,
-                    Transport = result.MissionAssignation.Transport
-                } : null
-            }).ToList();
-        }
-
         private static void CreateExcelHeaders(IXLWorksheet worksheet)
         {
             const int tableStartRow = 1;
@@ -571,20 +743,6 @@ namespace MyApp.Api.Services.mission
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
             headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        }
-
-        public static decimal CalculateExpenseAmount(List<CompensationScale> compensationScales, string expenseType)
-        {
-            return compensationScales
-                .Where(scale => scale.ExpenseType?.Type == expenseType)
-                .Sum(scale => scale.Amount);
-        }
-
-        public static decimal CalculateTransportAmount(List<CompensationScale> compensationScales, string? transportId)
-        {
-            return compensationScales
-                .Where(scale => scale.TransportId == transportId && scale.TransportId != null)
-                .Sum(scale => scale.Amount);
         }
 
         private static string FormatDate(DateTime? date)
@@ -697,7 +855,7 @@ namespace MyApp.Api.Services.mission
             var mission = await _missionRepository.GetByIdAsync(missionId); // Use repository
             if (mission != null)
             {
-                mission.Status = "Planifié";
+                mission.Status = "planned ";
                 mission.UpdatedAt = DateTime.UtcNow;
                 await _missionRepository.UpdateAsync(mission);
                 await _missionRepository.SaveChangesAsync();
@@ -731,6 +889,7 @@ namespace MyApp.Api.Services.mission
         {
             existing.EmployeeId = updated.EmployeeId;
             existing.MissionId = updated.MissionId;
+            existing.Type = updated.Type;
             existing.TransportId = updated.TransportId;
             existing.DepartureDate = updated.DepartureDate;
             existing.DepartureTime = updated.DepartureTime;
@@ -766,103 +925,18 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        private async Task<IEnumerable<MissionPaiement>> GetValidatedPaymentData(string employeeId, string missionId)
+        public static decimal CalculateExpenseAmount(List<CompensationScale> compensationScales, string expenseType)
         {
-            var missionPaymentResult = await GeneratePaiementsAsync(employeeId, missionId);
-            var missionPayments = ConvertToLegacyFormat(missionPaymentResult);
-
-            var paymentsList = missionPayments?.ToList();
-
-            if (paymentsList?.Any() != true)
-            {
-                throw new InvalidOperationException("No payment data found for the specified mission and employee.");
-            }
-
-            return paymentsList;
+            return compensationScales
+                .Where(scale => scale.ExpenseType?.Type == expenseType)
+                .Sum(scale => scale.Amount);
         }
 
-        private byte[] CreateExcelReport(IEnumerable<MissionPaiement> missionPayments, MissionPaiementResult missionPaymentResult)
+        public static decimal CalculateTransportAmount(List<CompensationScale> compensationScales, string? transportId)
         {
-            using var workbook = new XLWorkbook();
-            var worksheet = workbook.Worksheets.Add("Mission Payment Report");
-
-            CreateExcelHeaders(worksheet);
-            var transformedData = TransformPaymentDataForExcel(missionPayments, missionPaymentResult);
-            WriteDataToWorksheet(worksheet, transformedData, 1);
-            worksheet.Columns().AdjustToContents();
-
-            using var stream = new MemoryStream();
-            workbook.SaveAs(stream);
-            return stream.ToArray();
-        }
-
-        private static List<ExcelRowData> TransformPaymentDataForExcel(IEnumerable<MissionPaiement> missionPayments, MissionPaiementResult missionPaymentResult)
-        {
-            var assignment = missionPaymentResult.MissionAssignation;
-            var employee = assignment?.Employee;
-            var mission = assignment?.Mission;
-
-            return missionPayments.Select(item =>
-            {
-                var compensationScales = item.CompensationScales?.ToList() ?? new List<CompensationScale>();
-
-                return new ExcelRowData
-                {
-                    Beneficiary = $"{employee?.FirstName} {employee?.LastName}",
-                    EmployeeCode = employee?.EmployeeCode ?? string.Empty,
-                    MissionName = mission?.Name ?? string.Empty,
-                    MissionLocation = mission?.Lieu != null
-                        ? $"{mission.Lieu.Nom}/{mission.Lieu.Pays}"
-                        : string.Empty,
-
-                    StartDate = assignment?.Mission?.StartDate,
-                    Date = item.Date,
-                    Transport = CalculateTransportAmount(compensationScales, assignment?.TransportId),
-                    Breakfast = CalculateExpenseAmount(compensationScales, "Petit Déjeuner"),
-                    Lunch = CalculateExpenseAmount(compensationScales, "Déjeuner"),
-                    Dinner = CalculateExpenseAmount(compensationScales, "Dinner"),
-                    Accommodation = CalculateExpenseAmount(compensationScales, "Hébergement"),
-                };
-            }).ToList();
-        }
-
-        private static void WriteDataToWorksheet(IXLWorksheet worksheet, List<ExcelRowData> transformedData, int tableStartRow)
-        {
-            for (int i = 0; i < transformedData.Count; i++)
-            {
-                var row = tableStartRow + i + 1;
-                var data = transformedData[i];
-
-                worksheet.Cell(row, 1).Value = data.Beneficiary;
-                worksheet.Cell(row, 2).Value = data.EmployeeCode;
-                worksheet.Cell(row, 3).Value = data.MissionName;
-                worksheet.Cell(row, 4).Value = data.MissionLocation;
-                worksheet.Cell(row, 5).Value = FormatDate(data.StartDate);
-                worksheet.Cell(row, 6).Value = FormatDate(data.Date);
-                worksheet.Cell(row, 7).Value = data.Transport;
-                worksheet.Cell(row, 8).Value = data.Breakfast;
-                worksheet.Cell(row, 9).Value = data.Lunch;
-                worksheet.Cell(row, 10).Value = data.Dinner;
-                worksheet.Cell(row, 11).Value = data.Accommodation;
-
-                worksheet.Range($"H{row}:M{row}").Style.NumberFormat.Format = "#,##0";
-            }
-        }
-
-        private class ExcelRowData
-        {
-            public string? Beneficiary { get; set; }
-            public string? EmployeeCode { get; set; }
-            public string? MissionName { get; set; }    
-            public string? MissionLocation { get; set; }
-            public DateTime? StartDate { get; set; }
-            public DateTime? Date { get; set; }
-            public decimal Transport { get; set; }
-            public decimal Breakfast { get; set; }
-            public decimal Lunch { get; set; }
-            public decimal Dinner { get; set; }
-            public decimal Accommodation { get; set; }
-            public decimal Total { get; set; }
+            return compensationScales
+                .Where(scale => scale.TransportId == transportId && scale.TransportId != null)
+                .Sum(scale => scale.Amount);
         }
     }
 }

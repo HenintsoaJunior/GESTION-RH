@@ -46,8 +46,10 @@ export const StepCircle = styled.div`
   margin-bottom: 0.5rem;
 
   background-color: ${({ $status }) => {
+    if ($status === "validate") return "var(--success-color)";
     if ($status === "approved") return "var(--success-color)";
     if ($status === "in-progress" || $status === "pending") return "var(--pending-color)";
+    if ($status === "rejected") return "var(--error-color)";
     return "var(--text-muted)";
   }};
 

@@ -4,8 +4,9 @@ import { useEffect, useRef } from "react"
 
 let isQuillScriptLoaded = false
 
-export default function RichTextEditor({ placeholder, onChange, disabled }) {
+export default function RichTextEditor({ placeholder, onChange, disabled, initialValue }) {
   const quillRef = useRef(null)
+  const isInitializedRef = useRef(false)
 
   useEffect(() => {
     const initializeQuill = () => {
@@ -75,6 +76,12 @@ export default function RichTextEditor({ placeholder, onChange, disabled }) {
           placeholder,
         })
 
+        // Set initial value if provided
+        if (initialValue && !isInitializedRef.current) {
+          quillRef.current.root.innerHTML = initialValue
+          isInitializedRef.current = true
+        }
+
         quillRef.current.on("text-change", () => {
           if (onChange) {
             onChange(quillRef.current.root.innerHTML)
@@ -99,7 +106,17 @@ export default function RichTextEditor({ placeholder, onChange, disabled }) {
     } else {
       initializeQuill()
     }
-  }, [placeholder, onChange])
+  }, [placeholder, onChange, initialValue])
+
+  // Update content when initialValue changes
+  useEffect(() => {
+    if (quillRef.current && initialValue !== undefined) {
+      const currentContent = quillRef.current.root.innerHTML
+      if (currentContent !== initialValue) {
+        quillRef.current.root.innerHTML = initialValue
+      }
+    }
+  }, [initialValue])
 
   const getFileIcon = (type) => {
     if (type.startsWith("image/")) return "🖼️"

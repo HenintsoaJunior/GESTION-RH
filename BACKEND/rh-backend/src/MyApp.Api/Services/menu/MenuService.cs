@@ -2,12 +2,13 @@ using MyApp.Api.Entities.menu;
 using MyApp.Api.Repositories.menu;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Models.dto.menu;
+using MyApp.Api.Services.users;
 
 namespace MyApp.Api.Services.menu
 {
     public interface IMenuService
     {
-        Task<IEnumerable<MenuHierarchyDto>> GetMenuHierarchyAsync(string[]? roleNames = null);
+        Task<IEnumerable<MenuHierarchyDto>> GetMenuHierarchyAsync(string UserId);
         Task<IEnumerable<ModuleDto>> GetModulesAsync();
     }
 
@@ -15,24 +16,32 @@ namespace MyApp.Api.Services.menu
     {
         private readonly IMenuRepository _menuRepository;
         private readonly IMenuHierarchyRepository _hierarchyRepository;
+        private readonly IUserRoleService  _userRoleService;
         private readonly IModuleRepository _moduleRepository;
 
         public MenuService(
             IMenuRepository menuRepository,
             IMenuHierarchyRepository hierarchyRepository,
+            IUserRoleService userRoleService,
             IModuleRepository moduleRepository)
         {
             _menuRepository = menuRepository;
             _hierarchyRepository = hierarchyRepository;
+            _userRoleService = userRoleService;
             _moduleRepository = moduleRepository;
         }
 
-        public async Task<IEnumerable<MenuHierarchyDto>> GetMenuHierarchyAsync(string[]? roleNames = null)
+        public async Task<IEnumerable<MenuHierarchyDto>> GetMenuHierarchyAsync(string UserId)
         {
             var rootHierarchies = await _hierarchyRepository.GetRootMenusAsync();
             var result = new List<MenuHierarchyDto>();
+            var roleNames = await _userRoleService.GetRoleNamesByUserIdAsync(UserId) ?? [];
 
+            Console.WriteLine($"Roles for UserId {UserId}: {string.Join(", ", roleNames)}");
             var menusWithRoles = await _menuRepository.GetAllWithRolesAsync(roleNames);
+
+            Console.WriteLine($"Menus accessible to UserId {UserId}: {string.Join(", ", menusWithRoles.Select(m => m.MenuKey))}");
+            
             var menuDict = menusWithRoles.ToDictionary(m => m.MenuId, m => m);
 
             foreach (var hierarchy in rootHierarchies)
@@ -44,7 +53,7 @@ namespace MyApp.Api.Services.menu
                 }
             }
 
-            return result.OrderBy(r => r.Menu.Position).ToList();
+            return [.. result.OrderBy(r => r.Menu.Position)];
         }
 
         public async Task<IEnumerable<ModuleDto>> GetModulesAsync()

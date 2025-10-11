@@ -177,6 +177,7 @@ VALUES
     ('CT_0002', 'CDD', 'Contrat à Durée Déterminée', GETDATE(), NULL),
     ('CT_0003', 'CTT', 'Contrat de Travail Temporaire', GETDATE(), NULL);
 
+
 INSERT INTO employee_categories (employee_category_id, code, label, created_at, updated_at)
 VALUES 
     ('EC_0001', 'CAD', 'Cadre', GETDATE(), NULL),
@@ -203,8 +204,6 @@ VALUES
     ('ROLE_003', 'collaborateur', 'Standard employee role', CURRENT_TIMESTAMP, NULL);
 
 
-
-
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '000465d0-0530-41d9-872f-d6012418ba7e', '00298', 'Safidy RAKOTONDRAJOA (DSI)', 'safidy.rakotondrajoa@ravinala-airports.aero', 'Responsable des applications IT', 'DSI', '83dc05fd-0e42-43f5-b0e0-1567df7647b1', 'Vonjimampianina RAKOTOARISOA (DSI)', null, null, 0);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '002b1f12-e8c5-4a30-81ca-e8532855de71', '00182', 'Dealilalaina Sedera RASOLOMANANA (DRH)', 'sedera.rasolomanana@ravinala-airports.aero', 'Directrice des Ressources Humaines', 'DRH', 'ec738732-6e94-4288-be4a-c098408d199d', 'Daniel LEFEBVRE (DGE)', null, null, null);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '00b58219-2f52-470d-b48f-383c8fd9ba23', '00174', 'Andry Lova Tiana RAJERISON RASAONA (DT)', 'andry.rajerison@ravinala-airports.aero', 'Chef de Département Maintenance Multi-technique', 'DT', '1a0f5dab-9ad7-4a30-b73c-842f54ba6a9a', 'Rova RAHERIJAONA (DT)', null, null, null);
@@ -213,7 +212,7 @@ INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superi
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '06549ecf-3dbd-448d-a90d-55ac12005e72', '00162', 'Gilbert RAHERISOA (DOP)', 'gilbert.raherisoa@ravinala-airports.aero', 'Caissier Parking', 'DOP', '20fff662-51ee-4fc4-99ae-dc7a9c361cbd', 'Fanjanirina RAFANILONIAINA (DOP)', null, null, null);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '0692e9fe-e27b-4686-b658-ae81b861bc0f', '00403', 'Rivo Arilala RAMANANTSOA (DT)', 'rivo.ramanantsoa@ravinala-airports.aero', 'Superviseur Maintenance', 'DT', 'ee6cb78f-98c3-46c5-b178-e946005f8918', 'Rindra Clark RAKOTOZANANY (DT)', null, null, null);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '071e2782-cdec-4119-bdb0-177e399fbb50', '00016', 'Cathia Vololomanana RAHARIMANANTSOA (DAF)', 'cathia.raharimanantsoa@ravinala-airports.aero', 'Comptable Fournisseurs', 'DAF', '9c2ac066-01de-49a4-86a1-0d1153cb14e8', 'Andrianantenaina RAMAROLAHY (DAF)', null, null, null);
-INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '07e12d3a-8606-424e-9baf-fbe6f797af63', 'ST155','Mandaniaina ANDRIAMBOLOLONA (DRH)', 'mandaniaina.andriambololona@ravinala-airports.aero', 'Stagiaire DRH', 'DRH', 'ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'MiantsaFitia RAKOTOARIMANANA (DRH)', null, null, null);
+INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '07e12d3a-8606-424e-9baf-fbe6f797af63', 'ST155', 'Mandaniaina ANDRIAMBOLOLONA (DRH)', 'mandaniaina.andriambololona@ravinala-airports.aero', 'Stagiaire DRH', 'DRH', '76c25f37-2089-4e81-8329-1b63d880b71a', 'Herinomenjanaharilala Sedera RASOLOFONDRAMANAMBE (DRH)', null, null, null);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '0856afd4-4692-465f-8b80-69fd1ff1a894', '00451', 'Johannot ANDRIATIANA (DAF)', 'johannot.andriatiana@ravinala-airports.aero', 'Responsable Fiscalités', 'DAF', '7b2ef755-f135-4ae8-8f4d-b9fdbe2e32ad', 'Rado RAFANOMEZANTSOA (DAF)', null, null, null);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '08d33006-34ac-4da9-9910-4463821bd22b', '00119', 'Rantoanina Toavina RATSIMBA  (DRH)', 'toavina.rantoanina@ravinala-airports.aero', 'Chef de Service Relations Sociales', 'DRH', 'd054c552-5c38-41d2-ae50-13805364fb99', 'Tanjona RIVONIRINA (DRH)', null, null, 0);
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '090979ec-bd46-4b3f-a7ab-394b8c4c0192', '00356', 'Mialy RAHARIVELO(DAF)', 'mialy.raharivelo@ravinala-airports.aero', 'Facturière Extra Aéroportuaire', 'DAF', '7a1865b2-fae2-41f0-b045-1db2c4d80727', 'Herimboahary Dinarisoa ANDRIANTOLOTIANA RAVONIRINA (DAF)', null, null, null);
@@ -460,27 +459,10 @@ VALUES
 
 INSERT INTO habilitations (habilitation_id, label)
 VALUES
-    ('HAB_001','mission_insertion'),
-    ('HAB_002','mission_consultation'),
-    ('HAB_003','mission_modification'),
-    ('HAB_004','mission_suppression'),
-    ('HAB_005','mission_validation'),
-    ('HAB_006','utilisateur_consultation'),
-    ('HAB_007','utilisateur_creation'),
-    ('HAB_008','utilisateur_modification'),
-    ('HAB_009','utilisateur_suppression'),
-    ('HAB_010','role_consultation'),
-    ('HAB_011','role_creation'),
-    ('HAB_012','role_modification'),
-    ('HAB_013','role_suppression'),
-    ('HAB_014','rapport_consultation'),
-    ('HAB_015','rapport_export'),
-    ('HAB_016','parametre_systeme'),
-    ('HAB_017','journal_audit_consultation'),
-    ('HAB_018','journal_audit_export'),
-    ('HAB_019','tableau_de_bord_consultation'),
-    ('HAB_020','statistique_export'),
-    ('HAB_021','administration_generale');
+    ('HAB_001','creation des mission'),
+    ('HAB_002','consultation de toutes les missions'),
+    ('HAB_003','modification des mission'),
+    ('HAB_004','supression des mission');
 
 
 
@@ -488,7 +470,9 @@ INSERT INTO role_habilitation (habilitation_id, role_id)
 VALUES
     ('HAB_001', 'ROLE_001'),
     ('HAB_001', 'ROLE_002'),
-    ('HAB_001', 'ROLE_003');
+    ('HAB_002', 'ROLE_001'),
+    ('HAB_003', 'ROLE_001'),
+    ('HAB_004', 'ROLE_001');
 
 
 INSERT INTO lieu (lieu_id, nom, adresse, ville, code_postal, pays, created_at, updated_at) VALUES
@@ -559,3 +543,72 @@ INSERT INTO compensation_scale (
 ('comp0016', 35000.00, GETDATE(), GETDATE(), NULL, 'exp002', 'EC_0003'),
 ('comp0017', 35000.00, GETDATE(), GETDATE(), NULL, 'exp003', 'EC_0003'),
 ('comp0018', 120000.00, GETDATE(), GETDATE(), NULL, 'exp004', 'EC_0003');
+
+
+INSERT INTO expense_report_type (expense_report_type_id, type) 
+VALUES 
+('ERT001', 'FRAIS DE TRANSPORT/MISSION'),
+('ERT002', 'FRAIS DE RESTAURATION/RECEPTION'),
+('ERT003', 'AUTRE DEPENSE');
+
+-- ============================
+-- MENU DYNAMIQUE
+-- ============================
+INSERT INTO module (module_id, module_name, description, created_at, updated_at) VALUES
+('user', 'Utilisateurs', 'Gestion des utilisateurs et rôles', GETDATE(), GETDATE()),
+('habilitation', 'Habilitation', 'Gestion des habilitations et autorisations', GETDATE(), GETDATE()),
+('mission', 'Suivi des Missions', 'Gestion des missions, assignations et paiements', GETDATE(), GETDATE()),
+('logs', 'Logs', 'Suivi et journalisation des actions utilisateurs et systèmes', GETDATE(), GETDATE()),
+('treasury', 'Trésorerie', 'Gestion des flux financiers et de la trésorerie', GETDATE(), GETDATE()); 
+
+
+INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
+('menu0', 'utilisateurs', 'fa-users', '/utilisateur', 1, 1, 'user', 'administration', GETDATE(), GETDATE());
+
+INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
+('menu_hab', 'habilitation', 'fa-shield-alt', '/habilitation', 1, 2, 'habilitation', 'administration', GETDATE(), GETDATE()),
+('menu_hab_2', 'role', 'fa-list', '/role/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
+
+INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
+('menu_logs', 'logs', 'fa-file-alt', '/logs', 1, 4, 'logs', 'administration', GETDATE(), GETDATE());
+
+-- Navigation: mission
+INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
+('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE()),
+('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
+('menu2_3', 'collaborateur', 'fa-users', '/mission/collaborateur', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
+('menu2_5', 'treso', 'fa-money-bill-alt', '/treasury', 1, 5, 'treasury', 'navigation', GETDATE(), GETDATE()),
+('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 6, 'mission', 'navigation', GETDATE(), GETDATE()); 
+
+
+INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
+('h0', NULL, 'menu0', GETDATE(), GETDATE()),
+('h_hab', NULL, 'menu_hab', GETDATE(), GETDATE()),
+('h_hab_2', 'menu_hab', 'menu_hab_2', GETDATE(), GETDATE()),
+('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),
+('h4', NULL, 'menu2', GETDATE(), GETDATE()),
+('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
+('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
+('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE()),
+('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE());
+
+
+INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
+('menu0', 'ROLE_001', GETDATE(), GETDATE()),
+('menu_hab', 'ROLE_001', GETDATE(), GETDATE()),
+('menu_hab_2', 'ROLE_001', GETDATE(), GETDATE()),
+('menu_logs', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2', 'ROLE_002', GETDATE(), GETDATE()),
+('menu2', 'ROLE_003', GETDATE(), GETDATE()),
+('menu2_0', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2_0', 'ROLE_002', GETDATE(), GETDATE()),
+('menu2_3', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2_3', 'ROLE_002', GETDATE(), GETDATE()),
+('menu2_3', 'ROLE_003', GETDATE(), GETDATE()),
+('menu2_5', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2_5', 'ROLE_002', GETDATE(), GETDATE()),
+('menu2_5', 'ROLE_003', GETDATE(), GETDATE()),
+('menu2_4', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2_4', 'ROLE_002', GETDATE(), GETDATE()),
+('menu2_4', 'ROLE_003', GETDATE(), GETDATE());

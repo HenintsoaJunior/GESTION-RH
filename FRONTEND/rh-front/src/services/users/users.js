@@ -180,3 +180,52 @@ export const fetchCollaborators = async (userId, setCollaborators, setIsLoading,
     setIsLoading((prev) => ({ ...prev, collaborators: false }));
   }
 };
+
+export const fetchUserInfo = async (userId, setCollaborators, setIsLoading, onError) => {
+  // Validate input parameters
+  if (!userId || typeof setCollaborators !== 'function' || typeof setIsLoading !== 'function' || typeof onError !== 'function') {
+    console.error('Invalid parameters provided to fetchUserInfo');
+    onError({
+      isOpen: true,
+      type: 'error',
+      message: 'Invalid parameters provided to fetch user information',
+    });
+    return;
+  }
+
+  try {
+    setIsLoading((prev) => ({ ...prev, collaborators: true }));
+
+    const data = await apiGet(`/api/User/${userId}/info`);
+    console.log('API Response (User Info):', data);
+
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error('Invalid or empty response from API');
+    }
+
+    const userData = data[0];
+
+    if (!userData?.userId || !userData?.name || !userData?.email) {
+      throw new Error('Invalid user data structure in API response');
+    }
+
+    setCollaborators([userData]);
+
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
+    console.error('Error fetching user info:', error);
+    onError({
+      isOpen: true,
+      type: 'error',
+      message: `Failed to load user information: ${errorMessage}`,
+    });
+    setCollaborators([]);
+  } finally {
+    setIsLoading((prev) => ({ ...prev, collaborators: false }));
+  }
+};
+
+export const getUserId = (userName, usersList) => {
+  const user = usersList.find((u) => u.name === userName);
+  return user ? user.id : "";
+};

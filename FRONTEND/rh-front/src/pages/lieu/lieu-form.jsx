@@ -5,7 +5,7 @@ import Alert from "components/alert";
 import Modal from "components/modal";
 import * as FaIcons from "react-icons/fa";
 import AutoCompleteInput from "components/auto-complete-input";
-import { fetchAllRegions, createRegion } from "services/lieu/lieu";
+import { createRegion } from "services/lieu/lieu";
 
 export default function LieuForm() {
   const [formData, setFormData] = useState({
@@ -18,7 +18,6 @@ export default function LieuForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ isOpen: false, type: "info", message: "" });
   const [modal, setModal] = useState({ isOpen: false, type: "info", message: "" });
-  const [regions, setRegions] = useState([]);
   const [paysSuggestions, setPaysSuggestions] = useState([]); // Initialize as empty
   const [isLoading, setIsLoading] = useState({ lieux: false });
   const [fieldErrors, setFieldErrors] = useState({});
@@ -38,17 +37,6 @@ export default function LieuForm() {
     setReturnUrl(url);
     setFieldType(type);
   }, [location.search]);
-
-  // Fetch regions from API
-  useEffect(() => {
-    fetchAllRegions(
-      (data) => {
-        setRegions(data);
-      },
-      setIsLoading,
-      (alert) => setAlert(alert)
-    );
-  }, []);
 
   // Fetch countries from country.json
   useEffect(() => {
@@ -225,7 +213,7 @@ export default function LieuForm() {
               </tr>
               <tr>
                 <th className="form-label-cell">
-                <label htmlFor="ville" className="form-label">
+                  <label htmlFor="ville" className="form-label">
                     Ville
                   </label>
                 </th>

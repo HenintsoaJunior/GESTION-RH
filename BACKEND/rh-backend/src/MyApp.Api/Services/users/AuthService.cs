@@ -41,23 +41,26 @@ public class AuthService : IAuthService
     {
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             return new ValidationResult { Message = "Username and password are required", Type = "invalid_input" };
-
+        // try
+        // {
+        //     var ldapResult = await ValidateLdapCredentialsAsync(username, password);
+        //     if (ldapResult.Type == "success")
+        //     {
+        //         var dbUser = await GetUserFromDatabaseAsync(ldapResult.EmailAddress);
+        //         return ValidateUserAccess(dbUser);
+        //     }
+        //     else if (ldapResult.Type == "ldap_unavailable" || ldapResult.Type == "ldap_error")
+        //     {
+        //         return await FallbackValidateAsync(username, password);
+        //     }
+        //     else
+        //     {
+        //         return new ValidationResult { Message = ldapResult.Message, Type = ldapResult.Type };
+        //     }
+        // }
         try
         {
-            var ldapResult = await ValidateLdapCredentialsAsync(username, password);
-            if (ldapResult.Type == "success")
-            {
-                var dbUser = await GetUserFromDatabaseAsync(ldapResult.EmailAddress);
-                return ValidateUserAccess(dbUser);
-            }
-            else if (ldapResult.Type == "ldap_unavailable" || ldapResult.Type == "ldap_error")
-            {
-                return await FallbackValidateAsync(username, password);
-            }
-            else
-            {
-                return new ValidationResult { Message = ldapResult.Message, Type = ldapResult.Type };
-            }
+            return await FallbackValidateAsync(username, password);
         }
         catch (Exception ex)
         {
@@ -69,10 +72,13 @@ public class AuthService : IAuthService
     {
         var hardcodedUsers = new Dictionary<string, (string Password, string Email)>
         {
-            ["testuser"] = ("Carasco@22", "miantsafitia.rakotoarimanana@ravinala-airports.aero"),
-            ["st154"] = ("Carasco@22", "miantsafitia.rakotoarimanana@ravinala-airports.aero"),
-            ["00358"] = ("Carasco@22", "hery.rasolofondramanambe@ravinala-airports.aero"),
-            ["00182"] = ("Carasco@22", "sedera.rasolomanana@ravinala-airports.aero")
+
+            ["00446"] = ("1234", "christelle.rakotomavo@ravinala-airports.aero"),
+            ["st154"] = ("1234", "miantsafitia.rakotoarimanana@ravinala-airports.aero"),
+            ["00358"] = ("1234", "hery.rasolofondramanambe@ravinala-airports.aero"),
+            ["00182"] = ("1234", "sedera.rasolomanana@ravinala-airports.aero"),
+            ["00418"] = ("1234", "damien.andriantsilavina@ravinala-airports.aero"),
+
         };
 
         if (hardcodedUsers.TryGetValue(username, out var info) && info.Password == password)

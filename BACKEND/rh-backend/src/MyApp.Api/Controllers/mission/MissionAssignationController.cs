@@ -91,10 +91,7 @@ namespace MyApp.Api.Controllers.mission
             {
                 var excelBytes = await _service.GenerateExcelReportAsync(
                     generatePaiementDto.EmployeeId,
-                    generatePaiementDto.MissionId,
-                    generatePaiementDto.DirectionId,
-                    generatePaiementDto.StartDate,
-                    generatePaiementDto.EndDate);
+                    generatePaiementDto.MissionId);
 
                 var excelName = $"MissionPaymentReport-{generatePaiementDto.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.xlsx";
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
@@ -108,6 +105,36 @@ namespace MyApp.Api.Controllers.mission
             {
                 _logger.LogError(ex, "Erreur serveur lors de la génération du rapport Excel pour la mission {MissionId}", generatePaiementDto.MissionId);
                 return StatusCode(500, $"Erreur lors de la génération du fichier Excel : {ex.Message}");
+            }
+        }
+
+
+        [HttpPost("OM")]
+        public async Task<IActionResult> GenerateOM([FromBody] GenerateOMDTO generateOM)
+        {
+            if (generateOM == null || string.IsNullOrWhiteSpace(generateOM.MissionId))
+            {
+                _logger.LogWarning("Les données ou l'identifiant de la mission sont absents pour la génération de l'ordre de mission.");
+                return BadRequest("Les données ou l'identifiant de la mission sont requis.");
+            }
+
+            try
+            {
+                var pdfBytes = await _service.GenerateMissionOrderPDFAsync(generateOM.EmployeeId, generateOM.MissionId);
+
+                var pdfName = $"OrdreMission-{generateOM.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                
+                return File(pdfBytes, "application/pdf", pdfName);
+            }
+            catch (FileNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Template file not found for mission {MissionId}", generateOM.MissionId);
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur serveur lors de la génération de l'ordre de mission pour la mission {MissionId}", generateOM.MissionId);
+                return StatusCode(500, $"Erreur lors de la génération de l'ordre de mission : {ex.Message}");
             }
         }
 
@@ -131,7 +158,6 @@ namespace MyApp.Api.Controllers.mission
         {
             if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
             {
-                _logger.LogWarning("Les identifiants de l'employé ou de la mission sont vides pour la récupération de l'assignation.");
                 return BadRequest("Les identifiants de l'employé et de la mission sont requis.");
             }
 
@@ -139,7 +165,6 @@ namespace MyApp.Api.Controllers.mission
             {
                 var missionAssignation = await _service.GetByIdAsync(employeeId, missionId, null);
                 if (missionAssignation != null) return Ok(missionAssignation);
-                _logger.LogWarning("Aucune assignation trouvée pour EmployeeId: {EmployeeId}, MissionId: {MissionId}", employeeId, missionId);
                 return NotFound("Aucune assignation trouvée pour ces identifiants.");
             }
             catch (Exception ex)
@@ -178,32 +203,16 @@ namespace MyApp.Api.Controllers.mission
         {
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Échec de la validation du modèle pour l'assignation ID: {AssignationId}. Erreurs: {Errors}", assignationId, string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
                 return BadRequest(ModelState);
             }
 
             if (string.IsNullOrWhiteSpace(assignationId))
             {
-                _logger.LogWarning("L'identifiant de l'assignation est vide ou null pour la mise à jour.");
                 return BadRequest("L'identifiant de l'assignation est requis.");
             }
 
             try
             {
-                // Log the values of MissionAssignationDTOForm
-                _logger.LogInformation(
-                    "MissionAssignationDTOForm Values for AssignationId: {AssignationId}: EmployeeId={EmployeeId}, MissionId={MissionId}, TransportId={TransportId}, DepartureDate={DepartureDate}, DepartureTime={DepartureTime}, ReturnDate={ReturnDate}, ReturnTime={ReturnTime}, Duration={Duration}",
-                    assignationId,
-                    dto.EmployeeId ?? "null",
-                    dto.MissionId ?? "null",
-                    dto.TransportId ?? "null",
-                    dto.DepartureDate?.ToString("yyyy-MM-dd") ?? "null",
-                    dto.DepartureTime?.ToString() ?? "null",
-                    dto.ReturnDate?.ToString("yyyy-MM-dd") ?? "null",
-                    dto.ReturnTime?.ToString() ?? "null",
-                    dto.Duration?.ToString() ?? "null"
-                );
-
                 var missionAssignation = new MissionAssignation(dto);
                 var success = await _service.UpdateAsync(assignationId, missionAssignation);
                 if (success) return Ok(missionAssignation);
@@ -237,6 +246,26 @@ namespace MyApp.Api.Controllers.mission
             {
                 _logger.LogError(ex, "Erreur lors de la suppression de l'assignation ID: {AssignationId}", assignationId);
                 return StatusCode(500, $"Erreur lors de la suppression de l'assignation : {ex.Message}");
+            }
+        }
+
+        [HttpGet("{assignationId}")]
+        public async Task<IActionResult> GetByAssignationId(string assignationId)
+        {
+            try
+            {
+                var missionAssignation = await _service.GetByAssignationIdAsync(assignationId);
+                
+                if (missionAssignation == null)
+                {
+                    return NotFound(new { Message = $"No mission assignation found for AssignationId: {assignationId}" });
+                }
+
+                return Ok(missionAssignation);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = $"Error retrieving mission assignation: {ex.Message}" });
             }
         }
 

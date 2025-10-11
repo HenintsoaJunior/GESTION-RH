@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { X, FileText, Download, ArrowLeft } from "lucide-react";
-import ValidationStepper from "../list/validation-stepper";
-import Pagination from "components/pagination";
+import { useState, useEffect, useCallback } from "react";
+import { X, Download, CheckCircle, Send, Edit2, Trash2 } from "lucide-react";
+import ValidationStepper from "../list/components/validation-stepper";
 import Alert from "components/alert";
+import OMPayment from "./payment/om-payment";
+import OMNoteDeFrais from "./expense/om-note-de-frais";
+import MissionReport from "./report/mission-report"; 
 import {
     PopupOverlay,
     PopupContainer,
@@ -15,11 +16,7 @@ import {
     PopupContent,
     LoadingContainer,
     ContentArea,
-    StepHeader,
-    StepTitle,
-    StatusBadge,
     ValidatorCard,
-    ValidatorTitle,
     ValidatorGrid,
     ValidatorSection,
     SectionTitle,
@@ -32,43 +29,82 @@ import {
     InfoItem,
     InfoLabel,
     InfoValue,
-    CommentCard,
-    CommentTitle,
     CommentText,
-    CommentDate,
-    InfoAlert,
-    AlertText,
-    PopupFooter,
-    FooterActions,
     ActionButton,
-    StepCounter,
 } from "styles/generaliser/details-mission-container";
 import {
-    CardsContainer,
-    Card,
-    CardHeader,
-    CardTitle,
-    CardBody,
-    CardField,
-    CardLabel,
-    EmptyCardsState,
-} from "styles/generaliser/card-container";
-import { NoDataMessage } from "styles/generaliser/table-container";
-import { formatValidatorData } from "services/mission/validator-utils";
-import {
     fetchAssignMission,
-    fetchMissionById,
-    exportMissionAssignationPDF,
-    exportMissionAssignationExcel,
+    generateMissionOrder,
 } from "services/mission/mission";
-import { useGetMissionValidationsByAssignationId } from "services/mission/validator-utils";
+import { useGetMissionValidationsByAssignationId } from "services/mission/validation";
+import { CreateComment, GetCommentsByMission, UpdateComment, DeleteComment } from "services/mission/comments";
+import { GetCompensationsByEmployeeAndMission, exportMissionAssignationExcel } from "services/mission/compensation";
 import { formatDate } from "utils/dateConverter";
+import styled from "styled-components";
+import "styles/mission/assignment-details-styles.css";
+import {
+    CommentSection,
+    CommentInputGroup,
+    CommentButton,
+    CommentLabel,
+    CommentTextarea,
+    CommentsList,
+    CommentItem,
+    CommentContent,
+    CommentMeta,
+    CommentActions,
+    CommentActionButton,
+} from "styles/generaliser/comments-container";
+
+const OMPaymentButton = styled(ActionButton)`
+    background-color: var(--success-color, #28a745);
+    border-color: var(--success-color, #28a745);
+
+    &:hover {
+        background-color: #ffffff;
+        color: var(--success-color, #28a745);
+        border-color: var(--success-color, #28a745);
+    }
+`;
+
+const ButtonOMPDF = styled(ActionButton)`
+    background-color: var(--pdf-color);
+    border-color: var(--pdf-color);
+    margin-left: var(--spacing-sm, 10px);
+
+    &:hover {
+        background-color: var(--pdf-hover);
+        color: #ffffff;
+        border-color: var(--pdf-hover);
+    }
+`;
+const MissionReportButton = styled(ActionButton)`
+    width:103px;
+    background-color: var(--success-color, #28a745);
+    border-color: var(--success-color, #28a745);
+
+    &:hover {
+        background-color: #ffffff;
+        color: var(--success-color, #28a745);
+        border-color: var(--success-color, #28a745);
+    }
+`;
+
+
+const ButtonContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 10px);
+    margin-top: var(--spacing-sm, 10px);
+`;
 
 const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
-    console.log("DetailsMission - Rendering with props:", { missionId, isOpen });
-
-    const navigate = useNavigate();
+    const getCompensationsByEmployeeAndMission = GetCompensationsByEmployeeAndMission();
     const getMissionValidations = useGetMissionValidationsByAssignationId();
+    const createComment = CreateComment();
+    const getCommentsByMission = GetCommentsByMission();
+    const updateComment = UpdateComment();
+    const deleteComment = DeleteComment();
 
     const [isLoading, setIsLoading] = useState({
         assignMissions: false,
@@ -76,23 +112,46 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         exportPDF: false,
         exportExcel: false,
         validations: false,
+        comments: false,
+        missionPayment: false,
+        missionReport: false,
     });
     const [error, setError] = useState({ isOpen: false, type: "", message: "" });
     const [assignedPersons, setAssignedPersons] = useState([]);
-    const [missionDetails, setMissionDetails] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [totalEntries, setTotalEntries] = useState(0);
-    const [currentStep, setCurrentStep] = useState(0);
+    const [currentPage] = useState(1);
+    const [pageSize] = useState(10);
+    const [, setTotalEntries] = useState(0);
+    const [currentStep] = useState(0);
     const [validationSteps, setValidationSteps] = useState([]);
+    const [comments, setComments] = useState([]);
+    const [comment, setComment] = useState("");
+    const [editingCommentId, setEditingCommentId] = useState(null);
+    const [editCommentText, setEditCommentText] = useState("");
+    const [missionPayment, setMissionPayment] = useState({
+        dailyPaiements: [],
+        assignmentDetails: null,
+        totalAmount: 0,
+    });
+    const [showIndemnityDetails, setShowIndemnityDetails] = useState(false);
+    const [showExpenseDetails, setShowExpenseDetails] = useState(false);
+    const [showMissionReport, setShowMissionReport] = useState(false); // New state for MissionReport
+    const [selectedAssignmentId, setSelectedAssignmentId] = useState(null);
+    const [detailsType, setDetailsType] = useState(null);
+    const userId = JSON.parse(localStorage.getItem("user"))?.userId || null;
 
-    const handleError = (error) => {
-        setError(error);
-    };
+    const isMissionFullyValidated = validationSteps.every(step => {
+        return step.status === "approved";
+    });
 
-    const mapValidationsToSteps = (validations) => {
-        console.log("Raw validations received:", validations);
+    const handleError = useCallback((error) => {
+        setError({
+            isOpen: true,
+            type: "error",
+            message: error.message || "Erreur inconnue lors du chargement des données",
+        });
+    }, []);
 
+    const mapValidationsToSteps = useCallback((validations) => {
         const stepMapping = {
             "Directeur de tutelle": {
                 title: "Validation Supérieur",
@@ -108,29 +167,13 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
 
         const mappedSteps = validations.map((validation) => {
             const validationType = validation.type || "Directeur de tutelle";
-            console.log("Processing validation:", { 
-                id: validation.missionValidationId, 
-                type: validationType, 
-                status: validation.status,
-                validator: validation.validator?.name
-            });
-            
             const stepInfo = stepMapping[validationType] || {
                 title: validationType === "DRH" ? "Validation RH" : "Validation Supérieur",
                 subtitle: validationType === "DRH" ? "Ressources Humaines" : "Hiérarchique",
                 order: validationType === "DRH" ? 2 : 1,
             };
 
-            let status;
-            if (validation.status === "En attente") {
-                status = "in-progress";
-            } else if (validation.status === "Approuvé" || validation.status === "Validé") {
-                status = "approved";
-            } else if (validation.status === "Rejeté") {
-                status = "rejected";
-            } else {
-                status = "pending";
-            }
+            let status = validation.status;
 
             const mappedStep = {
                 id: validation.missionValidationId,
@@ -146,23 +189,181 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                     position: validation.validator?.position || stepInfo.title,
                 },
                 validatedAt: validation.createdAt,
-                comment: validation.comment || "Mission en attente de validation.",
+                validationDate: validation.validationDate,
+                comment: validation.comment || ".",
                 order: stepInfo.order,
             };
 
-            console.log("Mapped step:", {
-                id: mappedStep.id,
-                title: mappedStep.title,
-                status: mappedStep.status,
-                validatorName: mappedStep.validator.name,
-                validatorInitials: mappedStep.validator.initials
-            });
             return mappedStep;
         }).sort((a, b) => a.order - b.order);
 
-        console.log("Final mapped steps:", mappedSteps);
         return mappedSteps;
-    };
+    }, []);
+
+    const fetchComments = useCallback(async (id) => {
+        try {
+            setIsLoading((prev) => ({ ...prev, comments: true }));
+            const commentsData = await getCommentsByMission(id);
+            setComments(commentsData);
+        } catch (error) {
+            setError({
+                isOpen: true,
+                type: "error",
+                message: `Erreur lors du chargement des commentaires: ${error.message}`,
+            });
+            setComments([]);
+        } finally {
+            setIsLoading((prev) => ({ ...prev, comments: false }));
+        }
+    }, [getCommentsByMission]);
+
+    const handleCreateComment = useCallback(async (id, commentText) => {
+        try {
+            const commentData = {
+                missionId: id,
+                userId,
+                commentText,
+                createdAt: new Date().toISOString(),
+            };
+            const response = await createComment(commentData);
+            await fetchComments(id);
+            setComment("");
+            return response;
+        } catch (error) {
+            setError({
+                isOpen: true,
+                type: "error",
+                message: `Erreur lors de l'ajout du commentaire: ${error.message}`,
+            });
+            throw error;
+        }
+    }, [createComment, fetchComments, userId]);
+
+    const handleUpdateComment = useCallback(async (commentId, id, commentText) => {
+        try {
+            const commentData = {
+                missionId: id,
+                userId,
+                commentText,
+                createdAt: new Date().toISOString(),
+            };
+            const response = await updateComment(commentId, commentData);
+            await fetchComments(id);
+            return response;
+        } catch (error) {
+            setError({
+                isOpen: true,
+                type: "error",
+                message: `Erreur lors de la mise à jour du commentaire: ${error.message}`,
+            });
+            throw error;
+        }
+    }, [updateComment, fetchComments, userId]);
+
+    const handleDeleteComment = useCallback(async (commentId, id) => {
+        try {
+            const response = await deleteComment(commentId, id, userId);
+            await fetchComments(id);
+            return response;
+        } catch (error) {
+            setError({
+                isOpen: true,
+                type: "error",
+                message: `Erreur lors de la suppression du commentaire: ${error.message}`,
+            });
+            throw error;
+        }
+    }, [deleteComment, fetchComments, userId]);
+
+    const handleOMPaymentClick = useCallback(async (employeeId, assignmentType) => {
+        if (!missionId || !employeeId) {
+            setError({
+                isOpen: true,
+                type: "error",
+                message: "Mission ID et Employee ID sont requis.",
+            });
+            return;
+        }
+        setIsLoading(prev => ({ ...prev, missionPayment: true }));
+        try {
+            const response = await getCompensationsByEmployeeAndMission(employeeId, missionId);
+            const { assignation, compensations, totalAmount } = response;
+            setSelectedAssignmentId(assignation.assignationId);
+            const dailyPaiements = compensations.map(comp => ({
+                date: comp.paymentDate,
+                totalAmount: comp.totalAmount,
+                compensationScales: [
+                    ...(comp.transportAmount > 0 ? [{ amount: comp.transportAmount, transportId: assignation.transportId }] : []),
+                    ...(comp.breakfastAmount > 0 ? [{ amount: comp.breakfastAmount, expenseType: { type: "Petit Déjeuner" } }] : []),
+                    ...(comp.lunchAmount > 0 ? [{ amount: comp.lunchAmount, expenseType: { type: "Déjeuner" } }] : []),
+                    ...(comp.dinnerAmount > 0 ? [{ amount: comp.dinnerAmount, expenseType: { type: "Dîner" } }] : []),
+                    ...(comp.accommodationAmount > 0 ? [{ amount: comp.accommodationAmount, expenseType: { type: "Hébergement" } }] : []),
+                ],
+            }));
+
+            const assignmentDetails = {
+                beneficiary: `${assignation.employee.firstName} ${assignation.employee.lastName}`,
+                matricule: assignation.employee.employeeCode,
+                missionTitle: assignation.mission.name,
+                function: assignation.employee.jobTitle,
+                base: assignation.employee.siteName,
+                meansOfTransport: assignation.transport?.name || "Non spécifié",
+                direction: assignation.employee.directionName,
+                departmentService: `${assignation.employee.departmentName} / ${assignation.employee.serviceName}`,
+                costCenter: assignation.allocatedFund,
+                departureDate: assignation.departureDate,
+                departureTime: assignation.departureTime,
+                missionDuration: assignation.duration,
+                returnDate: assignation.returnDate,
+                returnTime: assignation.returnTime,
+                startDate: assignation.mission.startDate,
+            };
+
+            setMissionPayment({
+                dailyPaiements,
+                assignmentDetails,
+                totalAmount,
+            });
+            setDetailsType(assignmentType);
+            if (assignmentType === 'Indemnité') {
+                setShowIndemnityDetails(true);
+                setShowExpenseDetails(false);
+                setShowMissionReport(false);
+            } else if (assignmentType === 'Note de frais') {
+                setShowExpenseDetails(true);
+                setShowIndemnityDetails(false);
+                setShowMissionReport(false);
+            }
+        } catch (error) {
+            handleError(error);
+        } finally {
+            setIsLoading(prev => ({ ...prev, missionPayment: false }));
+        }
+    }, [missionId, getCompensationsByEmployeeAndMission, handleError]);
+
+    const handleMissionReportClick = useCallback((employeeId, assignationId) => {
+        if (!employeeId || !assignationId) {
+            setError({
+                isOpen: true,
+                type: "error",
+                message: "Employee ID et Assignation ID sont requis.",
+            });
+            return;
+        }
+        setSelectedAssignmentId(assignationId);
+        setShowMissionReport(true);
+        setShowIndemnityDetails(false);
+        setShowExpenseDetails(false);
+    }, []);
+
+    const handleBackToAssignments = useCallback(() => {
+        setShowIndemnityDetails(false);
+        setShowExpenseDetails(false);
+        setShowMissionReport(false);
+        setMissionPayment({ dailyPaiements: [], assignmentDetails: null, totalAmount: 0 });
+        setSelectedAssignmentId(null);
+        setDetailsType(null);
+    }, []);
 
     useEffect(() => {
         if (!missionId) {
@@ -183,7 +384,9 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
             pageSize,
             handleError
         );
-    }, [missionId, currentPage, pageSize]);
+
+        fetchComments(missionId);
+    }, [missionId, currentPage, pageSize, handleError, fetchComments]);
 
     useEffect(() => {
         if (assignedPersons.length > 0) {
@@ -195,12 +398,9 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                     const assignationId = firstAssignation.assignationId;
 
                     if (assignationId) {
-                        console.log("Fetching validations for assignation ID:", assignationId);
                         const validations = await getMissionValidations(assignationId);
-                        console.log("Validations fetched:", validations);
                         const mappedSteps = mapValidationsToSteps(validations);
                         setValidationSteps(mappedSteps);
-                        console.log("Final Validation Steps set:", mappedSteps);
                     }
                 } catch (error) {
                     console.error("Error fetching validations:", error);
@@ -216,7 +416,7 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
 
             fetchValidations();
         }
-    }, [assignedPersons, getMissionValidations]);
+    }, [assignedPersons, getMissionValidations, mapValidationsToSteps, handleError]);
 
     const handleClose = () => {
         if (onClose) {
@@ -224,36 +424,53 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         }
     };
 
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
-    };
+    const handleExportPDF = useCallback(
+        async (employeeId) => {
+            if (!missionId || !employeeId) {
+                setError({
+                    isOpen: true,
+                    type: "error",
+                    message: "Mission ID et Employee ID sont requis pour générer l'ordre de mission.",
+                });
+                return;
+            }
 
-    const handlePageSizeChange = (event) => {
-        setPageSize(Number(event.target.value));
-        setCurrentPage(1);
-    };
+            try {
+                const data = {
+                    missionId,
+                    employeeId,
+                };
 
-    const handleCardClick = (employeeId) => {
-        if (missionId && employeeId) {
-            navigate(`/assignments/details?missionId=${missionId}&employeeId=${employeeId}`);
-        } else {
-            setError({
-                isOpen: true,
-                type: "error",
-                message: "Informations manquantes pour accéder aux détails.",
-            });
-        }
-    };
-
-    const handleExportPDF = () => {
-        const exportFilters = { missionId };
-        exportMissionAssignationPDF(
-            exportFilters,
-            setIsLoading,
-            (success) => setError(success),
-            handleError
-        );
-    };
+                await generateMissionOrder(
+                    data,
+                    setIsLoading,
+                    (success) => {
+                        setError({
+                            isOpen: true,
+                            type: "success",
+                            message: success.message || "Ordre de mission généré et téléchargé avec succès.",
+                        });
+                    },
+                    (error) => {
+                        setError({
+                            isOpen: true,
+                            type: "error",
+                            message: error.message || "Erreur lors de la génération de l'ordre de mission.",
+                            details: error.details || { missionId, employeeId, timestamp: new Date().toISOString() },
+                        });
+                    }
+                );
+            } catch (error) {
+                setError({
+                    isOpen: true,
+                    type: "error",
+                    message: `Erreur inattendue lors de la génération de l'ordre de mission : ${error.message}`,
+                    details: { missionId, employeeId, timestamp: new Date().toISOString() },
+                });
+            }
+        },
+        [missionId, setError, setIsLoading]
+    );
 
     const handleExportExcel = () => {
         const exportFilters = { missionId };
@@ -265,27 +482,54 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
         );
     };
 
-    const getStatusBadge = (status) => {
-        const statusClass =
-            status === "En Cours"
-                ? "status-progress"
-                : status === "Planifié"
-                    ? "status-pending"
-                    : status === "Terminé"
-                        ? "status-approved"
-                        : status === "Annulé"
-                            ? "status-cancelled"
-                            : "status-pending";
-        return <span className={`status-badge ${statusClass}`}>{status || "Inconnu"}</span>;
+    const handleSaveComment = async () => {
+        if (!comment.trim()) {
+            setError({
+                isOpen: true,
+                type: "error",
+                message: "Le commentaire ne peut pas être vide.",
+            });
+            return;
+        }
+        try {
+            await handleCreateComment(missionId, comment);
+        } catch (error) {
+            // Error handling is already done in handleCreateComment
+        }
+    };
+
+    const handleEditComment = (commentId, currentText) => {
+        setEditingCommentId(commentId);
+        setEditCommentText(currentText);
+    };
+
+    const handleSaveEditComment = async (commentId) => {
+        if (!editCommentText.trim()) {
+            setError({
+                isOpen: true,
+                type: "error",
+                message: "Le commentaire ne peut pas être vide.",
+            });
+            return;
+        }
+        try {
+            await handleUpdateComment(commentId, missionId, editCommentText);
+            setEditingCommentId(null);
+            setEditCommentText("");
+        } catch (error) {
+            // Error handling is already done in handleUpdateComment
+        }
+    };
+
+    const handleDeleteCommentAction = async (commentId) => {
+        try {
+            await handleDeleteComment(commentId, missionId);
+        } catch (error) {
+            // Error handling is already done in handleDeleteComment
+        }
     };
 
     if (!isOpen) return null;
-
-    const currentStepData = validationSteps[currentStep] || validationSteps[0];
-    const currentAssignedPerson = assignedPersons[currentStep] || assignedPersons[0];
-    const formattedAssignedPerson = currentAssignedPerson
-        ? formatValidatorData(currentAssignedPerson, "Collaborateur")
-        : null;
 
     return (
         <PopupOverlay role="dialog" aria-labelledby="mission-details-title" aria-modal="true">
@@ -301,13 +545,13 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                     </PopupTitle>
                     <CloseButton
                         onClick={handleClose}
-                        disabled={isLoading.mission || isLoading.assignMissions || isLoading.validations}
+                        disabled={isLoading.mission || isLoading.assignMissions || isLoading.validations || isLoading.comments || isLoading.missionPayment || isLoading.missionReport}
                         aria-label="Fermer la fenêtre"
                     >
                         <X size={24} />
                     </CloseButton>
                 </PopupHeader>
-
+                
                 <PopupContent>
                     <Alert
                         type={error.type}
@@ -316,173 +560,313 @@ const DetailsMission = ({ missionId, onClose, isOpen = true }) => {
                         onClose={() => setError({ ...error, isOpen: false })}
                     />
 
-                    <ValidationStepper steps={validationSteps} currentStep={currentStep} />
+                    {!(showIndemnityDetails || showExpenseDetails || showMissionReport) && <ValidationStepper steps={validationSteps} currentStep={currentStep} />}
 
-                    {(isLoading.assignMissions || isLoading.validations) ? (
+                    {(isLoading.assignMissions || isLoading.validations || isLoading.comments || isLoading.missionPayment || isLoading.missionReport) ? (
                         <LoadingContainer>Chargement des informations de la mission...</LoadingContainer>
                     ) : (
                         <ContentArea>
-                            {validationSteps.length > 0 ? (
-                                <ValidatorCard>
-                                    <ValidatorGrid>
-                                        <ValidatorSection>
-                                            <SectionTitle>Validateurs</SectionTitle>
-                                            {validationSteps.map((step, index) => (
-                                                <ValidatorItem key={step.id}>
-                                                    <Avatar size="40px">{step.validator?.initials || "NA"}</Avatar>
-                                                    <ValidatorInfo>
-                                                        <ValidatorName>{step.validator?.name || "Non spécifié"}</ValidatorName>
-                                                        <ValidatorRole>
-                                                            {step.title} - {step.subtitle}
-                                                        </ValidatorRole>
-                                                    </ValidatorInfo>
-                                                </ValidatorItem>
-                                            ))}
-                                        </ValidatorSection>
-                                        <ValidatorSection>
-                                            <SectionTitle>Personnes Assignées à la Mission</SectionTitle>
-                                            {isLoading.assignMissions ? (
-                                                <ValidatorItem>
-                                                    <div
-                                                        style={{
-                                                            textAlign: "center",
-                                                            padding: "var(--spacing-md)",
-                                                            color: "var(--text-secondary)",
-                                                        }}
-                                                    >
-                                                        Chargement des assignations...
-                                                    </div>
-                                                </ValidatorItem>
-                                            ) : assignedPersons.length > 0 ? (
-                                                assignedPersons.map((assignment, index) => (
-                                                    <ValidatorItem
-                                                        key={`${assignment.employeeId}-${missionId}-${index}`}
-                                                        onClick={() => handleCardClick(assignment.employeeId)}
-                                                        style={{ cursor: "pointer", marginBottom: "var(--spacing-md)" }}
-                                                    >
-                                                        <Avatar size="40px">
-                                                            {assignment.beneficiary
-                                                                ? assignment.beneficiary
-                                                                    .split(" ")
-                                                                    .map((n) => n[0])
-                                                                    .join("")
-                                                                    .substring(0, 2)
-                                                                    .toUpperCase()
-                                                                : "NA"}
-                                                        </Avatar>
-                                                        <ValidatorInfo>
-                                                            <ValidatorName>
-                                                                {assignment.beneficiary && assignment.directionAcronym
-                                                                    ? `${assignment.beneficiary} (${assignment.directionAcronym})`
-                                                                    : assignment.beneficiary || "Non spécifié"}
-                                                            </ValidatorName>
-                                                        </ValidatorInfo>
-                                                    </ValidatorItem>
-                                                ))
-                                            ) : (
-                                                <ValidatorItem>
-                                                    <div
-                                                        style={{
-                                                            textAlign: "center",
-                                                            padding: "var(--spacing-md)",
-                                                            color: "var(--text-secondary)",
-                                                        }}
-                                                    >
-                                                        Aucune personne assignée à la mission {missionId || "inconnue"}.
-                                                    </div>
-                                                </ValidatorItem>
-                                            )}
+                            {showIndemnityDetails ? (
+                                <OMPayment
+                                    missionPayment={missionPayment}
+                                    selectedAssignmentId={selectedAssignmentId}
+                                    onBack={handleBackToAssignments}
+                                    onExportPDF={handleExportPDF}
+                                    onExportExcel={handleExportExcel}
+                                    isLoading={isLoading}
+                                    formatDate={formatDate}
+                                />
+                            ) : showExpenseDetails ? (
+                                <OMNoteDeFrais
+                                    missionPayment={missionPayment}
+                                    selectedAssignmentId={selectedAssignmentId}
+                                    detailsType={detailsType}
+                                    onBack={handleBackToAssignments}
+                                    onExportPDF={handleExportPDF}
+                                    onExportExcel={handleExportExcel}
+                                    isLoading={isLoading}
+                                    formatDate={formatDate}
+                                />
+                            ) : showMissionReport ? (
+                                <MissionReport
+                                    userId={userId}
+                                    assignationId={selectedAssignmentId}
+                                    onBack={handleBackToAssignments}
+                                />
+                            ) : (
+                                <>
+                                    {validationSteps.length > 0 && (
+                                        <ValidatorCard>
+                                            <ValidatorGrid>
+                                                <ValidatorSection>
+                                                    <SectionTitle>Valideurs</SectionTitle>
+                                                    {validationSteps.map((step, index) => (
+                                                        <ValidatorItem key={step.id}>
+                                                            <Avatar size="40px">{step.validator?.initials || "NA"}</Avatar>
+                                                            <ValidatorInfo>
+                                                                <ValidatorName>{step.validator?.name || "Non spécifié"}</ValidatorName>
+                                                                <ValidatorRole>
+                                                                    {step.title} - {step.subtitle}
+                                                                </ValidatorRole>
+                                                            </ValidatorInfo>
+                                                        </ValidatorItem>
+                                                    ))}
+                                                </ValidatorSection>
+                                                <ValidatorSection>
+                                                    <SectionTitle>Personnes Assignées à la Mission</SectionTitle>
+                                                    {isLoading.assignMissions ? (
+                                                        <ValidatorItem>
+                                                            <div
+                                                                style={{
+                                                                    textAlign: "center",
+                                                                    padding: "var(--spacing-md)",
+                                                                    color: "var(--text-secondary)",
+                                                                }}
+                                                            >
+                                                                Chargement des assignations...
+                                                            </div>
+                                                        </ValidatorItem>
+                                                    ) : assignedPersons.length > 0 ? (
+                                                        assignedPersons.map((assignment, index) => (
+                                                            <ValidatorItem
+                                                                key={`${assignment.employeeId}-${missionId}-${index}`}
+                                                                style={{ marginBottom: "var(--spacing-md)" }}
+                                                            >
+                                                                <Avatar size="40px">
+                                                                    {assignment.beneficiary
+                                                                        ? assignment.beneficiary
+                                                                              .split(" ")
+                                                                              .map((n) => n[0])
+                                                                              .join("")
+                                                                              .substring(0, 2)
+                                                                              .toUpperCase()
+                                                                        : "NA"}
+                                                                </Avatar>
+                                                                <ValidatorInfo>
+                                                                    <ValidatorName>
+                                                                        {assignment.beneficiary && assignment.directionAcronym
+                                                                            ? `${assignment.beneficiary} (${assignment.directionAcronym})`
+                                                                            : assignment.beneficiary || "Non spécifié"}
+                                                                    </ValidatorName>
+                                                                </ValidatorInfo>
+                                                            </ValidatorItem>
+                                                        ))
+                                                    ) : (
+                                                        <ValidatorItem>
+                                                            <div
+                                                                style={{
+                                                                    textAlign: "center",
+                                                                    padding: "var(--spacing-md)",
+                                                                    color: "var(--text-secondary)",
+                                                                }}
+                                                            >
+                                                                Aucune personne assignée à la mission {missionId || "inconnue"}.
+                                                            </div>
+                                                        </ValidatorItem>
+                                                    )}
 
-                                            {assignedPersons.length > 0 && (
-                                                <InfoGrid
-                                                    style={{
-                                                        marginTop: "var(--spacing-lg)",
-                                                        display: "grid",
-                                                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                                                        gap: "var(--spacing-md)",
-                                                    }}
-                                                >
-                                                    {assignedPersons.map((assignment, index) => (
-                                                        <div
-                                                            key={`info-${assignment.employeeId}-${index}`}
+                                                    {assignedPersons.length > 0 && (
+                                                        <InfoGrid
                                                             style={{
+                                                                marginTop: "var(--spacing-lg)",
                                                                 display: "grid",
-                                                                gridTemplateColumns: "repeat(2, 1fr)",
-                                                                gap: "var(--spacing-sm)",
-                                                                padding: "var(--spacing-md)",
-                                                                border: "1px solid var(--border-light)",
-                                                                borderRadius: "var(--border-radius)",
-                                                                backgroundColor: "var(--background-light)",
+                                                                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                                                                gap: "var(--spacing-md)",
                                                             }}
                                                         >
-                                                            <InfoItem>
-                                                                <InfoLabel>N° Assignation</InfoLabel>
-                                                                <InfoValue>{assignment.assignationId || "Non spécifié"}</InfoValue>
-                                                            </InfoItem>
-                                                            <InfoItem>
-                                                                <InfoLabel>Matricule</InfoLabel>
-                                                                <InfoValue>{assignment.matricule || "Non spécifié"}</InfoValue>
-                                                            </InfoItem>
-                                                            <InfoItem>
-                                                                <InfoLabel>Fonction</InfoLabel>
-                                                                <InfoValue>{assignment.function || "Non spécifié"}</InfoValue>
-                                                            </InfoItem>
-                                                            <InfoItem>
-                                                                <InfoLabel>Site</InfoLabel>
-                                                                <InfoValue>{assignment.base || "Non spécifié"}</InfoValue>
-                                                            </InfoItem>
-                                                        </div>
-                                                    ))}
-                                                </InfoGrid>
-                                            )}
-                                        </ValidatorSection>
-                                    </ValidatorGrid>
-                                </ValidatorCard>
-                            ) : (
-                                <div
-                                    style={{
-                                        textAlign: "center",
-                                        padding: "var(--spacing-md)",
-                                        color: "var(--text-secondary)",
-                                    }}
-                                >
-                                    {isLoading.validations
-                                        ? "Chargement des validations..."
-                                        : "Aucune information de validateur disponible"}
-                                </div>
-                            )}
+                                                            {assignedPersons.map((assignment, index) => (
+                                                                <div
+                                                                    key={`info-${assignment.employeeId}-${index}`}
+                                                                    style={{
+                                                                        display: "grid",
+                                                                        gridTemplateColumns: "repeat(2, 1fr)",
+                                                                        gap: "var(--spacing-sm)",
+                                                                        padding: "var(--spacing-md)",
+                                                                        border: "1px solid var(--border-light)",
+                                                                        borderRadius: "var(--border-radius)",
+                                                                        backgroundColor: "var(--background-light)",
+                                                                    }}
+                                                                >
+                                                                    <InfoItem>
+                                                                        <InfoLabel>N° Assignation</InfoLabel>
+                                                                        <InfoValue>{assignment.assignationId || "Non spécifié"}</InfoValue>
+                                                                    </InfoItem>
+                                                                    <InfoItem>
+                                                                        <InfoLabel>Matricule</InfoLabel>
+                                                                        <InfoValue>{assignment.matricule || "Non spécifié"}</InfoValue>
+                                                                    </InfoItem>
+                                                                    <InfoItem>
+                                                                        <InfoLabel>Fonction</InfoLabel>
+                                                                        <InfoValue>{assignment.function || "Non spécifié"}</InfoValue>
+                                                                    </InfoItem>
+                                                                    <InfoItem>
+                                                                        <InfoLabel>Site</InfoLabel>
+                                                                        <InfoValue>{assignment.base || "Non spécifié"}</InfoValue>
+                                                                    </InfoItem>
+                                                                </div>
+                                                            ))}
+                                                        </InfoGrid>
+                                                    )}
 
-                            {currentStepData && (currentStepData.comment || currentStepData.validatedAt) && (
-                                <CommentCard>
-                                    {currentStepData.comment && (
-                                        <>
-                                            <CommentTitle>Commentaire</CommentTitle>
-                                            <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--spacing-sm)" }}>
-                                                <Avatar size="24px">{currentStepData.validator?.initials || "JD"}</Avatar>
-                                                <CommentText>{currentStepData.comment}</CommentText>
-                                            </div>
-                                        </>
+                                                    {assignedPersons.length > 0 && isMissionFullyValidated && (
+                                                        <InfoGrid
+                                                            style={{
+                                                                marginTop: "var(--spacing-lg)",
+                                                                display: "grid",
+                                                                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                                                                gap: "var(--spacing-md)",
+                                                            }}
+                                                        >
+                                                            {assignedPersons.map((assignment, index) => {
+                                                                const buttonText = assignment.type === 'Indemnité' ? 'Indemnité' : 'Note de frais';
+                                                                const shouldShowButton = assignment.type === 'Indemnité' || assignment.type === 'Note de frais';
+                                                                return (
+                                                                    <div
+                                                                        key={`info-${assignment.employeeId}-${index}`}
+                                                                        style={{
+                                                                            display: "grid",
+                                                                            gridTemplateColumns: "repeat(2, 1fr)",
+                                                                            gap: "var(--spacing-sm)",
+                                                                            padding: "var(--spacing-md)",
+                                                                            border: "1px solid var(--border-light)",
+                                                                            borderRadius: "var(--border-radius)",
+                                                                            backgroundColor: "var(--background-light)",
+                                                                        }}
+                                                                    >
+                                                                        <InfoItem>
+                                                                            {shouldShowButton && (
+                                                                                <ButtonContainer>
+                                                                                    <OMPaymentButton
+                                                                                        onClick={() => handleOMPaymentClick(assignment.employeeId, assignment.type)}
+                                                                                        disabled={isLoading.missionPayment}
+                                                                                    >
+                                                                                        {buttonText}
+                                                                                    </OMPaymentButton>
+                                                                                
+                                                                                </ButtonContainer>
+                                                                            )}
+                                                                        </InfoItem>
+                                                                        <InfoItem>
+                                                                            <ButtonContainer>
+                                                                                <ButtonOMPDF
+                                                                                    onClick={() => handleExportPDF(assignment.employeeId)}
+                                                                                    disabled={isLoading.exportPDF}
+                                                                                >
+                                                                                    <Download size={16} /> OM PDF
+                                                                                </ButtonOMPDF>
+                                                                            </ButtonContainer>
+                                                                        </InfoItem>
+                                                                        <InfoItem>
+                                                                            {shouldShowButton && (
+                                                                                <ButtonContainer>
+                                                                                   
+                                                                                    <MissionReportButton
+                                                                                        onClick={() => handleMissionReportClick(assignment.employeeId, assignment.assignationId)}
+                                                                                        disabled={isLoading.missionReport}
+                                                                                    >
+                                                                                    Rendu
+                                                                                    </MissionReportButton>
+                                                                                </ButtonContainer>
+                                                                            )}
+                                                                        </InfoItem>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </InfoGrid>
+                                                    )}
+                                                </ValidatorSection>
+                                            </ValidatorGrid>
+                                        </ValidatorCard>
                                     )}
-                                    {currentStepData.validatedAt && (
-                                        <CommentDate>
-                                            Validé le :{" "}
-                                            {new Date(currentStepData.validatedAt).toLocaleString("fr-FR", {
-                                                year: "numeric",
-                                                month: "long",
-                                                day: "numeric",
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
-                                        </CommentDate>
-                                    )}
-                                </CommentCard>
-                            )}
 
-                            {currentStepData && currentStepData.status === "in-progress" && (
-                                <InfoAlert>
-                                    <span style={{ fontSize: "1.2rem" }}>🔄</span>
-                                    <AlertText>Validation en cours d'examen...</AlertText>
-                                </InfoAlert>
+                                    <SectionTitle>Commentaires</SectionTitle>
+                                    <CommentSection>
+                                        <CommentLabel htmlFor="new-comment">Nouveau Commentaire</CommentLabel>
+                                        <CommentInputGroup>
+                                            <CommentTextarea
+                                                id="new-comment"
+                                                value={comment}
+                                                onChange={(e) => setComment(e.target.value)}
+                                                placeholder="Ajoutez un commentaire..."
+                                            />
+                                        </CommentInputGroup>
+                                        <CommentActions>
+                                            <CommentButton
+                                                onClick={handleSaveComment}
+                                                disabled={!comment.trim()}
+                                                title={comment.trim() ? "Enregistrer le commentaire" : "Le commentaire est vide"}
+                                            >
+                                                <Send size={14} /> Enregistrer Commentaire
+                                            </CommentButton>
+                                        </CommentActions>
+                                    </CommentSection>
+
+                                    <CommentsList>
+                                        {comments.length === 0 ? (
+                                            <CommentText>Aucun commentaire pour cette mission.</CommentText>
+                                        ) : (
+                                            comments.map((commentItem) => {
+                                                const initials = commentItem.creator.name 
+                                                    ? commentItem.creator.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() 
+                                                    : 'NA';
+                                                return (
+                                                    <CommentItem key={commentItem.commentId}>
+                                                        <Avatar size="32px">{initials}</Avatar>
+                                                        <CommentContent>
+                                                            {editingCommentId === commentItem.commentId ? (
+                                                                <>
+                                                                    <CommentTextarea
+                                                                        value={editCommentText}
+                                                                        onChange={(e) => setEditCommentText(e.target.value)}
+                                                                        placeholder="Modifiez votre commentaire..."
+                                                                    />
+                                                                    <CommentActions>
+                                                                        <CommentButton
+                                                                            onClick={() => handleSaveEditComment(commentItem.commentId)}
+                                                                            disabled={!editCommentText.trim()}
+                                                                        >
+                                                                            <CheckCircle size={14} /> Enregistrer
+                                                                        </CommentButton>
+                                                                        <CommentButton
+                                                                            onClick={() => setEditingCommentId(null)}
+                                                                        >
+                                                                            <X size={14} /> Annuler
+                                                                        </CommentButton>
+                                                                    </CommentActions>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <CommentText>{commentItem.content}</CommentText>
+                                                                    <CommentMeta>
+                                                                        Par {commentItem.creator.name} le{" "}
+                                                                        {formatDate(commentItem.createdAt)}:
+                                                                    </CommentMeta>
+                                                                </>
+                                                            )}
+                                                        </CommentContent>
+                                                        {commentItem.creator.userId === userId && (
+                                                            <CommentActions>
+                                                                <CommentActionButton
+                                                                    onClick={() => handleEditComment(commentItem.commentId, commentItem.content)}
+                                                                    title="Modifier le commentaire"
+                                                                >
+                                                                    <Edit2 size={16} />
+                                                                </CommentActionButton>
+                                                                <CommentActionButton
+                                                                    className="delete"
+                                                                    onClick={() => handleDeleteCommentAction(commentItem.commentId)}
+                                                                    title="Supprimer le commentaire"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </CommentActionButton>
+                                                            </CommentActions>
+                                                        )}
+                                                    </CommentItem>
+                                                );
+                                            })
+                                        )}
+                                    </CommentsList>
+                                </>
                             )}
                         </ContentArea>
                     )}

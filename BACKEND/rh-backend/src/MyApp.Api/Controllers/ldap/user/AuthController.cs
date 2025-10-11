@@ -91,7 +91,7 @@ public class AuthController(
                 HttpOnly = true,
                 Secure = true, // Ensure HTTPS in production
                 SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddHours(1),
+                Expires = DateTime.UtcNow.AddMinutes(1) ,
                 Path = "/"
             };
 
@@ -104,8 +104,7 @@ public class AuthController(
                 result.User.Email,
                 result.User.Name,
                 result.User.Department,
-                result.User.UserType,
-                Roles = _authService.GetUserRolesAndHabilitations(result.User)
+                result.User.UserType
             };
 
             return Ok(new { Token = token, User = userResponse, Message = result.Message, Type = result.Type });

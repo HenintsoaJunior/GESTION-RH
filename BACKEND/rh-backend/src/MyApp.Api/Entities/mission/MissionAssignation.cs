@@ -7,7 +7,7 @@ using MyApp.Api.Models.dto.mission;
 namespace MyApp.Api.Entities.mission
 {
     [Table("mission_assignation")]
-    public class MissionAssignation
+    public class MissionAssignation :BaseEntity
     {
         [Key]
         [Column("assignation_id")]
@@ -40,12 +40,6 @@ namespace MyApp.Api.Entities.mission
 
         [Column("duration")]
         public int? Duration { get; set; }
-
-        [Column("created_at")]
-        public DateTime? CreatedAt { get; set; }
-
-        [Column("updated_at")]
-        public DateTime? UpdatedAt { get; set; }
         
         [Column("is_validated")]
         public int? IsValidated { get; set; }
@@ -59,6 +53,15 @@ namespace MyApp.Api.Entities.mission
         [ForeignKey("TransportId")]
         public Transport? Transport { get; set; }
 
+        [Column("type")]
+        [MaxLength(50)]
+        public string Type { get; set; } = string.Empty;
+        
+        //si le type est note de frais 
+        [Required]
+        [Column("allocated_fund", TypeName = "decimal(15,2)")]
+        public decimal AllocatedFund { get; set; }
+
         public MissionAssignation()
         {
             
@@ -66,14 +69,16 @@ namespace MyApp.Api.Entities.mission
         public MissionAssignation(MissionAssignationDTOForm dto)
         {
             EmployeeId = dto.EmployeeId;
-            MissionId = dto.MissionId;
+            if (dto.MissionId != null) MissionId = dto.MissionId;
             TransportId = dto.TransportId;
-            DepartureDate = dto.DepartureDate ?? DateTime.Now;
+            DepartureDate = dto.DepartureDate;
             DepartureTime = dto.DepartureTime;
             ReturnDate = dto.ReturnDate;
             ReturnTime = dto.ReturnTime;
             Duration = dto.Duration;
             IsValidated = 0;
+            Type = dto.Type;
+            // AllocatedFund = dto.AllocatedFund;
         }
 
         public MissionAssignation(string missionId, MissionAssignationDTOForm assignationDto)
@@ -81,11 +86,13 @@ namespace MyApp.Api.Entities.mission
             EmployeeId = assignationDto.EmployeeId;
             MissionId = missionId;
             TransportId = assignationDto.TransportId;
-            DepartureDate = assignationDto.DepartureDate ?? DateTime.Now;
+            DepartureDate = assignationDto.DepartureDate;
             DepartureTime = assignationDto.DepartureTime;
             ReturnDate = assignationDto.ReturnDate;
             ReturnTime = assignationDto.ReturnTime;
             Duration = assignationDto.Duration;
+            Type = assignationDto.Type;
+            // AllocatedFund = assignationDto.AllocatedFund;
         }
     }
 }

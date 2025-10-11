@@ -110,6 +110,7 @@ namespace MyApp.Api.Repositories.mission
         public async Task<Mission?> GetByIdAsync(string id)
         {
             return await _context.Missions
+                .AsNoTracking()
                 .Include(m => m.Lieu)
                 .FirstOrDefaultAsync(m => m.MissionId == id);
         }
@@ -123,7 +124,18 @@ namespace MyApp.Api.Repositories.mission
         // Met à jour une mission existante
         public Task UpdateAsync(Mission mission)
         {
-            _context.Missions.Update(mission);
+            var existingMission = _context.Missions.Local.FirstOrDefault(m => m.MissionId == mission.MissionId);
+            if (existingMission != null)
+            {
+                // Update properties of the already tracked entity
+                _context.Entry(existingMission).CurrentValues.SetValues(mission);
+            }
+            else
+            {
+                // Attach and mark as modified if not tracked
+                _context.Missions.Update(mission);
+            }
+
             return Task.CompletedTask;
         }
 
@@ -147,7 +159,7 @@ namespace MyApp.Api.Repositories.mission
                 .FirstOrDefaultAsync(m => m.MissionId == id);
             if (mission == null) return false;
 
-            mission.Status = "Annulé";
+            mission.Status = "canceled";
             _context.Missions.Update(mission);
             await _context.SaveChangesAsync();
             return true;
@@ -186,10 +198,10 @@ namespace MyApp.Api.Repositories.mission
 
             // Calculate statistics
             var total = await query.CountAsync();
-            var enCours = await query.CountAsync(m => m.Status == "En Cours");
-            var planifiee = await query.CountAsync(m => m.Status == "Planifié");
-            var terminee = await query.CountAsync(m => m.Status == "Terminé");
-            var annulee = await query.CountAsync(m => m.Status == "Annulé");
+            var enCours = await query.CountAsync(m => m.Status == "In Progress");
+            var planifiee = await query.CountAsync(m => m.Status == "Planned");
+            var terminee = await query.CountAsync(m => m.Status == "Completed");
+            var annulee = await query.CountAsync(m => m.Status == "Cancelled");
 
             // Return the MissionStats object
             return new MissionStats

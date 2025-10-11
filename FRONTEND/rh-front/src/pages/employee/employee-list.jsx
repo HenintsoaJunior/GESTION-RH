@@ -11,7 +11,6 @@ import {
 } from "services/employee/employee";
 import Modal from "components/modal";
 import Pagination from "components/pagination";
-import AutoCompleteInput from "components/auto-complete-input";
 import { fetchSites } from "services/site/site";
 import {
   DashboardContainer,
