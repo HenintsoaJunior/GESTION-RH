@@ -29,6 +29,7 @@ namespace MyApp.Api.Repositories.users
         Task<User?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
         Task<User?> GetDirectorByDepartmentAsync(string department);
+        Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
     }
 
     public class UserRepository : IUserRepository
@@ -40,6 +41,16 @@ namespace MyApp.Api.Repositories.users
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
+        public async Task<IEnumerable<string>> GetDistinctDepartmentsAsync()
+        {
+            return await _context.Users
+                .Where(u => !string.IsNullOrWhiteSpace(u.Department))
+                .Select(u => u.Department!)
+                .Distinct()
+                .OrderBy(d => d)
+                .ToListAsync();
+        }
+        
         public async Task<User?> GetDrhAsync()
         {
             return await _context.Users

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp,RefreshCw, X, List } from "lucide-react";
+import { ChevronDown, ChevronUp, RefreshCw, X, List } from "lucide-react";
 import {
-  DashboardContainer,
   FiltersContainer,
   FiltersHeader,
   FiltersTitle,
@@ -29,6 +28,7 @@ import {
   ButtonShowFilters,
   Loading,
   NoDataMessage,
+  Separator,
 } from "styles/generaliser/table-container";
 import { searchUsers, syncLdap, fetchAllUsers } from "services/users/users";
 import { formatDate } from "utils/dateConverter";
@@ -44,9 +44,7 @@ const UserList = () => {
     status: "",
   });
   const [appliedFilters, setAppliedFilters] = useState({ ...filters });
-  const [suggestions, setSuggestions] = useState({
-    users: [],
-  });
+  const [suggestions, setSuggestions] = useState({ users: [] });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalEntries, setTotalEntries] = useState(0);
@@ -55,7 +53,8 @@ const UserList = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
-  // Fetch users for autocomplete suggestions
+  const hasFilters = Object.values(filters).some(val => (val || "").trim() !== "");
+
   useEffect(() => {
     fetchAllUsers(
       (data) => {
@@ -69,12 +68,11 @@ const UserList = () => {
         });
       },
       setIsLoading,
-      () => {}, // setTotalEntries not needed for suggestions
+      () => {},
       (error) => setAlert(error)
     );
   }, []);
 
-  // Fetch users when filters or pagination change
   useEffect(() => {
     searchUsers(
       setUsers,
@@ -92,54 +90,22 @@ const UserList = () => {
     );
   }, [appliedFilters, currentPage, pageSize]);
 
-  // Handle filter input changes
-  // const handleFilterChange = (name, value) => {
-  //   setFilters((prev) => ({ ...prev, [name]: value }));
-  // };
-
-  // Handle filter form submission
   const handleFilterSubmit = (event) => {
     event.preventDefault();
-    
-    // Apply filters directly without additional validation for now
     const updatedFilters = { ...filters };
-    
     setFilters(updatedFilters);
     setAppliedFilters(updatedFilters);
     setCurrentPage(1);
   };
 
-  // Reset filters
   const handleResetFilters = () => {
-    const resetFilters = {
-      matricule: "",
-      name: "",
-      department: "",
-      status: "",
-    };
+    const resetFilters = { matricule: "", name: "", department: "", status: "" };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
     setCurrentPage(1);
     setAlert({ isOpen: true, type: "info", message: "Filtres réinitialisés." });
   };
 
-  // Handle pagination changes
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (event) => {
-    setPageSize(Number(event.target.value));
-    setCurrentPage(1);
-  };
-
-  // Toggle filter section minimize state
-  const toggleMinimize = () => setIsMinimized((prev) => !prev);
-
-  // Toggle filter section visibility
-  const toggleHide = () => setIsHidden((prev) => !prev);
-
-  // Synchronize users
   const handleSync = () => {
     setIsLoading((prev) => ({ ...prev, sync: true }));
     syncLdap(
@@ -150,7 +116,6 @@ const UserList = () => {
           message: successAlert.message || "Synchronisation LDAP réussie!",
         });
         setIsLoading((prev) => ({ ...prev, sync: false }));
-        // Refresh users after sync
         searchUsers(
           setUsers,
           setIsLoading,
@@ -173,7 +138,7 @@ const UserList = () => {
   };
 
   return (
-    <DashboardContainer>
+    <>
       <Alert
         type={alert.type}
         message={alert.message}
@@ -181,19 +146,20 @@ const UserList = () => {
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
 
+      {/* === SECTION FILTRES === */}
       {!isHidden && (
         <FiltersContainer $isMinimized={isMinimized}>
           <FiltersHeader>
-            <FiltersTitle>Filtres de Recherche</FiltersTitle>
+            <FiltersTitle>Filtre</FiltersTitle>
             <FiltersControls>
               <FilterControlButton
                 $isMinimized={isMinimized}
-                onClick={toggleMinimize}
+                onClick={() => setIsMinimized((p) => !p)}
                 title={isMinimized ? "Développer" : "Réduire"}
               >
                 {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
               </FilterControlButton>
-              <FilterControlButton $isClose onClick={toggleHide} title="Fermer">
+              <FilterControlButton $isClose onClick={() => setIsHidden(true)} title="Fermer">
                 <X size={16} />
               </FilterControlButton>
             </FiltersControls>
@@ -201,21 +167,50 @@ const UserList = () => {
 
           {!isMinimized && (
             <FiltersSection>
+              <Separator />
+
               <form onSubmit={handleFilterSubmit}>
                 <FormTableSearch>
                   <tbody>
+                    {/* Affiche les deux champs sur la même ligne */}
                     <FormRow>
+                      {/* Champ Matricule */}
+                      <FormFieldCell style={{ width: "50%" }}>
+                        <FormLabelSearch>Matricule</FormLabelSearch>
+                        <StyledAutoCompleteInput
+                          value={filters.matricule || ""}
+                          onChange={(value) => setFilters((prev) => ({ ...prev, matricule: value }))}
+                          onSelect={(value) => {
+                            const selectedUser = suggestions.users.find(
+                              (user) => user.matricule === value
+                            );
+                            setFilters((prev) => ({
+                              ...prev,
+                              matricule: selectedUser ? selectedUser.matricule : value,
+                            }));
+                          }}
+                          suggestions={suggestions.users
+                            .filter((user) =>
+                              user.matricule
+                                ?.toLowerCase()
+                                .includes(filters.matricule?.toLowerCase() || "")
+                            )
+                            .map((user) => user.matricule)}
+                          maxVisibleItems={5}
+                          placeholder="Rechercher par matricule..."
+                          disabled={isLoading.users || isLoading.sync}
+                          fieldType="user"
+                          fieldLabel="matricule"
+                          showAddOption={false}
+                        />
+                      </FormFieldCell>
 
-                      <FormFieldCell>
+                      {/* Champ Nom */}
+                      <FormFieldCell style={{ width: "50%" }}>
                         <FormLabelSearch>Nom</FormLabelSearch>
                         <StyledAutoCompleteInput
                           value={filters.name || ""}
-                          onChange={(value) => {
-                            setFilters((prev) => ({
-                              ...prev,
-                              name: value,
-                            }));
-                          }}
+                          onChange={(value) => setFilters((prev) => ({ ...prev, name: value }))}
                           onSelect={(value) => {
                             const selectedUser = suggestions.users.find(
                               (user) => user.displayName === value
@@ -227,7 +222,9 @@ const UserList = () => {
                           }}
                           suggestions={suggestions.users
                             .filter((user) =>
-                              user.displayName.toLowerCase().includes(filters.name?.toLowerCase() || "")
+                              user.displayName
+                                .toLowerCase()
+                                .includes(filters.name?.toLowerCase() || "")
                             )
                             .map((user) => user.displayName)}
                           maxVisibleItems={5}
@@ -238,25 +235,28 @@ const UserList = () => {
                           showAddOption={false}
                         />
                       </FormFieldCell>
-
-                      
                     </FormRow>
                   </tbody>
                 </FormTableSearch>
 
+                <Separator />
+
                 <FiltersActions>
-                  <ButtonReset 
-                    type="button" 
-                    onClick={handleResetFilters} 
-                    disabled={isLoading.users || isLoading.sync}
+                  <ButtonReset
+                    type="button"
+                    onClick={handleResetFilters}
+                    disabled={!hasFilters || isLoading.users || isLoading.sync}
+                    title="Effacer"
                   >
-                    Réinitialiser
+                    Effacer
                   </ButtonReset>
-                  <ButtonSearch 
-                    type="submit" 
+
+                  <ButtonSearch
+                    type="submit"
                     disabled={isLoading.users || isLoading.sync}
+                    title="Rechercher"
                   >
-                    {isLoading.users ? "Recherche..." : "Rechercher"}
+                    Rechercher
                   </ButtonSearch>
                 </FiltersActions>
               </form>
@@ -265,82 +265,80 @@ const UserList = () => {
         </FiltersContainer>
       )}
 
+      {/* === TOGGLE FILTRES === */}
       {isHidden && (
         <FiltersToggle>
-          <ButtonShowFilters type="button" onClick={toggleHide}>
+          <ButtonShowFilters type="button" onClick={() => setIsHidden(false)}>
             <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Afficher les filtres
           </ButtonShowFilters>
         </FiltersToggle>
       )}
 
-      <TableHeader>
-        <TableTitle>Liste des Utilisateurs</TableTitle>
-        <ButtonSearch onClick={handleSync} disabled={isLoading.sync}>
-          <RefreshCw size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-          {isLoading.sync ? "Synchronisation..." : "Synchroniser"}
-        </ButtonSearch>
-      </TableHeader>
-
+      {/* === TABLEAU === */}
       <TableContainer>
-        <DataTable>
-          <thead>
-            <tr>
-              <TableHeadCell>Matricule</TableHeadCell>
-              <TableHeadCell>Nom</TableHeadCell>
-              <TableHeadCell>Email</TableHeadCell>
-              <TableHeadCell>Département</TableHeadCell>
-              <TableHeadCell>Poste</TableHeadCell>
-              <TableHeadCell>Date de création</TableHeadCell>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading.users ? (
-              <TableRow>
-                <TableCell colSpan={6}>
-                  <Loading>Chargement des données...</Loading>
-                </TableCell>
-              </TableRow>
-            ) : users.length > 0 ? (
-              users.map((user, index) => (
-                <TableRow key={`${user.userId || user.matricule}-${index}`}>
-                  <TableCell>{user.matricule || "Non spécifié"}</TableCell>
-                  <TableCell>{user.name || "Non spécifié"}</TableCell>
-                  <TableCell>{user.email || "Non spécifié"}</TableCell>
-                  <TableCell>{user.department || "Non spécifié"}</TableCell>
-                  <TableCell>{user.position || "Non spécifié"}</TableCell>
-                  <TableCell>
-                    {formatDate(user.createdAt) || "Non spécifié"}
+        <TableHeader>
+          <TableTitle>Liste</TableTitle>
+          <ButtonSearch onClick={handleSync} disabled={isLoading.sync} title="Actualiser">
+            <RefreshCw size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+            {isLoading.sync ? "..." : "Actualiser"}
+          </ButtonSearch>
+        </TableHeader>
+
+        <div className="table-wrapper">
+          <DataTable>
+            <thead>
+              <tr>
+                <TableHeadCell>Matricule</TableHeadCell>
+                <TableHeadCell>Nom</TableHeadCell>
+                <TableHeadCell>Email</TableHeadCell>
+                <TableHeadCell>Département</TableHeadCell>
+                <TableHeadCell>Poste</TableHeadCell>
+                <TableHeadCell>Date de création</TableHeadCell>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading.users ? (
+                <TableRow>
+                  <TableCell colSpan={6}>
+                    <Loading>Chargement des données...</Loading>
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6}>
-                  <NoDataMessage>
-                    {appliedFilters.matricule ||
-                    appliedFilters.name ||
-                    appliedFilters.department ||
-                    appliedFilters.status
-                      ? "Aucun utilisateur ne correspond aux critères de recherche."
-                      : "Aucun utilisateur trouvé."}
-                  </NoDataMessage>
-                </TableCell>
-              </TableRow>
-            )}
-          </tbody>
-        </DataTable>
+              ) : users.length > 0 ? (
+                users.map((user, index) => (
+                  <TableRow key={`${user.userId || user.matricule}-${index}`}>
+                    <TableCell>{user.matricule || "Non spécifié"}</TableCell>
+                    <TableCell>{user.name || "Non spécifié"}</TableCell>
+                    <TableCell>{user.email || "Non spécifié"}</TableCell>
+                    <TableCell>{user.department || "Non spécifié"}</TableCell>
+                    <TableCell>{user.position || "Non spécifié"}</TableCell>
+                    <TableCell>{formatDate(user.createdAt) || "Non spécifié"}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6}>
+                    <NoDataMessage>
+                      {Object.values(appliedFilters).some(Boolean)
+                        ? "Aucun utilisateur ne correspond aux critères."
+                        : "Aucun utilisateur trouvé."}
+                    </NoDataMessage>
+                  </TableCell>
+                </TableRow>
+              )}
+            </tbody>
+          </DataTable>
+        </div>
       </TableContainer>
 
       <Pagination
         currentPage={currentPage}
         pageSize={pageSize}
         totalEntries={totalEntries}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
-        disabled={isLoading.users}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(e) => setPageSize(Number(e.target.value))}
       />
-    </DashboardContainer>
+    </>
   );
 };
 
