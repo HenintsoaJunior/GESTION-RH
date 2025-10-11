@@ -36,6 +36,7 @@ export default function Template({ children }) {
   const user = JSON.parse(localStorage.getItem("user")) || {
     userId: "USER DEFAULT",
     name: "John Doe",
+    email: "john.doe@example.com",
     roles: [{ roleName: "Administrateur" }],
   };
 
@@ -435,7 +436,7 @@ export default function Template({ children }) {
           ) : (
             <Link
               to={item.menu.link}
-              className={`nav-button ${isActive ? "active" : ""}`}
+              className={`nav-button ${isActive ? "active --primary-color" : ""}`}
               onClick={setActive(
                 item.menu.menuKey,
                 menuLabel,

@@ -83,34 +83,69 @@ export const StatLabel = styled.div`
 
 export const TableContainer = styled.div`
   background: var(--bg-primary);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  /* Suppression des bordures arrondies */
+  border-radius: 0;
+  /* Espacement (margin-top) après le filtre ou le bouton d'affichage des filtres */
+  margin-top: 0;
   margin-bottom: var(--spacing-lg);
+  max-width: 1400px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  
+  border: none; 
+  /* CLÉ : Bordure supérieure très épaisse et visible */
+  border-top: 5px solid var(--border-color);
+  overflow: visible;
+
+  /* Rétablissement du padding horizontal pour l'aération */
+  padding-left: var(--spacing-lg); 
+  padding-right: var(--spacing-lg);
+  padding-bottom: var(--spacing-lg);
+  padding-top: var(--spacing-md); 
+
+  @media (max-width: 768px) {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+  }
+
+  /* Style pour le wrapper du tableau pour la gestion du défilement */
+  .table-wrapper {
+    overflow-x: auto;
+    width: 100%;
+    margin-top: var(--spacing-md);
+  }
 `;
 
 export const DataTable = styled.table`
   width: 100%;
   border-collapse: collapse;
+  background-color: white; 
+  /* La bordure extérieure est appliquée ici */
+  border: 1px solid var(--border-light);
 `;
 
 export const TableHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: 0;
+  padding: var(--spacing-md) 0;
 
   @media (max-width: 768px) {
     flex-direction: column;
     gap: var(--spacing-md);
     align-items: stretch;
+    padding: var(--spacing-md) 0;
   }
 `;
 
 export const TableTitle = styled.h2`
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0;
 `;
 
 export const TableRow = styled.tr`
@@ -123,19 +158,46 @@ export const TableRow = styled.tr`
 export const TableCell = styled.td`
   padding: var(--spacing-md);
   text-align: left;
+  /* Bordures internes (entre les cellules) */
   border-bottom: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light); 
   font-size: var(--font-size-sm);
   color: var(--text-primary);
+
+  /* Suppression des bordures extérieures aux cellules */
+  &:first-child {
+    border-left: none;
+  }
+  &:last-child {
+    border-right: none; 
+  }
+  
+  /* Gérer le bas du tableau */
+  ${TableRow}:last-child & {
+    border-bottom: none;
+  }
 `;
 
 export const TableHeadCell = styled.th`
   padding: var(--spacing-md);
   text-align: left;
+  /* Bordures internes (entre les en-têtes) */
   border-bottom: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light); 
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--text-secondary);
   background: var(--bg-secondary);
+  white-space: nowrap;
+
+  /* Suppression des bordures extérieures aux en-têtes */
+  border-top: none; 
+  &:first-child {
+    border-left: none; 
+  }
+  &:last-child {
+    border-right: none; 
+  }
 `;
 
 export const Loading = styled.div`
@@ -178,15 +240,20 @@ export const StatusBadge = styled.span`
 export const FiltersContainer = styled.div`
   position: relative;
   background: var(--bg-primary);
-  border-radius: var(--radius-sm);
+  /* Suppression des bordures arrondies */
+  border-radius: 0;
   box-shadow: var(--shadow-sm);
-  margin-bottom: var(--spacing-lg);
+  /* Ajout d'une marge sous le filtre si il n'est pas caché */
+  margin-bottom: 21px;
   padding: var(--spacing-lg);
+  
+  /* CLÉ : Bordure supérieure très épaisse et visible */
+  border-top: 5px solid var(--border-color);
 
   ${({ $isMinimized }) =>
     $isMinimized &&
     `
-    margin-bottom: var(--spacing-md);
+    margin-bottom: 21px;
     & .filters-section {
       display: none;
     }
@@ -359,6 +426,15 @@ export const FormInputSearch = styled.input`
   }
 `;
 
+export const Separator = styled.hr`
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: var(--spacing-md) 0;
+  width: calc(100% + 2 * var(--spacing-lg));
+  margin-left: calc(-1 * var(--spacing-lg));
+  opacity: 0.6;
+`;
+
 export const StyledAutoCompleteInput = styled(AutoCompleteInput)`
   width: 100%;
   height: 32px;
@@ -501,13 +577,14 @@ export const ButtonSearch = styled.button`
   cursor: pointer;
   font-weight: 600;
   font-family: var(--font-family);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   box-shadow: var(--shadow-sm);
   height: 40px;
   line-height: 1;
   transition: all 0.2s ease;
   background-color: var(--primary-color);
   color: #ffffff;
+  align-self: flex-end;
 
   &:hover {
     background-color: var(--primary-hover);
@@ -592,7 +669,7 @@ export const ButtonUpdate = styled.button`
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
-    background-color: var(-primary-dark);
+    background-color: var(--primary-dark);
   }
 
   @media (max-width: 768px) {
@@ -642,20 +719,20 @@ export const ButtonConfirm = styled.button`
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-xs) var(--spacing-md); /* Réduit par rapport à var(--spacing-sm) var(--spacing-xl) */
+  padding: var(--spacing-xs) var(--spacing-md);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
   font-weight: 600;
   font-family: var(--font-family);
-  font-size: var(--font-size-xs); /* Réduit par rapport à var(--font-size-sm) */
+  font-size: var(--font-size-xs);
   box-shadow: var(--shadow-sm);
-  height: 32px; /* Réduit de 40px à 32px */
+  height: 32px;
   line-height: 1;
   transition: all 0.2s ease;
   background-color: var(--primary-color);
   color: #ffffff;
-  min-width: 70px; /* Ajouté pour correspondre à ButtonUpdate/ButtonCancel, ajustez si nécessaire */
+  min-width: 70px;
 
   &:hover {
     background-color: var(--primary-hover);
@@ -672,8 +749,11 @@ export const ButtonConfirm = styled.button`
     min-width: unset;
   }
 `;
+
 export const FiltersToggle = styled.div`
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: 21px;
+  /* Espacement CLÉ entre le bouton (si filtre caché) et le TableContainer */
+  margin-top: var(--spacing-lg); 
 `;
 
 export const ButtonShowFilters = styled.button`

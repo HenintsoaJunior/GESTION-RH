@@ -36,6 +36,25 @@ public class UserController : ControllerBase
         }
     }
 
+    [HttpGet("departments")]
+    public async Task<ActionResult> GetDistinctDepartments()
+    {
+        try
+        {
+            var departments = await _userService.GetDistinctDepartmentsAsync();
+            return Ok(new { status = "success", data = departments });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { status = "error", message = ex.Message });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, new { status = "error", message = e.Message });
+        }
+    }
+
     [HttpGet("{userId}/roles")]
     public async Task<ActionResult<IEnumerable<string>>> GetUserRoles(string userId)
     {

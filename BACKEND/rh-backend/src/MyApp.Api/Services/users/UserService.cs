@@ -29,6 +29,7 @@ namespace MyApp.Api.Services.users
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
         Task<UserDto?> GetDirectorByDepartmentAsync(string department);
         Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId);
+        Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
     }
 
     public class UserService : IUserService
@@ -175,6 +176,11 @@ namespace MyApp.Api.Services.users
             return MapToDto(user);
         }
 
+        public async Task<IEnumerable<string>> GetDistinctDepartmentsAsync()
+        {
+            return await _repository.GetDistinctDepartmentsAsync();
+        }
+        
         private static UserDto MapToDto(User user)
         {
             return new UserDto
