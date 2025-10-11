@@ -21,21 +21,6 @@ public class UserController : ControllerBase
         _roleHabilitationService = roleHabilitationService ?? throw new ArgumentNullException(nameof(roleHabilitationService));
     }
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserDto>>> GetAll()
-    {
-        try
-        {
-            var users = await _userService.GetAllAsync();
-            return Ok(users);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
-    }
-
     [HttpGet("departments")]
     public async Task<ActionResult> GetDistinctDepartments()
     {
@@ -43,6 +28,44 @@ public class UserController : ControllerBase
         {
             var departments = await _userService.GetDistinctDepartmentsAsync();
             return Ok(new { status = "success", data = departments });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { status = "error", message = ex.Message });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, new { status = "error", message = e.Message });
+        }
+    }
+
+    [HttpGet]
+    public async Task<ActionResult> GetAll()
+    {
+        try
+        {
+            var users = await _userService.GetAllAsync();
+            return Ok(new { status = "success", data = users });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { status = "error", message = ex.Message });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, new { status = "error", message = e.Message });
+        }
+    }
+
+    [HttpPost("search")]
+    public async Task<ActionResult> Search([FromQuery] UserSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        try
+        {
+            var (users, totalCount) = await _userService.SearchAsync(filters, page, pageSize);
+            return Ok(new { status = "success", data = new { Users = users, TotalCount = totalCount } });
         }
         catch (ArgumentException ex)
         {
@@ -159,21 +182,6 @@ public class UserController : ControllerBase
         catch (ArgumentException ex)
         {
             return BadRequest(ex.Message);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
-    }
-
-    [HttpPost("search")]
-    public async Task<ActionResult<(IEnumerable<User>, int)>> Search([FromQuery] UserSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
-    {
-        try
-        {
-            var (users, totalCount) = await _userService.SearchAsync(filters, page, pageSize);
-            return Ok(new { Users = users, TotalCount = totalCount });
         }
         catch (Exception e)
         {

@@ -1,0 +1,67 @@
+Crée un service React pour récupérer les départements à partir d’une API, en suivant l’exemple de code ci-dessous.
+Le service doit utiliser @tanstack/react-query pour la gestion des requêtes et axios pour les appels HTTP.
+Assure-toi de respecter les bonnes pratiques suivantes :
+
+Définir une clé de requête constante (queryKey)
+
+Typage strict avec TypeScript pour la réponse de l’API
+
+Utiliser la variable d’environnement BASE_URL provenant de config/apiConfig
+
+Gérer correctement les erreurs et le typage du résultat
+
+Voici un exemple à suivre :
+
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import { BASE_URL } from 'config/apiConfig';
+
+const DEPARTMENTS_KEY = ['departments'] as const;
+
+interface DepartmentsResponse {
+  status: string;
+  data: string[];
+}
+
+export const useDepartments = () => {
+  return useQuery<DepartmentsResponse, Error>({
+    queryKey: DEPARTMENTS_KEY,
+    queryFn: async () => {
+      const response = await axios.get(`${BASE_URL}/api/User/departments`, {
+        headers: {
+          accept: '*/*',
+        },
+      });
+      return response.data;
+    },
+  });
+};
+
+
+L’API appelée est :
+
+curl -X 'GET' \
+  'http://localhost:5183/api/User' \
+  -H 'accept: text/plain'
+
+Et la réponse JSON est :
+
+{
+  "status": "success",
+  "data": [
+    {
+      "userId": "000465d0-0530-41d9-872f-d6012418ba7e",
+      "name": "Safidy RAKOTONDRAJOA (DSI)",
+      "email": "safidy.rakotondrajoa@ravinala-airports.aero",
+      "matricule": "00298",
+      "department": "DSI",
+      "position": "Responsable des applications IT",
+      "superiorId": "83dc05fd-0e42-43f5-b0e0-1567df7647b1",
+      "superiorName": "Vonjimampianina RAKOTOARISOA (DSI)"
+    }
+  ]
+}
+
+
+🎯 Objectif final :
+Créer un hook qui renvoie les données de cette API en respectant la structure et les conventions de React Query et Axios.
