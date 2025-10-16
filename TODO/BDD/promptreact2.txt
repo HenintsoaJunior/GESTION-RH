@@ -38,128 +38,177 @@ export const useDepartments = () => {
 };
 
 
-voici le code a modifier :
+creer une services pour les suivant :
 "use client";
+voici le url 
+curl -X 'POST' \
+  'http://localhost:5183/api/MissionReport' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "text": "Test",
+  "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+  "assignationId": "MA-000001"
+}'
+
+voici la response json
+{
+  "data": {
+    "missionReportId": "MR-000001"
+  },
+  "status": 201,
+  "message": "created"
+}
+
+curl -X 'GET' \
+  'http://localhost:5183/api/MissionReport' \
+  -H 'accept: */*'
+
+{
+  "data": [
+    {
+      "missionReportId": "MR-000001",
+      "text": "Test",
+      "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+      "user": {
+        "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+        "matricule": "ST154",
+        "email": "miantsafitia.rakotoarimanana@ravinala-airports.aero",
+        "name": "Miantsafitia RAKOTOARIMANANA (DRH)",
+        "position": "Stagiaire DRH",
+        "department": "DRH",
+        "superiorId": "76c25f37-2089-4e81-8329-1b63d880b71a",
+        "superiorName": "Herinomenjanaharilala Sedera RASOLOFONDRAMANAMBE (DRH)",
+        "status": null,
+        "signature": null,
+        "userType": 0,
+        "refreshToken": "Ajsh4WZocuhbDKeg0iaVL12gPh/gZ53KB9SS/1LXvG4=",
+        "refreshTokenExpiry": "2025-10-23T05:46:58.23",
+        "userRoles": [],
+        "userHabilitations": [],
+        "createdAt": "2025-10-16T07:54:47.56",
+        "updatedAt": "2025-10-16T07:54:47.56"
+      },
+      "assignationId": "MA-000001",
+      "missionAssignation": {
+        "assignationId": "MA-000001",
+        "employeeId": "EMP_0001",
+        "missionId": "MIS-000001",
+        "transportId": null,
+        "departureDate": "2025-10-17T00:00:00",
+        "departureTime": "10:00:00",
+        "returnDate": "2025-10-19T00:00:00",
+        "returnTime": "10:00:00",
+        "duration": null,
+        "isValidated": null,
+        "employee": null,
+        "mission": null,
+        "transport": null,
+        "type": "Indemnité",
+        "allocatedFund": 0,
+        "createdAt": "2025-10-16T05:48:36.343",
+        "updatedAt": "2025-10-16T05:48:36.343"
+      },
+      "createdAt": "2025-10-16T08:49:35.587",
+      "updatedAt": null
+    }
+  ],
+  "status": 200,
+  "message": "success"
+}
+
+curl -X 'GET' \
+  'http://localhost:5183/api/MissionReport/MR-000001' \
+  -H 'accept: */*'
+
+{
+  "data": {
+    "missionReportId": "MR-000001",
+    "text": "Test",
+    "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+    "user": {
+      "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+      "matricule": "ST154",
+      "email": "miantsafitia.rakotoarimanana@ravinala-airports.aero",
+      "name": "Miantsafitia RAKOTOARIMANANA (DRH)",
+      "position": "Stagiaire DRH",
+      "department": "DRH",
+      "superiorId": "76c25f37-2089-4e81-8329-1b63d880b71a",
+      "superiorName": "Herinomenjanaharilala Sedera RASOLOFONDRAMANAMBE (DRH)",
+      "status": null,
+      "signature": null,
+      "userType": 0,
+      "refreshToken": "Ajsh4WZocuhbDKeg0iaVL12gPh/gZ53KB9SS/1LXvG4=",
+      "refreshTokenExpiry": "2025-10-23T05:46:58.23",
+      "userRoles": [],
+      "userHabilitations": [],
+      "createdAt": "2025-10-16T07:54:47.56",
+      "updatedAt": "2025-10-16T07:54:47.56"
+    },
+    "assignationId": "MA-000001",
+    "missionAssignation": {
+      "assignationId": "MA-000001",
+      "employeeId": "EMP_0001",
+      "missionId": "MIS-000001",
+      "transportId": null,
+      "departureDate": "2025-10-17T00:00:00",
+      "departureTime": "10:00:00",
+      "returnDate": "2025-10-19T00:00:00",
+      "returnTime": "10:00:00",
+      "duration": null,
+      "isValidated": null,
+      "employee": null,
+      "mission": null,
+      "transport": null,
+      "type": "Indemnité",
+      "allocatedFund": 0,
+      "createdAt": "2025-10-16T05:48:36.343",
+      "updatedAt": "2025-10-16T05:48:36.343"
+    },
+    "createdAt": "2025-10-16T08:49:35.587",
+    "updatedAt": null
+  },
+  "status": 200,
+  "message": "success"
+}
 
 
-import { useCallback } from "react";
-import { apiGet } from "utils/apiUtils";
-import { handleValidationError } from "utils/validation";
+
+curl -X 'PUT' \
+  'http://localhost:5183/api/MissionReport/MR-000001' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "text": "test2",
+  "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+  "assignationId": "MA-000001"
+}'
+
+{
+  "data": {
+    "message": "Rapport de mission MR-000001 mis à jour avec succès"
+  },
+  "status": 200,
+  "message": "success"
+}
 
 
-export const formatNotificationData = (notificationRecipient) => {
-    if (!notificationRecipient) return null;
+curl -X 'DELETE' \
+  'http://localhost:5183/api/MissionReport/MR-000001?userId=ce796eb6-0f7e-4dbc-9c1e-de00f53de186' \
+  -H 'accept: */*'
 
-    return {
-        notificationId: notificationRecipient.notificationId || "Non spécifié",
-        userId: notificationRecipient.userId || "Non spécifié",
-        status: notificationRecipient.status || "pending",
-        sentAt: notificationRecipient.sentAt || null,
-        readAt: notificationRecipient.readAt || null,
-        createdAt: notificationRecipient.createdAt || null,
-        updatedAt: notificationRecipient.updatedAt || null,
-        notification: {
-            title: notificationRecipient.notification?.title || "Non spécifié",
-            message: notificationRecipient.notification?.message || "Non spécifié",
-            type: notificationRecipient.notification?.type || "info"
-        },
-        user: {
-            name: notificationRecipient.user?.name || "Non spécifié",
-            email: notificationRecipient.user?.email || "Non spécifié"
-        }
-    };
-};
+  {
+  "data": {
+    "message": "Rapport de mission MR-000001 supprimé avec succès",
+    "data": {
+      "id": "MR-000001",
+      "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186"
+    }
+  },
+  "status": 200,
+  "message": "success"
+}
 
-// ---------------------------------------------------------------------
-
-export const GetLastThreeUnreadNotifications = () => {
-    // Le hook renvoie une fonction qui exige le 'userId' en paramètre.
-    return useCallback(async (userId) => {
-        if (!userId) {
-            throw new Error("User ID is required.");
-        }
-
-        try {
-            const response = await apiGet(`/api/notifications/by-user/${userId}/last-three-unread`);
-            
-            const data = Array.isArray(response) ? response : [];
-            
-            // Simplification de la map
-            const formattedData = data.map(formatNotificationData);
-            
-            return formattedData;
-        } catch (error) {
-            handleValidationError(error);
-            throw error;
-        }
-    }, []); // Dépendance 'userId' supprimée, tableau vide.
-};
-
-// ---------------------------------------------------------------------
-
-export const GetUnreadNotificationCount = () => {
-    return useCallback(async (userId) => {
-        if (!userId) {
-            throw new Error("User ID is required.");
-        }
-
-        try {
-            const response = await apiGet(`/api/notifications/by-user/${userId}/unread-count`);
-            
-            return {
-                unreadCount: response?.unreadCount ?? 0
-            };
-        } catch (error) {
-            handleValidationError(error);
-            throw error;
-        }
-    }, []); // Tableau de dépendances vide.
-};
-
-// ---------------------------------------------------------------------
-
-export const GetNotificationsByUser = () => {
-    return useCallback(async (userId) => {
-        if (!userId) {
-            throw new Error("User ID is required.");
-        }
-
-        try {
-            const response = await apiGet(`/api/notifications/by-user/${userId}`);
-            
-            const data = Array.isArray(response) ? response : [];
-            
-            const formattedData = data.map(formatNotificationData);
-            
-            return formattedData;
-        } catch (error) {
-            handleValidationError(error);
-            throw error;
-        }
-    }, []); // Tableau de dépendances vide.
-};
-
-// ---------------------------------------------------------------------
-
-export const GetUnreadNotificationCountByMenu = () => {
-    return useCallback(async (userId, relatedMenu = null) => {
-        if (!userId) {
-            throw new Error("User ID is required.");
-        }
-
-        try {
-            const url = relatedMenu
-                ? `/api/notifications/by-user/${userId}/unread-count-by-menu?relatedMenu=${encodeURIComponent(relatedMenu)}`
-                : `/api/notifications/by-user/${userId}/unread-count-by-menu`;
-            const response = await apiGet(url);
-            
-            return response && typeof response === 'object' ? response : {};
-        } catch (error) {
-            handleValidationError(error);
-            throw error;
-        }
-    }, []); // Tableau de dépendances vide.
-};
 
 🎯 Objectif final :
 Créer un hook qui renvoie les données de cette API en respectant la structure et les conventions de React Query et Axios.

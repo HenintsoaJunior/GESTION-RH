@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { ArrowLeft, Download } from "lucide-react";
@@ -13,10 +14,14 @@ import {
     TableCell,
     TotalRow,
     ActionButton,
-} from "styles/generaliser/details-mission-container";
-import { NoDataMessage } from "styles/generaliser/table-container";
-import { formatNumber } from "utils/format";
+} from "@/styles/detailsmission-styles";
+import { NoDataMessage } from "@/styles/table-styles";
+import { formatNumber } from "@/utils/format";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from "chart.js";
+import type {
+    ChartData,
+    ChartOptions,
+} from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
 import styled from "styled-components";
 
@@ -58,8 +63,200 @@ const ChartCard = styled.div`
     }
 `;
 
-const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, onExportExcel, isLoading, formatDate }) => {
-    const indemnityDetails = missionPayment.dailyPaiements.map((item) => {
+interface CompensationScale {
+    amount: number;
+    expenseType?: {
+        type: string;
+    };
+    transportId?: string;
+}
+
+interface DailyPaiement {
+    date: string;
+    totalAmount: number;
+    compensationScales: CompensationScale[];
+}
+
+interface AssignmentDetails {
+    beneficiary: string;
+    matricule: string;
+    missionTitle: string;
+    function: string;
+    base: string;
+    meansOfTransport: string;
+    direction: string;
+    departmentService: string;
+    costCenter: number;
+    departureDate: string;
+    departureTime: string;
+    missionDuration: number;
+    returnDate: string;
+    returnTime: string;
+    startDate: string;
+}
+
+interface MissionPayment {
+    dailyPaiements: DailyPaiement[];
+    assignmentDetails: AssignmentDetails;
+    totalAmount: number;
+}
+
+interface IndemnityDetail {
+    date: string;
+    breakfast: number;
+    lunch: number;
+    dinner: number;
+    accommodation: number;
+    transport: number;
+    total: number;
+}
+
+interface IsLoading {
+    exportExcel: boolean;
+    // Add other loading states if needed
+}
+
+interface OMPaymentProps {
+    missionPayment: MissionPayment;
+    selectedAssignmentId: string;
+    onBack: () => void;
+    onExportPDF?: (employeeId: string) => void;
+    onExportExcel: () => void;
+    isLoading: IsLoading;
+    formatDate: (date: string) => string;
+}
+
+const createTooltipCallback = (
+    unit: string = ",00 "
+) => {
+    return {
+        callbacks: {
+            label: function (tooltipItem: any) {
+                const label = tooltipItem.label || "";
+                const value = tooltipItem.raw as number;
+                return `${label}: ${formatNumber(value)}${unit} MGA`;
+            },
+        },
+    };
+};
+
+const IndemnityDoughnutChart: React.FC<{ indemnityDetails: IndemnityDetail[] }> = ({ indemnityDetails }) => {
+    const totalTransport = indemnityDetails.reduce((sum, item) => sum + (item.transport || 0), 0);
+    const totalRepas = indemnityDetails.reduce(
+        (sum, item) => sum + (item.breakfast || 0) + (item.lunch || 0) + (item.dinner || 0),
+        0
+    );
+    const totalHebergement = indemnityDetails.reduce((sum, item) => sum + (item.accommodation || 0), 0);
+
+    const data: number[] = [totalTransport, totalRepas, totalHebergement];
+    const hasData = data.some(val => val > 0);
+
+    if (!hasData) return <p>Données insuffisantes.</p>;
+
+    const chartData: ChartData<'doughnut'> = {
+        labels: ["Transport", "Repas", "Hébergement"],
+        datasets: [
+            {
+                data: data,
+                backgroundColor: ["#007bff", "#28a745", "#ffc107"],
+                hoverBackgroundColor: ["#0056b3", "#1e7e34", "#d39e00"],
+                borderColor: ["#ffffff"],
+                borderWidth: 2,
+            },
+        ],
+    };
+
+    const options: ChartOptions<'doughnut'> = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: "right" as const,
+                labels: { boxWidth: 10, padding: 10 },
+            },
+            tooltip: {
+                callbacks: {
+                    label: function (tooltipItem: any) {
+                        const label = tooltipItem.label || "";
+                        const value = tooltipItem.raw as number;
+                        const total = tooltipItem.dataset.data.reduce((a: number, b: number) => a + b, 0);
+                        const percentage = ((value / total) * 100).toFixed(1) + "%";
+                        return `${label}: ${formatNumber(value)},00 MGA (${percentage})`;
+                    },
+                },
+            },
+        },
+        cutout: "70%",
+    };
+
+    return (
+        <ChartCard>
+            <h4>Répartition Globale des Coûts</h4>
+            <div className="chart-content">
+                <Doughnut data={chartData} options={options} />
+            </div>
+        </ChartCard>
+    );
+};
+
+const DailyIndemnityBarChart: React.FC<{ indemnityDetails: IndemnityDetail[]; formatDate: (date: string) => string }> = ({ indemnityDetails, formatDate }) => {
+    const dailyTotals = indemnityDetails.map(item => ({
+        date: formatDate(item.date),
+        amount: item.total || 0,
+    }));
+
+    const hasData = dailyTotals.some(item => item.amount > 0);
+    if (!hasData) return <p>Données journalières insuffisantes.</p>;
+
+    const chartData: ChartData<'bar'> = {
+        labels: dailyTotals.map(item => item.date),
+        datasets: [
+            {
+                label: "Montant par jour",
+                data: dailyTotals.map(item => item.amount),
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    const options: ChartOptions<'bar'> = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            title: { display: false },
+            tooltip: createTooltipCallback(" MGA"),
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Montant Total (MGA)' },
+                ticks: {
+                    callback: function (value: number | string) {
+                        return formatNumber(Number(value));
+                    },
+                },
+            },
+            x: {
+                title: { display: true, text: 'Date' },
+            },
+        },
+    };
+
+    return (
+        <ChartCard>
+            <h4>Indemnité Totale par Jour</h4>
+            <div className="chart-content">
+                <Bar data={chartData} options={options} />
+            </div>
+        </ChartCard>
+    );
+};
+
+const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmentId, onBack, onExportExcel, isLoading, formatDate }) => {
+    const indemnityDetails: IndemnityDetail[] = missionPayment.dailyPaiements.map((item: DailyPaiement) => {
         const amounts = {
             breakfast: 0,
             lunch: 0,
@@ -68,7 +265,7 @@ const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, 
             transport: 0,
         };
 
-        item.compensationScales.forEach((scale) => {
+        item.compensationScales.forEach((scale: CompensationScale) => {
             const amount = scale.amount || 0;
             if (scale.expenseType?.type === "Petit Déjeuner") amounts.breakfast += amount;
             else if (scale.expenseType?.type === "Déjeuner") amounts.lunch += amount;
@@ -91,133 +288,6 @@ const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, 
     });
 
     const grandTotal = indemnityDetails.reduce((sum, item) => sum + item.total, 0);
-
-    const createTooltipCallback = (unit = ",00 ") => {
-        return {
-            label: function (tooltipItem) {
-                const label = tooltipItem.label || "";
-                const value = tooltipItem.raw;
-                return `${label}: ${formatNumber(value)}${unit} MGA`; 
-            },
-        };
-    };
-
-    /**
-     * Graphique 1 : Répartition des Montants par Catégorie (Doughnut)
-     */
-    const IndemnityDoughnutChart = ({ indemnityDetails }) => {
-        const totalTransport = indemnityDetails.reduce((sum, item) => sum + (item.transport || 0), 0);
-        const totalRepas = indemnityDetails.reduce(
-            (sum, item) => sum + (item.breakfast || 0) + (item.lunch || 0) + (item.dinner || 0),
-            0
-        );
-        const totalHebergement = indemnityDetails.reduce((sum, item) => sum + (item.accommodation || 0), 0);
-
-        const data = [totalTransport, totalRepas, totalHebergement];
-        const hasData = data.some(val => val > 0);
-
-        if (!hasData) return <p>Données insuffisantes.</p>;
-
-        const chartData = {
-            labels: ["Transport", "Repas", "Hébergement"],
-            datasets: [
-                {
-                    data: data,
-                    backgroundColor: ["#007bff", "#28a745", "#ffc107"],
-                    hoverBackgroundColor: ["#0056b3", "#1e7e34", "#d39e00"],
-                    borderColor: ["#ffffff"],
-                    borderWidth: 2,
-                },
-            ],
-        };
-
-        const options = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: "right",
-                    labels: { boxWidth: 10, padding: 10 },
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (tooltipItem) {
-                            const label = tooltipItem.label || "";
-                            const value = tooltipItem.raw;
-                            const total = tooltipItem.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1) + "%";
-                            return `${label}: ${formatNumber(value)},00 MGA (${percentage})`;
-                        },
-                    },
-                },
-            },
-            cutout: "70%",
-        };
-
-        return (
-            <ChartCard>
-                <h4>Répartition Globale des Coûts</h4>
-                <div className="chart-content">
-                    <Doughnut data={chartData} options={options} />
-                </div>
-            </ChartCard>
-        );
-    };
-
-    /**
-     * Graphique 2 : Total de Indemnité par Jour (Barres)
-     */
-    const DailyIndemnityBarChart = ({ indemnityDetails, formatDate }) => {
-        const dailyTotals = indemnityDetails.map(item => ({
-            date: formatDate(item.date),
-            amount: item.total || 0,
-        }));
-
-        const hasData = dailyTotals.some(item => item.amount > 0);
-        if (!hasData) return <p>Données journalières insuffisantes.</p>;
-
-        const chartData = {
-            labels: dailyTotals.map(item => item.date),
-            datasets: [
-                {
-                    label: "Montant par jour",
-                    data: dailyTotals.map(item => item.amount),
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1,
-                },
-            ],
-        };
-
-        const options = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                title: { display: false },
-                tooltip: { callbacks: createTooltipCallback(" MGA") },
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'Montant Total (MGA)' },
-                    ticks: { callback: (value) => formatNumber(value) },
-                },
-                x: {
-                    title: { display: true, text: 'Date' },
-                },
-            },
-        };
-
-        return (
-            <ChartCard>
-                <h4>Indemnité Totale par Jour</h4>
-                <div className="chart-content">
-                    <Bar data={chartData} options={options} />
-                </div>
-            </ChartCard>
-        );
-    };
 
     return (
         <>

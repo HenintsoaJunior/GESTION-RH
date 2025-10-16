@@ -87,6 +87,31 @@ namespace MyApp.Api.Controllers.mission
                 return StatusCode(500, $"Erreur lors de la génération de l'ordre de mission : {ex.Message}");
             }
         }
+
+        [HttpGet("{assignationId}")]
+        // [AllowAnonymous]
+        public async Task<IActionResult> GetByAssignationId(string assignationId)
+        {
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            // {
+            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            // }
+            try
+            {
+                var missionAssignation = await _service.GetByAssignationIdAsync(assignationId);
+                
+                if (missionAssignation == null)
+                {
+                    return NotFound(new { Message = $"No mission assignation found for AssignationId: {assignationId}" });
+                }
+
+                return Ok(missionAssignation);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = $"Error retrieving mission assignation: {ex.Message}" });
+            }
+        }
         
         //
         [HttpPost("import-csv")]
@@ -293,25 +318,7 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
-        [HttpGet("{assignationId}")]
-        public async Task<IActionResult> GetByAssignationId(string assignationId)
-        {
-            try
-            {
-                var missionAssignation = await _service.GetByAssignationIdAsync(assignationId);
-                
-                if (missionAssignation == null)
-                {
-                    return NotFound(new { Message = $"No mission assignation found for AssignationId: {assignationId}" });
-                }
-
-                return Ok(missionAssignation);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = $"Error retrieving mission assignation: {ex.Message}" });
-            }
-        }
+        
 
     }
 }
