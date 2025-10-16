@@ -1,5 +1,4 @@
 # --- Fichiers communs à ignorer ---
-*.log
 *.tmp
 *.bak
 *.swp
