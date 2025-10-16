@@ -84,14 +84,14 @@ public class AuthController(
             var token = await _authService.GenerateJwtTokenAsync(result.User);
 
             // Log successful authentication, explicitly specifying T as object
-            await _logService.LogAsync<object>("AUTHENTICATION", null, null, result.User.UserId.ToString());
+            await _logService.LogAsync("AUTHENTICATION", "UTILISATEUR",result.User.UserId.ToString());
 
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true, // Ensure HTTPS in production
                 SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddMinutes(1) ,
+                Expires = DateTime.UtcNow.AddHours(1) ,
                 Path = "/"
             };
 

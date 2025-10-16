@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.lieu;
@@ -13,20 +14,31 @@ namespace MyApp.Api.Controllers.mission
 
         // Récupère tous les lieux
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Lieu>>> GetAll()
+        [AllowAnonymous]
+        public async Task<ActionResult> GetAll()
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
             try
             {
                 var lieux = await lieuService.GetAllAsync();
-                return Ok(lieux);
+                return Ok(new { data = lieux, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
                 logger.LogError(ex, "Erreur lors de la récupération de tous les lieux");
-                return StatusCode(500, "Une erreur est survenue lors de la récupération des lieux");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Erreur lors de la récupération de tous les lieux");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
-
+//
         // Récupère un lieu par son identifiant
         [HttpGet("{id}")]
         public async Task<ActionResult<Lieu>> GetById(string id)

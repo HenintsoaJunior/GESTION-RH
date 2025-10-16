@@ -3,6 +3,7 @@ using MyApp.Api.Entities.mission;
 using MyApp.Api.Services.mission;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Models.dto.mission;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MyApp.Api.Controllers.mission
 {
@@ -15,6 +16,79 @@ namespace MyApp.Api.Controllers.mission
         private readonly IMissionService _missionService = missionService ?? throw new ArgumentNullException(nameof(missionService));
         private readonly ILogger<MissionAssignationController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
+
+        [HttpPost("search")]
+        [AllowAnonymous]
+        public async Task<ActionResult> Search([FromBody] MissionAssignationSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (page < 1 || pageSize < 1)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "La page et la taille de la page doivent être supérieures à 0." });
+            }
+
+            try
+            {
+                var (results, totalCount) = await _service.SearchAsync(filters, page, pageSize);
+                var responseData = new
+                {
+                    Data = results,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize
+                };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpPost("OM")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GenerateOM([FromBody] GenerateOMDTO generateOM)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+            if (generateOM == null || string.IsNullOrWhiteSpace(generateOM.MissionId))
+            {
+                _logger.LogWarning("Les données ou l'identifiant de la mission sont absents pour la génération de l'ordre de mission.");
+                return BadRequest("Les données ou l'identifiant de la mission sont requis.");
+            }
+
+            try
+            {
+                var pdfBytes = await _service.GenerateMissionOrderPDFAsync(generateOM.EmployeeId, generateOM.MissionId);
+
+                var pdfName = $"OrdreMission-{generateOM.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
+
+                return File(pdfBytes, "application/pdf", pdfName);
+            }
+            catch (FileNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Template file not found for mission {MissionId}", generateOM.MissionId);
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur serveur lors de la génération de l'ordre de mission pour la mission {MissionId}", generateOM.MissionId);
+                return StatusCode(500, $"Erreur lors de la génération de l'ordre de mission : {ex.Message}");
+            }
+        }
+        
+        //
         [HttpPost("import-csv")]
         public async Task<IActionResult> ImportCsv(IFormFile? file, [FromQuery] char separator = ';')
         {
@@ -105,36 +179,6 @@ namespace MyApp.Api.Controllers.mission
             {
                 _logger.LogError(ex, "Erreur serveur lors de la génération du rapport Excel pour la mission {MissionId}", generatePaiementDto.MissionId);
                 return StatusCode(500, $"Erreur lors de la génération du fichier Excel : {ex.Message}");
-            }
-        }
-
-
-        [HttpPost("OM")]
-        public async Task<IActionResult> GenerateOM([FromBody] GenerateOMDTO generateOM)
-        {
-            if (generateOM == null || string.IsNullOrWhiteSpace(generateOM.MissionId))
-            {
-                _logger.LogWarning("Les données ou l'identifiant de la mission sont absents pour la génération de l'ordre de mission.");
-                return BadRequest("Les données ou l'identifiant de la mission sont requis.");
-            }
-
-            try
-            {
-                var pdfBytes = await _service.GenerateMissionOrderPDFAsync(generateOM.EmployeeId, generateOM.MissionId);
-
-                var pdfName = $"OrdreMission-{generateOM.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
-                
-                return File(pdfBytes, "application/pdf", pdfName);
-            }
-            catch (FileNotFoundException ex)
-            {
-                _logger.LogWarning(ex, "Template file not found for mission {MissionId}", generateOM.MissionId);
-                return NotFound(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur serveur lors de la génération de l'ordre de mission pour la mission {MissionId}", generateOM.MissionId);
-                return StatusCode(500, $"Erreur lors de la génération de l'ordre de mission : {ex.Message}");
             }
         }
 
@@ -269,31 +313,5 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
-        [HttpPost("search")]
-        public async Task<ActionResult<object>> Search([FromBody] MissionAssignationSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
-        {
-            if (page < 1 || pageSize < 1)
-            {
-                _logger.LogWarning("Paramètres de pagination invalides: page={Page}, pageSize={PageSize}", page, pageSize);
-                return BadRequest("La page et la taille de la page doivent être supérieures à 0.");
-            }
-
-            try
-            {
-                var (results, totalCount) = await _service.SearchAsync(filters, page, pageSize);
-                return Ok(new
-                {
-                    Data = results,
-                    TotalCount = totalCount,
-                    Page = page,
-                    PageSize = pageSize
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la recherche des assignations de mission avec filtres");
-                return StatusCode(500, $"Erreur lors de la recherche : {ex.Message}");
-            }
-        }
     }
 }

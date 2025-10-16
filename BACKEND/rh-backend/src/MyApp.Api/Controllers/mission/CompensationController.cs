@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Services.mission;
@@ -17,6 +18,43 @@ namespace MyApp.Api.Controllers.mission
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
+        [HttpGet("by-employee/{employeeId}/mission/{missionId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetByEmployeeId(string employeeId, string missionId)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Employee ID and Mission ID cannot be null or empty" });
+            }
+
+            try
+            {
+                var result = await _compensationService.GetByEmployeeIdAsync(employeeId, missionId);
+                if (result.Assignation == null)
+                {
+                    return NotFound(new { data = (object?)null, status = 404, message = $"No assignation found for employee {employeeId} and mission {missionId}" });
+                }
+
+                var responseData = result;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        //
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -58,33 +96,7 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
-        [HttpGet("by-employee/{employeeId}/mission/{missionId}")]
-        public async Task<IActionResult> GetByEmployeeId(string employeeId, string missionId)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
-                {
-                    return BadRequest(new { Message = "Employee ID and Mission ID cannot be null or empty" });
-                }
-
-                var result = await _compensationService.GetByEmployeeIdAsync(employeeId, missionId);
-                if (result.Assignation == null)
-                {
-                    return NotFound(new { Message = $"No assignation found for employee {employeeId} and mission {missionId}" });
-                }
-
-                return Ok(result);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "An error occurred while retrieving compensations", Error = ex.Message });
-            }
-        }
+        
 
         [HttpPut("{employeId}/{assignation_id}/status")]
         public async Task<IActionResult> UpdateStatus(string employeId, string assignation_id, [FromBody] string status)

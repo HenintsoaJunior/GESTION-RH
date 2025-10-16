@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Services.mission;
@@ -20,92 +21,123 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpPost("mission")]
-        public async Task<IActionResult> CreateComment([FromBody] CommentFormDTO comment)
+        [AllowAnonymous]
+        public async Task<ActionResult> CreateComment([FromBody] CommentFormDTO comment)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (comment == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Comment data cannot be null" });
+            }
+
             try
             {
-                if (comment == null)
-                {
-                    return BadRequest(new { Message = "Comment data cannot be null" });
-                }
-
                 var commentId = await _commentsService.CreateAsync(comment);
-                return CreatedAtAction(nameof(GetCommentsByMission), new { comment.MissionId }, new { CommentId = commentId });
+                var responseData = new { CommentId = commentId };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (ArgumentNullException ex)
+            catch (ArgumentException ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
-            catch (InvalidOperationException ex)
+            catch (Exception e)
             {
-                return BadRequest(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "An error occurred while creating the comment", Error = ex.Message });
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         [HttpGet("by-mission/{missionId}")]
-        public async Task<IActionResult> GetCommentsByMission(string missionId)
+        [AllowAnonymous]
+        public async Task<ActionResult> GetCommentsByMission(string missionId)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrEmpty(missionId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Mission ID cannot be null or empty" });
+            }
+
             try
             {
                 var comments = await _missionCommentsService.GetByMissionIdAsync(missionId);
-                return Ok(comments);
+                var responseData = comments;
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return StatusCode(500, new { Message = "An error occurred while retrieving comments", Error = ex.Message });
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         [HttpPut("{commentId}")]
-        public async Task<IActionResult> UpdateComment(string commentId, [FromBody] CommentFormDTO comment)
+        [AllowAnonymous]
+        public async Task<ActionResult> UpdateComment(string commentId, [FromBody] CommentFormDTO comment)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
             if (string.IsNullOrEmpty(commentId))
             {
-                return BadRequest(new { message = "Comment ID cannot be null or empty" });
+                return BadRequest(new { data = (object?)null, status = 400, message = "Comment ID cannot be null or empty" });
             }
+
             if (comment == null)
             {
-                return BadRequest(new { message = "Comment data cannot be null" });
+                return BadRequest(new { data = (object?)null, status = 400, message = "Comment data cannot be null" });
             }
 
             try
             {
                 var updatedComment = await _commentsService.UpdateAsync(commentId, comment);
-                
-                return Ok(new { message = $"Comment with ID {commentId} successfully updated", data = updatedComment });
+                var responseData = new { message = $"Comment with ID {commentId} successfully updated", data = updatedComment };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (ArgumentNullException ex)
+            catch (ArgumentException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { data = (object?)null, status = 404, message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, new { message = ex.Message });
+                return StatusCode(403, new { data = (object?)null, status = 403, message = ex.Message });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return StatusCode(500, new { message = "An error occurred while updating the comment", error = ex.Message });
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         [HttpDelete("{commentId}/mission/{missionId}")]
-        public async Task<IActionResult> DeleteComment(string commentId, string missionId, [FromQuery] string userId)
+        [AllowAnonymous]
+        public async Task<ActionResult> DeleteComment(string commentId, string missionId, [FromQuery] string userId)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
             if (string.IsNullOrEmpty(commentId) || string.IsNullOrEmpty(missionId) || string.IsNullOrEmpty(userId))
             {
-                return BadRequest(new { message = "Comment ID, Mission ID, and User ID are required" });
+                return BadRequest(new { data = (object?)null, status = 400, message = "Comment ID, Mission ID, and User ID are required" });
             }
 
             try
@@ -113,31 +145,33 @@ namespace MyApp.Api.Controllers.mission
                 var relationshipDeleted = await _missionCommentsService.DeleteAsync(missionId, commentId, userId);
                 if (!relationshipDeleted)
                 {
-                    return NotFound(new { message = $"Relationship between Mission {missionId} and Comment {commentId} not found" });
+                    return NotFound(new { data = (object?)null, status = 404, message = $"Relationship between Mission {missionId} and Comment {commentId} not found" });
                 }
 
                 var commentDeleted = await _commentsService.DeleteAsync(commentId, userId);
                 if (!commentDeleted)
                 {
-                    return NotFound(new { message = $"Comment with ID {commentId} not found" });
+                    return NotFound(new { data = (object?)null, status = 404, message = $"Comment with ID {commentId} not found" });
                 }
 
-                return Ok(new { 
+                var responseData = new { 
                     message = $"Comment with ID {commentId} and its relationship with Mission {missionId} successfully deleted",
                     data = new { commentId, missionId }
-                });
+                };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(403, new { message = ex.Message });
+                return StatusCode(403, new { data = (object?)null, status = 403, message = ex.Message });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return StatusCode(500, new { message = "An error occurred while deleting the comment", error = ex.Message });
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
     }

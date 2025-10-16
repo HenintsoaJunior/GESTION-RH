@@ -1,0 +1,153 @@
+:root {
+  /* === Couleurs principales === */
+  --primary-color: #69b42e; /* Second bloc */
+  --primary-hover: #5a9625; /* Second bloc */
+  --primary-light: rgba(105, 180, 46, 0.1); /* Second bloc */
+  --primary-shadow: rgba(105, 180, 46, 0.2); /* Second bloc */
+  --primary-shadow-hover: rgba(105, 180, 46, 0.3); /* Second bloc */
+  --primary-dark: #5a8c42; /* Second bloc */
+  --primary-transparent: rgba(122, 181, 92, 0.1); /* Second bloc */
+  --primary-gradient: linear-gradient(135deg, #5a8c42 0%, #69b42e 100%); /* Second bloc */
+
+  /* === Couleurs secondaires et accents === */
+  --accent-color: #9d9d9c; /* Second bloc */
+  --accent-hover: #8c8c8b; /* Second bloc */
+
+  /* === Couleurs de fond === */
+  --bg-primary: #ffffff; /* Commun, identique */
+  --bg-secondary: #f8f9fa; /* Second bloc, plus spécifique */
+  --bg-tertiary: #fafafa; /* Second bloc */
+  --bg-light: #f5f5f5; /* Second bloc */
+  --bg-sidebar: #f5f5f5; /* Second bloc */
+  --bg-sidebar-hover: #dadada85; /* Second bloc */
+  --bg-sidebar-active: #69b42e; /* Second bloc */
+
+  /* === Couleurs de texte === */
+  --text-color: #333; /* Second bloc */
+  --text-placeholder: #9ca3af; /* Second bloc */
+  --text-input: #000000; /* Second bloc */
+  --text-sidebar: #000000; /* Second bloc */
+  --text-white: #ffffff; /* Ajouté pour cohérence */
+
+  /* === Couleurs d'action === */
+  --success-color: #16a34a; /* Second bloc */
+  --pending-color: #FACC15;
+  --success-hover: #15803d; /* Second bloc */
+  --danger-color: #e4002b; /* Pantone 185 C */
+  --danger-hover: #b60022; /* Second bloc, adjusted */
+  --info-color: #2563eb; /* Second bloc */
+  --info-hover: #1d4ed8; /* Second bloc */
+  --purple-color: #7c3aed; /* Second bloc */
+  --purple-hover: #6d28d9; /* Second bloc */
+  --pdf-color: #e4002b; /* Pantone 185 C */
+  --pdf-hover: #b60022; /* Second bloc, adjusted */
+  --warning-color: #f59e0b; /* Second bloc */
+  --warning-hover: #d97706; /* Second bloc */
+  --orange-color: #f97316; /* Second bloc */
+  --orange-hover: #ea580c; /* Second bloc */
+  --error-color: #e4002b; /* Pantone 185 C */
+  --error-hover: #b60022; /* Second bloc, adjusted */
+
+  /* === Couleurs de bordure === */
+  --border-color: #e0e0e0; /* Second bloc */
+  --border-medium: #cbd5e1; /* Commun, identique */
+  --border-focus: var(--primary-color); /* Second bloc */
+
+  /* === Espacements === */
+  --spacing-xs: 4px; /* Second bloc */
+  --spacing-sm: 8px; /* Second bloc */
+  --spacing-md: 12px; /* Second bloc */
+  --spacing-lg: 16px; /* Second bloc */
+  --spacing-xl: 20px; /* Second bloc */
+  --spacing-2xl: 24px; /* Second bloc */
+  --spacing-3xl: 32px; /* Second bloc */
+  --spacing-4xl: 40px; /* Second bloc */
+
+  /* === Rayons de bordure === */
+  --border-radius-sm: 4px; /* Second bloc */
+  --border-radius-md: 8px; /* Second bloc */
+  --border-radius-lg: 12px; /* Second bloc */
+  --radius-sm: 3px; /* Second bloc */
+  --radius-md: 4px; /* Second bloc */
+  --radius-lg: 12px; /* Second bloc */
+
+  /* === Typographie === */
+    --font-family: 'Source Sans Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif; /* Modifié */
+  --font-size-xs: 12px; /* Second bloc */
+  --font-size-sm: 14px; /* Second bloc */
+  --font-size-md: 16px; /* Second bloc */
+  --font-size-lg: 18px; /* Second bloc */
+  --font-size-xl: 20px; /* Second bloc */
+  --font-size-2xl: 24px; /* Second bloc */
+  --font-weight-medium: 500; /* Commun, identique */
+
+  /* === Ombres === */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1); /* Second bloc */
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1); /* Second bloc */
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Commun, identique */
+  --shadow-focus: 0 0 4px var(--primary-shadow); /* Second bloc */
+
+  /* === Layout === */
+  --sidebar-width: 270px; /* Modifié à 260px */
+  --sidebar-collapsed-width: 60px; /* Réduit de 80px */
+  --header-height: 70px; /* Second bloc */
+  --transition-speed: 0.3s; /* Second bloc */
+
+  /* === Couleurs additionnelles === */
+  --white: #ffffff; /* Second bloc */
+
+  /* === Badges et statuts === */
+  --badge-new: #3498db; /* Second bloc */
+  --badge-count: #e74c3c; /* Second bloc */
+  --badge-hot: #f39c12; /* Second bloc */
+  --badge-premium: #9b59b6; /* Second bloc */
+  --status-online: #2ecc71; /* Second bloc */
+  --status-away: #f39c12; /* Second bloc */
+  --status-busy: #e74c3c; /* Second bloc */
+
+  --color-border: #9ca3af;
+  --text-light: #9ca3af;
+  --text-muted: #63666a; /* Pantone Cool Gray 10 C */
+  --text-secondary: #63666a; /* Pantone Cool Gray 10 C */
+  --border-light: #e0e0e0;
+  --font-weight-normal: 400;
+  --font-weight-semibold: 600;
+
+  /* === Couleurs pour éviter les hardcodés === */
+  --bg-icon-default: rgba(0, 0, 0, 0.1); /* Pour nav-icon-wrapper */
+  --bg-icon-hover: rgba(0, 0, 0, 0.15); /* Pour hover */
+  --border-spinner: #e3e3e3; /* Pour spinner */
+  --border-dashed: rgba(0, 0, 0, 0.2); /* Pour submenu */
+  --opacity-low: 0.8; /* Pour submenu-icon */
+  --bg-badge-default: rgba(0, 0, 0, 0.1); /* Pour submenu-badge */
+  --overlay-bg: rgba(0, 0, 0, 0.5); /* Pour sidebar-overlay */
+
+  /* === Couleurs pour les alertes (ajoutées si absentes) === */
+  /* Success */
+  --success-bg: #f0fdf4;
+  --success-border: #16a34a;
+  --success-text: #166534;
+  --success-icon: #16a34a;
+  --success-icon-bg: rgba(16, 163, 74, 0.1);
+
+  /* Error */
+  --error-bg: #fef2f2;
+  --error-border: #e4002b;
+  --error-text: #991b1b;
+  --error-icon: #e4002b;
+  --error-icon-bg: rgba(228, 0, 43, 0.1);
+
+  /* Warning */
+  --warning-bg: #fffbeb;
+  --warning-border: #f59e0b;
+  --warning-text: #92400e;
+  --warning-icon: #f59e0b;
+  --warning-icon-bg: rgba(245, 158, 11, 0.1);
+
+  /* Info */
+  --info-bg: #eff6ff;
+  --info-border: #2563eb;
+  --info-text: #1e40af;
+  --info-icon: #2563eb;
+  --info-icon-bg: rgba(37, 99, 235, 0.1);
+}

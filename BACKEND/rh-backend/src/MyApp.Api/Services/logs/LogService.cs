@@ -11,7 +11,10 @@ namespace MyApp.Api.Services.logs
     {
         Task LogAsync<T>(string action, T? oldEntity, T? newEntity, string userId);
         Task LogAsync(string action, string? oldValues, string? newValues, string userId, string? fields = null);
+        Task LogAsync(string action, string tableName, string userId);
         Task LogAsync<T>(string action, T? oldEntity, T? newEntity, string userId, string fields);
+        Task LogAsync<T>(string action, string tableName, T? oldEntity, T? newEntity, string userId);
+        Task LogAsync<T>(string action, string tableName, T? oldEntity, T? newEntity, string userId, string fields);
         Task<IEnumerable<Log>> GetAllAsync();
         Task<Log?> GetByIdAsync(string logId);
         Task AddAsync(LogDTOForm dto);
@@ -25,14 +28,17 @@ namespace MyApp.Api.Services.logs
         private readonly ILogRepository _repository;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<LogService> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public LogService(
             ILogRepository repository,
             ISequenceGenerator sequenceGenerator,
-            ILogger<LogService> logger)
+            ILogger<LogService> logger,
+            IHttpContextAccessor httpContextAccessor)
         {
             _repository = repository;
             _sequenceGenerator = sequenceGenerator;
+            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
         }
 
@@ -62,27 +68,8 @@ namespace MyApp.Api.Services.logs
 
         public async Task LogAsync<T>(string action, T? oldEntity, T? newEntity, string userId)
         {
-            try
-            {
-                var oldValues = oldEntity == null ? null : SerializeEntity(oldEntity);
-                var newValues = newEntity == null ? null : SerializeEntity(newEntity);
-
-                await AddAsync(new LogDTOForm
-                {
-                    Action = action,
-                    TableName = typeof(T).Name.ToLower() + "s",
-                    OldValues = oldValues,
-                    NewValues = newValues,
-                    UserId = userId
-                });
-
-                _logger.LogInformation("Log créé pour l'action {Action} par l'utilisateur {UserId}", action, userId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la création du log pour l'action {Action}", action);
-                throw;
-            }
+            var tableName = typeof(T).Name.ToLower() + "s";
+            await LogAsync(action, tableName, oldEntity, newEntity, userId);
         }
 
         public async Task LogAsync(string action, string? oldValues, string? newValues, string userId, string? fields = null)
@@ -101,7 +88,28 @@ namespace MyApp.Api.Services.logs
                     UserId = userId
                 });
 
-                _logger.LogInformation("Log créé pour l'action {Action} par l'utilisateur {UserId}", action, userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création du log pour l'action {Action}", action);
+                throw;
+            }
+        }
+
+        public async Task LogAsync(string action,string tableName,string userId)
+        {
+            try
+            {
+
+                await AddAsync(new LogDTOForm
+                {
+                    Action = action,
+                    TableName = tableName,
+                    OldValues = null,
+                    NewValues = null,
+                    UserId = userId
+                });
+
             }
             catch (Exception ex)
             {
@@ -112,13 +120,40 @@ namespace MyApp.Api.Services.logs
 
         public async Task LogAsync<T>(string action, T? oldEntity, T? newEntity, string userId, string fields)
         {
+            var tableName = typeof(T).Name.ToLower() + "s";
+            await LogAsync(action, tableName, oldEntity, newEntity, userId, fields);
+        }
+
+        public async Task LogAsync<T>(string action, string tableName, T? oldEntity, T? newEntity, string userId)
+        {
+            try
+            {
+                var oldValues = oldEntity == null ? null : SerializeEntity(oldEntity);
+                var newValues = newEntity == null ? null : SerializeEntity(newEntity);
+
+                await AddAsync(new LogDTOForm
+                {
+                    Action = action,
+                    TableName = tableName,
+                    OldValues = oldValues,
+                    NewValues = newValues,
+                    UserId = userId
+                });
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création du log pour l'action {Action}", action);
+                throw;
+            }
+        }
+
+        public async Task LogAsync<T>(string action, string tableName, T? oldEntity, T? newEntity, string userId, string fields)
+        {
             try
             {
                 var formattedOldValues = oldEntity == null ? null : SerializeSpecificFields(oldEntity, fields);
                 var formattedNewValues = newEntity == null ? null : SerializeSpecificFields(newEntity, fields);
-
-                // Extraire le nom de la table à partir du type générique
-                var tableName = typeof(T).Name.ToLower() + "s";
 
                 await AddAsync(new LogDTOForm
                 {
@@ -129,7 +164,6 @@ namespace MyApp.Api.Services.logs
                     UserId = userId
                 });
 
-                _logger.LogInformation("Log créé pour l'action {Action} par l'utilisateur {UserId}", action, userId);
             }
             catch (Exception ex)
             {
@@ -144,7 +178,7 @@ namespace MyApp.Api.Services.logs
 
             if (string.IsNullOrEmpty(fields))
             {
-                return values; // Return raw values if no fields are specified
+                return values;
             }
 
             var fieldList = fields.Split(',').Select(f => f.Trim()).ToList();
@@ -181,7 +215,6 @@ namespace MyApp.Api.Services.logs
                 }
                 catch (Exception ex)
                 {
-                    // Log l'erreur mais continue avec les autres propriétés
                     values[prop.Name] = $"Erreur: {ex.Message}";
                 }
             }
@@ -200,7 +233,6 @@ namespace MyApp.Api.Services.logs
             {
                 try
                 {
-                    // Gérer les noms de propriétés simples (ex: "Name" au lieu de "role.Name")
                     var propName = field.Contains('.') ? field.Split('.').Last() : field;
                     
                     var prop = typeof(T).GetProperty(propName, BindingFlags.Public | BindingFlags.Instance);
@@ -210,7 +242,6 @@ namespace MyApp.Api.Services.logs
                         continue;
                     }
 
-                    // Vérifier si la propriété nécessite des paramètres (indexeurs)
                     var indexParameters = prop.GetIndexParameters();
                     if (indexParameters.Length > 0)
                     {
@@ -277,9 +308,14 @@ namespace MyApp.Api.Services.logs
                 if (string.IsNullOrWhiteSpace(log.LogId))
                 {
                     log.LogId = _sequenceGenerator.GenerateSequence("seq_log_id", "LOG", 6, "-");
-                    _logger.LogInformation("ID généré pour le log: {LogId}", log.LogId);
                 }
-
+                
+                // ✅ CORRECTION ICI - Assigner à IpAddress au lieu de LogId
+                if (string.IsNullOrWhiteSpace(log.IpAddress))
+                {
+                    log.IpAddress = GetClientIpAddress();
+                }
+                
                 if (log.CreatedAt == default)
                 {
                     log.CreatedAt = DateTime.UtcNow;
@@ -341,6 +377,98 @@ namespace MyApp.Api.Services.logs
             {
                 _logger.LogError(ex, "Erreur lors de la suppression du log avec LogId: {LogId}", logId);
                 throw;
+            }
+        }
+
+        private string GetClientIpAddress()
+        {
+            var context = _httpContextAccessor.HttpContext;
+            if (context == null)
+            {
+                _logger.LogWarning("Aucun HttpContext disponible pour récupérer l'IP du client");
+                return GetLocalIpAddress(); // Fallback sur l'IP locale de la machine
+            }
+
+            // 1. Vérifier X-Forwarded-For (en cas de proxy/load balancer)
+            var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(forwardedFor))
+            {
+                var ips = forwardedFor.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(ip => ip.Trim())
+                                    .Where(ip => !string.IsNullOrEmpty(ip) && ip != "::1" && !ip.StartsWith("127."));
+                if (ips.Any())
+                {
+                    return ips.First();
+                }
+            }
+
+            // 2. Vérifier X-Real-IP
+            var realIp = context.Request.Headers["X-Real-IP"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(realIp) && realIp != "::1" && !realIp.StartsWith("127."))
+            {
+                return realIp;
+            }
+
+            // 3. Essayer l'IP de connexion directe
+            var remoteIp = context.Connection.RemoteIpAddress;
+            if (remoteIp != null)
+            {
+                // Convertir IPv6 mappé en IPv4
+                if (remoteIp.IsIPv4MappedToIPv6)
+                {
+                    remoteIp = remoteIp.MapToIPv4();
+                }
+
+                var ip = remoteIp.ToString();
+                
+                // Si c'est localhost, obtenir l'IP réelle de la machine
+                if (ip == "::1" || ip.StartsWith("127."))
+                {
+                    return GetLocalIpAddress();
+                }
+                
+                if (!string.IsNullOrEmpty(ip))
+                {
+                    return ip;
+                }
+            }
+
+            // 4. Dernier recours : IP locale de la machine
+            return GetLocalIpAddress();
+        }
+
+        private string GetLocalIpAddress()
+        {
+            try
+            {
+                var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+                
+                // Priorité aux adresses IPv4 non-loopback
+                var ipv4Address = host.AddressList
+                    .FirstOrDefault(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork 
+                                       && !System.Net.IPAddress.IsLoopback(ip));
+                
+                if (ipv4Address != null)
+                {
+                    return ipv4Address.ToString();
+                }
+
+                // Sinon, essayer IPv6 non-loopback
+                var ipv6Address = host.AddressList
+                    .FirstOrDefault(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6 
+                                       && !System.Net.IPAddress.IsLoopback(ip));
+                
+                if (ipv6Address != null)
+                {
+                    return ipv6Address.ToString();
+                }
+
+                return "Unknown";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de l'IP locale");
+                return "Unknown";
             }
         }
     }

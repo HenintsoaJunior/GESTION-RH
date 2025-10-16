@@ -34,7 +34,7 @@ namespace MyApp.Api.Services.mission
         private readonly IMissionAssignationService _missionAssignationService;
         private readonly INotificationsService _notificationsService;
         private readonly ILogger<MissionService> _logger;
-        private readonly ILogService _logService; // Added ILogService
+        private readonly ILogService _logService; 
 
         public MissionService(
             IMissionRepository repository,

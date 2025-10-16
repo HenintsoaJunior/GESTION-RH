@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.transport;
@@ -14,20 +15,31 @@ namespace MyApp.Api.Controllers.mission
     {
         // Récupère la liste de tous les moyens de transport
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Transport>>> GetAll()
+        [AllowAnonymous]
+        public async Task<ActionResult> GetAll()
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
             try
             {
                 var transports = await transportService.GetAllAsync();
-                return Ok(transports);
+                return Ok(new { data = transports, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
                 logger.LogError(ex, "Erreur lors de la récupération de tous les moyens de transport");
-                return StatusCode(500, "Une erreur est survenue lors de la récupération des moyens de transport");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Erreur lors de la récupération de tous les moyens de transport");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
-
+//
         // Récupère un moyen de transport par son identifiant
         [HttpGet("{id}")]
         public async Task<ActionResult<Transport>> GetById(string id)

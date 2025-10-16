@@ -4,7 +4,12 @@ using Microsoft.IdentityModel.Tokens;
 using MyApp.Api.Data;
 using MyApp.Api.Extensions;
 using MyApp.Api.Utils.generator;
+using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,13 +17,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
-
+        policy.WithOrigins("http://localhost:5173")
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
 });
-
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -26,7 +29,6 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler = 
             System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
-
 
 // Register services and database context
 builder.Services.AddScoped<ISequenceGenerator, SequenceGenerator>();
@@ -55,6 +57,25 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured"))),
         RoleClaimType = System.Security.Claims.ClaimTypes.Role
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = 401;
+            context.Response.ContentType = "application/json";
+            var json = new { data = (object?)null, status = 401, message = "unauthorized" };
+            return context.Response.WriteAsync(JsonSerializer.Serialize(json));
+        },
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = 403;
+            context.Response.ContentType = "application/json";
+            var json = new { data = (object?)null, status = 403, message = "forbidden" };
+            return context.Response.WriteAsync(JsonSerializer.Serialize(json));
+        }
+    };
 });
 
 // Configure authorization policies
@@ -65,11 +86,20 @@ builder.Services.AddAuthorization(options =>
 });
 
 // Add controllers and Swagger
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpContextAccessor();
+
+// Configuration des en-têtes forwarded
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    
+});
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
@@ -79,7 +109,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowFrontend"); // Use the correct CORS policy name
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

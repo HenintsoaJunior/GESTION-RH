@@ -7,7 +7,6 @@ sqlcmd -S localhost -U sa -P Carasco@20 -d RH -i /BDD/sequence.sql
 sqlcmd -S localhost -U sa -P Carasco@20 -d RH -i /BDD/data.sql
 
 
-
 00182 (DRH)
 00358 (DT)
 00418

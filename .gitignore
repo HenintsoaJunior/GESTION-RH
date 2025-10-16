@@ -11,6 +11,16 @@ Thumbs.db
 ehthumbs.db
 ~$*.xlsx
 
+
+
+/FRONTEND/mission-app/node_modules/
+/FRONTEND/mission-app/build/
+/FRONTEND/mission-app/dist/
+/FRONTEND/mission-app/.env
+/FRONTEND/mission-app/.next/
+/FRONTEND/mission-app/.turbo/
+/FRONTEND/mission-app/.cache/
+/FRONTEND/mission-app/.eslintcache/
 # --- Node (React FRONTEND) ---
 /FRONTEND/rh-front/node_modules/
 /FRONTEND/rh-front/build/
