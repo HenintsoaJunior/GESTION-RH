@@ -1,9 +1,10 @@
+npm install @tanstack/react-query axios
+
 docker cp /home/dax/Documents/GitHub/GESTION-RH/TODO/BDD/. sqlserver2019:/BDD
 
 sqlcmd -S localhost -U sa -P Carasco@20 -d RH -i /BDD/table.sql
 sqlcmd -S localhost -U sa -P Carasco@20 -d RH -i /BDD/sequence.sql
 sqlcmd -S localhost -U sa -P Carasco@20 -d RH -i /BDD/data.sql
-
 
 
 00182 (DRH)

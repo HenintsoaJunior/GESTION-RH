@@ -9,9 +9,10 @@ namespace MyApp.Api.Services.users;
 public interface IRoleService
 {
     Task<IEnumerable<Role>> GetAllAsync();
+    Task<IEnumerable<RoleWithGroupedHabilitationsDto>> GetAllInfoAsync();
     Task<Role?> GetByIdAsync(string id);
     Task AddAsync(RoleDTOForm dto);
-    Task UpdateAsync(string id, RoleDTOForm role);
+    Task UpdateAsync(string id, RoleUpdateDto? dto, string? userId);
     Task DeleteAsync(string id, string userId);
 }
 
@@ -25,10 +26,10 @@ public class RoleService : IRoleService
 
     public RoleService(
         IRoleRepository repository,
-        IRoleHabilitationService roleHabilitationService,
         ILogService logService,
         ISequenceGenerator sequenceGenerator,
-        ILogger<RoleService> logger, IRoleHabilitationRepository roleHabilitationRepository)
+        ILogger<RoleService> logger,
+        IRoleHabilitationRepository roleHabilitationRepository)
     {
         _repository = repository;
         _logService = logService;
@@ -51,6 +52,19 @@ public class RoleService : IRoleService
         }
     }
 
+
+    public async Task<IEnumerable<RoleWithGroupedHabilitationsDto>> GetAllInfoAsync()
+    {
+        try
+        {
+            return await _repository.GetAllInfoAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération des rôles avec habilitations groupées");
+            throw;
+        }
+    }
     public async Task<Role?> GetByIdAsync(string id)
     {
         try
@@ -109,14 +123,14 @@ public class RoleService : IRoleService
         }
     }
 
-    public async Task UpdateAsync(string id, RoleDTOForm? roleDto)
+    public async Task UpdateAsync(string id, RoleUpdateDto? dto, string? userId)
     {
         try
         {
-            if (roleDto == null)
+            if (dto == null)
             {
-                _logger.LogWarning("Tentative de mise à jour avec un RoleDTOForm null");
-                throw new ArgumentNullException(nameof(roleDto), "Les données du rôle ne peuvent pas être nulles");
+                _logger.LogWarning("Tentative de mise à jour avec un RoleUpdateDto null");
+                throw new ArgumentNullException(nameof(dto), "Les données du rôle ne peuvent pas être nulles");
             }
 
             var existingRole = await _repository.GetByIdAsync(id);
@@ -124,25 +138,23 @@ public class RoleService : IRoleService
             {
                 throw new InvalidOperationException($"Le rôle avec l'ID {id} n'existe pas");
             }
-            
-            var newRole = new Role(roleDto)
+
+            var roleToUpdate = await _repository.GetByIdForUpdateAsync(id);
+            if (roleToUpdate == null)
             {
-                RoleId = id
-            };
+                throw new InvalidOperationException($"Le rôle avec l'ID {id} n'existe pas");
+            }
 
-            await _repository.UpdateAsync(newRole);
-            
-            // Synchroniser les habilitations
-            await _roleHabilitationRepository.SynchronizeHabilitationsAsync(id, roleDto.HabilitationIds);
-            _logger.LogInformation("Habilitations synchronisées pour le rôle: {RoleId}", id);
+            roleToUpdate.Name = dto.Name;
+            roleToUpdate.Description = dto.Description;
 
+            await _repository.UpdateAsync(roleToUpdate);
             await _repository.SaveChangesAsync();
 
             _logger.LogInformation("Rôle mis à jour avec succès avec l'ID: {RoleId}", id);
 
-            if (roleDto.UserId != null)
-                await _logService.LogAsync("MODIFICATION", existingRole, newRole, roleDto.UserId,
-                    "Name,Description,HabilitationIds");
+            if (userId != null)
+                await _logService.LogAsync("MODIFIER","ROLE", existingRole, roleToUpdate, userId, "Name,Description");
         }
         catch (Exception ex)
         {
@@ -170,7 +182,7 @@ public class RoleService : IRoleService
 
             _logger.LogInformation("Rôle supprimé avec succès pour l'ID: {RoleId}", id);
 
-            await _logService.LogAsync("SUPPRESSION", existingRole, null, userId);
+            await _logService.LogAsync("SUPPRIMER","ROLE", existingRole, null, userId,"Name,Description");
         }
         catch (Exception ex)
         {

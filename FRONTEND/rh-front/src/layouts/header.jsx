@@ -1,17 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
-import ReactCountryFlag from "react-country-flag";
 import { GetUnreadNotificationCount, GetLastThreeUnreadNotifications } from "services/notifications/services";
 
 export default function Header({ 
   toggleMobileSidebar, 
   mobileOpen, 
   generateBreadcrumbs, 
-  languages, 
-  selectedLanguage, 
-  handleLanguageChange, 
-  isLanguagesLoading, 
   user, 
   getInitials, 
   setActive 
@@ -100,13 +95,6 @@ export default function Header({
         </nav>
       </div>
 
-      <div className="header-center">
-        <div className="search-container">
-          <FaIcons.FaSearch className="search-icon" />
-          <input type="text" placeholder="Rechercher..." className="search-input" />
-        </div>
-      </div>
-
       <div className="header-right">
         <div className="header-icons">
           <div className="notification-container">
@@ -158,33 +146,14 @@ export default function Header({
             )}
           </div>
 
-          <div className="language-selector">
-            <ReactCountryFlag
-              countryCode={languages.find((lang) => lang.languageId === selectedLanguage)?.countryCode || "US"}
-              svg
-              style={{
-                width: "20px",
-                height: "15px",
-                marginRight: "8px",
-              }}
-            />
-            <select
-              value={selectedLanguage}
-              onChange={(e) => handleLanguageChange(e.target.value)}
-              className="language-dropdown"
-              disabled={isLanguagesLoading}
-            >
-              {languages.map((lang) => (
-                <option key={lang.languageId} value={lang.languageId}>
-                  {lang.abr} - {lang.languageName}
-                </option>
-              ))}
-            </select>
+          <div className="user-info">
+            <div className="user-name large bold">{user.name}</div>
+            <div className="user-email small discreet">{user.email}</div>
           </div>
 
           <div className="user-profile-dropdown">
             <div className="user-profile">
-              <div className="user-avatar">{getInitials(user.name)}</div>
+              <div className="user-avatar --primary-color">{getInitials(user.name)}</div>
               <FaIcons.FaChevronDown className="dropdown-arrow" />
             </div>
             <div className="user-dropdown-menu">

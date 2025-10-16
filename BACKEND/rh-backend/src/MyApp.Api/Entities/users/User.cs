@@ -68,6 +68,8 @@ namespace MyApp.Api.Entities.users
 
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 
+        public ICollection<UserHabilitation> UserHabilitations { get; set; } = new List<UserHabilitation>();
+
         public User()
         {
             

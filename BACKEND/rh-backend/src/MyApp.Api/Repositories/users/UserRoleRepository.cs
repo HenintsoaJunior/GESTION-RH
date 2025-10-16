@@ -11,8 +11,7 @@ namespace MyApp.Api.Repositories.users
         Task AddAsync(UserRole userRole);
         Task UpdateAsync(UserRole userRole);
         Task DeleteAsync(string userId, string roleId);
-        
-        Task SynchronizeRolesAsync(string userId, IEnumerable<string> newRoleIds);
+        Task SynchronizeRolesAsync(IEnumerable<string> userIds, IEnumerable<string> newRoleIds);
         Task SaveChangesAsync();
     }
 
@@ -60,64 +59,78 @@ namespace MyApp.Api.Repositories.users
                 _context.UserRoles.Remove(userRole);
         }
         
-        public async Task SynchronizeRolesAsync(string userId, IEnumerable<string> newRoleIds)
+        public async Task SynchronizeRolesAsync(IEnumerable<string> userIds, IEnumerable<string> newRoleIds)
         {
-            if (string.IsNullOrWhiteSpace(userId))
-                throw new ArgumentException("L'ID de l'utilisateur ne peut pas être null ou vide");
+            if (userIds == null || !userIds.Any())
+                throw new ArgumentException("Les IDs des utilisateurs ne peuvent pas être null ou vides");
             if (newRoleIds == null)
                 throw new ArgumentNullException(nameof(newRoleIds));
 
-            // Get existing roles for the user
-            var existingUserRoles = await _context.UserRoles
-                .Where(ur => ur.UserId == userId)
-                .ToListAsync();
-            var existingRoleIds = existingUserRoles
-                .Select(ur => ur.RoleId)
-                .ToHashSet();
+            // Validate user IDs
+            foreach (var userId in userIds)
+            {
+                if (string.IsNullOrWhiteSpace(userId))
+                    throw new ArgumentException("Un ID d'utilisateur ne peut pas être null ou vide");
+            }
 
             // Filter out invalid role IDs
             var validNewRoleIds = newRoleIds
                 .Where(id => !string.IsNullOrWhiteSpace(id))
                 .ToHashSet();
 
-            // Determine roles to add, remove, and keep
-            var rolesToAdd = validNewRoleIds.Except(existingRoleIds).ToList();
-            var rolesToRemove = existingRoleIds.Except(validNewRoleIds).ToList();
-            var rolesToKeep = validNewRoleIds.Intersect(existingRoleIds).ToList();
+            if (!validNewRoleIds.Any())
+                throw new ArgumentException("Aucun ID de rôle valide fourni");
 
-            // Add new user-role relationships
-            foreach (var roleId in rolesToAdd)
+            // Synchronize for each user
+            foreach (var userId in userIds)
             {
-                // Double-check to avoid duplicates (in case of concurrent updates)
-                var existing = await GetByKeysAsync(userId, roleId);
-                if (existing == null)
+                // Get existing roles for the user
+                var existingUserRoles = await _context.UserRoles
+                    .Where(ur => ur.UserId == userId)
+                    .ToListAsync();
+                var existingRoleIds = existingUserRoles
+                    .Select(ur => ur.RoleId)
+                    .ToHashSet();
+
+                // Determine roles to add, remove, and keep
+                var rolesToAdd = validNewRoleIds.Except(existingRoleIds).ToList();
+                var rolesToRemove = existingRoleIds.Except(validNewRoleIds).ToList();
+                var rolesToKeep = validNewRoleIds.Intersect(existingRoleIds).ToList();
+
+                // Add new user-role relationships
+                foreach (var roleId in rolesToAdd)
                 {
-                    var userRole = new UserRole
+                    // Double-check to avoid duplicates (in case of concurrent updates)
+                    var existing = await GetByKeysAsync(userId, roleId);
+                    if (existing == null)
                     {
-                        UserId = userId,
-                        RoleId = roleId,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    };
-                    await AddAsync(userRole);
+                        var userRole = new UserRole
+                        {
+                            UserId = userId,
+                            RoleId = roleId,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        await AddAsync(userRole);
+                    }
                 }
-            }
 
-            // Update existing relationships to refresh UpdatedAt
-            foreach (var roleId in rolesToKeep)
-            {
-                var existing = await GetByKeysAsync(userId, roleId);
-                if (existing != null)
+                // Update existing relationships to refresh UpdatedAt
+                foreach (var roleId in rolesToKeep)
                 {
-                    existing.UpdatedAt = DateTime.UtcNow;
-                    await UpdateAsync(existing);
+                    var existing = await GetByKeysAsync(userId, roleId);
+                    if (existing != null)
+                    {
+                        existing.UpdatedAt = DateTime.UtcNow;
+                        await UpdateAsync(existing);
+                    }
                 }
-            }
 
-            // Remove obsolete user-role relationships
-            foreach (var roleId in rolesToRemove)
-            {
-                await DeleteAsync(userId, roleId);
+                // Remove obsolete user-role relationships
+                foreach (var roleId in rolesToRemove)
+                {
+                    await DeleteAsync(userId, roleId);
+                }
             }
         }
 

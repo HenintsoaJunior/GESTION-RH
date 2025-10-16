@@ -1,9 +1,12 @@
 
+INSERT INTO mission (mission_id,mission_type, name, description, start_date, end_date, status, lieu_id, created_at, updated_at) VALUES
+('M001','national', 'Agricultural Training Analamanga', 'Conduct training on sustainable farming techniques for local farmers.', '2024-01-10', '2024-01-15', 'Terminé', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO mission_assignation (assignation_id, departure_date, departure_time, return_date, return_time, duration, created_at, updated_at, transport_id, mission_id, employee_id, is_validated, type, allocated_fund) VALUES
+('MA001', '2024-01-10', '08:00:00', '2024-01-15', '17:00:00', 5, CURRENT_TIMESTAMP, NULL, 'tr001', 'M001', 'EMP_0001', 1, 'Indemnité', 1500000.00);
 
-
-
-
-
+INSERT INTO mission_validation (mission_validation_id, status, created_at, updated_at, validation_date, mission_creator, mission_id, mission_assignation_id, to_whom, type) VALUES
+('MVAL-000001', 'approved', '2024-01-09 10:00:00', NULL, '2024-01-09 15:00:00', 'ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'M001', 'MA001', '76c25f37-2089-4e81-8329-1b63d880b71a', 'Directeur de tutelle'),
+('MVAL-000002', 'approved', '2024-01-09 10:05:00', NULL, '2024-01-09 15:30:00', 'ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'M001', 'MA001', '002b1f12-e8c5-4a30-81ca-e8532855de71', 'DRH');
 -- INSERT INTO mission (mission_id, name, description, start_date, end_date, status, lieu_id, created_at, updated_at) VALUES
 -- ('M001', 'Agricultural Training Analamanga', 'Conduct training on sustainable farming techniques for local farmers.', '2024-01-10', '2024-01-15', 'Terminé', '1', CURRENT_TIMESTAMP, NULL),
 -- ('M002', 'Community Health Outreach Bongolava', 'Provide medical checkups and health education in rural areas.', '2024-02-01', '2024-02-05', 'Terminé', '2', CURRENT_TIMESTAMP, NULL),

@@ -2,6 +2,7 @@
 {
     public class LogDTOForm
     {
+        public string? IpAddress { get; set; }
         public string Action { get; set; } = null!;
         public string? TableName { get; set; }
         public string? OldValues { get; set; }

@@ -1,13 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.users;
+using MyApp.Api.Models.dto.users;
 
 namespace MyApp.Api.Repositories.users;
 
 public interface IRoleRepository
 {
     Task<IEnumerable<Role>> GetAllAsync();
+    Task<IEnumerable<RoleWithGroupedHabilitationsDto>> GetAllInfoAsync();
     Task<Role?> GetByIdAsync(string id);
+    Task<Role?> GetByIdForUpdateAsync(string id);
     Task AddAsync(Role role);
     Task UpdateAsync(Role role);
     Task DeleteAsync(string id);
@@ -31,10 +34,58 @@ public class RoleRepository : IRoleRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<RoleWithGroupedHabilitationsDto>> GetAllInfoAsync()
+    {
+        var roles = await _context.Roles
+            .Include(r => r.RoleHabilitations)
+                .ThenInclude(rh => rh.Habilitation)
+                    .ThenInclude(h => h!.Group)
+            .OrderByDescending(r => r.CreatedAt)
+            .AsNoTracking()
+            .ToListAsync()
+            .ConfigureAwait(false);
+
+        return roles.Select(role => new RoleWithGroupedHabilitationsDto
+        {
+            RoleId = role.RoleId,
+            Name = role.Name,
+            Description = role.Description,
+            UserRoles = role.UserRoles,
+            HabilitationGroups = role.RoleHabilitations
+                .Where(rh => rh.Habilitation?.Group != null)
+                .GroupBy(rh => rh.Habilitation!.Group!.GroupId)
+                .Select(g =>
+                {
+                    var firstGroup = g.First().Habilitation!.Group!;
+                    return new HabilitationGroupDto
+                    {
+                        GroupId = firstGroup.GroupId,
+                        Label = firstGroup.Label,
+                        CreatedAt = firstGroup.CreatedAt,
+                        UpdatedAt = firstGroup.UpdatedAt,
+                        Habilitations = g.Select(rh => new HabilitationDto
+                        {
+                            HabilitationId = rh.Habilitation!.HabilitationId,
+                            Label = rh.Habilitation.Label,
+                            CreatedAt = rh.Habilitation.CreatedAt,
+                            UpdatedAt = rh.Habilitation.UpdatedAt
+                        }).ToList()
+                    };
+                }).ToList(),
+            CreatedAt = role.CreatedAt,
+            UpdatedAt = role.UpdatedAt
+        }).ToList();
+    }
     public async Task<Role?> GetByIdAsync(string id)
     {
         return await _context.Roles
             .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.RoleId == id);
+    }
+
+    public async Task<Role?> GetByIdForUpdateAsync(string id)
+    {
+        return await _context.Roles
             .FirstOrDefaultAsync(r => r.RoleId == id);
     }
 

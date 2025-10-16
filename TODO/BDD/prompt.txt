@@ -1,0 +1,6 @@
+Utilise uniquement les services déjà existants dans @/api/access/services et @/api/users/services.
+⚠️ Ne crée pas de nouveaux fichiers ni de requêtes supplémentaires (par exemple : userRolesQueries, userHabilitationsQueries, etc.), afin d’éviter toute duplication de logique.
+👉 Applique la même règle pour tout ce qui concerne la partie User.
+
+💡 Important :
+Implémente la solution en suivant les meilleures pratiques React, notamment en matière d’organisation du code, de réutilisation des hooks/services et de gestion des états asynchrones.

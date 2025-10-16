@@ -8,6 +8,7 @@ public interface IHabilitationRepository
 {
     Task<IEnumerable<Habilitation>> GetAllAsync();
     Task<Habilitation?> GetByIdAsync(string id);
+    Task<IEnumerable<Habilitation>> GetByGroupIdsAsync(string[] groupIds);
     Task AddAsync(Habilitation habilitation);
     Task UpdateAsync(Habilitation habilitation);
     Task DeleteAsync(string id);
@@ -26,6 +27,7 @@ public class HabilitationRepository : IHabilitationRepository
     public async Task<IEnumerable<Habilitation>> GetAllAsync()
     {
         return await _context.Habilitations
+            .Include(h => h.Group)
             .Include(h => h.RoleHabilitations)
             .ThenInclude(rh => rh.Role)
             .OrderByDescending(h => h.CreatedAt)
@@ -36,7 +38,19 @@ public class HabilitationRepository : IHabilitationRepository
     {
         return await _context.Habilitations
             .AsNoTracking()
+            .Include(h => h.Group)
             .FirstOrDefaultAsync(h => h.HabilitationId == id);
+    }
+
+    public async Task<IEnumerable<Habilitation>> GetByGroupIdsAsync(string[] groupIds)
+    {
+        return await _context.Habilitations
+            .Include(h => h.Group)
+            .Include(h => h.RoleHabilitations)
+            .ThenInclude(rh => rh.Role)
+            .Where(h => groupIds.Contains(h.GroupId))
+            .OrderByDescending(h => h.CreatedAt)
+            .ToListAsync();
     }
 
     public async Task AddAsync(Habilitation habilitation)

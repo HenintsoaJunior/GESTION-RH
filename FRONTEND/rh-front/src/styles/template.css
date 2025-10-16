@@ -27,6 +27,7 @@
   --text-placeholder: #9ca3af; /* Second bloc */
   --text-input: #000000; /* Second bloc */
   --text-sidebar: #000000; /* Second bloc */
+  --text-white: #ffffff; /* Ajouté pour cohérence */
 
   /* === Couleurs d'action === */
   --success-color: #16a34a; /* Second bloc */
@@ -71,7 +72,7 @@
   --radius-lg: 12px; /* Second bloc */
 
   /* === Typographie === */
-  --font-family: "Montserrat", sans-serif; /* Second bloc */
+  --font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; /* Modifié */
   --font-size-xs: 12px; /* Second bloc */
   --font-size-sm: 14px; /* Second bloc */
   --font-size-md: 16px; /* Second bloc */
@@ -87,8 +88,8 @@
   --shadow-focus: 0 0 4px var(--primary-shadow); /* Second bloc */
 
   /* === Layout === */
-  --sidebar-width: 280px; /* Second bloc */
-  --sidebar-collapsed-width: 80px; /* Second bloc */
+  --sidebar-width: 260px; /* Modifié à 260px */
+  --sidebar-collapsed-width: 60px; /* Réduit de 80px */
   --header-height: 70px; /* Second bloc */
   --transition-speed: 0.3s; /* Second bloc */
 
@@ -110,6 +111,15 @@
   --border-light: #e0e0e0;
   --font-weight-normal: 400;
   --font-weight-semibold: 600;
+
+  /* === Couleurs pour éviter les hardcodés === */
+  --bg-icon-default: rgba(0, 0, 0, 0.1); /* Pour nav-icon-wrapper */
+  --bg-icon-hover: rgba(0, 0, 0, 0.15); /* Pour hover */
+  --border-spinner: #e3e3e3; /* Pour spinner */
+  --border-dashed: rgba(0, 0, 0, 0.2); /* Pour submenu */
+  --opacity-low: 0.8; /* Pour submenu-icon */
+  --bg-badge-default: rgba(0, 0, 0, 0.1); /* Pour submenu-badge */
+  --overlay-bg: rgba(0, 0, 0, 0.5); /* Pour sidebar-overlay */
 }
 
 * {
@@ -253,7 +263,7 @@ body {
 .nav-icon-wrapper {
   width: 23px;
   height: 23px;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--bg-icon-default);
   border-radius: var(--border-radius-sm);
   display: flex;
   align-items: center;
@@ -263,7 +273,7 @@ body {
 }
 
 .nav-button:hover .nav-icon-wrapper {
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: var(--bg-icon-hover);
 }
 
 .nav-button.expanded .nav-icon-wrapper,
@@ -363,7 +373,7 @@ body {
   margin-left: 30px;
   margin-right: var(--spacing-sm);
   padding-left: var(--spacing-md);
-  border-left: 1px dashed rgba(0, 0, 0, 0.2);
+  border-left: 1px dashed var(--border-dashed);
 }
 
 .submenu.expanded {
@@ -384,7 +394,7 @@ body {
   top: 15px;
   width: 10px;
   height: 1px;
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: var(--border-dashed);
 }
 
 .submenu li a {
@@ -423,7 +433,7 @@ body {
 .submenu-icon {
   font-size: var(--font-size-sm);
   margin-right: var(--spacing-sm);
-  opacity: 0.8;
+  opacity: var(--opacity-low);
 }
 
 .submenu-badge {
@@ -432,7 +442,7 @@ body {
   padding: 2px 6px;
   border-radius: 10px;
   margin-left: auto;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--bg-badge-default);
   color: var(--text-sidebar);
 }
 
@@ -834,6 +844,8 @@ body {
 
 /* User Profile Dropdown */
 .user-profile-dropdown {
+  display: flex;
+  align-items: center;
   position: relative;
 }
 
@@ -852,21 +864,36 @@ body {
 }
 
 .user-avatar {
-  width: 32px;
-  height: 32px;
-  background-color: var(--primary-color);
-  color: var(--text-white);
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: white;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  background-color: var(--primary-color, #007bff);
 }
 
 .user-info {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  margin-right: 1rem;
+  text-align: left;
+}
+
+.user-info .user-name {
+  font-size: 1rem; /* Taille de base pour le nom */
+  font-weight: 700; /* Gras */
+  color: #222; /* Couleur principale du texte */
+  line-height: 1.2;
+}
+
+.user-info .user-email {
+  font-size: 0.85rem; /* Plus petit que le nom */
+  color: #666; /* Couleur plus discrète */
+  margin-top: 2px;
 }
 
 .user-name {
@@ -1082,7 +1109,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: var(--overlay-bg);
     z-index: 999;
     opacity: 1;
     visibility: visible;
@@ -1150,7 +1177,7 @@ body {
   width: 16px;
   height: 16px;
   margin-left: var(--spacing-sm);
-  border: 2px solid #e3e3e3;
+  border: 2px solid var(--border-spinner);
   border-top: 2px solid var(--primary-color);
   border-radius: 50%;
   animation: menu-loading-spin 1s linear infinite;
@@ -1257,4 +1284,22 @@ body {
   .header-left {
     gap: var(--spacing-sm);
   }
+}
+
+/* Règle pour lisibilité sur fond primary */
+.--primary-color {
+  color: var(--text-white) !important;
+}
+
+/* Style pour le font (tooltip ou élément similaire) */
+.font-tooltip {
+  position: absolute;
+  z-index: 1070;
+  display: block;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 1.4;
+  filter: alpha(opacity=0);
+  opacity: 0;
 }

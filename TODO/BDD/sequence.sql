@@ -422,6 +422,18 @@ CREATE SEQUENCE seq_mission_report
     CACHE 50;
 GO
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_group_id')
+    DROP SEQUENCE seq_group_id;
+GO
+CREATE SEQUENCE seq_group_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
 
 
 

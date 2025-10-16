@@ -14,20 +14,117 @@ namespace MyApp.Api.Controllers.mission
     {
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<MissionAssignation>> GetByIdMissionAsync(string id)
+        [AllowAnonymous]
+        public async Task<ActionResult> GetByIdMissionAsync(string id)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'id ne peut pas être null ou vide." });
+            }
+
             try
             {
-                var mission = await missionAssignationService.GetByIdMissionAsync(id);
-                if (mission == null) return NotFound();
-                return Ok(mission);
+                var entity = await missionAssignationService.GetByIdMissionAsync(id);
+
+                if (entity != null)
+                {
+                    var responseData = entity;
+                    return Ok(new { data = responseData, status = 200, message = "success" });
+                }
+
+                return NotFound(new { data = (object?)null, status = 404, message = $"Mission assignation pour id {id} non trouvée." });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                logger.LogError(ex, "Erreur lors de la récupération de la mission {MissionId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la récupération de la mission");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Erreur lors de la récupération de la mission {MissionId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
+
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<ActionResult> Create([FromBody] MissionDTOForm mission)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (mission == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "La mission ne peut pas être null." });
+            }
+
+            try
+            {
+                var id = await missionService.CreateAsync(mission);
+                var responseData = new { id, mission };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Erreur lors de la création de la mission");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        // Met à jour une mission existante
+        [HttpPut("{id}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> Update(string id, [FromBody] MissionDTOForm mission)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'id ne peut pas être null ou vide." });
+            }
+
+            if (mission == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "La mission ne peut pas être null." });
+            }
+
+            try
+            {
+                var updated = await missionService.UpdateAsync(id, mission);
+
+                if (updated)
+                {
+                    var responseData = new { success = updated, mission };
+                    return Ok(new { data = responseData, status = 200, message = "success" });
+                }
+
+                return NotFound(new { data = (object?)null, status = 404, message = $"Mission pour id {id} non trouvée." });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Erreur lors de la mise à jour de la mission {MissionId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Mission>>> GetAll()
         {
@@ -42,40 +139,7 @@ namespace MyApp.Api.Controllers.mission
                 return StatusCode(500, "Une erreur est survenue lors de la récupération des missions");
             }
         }
-
-        // Crée une nouvelle mission à partir d'un formulaire
-        [HttpPost]
-        public async Task<ActionResult<object>> Create([FromBody] MissionDTOForm mission)
-        {
-            try
-            {
-                var id = await missionService.CreateAsync(mission);
-                return Ok(new { id, mission });
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors de la création de la mission");
-                return StatusCode(500, "Une erreur est survenue lors de la création de la mission");
-            }
-        }
-
-        // Met à jour une mission existante
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] MissionDTOForm mission)
-        {
-            try
-            {
-                var updated = await missionService.UpdateAsync(id,mission);
-                
-                return Ok(new { success = updated, mission });
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors de la mise à jour de la mission {MissionId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la mise à jour de la mission");
-            }
-        }
-
+        
         // Supprime une mission par son identifiant
         [HttpDelete("{id}/{userId}")]
         public async Task<IActionResult> Delete(string id, string userId)

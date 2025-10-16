@@ -27,8 +27,12 @@ namespace MyApp.Api.Services.users
         Task<UserDto?> GetSuperiorAsync(string? matricule);
         Task<UserDto?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
+        Task<IEnumerable<string>> GetUserHabilitationAsync(string userId);
         Task<UserDto?> GetDirectorByDepartmentAsync(string department);
         Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId);
+        Task<IEnumerable<UserInfoDto>> GetUsersInfo(string[] userIds);
+
+        Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
     }
 
     public class UserService : IUserService
@@ -89,6 +93,14 @@ namespace MyApp.Api.Services.users
                 allUsers.AddRange(batch);
             }
             return allUsers;
+        }
+
+        public async Task<IEnumerable<string>> GetUserHabilitationAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            return await _repository.GetUserHabilitationAsync(userId);
         }
 
         public async Task<IEnumerable<string>> GetUserRolesAsync(string userId)
@@ -154,13 +166,23 @@ namespace MyApp.Api.Services.users
             return collaborators.Select(MapToDto);
         }
 
+        public async Task<IEnumerable<UserInfoDto>> GetUsersInfo(string[] userIds)
+        {
+            if (userIds == null || userIds.Length == 0)
+                throw new ArgumentException("User IDs cannot be null or empty.", nameof(userIds));
+
+            var collaborators = await _repository.GetUsersInfo(userIds);
+            return collaborators.Select(Map2ToDto);
+        }
+
+
         public async Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
                 throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
 
             var collaborators = await _repository.GetUserInfo(userId);
-            return collaborators.Select(Map2ToDto);
+            return collaborators;
         }
 
         public async Task<UserDto?> LoginAsync(string email, string password)
@@ -175,6 +197,11 @@ namespace MyApp.Api.Services.users
             return MapToDto(user);
         }
 
+        public async Task<IEnumerable<string>> GetDistinctDepartmentsAsync()
+        {
+            return await _repository.GetDistinctDepartmentsAsync();
+        }
+        
         private static UserDto MapToDto(User user)
         {
             return new UserDto
