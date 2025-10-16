@@ -4,6 +4,7 @@ import api from '@/utils/axios-config';
 
 const SEARCH_MISSION_ASSIGNATIONS_BASE_KEY = ['searchMissionAssignations'] as const;
 const MISSION_ASSIGNATION_BY_ID_BASE_KEY = ['getMissionAssignationByMissionId'] as const;
+const MISSION_ASSIGNATION_BY_ASSIGNATION_ID_BASE_KEY = ['getMissionAssignationByAssignationId'] as const;
 
 export interface MissionAssignationSearchFilters {
   employeeId?: string;
@@ -143,16 +144,16 @@ export interface MissionAssignation {
   assignationId: string;
   employeeId: string;
   missionId: string;
-  transportId: string;
+  transportId: string | null;
   departureDate: string;
   departureTime: string;
   returnDate: string;
   returnTime: string;
   duration: number;
-  isValidated: number; // 1 pour validé, 0 sinon (basé sur la réponse API)
+  isValidated: number | null; // Adjusted to match response (null possible)
   employee: Employee;
   mission: Mission;
-  transport: Transport;
+  transport: Transport | null;
   type: string;
   allocatedFund: number;
   createdAt: string;
@@ -193,6 +194,7 @@ export interface MissionAssignationDTOForm {
   returnTime: string;
   type: string;
   allocatedFund: number;
+  duration: number;
 }
 
 export interface MissionDTOForm {
@@ -257,6 +259,24 @@ export const useGetMissionAssignationByMissionId = (missionId: string) => {
       }
     },
     enabled: !!missionId,
+  });
+};
+
+export const useGetMissionAssignationByAssignationId = (assignationId: string) => {
+  return useQuery<ApiResponse<MissionAssignation>, Error>({
+    queryKey: [...MISSION_ASSIGNATION_BY_ASSIGNATION_ID_BASE_KEY, assignationId] as const,
+    queryFn: async () => {
+      try {
+        const response = await api.get(`/api/MissionAssignation/${assignationId}`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!assignationId,
   });
 };
 

@@ -590,9 +590,9 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_3', 'collaborateur', 'fa-users', '/mission/collaborateur', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_5', 'treso', 'fa-money-bill-alt', '/treasury', 1, 5, 'treasury', 'navigation', GETDATE(), GETDATE()),
-('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 6, 'mission', 'navigation', GETDATE(), GETDATE()); 
+('menu2_3', 'collaborateur', 'fa-users', '/mission/collaborateur', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE());
+-- ('menu2_5', 'treso', 'fa-money-bill-alt', '/treasury', 1, 5, 'treasury', 'navigation', GETDATE(), GETDATE()),
+-- ('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 6, 'mission', 'navigation', GETDATE(), GETDATE()); 
 
 
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
@@ -602,9 +602,9 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),
 ('h4', NULL, 'menu2', GETDATE(), GETDATE()),
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
-('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
-('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE()),
-('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE());
+('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE());
+-- ('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE()),
+-- ('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE());
 
 
 INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
@@ -619,10 +619,10 @@ INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
 ('menu2_0', 'ROLE_002', GETDATE(), GETDATE()),
 ('menu2_3', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_3', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2_3', 'ROLE_003', GETDATE(), GETDATE()),
-('menu2_5', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2_5', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2_5', 'ROLE_003', GETDATE(), GETDATE()),
-('menu2_4', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2_4', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2_4', 'ROLE_003', GETDATE(), GETDATE());
+('menu2_3', 'ROLE_003', GETDATE(), GETDATE());
+-- ('menu2_5', 'ROLE_001', GETDATE(), GETDATE()),
+-- ('menu2_5', 'ROLE_002', GETDATE(), GETDATE()),
+-- ('menu2_5', 'ROLE_003', GETDATE(), GETDATE()),
+-- ('menu2_4', 'ROLE_001', GETDATE(), GETDATE()),
+-- ('menu2_4', 'ROLE_002', GETDATE(), GETDATE()),
+-- ('menu2_4', 'ROLE_003', GETDATE(), GETDATE());

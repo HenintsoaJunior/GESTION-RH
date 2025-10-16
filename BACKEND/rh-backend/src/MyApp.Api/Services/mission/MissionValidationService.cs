@@ -206,6 +206,8 @@ namespace MyApp.Api.Services.mission
                     await _missionAssignationService.UpdateAsync(validation.MissionAssignationId, missionAssignation);
                     result = "Validation effectuée avec succès et mission validée";
 
+                    _logger.LogInformation("Type de validation type={Type}  employeeID={EmployeeId} mission={MissionId}" , validation.Type,missionAssignation.EmployeeId,missionAssignation.MissionId);
+                    
                     if (validation.Type.Equals("Indemnité"))
                     {
                         await _missionAssignationService.GeneratePaiementsAsync(

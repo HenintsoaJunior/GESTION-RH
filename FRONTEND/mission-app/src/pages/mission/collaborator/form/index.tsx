@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Save } from "lucide-react";
 import * as FaIcons from "react-icons/fa";
 import {

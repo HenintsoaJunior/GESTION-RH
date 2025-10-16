@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable prefer-const */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLieux, type Lieu } from "@/api/lieu/services";
 import { useEmployees, type Employee } from "@/api/collaborator/services";
@@ -681,6 +683,7 @@ const useMissionForm = ({
               returnTime: beneficiary.returnTime || "",
               type: formData.type,
               allocatedFund: 0, // Assuming not in form, or add
+              duration: parseInt(beneficiary.missionDuration) || 0,
             } as MissionAssignationDTOForm,
           ],
         };

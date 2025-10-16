@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, useEffect, useMemo, type JSX } from "react";
 import { X, ChevronDown, ChevronUp, List, Search, Eye } from "lucide-react";

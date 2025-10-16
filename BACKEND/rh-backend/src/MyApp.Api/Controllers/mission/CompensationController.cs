@@ -19,13 +19,13 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpGet("by-employee/{employeeId}/mission/{missionId}")]
-        [AllowAnonymous]
+        // [AllowAnonymous]
         public async Task<ActionResult> GetByEmployeeId(string employeeId, string missionId)
         {
-            if (!User.Identity?.IsAuthenticated ?? true)
-            {
-                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            // {
+            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            // }
 
             if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
             {
