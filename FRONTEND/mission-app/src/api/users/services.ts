@@ -57,6 +57,29 @@ export interface User {
   updatedAt: string;
 }
 
+interface Group {
+  groupId: string;
+  name: string;
+  description?: string;
+}
+
+interface RoleHabilitation {
+  roleId: string;
+  habilitationId: string;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+interface Habilitation {
+  habilitationId: string;
+  groupId: string;
+  label: string;
+  group: Group | null;
+  roleHabilitations: RoleHabilitation[];
+  createdAt: string;
+  updatedAt: string | null;
+}
+
 export interface UserInfo {
   userId: string;
   name: string;
@@ -66,7 +89,7 @@ export interface UserInfo {
   position: string;
   superiorId: string;
   superiorName: string;
-  roles: any[];
+  roles: string[];
 }
 
 export interface BulkHabilitationData {
@@ -79,16 +102,6 @@ export interface UseUserHabilitationBulkParams {
   habilitationIds: string[];
   roleIds: string[];
   userId: string;
-}
-
-interface Habilitation {
-  habilitationId: string;
-  groupId: string;
-  label: string;
-  group: any | null;
-  roleHabilitations: any[];
-  createdAt: string;
-  updatedAt: string | null;
 }
 
 interface ApiResponse<T> {
@@ -169,6 +182,7 @@ export const useSearchUsers = (filters: UserSearchFilters, page: number = 1, pag
         throw error;
       }
     },
+    enabled: Object.values(filters).some(Boolean) || page > 0,
   });
 };
 
@@ -183,7 +197,6 @@ export const useUserHabilitations = (userId: string | undefined) => {
       }
       try {
         const response = await api.get(`/api/User/${userId}/access-habilitations`);
-        console.log("RESPONSE VALUE ",response.data)
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -192,7 +205,7 @@ export const useUserHabilitations = (userId: string | undefined) => {
         throw error;
       }
     },
-    enabled: !!userId, // N'exécute la requête que si userId est défini
+    enabled: !!userId,
   });
 };
 
@@ -200,6 +213,9 @@ export const useUserHabilitationsRole = (userId?: string) => {
   return useQuery<HabilitationResponse, Error>({
     queryKey: [...USER_HABILITATIONSROLE_KEY, userId],
     queryFn: async () => {
+      if (!userId) {
+        throw new Error('userId is required for fetching habilitations roles');
+      }
       try {
         const response = await api.get(`/api/User/${userId}/habilitations`);
         return response.data;
@@ -218,12 +234,12 @@ export const useHasHabilitation = (userId: string | undefined, label: string) =>
   const { data: habilitationsResponse, isLoading } = useUserHabilitationsRole(userId);
 
   return useMemo(() => {
-    if (isLoading) return undefined;
-    
-    if (!habilitationsResponse?.data) return false;
+    if (isLoading || !habilitationsResponse?.data) {
+      return false;
+    }
   
-   return habilitationsResponse.data.some((h: Habilitation) => h.label === label);
-  }, [habilitationsResponse, label, isLoading]);
+    return habilitationsResponse.data.some((h: Habilitation) => h.label === label);
+  }, [habilitationsResponse?.data, label, isLoading]);
 };
 
 export const useUserRoles = (userId: string | undefined) => {
@@ -245,7 +261,7 @@ export const useUserRoles = (userId: string | undefined) => {
         throw error;
       }
     },
-    enabled: !!userId, // N'exécute la requête que si userId est défini
+    enabled: !!userId,
   });
 };
 
@@ -289,13 +305,15 @@ export const useBulkCreateUserRoles = () => {
       }
     },
     onSuccess: (_, variables) => {
-      // Invalider les queries spécifiques pour de meilleures performances
       queryClient.invalidateQueries({ queryKey: USERS_KEY });
       queryClient.refetchQueries({ queryKey: SEARCH_LOGS_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: MENU_HIERARCHY_KEY });
       variables.userIds.forEach((userId) => {
         queryClient.invalidateQueries({ queryKey: [...USER_ROLES_BASE_KEY, userId] });
       });
+    },
+    onError: (error) => {
+      console.error('Error creating bulk user roles:', error);
     },
   });
 };
@@ -323,6 +341,9 @@ export const useBulkRemoveUserRoles = () => {
         queryClient.invalidateQueries({ queryKey: [...USER_ROLES_BASE_KEY, userId] });
       });
     },
+    onError: (error) => {
+      console.error('Error removing bulk user roles:', error);
+    },
   });
 };
 
@@ -332,6 +353,9 @@ export const useUserInfos = (userIds: string[]) => {
   return useQuery<UserInfosResponse, Error>({
     queryKey,
     queryFn: async () => {
+      if (userIds.length === 0) {
+        return { data: [], status: 200, message: 'success' } as UserInfosResponse;
+      }
       try {
         const response = await api.post('/api/User/infos', userIds);
         return response.data;
@@ -342,7 +366,7 @@ export const useUserInfos = (userIds: string[]) => {
         throw error;
       }
     },
-    enabled: userIds.length > 0, // N'exécute que si la liste n'est pas vide
+    enabled: userIds.length > 0,
   });
 };
 
@@ -378,6 +402,9 @@ export const useUserHabilitationBulk = () => {
       if (!userId) {
         throw new Error('userId is required for bulk habilitation');
       }
+      if (habilitationIds.length === 0 || roleIds.length === 0) {
+        throw new Error('At least one habilitation and role must be provided');
+      }
       try {
         const response = await api.post('/api/UserHabilitation/bulk', {
           habilitationIds,
@@ -397,6 +424,9 @@ export const useUserHabilitationBulk = () => {
       queryClient.refetchQueries({ queryKey: SEARCH_LOGS_BASE_KEY });
       queryClient.refetchQueries({ queryKey: [...USER_ROLES_BASE_KEY, variables.userId] });
       queryClient.refetchQueries({ queryKey: [...USER_HABILITATIONS_BASE_KEY, variables.userId] });
-    },  
+    },
+    onError: (error) => {
+      console.error('Error in bulk user habilitation:', error);
+    },
   });
 };

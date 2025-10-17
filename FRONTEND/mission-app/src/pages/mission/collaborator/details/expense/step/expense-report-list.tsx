@@ -18,7 +18,7 @@ import {
     TotalRow,
 } from "@/styles/detailsmission-styles";
 import { NoDataMessage } from "@/styles/table-styles";
-import { formatNumber } from "utils/format";
+import { formatNumber } from "@/utils/format";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useExpenseReportsByAssignationId, useStatusByAssignationId } from "@/api/mission/expense/services";
 import { useGetMissionAssignationByAssignationId } from "@/api/mission/services";

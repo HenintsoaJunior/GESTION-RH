@@ -6,6 +6,7 @@ import ValidationStepper from "@/pages/stepper/index";
 import Alert from "@/components/alert";
 import MissionReport from "./report/mission-report";
 import OMPayment from "./payment/om-payment";
+import OMNoteDeFrais from "../details/expense/om-note-de-frais";
 import {
   PopupOverlay,
   PagePopup,
@@ -488,6 +489,7 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
 
   const [showMissionReport, setShowMissionReport] = useState(false);
   const [showOMPayment, setShowOMPayment] = useState(false);
+  const [showOMNoteDeFrais, setShowOMNoteDeFrais] = useState(false);
   const [selectedAssignationId, setSelectedAssignationId] = useState<string | null>(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [missionPayment, setMissionPayment] = useState<MissionPaymentState>({
@@ -511,7 +513,7 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
         date: comp.paymentDate,
         totalAmount: comp.totalAmount,
         compensationScales: [
-          ...(comp.transportAmount > 0 ? [{ amount: comp.transportAmount, transportId: assignation.transportId }] : []),
+          ...(comp.transportAmount > 0 ? [{ amount: comp.transportAmount, transportId: assignation.transportId ?? undefined }] : []),
           ...(comp.breakfastAmount > 0 ? [{ amount: comp.breakfastAmount, expenseType: { type: "Petit Déjeuner" } }] : []),
           ...(comp.lunchAmount > 0 ? [{ amount: comp.lunchAmount, expenseType: { type: "Déjeuner" } }] : []),
           ...(comp.dinnerAmount > 0 ? [{ amount: comp.dinnerAmount, expenseType: { type: "Dîner" } }] : []),
@@ -627,6 +629,7 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
     setSelectedAssignationId(assignationId);
     setShowOMPayment(true);
     setShowMissionReport(false);
+    setShowOMNoteDeFrais(false);
   }, [showAlert]);
 
   const handleMissionReportClick = useCallback((employeeId: string, assignationId: string) => {
@@ -637,12 +640,26 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
     setSelectedAssignationId(assignationId);
     setShowMissionReport(true);
     setShowOMPayment(false);
+    setShowOMNoteDeFrais(false);
+    setSelectedEmployeeId(null);
+  }, [showAlert]);
+
+  const handleOMNoteDeFraisClick = useCallback((assignationId: string) => {
+    if (!assignationId) {
+      showAlert("error", "Assignation ID est requis.");
+      return;
+    }
+    setSelectedAssignationId(assignationId);
+    setShowOMNoteDeFrais(true);
+    setShowOMPayment(false);
+    setShowMissionReport(false);
     setSelectedEmployeeId(null);
   }, [showAlert]);
 
   const handleBackToMissionDetails = useCallback(() => {
     setShowMissionReport(false);
     setShowOMPayment(false);
+    setShowOMNoteDeFrais(false);
     setSelectedAssignationId(null);
     setSelectedEmployeeId(null);
     setMissionPayment({ dailyPaiements: [], assignmentDetails: null, totalAmount: 0 });
@@ -681,7 +698,7 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
             />
           )}
 
-          {validationSteps.length > 0 && !showMissionReport && !showOMPayment && !isGlobalLoading && (
+          {validationSteps.length > 0 && !showMissionReport && !showOMPayment && !showOMNoteDeFrais && !isGlobalLoading && (
             <ValidationStepper steps={validationSteps} currentStep={0} />
           )}
 
@@ -698,6 +715,11 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
                   onExportExcel={handleExportExcel}
                   isLoading={{ exportExcel: exportExcelMutation.isPending }}
                   formatDate={formatDate}
+                />
+              ) : showOMNoteDeFrais && selectedAssignationId ? (
+                <OMNoteDeFrais
+                  selectedAssignmentId={selectedAssignationId}
+                  onBack={handleBackToMissionDetails}
                 />
               ) : showMissionReport ? (
                 <MissionReport
@@ -818,8 +840,10 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
                               }}
                             >
                               {assignedPersons.map((assignment, index) => {
-                                const buttonText = assignment.type === "Indemnité" ? "Indemnité" : "Note de frais";
-                                const shouldShowButton = assignment.type === "Indemnité" || assignment.type === "Note de frais";
+                                // Conditions pour afficher le bouton approprié en position 1 (haut-gauche)
+                                const assignmentType = assignment.type;
+                                const shouldShowRendu = assignmentType === "Indemnité" || assignmentType === "Note de frais";
+
                                 return (
                                   <div
                                     key={`buttons-${assignment.employeeId}-${index}`}
@@ -833,18 +857,27 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
                                       backgroundColor: "var(--background-light)",
                                     }}
                                   >
+                                    {/* Premier slot : Bouton conditionnel en position unifiée (Indemnité ou Note de Frais) */}
                                     <InfoItem>
-                                      {shouldShowButton && (
-                                        <ButtonContainer>
+                                      <ButtonContainer>
+                                        {assignmentType === "Indemnité" ? (
                                           <OMPaymentButton
-                                            onClick={() => handleOMPaymentClick(assignment.employeeId, assignment.type || "", assignment.assignationId)}
+                                            onClick={() => handleOMPaymentClick(assignment.employeeId, assignmentType, assignment.assignationId)}
                                             disabled={isGlobalLoading}
                                           >
-                                            {buttonText}
+                                            Indemnité
                                           </OMPaymentButton>
-                                        </ButtonContainer>
-                                      )}
+                                        ) : assignmentType === "Note de frais" ? (
+                                          <OMPaymentButton
+                                            onClick={() => handleOMNoteDeFraisClick(assignment.assignationId)}
+                                            disabled={isGlobalLoading}
+                                          >
+                                            Note de Frais
+                                          </OMPaymentButton>
+                                        ) : null}
+                                      </ButtonContainer>
                                     </InfoItem>
+                                    {/* Deuxième slot : Toujours "OM PDF" */}
                                     <InfoItem>
                                       <ButtonContainer>
                                         <ButtonOMPDF
@@ -855,8 +888,9 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
                                         </ButtonOMPDF>
                                       </ButtonContainer>
                                     </InfoItem>
+                                    {/* Troisième slot : "Rendu" pour les deux types */}
                                     <InfoItem>
-                                      {shouldShowButton && (
+                                      {shouldShowRendu && (
                                         <ButtonContainer>
                                           <MissionReportButton
                                             onClick={() => handleMissionReportClick(assignment.employeeId, assignment.assignationId)}
@@ -867,6 +901,8 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
                                         </ButtonContainer>
                                       )}
                                     </InfoItem>
+                                    {/* Quatrième slot : Vide */}
+                                    <InfoItem />
                                   </div>
                                 );
                               })}

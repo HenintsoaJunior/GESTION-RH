@@ -39,6 +39,7 @@ import Modal from "@/components/modal";
 import RoleFormPopup from "./components/update-form";
 import CreateRolePopup from "./components/create-form";
 import ProtectedRoute from "@/components/protected-route";
+import axios from 'axios';
 
 interface FiltersState {
   name: string;
@@ -169,7 +170,6 @@ const RoleList: React.FC = () => {
       const request = {
         name: editValues.name,
         description: editValues.description,
-        userId,
       };
 
       updateRoleMutation.mutate(
@@ -182,11 +182,17 @@ const RoleList: React.FC = () => {
             setEditValues(null);
             setOriginalValues(null);
           },
-          onError: (error: any) => {
+          onError: (error: unknown) => {
+            let errorMessage = "Échec de la mise à jour du rôle";
+            if (axios.isAxiosError(error)) {
+              errorMessage = error.response?.data?.message || error.message || errorMessage;
+            } else if (error instanceof Error) {
+              errorMessage = error.message;
+            }
             setAlert({
               isOpen: true,
               type: "error",
-              message: error?.message || "Échec de la mise à jour du rôle",
+              message: errorMessage,
             });
           },
         }
@@ -269,11 +275,17 @@ const RoleList: React.FC = () => {
             setSelectedRoles([]);
             refetchRoles();
           },
-          onError: (error: any) => {
+          onError: (error: unknown) => {
+            let errorMessage = "Échec de la suppression du rôle";
+            if (axios.isAxiosError(error)) {
+              errorMessage = error.response?.data?.message || error.message || errorMessage;
+            } else if (error instanceof Error) {
+              errorMessage = error.message;
+            }
             setAlert({
               isOpen: true,
               type: "error",
-              message: error?.message || "Échec de la suppression du rôle",
+              message: errorMessage,
             });
           },
         }
@@ -298,6 +310,8 @@ const RoleList: React.FC = () => {
     [selectedRoles.length]
   );
 
+  const filtersString = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
+
   useEffect(() => {
     setSelectedRoles([]);
     setEditingRole(null);
@@ -307,7 +321,7 @@ const RoleList: React.FC = () => {
       clearTimeout(blurTimeoutRef.current);
       blurTimeoutRef.current = null;
     }
-  }, [JSON.stringify(appliedFilters)]);
+  }, [filtersString]);
 
   useEffect(() => {
     if (rolesResponse) {

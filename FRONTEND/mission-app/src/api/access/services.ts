@@ -54,7 +54,7 @@ interface Habilitation {
   groupId: string;
   label: string;
   group: null;
-  roleHabilitations: any[];
+  roleHabilitations: RoleHabilitation[];
   createdAt: string;
   updatedAt: string | null;
 }
@@ -79,7 +79,7 @@ export interface RoleWithGroupedHabilitations {
   roleId: string;
   name: string;
   description: string;
-  userRoles: any[];
+  userRoles: UserRole[];
   habilitationGroups: HabilitationGroupDto[];
   createdAt: string;
   updatedAt: string | null;

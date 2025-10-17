@@ -1,6 +1,5 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp, RefreshCw, X, List, Search } from "lucide-react";
 import axios, { AxiosError } from "axios";
@@ -251,9 +250,11 @@ const UserList: React.FC = () => {
     setSelectedUsersWithRoles([]);
   };
 
+  const filtersString = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
+
   useEffect(() => {
     setSelectedUsers([]);
-  }, [currentPage, JSON.stringify(appliedFilters)]);
+  }, [currentPage, filtersString]);
 
   useEffect(() => {
     if (searchResponse) {

@@ -27,6 +27,22 @@ import {
 // Import du hook React Query pour les infos utilisateur
 import { useUserInfo } from '@/api/users/services';
 
+interface Role {
+  role: {
+    name: string;
+  };
+}
+
+interface User {
+  name?: string;
+  email?: string;
+  position?: string;
+  matricule?: string;
+  superiorName?: string;
+  department?: string;
+  roles?: Role[];
+}
+
 const ProfilePage = () => {
   const [userId, setUserId] = useState<string | undefined>(undefined);
 
@@ -52,7 +68,7 @@ const ProfilePage = () => {
 
   const { data: userInfosResponse } = useUserInfo(userId);
 
-  const user = useMemo(() => userInfosResponse?.data?.[0] || null, [userInfosResponse]);
+  const user = useMemo(() => userInfosResponse?.data?.[0] || null, [userInfosResponse]) as User | null;
 
   const userRoles = user?.roles || [];
   const notSpecified = 'Non spécifié';
@@ -109,7 +125,7 @@ const ProfilePage = () => {
               <SectionTitle>Rôles</SectionTitle>
               {userRoles.length > 0 ? (
                 <RolesContainer>
-                  {userRoles.map((userRole: any, index: number) => (
+                  {userRoles.map((userRole: Role, index: number) => (
                     <RoleBadge key={index}>{userRole.role.name}</RoleBadge>
                   ))}
                 </RolesContainer>

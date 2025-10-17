@@ -33,7 +33,7 @@ interface Habilitation {
   groupId: string;
   label: string;
   group: null;
-  roleHabilitations: any[];
+  roleHabilitations: unknown[];
   createdAt: string;
   updatedAt: string | null;
 }
@@ -58,6 +58,10 @@ interface AlertState {
   isOpen: boolean;
   type: AlertType;
   message: string;
+}
+
+interface UserData {
+  userId: string;
 }
 
 const useAlert = (onSuccessClose?: () => void) => {
@@ -95,7 +99,7 @@ const useAlert = (onSuccessClose?: () => void) => {
         onSuccessClose();
       }, 800);
     }
-  }, [alert.type, onSuccessClose, clearTimers]);
+  }, [alert.type, onSuccessClose]);
 
   const resetAlert = useCallback(() => {
     clearTimers();
@@ -272,8 +276,8 @@ const UpdateRoleFormPopup: React.FC<RoleFormProps> = ({
   }, [groupsError, isOpen, showAlert]);
 
   const handleUpdate = useCallback(() => {
-    const userData = JSON.parse(localStorage.getItem("user") || "{}");
-    const userId = userData?.userId;
+    const userData = JSON.parse(localStorage.getItem("user") || "{}") as UserData;
+    const userId = userData.userId;
 
     if (selectedRoles.length === 0) {
       showAlert("warning", "Veuillez sélectionner au moins un rôle.");
@@ -312,13 +316,14 @@ const UpdateRoleFormPopup: React.FC<RoleFormProps> = ({
             showAlert("error", data.message || "Erreur lors de la mise à jour.");
           }
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
           setIsUpdating(false);
-          const errorMessage = 
-            axios.isAxiosError(err) 
-              ? err.response?.data?.message || err.message 
-              : err.message || 
-              "Une erreur est survenue lors de la mise à jour.";
+          let errorMessage: string;
+          if (axios.isAxiosError(err)) {
+            errorMessage = err.response?.data?.message || err.message || "Erreur inconnue";
+          } else {
+            errorMessage = (err as Error).message || "Une erreur est survenue lors de la mise à jour.";
+          }
           showAlert("error", errorMessage);
         }
       }
