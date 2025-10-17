@@ -7,7 +7,7 @@ import {
   PopupTitle,
   PopupClose,
   PopupContent,
-  SectionContainer,
+  SectionContainer, 
   SectionHeader,
   SectionTitle,
   ItemsList,
@@ -38,7 +38,7 @@ interface Habilitation {
   groupId: string;
   label: string;
   group: null;
-  roleHabilitations: any[];
+  roleHabilitations: unknown[];
   createdAt: string;
   updatedAt: string | null;
 }
@@ -62,6 +62,10 @@ interface AlertState {
   isOpen: boolean;
   type: AlertType;
   message: string;
+}
+
+interface UserData {
+  userId: string;
 }
 
 const useAlert = (onSuccessClose?: () => void) => {
@@ -99,7 +103,7 @@ const useAlert = (onSuccessClose?: () => void) => {
         onSuccessClose();
       }, 800);
     }
-  }, [alert.type, onSuccessClose, clearTimers]);
+  }, [alert.type, onSuccessClose]);
 
   const resetAlert = useCallback(() => {
     clearTimers();
@@ -193,8 +197,8 @@ const CreateRolePopup: React.FC<CreateRoleProps> = ({
   }, [groupsError, isOpen, showAlert]);
 
   const handleCreate = useCallback(() => {
-    const userData = JSON.parse(localStorage.getItem("user") || "{}");
-    const userId = userData?.userId;
+    const userData = JSON.parse(localStorage.getItem("user") || "{}") as UserData;
+    const userId = userData.userId;
 
     if (!name.trim()) {
       showAlert("warning", "Veuillez saisir un nom pour le rôle.");
@@ -237,13 +241,14 @@ const CreateRolePopup: React.FC<CreateRoleProps> = ({
             showAlert("error", data.message || "Erreur lors de la création du rôle.");
           }
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
           setIsCreating(false);
-          const errorMessage = 
-            axios.isAxiosError(err) 
-              ? err.response?.data?.message || err.message 
-              : err.message || 
-              "Une erreur est survenue lors de la création du rôle.";
+          let errorMessage: string;
+          if (axios.isAxiosError(err)) {
+            errorMessage = err.response?.data?.message || err.message || "Erreur inconnue";
+          } else {
+            errorMessage = (err as Error).message || "Une erreur est survenue lors de la création du rôle.";
+          }
           showAlert("error", errorMessage);
         }
       }

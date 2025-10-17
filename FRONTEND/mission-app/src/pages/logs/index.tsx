@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, useEffect, useMemo, type JSX } from "react";
 import { X, ChevronDown, ChevronUp, List, Search, Eye } from "lucide-react";
@@ -82,14 +81,36 @@ interface LogDetailsPopupProps {
 }
 
 const LogDetailsPopup: React.FC<LogDetailsPopupProps> = ({ isOpen, onClose, log, userMap }) => {
+  const { oldValues, newValues } = log || { oldValues: null, newValues: null };
+
+  const parsedOldValues = useMemo((): Record<string, unknown> | null => {
+    if (!oldValues) return null;
+    try {
+      const parsed = JSON.parse(oldValues);
+      return typeof parsed === 'object' && parsed !== null ? parsed : null;
+    } catch {
+      return null;
+    }
+  }, [oldValues]);
+
+  const parsedNewValues = useMemo((): Record<string, unknown> | null => {
+    if (!newValues) return null;
+    try {
+      const parsed = JSON.parse(newValues);
+      return typeof parsed === 'object' && parsed !== null ? parsed : null;
+    } catch {
+      return null;
+    }
+  }, [newValues]);
+
   if (!isOpen || !log) return null;
 
-  const { oldValues, newValues } = log;
-  const hasChanges = oldValues || newValues;
+  const hasChanges = parsedOldValues || parsedNewValues;
 
-  const formatValue = (value: any): string => {
+  const formatValue = (value: unknown): string => {
     if (value === null || value === undefined) return "Aucun";
-    if (Array.isArray(value)) return value.join(", ");
+    if (Array.isArray(value)) return (value as unknown[]).join(", ");
+    if (typeof value === 'object') return '[Objet]';
     return String(value);
   };
 
@@ -102,8 +123,8 @@ const LogDetailsPopup: React.FC<LogDetailsPopupProps> = ({ isOpen, onClose, log,
   };
 
   const renderChanges = () => {
-    const oldKeys = oldValues ? Object.keys(oldValues) : [];
-    const newKeys = newValues ? Object.keys(newValues) : [];
+    const oldKeys = parsedOldValues ? Object.keys(parsedOldValues) : [];
+    const newKeys = parsedNewValues ? Object.keys(parsedNewValues) : [];
     const allKeys = [...new Set([...oldKeys, ...newKeys])];
 
     // Collect simple changes
@@ -112,16 +133,16 @@ const LogDetailsPopup: React.FC<LogDetailsPopupProps> = ({ isOpen, onClose, log,
     const nestedRenders: JSX.Element[] = [];
 
     allKeys.forEach((key) => {
-      const oldVal = oldValues?.[key];
-      const newVal = newValues?.[key];
+      const oldVal = parsedOldValues?.[key];
+      const newVal = parsedNewValues?.[key];
 
       const isNested =
         (oldVal && typeof oldVal === "object" && !Array.isArray(oldVal) && oldVal !== null) ||
         (newVal && typeof newVal === "object" && !Array.isArray(newVal) && newVal !== null);
 
       if (isNested) {
-        const oldSub = oldVal as Record<string, any> || {};
-        const newSub = newVal as Record<string, any> || {};
+        const oldSub = oldVal && typeof oldVal === "object" && !Array.isArray(oldVal) && oldVal !== null ? oldVal as Record<string, unknown> : {};
+        const newSub = newVal && typeof newVal === "object" && !Array.isArray(newVal) && newVal !== null ? newVal as Record<string, unknown> : {};
         const allSubKeys = [...new Set([...Object.keys(oldSub), ...Object.keys(newSub)])];
 
         if (allSubKeys.length === 0) return;
@@ -461,7 +482,7 @@ const LogList: React.FC = () => {
                   <FormRow style={{ marginTop: "var(--spacing-md)" }}>
                     {/* Champ Date min */}
                     <FormFieldCell style={fieldCellStyle("50%")}>
-                      <FormLabelSearch>Date minimale</FormLabelSearch>
+                      <FormLabelSearch>Du</FormLabelSearch>
                       <FormInputSearch
                         type="date"
                         value={displayFilters.minCreatedAt || ""}
@@ -471,7 +492,7 @@ const LogList: React.FC = () => {
                     </FormFieldCell>
                     {/* Champ Date max */}
                     <FormFieldCell style={fieldCellStyle("50%")}>
-                      <FormLabelSearch>Date maximale</FormLabelSearch>
+                      <FormLabelSearch>Au</FormLabelSearch>
                       <FormInputSearch
                         type="date"
                         value={displayFilters.maxCreatedAt || ""}

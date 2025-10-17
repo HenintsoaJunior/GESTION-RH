@@ -80,7 +80,7 @@ interface Unit {
   updatedAt: string | null;
 }
 
-interface Employee {
+export interface Employee {
   employeeId: string;
   employeeCode: string;
   lastName: string;
@@ -108,7 +108,7 @@ interface Employee {
   updatedAt: string | null;
 }
 
-interface Lieu {
+export interface Lieu {
   lieuId: string;
   nom: string;
   adresse: string;

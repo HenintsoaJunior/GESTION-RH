@@ -458,10 +458,12 @@ VALUES
 
 INSERT INTO habilitation_groups (group_id, label)
 VALUES
-    ('HABG_001', 'Admin');
+    ('HABG_001', 'Admin'),
+    ('HABG_002', 'Projet');
 
 INSERT INTO habilitations (habilitation_id, group_id, label)
 VALUES
+--Admin
 --Utilisateur
     ('HAB_001', 'HABG_001', 'voir page utilisateurs'),
     ('HAB_002', 'HABG_001', 'modifier role utilisateur(s)'),
@@ -473,7 +475,13 @@ VALUES
     ('HAB_006', 'HABG_001', 'creer role et habilitation(s)'),
     ('HAB_007', 'HABG_001', 'modifier role'),
     ('HAB_008', 'HABG_001', 'suprimer role'),
-    ('HAB_009', 'HABG_001', 'voir page access');
+    ('HAB_009', 'HABG_001', 'voir page access'),
+--Projet
+    ('HAB_010', 'HABG_002', 'voir page mission'),
+    ('HAB_011', 'HABG_002', 'modifier mission'),
+    ('HAB_012', 'HABG_002', 'annuler mission'),
+    ('HAB_013', 'HABG_002', 'ajouter mission'),
+    ('HAB_014', 'HABG_002', 'voir details mission');
 
 INSERT INTO role_habilitation (habilitation_id, role_id)
 VALUES

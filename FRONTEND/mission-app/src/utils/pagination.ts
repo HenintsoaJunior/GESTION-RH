@@ -1,7 +1,7 @@
 export const getPaginationRange = (currentPage: number, totalPages: number, maxButtons: number = 5): number[] => {
   const half = Math.floor(maxButtons / 2);
   let start = Math.max(1, currentPage - half);
-  let end = Math.min(totalPages, start + maxButtons - 1);
+  const end = Math.min(totalPages, start + maxButtons - 1);
 
   if (end - start + 1 < maxButtons) {
     start = Math.max(1, end - maxButtons + 1);

@@ -30,6 +30,7 @@ import { useUsers, useBulkRemoveUserRoles } from "@/api/users/services";
 import { useRoles, type Role } from "@/api/access/services";
 import Alert from "@/components/alert";
 import type { User } from "@/api/users/services";
+import axios from "axios";
 
 interface RemoveRolePopupProps {
   isOpen: boolean;
@@ -83,7 +84,7 @@ const useAlert = (onSuccessClose?: () => void) => {
         onSuccessClose();
       }, 800); // Délai optimisé pour UX fluide
     }
-  }, [alert.type, onSuccessClose, clearTimers]);
+  }, [alert.type, onSuccessClose]);
 
   const resetAlert = useCallback(() => {
     clearTimers();
@@ -172,7 +173,6 @@ const RemoveRolePopupComponent: React.FC<RemoveRolePopupProps> = ({
   const [filterTypeRoles, setFilterTypeRoles] = useState<"all" | "selected" | "unselected">("all");
   const [isRemoving, setIsRemoving] = useState(false);
 
-  // Récupération des données via les services existants
   const { 
     data: usersResponse, 
     isLoading: usersLoading, 
@@ -189,17 +189,14 @@ const RemoveRolePopupComponent: React.FC<RemoveRolePopupProps> = ({
 
   const bulkMutation = useBulkRemoveUserRoles();
 
-  // Extraction des données avec valeurs par défaut
   const allUsers = useMemo(() => usersResponse?.data || [], [usersResponse?.data]);
   const roles = useMemo(() => rolesResponse?.data || [], [rolesResponse?.data]);
 
-  // Utilise les users passés en props si disponibles, sinon fallback sur allUsers filtrés par userIds
   const resolvedSelectedUsers = useMemo(() => {
     if (selectedUsers.length > 0) return selectedUsers;
     return allUsers.filter((u) => userIds.includes(u.userId || u.matricule));
   }, [selectedUsers, allUsers, userIds]);
 
-  // Gestion des sélections
   const {
     selectedRoles,
     toggleRole,
@@ -207,22 +204,15 @@ const RemoveRolePopupComponent: React.FC<RemoveRolePopupProps> = ({
     selectedCount,
   } = useSelections();
 
-  // Gestion des alertes avec fermeture automatique du popup
   const { alert, showAlert, handleClose: handleAlertClose, resetAlert } = useAlert(onClose);
 
-  // Filtrage des rôles
   const filteredRoles = useFilteredRoles(roles, selectedRoles, searchTermRoles, filterTypeRoles);
 
-  // Gestion du nom utilisateur avec mémoisation
   const getUserName = useCallback((userId: string): string => {
     const user = [...resolvedSelectedUsers, ...allUsers].find((u) => u.userId === userId);
     return user?.name || userId;
   }, [resolvedSelectedUsers, allUsers]);
 
-  /**
-   * Reset complet des états locaux à l'ouverture
-   * Assure un état propre à chaque ouverture du popup
-   */
   const resetAllStates = useCallback(() => {
     setSearchTermRoles("");
     setFilterTypeRoles("all");
@@ -231,14 +221,12 @@ const RemoveRolePopupComponent: React.FC<RemoveRolePopupProps> = ({
     resetSelections();
   }, [resetAlert, resetSelections]);
 
-  // Reset à l'ouverture du popup
   useEffect(() => {
     if (isOpen) {
       resetAllStates();
     }
   }, [isOpen, resetAllStates]);
 
-  // Rechargement des données à l'ouverture
   useEffect(() => {
     if (isOpen) {
       refetchUsers();
@@ -246,7 +234,6 @@ const RemoveRolePopupComponent: React.FC<RemoveRolePopupProps> = ({
     }
   }, [isOpen, refetchUsers, refetchRoles]);
 
-  // Gestion des erreurs de chargement des utilisateurs
   useEffect(() => {
     if (usersError && isOpen) {
       const errorMessage = usersError.message || "Erreur lors du chargement des utilisateurs.";
@@ -254,7 +241,6 @@ const RemoveRolePopupComponent: React.FC<RemoveRolePopupProps> = ({
     }
   }, [usersError, isOpen, showAlert]);
 
-  // Gestion des erreurs de chargement des rôles
   useEffect(() => {
     if (rolesError && isOpen) {
       const errorMessage = rolesError.message || "Erreur lors du chargement des rôles.";
@@ -262,14 +248,10 @@ const RemoveRolePopupComponent: React.FC<RemoveRolePopupProps> = ({
     }
   }, [rolesError, isOpen, showAlert]);
 
-  /**
-   * Gestion de la suppression des rôles
-   * Inclut validation, gestion d'erreur et feedback utilisateur
-   */
   const handleRemove = useCallback(async () => {
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = userData?.userId;
-    // Validations
+
     if (resolvedSelectedUsers.length === 0) {
       showAlert("warning", "Aucun utilisateur sélectionné.");
       return;
@@ -301,29 +283,24 @@ const RemoveRolePopupComponent: React.FC<RemoveRolePopupProps> = ({
         `${selectedCount} ${roleText} pour ${resolvedSelectedUsers.length} ${userText} avec succès.`
       );
       
-      // Les données sont automatiquement rechargées via l'invalidation des queries
-      // Le popup se fermera automatiquement après l'alerte grâce au hook useAlert
-    } catch (err: any) {
-      const errorMessage = 
-        err?.response?.data?.message || 
-        err.message || 
-        "Une erreur est survenue lors de la suppression.";
+    } catch (err: unknown) {
+      let errorMessage = "Une erreur est survenue lors de la suppression.";
+      if (axios.isAxiosError(err)) {
+        errorMessage = err.response?.data?.message || err.message || errorMessage;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
       showAlert("error", errorMessage);
     } finally {
       setIsRemoving(false);
     }
   }, [resolvedSelectedUsers.length, selectedCount, selectedRoles, showAlert, bulkMutation, isRemoving, userIds]);
 
-  /**
-   * Gestion de l'annulation
-   * Reset complet et fermeture du popup
-   */
   const handleCancel = useCallback(() => {
     resetAllStates();
     onClose();
   }, [resetAllStates, onClose]);
 
-  // Ne rien rendre si le popup n'est pas ouvert
   if (!isOpen) return null;
 
   const isLoading = usersLoading || rolesLoading;

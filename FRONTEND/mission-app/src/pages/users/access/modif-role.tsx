@@ -30,6 +30,7 @@ import { useUsers, useBulkCreateUserRoles } from "@/api/users/services";
 import { useRoles, type Role } from "@/api/access/services";
 import Alert from "@/components/alert";
 import type { User } from "@/api/users/services";
+import axios from "axios";
 
 interface HabilitationPopupProps {
   isOpen: boolean;
@@ -83,7 +84,7 @@ const useAlert = (onSuccessClose?: () => void) => {
         onSuccessClose();
       }, 800); // Délai optimisé pour UX fluide
     }
-  }, [alert.type, onSuccessClose, clearTimers]);
+  }, [alert.type, onSuccessClose]);
 
   const resetAlert = useCallback(() => {
     clearTimers();
@@ -305,11 +306,13 @@ const RoleModifPopupComponent: React.FC<HabilitationPopupProps> = ({
       
       // Les données sont automatiquement rechargées via l'invalidation des queries
       // Le popup se fermera automatiquement après l'alerte grâce au hook useAlert
-    } catch (err: any) {
-      const errorMessage = 
-        err?.response?.data?.message || 
-        err.message || 
-        "Une erreur est survenue lors de l'assignation.";
+    } catch (err: unknown) {
+      let errorMessage = "Une erreur est survenue lors de l'assignation.";
+      if (axios.isAxiosError(err)) {
+        errorMessage = err.response?.data?.message || err.message || errorMessage;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
       showAlert("error", errorMessage);
     } finally {
       setIsAssigning(false);

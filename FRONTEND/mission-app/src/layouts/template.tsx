@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
+import type { IconType } from "react-icons";
 import { useMenuHierarchy } from "@/api/menu/services";
 import Header from "./header";
 import Footer from "./footer";
@@ -168,13 +169,13 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   );
 
   // Get icon component
-  const getIconComponent = useCallback((iconName: string) => {
+  const getIconComponent = useCallback((iconName: string): IconType => {
     const formattedIconName = `Fa${iconName
       .replace("fa-", "")
       .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join("")}`;
-    return (FaIcons as any)[formattedIconName] || FaIcons.FaFile;
+    return (FaIcons as Record<string, IconType>)[formattedIconName] || FaIcons.FaFile;
   }, []);
 
   // Get menu label

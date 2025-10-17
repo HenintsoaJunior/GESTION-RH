@@ -1,7 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable no-case-declarations */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { ChevronDown, ChevronUp, X, List, Search, Plus } from "lucide-react";
@@ -18,6 +14,7 @@ import {
   FormLabelSearch,
   StyledAutoCompleteInput,
   StyledSelect,
+  FormInputSearch,
   FiltersActions,
   ButtonReset,
   ButtonSearch,
@@ -35,22 +32,29 @@ import {
   Separator,
   ActionsSelect,
   SelectionInfo,
+  StatusBadge,
 } from "@/styles/table-styles";
 import { useEmployees } from "@/api/collaborator/services";
 import { useLieux } from "@/api/lieu/services";
 import { useSearchMissionAssignations } from "@/api/mission/services";
 import { useUserCollaborators } from "@/api/users/services";
-import type { MissionAssignationSearchFilters, MissionAssignation } from "@/api/mission/services";
-import type { UserInfo } from "@/api/users/services";
+import { useHasHabilitation } from "@/api/users/services";
+import type { MissionAssignationSearchFilters, MissionAssignation, Lieu } from "@/api/mission/services";
+import type { Employee as CollabEmployee } from "@/api/collaborator/services";
+import type { UserInfo, UserInfosResponse } from "@/api/users/services";
 import Alert from "@/components/alert";
 import Modal from "@/components/modal";
 import Pagination from "@/components/pagination";
 import DetailsMission from "../details/mission-details";
 import MissionForm from "../form/index";
+import { getStatusBadgeClass, englishToFrench } from "@/utils/status";
+import ProtectedRoute from "@/components/protected-route";
 
-interface FiltersState extends Omit<MissionAssignationSearchFilters, 'matricule' | 'missionId' | 'transportId' | 'minDepartureDate' | 'maxDepartureDate' | 'minArrivalDate' | 'maxArrivalDate'> {
-  selectedEmployee?: any;
-  selectedLieu?: any;
+interface FiltersState extends Omit<MissionAssignationSearchFilters, 'matricule' | 'missionId' | 'transportId'> {
+  selectedEmployee?: CollabEmployee | null;
+  selectedLieu?: Lieu | null;
+  employeeSearch?: string;
+  lieuSearch?: string;
 }
 
 interface AlertState {
@@ -66,19 +70,31 @@ const MissionList: React.FC = () => {
     missionType: "",
     lieuId: "",
     status: "",
+    minDepartureDate: null,
+    maxDepartureDate: null,
+    minArrivalDate: null,
+    maxArrivalDate: null,
     selectedEmployee: null,
     selectedLieu: null,
+    employeeSearch: "",
+    lieuSearch: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<FiltersState>({
     employeeId: "",
     missionType: "",
     lieuId: "",
     status: "",
+    minDepartureDate: null,
+    maxDepartureDate: null,
+    minArrivalDate: null,
+    maxArrivalDate: null,
     selectedEmployee: null,
     selectedLieu: null,
+    employeeSearch: "",
+    lieuSearch: "",
   });
   const [selectedAssignations, setSelectedAssignations] = useState<string[]>([]);
-  const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null); // Store selected mission ID
+  const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
   const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
@@ -86,69 +102,119 @@ const MissionList: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [totalCount, setTotalCount] = useState<number>(0);
-  const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false); // State for DetailsMission
-  const [isFormOpen, setIsFormOpen] = useState<boolean>(false); // State for MissionForm
+  const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
+  const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
 
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const matricule = userData?.matricule || "";
   const userId = userData?.userId || "";
 
+  const canViewDetails = useHasHabilitation(userId, "voir details mission");
+  const canModifyMission = useHasHabilitation(userId, "modifier mission");
+  const canCancelMission = useHasHabilitation(userId, "annuler mission");
+  const canAddMission = useHasHabilitation(userId, "ajouter mission");
+
+  const hasAnyHabilitation = canViewDetails || canModifyMission || canCancelMission;
+
   const { data: employeesResponse, isLoading: isEmployeesLoading } = useEmployees();
   const { data: lieuxResponse, isLoading: isLieuxLoading } = useLieux();
-  const { data: collaboratorsResponse } = useUserCollaborators(userId);
+  const { data: collaboratorsResponse }: { data?: UserInfosResponse } = useUserCollaborators(userId);
 
-  const employees = useMemo(() => employeesResponse?.data || [], [employeesResponse?.data]);
+  const employees = useMemo(() => employeesResponse?.data || [], [employeesResponse?.data]) as CollabEmployee[];
   const lieux = useMemo(() => lieuxResponse?.data || [], [lieuxResponse?.data]);
 
   const employeeSuggestions = useMemo(() =>
-    employees.map((emp: any) => `${emp.firstName} ${emp.lastName} (${emp.employeeCode})`),
+    employees.map((emp) => `${emp.firstName} ${emp.lastName}`),
     [employees]
   );
 
+  const filteredEmployeeSuggestions = useMemo(() =>
+    employeeSuggestions.filter((sug) =>
+      sug.toLowerCase().includes((filters.employeeSearch || "").toLowerCase())
+    ),
+    [employeeSuggestions, filters.employeeSearch]
+  );
+
   const lieuSuggestions = useMemo(() =>
-    lieux.map((lieu: any) => lieu.nom),
+    lieux.map((lieu: Lieu) => lieu.nom),
     [lieux]
   );
 
+  const filteredLieuSuggestions = useMemo(() =>
+    lieuSuggestions.filter((sug) =>
+      sug.toLowerCase().includes((filters.lieuSearch || "").toLowerCase())
+    ),
+    [lieuSuggestions, filters.lieuSearch]
+  );
+
   const missionTypes = ["International", "National"];
-  const statuses = ["En cours", "Terminé", "Planifié"];
 
-  const hasFilters: boolean = Object.values({ ...filters, selectedEmployee: null, selectedLieu: null }).some((val) => (val || "").trim() !== "");
+  const statusOptions = [
+    { label: "En cours", value: "in progress" },
+    { label: "Terminé", value: "completed" },
+    { label: "Planifié", value: "planned" },
+  ];
 
-  // Prepare filters for query based on active tab
+  const hasFilters: boolean = Object.values({ 
+    ...filters, 
+    selectedEmployee: null, 
+    selectedLieu: null,
+    employeeSearch: filters.employeeSearch || "",
+    lieuSearch: filters.lieuSearch || "",
+    minDepartureDate: filters.minDepartureDate || "",
+    maxDepartureDate: filters.maxDepartureDate || "",
+    minArrivalDate: filters.minArrivalDate || "",
+    maxArrivalDate: filters.maxArrivalDate || "",
+  }).some((val) => (val || "").trim() !== "");
+
   const queryFilters: MissionAssignationSearchFilters = useMemo(() => {
-    const filters: Partial<MissionAssignationSearchFilters> = {};
+    const filtersBase: Partial<MissionAssignationSearchFilters> = {};
 
     if (appliedFilters.employeeId) {
-      filters.employeeId = appliedFilters.employeeId;
+      filtersBase.employeeId = appliedFilters.employeeId;
     }
     if (appliedFilters.missionType) {
-      filters.missionType = appliedFilters.missionType;
+      filtersBase.missionType = appliedFilters.missionType;
     }
     if (appliedFilters.lieuId) {
-      filters.lieuId = appliedFilters.lieuId;
+      filtersBase.lieuId = appliedFilters.lieuId;
     }
     if (appliedFilters.status) {
-      filters.status = appliedFilters.status;
+      filtersBase.status = appliedFilters.status;
+    }
+    if (appliedFilters.minDepartureDate) {
+      filtersBase.minDepartureDate = appliedFilters.minDepartureDate;
+    }
+    if (appliedFilters.maxDepartureDate) {
+      filtersBase.maxDepartureDate = appliedFilters.maxDepartureDate;
+    }
+    if (appliedFilters.minArrivalDate) {
+      filtersBase.minArrivalDate = appliedFilters.minArrivalDate;
+    }
+    if (appliedFilters.maxArrivalDate) {
+      filtersBase.maxArrivalDate = appliedFilters.maxArrivalDate;
     }
 
     switch (activeTab) {
-      case 'mes':
-        filters.matricule = [matricule || ""];
+      case 'mes': {
+        filtersBase.matricule = [matricule || ""];
         break;
-      case 'collaborateurs':
+      }
+      case 'collaborateurs': {
         const collaboratorsData = collaboratorsResponse?.data as UserInfo[] || [];
         const collaboratorsMatricules = collaboratorsData.map((c) => c.matricule).filter(Boolean);
         if (collaboratorsMatricules.length > 0) {
-          filters.matricule = collaboratorsMatricules;
+          filtersBase.matricule = collaboratorsMatricules;
         }
         break;
-      default: // 'toutes'
-        filters.matricule = [""];
+      }
+      default: {
+        filtersBase.matricule = [""];
         break;
+      }
     }
 
-    return filters as MissionAssignationSearchFilters;
+    return filtersBase as MissionAssignationSearchFilters;
   }, [appliedFilters, activeTab, matricule, collaboratorsResponse]);
 
   const { data: searchResponse, isLoading: isSearchLoading, refetch: refetchSearch } = useSearchMissionAssignations(
@@ -166,7 +232,6 @@ const MissionList: React.FC = () => {
     return activeTab === 'collaborateurs' && collaboratorsData.length === 0;
   }, [activeTab, collaboratorsResponse]);
 
-  // Handle row selection to highlight row and set mission ID
   const handleRowSelection = useCallback((assignationId: string, missionId: string) => {
     if (selectedAssignations.includes(assignationId)) {
       setSelectedAssignations([]);
@@ -179,19 +244,19 @@ const MissionList: React.FC = () => {
 
   const handleActionsChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const action = e.target.value;
-    if (action === "details") {
+    if (action === "details" && canViewDetails) {
       if (selectedAssignations.length === 0) {
         setAlert({ isOpen: true, type: "warning", message: "Veuillez sélectionner au moins une assignation." });
       } else {
         setIsDetailsOpen(true);
       }
-    } else if (action === "modifier") {
+    } else if (action === "modifier" && canModifyMission) {
       if (selectedAssignations.length === 0) {
         setAlert({ isOpen: true, type: "warning", message: "Veuillez sélectionner au moins une assignation." });
       } else if (selectedMissionId) {
         setIsFormOpen(true);
       }
-    } else if (action === "annuler") {
+    } else if (action === "annuler" && canCancelMission) {
       if (selectedAssignations.length === 0) {
         setAlert({ isOpen: true, type: "warning", message: "Veuillez sélectionner au moins une assignation." });
       } else {
@@ -199,7 +264,7 @@ const MissionList: React.FC = () => {
       }
     }
     e.target.value = "";
-  }, [selectedAssignations, selectedMissionId]);
+  }, [selectedAssignations, selectedMissionId, canViewDetails, canModifyMission, canCancelMission]);
 
   const handleCancelConfirm = useCallback(() => {
     setAlert({ isOpen: true, type: "success", message: "Assignation(s) annulée(s) avec succès." });
@@ -226,8 +291,14 @@ const MissionList: React.FC = () => {
       missionType: "",
       lieuId: "",
       status: "",
+      minDepartureDate: null,
+      maxDepartureDate: null,
+      minArrivalDate: null,
+      maxArrivalDate: null,
       selectedEmployee: null,
       selectedLieu: null,
+      employeeSearch: "",
+      lieuSearch: "",
     };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
@@ -236,23 +307,41 @@ const MissionList: React.FC = () => {
   }, []);
 
   const handleEmployeeChange = useCallback((value: string): void => {
-    const matchedEmployee = employees.find((emp: any) =>
-      `${emp.firstName} ${emp.lastName} (${emp.employeeCode})`.toLowerCase().includes(value.toLowerCase())
+    setFilters((prev) => ({ ...prev, employeeSearch: value }));
+    const matchedEmployee = employees.find((emp) =>
+      `${emp.firstName} ${emp.lastName}` === value
     );
-    setFilters((prev) => ({
-      ...prev,
-      selectedEmployee: matchedEmployee || null,
-      employeeId: matchedEmployee ? matchedEmployee.employeeId : "",
-    }));
+    if (matchedEmployee) {
+      setFilters((prev) => ({
+        ...prev,
+        selectedEmployee: matchedEmployee,
+        employeeId: matchedEmployee.employeeId,
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        selectedEmployee: null,
+        employeeId: "",
+      }));
+    }
   }, [employees]);
 
   const handleLieuChange = useCallback((value: string): void => {
-    const matchedLieu = lieux.find((lieu: any) => lieu.nom.toLowerCase().includes(value.toLowerCase()));
-    setFilters((prev) => ({
-      ...prev,
-      selectedLieu: matchedLieu || null,
-      lieuId: matchedLieu ? matchedLieu.lieuId : "",
-    }));
+    setFilters((prev) => ({ ...prev, lieuSearch: value }));
+    const matchedLieu = lieux.find((lieu: Lieu) => lieu.nom === value);
+    if (matchedLieu) {
+      setFilters((prev) => ({
+        ...prev,
+        selectedLieu: matchedLieu,
+        lieuId: matchedLieu.lieuId,
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        selectedLieu: null,
+        lieuId: "",
+      }));
+    }
   }, [lieux]);
 
   const handleMissionTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>): void => {
@@ -261,6 +350,22 @@ const MissionList: React.FC = () => {
 
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>): void => {
     setFilters((prev) => ({ ...prev, status: e.target.value }));
+  }, []);
+
+  const handleMinDepartureDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    setFilters((prev) => ({ ...prev, minDepartureDate: e.target.value || null }));
+  }, []);
+
+  const handleMaxDepartureDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    setFilters((prev) => ({ ...prev, maxDepartureDate: e.target.value || null }));
+  }, []);
+
+  const handleMinArrivalDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    setFilters((prev) => ({ ...prev, minArrivalDate: e.target.value || null }));
+  }, []);
+
+  const handleMaxArrivalDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    setFilters((prev) => ({ ...prev, maxArrivalDate: e.target.value || null }));
   }, []);
 
   const handleCloseDetails = useCallback(() => {
@@ -273,10 +378,10 @@ const MissionList: React.FC = () => {
     setIsFormOpen(true);
   }, []);
 
-  const handleFormSuccess = useCallback((_data: any) => {
+  const handleFormSuccess = useCallback((type: string, message: string) => {
     refetchSearch();
     setIsFormOpen(false);
-    setAlert({ isOpen: true, type: "success", message: "Mission créée avec succès." });
+    setAlert({ isOpen: true, type: type as "info" | "success" | "error" | "warning", message });
   }, [refetchSearch]);
 
   const handleFormClose = useCallback(() => {
@@ -298,19 +403,19 @@ const MissionList: React.FC = () => {
     }
   }, [searchResponse]);
 
+  const appliedFiltersStr = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
+
   useEffect(() => {
     setSelectedAssignations([]);
     setSelectedMissionId(null);
     setIsDetailsOpen(false);
     setPage(1);
-  }, [activeTab, JSON.stringify(appliedFilters)]);
+  }, [activeTab, appliedFiltersStr]);
 
   const handlePageSizeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setPageSize(Number(e.target.value));
     setPage(1);
   }, []);
-
-  const hasAnyHabilitation = true;
 
   const tabTitles = [
     { key: 'toutes' as const, label: 'Toutes les missions' },
@@ -341,22 +446,24 @@ const MissionList: React.FC = () => {
           isOpen={isFormOpen}
           onClose={handleFormClose}
           missionId={selectedMissionId}
-          initialStartDate={new Date().toISOString().split('T')[0]} // Today's date as initial
+          initialStartDate={new Date().toISOString().split('T')[0]}
           onFormSuccess={handleFormSuccess}
         />
       )}
 
-      <Modal
-        type="error"
-        message={`Êtes-vous sûr de vouloir annuler ${selectedAssignations.length} assignation${selectedAssignations.length > 1 ? 's' : ''} sélectionnée${selectedAssignations.length > 1 ? 's' : ''} ?`}
-        isOpen={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
-        title="Confirmer l'annulation"
-        confirmAction={handleCancelConfirm}
-        confirmLabel="Confirmer l'annulation"
-        cancelLabel="Annuler"
-        showActions={true}
-      />
+      {showCancelModal && (
+        <Modal
+          type="error"
+          message={`Êtes-vous sûr de vouloir annuler ${selectedAssignations.length} assignation${selectedAssignations.length > 1 ? 's' : ''} sélectionnée${selectedAssignations.length > 1 ? 's' : ''} ?`}
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          title="Confirmer l'annulation"
+          confirmAction={handleCancelConfirm}
+          confirmLabel="Confirmer l'annulation"
+          cancelLabel="Annuler"
+          showActions={true}
+        />
+      )}
 
       {!isHidden && (
         <FiltersContainer $isMinimized={isMinimized}>
@@ -383,12 +490,12 @@ const MissionList: React.FC = () => {
                 <FormTableSearch>
                   <tbody>
                     <FormRow>
-                      <FormFieldCell style={{ width: "50%" }}>
-                        <FormLabelSearch>Employé</FormLabelSearch>
+                      <FormFieldCell style={{ width: "25%" }}>
+                        <FormLabelSearch>Collaborateur</FormLabelSearch>
                         <StyledAutoCompleteInput
-                          value={filters.selectedEmployee ? `${filters.selectedEmployee.firstName} ${filters.selectedEmployee.lastName} (${filters.selectedEmployee.employeeCode})` : ""}
+                          value={filters.employeeSearch || ""}
                           onChange={handleEmployeeChange}
-                          suggestions={employeeSuggestions}
+                          suggestions={filteredEmployeeSuggestions}
                           maxVisibleItems={5}
                           placeholder="Sélectionner un employé..."
                           disabled={isEmployeesLoading || isSearchLoading}
@@ -397,7 +504,7 @@ const MissionList: React.FC = () => {
                           showAddOption={false}
                         />
                       </FormFieldCell>
-                      <FormFieldCell style={{ width: "50%" }}>
+                      <FormFieldCell style={{ width: "25%" }}>
                         <FormLabelSearch>Type de mission</FormLabelSearch>
                         <StyledSelect
                           value={filters.missionType}
@@ -410,14 +517,12 @@ const MissionList: React.FC = () => {
                           ))}
                         </StyledSelect>
                       </FormFieldCell>
-                    </FormRow>
-                    <FormRow>
-                      <FormFieldCell style={{ width: "50%" }}>
+                      <FormFieldCell style={{ width: "25%" }}>
                         <FormLabelSearch>Lieu</FormLabelSearch>
                         <StyledAutoCompleteInput
-                          value={filters.selectedLieu ? filters.selectedLieu.nom : ""}
+                          value={filters.lieuSearch || ""}
                           onChange={handleLieuChange}
-                          suggestions={lieuSuggestions}
+                          suggestions={filteredLieuSuggestions}
                           maxVisibleItems={5}
                           placeholder="Sélectionner un lieu..."
                           disabled={isLieuxLoading || isSearchLoading}
@@ -426,7 +531,7 @@ const MissionList: React.FC = () => {
                           showAddOption={false}
                         />
                       </FormFieldCell>
-                      <FormFieldCell style={{ width: "50%" }}>
+                      <FormFieldCell style={{ width: "25%" }}>
                         <FormLabelSearch>Statut</FormLabelSearch>
                         <StyledSelect
                           value={filters.status}
@@ -434,10 +539,48 @@ const MissionList: React.FC = () => {
                           disabled={isSearchLoading}
                         >
                           <option value="">Tous</option>
-                          {statuses.map((stat) => (
-                            <option key={stat} value={stat}>{stat}</option>
+                          {statusOptions.map(({ label, value }) => (
+                            <option key={value} value={value}>{label}</option>
                           ))}
                         </StyledSelect>
+                      </FormFieldCell>
+                    </FormRow>
+                    <FormRow>
+                      <FormFieldCell style={{ width: "25%" }}>
+                        <FormLabelSearch>Date Départ Du</FormLabelSearch>
+                        <FormInputSearch
+                          type="date"
+                          value={filters.minDepartureDate || ""}
+                          onChange={handleMinDepartureDateChange}
+                          disabled={isSearchLoading}
+                        />
+                      </FormFieldCell>
+                      <FormFieldCell style={{ width: "25%" }}>
+                        <FormLabelSearch>Date Départ Au</FormLabelSearch>
+                        <FormInputSearch
+                          type="date"
+                          value={filters.maxDepartureDate || ""}
+                          onChange={handleMaxDepartureDateChange}
+                          disabled={isSearchLoading}
+                        />
+                      </FormFieldCell>
+                      <FormFieldCell style={{ width: "25%" }}>
+                        <FormLabelSearch>Date Retour Du</FormLabelSearch>
+                        <FormInputSearch
+                          type="date"
+                          value={filters.minArrivalDate || ""}
+                          onChange={handleMinArrivalDateChange}
+                          disabled={isSearchLoading}
+                        />
+                      </FormFieldCell>
+                      <FormFieldCell style={{ width: "25%" }}>
+                        <FormLabelSearch>Date Retour Au</FormLabelSearch>
+                        <FormInputSearch
+                          type="date"
+                          value={filters.maxArrivalDate || ""}
+                          onChange={handleMaxArrivalDateChange}
+                          disabled={isSearchLoading}
+                        />
                       </FormFieldCell>
                     </FormRow>
                   </tbody>
@@ -507,15 +650,17 @@ const MissionList: React.FC = () => {
             {hasAnyHabilitation && selectedAssignations.length > 0 && (
               <ActionsSelect value="" onChange={handleActionsChange}>
                 <option value="">Actions</option>
-                <option value="details">Details</option>
-                <option value="modifier">Modifier</option>
-                <option value="annuler">Annuler</option>
+                {canViewDetails && <option value="details">Details</option>}
+                {canModifyMission && <option value="modifier">Modifier</option>}
+                {canCancelMission && <option value="annuler">Annuler</option>}
               </ActionsSelect>
             )}
-            <ButtonSearch title="Ajouter" onClick={handleOpenForm}>
-              <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-              Ajouter
-            </ButtonSearch>
+            {canAddMission && (
+              <ButtonSearch title="Ajouter" onClick={handleOpenForm}>
+                <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                Ajouter
+              </ButtonSearch>
+            )}
           </div>
         </TableHeader>
 
@@ -523,9 +668,9 @@ const MissionList: React.FC = () => {
           <DataTable>
             <thead>
               <tr>
-                <TableHeadCell>Employé</TableHeadCell>
+                <TableHeadCell>Collaborateur</TableHeadCell>
                 <TableHeadCell>Mission</TableHeadCell>
-                <TableHeadCell>Type</TableHeadCell>
+                <TableHeadCell>TYPE</TableHeadCell>
                 <TableHeadCell>Lieu</TableHeadCell>
                 <TableHeadCell>Statut</TableHeadCell>
                 <TableHeadCell>Date Départ</TableHeadCell>
@@ -548,6 +693,12 @@ const MissionList: React.FC = () => {
               ) : filteredAssignations.length > 0 ? (
                 filteredAssignations.map((assignation: MissionAssignation, index: number) => {
                   const isSelected = selectedAssignations.includes(assignation.assignationId);
+                  const rawStatus = assignation.mission.status;
+                  const trimmedLowerStatus = rawStatus.trim().toLowerCase();
+                  const frenchStatus = englishToFrench[trimmedLowerStatus] || rawStatus.trim();
+                 const statusClass = getStatusBadgeClass(rawStatus);
+
+                  
                   return (
                     <TableRow
                       key={`${assignation.assignationId}-${index}`}
@@ -559,12 +710,12 @@ const MissionList: React.FC = () => {
                       title={hasAnyHabilitation ? "Clic pour sélectionner" : ""}
                     >
                       <TableCell>
-                        {assignation.employee.firstName} {assignation.employee.lastName} ({assignation.employee.employeeCode})
+                        {assignation.employee.firstName} {assignation.employee.lastName}
                       </TableCell>
                       <TableCell>{assignation.mission.name}</TableCell>
-                      <TableCell>{assignation.mission.missionType}</TableCell>
+                      <TableCell>{assignation.mission.missionType.toUpperCase()}</TableCell>
                       <TableCell>{assignation.mission.lieu.nom}</TableCell>
-                      <TableCell>{assignation.mission.status}</TableCell>
+                      <TableCell><StatusBadge className={statusClass}>{frenchStatus}</StatusBadge></TableCell>
                       <TableCell>{new Date(assignation.departureDate).toLocaleDateString()}</TableCell>
                       <TableCell>{new Date(assignation.returnDate).toLocaleDateString()}</TableCell>
                     </TableRow>
@@ -594,4 +745,10 @@ const MissionList: React.FC = () => {
   );
 };
 
-export default MissionList;
+const ProtectedMissionList: React.FC = () => (
+  <ProtectedRoute requiredHabilitation="voir page mission">
+    <MissionList />
+  </ProtectedRoute>
+);
+
+export default ProtectedMissionList;
