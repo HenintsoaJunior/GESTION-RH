@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS compensation;
 DROP TABLE IF EXISTS mission_assignation;
 DROP TABLE IF EXISTS compensation_scale;
 DROP TABLE IF EXISTS employee_nationalities;
+DROP TABLE IF EXISTS user_habilitations;
 DROP TABLE IF EXISTS role_habilitation;
 DROP TABLE IF EXISTS user_role;
 DROP TABLE IF EXISTS categories_of_employee;
@@ -31,6 +32,7 @@ DROP TABLE IF EXISTS transport;
 DROP TABLE IF EXISTS expense_type;
 DROP TABLE IF EXISTS expense_report_type;
 DROP TABLE IF EXISTS habilitations;
+DROP TABLE IF EXISTS habilitation_groups;
 DROP TABLE IF EXISTS role;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS employee_categories;
@@ -209,12 +211,21 @@ CREATE TABLE user_role (
         ON DELETE CASCADE
 );
 
-CREATE TABLE habilitations(
-   habilitation_id VARCHAR(50),
-   label VARCHAR(50),
+CREATE TABLE habilitation_groups (
+   group_id VARCHAR(50) PRIMARY KEY,
+   label VARCHAR(100) NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME
+);
+
+
+CREATE TABLE habilitations (
+   habilitation_id VARCHAR(50) PRIMARY KEY,
+   group_id VARCHAR(50),
+   label VARCHAR(100) NOT NULL,
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
-   PRIMARY KEY(habilitation_id)
+   FOREIGN KEY (group_id) REFERENCES habilitation_groups(group_id)
 );
 
 CREATE TABLE role_habilitation(
@@ -227,6 +238,15 @@ CREATE TABLE role_habilitation(
    FOREIGN KEY(role_id) REFERENCES role(role_id)
 );
 
+CREATE TABLE user_habilitations (
+  user_id VARCHAR(250),
+  habilitation_id VARCHAR(50),
+  PRIMARY KEY (user_id, habilitation_id),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME,
+  FOREIGN KEY (user_id) REFERENCES users(user_id),
+  FOREIGN KEY (habilitation_id) REFERENCES habilitations(habilitation_id)
+);
 
 CREATE TABLE employee_nationalities(
    employee_id VARCHAR(50),
@@ -437,6 +457,7 @@ CREATE TABLE mission_report(
 
 CREATE TABLE logs(
    log_id VARCHAR(50),
+   ip_address VARCHAR(50),
    action VARCHAR(100) NOT NULL,
    table_name VARCHAR(255),
    old_values TEXT,

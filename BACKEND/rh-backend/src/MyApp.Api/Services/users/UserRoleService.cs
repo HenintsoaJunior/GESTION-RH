@@ -1,7 +1,8 @@
 ﻿using MyApp.Api.Entities.users;
 using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.users;
-using Microsoft.Extensions.Logging; // Added for ILogger
+using Microsoft.Extensions.Logging;
+using MyApp.Api.Services.logs; // Added for ILogger
 
 namespace MyApp.Api.Services.users
 {
@@ -14,17 +15,20 @@ namespace MyApp.Api.Services.users
         Task<bool> DeleteAsync(string userId, string roleId);
         Task AddAsync(UserRoleDtoFormBulk dto);
         Task<string[]?> GetRoleNamesByUserIdAsync(string userId);
+        Task RemoveRolesAsync(UserRoleDtoFormBulk dto);
     }
 
     public class UserRoleService : IUserRoleService
     {
         private readonly IUserRoleRepository _repository;
-        private readonly ILogger<UserRoleService> _logger; // Added ILogger dependency
+        private readonly ILogger<UserRoleService> _logger;
+        private readonly ILogService _logService;
 
-        public UserRoleService(IUserRoleRepository repository, ILogger<UserRoleService> logger)
+        public UserRoleService(IUserRoleRepository repository, ILogger<UserRoleService> logger, ILogService logService)
         {
             _repository = repository;
             _logger = logger;
+            _logService = logService;
         }
 
         public async Task<string[]?> GetRoleNamesByUserIdAsync(string userId)
@@ -102,6 +106,8 @@ namespace MyApp.Api.Services.users
                 await _repository.AddAsync(entity);
                 await _repository.SaveChangesAsync();
 
+                await _logService.LogAsync("CREATION USER_ROLE", null, entity, dto.UserId, "UserId,RoleId");
+
                 _logger.LogInformation("Relation utilisateur-rôle créée avec succès pour UserId {UserId} et RoleId {RoleId}", dto.UserId, dto.RoleId);
                 return entity;
             }
@@ -117,20 +123,22 @@ namespace MyApp.Api.Services.users
             try
             {
                 _logger.LogInformation("Mise à jour de la relation utilisateur-rôle pour UserId {UserId} et RoleId {RoleId}", dto.UserId, dto.RoleId);
-                var entity = await _repository.GetByKeysAsync(dto.UserId, dto.RoleId);
-                if (entity == null)
+                var oldEntity = await _repository.GetByKeysAsync(dto.UserId, dto.RoleId);
+                if (oldEntity == null)
                 {
                     _logger.LogWarning("Échec de la mise à jour, relation utilisateur-rôle avec UserId {UserId} et RoleId {RoleId} introuvable", dto.UserId, dto.RoleId);
                     return null;
                 }
 
-                entity = new UserRole(dto);
+                var newEntity = new UserRole(dto);
 
-                await _repository.UpdateAsync(entity);
+                await _repository.UpdateAsync(newEntity);
                 await _repository.SaveChangesAsync();
 
+                await _logService.LogAsync("MODIFICATION USER_ROLE", oldEntity, newEntity, dto.UserId, "UserId,RoleId");
+
                 _logger.LogInformation("Relation utilisateur-rôle mise à jour avec succès pour UserId {UserId} et RoleId {RoleId}", dto.UserId, dto.RoleId);
-                return entity;
+                return newEntity;
             }
             catch (Exception ex)
             {
@@ -151,6 +159,8 @@ namespace MyApp.Api.Services.users
                     return false;
                 }
 
+                await _logService.LogAsync("SUPPRESSION USER_ROLE", entity, null, userId, "UserId,RoleId");
+
                 await _repository.DeleteAsync(userId, roleId);
                 await _repository.SaveChangesAsync();
 
@@ -168,30 +178,184 @@ namespace MyApp.Api.Services.users
         {
             try
             {
-                if (dto == null || string.IsNullOrWhiteSpace(dto.UserId) || !dto.RoleIds.Any())
+                if (dto == null || !dto.UserIds.Any() || !dto.RoleIds.Any())
                 {
-                    throw new ArgumentException("L'ID de l'utilisateur ou la liste des IDs de rôles ne peuvent pas être null ou vides");
+                    throw new ArgumentException("La liste des IDs d'utilisateurs ou la liste des IDs de rôles ne peuvent pas être null ou vides");
                 }
 
-                // Validate role IDs
+                foreach (var userId in dto.UserIds)
+                {
+                    if (string.IsNullOrWhiteSpace(userId))
+                    {
+                        throw new ArgumentException("Un ID d'utilisateur ne peut pas être null ou vide");
+                    }
+                }
+
                 foreach (var roleId in dto.RoleIds)
                 {
                     if (string.IsNullOrWhiteSpace(roleId))
                     {
-                        throw new ArgumentException("L'ID du rôle ne peut pas être null ou vide");
+                        throw new ArgumentException("Un ID de rôle ne peut pas être null ou vide");
                     }
                 }
 
-                // Synchronize roles for the user
-                await _repository.SynchronizeRolesAsync(dto.UserId, dto.RoleIds);
+                var currentUserRoles = await _repository.GetAllAsync();
+                var oldUserNames = new Dictionary<string, string>(); 
+                var oldUTILISATEUR_ROLE = new Dictionary<string, List<string>>(); 
+                
+                foreach (var userId in dto.UserIds)
+                {
+                    var currentRolesForUser = currentUserRoles.Where(ur => ur.UserId == userId).ToList();
+                    
+                    // Seulement traiter si l'utilisateur a des rôles existants
+                    if (currentRolesForUser.Any())
+                    {
+                        string userName = currentRolesForUser.First().User?.Name ?? "Unknown";
+                        oldUserNames[userId] = userName;
 
+                        var roleNames = currentRolesForUser
+                            .Select(ur => ur.Role?.Name ?? "Unknown")
+                            .ToList();
+                        
+                        oldUTILISATEUR_ROLE[userName] = roleNames;
+                    }
+                }
+
+                var oldBulkData = new { UserNames = oldUserNames, UTILISATEUR_ROLE = oldUTILISATEUR_ROLE };
+
+                await _repository.SynchronizeRolesAsync(dto.UserIds, dto.RoleIds);
+                
                 await _repository.SaveChangesAsync();
 
-                _logger.LogInformation("Relations utilisateur-rôle mises à jour avec succès pour UserId {UserId}", dto.UserId);
+                var updatedUserRoles = await _repository.GetAllAsync();
+                var newUserNames = new Dictionary<string, string>(); 
+                var newUTILISATEUR_ROLE = new Dictionary<string, List<string>>(); 
+                
+                foreach (var userId in dto.UserIds)
+                {
+                    var updatedRolesForUser = updatedUserRoles.Where(ur => ur.UserId == userId).ToList();
+                    
+                    // Seulement traiter si l'utilisateur a des rôles après la mise à jour
+                    if (updatedRolesForUser.Any())
+                    {
+                        string userName = updatedRolesForUser.First().User?.Name ?? "Unknown";
+                        newUserNames[userId] = userName;
+
+                        var roleNames = updatedRolesForUser
+                            .Select(ur => ur.Role?.Name ?? "Unknown")
+                            .ToList();
+                        
+                        newUTILISATEUR_ROLE[userName] = roleNames;
+                    }
+                }
+
+                var newBulkData = new { UserNames = newUserNames, UTILISATEUR_ROLE = newUTILISATEUR_ROLE };
+                
+                await _logService.LogAsync("MODIFIER","UTILISATEUR_ROLE", oldBulkData, newBulkData, dto.UserIdLog, "UTILISATEUR_ROLE");
+
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour des relations utilisateur-rôle pour UserId {UserId}", dto.UserId);
+                var userIdsLog = dto?.UserIds != null ? string.Join(", ", dto.UserIds) : "inconnus";
+                _logger.LogError(ex, "Erreur lors de la mise à jour des relations utilisateur-rôle pour les UserIds {UserIds}", userIdsLog);
+                throw;
+            }
+        }
+
+        public async Task RemoveRolesAsync(UserRoleDtoFormBulk dto)
+        {
+            try
+            {
+                if (dto == null || !dto.UserIds.Any() || !dto.RoleIds.Any())
+                {
+                    throw new ArgumentException("La liste des IDs d'utilisateurs ou la liste des IDs de rôles ne peuvent pas être null ou vides");
+                }
+
+                foreach (var userId in dto.UserIds)
+                {
+                    if (string.IsNullOrWhiteSpace(userId))
+                    {
+                        throw new ArgumentException("Un ID d'utilisateur ne peut pas être null ou vide");
+                    }
+                }
+
+                foreach (var roleId in dto.RoleIds)
+                {
+                    if (string.IsNullOrWhiteSpace(roleId))
+                    {
+                        throw new ArgumentException("Un ID de rôle ne peut pas être null ou vide");
+                    }
+                }
+
+                // Capturer l'état AVANT la suppression
+                var currentUserRoles = await _repository.GetAllAsync();
+                var oldUserNames = new Dictionary<string, string>(); 
+                var oldUTILISATEUR_ROLE = new Dictionary<string, List<string>>(); 
+                
+                foreach (var userId in dto.UserIds)
+                {
+                    var currentRolesForUser = currentUserRoles.Where(ur => ur.UserId == userId).ToList();
+                    
+                    // Seulement traiter si l'utilisateur a des rôles existants
+                    if (currentRolesForUser.Any())
+                    {
+                        string userName = currentRolesForUser.First().User?.Name ?? "Unknown";
+                        oldUserNames[userId] = userName;
+
+                        var roleNames = currentRolesForUser
+                            .Select(ur => ur.Role?.Name ?? "Unknown")
+                            .ToList();
+                        
+                        oldUTILISATEUR_ROLE[userName] = roleNames;
+                    }
+                }
+
+                var oldBulkData = new { UserNames = oldUserNames, UTILISATEUR_ROLE = oldUTILISATEUR_ROLE };
+
+                // Effectuer la suppression
+                foreach (var userId in dto.UserIds)
+                {
+                    foreach (var roleId in dto.RoleIds)
+                    {
+                        await _repository.DeleteAsync(userId, roleId);
+                    }
+                }
+
+                await _repository.SaveChangesAsync();
+
+                // Capturer l'état APRÈS la suppression
+                var updatedUserRoles = await _repository.GetAllAsync();
+                var newUserNames = new Dictionary<string, string>(); 
+                var newUTILISATEUR_ROLE = new Dictionary<string, List<string>>(); 
+                
+                foreach (var userId in dto.UserIds)
+                {
+                    var updatedRolesForUser = updatedUserRoles.Where(ur => ur.UserId == userId).ToList();
+                    
+                    // Seulement traiter si l'utilisateur a encore des rôles après la suppression
+                    if (updatedRolesForUser.Any())
+                    {
+                        string userName = updatedRolesForUser.First().User?.Name ?? "Unknown";
+                        newUserNames[userId] = userName;
+
+                        var roleNames = updatedRolesForUser
+                            .Select(ur => ur.Role?.Name ?? "Unknown")
+                            .ToList();
+                        
+                        newUTILISATEUR_ROLE[userName] = roleNames;
+                    }
+                }
+
+                var newBulkData = new { UserNames = newUserNames, UTILISATEUR_ROLE = newUTILISATEUR_ROLE };
+                
+                await _logService.LogAsync("SUPPRIMER", "UTILISATEUR_ROLE", oldBulkData, newBulkData, dto.UserIdLog, "UTILISATEUR_ROLE");
+
+            }
+            catch (Exception ex)
+            {
+                var userIdsLog = dto?.UserIds != null ? string.Join(", ", dto.UserIds) : "inconnus";
+                var roleIdsLog = dto?.RoleIds != null ? string.Join(", ", dto.RoleIds) : "inconnus";
+                _logger.LogError(ex, "Erreur lors de la suppression des relations utilisateur-rôle pour les UserIds {UserIds} et RoleIds {RoleIds}", userIdsLog, roleIdsLog);
                 throw;
             }
         }

@@ -3,72 +3,94 @@ using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.users;
 using MyApp.Api.Services.logs;
 using MyApp.Api.Utils.generator;
+using System.Linq;
 
 namespace MyApp.Api.Services.users;
 
 public interface IHabilitationService
+{
+    Task<IEnumerable<Habilitation>> GetAllAsync();
+    Task<Habilitation?> GetByIdAsync(string id);
+    Task<IEnumerable<Habilitation>> GetByGroupIdsAsync(string[] groupIds);
+    Task AddAsync(HabilitationDTOForm dto, string userId);
+    Task UpdateAsync(string id, HabilitationDTOForm dto, string userId);
+    Task DeleteAsync(string id, string userId);
+}
+
+public class HabilitationService : IHabilitationService
+{
+    private readonly IHabilitationRepository _repository;
+    private readonly ILogService _logService;
+    private readonly ISequenceGenerator _sequenceGenerator;
+    private readonly ILogger<HabilitationService> _logger;
+
+    public HabilitationService(
+        IHabilitationRepository repository,
+        ILogService logService,
+        ISequenceGenerator sequenceGenerator,
+        ILogger<HabilitationService> logger)
     {
-        Task<IEnumerable<Habilitation>> GetAllAsync();
-        Task<Habilitation?> GetByIdAsync(string id);
-        Task AddAsync(HabilitationDTOForm dto, string userId);
-        Task UpdateAsync(string id, HabilitationDTOForm dto,  string userId);
-        Task DeleteAsync(string id, string userId);
+        _repository = repository;
+        _logService = logService;
+        _sequenceGenerator = sequenceGenerator;
+        _logger = logger;
     }
 
-    public class HabilitationService : IHabilitationService
+    public async Task<IEnumerable<Habilitation>> GetAllAsync()
     {
-        private readonly IHabilitationRepository _repository;
-        private readonly ILogService _logService;
-        private readonly ISequenceGenerator _sequenceGenerator;
-        private readonly ILogger<HabilitationService> _logger;
-
-        public HabilitationService(
-            IHabilitationRepository repository,
-            ILogService logService,
-            ISequenceGenerator sequenceGenerator,
-            ILogger<HabilitationService> logger)
+        try
         {
-            _repository = repository;
-            _logService = logService;
-            _sequenceGenerator = sequenceGenerator;
-            _logger = logger;
+            _logger.LogInformation("Récupération de tous les habilitations");
+            return await _repository.GetAllAsync();
         }
-
-        public async Task<IEnumerable<Habilitation>> GetAllAsync()
+        catch (Exception ex)
         {
-            try
-            {
-                _logger.LogInformation("Récupération de tous les habilitations");
-                return await _repository.GetAllAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la récupération des habilitations");
-                throw;
-            }
+            _logger.LogError(ex, "Erreur lors de la récupération des habilitations");
+            throw;
         }
+    }
 
-        public async Task<Habilitation?> GetByIdAsync(string id)
+    public async Task<Habilitation?> GetByIdAsync(string id)
+    {
+        try
         {
-            try
+            if (string.IsNullOrWhiteSpace(id))
             {
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    _logger.LogWarning("Tentative de récupération d'une habilitation avec un ID null ou vide");
-                    return null;
-                }
+                _logger.LogWarning("Tentative de récupération d'une habilitation avec un ID null ou vide");
+                return null;
+            }
 
-                _logger.LogInformation("Récupération de l'habilitation avec l'ID: {HabilitationId}", id);
-                return await _repository.GetByIdAsync(id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la récupération de l'habilitation avec l'ID: {HabilitationId}", id);
-                throw;
-            }
+            _logger.LogInformation("Récupération de l'habilitation avec l'ID: {HabilitationId}", id);
+            return await _repository.GetByIdAsync(id);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération de l'habilitation avec l'ID: {HabilitationId}", id);
+            throw;
+        }
+    }
 
-        public async Task AddAsync(HabilitationDTOForm dto, string userId)
+    public async Task<IEnumerable<Habilitation>> GetByGroupIdsAsync(string[] groupIds)
+    {
+        try
+        {
+            if (groupIds == null || !groupIds.Any())
+            {
+                _logger.LogWarning("Tentative de récupération des habilitations avec un tableau de groupIds null ou vide");
+                return Enumerable.Empty<Habilitation>();
+            }
+
+            _logger.LogInformation("Récupération des habilitations pour les groupes avec les IDs: {GroupIds}", string.Join(", ", groupIds));
+            return await _repository.GetByGroupIdsAsync(groupIds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération des habilitations pour les groupes avec les IDs: {GroupIds}", string.Join(", ", groupIds));
+            throw;
+        }
+    }
+
+    public async Task AddAsync(HabilitationDTOForm dto, string userId)
     {
         try
         {
@@ -141,7 +163,6 @@ public interface IHabilitationService
 
             _logger.LogInformation("Habilitation supprimée avec succès pour l'ID: {HabilitationId}", id);
 
-            // === Ajout dans les logs ===
             await _logService.LogAsync("SUPPRESSION", existing, null, userId);
         }
         catch (Exception ex)
@@ -150,4 +171,4 @@ public interface IHabilitationService
             throw;
         }
     }
-    }
+}

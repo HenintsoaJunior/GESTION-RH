@@ -13,19 +13,19 @@ namespace MyApp.Api.Entities.mission
         [MaxLength(50)]
         public string CompensationId { get; set; } = null!;
         
-        [Column("transport_amount")]
+        [Column("transport_amount", TypeName = "decimal(15,2)")]  
         public decimal TransportAmount { get; set; }
         
-        [Column("breakfast_amount")]
+        [Column("breakfast_amount", TypeName = "decimal(15,2)")]  
         public decimal BreakfastAmount { get; set; }
         
-        [Column("lunch_amount")]
+        [Column("lunch_amount", TypeName = "decimal(15,2)")]  
         public decimal LunchAmount { get; set; }
         
-        [Column("dinner_amount")]
+        [Column("dinner_amount", TypeName = "decimal(15,2)")]  
         public decimal DinnerAmount { get; set; }
         
-        [Column("accommodation_amount")]
+        [Column("accommodation_amount", TypeName = "decimal(15,2)")]  
         public decimal AccommodationAmount { get; set; }
 
         [Column("payment_date")]

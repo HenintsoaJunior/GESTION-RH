@@ -1,19 +1,333 @@
-Prend example sur cette le return d'une controller avec le data et le status ;
-[HttpGet("departments")]
-    public async Task<ActionResult> GetDistinctDepartments()
+data : les données retournées (ou null en cas d’erreur)
+
+status : le code HTTP (ex. 200, 400, 402, etc.)
+
+message : une chaîne indiquant le résultat (ex. "success", "error", "invalid parameters", etc.)
+:
+
+        [HttpPost("bulk")]
+        public async Task<IActionResult> CreateBulk([FromBody] UserRoleDtoFormBulk? dto)
+        {
+            try
+            {
+                if (dto == null || string.IsNullOrWhiteSpace(dto.UserId) || !dto.RoleIds.Any())
+                {
+                    _logger.LogWarning("Tentative de création en masse de relations utilisateur-rôle avec des données invalides");
+                    return BadRequest("L'ID de l'utilisateur et la liste des IDs de rôles doivent être valides");
+                }
+
+                _logger.LogInformation("Création en masse de relations utilisateur-rôle pour UserId {UserId}", dto.UserId);
+                await _userRoleService.AddAsync(dto);
+
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création en masse des relations utilisateur-rôle pour UserId {UserId}", dto?.UserId);
+                return StatusCode(500, "Une erreur est survenue lors de la mise à jour des relations utilisateur-rôle");
+            }
+        }
+
+
+
+
+
+prend example sur ca :
+[HttpGet]
+    [AllowAnonymous] 
+    public async Task<ActionResult> GetAll()
     {
+        if (!User.Identity?.IsAuthenticated ?? true)
+        {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
+
         try
         {
-            var departments = await _userService.GetDistinctDepartmentsAsync();
-            return Ok(new { status = "success", data = departments });
+            var users = await _userService.GetAllAsync();
+            return Ok(new { data = users, status = 200, message = "success" });
         }
-        catch (ArgumentException ex)
+        catch (ArgumentException)
         {
-            return BadRequest(new { status = "error", message = ex.Message });
+            return BadRequest(new { data = (object?)null, status = 400, message = "error" });
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return StatusCode(500, new { status = "error", message = e.Message });
+            return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
         }
     }
+
+
+utilise les service suivant :
+
+----------------------------------------------------------------------------------------------------------------------------------------------------
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import api from '@/utils/axios-config';
+
+const DEPARTMENTS_KEY = ['departments'] as const;
+export const USERS_KEY = ['users'] as const;
+export const SEARCH_USERS_BASE_KEY = ['searchUsers'] as const;
+export const USER_ROLES_BASE_KEY = ['userRoles'] as const;
+
+export interface UserSearchFilters {
+  name?: string;
+  department?: string;
+  role?: string;
+}
+
+interface Role {
+  roleId: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+interface UserRole {
+  userId: string;
+  roleId: string;
+  role: Role;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface User {
+  userId: string;
+  matricule: string;
+  email: string;
+  name: string;
+  position: string;
+  department: string;
+  superiorId: string;
+  superiorName: string;
+  status: string | null;
+  signature: string | null;
+  userType: number;
+  refreshToken: string;
+  refreshTokenExpiry: string;
+  userRoles: UserRole[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ApiResponse<T> {
+  data: T | null;
+  status: number;
+  message: string;
+}
+
+type DepartmentsResponse = ApiResponse<string[]>;
+type UsersResponse = ApiResponse<User[]>;
+type SearchUsersData = {
+  users: User[];
+  totalCount: number;
+};
+type SearchUsersResponse = ApiResponse<SearchUsersData>;
+type RolesResponse = ApiResponse<string[]>;
+
+export interface UserRoleBulkDto {
+  userId: string;
+  roleIds: string[];
+}
+
+type BulkCreateUserRolesResponse = ApiResponse<UserRoleBulkDto>;
+
+export const useDepartments = () => {
+  return useQuery<DepartmentsResponse, Error>({
+    queryKey: DEPARTMENTS_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/User/departments'); 
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useUsers = () => {
+  return useQuery<UsersResponse, Error>({
+    queryKey: USERS_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/User');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useSearchUsers = (filters: UserSearchFilters, page: number = 1, pageSize: number = 10) => {
+  const queryKey = [...SEARCH_USERS_BASE_KEY, { filters, page, pageSize }] as const;
+
+  return useQuery<SearchUsersResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      try {
+        const params = { ...filters, page, pageSize };
+        const response = await api.post('/api/User/search', {}, { params }); 
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useUserRoles = (userId: string) => {
+  const queryKey = [...USER_ROLES_BASE_KEY, userId] as const;
+
+  return useQuery<RolesResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      try {
+        const response = await api.get(`/api/User/${userId}/roles`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useBulkCreateUserRoles = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<BulkCreateUserRolesResponse, Error, UserRoleBulkDto>({
+    mutationKey: ['bulkCreateUserRoles'],
+    mutationFn: async (dto: UserRoleBulkDto) => {
+      try {
+        const response = await api.post('/api/UserRole/bulk', dto);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: USERS_KEY });
+      queryClient.invalidateQueries({ queryKey: USER_ROLES_BASE_KEY });
+    },
+  });
+};
+
+
+
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import api from '@/utils/axios-config';
+
+const ROLES_KEY = ['roles'] as const;
+export const SEARCH_ROLES_BASE_KEY = ['searchRoles'] as const;
+export const HABILITATIONS_KEY = ['habilitations'] as const;
+
+export interface RoleSearchFilters {
+  name?: string;
+  description?: string;
+}
+
+export interface UserSearchFilters {
+  name?: string;
+  department?: string;
+  role?: string;
+}
+
+interface UserRole {
+  userId: string;
+  roleId: string;
+  role: Role;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+interface RoleHabilitation {
+  habilitationId: string;
+  roleId: string;
+  habilitation: Habilitation | null;
+  role: Role | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface Role {
+  roleId: string;
+  name: string;
+  description: string;
+  userRoles: UserRole[];
+  roleHabilitations: RoleHabilitation[];
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface Habilitation {
+  habilitationId: string;
+  label: string;
+  roleHabilitations: RoleHabilitation[];
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+interface ApiResponse<T> {
+  data: T | null;
+  status: number;
+  message: string;
+}
+
+type RolesResponse = ApiResponse<Role[]>;
+type HabilitationsResponse = ApiResponse<Habilitation[]>;
+
+export const useRoles = () => {
+  return useQuery<RolesResponse, Error>({
+    queryKey: ROLES_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Access/role');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useHabilitations = () => {
+  return useQuery<HabilitationsResponse, Error>({
+    queryKey: HABILITATIONS_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Access/habilitations');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+Dans le page HabilitationPopupComponent voici les information a afficher recupere l'userId envoyer par 

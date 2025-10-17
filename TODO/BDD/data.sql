@@ -456,23 +456,37 @@ VALUES
     ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_002'),
     ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_003');
 
-
-INSERT INTO habilitations (habilitation_id, label)
+INSERT INTO habilitation_groups (group_id, label)
 VALUES
-    ('HAB_001','creation des mission'),
-    ('HAB_002','consultation de toutes les missions'),
-    ('HAB_003','modification des mission'),
-    ('HAB_004','supression des mission');
+    ('HABG_001', 'Admin');
 
-
+INSERT INTO habilitations (habilitation_id, group_id, label)
+VALUES
+--Utilisateur
+    ('HAB_001', 'HABG_001', 'voir page utilisateurs'),
+    ('HAB_002', 'HABG_001', 'modifier role utilisateur(s)'),
+    ('HAB_003', 'HABG_001', 'suprimer role utilisateur(s)'),
+--Log
+    ('HAB_004', 'HABG_001', 'voir page logs'),
+--Access   
+    ('HAB_005', 'HABG_001', 'modifier habilitation(s) du role'),
+    ('HAB_006', 'HABG_001', 'creer role et habilitation(s)'),
+    ('HAB_007', 'HABG_001', 'modifier role'),
+    ('HAB_008', 'HABG_001', 'suprimer role'),
+    ('HAB_009', 'HABG_001', 'voir page access');
 
 INSERT INTO role_habilitation (habilitation_id, role_id)
 VALUES
     ('HAB_001', 'ROLE_001'),
-    ('HAB_001', 'ROLE_002'),
     ('HAB_002', 'ROLE_001'),
     ('HAB_003', 'ROLE_001'),
-    ('HAB_004', 'ROLE_001');
+    ('HAB_004', 'ROLE_001'),
+    ('HAB_005', 'ROLE_001'),
+    ('HAB_006', 'ROLE_001'),
+    ('HAB_007', 'ROLE_001'),
+    ('HAB_008', 'ROLE_001'),
+    ('HAB_009', 'ROLE_001');
+    
 
 
 INSERT INTO lieu (lieu_id, nom, adresse, ville, code_postal, pays, created_at, updated_at) VALUES
@@ -556,7 +570,7 @@ VALUES
 -- ============================
 INSERT INTO module (module_id, module_name, description, created_at, updated_at) VALUES
 ('user', 'Utilisateurs', 'Gestion des utilisateurs et rôles', GETDATE(), GETDATE()),
-('habilitation', 'Habilitation', 'Gestion des habilitations et autorisations', GETDATE(), GETDATE()),
+('habilitation', 'Droit & Accès', 'Gestion des droits et autorisations', GETDATE(), GETDATE()),
 ('mission', 'Suivi des Missions', 'Gestion des missions, assignations et paiements', GETDATE(), GETDATE()),
 ('logs', 'Logs', 'Suivi et journalisation des actions utilisateurs et systèmes', GETDATE(), GETDATE()),
 ('treasury', 'Trésorerie', 'Gestion des flux financiers et de la trésorerie', GETDATE(), GETDATE()); 
@@ -566,8 +580,8 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 ('menu0', 'utilisateurs', 'fa-users', '/utilisateur', 1, 1, 'user', 'administration', GETDATE(), GETDATE());
 
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_hab', 'habilitation', 'fa-shield-alt', '/habilitation', 1, 2, 'habilitation', 'administration', GETDATE(), GETDATE()),
-('menu_hab_2', 'role', 'fa-list', '/role/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
+('menu_hab', 'Droit & Accès', 'fa-shield-alt', '/droit-access', 1, 2, 'habilitation', 'administration', GETDATE(), GETDATE()),
+('menu_hab_2', 'access', 'fa-list', '/access/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
 
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu_logs', 'logs', 'fa-file-alt', '/logs', 1, 4, 'logs', 'administration', GETDATE(), GETDATE());
@@ -576,9 +590,9 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_3', 'collaborateur', 'fa-users', '/mission/collaborateur', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_5', 'treso', 'fa-money-bill-alt', '/treasury', 1, 5, 'treasury', 'navigation', GETDATE(), GETDATE()),
-('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 6, 'mission', 'navigation', GETDATE(), GETDATE()); 
+('menu2_3', 'collaborateur', 'fa-users', '/mission/collaborateur', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE());
+-- ('menu2_5', 'treso', 'fa-money-bill-alt', '/treasury', 1, 5, 'treasury', 'navigation', GETDATE(), GETDATE()),
+-- ('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 6, 'mission', 'navigation', GETDATE(), GETDATE()); 
 
 
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
@@ -588,9 +602,9 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),
 ('h4', NULL, 'menu2', GETDATE(), GETDATE()),
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
-('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
-('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE()),
-('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE());
+('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE());
+-- ('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE()),
+-- ('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE());
 
 
 INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
@@ -605,10 +619,10 @@ INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
 ('menu2_0', 'ROLE_002', GETDATE(), GETDATE()),
 ('menu2_3', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_3', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2_3', 'ROLE_003', GETDATE(), GETDATE()),
-('menu2_5', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2_5', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2_5', 'ROLE_003', GETDATE(), GETDATE()),
-('menu2_4', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2_4', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2_4', 'ROLE_003', GETDATE(), GETDATE());
+('menu2_3', 'ROLE_003', GETDATE(), GETDATE());
+-- ('menu2_5', 'ROLE_001', GETDATE(), GETDATE()),
+-- ('menu2_5', 'ROLE_002', GETDATE(), GETDATE()),
+-- ('menu2_5', 'ROLE_003', GETDATE(), GETDATE()),
+-- ('menu2_4', 'ROLE_001', GETDATE(), GETDATE()),
+-- ('menu2_4', 'ROLE_002', GETDATE(), GETDATE()),
+-- ('menu2_4', 'ROLE_003', GETDATE(), GETDATE());

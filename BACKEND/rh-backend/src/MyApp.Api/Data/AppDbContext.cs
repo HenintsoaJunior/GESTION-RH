@@ -49,8 +49,10 @@ namespace MyApp.Api.Data
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Role>  Roles { get; set; }
-        public DbSet<Habilitation> Habilitations { get; set; }        
+        public DbSet<Habilitation> Habilitations { get; set; }
+        public DbSet<HabilitationGroup> HabilitationGroups { get; set; }
         public DbSet<RoleHabilitation> RoleHabilitations { get; set; }
+        public DbSet<UserHabilitation> UserHabilitations { get; set; }
         public DbSet<Module> Modules { get; set; }
         public DbSet<Menu> Menus { get; set; }
         

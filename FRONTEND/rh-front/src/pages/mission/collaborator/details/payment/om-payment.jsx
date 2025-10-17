@@ -77,6 +77,8 @@ const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, 
             else if (scale.transportId) amounts.transport += amount;
         });
 
+        const total = amounts.breakfast + amounts.lunch + amounts.dinner + amounts.accommodation + amounts.transport;
+
         return {
             date: item.date,
             breakfast: amounts.breakfast,
@@ -84,9 +86,11 @@ const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, 
             dinner: amounts.dinner,
             accommodation: amounts.accommodation,
             transport: amounts.transport,
-            total: item.totalAmount,
+            total,
         };
     });
+
+    const grandTotal = indemnityDetails.reduce((sum, item) => sum + item.total, 0);
 
     const createTooltipCallback = (unit = ",00 ") => {
         return {
@@ -310,7 +314,7 @@ const OMPayment = ({ missionPayment, selectedAssignmentId, onBack, onExportPDF, 
                             ))}
                             <TotalRow>
                                 <TableCell colSpan={6}>Total</TableCell>
-                                <TableCell><strong>{formatNumber(missionPayment.totalAmount)},00</strong></TableCell>
+                                <TableCell><strong>{formatNumber(grandTotal)},00</strong></TableCell>
                             </TotalRow>
                         </tbody>
                     </IndemnityTable>

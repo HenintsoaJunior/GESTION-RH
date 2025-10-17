@@ -1,0 +1,293 @@
+Crée un service React pour récupérer les départements à partir d’une API, en suivant l’exemple de code ci-dessous.
+Le service doit utiliser @tanstack/react-query pour la gestion des requêtes et axios pour les appels HTTP.
+Assure-toi de respecter les bonnes pratiques suivantes :
+
+Définir une clé de requête constante (queryKey)
+
+Typage strict avec TypeScript pour la réponse de l’API
+
+Utiliser la variable d’environnement BASE_URL provenant de config/apiConfig
+
+Gérer correctement les erreurs et le typage du résultat
+
+Voici un exemple à suivre :
+
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import { BASE_URL } from '@/config/api-config';
+
+const DEPARTMENTS_KEY = ['departments'] as const;
+
+interface DepartmentsResponse {
+  status: string;
+  data: string[];
+}
+
+export const useDepartments = () => {
+  return useQuery<DepartmentsResponse, Error>({
+    queryKey: DEPARTMENTS_KEY,
+    queryFn: async () => {
+      const response = await axios.get(`${BASE_URL}/api/User/departments`, {
+        headers: {
+          accept: '*/*',
+        },
+      });
+      return response.data;
+    },
+  });
+};
+
+
+creer une services pour les suivant :
+"use client";
+voici le url 
+curl -X 'POST' \
+  'http://localhost:5183/api/MissionReport' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "text": "Test",
+  "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+  "assignationId": "MA-000001"
+}'
+
+voici la response json
+{
+  "data": {
+    "missionReportId": "MR-000001"
+  },
+  "status": 201,
+  "message": "created"
+}
+
+curl -X 'GET' \
+  'http://localhost:5183/api/MissionReport' \
+  -H 'accept: */*'
+
+{
+  "data": [
+    {
+      "missionReportId": "MR-000001",
+      "text": "Test",
+      "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+      "user": {
+        "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+        "matricule": "ST154",
+        "email": "miantsafitia.rakotoarimanana@ravinala-airports.aero",
+        "name": "Miantsafitia RAKOTOARIMANANA (DRH)",
+        "position": "Stagiaire DRH",
+        "department": "DRH",
+        "superiorId": "76c25f37-2089-4e81-8329-1b63d880b71a",
+        "superiorName": "Herinomenjanaharilala Sedera RASOLOFONDRAMANAMBE (DRH)",
+        "status": null,
+        "signature": null,
+        "userType": 0,
+        "refreshToken": "Ajsh4WZocuhbDKeg0iaVL12gPh/gZ53KB9SS/1LXvG4=",
+        "refreshTokenExpiry": "2025-10-23T05:46:58.23",
+        "userRoles": [],
+        "userHabilitations": [],
+        "createdAt": "2025-10-16T07:54:47.56",
+        "updatedAt": "2025-10-16T07:54:47.56"
+      },
+      "assignationId": "MA-000001",
+      "missionAssignation": {
+        "assignationId": "MA-000001",
+        "employeeId": "EMP_0001",
+        "missionId": "MIS-000001",
+        "transportId": null,
+        "departureDate": "2025-10-17T00:00:00",
+        "departureTime": "10:00:00",
+        "returnDate": "2025-10-19T00:00:00",
+        "returnTime": "10:00:00",
+        "duration": null,
+        "isValidated": null,
+        "employee": null,
+        "mission": null,
+        "transport": null,
+        "type": "Indemnité",
+        "allocatedFund": 0,
+        "createdAt": "2025-10-16T05:48:36.343",
+        "updatedAt": "2025-10-16T05:48:36.343"
+      },
+      "createdAt": "2025-10-16T08:49:35.587",
+      "updatedAt": null
+    }
+  ],
+  "status": 200,
+  "message": "success"
+}
+
+curl -X 'GET' \
+  'http://localhost:5183/api/MissionReport/MR-000001' \
+  -H 'accept: */*'
+
+{
+  "data": {
+    "missionReportId": "MR-000001",
+    "text": "Test",
+    "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+    "user": {
+      "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+      "matricule": "ST154",
+      "email": "miantsafitia.rakotoarimanana@ravinala-airports.aero",
+      "name": "Miantsafitia RAKOTOARIMANANA (DRH)",
+      "position": "Stagiaire DRH",
+      "department": "DRH",
+      "superiorId": "76c25f37-2089-4e81-8329-1b63d880b71a",
+      "superiorName": "Herinomenjanaharilala Sedera RASOLOFONDRAMANAMBE (DRH)",
+      "status": null,
+      "signature": null,
+      "userType": 0,
+      "refreshToken": "Ajsh4WZocuhbDKeg0iaVL12gPh/gZ53KB9SS/1LXvG4=",
+      "refreshTokenExpiry": "2025-10-23T05:46:58.23",
+      "userRoles": [],
+      "userHabilitations": [],
+      "createdAt": "2025-10-16T07:54:47.56",
+      "updatedAt": "2025-10-16T07:54:47.56"
+    },
+    "assignationId": "MA-000001",
+    "missionAssignation": {
+      "assignationId": "MA-000001",
+      "employeeId": "EMP_0001",
+      "missionId": "MIS-000001",
+      "transportId": null,
+      "departureDate": "2025-10-17T00:00:00",
+      "departureTime": "10:00:00",
+      "returnDate": "2025-10-19T00:00:00",
+      "returnTime": "10:00:00",
+      "duration": null,
+      "isValidated": null,
+      "employee": null,
+      "mission": null,
+      "transport": null,
+      "type": "Indemnité",
+      "allocatedFund": 0,
+      "createdAt": "2025-10-16T05:48:36.343",
+      "updatedAt": "2025-10-16T05:48:36.343"
+    },
+    "createdAt": "2025-10-16T08:49:35.587",
+    "updatedAt": null
+  },
+  "status": 200,
+  "message": "success"
+}
+
+
+
+curl -X 'PUT' \
+  'http://localhost:5183/api/MissionReport/MR-000001' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "text": "test2",
+  "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+  "assignationId": "MA-000001"
+}'
+
+{
+  "data": {
+    "message": "Rapport de mission MR-000001 mis à jour avec succès"
+  },
+  "status": 200,
+  "message": "success"
+}
+
+
+curl -X 'DELETE' \
+  'http://localhost:5183/api/MissionReport/MR-000001?userId=ce796eb6-0f7e-4dbc-9c1e-de00f53de186' \
+  -H 'accept: */*'
+
+  {
+  "data": {
+    "message": "Rapport de mission MR-000001 supprimé avec succès",
+    "data": {
+      "id": "MR-000001",
+      "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186"
+    }
+  },
+  "status": 200,
+  "message": "success"
+}
+
+
+🎯 Objectif final :
+Créer un hook qui renvoie les données de cette API en respectant la structure et les conventions de React Query et Axios.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Convertis cette page actuellement en JSX vers TypeScript (TSX).
+
+Intègre le service situé dans /api/users/services à la page convertie.
+
+Assure-toi de :
+
+Typiser correctement tous les props, states, et fonctions ;
+
+Remplacer tous les types implicites par des types explicites ;
+
+Gérer proprement les erreurs de typage après conversion ;
+
+Conserver le même comportement et la même logique que dans la version JSX ;
+
+Importer et utiliser le service depuis /api/users/services
+
+
+
+
+
+
+
+{
+  "token": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtaWFudHNhZml0aWEucmFrb3RvYXJpbWFuYW5hQHJhdmluYWxhLWFpcnBvcnRzLmFlcm8iLCJuYW1lIjoiTWlhbnRzYWZpdGlhIFJBS09UT0FSSU1BTkFOQSAoRFJIKSIsImp0aSI6IjU3MGU4OTBmLTAzY2YtNDAyNy05NjQzLWFiM2NhYTdjNmJhZSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiY2U3OTZlYjYtMGY3ZS00ZGJjLTljMWUtZGUwMGY1M2RlMTg2IiwidXNlcl90eXBlIjoiTm9uQ2FkcmUiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOlsiYWRtaW4iLCJyaCIsImNvbGxhYm9yYXRldXIiXSwiZXhwIjoxNzYwMjUzMzY4LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjUxODMiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjMwMDAifQ.Yyu4is7gszrZYoTK5eEqgtmXPwHKD-uAy6pcQlcF2kY",
+    "refreshToken": "8PgpgzJegRCpdEWBZaY+Re3CxmpDoqx3zj+BJIRXcy8=",
+    "expiresIn": 60
+  },
+  "user": {
+    "userId": "ce796eb6-0f7e-4dbc-9c1e-de00f53de186",
+    "matricule": "ST154",
+    "email": "miantsafitia.rakotoarimanana@ravinala-airports.aero",
+    "name": "Miantsafitia RAKOTOARIMANANA (DRH)",
+    "department": "DRH",
+    "userType": 0
+  },
+  "message": "Success",
+  "type": "success"
+}
+
+
+Comment faire ca J'utilise une .NET comme backend et react ts en frontend et ce que je veux si le token est espirer l'utilisateur doit refaire une login mais pour que le token n'est pas expirer a chaque 1 heure par example on appel cet refresh token :
+curl -X 'POST' \
+  'http://localhost:5183/api/Auth/refresh' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "refreshToken": "8PgpgzJegRCpdEWBZaY+Re3CxmpDoqx3zj+BJIRXcy8="
+}'
+
+{
+  "token": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtaWFudHNhZml0aWEucmFrb3RvYXJpbWFuYW5hQHJhdmluYWxhLWFpcnBvcnRzLmFlcm8iLCJuYW1lIjoiTWlhbnRzYWZpdGlhIFJBS09UT0FSSU1BTkFOQSAoRFJIKSIsImp0aSI6IjMzZjc4ZjAzLTNiODQtNGVmZS1hMDgxLWIzZDE3OGQwNDFkMyIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiY2U3OTZlYjYtMGY3ZS00ZGJjLTljMWUtZGUwMGY1M2RlMTg2IiwidXNlcl90eXBlIjoiTm9uQ2FkcmUiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOlsiYWRtaW4iLCJyaCIsImNvbGxhYm9yYXRldXIiXSwiZXhwIjoxNzYwMjUzNDk5LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjUxODMiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjMwMDAifQ.j2Go5NieoyKzswLaoXEj3ozOLvpdUVDk-j4zexR4RQU",
+    "refreshToken": "xSz4rGhu30laT3VcaXju7JAtd454Fv16KMXmOUR6+nY=",
+    "expiresIn": 60
+  },
+  "message": "Token refreshed successfully",
+  "type": "success"
+}
+
+a chaque fois qu'on appel une api mais comment faire dans react pour que si le token est expirer et 

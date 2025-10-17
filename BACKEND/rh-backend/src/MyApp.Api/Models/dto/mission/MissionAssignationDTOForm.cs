@@ -34,7 +34,7 @@ public class MissionAssignationSearchFiltersDTO
 {
     public string? EmployeeId { get; set; }
     
-    public string? [] Matricule { get; set; } = null!;
+    public string?[] Matricule { get; set; } = new string?[] { };
     public string? MissionId { get; set; }
     public string? MissionType { get; set;  }
     public string? TransportId { get; set; }

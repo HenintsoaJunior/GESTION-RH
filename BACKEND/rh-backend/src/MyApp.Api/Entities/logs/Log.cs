@@ -14,10 +14,15 @@ namespace MyApp.Api.Entities.logs
         public string LogId { get; set; } = null!;
 
         [Required]
+        [Column("ip_address")]
+        [MaxLength(50)]
+        public string? IpAddress { get; set; }
+
+        [Required]
         [Column("action")]
         [MaxLength(100)]
         public string Action { get; set; } = null!;
-
+        
         [Column("table_name")]
         [MaxLength(255)]
         public string? TableName { get; set; }
@@ -39,6 +44,7 @@ namespace MyApp.Api.Entities.logs
 
         public Log(LogDTOForm dto)
         {
+            IpAddress = dto.IpAddress;
             Action = dto.Action;
             TableName = dto.TableName;
             OldValues = dto.OldValues;

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Models.dto.employee;
@@ -13,6 +14,33 @@ namespace MyApp.Api.Controllers.employee
         ILogger<EmployeeController> logger)
         : ControllerBase
     {
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetAll()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var employees = await employeeService.GetAllAsync();
+                return Ok(new { data = employees, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération de tous les employés");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Erreur lors de la récupération de tous les employés");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+//
         [HttpPost("search")]
         public async Task<ActionResult<object>> Search([FromBody] EmployeeSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
@@ -32,22 +60,6 @@ namespace MyApp.Api.Controllers.employee
             {
                 logger.LogError(ex, "Erreur lors de la recherche paginée des employés");
                 return StatusCode(500, "Une erreur est survenue lors de la recherche des employés.");
-            }
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Employee>>> GetAll()
-        {
-            try
-            {
-                logger.LogInformation("Récupération de tous les employés");
-                var employees = await employeeService.GetAllAsync();
-                return Ok(employees);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors de la récupération de tous les employés");
-                return StatusCode(500, "Une erreur est survenue lors de la récupération des employés.");
             }
         }
 

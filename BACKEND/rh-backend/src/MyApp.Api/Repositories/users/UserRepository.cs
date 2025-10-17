@@ -24,10 +24,12 @@ namespace MyApp.Api.Repositories.users
         Task DeleteUsersAsync(List<User> users);
         Task SaveChangesAsync();
         Task<IEnumerable<User>> GetCollaboratorsAsync(string userId);
-        Task<IEnumerable<User>> GetUserInfo(string userId);
+        Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId);
+        Task<IEnumerable<User>> GetUsersInfo(string[] userIds);
         Task<User?> GetSuperiorAsync(string matricule);
         Task<User?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
+        Task<IEnumerable<string>> GetUserHabilitationAsync(string userId);
         Task<User?> GetDirectorByDepartmentAsync(string department);
         Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
     }
@@ -140,20 +142,70 @@ namespace MyApp.Api.Repositories.users
             return (results, totalCount);
         }
 
+        public async Task<IEnumerable<User>> GetUsersInfo(string[] userIds)
+        {
+            if (userIds == null || userIds.Length == 0)
+                throw new ArgumentException("User IDs cannot be null or empty.", nameof(userIds));
 
-        public async Task<IEnumerable<User>> GetUserInfo(string userId)
+            return await _context.Users
+                .AsNoTracking()
+                .Where(u => userIds.Contains(u.UserId))
+                .ToListAsync();
+        }
+
+
+        public async Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
                 throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
 
-            return await _context.Users
+            var user = await _context.Users
                 .AsNoTracking()
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
-                    .ThenInclude(r => r!.RoleHabilitations)
-                        .ThenInclude(rh => rh.Habilitation)
-                .Where(u => u.UserId == userId)
-                .ToListAsync();
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+
+            if (user == null)
+                return Enumerable.Empty<UserInfoDto>();
+
+            string? superiorName = null;
+            if (!string.IsNullOrEmpty(user.SuperiorId))
+            {
+                superiorName = await _context.Users
+                    .AsNoTracking()
+                    .Where(s => s.UserId == user.SuperiorId)
+                    .Select(s => s.Name)
+                    .FirstOrDefaultAsync();
+            }
+
+            var dto = new UserInfoDto
+            {
+                UserId = user.UserId,
+                Name = user.Name,
+                Email = user.Email,
+                Matricule = user.Matricule,
+                Department = user.Department,
+                Position = user.Position,
+                SuperiorId = user.SuperiorId,
+                SuperiorName = superiorName,
+                Roles = user.UserRoles.Select(ur => new UserRole
+                {
+                    UserId = ur.UserId,
+                    RoleId = ur.RoleId,
+                    Role = new Role
+                    {
+                        RoleId = ur.Role!.RoleId,
+                        Name = ur.Role.Name,
+                        Description = ur.Role.Description,
+                        CreatedAt = ur.Role.CreatedAt,
+                        UpdatedAt = ur.Role.UpdatedAt
+                    },
+                    CreatedAt = ur.CreatedAt,
+                    UpdatedAt = ur.UpdatedAt
+                })
+            };
+
+            return new[] { dto };
         }
 
         public async Task<IEnumerable<User>> GetCollaboratorsAsync(string userId)
@@ -244,6 +296,18 @@ namespace MyApp.Api.Repositories.users
             }
 
             return await Task.FromResult(GetBatches());
+        }
+
+        public async Task<IEnumerable<string>> GetUserHabilitationAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            return await _context.UserHabilitations
+                .AsNoTracking()
+                .Where(ur => ur.UserId == userId)
+                .Select(ur => ur.HabilitationId)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<string>> GetUserRolesAsync(string userId)

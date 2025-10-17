@@ -15,6 +15,7 @@ public interface IRoleHabilitationRepository
     Task SynchronizeHabilitationsAsync(string roleId, IEnumerable<string> newHabilitationIds);
     
     Task<IEnumerable<Habilitation>> GetHabilitationsByUserIdAsync(string userId);
+    Task<IEnumerable<string>> GetHabilitationIdsByRoleIdsAsync(IEnumerable<string> roleIds);
 }
 
 public class RoleHabilitationRepository : IRoleHabilitationRepository
@@ -24,6 +25,24 @@ public class RoleHabilitationRepository : IRoleHabilitationRepository
     public RoleHabilitationRepository(AppDbContext context)
     {
         _context = context;
+    }
+
+    public async Task<IEnumerable<string>> GetHabilitationIdsByRoleIdsAsync(IEnumerable<string> roleIds)
+    {
+        if (roleIds == null || !roleIds.Any())
+            throw new ArgumentException("La liste des IDs de rôles ne peut pas être null ou vide", nameof(roleIds));
+
+        var validRoleIds = roleIds.Where(id => !string.IsNullOrWhiteSpace(id)).ToHashSet();
+
+        if (!validRoleIds.Any())
+            return Enumerable.Empty<string>();
+
+        return await _context.RoleHabilitations
+            .AsNoTracking()
+            .Where(rh => validRoleIds.Contains(rh.RoleId))
+            .Select(rh => rh.HabilitationId)
+            .Distinct()
+            .ToListAsync();
     }
 
     public async Task<IEnumerable<Habilitation>> GetHabilitationsByUserIdAsync(string userId)

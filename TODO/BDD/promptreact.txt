@@ -12,56 +12,318 @@ Gérer correctement les erreurs et le typage du résultat
 
 Voici un exemple à suivre :
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { BASE_URL } from 'config/apiConfig';
+import api from '@/utils/axios-config';
+import { MENU_HIERARCHY_KEY } from '../menu/services';
 
 const DEPARTMENTS_KEY = ['departments'] as const;
+export const USERS_KEY = ['users'] as const;
+export const SEARCH_USERS_BASE_KEY = ['searchUsers'] as const;
+export const USER_ROLES_BASE_KEY = ['userRoles'] as const;
+export const USER_HABILITATIONS_BASE_KEY = ['userHabilitations'] as const;
+export const USER_INFOS_BASE_KEY = ['userInfos'] as const;
+const USER_HABILITATION_BULK_BASE_KEY = ['userHabilitationBulk'] as const;
 
-interface DepartmentsResponse {
-  status: string;
-  data: string[];
+export interface UserSearchFilters {
+  name?: string;
+  department?: string;
+  role?: string;
 }
+
+interface Role {
+  roleId: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+interface UserRole {
+  userId: string;
+  roleId: string;
+  role: Role;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface User {
+  userId: string;
+  matricule: string;
+  email: string;
+  name: string;
+  position: string;
+  department: string;
+  superiorId: string;
+  superiorName: string;
+  status: string | null;
+  signature: string | null;
+  userType: number;
+  refreshToken: string;
+  refreshTokenExpiry: string;
+  userRoles: UserRole[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserInfo {
+  userId: string;
+  name: string;
+  email: string;
+  matricule: string;
+  department: string;
+  position: string;
+  superiorId: string;
+  superiorName: string;
+  roles: any[];
+}
+
+export interface BulkHabilitationData {
+  habilitationIds: string[];
+  roleIds: string[];
+  userId: string;
+}
+
+export interface UseUserHabilitationBulkParams {
+  habilitationIds: string[];
+  roleIds: string[];
+  userId: string;
+}
+
+interface ApiResponse<T> {
+  data: T | null;
+  status: number;
+  message: string;
+}
+
+type DepartmentsResponse = ApiResponse<string[]>;
+type UsersResponse = ApiResponse<User[]>;
+type SearchUsersData = {
+  users: User[];
+  totalCount: number;
+};
+type SearchUsersResponse = ApiResponse<SearchUsersData>;
+type RolesResponse = ApiResponse<string[]>;
+type HabilitationResponse = ApiResponse<string[]>;
+type UserInfosResponse = ApiResponse<UserInfo[]>;
+type BulkHabilitationResponse = ApiResponse<BulkHabilitationData>;
+
+export interface UserRoleBulkDto {
+  userIds: string[];
+  roleIds: string[];
+}
+
+type BulkCreateUserRolesResponse = ApiResponse<UserRoleBulkDto>;
 
 export const useDepartments = () => {
   return useQuery<DepartmentsResponse, Error>({
     queryKey: DEPARTMENTS_KEY,
     queryFn: async () => {
-      const response = await axios.get(`${BASE_URL}/api/User/departments`, {
-        headers: {
-          accept: '*/*',
-        },
-      });
-      return response.data;
+      try {
+        const response = await api.get('/api/User/departments'); 
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
     },
   });
 };
 
+export const useUsers = () => {
+  return useQuery<UsersResponse, Error>({
+    queryKey: USERS_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/User');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
 
+export const useSearchUsers = (filters: UserSearchFilters, page: number = 1, pageSize: number = 10) => {
+  const queryKey = [...SEARCH_USERS_BASE_KEY, { filters, page, pageSize }] as const;
+
+  return useQuery<SearchUsersResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      try {
+        const params = { ...filters, page, pageSize };
+        const response = await api.post('/api/User/search', {}, { params }); 
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useUserHabilitations = (userId: string | undefined) => {
+  const queryKey = [...USER_HABILITATIONS_BASE_KEY, userId] as const;
+
+  return useQuery<HabilitationResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error('userId is required for fetching habilitations');
+      }
+      try {
+        const response = await api.get(`/api/User/${userId}/access-habilitations`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!userId, // N'exécute la requête que si userId est défini
+  });
+};
+
+export const useUserRoles = (userId: string | undefined) => {
+  const queryKey = [...USER_ROLES_BASE_KEY, userId] as const;
+
+  return useQuery<RolesResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error('userId is required for fetching roles');
+      }
+      try {
+        const response = await api.get(`/api/User/${userId}/roles`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!userId, // N'exécute la requête que si userId est défini
+  });
+};
+
+export const useBulkCreateUserRoles = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<BulkCreateUserRolesResponse, Error, UserRoleBulkDto>({
+    mutationKey: ['bulkCreateUserRoles'],
+    mutationFn: async (dto: UserRoleBulkDto) => {
+      try {
+        const response = await api.post('/api/UserRole/bulk', dto);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    onSuccess: (_, variables) => {
+      // Invalider les queries spécifiques pour de meilleures performances
+      queryClient.invalidateQueries({ queryKey: USERS_KEY });
+      queryClient.invalidateQueries({ queryKey: MENU_HIERARCHY_KEY });
+      variables.userIds.forEach((userId) => {
+        queryClient.invalidateQueries({ queryKey: [...USER_ROLES_BASE_KEY, userId] });
+      });
+    },
+  });
+};
+
+export const useUserInfos = (userIds: string[]) => {
+  const queryKey = [...USER_INFOS_BASE_KEY, userIds.sort()] as const; 
+  
+  return useQuery<UserInfosResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      try {
+        const response = await api.post('/api/User/infos', userIds);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: userIds.length > 0, // N'exécute que si la liste n'est pas vide
+  });
+};
+
+export const useUserHabilitationBulk = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<BulkHabilitationResponse, Error, UseUserHabilitationBulkParams>({
+    mutationKey: USER_HABILITATION_BULK_BASE_KEY,
+    mutationFn: async ({ habilitationIds, roleIds, userId }: UseUserHabilitationBulkParams) => {
+      if (!userId) {
+        throw new Error('userId is required for bulk habilitation');
+      }
+      try {
+        const response = await api.post('/api/UserHabilitation/bulk', {
+          habilitationIds,
+          roleIds,
+          userId,
+        });
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.refetchQueries({ queryKey: USERS_KEY });
+      queryClient.refetchQueries({ queryKey: [...USER_ROLES_BASE_KEY, variables.userId] });
+      queryClient.refetchQueries({ queryKey: [...USER_HABILITATIONS_BASE_KEY, variables.userId] });
+    },  
+  });
+};
 L’API appelée est :
 
-curl -X 'GET' \
-  'http://localhost:5183/api/User' \
-  -H 'accept: text/plain'
+curl -X 'POST' \
+  'http://localhost:5183/api/UserRole/bulk/remove' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "userIds": [
+    "07e12d3a-8606-424e-9baf-fbe6f797af63"
+  ],
+  "roleIds": [
+    "ROLE_003"
+  ]
+}'
 
 Et la réponse JSON est :
 
 {
-  "status": "success",
-  "data": [
-    {
-      "userId": "000465d0-0530-41d9-872f-d6012418ba7e",
-      "name": "Safidy RAKOTONDRAJOA (DSI)",
-      "email": "safidy.rakotondrajoa@ravinala-airports.aero",
-      "matricule": "00298",
-      "department": "DSI",
-      "position": "Responsable des applications IT",
-      "superiorId": "83dc05fd-0e42-43f5-b0e0-1567df7647b1",
-      "superiorName": "Vonjimampianina RAKOTOARISOA (DSI)"
-    }
-  ]
+  "data": {
+    "userIds": [
+      "07e12d3a-8606-424e-9baf-fbe6f797af63"
+    ],
+    "roleIds": [
+      "ROLE_003"
+    ]
+  },
+  "status": 200,
+  "message": "success"
 }
-
 
 🎯 Objectif final :
 Créer un hook qui renvoie les données de cette API en respectant la structure et les conventions de React Query et Axios.
+
+
+NB : Donne moi seulement le service de cette habilitations-group
