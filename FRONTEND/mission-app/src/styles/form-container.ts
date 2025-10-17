@@ -9,7 +9,7 @@ const formInputBaseStyles = css`
   border-radius: 0;
   font-size: var(--font-size-xs);
   font-family: var(--font-family);
-  background-color: #f5f5f5;
+  background-color: var(--bg-light);
   color: var(--text-input);
   box-sizing: border-box;
   line-height: 1.2;
@@ -20,7 +20,7 @@ const formInputBaseStyles = css`
   }
   &:focus {
     border: 1px solid var(--primary-color);
-    background-color: #ffffff;
+    background-color: var(--bg-primary);
     outline: none;
     box-shadow: inset 0 0 2px var(--primary-shadow);
   }
@@ -64,13 +64,13 @@ export const TableHeader = styled.div`
 export const TableIcon = styled.div`
   font-size: var(--font-size-xl);
   margin-right: var(--spacing-sm);
-  color: var(--text-primary);
+  color: var(--text-color);
 `;
 
 export const TableTitle = styled.h2`
   font-size: var(--font-size-2xl);
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-color);
 `;
 
 // Form Structure
@@ -86,7 +86,7 @@ export const FormTable = styled.table`
   & th {
     background-color: var(--bg-secondary);
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--text-color);
     padding: var(--spacing-md);
     text-align: left;
     border-bottom: 2px solid var(--border-light);
@@ -135,7 +135,7 @@ export const FormFieldCell = styled.td`
 `;
 
 export const FormLabel = styled.label`
-  margin-bottom: var(--spacing-xxs);
+  margin-bottom: var(--spacing-xs);
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--text-secondary);
@@ -164,7 +164,7 @@ export const FormSelect = styled.select`
   -moz-appearance: none;
   appearance: none;
   padding-right: var(--spacing-3xl);
-  background: #f5f5f5
+  background: var(--bg-light)
     url("data:image/svg+xml;utf8,<svg fill='%2369B42E' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>")
     no-repeat right var(--spacing-sm) center;
   background-size: 16px;
@@ -172,7 +172,7 @@ export const FormSelect = styled.select`
     padding: var(--spacing-md);
     line-height: 1.4;
     font-size: var(--font-size-xs);
-    background: #ffffff;
+    background: var(--bg-primary);
     color: var(--text-input);
   }
 `;
@@ -206,7 +206,7 @@ export const StyledAutoCompleteInput = styled(AutoCompleteInput)`
   border-radius: 0;
   font-size: var(--font-size-xs);
   font-family: var(--font-family);
-  background-color: #f5f5f5;
+  background-color: var(--bg-light);
   color: var(--text-input);
   box-sizing: border-box;
   line-height: 1.2;
@@ -217,7 +217,7 @@ export const StyledAutoCompleteInput = styled(AutoCompleteInput)`
   }
   &:focus {
     border: 1px solid var(--primary-color);
-    background-color: #ffffff;
+    background-color: var(--bg-primary);
     outline: none;
     box-shadow: inset 0 0 2px var(--primary-shadow);
   }
@@ -287,7 +287,7 @@ export const FormRadio = styled.input.attrs({ type: "radio" })`
   height: 18px;
   border: 2px solid var(--border-medium);
   border-radius: 50%;
-  background-color: #f5f5f5;
+  background-color: var(--bg-light);
   cursor: pointer;
   vertical-align: middle;
   margin: 0 4px 0 0;
@@ -302,7 +302,7 @@ export const FormRadio = styled.input.attrs({ type: "radio" })`
       content: "";
       width: 10px;
       height: 10px;
-      background-color: #ffffff;
+      background-color: var(--text-white);
       border-radius: 50%;
       position: absolute;
       top: 50%;
@@ -322,7 +322,7 @@ export const FormRadio = styled.input.attrs({ type: "radio" })`
     opacity: 0.6;
     cursor: not-allowed;
     border-color: var(--border-light);
-    background-color: #e0e0e0;
+    background-color: var(--border-light);
   }
   &.input-error {
     outline: 2px solid var(--error-color) !important;
@@ -331,10 +331,28 @@ export const FormRadio = styled.input.attrs({ type: "radio" })`
 
 // Form Section Header
 export const FormSectionTitle = styled.h3`
-  margin-top: 8px;
-  font-size: var(--font-size-lg);
+  margin: var(--spacing-lg) 0 var(--spacing-md) 0;
+  font-size: var(--font-size-xl); 
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-color);
+  position: relative;
+  padding-bottom: var(--spacing-sm);
+  
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px; 
+    background: linear-gradient(to right, var(--primary-color), transparent); 
+    border-radius: 1px; 
+  }
+  
+  @media (max-width: 768px) {
+    font-size: var(--font-size-lg); 
+    margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+  }
 `;
 
 // Positions Table
@@ -361,7 +379,7 @@ export const PositionsTable = styled.table`
 
 export const RemoveItem = styled.button`
   background-color: var(--error-color);
-  color: #ffffff;
+  color: var(--text-white);
   border: none;
   padding: var(--spacing-xs);
   border-radius: var(--radius-md);
@@ -419,7 +437,7 @@ export const SubmitButton = styled.button`
   font-size: var(--font-size-sm);
   box-shadow: var(--shadow-sm);
   background-color: var(--primary-color);
-  color: #ffffff;
+  color: var(--text-white);
   &:hover {
     background-color: var(--primary-hover);
   }
@@ -518,16 +536,16 @@ export const AutocompleteIcon = styled.div`
 `;
 
 export const AutocompleteDropdown = styled.div`
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
   z-index: 1000;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 `;
 
 export const AutocompleteSuggestionsContainer = styled.div`
@@ -539,13 +557,13 @@ export const AutocompleteSuggestionsContainer = styled.div`
 `;
 
 export const AutocompleteSuggestion = styled.div`
-  padding: 6px 10px;
+  padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
-  border-bottom: 1px solid #eee;
-  font-size: 12px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--font-size-xs);
   color: var(--text-input);
   &:hover {
-    background-color: #f5f5f5;
+    background-color: var(--bg-light);
   }
   &:last-child {
     border-bottom: none;
@@ -553,25 +571,25 @@ export const AutocompleteSuggestion = styled.div`
 `;
 
 export const AutocompleteAddOption = styled.div`
-  border-top: 1px solid #ddd;
-  background-color: #f9f9f9;
+  border-top: 1px solid var(--border-light);
+  background-color: var(--bg-tertiary);
 `;
 
 export const AutocompleteAddItem = styled.div`
-  padding: 6px 10px;
+  padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
   &.enabled {
-    color: #69b42e;
+    color: var(--primary-color);
     &:hover {
-      background-color: #e7f3ff;
+      background-color: var(--primary-light);
     }
   }
   &.disabled {
-    color: #6c757d;
+    color: var(--text-muted);
     cursor: not-allowed;
   }
 `;
@@ -580,9 +598,9 @@ export const AutocompleteAddItem = styled.div`
 export const ErrorMessage = styled.span`
   font-family: var(--font-family);
   color: var(--error-color);
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   font-weight: normal;
-  margin-top: 0.25rem;
+  margin-top: var(--spacing-xs);
   display: block;
   text-align: left;
 `;
@@ -602,7 +620,7 @@ export const BeneficiariesTableContainer = styled.div`
     height: 6px;
   }
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--bg-light);
     border-radius: var(--radius-sm);
   }
   &::-webkit-scrollbar-thumb {
@@ -618,10 +636,10 @@ export const BeneficiariesTable = styled.table`
   width: 100%;
   border-collapse: collapse;
   font-size: var(--font-size-xs);
-  background-color: #ffffff;
+  background-color: var(--bg-primary);
   min-width: 1000px;
   & th {
-    background-color: #f8f9fa;
+    background-color: var(--bg-secondary);
     color: var(--text-secondary);
     font-weight: 600;
     font-size: var(--font-size-xs);
@@ -656,7 +674,7 @@ export const BeneficiariesTable = styled.table`
     }
   }
   & tbody tr:hover {
-    background-color: #f8f9fa;
+    background-color: var(--bg-secondary);
   }
   & tbody tr:last-child td {
     border-bottom: none;
@@ -724,15 +742,15 @@ export const TableActionButton = styled.button`
     transform: scale(0.95);
   }
   &.edit-btn {
-    background-color: #17a2b8;
-    color: #ffffff;
+    background-color: var(--info-color);
+    color: var(--text-white);
     &:hover {
-      background-color: #138496;
+      background-color: var(--info-hover);
     }
   }
   &.delete-btn {
     background-color: var(--error-color);
-    color: #ffffff;
+    color: var(--text-white);
     &:hover {
       background-color: var(--error-hover);
     }
@@ -756,14 +774,14 @@ export const NoBeneficiaries = styled.div`
   padding: var(--spacing-2xl);
   color: var(--text-secondary);
   font-style: italic;
-  background-color: #f8f9fa;
+  background-color: var(--bg-secondary);
   border: 1px dashed var(--border-light);
   border-radius: var(--radius-sm);
 `;
 
 export const DateInfo = styled.div`
   display: block;
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
   & + & {
     margin-top: 2px;
@@ -772,9 +790,9 @@ export const DateInfo = styled.div`
 
 export const DurationBadge = styled.span`
   background-color: var(--primary-color);
-  color: #ffffff;
+  color: var(--text-white);
   padding: 2px 6px;
-  border-radius: 12px;
+  border-radius: var(--border-radius-lg);
   font-size: 10px;
   font-weight: 600;
   display: inline-block;
@@ -801,6 +819,7 @@ export const StepperWrapper = styled.div`
 export const StepItem = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== 'active',
 })<{ active: boolean }>`
+
   display: flex;
   align-items: center;
   font-size: var(--font-size-md);
@@ -828,9 +847,10 @@ export const StepItem = styled.div.withConfig({
     active &&
     css`
       color: var(--primary-color);
+      font-weight: var(--font-weight-semibold);
       span {
         background: var(--primary-color);
-        color: #ffffff;
+        color: var(--text-white);
       }
     `}
 `;
@@ -860,9 +880,10 @@ export const StepNavigation = styled(FormActions)`
 export const NextButton = styled(SubmitButton)``;
 
 export const PreviousButton = styled(SubmitButton)`
-  background-color: #6c757d;
+  background-color: var(--accent-color);
+  color: var(--text-white);
   &:hover {
-    color: #000;
-    background-color: var(--secondary-hover);
+    background-color: var(--accent-hover);
+    color: var(--text-color);
   }
 `;

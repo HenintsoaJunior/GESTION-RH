@@ -119,7 +119,7 @@ type SearchUsersData = {
 type SearchUsersResponse = ApiResponse<SearchUsersData>;
 type RolesResponse = ApiResponse<string[]>;
 type HabilitationResponse = ApiResponse<Habilitation[]>;
-type UserInfosResponse = ApiResponse<UserInfo[]>;
+export type UserInfosResponse = ApiResponse<UserInfo[]>;
 type BulkHabilitationResponse = ApiResponse<BulkHabilitationData>;
 
 export interface UserRoleBulkDto {
@@ -234,7 +234,11 @@ export const useHasHabilitation = (userId: string | undefined, label: string) =>
   const { data: habilitationsResponse, isLoading } = useUserHabilitationsRole(userId);
 
   return useMemo(() => {
-    if (isLoading || !habilitationsResponse?.data) {
+    if (isLoading) {
+      return undefined;
+    }
+  
+    if (!habilitationsResponse?.data) {
       return false;
     }
   
