@@ -60,9 +60,6 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
     console.log("MissionCollaboratorStep - fieldErrors:", fieldErrors);
   }, [fieldErrors]);
 
-  const isBeneficiarySelected = !!formData.beneficiary.beneficiary;
-  const isReadOnly = isSubmitting || isBeneficiarySelected;
-
   return (
     <>
       {/* Section Informations de la Mission */}
@@ -187,11 +184,14 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 type="text"
                 name="matricule"
                 value={formData.beneficiary.matricule}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
                 placeholder="Saisir le matricule..."
-                disabled={isSubmitting || isBeneficiarySelected}
-                readOnly={isBeneficiarySelected}
+                disabled={isSubmitting}
+                readOnly={true}
+                className={fieldErrors["beneficiary.matricule"] ? "input-error" : ""}
               />
+              {fieldErrors["beneficiary.matricule"] && fieldErrors["beneficiary.matricule"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.matricule"].join(", ")}</ErrorMessage>
+              )}
             </FormFieldCell>
           </FormRow>
           <FormRow className="dual-field-row">
@@ -201,11 +201,14 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 type="text"
                 name="function"
                 value={formData.beneficiary.function}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
                 placeholder="Saisir la fonction..."
-                disabled={isReadOnly}
-                readOnly={isBeneficiarySelected}
+                disabled={isSubmitting}
+                readOnly={true}
+                className={fieldErrors["beneficiary.function"] ? "input-error" : ""}
               />
+              {fieldErrors["beneficiary.function"] && fieldErrors["beneficiary.function"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.function"].join(", ")}</ErrorMessage>
+              )}
             </FormFieldCell>
             <FormFieldCell>
               <FormLabelRequired>Site</FormLabelRequired>
@@ -213,11 +216,14 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 type="text"
                 name="base"
                 value={formData.beneficiary.base}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
                 placeholder="Saisir la base..."
-                disabled={isReadOnly}
-                readOnly={isBeneficiarySelected}
+                disabled={isSubmitting}
+                readOnly={true}
+                className={fieldErrors["beneficiary.base"] ? "input-error" : ""}
               />
+              {fieldErrors["beneficiary.base"] && fieldErrors["beneficiary.base"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.base"].join(", ")}</ErrorMessage>
+              )}
             </FormFieldCell>
           </FormRow>
           <FormRow className="dual-field-row">
@@ -227,11 +233,14 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 type="text"
                 name="direction"
                 value={formData.beneficiary.direction}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
                 placeholder="Saisir la direction..."
-                disabled={isReadOnly}
-                readOnly={isBeneficiarySelected}
+                disabled={isSubmitting}
+                readOnly={true}
+                className={fieldErrors["beneficiary.direction"] ? "input-error" : ""}
               />
+              {fieldErrors["beneficiary.direction"] && fieldErrors["beneficiary.direction"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.direction"].join(", ")}</ErrorMessage>
+              )}
             </FormFieldCell>
             <FormFieldCell>
               <FormLabelRequired>Département</FormLabelRequired>
@@ -239,11 +248,14 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 type="text"
                 name="department"
                 value={formData.beneficiary.department}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
                 placeholder="Saisir le département..."
-                disabled={isReadOnly}
-                readOnly={isBeneficiarySelected}
+                disabled={isSubmitting}
+                readOnly={true}
+                className={fieldErrors["beneficiary.department"] ? "input-error" : ""}
               />
+              {fieldErrors["beneficiary.department"] && fieldErrors["beneficiary.department"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.department"].join(", ")}</ErrorMessage>
+              )}
             </FormFieldCell>
           </FormRow>
           <FormRow className="dual-field-row">
@@ -253,11 +265,14 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 type="text"
                 name="service"
                 value={formData.beneficiary.service}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
                 placeholder="Saisir le service..."
-                disabled={isReadOnly}
-                readOnly={isBeneficiarySelected}
+                disabled={isSubmitting}
+                readOnly={true}
+                className={fieldErrors["beneficiary.service"] ? "input-error" : ""}
               />
+              {fieldErrors["beneficiary.service"] && fieldErrors["beneficiary.service"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.service"].join(", ")}</ErrorMessage>
+              )}
             </FormFieldCell>
             <FormFieldCell>
               <FormLabel>Centre de coût</FormLabel>

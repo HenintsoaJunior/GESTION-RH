@@ -227,7 +227,7 @@ const useMissionForm = ({
     missionStartDate?: string | null
   ): MissionDurationResult => {
     if (!departureDate || !returnDate) {
-      return { missionDuration: "", error: "La date de départ et la date de retour doivent être fournies." };
+      return { missionDuration: "", error: undefined };
     }
 
     const departure = new Date(departureDate);
@@ -269,6 +269,15 @@ const useMissionForm = ({
     if (!formData.location) errors.lieuId = ["Le lieu est requis."];
     if (!formData.missionType) errors.missionType = ["Le type de mission est requis."];
 
+    const beneficiary = formData.beneficiary;
+    if (!beneficiary.beneficiary) errors["beneficiary.beneficiary"] = ["Le bénéficiaire est requis."];
+    if (!beneficiary.matricule) errors["beneficiary.matricule"] = ["Le matricule est requis."];
+    if (!beneficiary.function) errors["beneficiary.function"] = ["La fonction est requise."];
+    if (!beneficiary.base) errors["beneficiary.base"] = ["Le site est requis."];
+    if (!beneficiary.direction) errors["beneficiary.direction"] = ["La direction est requise."];
+    if (!beneficiary.department) errors["beneficiary.department"] = ["Le département est requis."];
+    if (!beneficiary.service) errors["beneficiary.service"] = ["Le service est requis."];
+
     setFieldErrors((prev) => {
       const updatedErrors = { ...prev, ...errors };
       Object.keys(updatedErrors).forEach((key) => {
@@ -296,7 +305,6 @@ const useMissionForm = ({
       }
     }
 
-    if (!beneficiary.beneficiary) errors["beneficiary.beneficiary"] = ["Le bénéficiaire est requis."];
     if (!beneficiary.departureDate) errors["beneficiary.departureDate"] = ["La date de départ est requise."];
     if (!beneficiary.returnDate) errors["beneficiary.returnDate"] = ["La date de retour est requise."];
     if (!beneficiary.departureTime) errors["beneficiary.departureTime"] = ["L'heure de départ est requise."];
@@ -321,7 +329,7 @@ const useMissionForm = ({
       }
     }
 
-    const fieldsToClean = ["beneficiary.beneficiary", "beneficiary.departureDate", "beneficiary.returnDate", "beneficiary.departureTime", "beneficiary.returnTime", "beneficiary.missionDuration"];
+    const fieldsToClean = ["beneficiary.departureDate", "beneficiary.returnDate", "beneficiary.departureTime", "beneficiary.returnTime", "beneficiary.missionDuration"];
     fieldsToClean.forEach(field => {
       const formKey = field.split(".").pop() as keyof BeneficiaryFormData;
       const formValue = formData.beneficiary[formKey];
@@ -486,6 +494,15 @@ const useMissionForm = ({
         } else {
           updatedErrors[fieldKey] = [`${name} est requis.`];
         }
+
+        // Clear related beneficiary errors when beneficiary is selected
+        if (name === "beneficiary" && value) {
+          const relatedFields = ["matricule", "function", "base", "direction", "department", "service"];
+          relatedFields.forEach((field) => {
+            delete updatedErrors[`beneficiary.${field}`];
+          });
+        }
+
         return updatedErrors;
       });
     } else if (section === "compensation") {
@@ -539,11 +556,34 @@ const useMissionForm = ({
 
       setFieldErrors((prev) => {
         const updatedErrors = { ...prev };
-        if (value) {
-          delete updatedErrors[name];
-        } else {
-          updatedErrors[name] = [`${name} est requis.`];
+        let errorKey = name;
+        let errorMessage = "";
+        switch (name) {
+          case "missionTitle":
+            errorMessage = "Le titre de la mission est requis.";
+            break;
+          case "missionType":
+            errorMessage = "Le type de mission est requis.";
+            break;
+          case "startDate":
+            errorMessage = "La date de début est requise.";
+            break;
+          case "endDate":
+            errorMessage = "La date de fin est requise.";
+            break;
+          case "location":
+            errorKey = "lieuId";
+            errorMessage = "Le lieu est requis.";
+            break;
+          default:
+            errorMessage = `${name} est requis.`;
         }
+        if (value) {
+          delete updatedErrors[errorKey];
+        } else if (name !== "description") {
+          updatedErrors[errorKey] = [errorMessage];
+        }
+
         return updatedErrors;
       });
     }
