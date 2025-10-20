@@ -189,9 +189,10 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     return menuItem.label;
   }, []);
 
-  // Find menu item by path
+  // Find menu item by path (modifié pour inclure le matching par préfixe)
   const findMenuItemByPath = useCallback(
     (items: MenuItem[], targetPath: string): MenuPathResult | null => {
+      // Logique existante pour match exact
       for (const item of items) {
         if (item.menu.link === targetPath) {
           return {
@@ -221,6 +222,50 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
           }
         }
       }
+
+      // NOUVEAU : Matching par préfixe pour routes enfants (ex. /mission/collaborateur/:id)
+      // On cherche le menu dont le lien est un préfixe du chemin actuel
+      for (const item of items) {
+        if (targetPath.startsWith(item.menu.link)) {
+          return {
+            item: item.menu,
+            parentKey: null, // C'est le parent direct
+            title: getMenuLabel(item.menu),
+          };
+        }
+        if (item.children && item.children.length > 0) {
+          for (const child of item.children) {
+            if (targetPath.startsWith(child.menu.link)) {
+              return {
+                item: child.menu,
+                parentKey: item.menu.menuKey,
+                title: getMenuLabel(child.menu),
+              };
+            }
+            if (child.children && child.children.length > 0) {
+              const deepResult: MenuPathResult | null = (() => {
+                for (const deepChild of child.children) {
+                  if (targetPath.startsWith(deepChild.menu.link)) {
+                    return {
+                      item: deepChild.menu,
+                      parentKey: child.menu.menuKey,
+                      title: getMenuLabel(deepChild.menu),
+                    };
+                  }
+                }
+                return null;
+              })();
+              if (deepResult) {
+                return {
+                  ...deepResult,
+                  parentKey: `${item.menu.menuKey}|${child.menu.menuKey}`, // Chaîne pour multi-niveaux si besoin
+                };
+              }
+            }
+          }
+        }
+      }
+
       return null;
     },
     [getMenuLabel]
@@ -319,7 +364,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     }
   }, [menuData, initializeExpandedMenus]);
 
-  // Update active item etc.
+  // Update active item etc. (modifié pour gérer le parentKey avec préfixe)
   useEffect(() => {
     if (menuData.length === 0) return;
     const currentPath = location.pathname === "/" ? "/" : location.pathname + location.hash;
@@ -341,8 +386,14 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
       }
       setExpandedMenus((prev) => {
         const newExpanded = { ...prev };
+        // Active le parent si parentKey existe (ex. "mission" pour "collaborateur")
+        if (parentKey) {
+          newExpanded[parentKey.split('|')[0]] = true; // Prend le premier niveau parent si multi-niveaux
+        }
         Object.keys(newExpanded).forEach((key) => {
-          newExpanded[key] = key === parentKey;
+          if (key !== item.menuKey && key !== (parentKey ? parentKey.split('|')[0] : null)) {
+            newExpanded[key] = false;
+          }
         });
         return newExpanded;
       });

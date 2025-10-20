@@ -154,7 +154,7 @@ public class RoleService : IRoleService
             _logger.LogInformation("Rôle mis à jour avec succès avec l'ID: {RoleId}", id);
 
             if (userId != null)
-                await _logService.LogAsync("MODIFIER","ROLE", existingRole, roleToUpdate, userId, "Name,Description");
+                await _logService.LogAsync("MODIFICATION","ROLE", existingRole, roleToUpdate, userId, "Name,Description");
         }
         catch (Exception ex)
         {
@@ -182,7 +182,7 @@ public class RoleService : IRoleService
 
             _logger.LogInformation("Rôle supprimé avec succès pour l'ID: {RoleId}", id);
 
-            await _logService.LogAsync("SUPPRIMER","ROLE", existingRole, null, userId,"Name,Description");
+            await _logService.LogAsync("SUPPRESSION","ROLE", existingRole, null, userId,"Name,Description");
         }
         catch (Exception ex)
         {

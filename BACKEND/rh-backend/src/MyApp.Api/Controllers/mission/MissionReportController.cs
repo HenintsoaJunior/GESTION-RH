@@ -21,13 +21,13 @@ namespace MyApp.Api.Controllers.mission
         
         // GET: api/MissionReport/assignation/{assignationId}
         [HttpGet("assignation/{assignationId}")]
-        // [AllowAnonymous]
+        [AllowAnonymous]
         public async Task<ActionResult> GetByAssignationId(string assignationId)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
 
             if (string.IsNullOrEmpty(assignationId))
             {
@@ -52,13 +52,13 @@ namespace MyApp.Api.Controllers.mission
 
         // GET: api/MissionReport
         [HttpGet]
-        // [AllowAnonymous]
+        [AllowAnonymous]
         public async Task<ActionResult> GetAll()
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
 
             try
             {

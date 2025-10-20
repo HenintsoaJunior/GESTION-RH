@@ -47,6 +47,7 @@ import {
   PopupContent,
 } from "@/styles/popup-styles";
 import ProtectedRoute from "@/components/protected-route";
+import { formatDateTime } from "@/utils/date-converter";
 
 interface UserSuggestion {
   id: string;
@@ -107,11 +108,22 @@ const LogDetailsPopup: React.FC<LogDetailsPopupProps> = ({ isOpen, onClose, log,
 
   const hasChanges = parsedOldValues || parsedNewValues;
 
-  const formatValue = (value: unknown): string => {
+  const formatValue = (value: unknown, key?: string): string => {
     if (value === null || value === undefined) return "Aucun";
+    if (typeof value === 'string' && value.trim() === '') return "Aucun";
     if (Array.isArray(value)) return (value as unknown[]).join(", ");
-    if (typeof value === 'object') return '[Objet]';
-    return String(value);
+    if (typeof value === 'object' && value !== null) return '[Objet]';
+    const str = String(value);
+    const isDateField = key && /date|time/i.test(key);
+    const isIsoDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})?$/.test(str);
+    if ((isDateField || isIsoDate) && str !== "Aucun") {
+      try {
+        return formatDateTime(str);
+      } catch {
+        return str;
+      }
+    }
+    return str;
   };
 
   const getDisplayName = (key: string): string => {
@@ -122,13 +134,32 @@ const LogDetailsPopup: React.FC<LogDetailsPopupProps> = ({ isOpen, onClose, log,
     return fieldKey === "UserNames" || fieldKey === "RoleNamesPerUser";
   };
 
+  // Fonction pour rendre le HTML en toute sécurité (utilise dangerouslySetInnerHTML)
+  const renderHtmlValue = (htmlString: string): JSX.Element => (
+    <div dangerouslySetInnerHTML={{ __html: htmlString }} />
+  );
+
+  // Vérifie si la valeur ressemble à du HTML (présence de balises)
+  const isHtmlString = (value: unknown): boolean => {
+    if (typeof value !== 'string') return false;
+    return /<[a-z][\s\S]*>/i.test(value);
+  };
+
+  const renderValueCell = (value: unknown, key?: string): JSX.Element => {
+    const formattedValue = formatValue(value, key);
+    if (isHtmlString(value)) {
+      return renderHtmlValue(formattedValue);
+    }
+    return <>{formattedValue}</>;
+  };
+
   const renderChanges = () => {
     const oldKeys = parsedOldValues ? Object.keys(parsedOldValues) : [];
     const newKeys = parsedNewValues ? Object.keys(parsedNewValues) : [];
     const allKeys = [...new Set([...oldKeys, ...newKeys])];
 
     // Collect simple changes
-    const simpleChanges: { field: string; old: string; new: string }[] = [];
+    const simpleChanges: { field: string; old: unknown; new: unknown }[] = [];
     // Collect nested renders
     const nestedRenders: JSX.Element[] = [];
 
@@ -165,13 +196,11 @@ const LogDetailsPopup: React.FC<LogDetailsPopupProps> = ({ isOpen, onClose, log,
                   const oldSubVal = oldSub[subKey];
                   const newSubVal = newSub[subKey];
                   const subDisplay = isUserField(key) ? getDisplayName(subKey) : subKey;
-                  const oldDisplay = formatValue(oldSubVal);
-                  const newDisplay = formatValue(newSubVal);
                   return (
                     <TableRow key={subKey}>
                       <TableCell>{subDisplay}</TableCell>
-                      <TableCell>{oldDisplay}</TableCell>
-                      <TableCell>{newDisplay}</TableCell>
+                      <TableCell>{renderValueCell(oldSubVal, subKey)}</TableCell>
+                      <TableCell>{renderValueCell(newSubVal, subKey)}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -181,9 +210,9 @@ const LogDetailsPopup: React.FC<LogDetailsPopupProps> = ({ isOpen, onClose, log,
         );
         nestedRenders.push(table);
       } else {
-        const oldDisplay = formatValue(oldVal);
-        const newDisplay = formatValue(newVal);
-        if (oldDisplay === newDisplay && oldDisplay !== "Aucun") return;
+        const oldDisplay = oldVal;
+        const newDisplay = newVal;
+        if (formatValue(oldDisplay, key) === formatValue(newDisplay, key) && formatValue(oldDisplay, key) !== "Aucun") return;
         simpleChanges.push({ field: key, old: oldDisplay, new: newDisplay });
       }
     });
@@ -208,8 +237,8 @@ const LogDetailsPopup: React.FC<LogDetailsPopupProps> = ({ isOpen, onClose, log,
               {simpleChanges.map(({ field, old, new: newVal }) => (
                 <TableRow key={field}>
                   <TableCell>{field}</TableCell>
-                  <TableCell>{old}</TableCell>
-                  <TableCell>{newVal}</TableCell>
+                  <TableCell>{renderValueCell(old, field)}</TableCell>
+                  <TableCell>{renderValueCell(newVal, field)}</TableCell>
                 </TableRow>
               ))}
             </tbody>
@@ -298,7 +327,7 @@ const LogList: React.FC = () => {
     pageSize
   );
 
-  const actionSuggestions = ["Créer", "Lire", "Mettre à jour", "Supprimer"];
+  const actionSuggestions = ["INSERTION", "MODIFICATION", "SUPPRESSION", "VALIDATION","AUTHENTICATION"];
   const userNameSuggestions = suggestions.users
     .filter((u) =>
       !displayFilters.userName || u.displayName.toLowerCase().includes(displayFilters.userName.toLowerCase())
@@ -570,7 +599,7 @@ const LogList: React.FC = () => {
                     <TableCell>{log.tableName || "Non spécifié"}</TableCell>
                     <TableCell>{log.user?.name || "Non spécifié"}</TableCell>
                     <TableCell>
-                      {log.createdAt ? new Date(log.createdAt).toLocaleString("fr-FR") : "Non spécifié"}
+                      {log.createdAt ? formatDateTime(log.createdAt) : "Non spécifié"}
                     </TableCell>
                     <TableCell>
                       {log.oldValues || log.newValues ? (

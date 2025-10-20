@@ -1,4 +1,4 @@
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 
 interface StepItemProps {
   $status?: string;
@@ -7,19 +7,7 @@ interface StepItemProps {
 
 interface StepCircleProps {
   $status?: string;
-  $hasIndicator?: boolean;
 }
-
-export const StepperContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background-color: var(--bg-primary);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
-`;
 
 export const StepItem = styled.div<StepItemProps>`
   display: flex;
@@ -28,17 +16,69 @@ export const StepItem = styled.div<StepItemProps>`
   position: relative;
   flex: 1;
   cursor: ${({ $isActive }) => ($isActive ? "pointer" : "default")};
+  padding: var(--spacing-md) 0;
 
   &:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: 20px;
+    top: 35px;
     right: -50%;
     width: 100%;
     height: 2px;
     background-color: ${({ $status }) =>
       $status === "approved" ? "var(--success-color)" : "var(--border-color)"};
     z-index: 1;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    flex: none;
+    width: 100%;
+
+    &:not(:last-child)::after {
+      top: -50%;
+      right: auto;
+      bottom: 20px;
+      left: 20px;
+      width: 2px;
+      height: 100%;
+      background-color: ${({ $status }) =>
+        $status === "approved" ? "var(--success-color)" : "var(--border-color)"};
+    }
+  }
+`;
+
+export const StepperContainer = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  margin: var(--spacing-lg) 0;
+  padding: 0;
+
+  background: var(--bg-primary);
+  border-radius: 0;
+  margin-top: 0;
+  margin-bottom: var(--spacing-lg);
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  border: none;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-left: var(--spacing-3xl);
+  padding-right: var(--spacing-3xl);
+  padding-bottom: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+
+  @media (max-width: 768px) {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+    flex-direction: column;
+    gap: var(--spacing-md);
   }
 `;
 
@@ -56,24 +96,26 @@ export const StepCircle = styled.div<StepCircleProps>`
   margin-bottom: 0.5rem;
 
   background-color: ${({ $status }) => {
-    if ($status === "validate") return "var(--success-color)";
     if ($status === "approved") return "var(--success-color)";
-    if ($status === "in-progress" || $status === "pending") return "var(--pending-color)";
+    if ($status === "in-progress" || $status === "pending") return "var(--warning-color)";
     if ($status === "rejected") return "var(--error-color)";
-    return "var(--text-muted)";
+    return "var(--bg-secondary)";
   }};
 
-  color: white;
+  color: ${({ $status }) => 
+    $status === "approved" || $status === "rejected" || $status === "in-progress" || $status === "pending" 
+      ? "white" 
+      : "var(--text-primary)"
+  };
 
-  ${({ $hasIndicator }) =>
-    $hasIndicator &&
-    css`
-      &::after {
-        content: '✓';
-        position: absolute;
-        font-size: 0.8rem;
-      }
-    `}
+  border: 3px solid ${({ $status }) => {
+    if ($status === "approved") return "var(--success-color)";
+    if ($status === "in-progress" || $status === "pending") return "var(--warning-color)";
+    if ($status === "rejected") return "var(--error-color)";
+    return "var(--border-light)";
+  }};
+
+  transition: all 0.3s ease;
 `;
 
 export const StepLabel = styled.div`
@@ -88,4 +130,12 @@ export const StepSubtitle = styled.div`
   text-align: center;
   font-size: 0.8rem;
   color: var(--text-muted);
+`;
+
+export const ValidationDateText = styled.p`
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-style: italic;
+  text-align: center;
 `;

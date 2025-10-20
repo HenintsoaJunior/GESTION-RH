@@ -2,11 +2,12 @@
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { ArrowLeft, Save, List, FileText, Edit2, Trash2, X } from "lucide-react";
+import { PageHeader, HeaderLeft, BtnBack, HeaderActions, SaveButton, ToggleButton, EditButton, DeleteButton, CancelButton, ReportTextContainer, ReportHeader, ReportActions } from "@/styles/detailsmission-styles";
 import Alert from "@/components/alert";
 import {
     DetailSection,
     SectionTitle,
-    ActionButton,
+    Separator,
 } from "@/styles/detailsmission-styles";
 import {
     FormTable,
@@ -16,7 +17,6 @@ import {
 } from "@/styles/form-container";
 import { NoDataMessage } from "@/styles/table-styles";
 import RichTextEditor from "@/components/rich-text-editor";
-import styled from "styled-components";
 import { 
     useMissionReports,
     useCreateMissionReport, 
@@ -25,99 +25,6 @@ import {
     type MissionReport as MissionReportType
 } from "@/api/mission/report/services";
 import { useQueryClient } from '@tanstack/react-query';
-
-const SaveButton = styled(ActionButton)`
-    background-color: var(--success-color, #28a745);
-    border-color: var(--success-color, #28a745);
-
-    &:hover {
-        background-color: #ffffff;
-        color: var(--success-color, #28a745);
-        border-color: var(--success-color, #28a745);
-    }
-`;
-
-const ToggleButton = styled(ActionButton)`
-    background-color: var(--primary-color, #007bff);
-    border-color: var(--primary-color, #007bff);
-    margin-right: 10px;
-
-    &:hover {
-        background-color: #ffffff;
-        color: var(--primary-color, #007bff);
-        border-color: var(--primary-color, #007bff);
-    }
-`;
-
-const EditButton = styled(ActionButton)`
-    background-color: var(--warning-color, #ffc107);
-    border-color: var(--warning-color, #ffc107);
-    color: #000;
-    margin-right: 10px;
-
-    &:hover {
-        background-color: #ffffff;
-        color: var(--warning-color, #ffc107);
-        border-color: var(--warning-color, #ffc107);
-    }
-`;
-
-const DeleteButton = styled(ActionButton)`
-    background-color: var(--danger-color, #dc3545);
-    border-color: var(--danger-color, #dc3545);
-
-    &:hover {
-        background-color: #ffffff;
-        color: var(--danger-color, #dc3545);
-        border-color: var(--danger-color, #dc3545);
-    }
-`;
-
-const CancelButton = styled(ActionButton)`
-    background-color: var(--secondary-color, #6c757d);
-    border-color: var(--secondary-color, #6c757d);
-    margin-right: 10px;
-
-    &:hover {
-        background-color: #ffffff;
-        color: var(--secondary-color, #6c757d);
-        border-color: var(--secondary-color, #6c757d);
-    }
-`;
-
-const ReportTextContainer = styled.div`
-    background-color: #ffffff;
-    padding: 20px;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    margin-bottom: 20px;
-    font-family: 'Times New Roman', Times, serif;
-    font-size: 16px;
-    line-height: 1.6;
-    color: #333;
-
-    & p {
-        margin: 0 0 10px 0;
-    }
-
-    & + & {
-        border-top: 1px solid #e0e0e0;
-    }
-`;
-
-const ReportHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #e0e0e0;
-`;
-
-const ReportActions = styled.div`
-    display: flex;
-    gap: 10px;
-`;
 
 type AlertType = "error" | "success" | "info" | "warning";
 
@@ -201,20 +108,22 @@ const useMissionReport = (
   const [isEditMode, setIsEditMode] = useState(false);
 
   const { data: allReportsResponse, isLoading: allReportsLoading } = useMissionReports();
-  const missionReports = useMemo(() => allReportsResponse?.data?.data || [], [allReportsResponse]);
+  // Access the data directly as array
+  const allMissionReports = useMemo(() => allReportsResponse?.data || [], [allReportsResponse]);
+  // Debug log (remove after testing)
+  console.log('allMissionReports:', allMissionReports);
+  console.log('assignationId prop:', assignationId);
+  
+  // Since only one report per person, get the first (or only) matching report
   const filteredReports = useMemo(() => {
-    const filtered = missionReports.filter((report: MissionReportType) => 
-      report.assignationId.trim() === assignationId.trim() && 
-      (!userId || report.userId === userId)
+    const matching = allMissionReports.filter((report: MissionReportType) => 
+      report.assignationId.trim() === assignationId.trim()
     );
-    // Debug logs (remove in production)
-    console.log('Debug - assignationId:', assignationId);
-    console.log('Debug - userId:', userId);
-    console.log('Debug - missionReports:', missionReports);
-    console.log('Debug - filteredReports:', filtered);
-    return filtered;
-  }, [missionReports, assignationId, userId]) as MissionReportType[];
+    // Return the first one if exists, or empty
+    return matching.length > 0 ? [matching[0]] : [];
+  }, [allMissionReports, assignationId]) as MissionReportType[];
   const hasExistingReport = filteredReports.length > 0;
+  const existingReport = hasExistingReport ? filteredReports[0] : null;
 
   const createMutation = useCreateMissionReport();
   const updateMutation = useUpdateMissionReport();
@@ -303,6 +212,7 @@ const useMissionReport = (
     formData,
     filteredReports,
     hasExistingReport,
+    existingReport,
     isLoading,
     isEditMode,
     editingReportId,
@@ -311,13 +221,13 @@ const useMissionReport = (
     handleEditReport,
     handleDeleteReport,
     handleCancelEdit,
-    allReportsLoading, // Exposer pour le loading spécifique si besoin
+    allReportsLoading,
   };
 };
 
 const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assignationId, onBack }) => {
     const userId = propUserId || (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "{}")?.userId || null : null);
-    const [viewMode, setViewMode] = useState<"form" | "list">("form");
+    const [viewMode, setViewMode] = useState<"form" | "list">("list");
     const queryClient = useQueryClient();
 
     const { alert, showAlert, handleClose } = useAlert();
@@ -344,11 +254,14 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
     }, [onBack]);
 
     const toggleView = useCallback(() => {
-        if (viewMode === "list") {
+        if (viewMode === "list" && hasExistingReport) {
+            return;
+        }
+        if (viewMode === "form") {
             handleCancelEdit();
         }
         setViewMode((prev) => (prev === "form" ? "list" : "form"));
-    }, [viewMode, handleCancelEdit]);
+    }, [viewMode, handleCancelEdit, hasExistingReport]);
 
     const handleSaveClick = useCallback(async () => {
         const success = await handleSaveReport();
@@ -382,35 +295,36 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
         ? "Le rapport est vide"
         : isEditMode ? "Mettre à jour le rapport" : "Enregistrer le rapport";
 
+    const shouldShowToggleButton = viewMode === "form" || !hasExistingReport;
+
     return (
         <>
-            <div className="page-header">
-                <div className="header-left">
-                    <button 
-                        onClick={handleBack} 
-                        className="btn-back" 
-                        title="Retour aux missions"
-                        disabled={isLoading}
-                    >
+            <PageHeader>
+                <HeaderLeft>
+                    <BtnBack onClick={handleBack} title="Retour aux missions">
                         <ArrowLeft className="w-5 h-5" />
-                    </button>
+                    </BtnBack>
+                </HeaderLeft>
+                <div className="header-center">
                     <div className="header-title-section">
                         <h1 className="page-title">Rapport de Mission</h1>
                         <p className="page-subtitle">Assignation #{assignationId}</p>
                     </div>
                 </div>
-                <div className="header-right">
-                    <ToggleButton
-                        onClick={toggleView}
-                        disabled={isLoading}
-                        title={viewMode === "form" ? "Voir la liste des rapports" : "Créer un nouveau rapport"}
-                    >
-                        {viewMode === "form" ? <List size={16} /> : <FileText size={16} />}
-                        {viewMode === "form" ? "Liste" : "Nouveau Rapport"}
-                    </ToggleButton>
-                </div>
-            </div>
-
+                <HeaderActions>
+                    {shouldShowToggleButton && (
+                        <ToggleButton
+                            onClick={toggleView}
+                            disabled={isLoading}
+                            title={viewMode === "form" ? "Voir la liste des rapports" : "Créer un nouveau rapport"}
+                        >
+                            {viewMode === "form" ? <List size={16} /> : <FileText size={16} />}
+                            {viewMode === "form" ? "Liste" : "Nouveau Rapport"}
+                        </ToggleButton>
+                    )}
+                </HeaderActions>
+            </PageHeader>
+            <Separator />
             {alert.isOpen && (
                 <Alert
                     type={alert.type}
@@ -470,7 +384,7 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                 </DetailSection>
             ) : (
                 <DetailSection>
-                    <SectionTitle>Liste des Rapports</SectionTitle>
+                    <SectionTitle>Liste</SectionTitle>
                     {isLoading ? (
                         <NoDataMessage>Chargement des rapports...</NoDataMessage>
                     ) : filteredReports.length === 0 ? (
@@ -483,7 +397,9 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                                         <div>
                                             <strong>Rapport #{report.missionReportId}</strong>
                                         </div>
+                                        
                                         <ReportActions>
+                                          
                                             <EditButton
                                                 onClick={() => handleEditClick(report)}
                                                 disabled={isLoading}
@@ -500,6 +416,7 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                                             </DeleteButton>
                                         </ReportActions>
                                     </ReportHeader>
+                                    
                                     <div dangerouslySetInnerHTML={{ __html: report.text }} />
                                 </ReportTextContainer>
                             ))}
