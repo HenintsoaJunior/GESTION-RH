@@ -111,7 +111,7 @@ namespace MyApp.Api.Services.mission
                 await _repository.SaveChangesAsync();
 
                 _logger.LogInformation("Rapport de mission créé avec l'ID: {MissionReportId}", entity.MissionReportId);
-                await _logService.LogAsync("INSERTION", null, entity, dto.UserId,"Text,AssignationId");
+                await _logService.LogAsync("INSERTION","RAPPORT MISSION", null, entity, dto.UserId,"Text");
 
                 return entity.MissionReportId;
             }
@@ -154,7 +154,7 @@ namespace MyApp.Api.Services.mission
                 await _repository.SaveChangesAsync();
 
                 _logger.LogInformation("Rapport de mission mis à jour avec succès avec l'ID: {MissionReportId}", id);
-                await _logService.LogAsync("MODIFICATION", existing, updated, dto.UserId,"Text,AssignationId");
+                await _logService.LogAsync("MODIFICATION","RAPPORT MISSION", existing, updated, dto.UserId,"Text");
 
                 return true;
             }
@@ -186,7 +186,7 @@ namespace MyApp.Api.Services.mission
                 await _repository.SaveChangesAsync();
 
                 _logger.LogInformation("Rapport de mission supprimé avec succès avec l'ID: {MissionReportId}", id);
-                await _logService.LogAsync("SUPPRESSION", existing, null, userId,"Text,AssignationId");
+                await _logService.LogAsync("SUPPRESSION","RAPPORT MISSION", existing, null, userId,"Text");
 
                 return true;
             }

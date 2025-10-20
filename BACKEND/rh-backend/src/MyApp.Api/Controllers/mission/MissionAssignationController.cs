@@ -89,13 +89,13 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpGet("{assignationId}")]
-        // [AllowAnonymous]
+        [AllowAnonymous]
         public async Task<IActionResult> GetByAssignationId(string assignationId)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
             try
             {
                 var missionAssignation = await _service.GetByAssignationIdAsync(assignationId);

@@ -348,7 +348,7 @@ namespace MyApp.Api.Services.users
 
                 var newBulkData = new { UserNames = newUserNames, UTILISATEUR_ROLE = newUTILISATEUR_ROLE };
                 
-                await _logService.LogAsync("SUPPRIMER", "UTILISATEUR_ROLE", oldBulkData, newBulkData, dto.UserIdLog, "UTILISATEUR_ROLE");
+                await _logService.LogAsync("SUPPRESSION", "UTILISATEUR_ROLE", oldBulkData, newBulkData, dto.UserIdLog, "UTILISATEUR_ROLE");
 
             }
             catch (Exception ex)

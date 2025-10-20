@@ -1,4 +1,4 @@
-import { Save } from "lucide-react";
+import { Save, X } from "lucide-react";
 import * as FaIcons from "react-icons/fa";
 import {
     PopupOverlay,
@@ -190,7 +190,7 @@ const MissionForm: React.FC<MissionFormProps> = ({
                         aria-label="Fermer le formulaire"
                         title="Fermer"
                     >
-                        <FaIcons.FaTimes className="w-5 h-5" />
+                        <X className="w-5 h-5" />
                     </PopupClose>
                 </PopupHeader>
 
@@ -224,7 +224,7 @@ const MissionForm: React.FC<MissionFormProps> = ({
                                 aria-label="Fermer la modale"
                                 type="button"
                             >
-                                ×
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="modal-body">
@@ -242,17 +242,17 @@ const MissionForm: React.FC<MissionFormProps> = ({
                         </div>
                     </Modal>
 
-                    <FormContainer>
-                        {/* Stepper de navigation */}
-                        <StepperWrapper>
-                            <StepItem active={currentStep === 1}>
-                                <span>1</span> Mission & Collaborateur
-                            </StepItem>
-                            <StepItem active={currentStep === 2}>
-                                <span>2</span> Date & Compensation
-                            </StepItem>
-                        </StepperWrapper>
+                    {/* Stepper de navigation */}
+                    <StepperWrapper>
+                        <StepItem active={currentStep === 1}>
+                            <span>1</span> Mission & Collaborateur
+                        </StepItem>
+                        <StepItem active={currentStep === 2}>
+                            <span>2</span> Date & Compensation
+                        </StepItem>
+                    </StepperWrapper>
 
+                    <FormContainer>
                         {/* Formulaire multi-étapes */}
                         <GenericForm id="combinedMissionForm" onSubmit={handleSubmit}>
                             {/* Étape 1: Mission et Collaborateur */}

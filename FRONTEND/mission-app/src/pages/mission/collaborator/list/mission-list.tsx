@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { ChevronDown, ChevronUp, X, List, Search, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   FiltersContainer,
   FiltersHeader,
@@ -45,7 +46,6 @@ import type { UserInfo, UserInfosResponse } from "@/api/users/services";
 import Alert from "@/components/alert";
 import Modal from "@/components/modal";
 import Pagination from "@/components/pagination";
-import DetailsMission from "../details/mission-details";
 import MissionForm from "../form/index";
 import { getStatusBadgeClass, englishToFrench } from "@/utils/status";
 import ProtectedRoute from "@/components/protected-route";
@@ -64,6 +64,7 @@ interface AlertState {
 }
 
 const MissionList: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'mes' | 'toutes' | 'collaborateurs'>('mes');
   const [filters, setFilters] = useState<FiltersState>({
     employeeId: "",
@@ -102,7 +103,6 @@ const MissionList: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [totalCount, setTotalCount] = useState<number>(0);
-  const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
 
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
@@ -225,8 +225,6 @@ const MissionList: React.FC = () => {
 
   const assignations = useMemo(() => searchResponse?.data?.data || [], [searchResponse?.data?.data]);
 
-  const filteredAssignations = useMemo(() => assignations, [assignations]);
-
   const showNoCollaboratorsMessage = useMemo(() => {
     const collaboratorsData = collaboratorsResponse?.data as UserInfo[] || [];
     return activeTab === 'collaborateurs' && collaboratorsData.length === 0;
@@ -247,8 +245,8 @@ const MissionList: React.FC = () => {
     if (action === "details" && canViewDetails) {
       if (selectedAssignations.length === 0) {
         setAlert({ isOpen: true, type: "warning", message: "Veuillez sélectionner au moins une assignation." });
-      } else {
-        setIsDetailsOpen(true);
+      } else if (selectedMissionId) {
+        navigate(`/mission/collaborateur/${selectedMissionId}`);
       }
     } else if (action === "modifier" && canModifyMission) {
       if (selectedAssignations.length === 0) {
@@ -264,7 +262,7 @@ const MissionList: React.FC = () => {
       }
     }
     e.target.value = "";
-  }, [selectedAssignations, selectedMissionId, canViewDetails, canModifyMission, canCancelMission]);
+  }, [selectedAssignations, selectedMissionId, canViewDetails, canModifyMission, canCancelMission, navigate]);
 
   const handleCancelConfirm = useCallback(() => {
     setAlert({ isOpen: true, type: "success", message: "Assignation(s) annulée(s) avec succès." });
@@ -368,12 +366,6 @@ const MissionList: React.FC = () => {
     setFilters((prev) => ({ ...prev, maxArrivalDate: e.target.value || null }));
   }, []);
 
-  const handleCloseDetails = useCallback(() => {
-    setIsDetailsOpen(false);
-    setSelectedAssignations([]);
-    setSelectedMissionId(null);
-  }, []);
-
   const handleOpenForm = useCallback(() => {
     setIsFormOpen(true);
   }, []);
@@ -408,7 +400,6 @@ const MissionList: React.FC = () => {
   useEffect(() => {
     setSelectedAssignations([]);
     setSelectedMissionId(null);
-    setIsDetailsOpen(false);
     setPage(1);
   }, [activeTab, appliedFiltersStr]);
 
@@ -431,15 +422,6 @@ const MissionList: React.FC = () => {
         isOpen={alert.isOpen}
         onClose={() => setAlert({ ...alert, isOpen: false })}
       />
-
-      {isDetailsOpen && selectedMissionId && (
-        <DetailsMission
-          missionId={selectedMissionId}
-          userId={userId}
-          onClose={handleCloseDetails}
-          isOpen={isDetailsOpen}
-        />
-      )}
 
       {isFormOpen && (
         <MissionForm
@@ -690,15 +672,14 @@ const MissionList: React.FC = () => {
                     <NoDataMessage>Aucun collaborateur trouvé.</NoDataMessage>
                   </TableCell>
                 </TableRow>
-              ) : filteredAssignations.length > 0 ? (
-                filteredAssignations.map((assignation: MissionAssignation, index: number) => {
+              ) : assignations.length > 0 ? (
+                assignations.map((assignation: MissionAssignation, index: number) => {
                   const isSelected = selectedAssignations.includes(assignation.assignationId);
                   const rawStatus = assignation.mission.status;
                   const trimmedLowerStatus = rawStatus.trim().toLowerCase();
                   const frenchStatus = englishToFrench[trimmedLowerStatus] || rawStatus.trim();
-                 const statusClass = getStatusBadgeClass(rawStatus);
+                  const statusClass = getStatusBadgeClass(rawStatus);
 
-                  
                   return (
                     <TableRow
                       key={`${assignation.assignationId}-${index}`}

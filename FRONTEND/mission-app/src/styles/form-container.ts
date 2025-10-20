@@ -41,7 +41,6 @@ export const InputButtonContainer = styled.div`
 export const FormContainer = styled.div`
   font-family: var(--font-family);
   background: var(--bg-primary);
-  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
   margin: var(--spacing-xl) auto;
   padding: var(--spacing-lg);

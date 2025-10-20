@@ -64,15 +64,6 @@ interface ApiResponse<T> {
   message: string;
 }
 
-// Specific response interfaces
-interface MissionReportsResponseData {
-  data: MissionReport[];
-}
-
-interface MissionReportResponseData {
-  data: MissionReport;
-}
-
 interface CreateMissionReportResponseData {
   missionReportId: string;
 }
@@ -104,11 +95,12 @@ interface UpdateMissionReportRequest {
 
 // Hook for fetching all mission reports
 export const useMissionReports = () => {
-  return useQuery<ApiResponse<MissionReportsResponseData>, Error>({
+  return useQuery<ApiResponse<MissionReport[]>, Error>({
     queryKey: MISSION_REPORTS_BASE_KEY,
     queryFn: async () => {
       try {
         const response = await api.get('/api/MissionReport');
+        console.log('Mission Reports Response:', response.data);
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -122,7 +114,7 @@ export const useMissionReports = () => {
 
 // Hook for fetching a single mission report
 export const useMissionReport = (missionReportId: string) => {
-  return useQuery<ApiResponse<MissionReportResponseData>, Error>({
+  return useQuery<ApiResponse<MissionReport>, Error>({
     queryKey: [...MISSION_REPORT_BY_ID_BASE_KEY, missionReportId],
     queryFn: async () => {
       try {

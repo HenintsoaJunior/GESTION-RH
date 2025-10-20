@@ -104,7 +104,7 @@ public class RoleHabilitationService : IRoleHabilitationService
 
             var newBulkData = new { RoleNames = newRoleNames, ROLE_HABILITATION = newROLE_HABILITATION };
             
-            await _logService.LogAsync("CREER","ROLE_HABILITATION", oldBulkData, newBulkData, dto.UserIdLog, "ROLE_HABILITATION");
+            await _logService.LogAsync("INSERTION","ROLE_HABILITATION", oldBulkData, newBulkData, dto.UserIdLog, "ROLE_HABILITATION");
 
             return role;
         }
@@ -291,7 +291,7 @@ public class RoleHabilitationService : IRoleHabilitationService
 
             var newBulkData = new { RoleNames = newRoleNames, ROLE_HABILITATION = newROLE_HABILITATION };
             
-            await _logService.LogAsync("MODIFIER","ROLE_HABILITATION", oldBulkData, newBulkData, dto.UserIdLog, "ROLE_HABILITATION");
+            await _logService.LogAsync("MODIFICATION","ROLE_HABILITATION", oldBulkData, newBulkData, dto.UserIdLog, "ROLE_HABILITATION");
 
             _logger.LogInformation("Relations rôle-habilitation mises à jour avec succès");
         }

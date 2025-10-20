@@ -86,7 +86,7 @@ namespace MyApp.Api.Services.mission
                 var existingAttachments = await _repository.GetByAssignationIdAsync(assignationId);
                 if (!existingAttachments.Any())
                 {
-                    _logger.LogInformation("Aucune pièce jointe à supprimer pour assignationId: {AssignationId}", assignationId);
+                    _logger.LogInformation("Aucune pièce jointe à SUPPRESSION pour assignationId: {AssignationId}", assignationId);
                     return true;
                 }
 

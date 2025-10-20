@@ -20,8 +20,8 @@ export interface User {
   userType: number | null;
   refreshToken: string | null;
   refreshTokenExpiry: string | null;
-  userRoles: any[];
-  userHabilitations: any[];
+  userRoles: unknown[];
+  userHabilitations: unknown[];
   createdAt: string;
   updatedAt: string;
 }
@@ -62,9 +62,9 @@ export interface MissionAssignation {
   returnTime: string;
   duration: number;
   isValidated: number | null;
-  employee: any | null;
+  employee: unknown | null;
   mission: Mission | null;
-  transport: any | null;
+  transport: unknown | null;
   type: string;
   allocatedFund: number;
   createdAt: string;
@@ -231,32 +231,29 @@ export const useValidateMission = (userId: string) => {
       throw new Error("Invalid action. Must be 'validate' or 'reject'");
     }
 
-    try {
-      const payload = {
-        missionValidationId,
-        missionAssignationId,
-        userId,
-        ...(action === "validate" && {
-          type,
-          missionBudget,
-          validation: true,
-          isSureToConfirm: true
-        }),
-        ...(action === "reject" && {
-          comment
-        })
-      };
+    const payload = {
+      missionValidationId,
+      missionAssignationId,
+      userId,
+      ...(action === "validate" && {
+        type,
+        missionBudget,
+        validation: true,
+        isSureToConfirm: true
+      }),
+      ...(action === "reject" && {
+        comment
+      })
+    };
 
-      const endpoint = action === "validate" ? "/api/MissionValidation/validate" : "/api/MissionValidation/reject";
+    const endpoint: "/api/MissionValidation/validate" | "/api/MissionValidation/reject" = 
+      action === "validate" ? "/api/MissionValidation/validate" : "/api/MissionValidation/reject";
 
-      const response = await api.post(endpoint, payload);
-      if (response.data.status !== 200) {
-        throw new Error(response.data.message || `Failed to ${action} mission validation`);
-      }
-      
-      return response.data.data;
-    } catch (error) {
-      throw error;
+    const response = await api.post(endpoint, payload);
+    if (response.data.status !== 200) {
+      throw new Error(response.data.message || `Failed to ${action} mission validation`);
     }
+    
+    return response.data.data;
   }, [userId]);
 };

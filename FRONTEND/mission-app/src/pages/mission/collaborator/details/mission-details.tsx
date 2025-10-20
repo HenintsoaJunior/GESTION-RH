@@ -1,20 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { X, Download, CheckCircle, Send, Edit2, Trash2 } from "lucide-react";
+import { Download, CheckCircle, Send, Edit2, Trash2, X, ArrowLeft } from "lucide-react";
+import { useParams, useNavigate, Routes, Route } from "react-router-dom";
 import ValidationStepper from "@/pages/stepper/index";
 import Alert from "@/components/alert";
 import MissionReport from "./report/mission-report";
 import OMPayment from "./payment/om-payment";
 import OMNoteDeFrais from "../details/expense/om-note-de-frais";
-import {
-  PopupOverlay,
-  PagePopup,
-  PopupHeader,
-  PopupTitle,
-  PopupClose,
-  PopupContent,
-} from "@/styles/popup-styles";
 import {
   LoadingContainer,
   ContentArea,
@@ -32,10 +24,14 @@ import {
   InfoLabel,
   InfoValue,
   CommentText,
-  ButtonContainer,
   OMPaymentButton,
   MissionReportButton,
-  ButtonOMPDF
+  ButtonOMPDF,
+  PageHeader,
+  HeaderLeft,
+  BtnBack,
+  HeaderActions,
+  Separator,
 } from "@/styles/detailsmission-styles";
 import {
   useSearchMissionAssignations,
@@ -55,11 +51,12 @@ import {
   type Compensation,
 } from "@/api/compensation/services";
 import { formatDate } from "@/utils/date-converter";
+import { StatusBadge } from "@/styles/table-styles";
+import { getStatusBadgeClass, englishToFrench } from "@/utils/status";
 import {
   CommentSection,
   CommentInputGroup,
   CommentButton,
-  CommentLabel,
   CommentTextarea,
   CommentsList,
   CommentItem,
@@ -68,17 +65,6 @@ import {
   CommentActions,
   CommentActionButton,
 } from "@/styles/comment-styles";
-
-interface AssignedPerson {
-  assignationId: string;
-  employeeId: string;
-  beneficiary: string;
-  directionAcronym?: string;
-  matricule: string;
-  function: string;
-  base: string;
-  type?: string;
-}
 
 interface Comment {
   commentId: string;
@@ -115,13 +101,6 @@ interface AlertState {
   isOpen: boolean;
   type: AlertType;
   message: string;
-}
-
-interface DetailsMissionProps {
-  missionId: string;
-  userId: string | null;
-  onClose: () => void;
-  isOpen?: boolean;
 }
 
 interface CompensationResponse {
@@ -176,6 +155,23 @@ interface MissionPaymentState {
   totalAmount: number;
 }
 
+interface MissionValidation {
+  missionValidationId: string;
+  type: string;
+  status: string;
+  createdAt: string;
+  validationDate?: string | null;
+  comment?: string;
+  validator: {
+    name: string;
+    title?: string;
+    subtitle?: string;
+    email: string;
+    department: string;
+    position: string;
+  };
+}
+
 const useAlert = () => {
   const [alert, setAlert] = useState<AlertState>({
     isOpen: false,
@@ -206,11 +202,6 @@ const useAlert = () => {
     setAlert({ isOpen: false, type: "info", message: "" });
   }, []);
 
-  const resetAlert = useCallback(() => {
-    clearTimers();
-    setAlert({ isOpen: false, type: "info", message: "" });
-  }, [clearTimers]);
-
   useEffect(() => {
     if (alert.isOpen && alert.type === "success") {
       alertTimerRef.current = setTimeout(() => {
@@ -231,7 +222,7 @@ const useAlert = () => {
     };
   }, [clearTimers]);
 
-  return { alert, showAlert, handleClose, resetAlert };
+  return { alert, showAlert, handleClose };
 };
 
 const useComments = (missionId: string, userId: string | null, showAlert: (type: AlertType, message: string) => void) => {
@@ -273,8 +264,9 @@ const useComments = (missionId: string, userId: string | null, showAlert: (type:
         };
         await createCommentMutation.mutateAsync(commentData);
         setComment("");
-      } catch (error: any) {
-        showAlert("error", `Erreur lors de l'ajout du commentaire: ${error.message}`);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        showAlert("error", `Erreur lors de l'ajout du commentaire: ${errorMessage}`);
         throw error;
       }
     },
@@ -294,8 +286,9 @@ const useComments = (missionId: string, userId: string | null, showAlert: (type:
         await updateCommentMutation.mutateAsync({ commentId, comment: commentData });
         setEditingCommentId(null);
         setEditCommentText("");
-      } catch (error: any) {
-        showAlert("error", `Erreur lors de la mise à jour du commentaire: ${error.message}`);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        showAlert("error", `Erreur lors de la mise à jour du commentaire: ${errorMessage}`);
         throw error;
       }
     },
@@ -307,8 +300,9 @@ const useComments = (missionId: string, userId: string | null, showAlert: (type:
       if (!missionId || !userId) return;
       try {
         await deleteCommentMutation.mutateAsync({ commentId, missionId, userId });
-      } catch (error: any) {
-        showAlert("error", `Erreur lors de la suppression du commentaire: ${error.message}`);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        showAlert("error", `Erreur lors de la suppression du commentaire: ${errorMessage}`);
         throw error;
       }
     },
@@ -346,11 +340,11 @@ const useComments = (missionId: string, userId: string | null, showAlert: (type:
 const useMissionData = (
   missionId: string
 ) => {
-  const [assignedPersons, setAssignedPersons] = useState<AssignedPerson[]>([]);
+  const [assignations, setAssignations] = useState<MissionAssignation[]>([]);
   const [validationSteps, setValidationSteps] = useState<ValidationStep[]>([]);
   const [totalEntries, setTotalEntries] = useState(0);
   const currentPage = 1;
-  const pageSize = 10;
+  const pageSize = 100;
 
   const { data: searchResponse, isLoading: searchLoading, refetch: refetchSearch } = useSearchMissionAssignations(
     { missionId },
@@ -358,31 +352,20 @@ const useMissionData = (
     pageSize
   );
 
-  const assignationId = assignedPersons[0]?.assignationId;
+  const assignationId = assignations[0]?.assignationId;
   const { data: validationsResponse, isLoading: validationsLoading } = useGetMissionValidationsByAssignationId(assignationId);
-
-  const mapToAssignedPerson = useCallback((assignation: MissionAssignation): AssignedPerson => ({
-    assignationId: assignation.assignationId,
-    employeeId: assignation.employee.employeeId,
-    beneficiary: `${assignation.employee.firstName} ${assignation.employee.lastName}`,
-    directionAcronym: assignation.employee.direction.acronym,
-    matricule: assignation.employee.employeeCode,
-    function: assignation.employee.jobTitle,
-    base: assignation.employee.site.siteName,
-    type: assignation.type,
-  }), []);
 
   useEffect(() => {
     if (searchResponse?.data?.data) {
-      setAssignedPersons(searchResponse.data.data.map(mapToAssignedPerson));
+      setAssignations(searchResponse.data.data);
       setTotalEntries(searchResponse.data.totalCount || 0);
     } else {
-      setAssignedPersons([]);
+      setAssignations([]);
       setTotalEntries(0);
     }
-  }, [searchResponse, mapToAssignedPerson]);
+  }, [searchResponse]);
 
-  const mapValidationsToSteps = useCallback((validations: any[]) => {
+  const mapValidationsToSteps = useCallback((validations: MissionValidation[]) => {
     const stepMapping: Record<string, { title: string; subtitle: string; order: number }> = {
       "Directeur de tutelle": {
         title: "Validation Supérieur",
@@ -396,7 +379,7 @@ const useMissionData = (
       },
     };
 
-    const mappedSteps = validations.map((validation: any) => {
+    const mappedSteps = validations.map((validation) => {
       const validationType = validation.type || "Directeur de tutelle";
       const stepInfo = stepMapping[validationType] || {
         title: validationType === "DRH" ? "Validation RH" : "Validation Supérieur",
@@ -423,7 +406,7 @@ const useMissionData = (
           position: validation.validator.position || stepInfo.title,
         },
         validatedAt: validation.createdAt,
-        validationDate: validation.validationDate,
+        validationDate: validation.validationDate || undefined,
         comment: validation.comment || ".",
         order: stepInfo.order,
       };
@@ -446,9 +429,12 @@ const useMissionData = (
     return validationSteps.every((step) => step.status === "approved");
   }, [validationSteps]);
 
+  const mission = useMemo(() => assignations[0]?.mission, [assignations]);
+
   return {
-    assignedPersons,
+    assignations,
     validationSteps,
+    mission,
     isLoading: searchLoading || validationsLoading,
     totalEntries,
     currentStep: 0,
@@ -457,8 +443,12 @@ const useMissionData = (
   };
 };
 
-const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onClose, isOpen = true }) => {
-  const { alert, showAlert, handleClose: handleAlertClose, resetAlert } = useAlert();
+const DetailsMission: React.FC = () => {
+  const { missionId } = useParams<{ missionId: string }>();
+  const navigate = useNavigate();
+  const userData = JSON.parse(localStorage.getItem("user") || "{}");
+  const userId = userData?.userId || null;
+  const { alert, showAlert, handleClose: handleAlertClose } = useAlert();
   const {
     comments,
     isLoading: commentsLoading,
@@ -472,24 +462,21 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
     handleUpdateComment,
     handleDeleteComment,
     handleEditComment,
-    reset: resetComments,
-  } = useComments(missionId, userId, showAlert);
+  } = useComments(missionId || "", userId, showAlert);
   const {
-    assignedPersons,
+    assignations,
     validationSteps,
+    mission,
     isLoading: missionLoading,
     isMissionFullyValidated,
     refetch: refetchMissionData,
-  } = useMissionData(missionId);
+  } = useMissionData(missionId || "");
 
   const [exportLoading, setExportLoading] = useState({
     pdf: false,
     excel: false,
   });
 
-  const [showMissionReport, setShowMissionReport] = useState(false);
-  const [showOMPayment, setShowOMPayment] = useState(false);
-  const [showOMNoteDeFrais, setShowOMNoteDeFrais] = useState(false);
   const [selectedAssignationId, setSelectedAssignationId] = useState<string | null>(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [missionPayment, setMissionPayment] = useState<MissionPaymentState>({
@@ -504,6 +491,12 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
     selectedEmployeeId ?? undefined,
     missionId
   );
+
+  useEffect(() => {
+    if (missionId) {
+      refetchMissionData();
+    }
+  }, [missionId, refetchMissionData]);
 
   useEffect(() => {
     if (compensationsResponse?.data) {
@@ -557,15 +550,14 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
       try {
         const data = { missionId, employeeId };
         await generateOrderMutation.mutateAsync(data);
-        showAlert("success", "Ordre de mission généré et téléchargé avec succès.");
-      } catch (error: any) {
-        showAlert("error", error.message || "Erreur lors de la génération de l'ordre de mission.");
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        showAlert("error", errorMessage || "Erreur lors de la génération de l'ordre de mission.");
       } finally {
         setExportLoading((prev) => ({ ...prev, pdf: false }));
-        refetchMissionData();
       }
     },
-    [missionId, showAlert, generateOrderMutation, refetchMissionData]
+    [missionId, showAlert, generateOrderMutation]
   );
 
   const handleExportExcel = useCallback(() => {
@@ -579,7 +571,7 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
     }
     try {
       await handleCreateComment(comment);
-    } catch (error: any) {
+    } catch {
       // Error handled in hook
     }
   }, [comment, handleCreateComment, showAlert]);
@@ -592,7 +584,7 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
       }
       try {
         await handleUpdateComment(commentId, editCommentText);
-      } catch (error: any) {
+      } catch {
         // Error handled in hook
       }
     },
@@ -603,135 +595,120 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
     async (commentId: string) => {
       try {
         await handleDeleteComment(commentId);
-      } catch (error: any) {
+      } catch {
         // Error handled in hook
       }
     },
     [handleDeleteComment]
   );
 
-  const handleClosePopup = useCallback(() => {
-    resetAlert();
-    resetComments();
-    onClose();
-  }, [resetAlert, resetComments, onClose]);
-
   const isGlobalLoading = useMemo(() => {
     return missionLoading || commentsLoading || exportLoading.pdf || exportLoading.excel || compensationsLoading;
   }, [missionLoading, commentsLoading, exportLoading, compensationsLoading]);
 
-  const handleOMPaymentClick = useCallback((employeeId: string, assignmentType: string, assignationId: string) => {
-    if (assignmentType === "Indemnité" && !employeeId || !assignationId) {
-      showAlert("error", "Employee ID et Assignation ID sont requis.");
-      return;
-    }
+  const handleBackToMissionDetails = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
+
+  const handleNavigateToPayment = useCallback((employeeId: string, assignationId: string) => {
     setSelectedEmployeeId(employeeId);
     setSelectedAssignationId(assignationId);
-    setShowOMPayment(true);
-    setShowMissionReport(false);
-    setShowOMNoteDeFrais(false);
-  }, [showAlert]);
+    navigate(`payment/${assignationId}`);
+  }, [navigate]);
 
-  const handleMissionReportClick = useCallback((employeeId: string, assignationId: string) => {
-    if (!employeeId || !assignationId) {
-      showAlert("error", "Employee ID et Assignation ID sont requis.");
-      return;
-    }
+  const handleNavigateToNote = useCallback((assignationId: string) => {
     setSelectedAssignationId(assignationId);
-    setShowMissionReport(true);
-    setShowOMPayment(false);
-    setShowOMNoteDeFrais(false);
-    setSelectedEmployeeId(null);
-  }, [showAlert]);
+    navigate(`note/${assignationId}`);
+  }, [navigate]);
 
-  const handleOMNoteDeFraisClick = useCallback((assignationId: string) => {
-    if (!assignationId) {
-      showAlert("error", "Assignation ID est requis.");
-      return;
-    }
+  const handleNavigateToReport = useCallback((assignationId: string, employeeId: string) => {
     setSelectedAssignationId(assignationId);
-    setShowOMNoteDeFrais(true);
-    setShowOMPayment(false);
-    setShowMissionReport(false);
-    setSelectedEmployeeId(null);
-  }, [showAlert]);
+    setSelectedEmployeeId(employeeId);
+    navigate(`report/${assignationId}`);
+  }, [navigate]);
 
-  const handleBackToMissionDetails = useCallback(() => {
-    setShowMissionReport(false);
-    setShowOMPayment(false);
-    setShowOMNoteDeFrais(false);
-    setSelectedAssignationId(null);
-    setSelectedEmployeeId(null);
-    setMissionPayment({ dailyPaiements: [], assignmentDetails: null, totalAmount: 0 });
-  }, []);
-
-  if (!isOpen) return null;
+  if (!missionId) {
+    return <LoadingContainer>Mission ID manquante</LoadingContainer>;
+  }
 
   return (
-    <PopupOverlay role="dialog" aria-labelledby="mission-details-title" aria-modal="true">
-      <PagePopup>
-        <PopupHeader>
-          <PopupTitle id="mission-details-title">
-            Détails de la Mission {missionId || "Inconnue"}
-            {assignedPersons.length > 0 && (
-              <span className="assignments-count">
-                ({assignedPersons.length} assignation{assignedPersons.length > 1 ? "s" : ""})
-              </span>
-            )}
-          </PopupTitle>
-          <PopupClose
-            onClick={handleClosePopup}
-            disabled={isGlobalLoading}
-            aria-label="Fermer la fenêtre"
-          >
-            <X size={24} />
-          </PopupClose>
-        </PopupHeader>
-
-        <PopupContent>
-          {alert.isOpen && (
-            <Alert
-              type={alert.type}
-              message={alert.message}
-              isOpen={alert.isOpen}
-              onClose={handleAlertClose}
-            />
-          )}
-
-          {validationSteps.length > 0 && !showMissionReport && !showOMPayment && !showOMNoteDeFrais && !isGlobalLoading && (
-            <ValidationStepper steps={validationSteps} currentStep={0} />
-          )}
-
-          {isGlobalLoading ? (
-            <LoadingContainer>Chargement des informations de la mission...</LoadingContainer>
-          ) : (
-            <ContentArea>
-              {showOMPayment && missionPayment.assignmentDetails ? (
-                <OMPayment
-                  missionPayment={missionPayment as MissionPayment}
-                  selectedAssignmentId={selectedAssignationId || ""}
-                  onBack={handleBackToMissionDetails}
-                  onExportPDF={handleExportPDF}
-                  onExportExcel={handleExportExcel}
-                  isLoading={{ exportExcel: exportExcelMutation.isPending }}
-                  formatDate={formatDate}
-                />
-              ) : showOMNoteDeFrais && selectedAssignationId ? (
-                <OMNoteDeFrais
-                  selectedAssignmentId={selectedAssignationId}
-                  onBack={handleBackToMissionDetails}
-                />
-              ) : showMissionReport ? (
-                <MissionReport
-                  userId={userId}
-                  assignationId={selectedAssignationId!}
-                  onBack={handleBackToMissionDetails}
-                />
-              ) : (
+    <>
+      <Alert
+        type={alert.type}
+        message={alert.message}
+        isOpen={alert.isOpen}
+        onClose={handleAlertClose}
+      />
+      {isGlobalLoading ? (
+        <LoadingContainer>Chargement des informations de la mission...</LoadingContainer>
+      ) : (
+        <ContentArea>
+          <Routes>
+            <Route
+              index
+              element={
                 <>
+                  <PageHeader>
+                    <HeaderLeft>
+                      <BtnBack onClick={handleBackToMissionDetails} title="Retour aux missions">
+                        <ArrowLeft className="w-5 h-5" />
+                      </BtnBack>
+                    </HeaderLeft>
+                    <div className="header-center">
+                      <div className="header-title-section">
+                        <h1 className="page-title">Détails de la Mission</h1>
+                        <p className="page-subtitle">Mission #{missionId}</p>
+                      </div>
+                    </div>
+                    <HeaderActions>
+                      {mission && (
+                        <StatusBadge className={getStatusBadgeClass(mission.status)}>
+                          {englishToFrench[mission.status?.trim().toLowerCase()] || mission.status}
+                        </StatusBadge>
+                      )}
+                    </HeaderActions>
+                  </PageHeader>
+                  <Separator />
+                  {validationSteps.length > 0 && (
+                    <ValidationStepper steps={validationSteps} currentStep={0} />
+                  )}
+
+                  <Separator />
+                  {mission && (
+                    <>
+                      <SectionTitle>Informations Générales de la Mission</SectionTitle>
+                      <InfoGrid style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+                        <InfoItem>
+                          <InfoLabel>Nom de la Mission</InfoLabel>
+                          <InfoValue>{mission.name}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Description</InfoLabel>
+                          <InfoValue>{mission.description || "Aucune description"}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Type de Mission</InfoLabel>
+                          <InfoValue>{mission.missionType}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Date de Début</InfoLabel>
+                          <InfoValue>{formatDate(mission.startDate)}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Date de Fin</InfoLabel>
+                          <InfoValue>{formatDate(mission.endDate)}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Lieu/Pays</InfoLabel>
+                          <InfoValue>{`${mission.lieu.nom} / ${mission.lieu.pays}`}</InfoValue>
+                        </InfoItem>
+                        
+                      </InfoGrid>
+                    </>
+                  )}
                   {validationSteps.length > 0 && (
                     <ValidatorCard>
-                      <ValidatorGrid>
+                      <ValidatorGrid style={{ gridTemplateColumns: "1fr 2fr" }}>
                         <ValidatorSection>
                           <SectionTitle>Valideurs</SectionTitle>
                           {validationSteps.map((step) => (
@@ -748,31 +725,122 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
                         </ValidatorSection>
                         <ValidatorSection>
                           <SectionTitle>Personnes Assignées à la Mission</SectionTitle>
-                          {assignedPersons.length > 0 ? (
-                            assignedPersons.map((assignment, index) => (
-                              <ValidatorItem
-                                key={`${assignment.employeeId}-${missionId}-${index}`}
-                                style={{ marginBottom: "var(--spacing-md)" }}
-                              >
-                                <Avatar size="40px">
-                                  {assignment.beneficiary
-                                    ? assignment.beneficiary
-                                        .split(" ")
-                                        .map((n) => n[0])
-                                        .join("")
-                                        .substring(0, 2)
-                                        .toUpperCase()
-                                    : "NA"}
-                                </Avatar>
-                                <ValidatorInfo>
-                                  <ValidatorName>
-                                    {assignment.beneficiary && assignment.directionAcronym
-                                      ? `${assignment.beneficiary} (${assignment.directionAcronym})`
-                                      : assignment.beneficiary || "Non spécifié"}
-                                  </ValidatorName>
-                                </ValidatorInfo>
-                              </ValidatorItem>
-                            ))
+                          {assignations.length > 0 ? (
+                            assignations.map((assignation, index) => {
+                              const employee = assignation.employee;
+                              const initials = `${employee.firstName?.[0] || ''}${employee.lastName?.[0] || ''}`.toUpperCase();
+                              const assignmentType = assignation.type;
+                              const shouldShowRendu = assignmentType === "Indemnité" || assignmentType === "Note de frais";
+                              return (
+                                <div
+                                  key={`${assignation.assignationId}-${index}`}
+                                  style={{
+                                    marginBottom: "var(--spacing-md)",
+                                    padding: "var(--spacing-md)",
+                                    border: "1px solid var(--border-light)",
+                                    borderRadius: "var(--radius-sm)",
+                                    backgroundColor: "var(--bg-secondary)",
+                                  }}
+                                >
+                                  <ValidatorItem style={{ marginBottom: "var(--spacing-md)" }}>
+                                    <Avatar size="40px">{initials}</Avatar>
+                                    <ValidatorInfo>
+                                      <ValidatorName>
+                                        {employee.firstName} {employee.lastName} ({employee.direction?.acronym})
+                                      </ValidatorName>
+                                    </ValidatorInfo>
+                                  </ValidatorItem>
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns: "repeat(3, 1fr)",
+                                      gap: "var(--spacing-sm)",
+                                    }}
+                                  >
+                                    <InfoItem>
+                                      <InfoLabel>N° Assignation</InfoLabel>
+                                      <InfoValue>{assignation.assignationId}</InfoValue>
+                                    </InfoItem>
+                                    <InfoItem>
+                                      <InfoLabel>Matricule</InfoLabel>
+                                      <InfoValue>{employee.employeeCode || "Non spécifié"}</InfoValue>
+                                    </InfoItem>
+                                    <InfoItem>
+                                      <InfoLabel>Fonction</InfoLabel>
+                                      <InfoValue>{employee.jobTitle || "Non spécifié"}</InfoValue>
+                                    </InfoItem>
+                                    <InfoItem>
+                                      <InfoLabel>Site</InfoLabel>
+                                      <InfoValue>{employee.site?.siteName || "Non spécifié"}</InfoValue>
+                                    </InfoItem>
+                                    <InfoItem>
+                                      <InfoLabel>Type d'Assignation</InfoLabel>
+                                      <InfoValue>{assignation.type || "Non spécifié"}</InfoValue>
+                                    </InfoItem>
+                                    <InfoItem>
+                                      <InfoLabel>Moyen de Transport</InfoLabel>
+                                      <InfoValue>{assignation.transport?.type || "Non spécifié"}</InfoValue>
+                                    </InfoItem>
+                                    <InfoItem>
+                                      <InfoLabel>Date et Heure de Départ</InfoLabel>
+                                      <InfoValue>{`${formatDate(assignation.departureDate)} ${assignation.departureTime || ''}`}</InfoValue>
+                                    </InfoItem>
+                                    <InfoItem>
+                                      <InfoLabel>Date et Heure de Retour</InfoLabel>
+                                      <InfoValue>{`${formatDate(assignation.returnDate)} ${assignation.returnTime || ''}`}</InfoValue>
+                                    </InfoItem>
+                                    <InfoItem>
+                                      <InfoLabel>Durée</InfoLabel>
+                                      <InfoValue>{assignation.duration} jours</InfoValue>
+                                    </InfoItem>
+                                  </div>
+                                  {isMissionFullyValidated && (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        gap: "var(--spacing-sm)",
+                                        justifyContent: "flex-start",
+                                        marginTop: "calc(var(--spacing-md) + 20px)",
+                                        flexWrap: "wrap",
+                                      }}
+                                    >
+                                      {assignmentType === "Indemnité" ? (
+                                        <OMPaymentButton
+                                          onClick={() => handleNavigateToPayment(assignation.employee.employeeId, assignation.assignationId)}
+                                          disabled={isGlobalLoading}
+                                        >
+                                          Indemnité
+                                        </OMPaymentButton>
+                                      ) : assignmentType === "Note de frais" ? (
+                                        <OMPaymentButton
+                                          onClick={() => handleNavigateToNote(assignation.assignationId)}
+                                          disabled={isGlobalLoading}
+                                        >
+                                          Note de Frais
+                                        </OMPaymentButton>
+                                      ) : null}
+                                      <ButtonOMPDF
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          handleExportPDF(assignation.employee.employeeId);
+                                        }}
+                                        disabled={exportLoading.pdf}
+                                      >
+                                        <Download size={16} /> OM PDF
+                                      </ButtonOMPDF>
+                                      {shouldShowRendu && (
+                                        <MissionReportButton
+                                          onClick={() => handleNavigateToReport(assignation.assignationId, assignation.employee.employeeId)}
+                                          disabled={isGlobalLoading}
+                                        >
+                                          Rendu
+                                        </MissionReportButton>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
                           ) : (
                             <ValidatorItem>
                               <div
@@ -786,136 +854,15 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
                               </div>
                             </ValidatorItem>
                           )}
-
-                          {assignedPersons.length > 0 && (
-                            <InfoGrid
-                              style={{
-                                marginTop: "var(--spacing-lg)",
-                                display: "grid",
-                                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                                gap: "var(--spacing-md)",
-                              }}
-                            >
-                              {assignedPersons.map((assignment, index) => (
-                                <div
-                                  key={`info-${assignment.employeeId}-${index}`}
-                                  style={{
-                                    display: "grid",
-                                    gridTemplateColumns: "repeat(2, 1fr)",
-                                    gap: "var(--spacing-sm)",
-                                    padding: "var(--spacing-md)",
-                                    border: "1px solid var(--border-light)",
-                                    borderRadius: "var(--border-radius)",
-                                    backgroundColor: "var(--background-light)",
-                                  }}
-                                >
-                                  <InfoItem>
-                                    <InfoLabel>N° Assignation</InfoLabel>
-                                    <InfoValue>{assignment.assignationId || "Non spécifié"}</InfoValue>
-                                  </InfoItem>
-                                  <InfoItem>
-                                    <InfoLabel>Matricule</InfoLabel>
-                                    <InfoValue>{assignment.matricule || "Non spécifié"}</InfoValue>
-                                  </InfoItem>
-                                  <InfoItem>
-                                    <InfoLabel>Fonction</InfoLabel>
-                                    <InfoValue>{assignment.function || "Non spécifié"}</InfoValue>
-                                  </InfoItem>
-                                  <InfoItem>
-                                    <InfoLabel>Site</InfoLabel>
-                                    <InfoValue>{assignment.base || "Non spécifié"}</InfoValue>
-                                  </InfoItem>
-                                </div>
-                              ))}
-                            </InfoGrid>
-                          )}
-
-                          {assignedPersons.length > 0 && isMissionFullyValidated && (
-                            <InfoGrid
-                              style={{
-                                marginTop: "var(--spacing-lg)",
-                                display: "grid",
-                                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                                gap: "var(--spacing-md)",
-                              }}
-                            >
-                              {assignedPersons.map((assignment, index) => {
-                                // Conditions pour afficher le bouton approprié en position 1 (haut-gauche)
-                                const assignmentType = assignment.type;
-                                const shouldShowRendu = assignmentType === "Indemnité" || assignmentType === "Note de frais";
-
-                                return (
-                                  <div
-                                    key={`buttons-${assignment.employeeId}-${index}`}
-                                    style={{
-                                      display: "grid",
-                                      gridTemplateColumns: "repeat(2, 1fr)",
-                                      gap: "var(--spacing-sm)",
-                                      padding: "var(--spacing-md)",
-                                      border: "1px solid var(--border-light)",
-                                      borderRadius: "var(--border-radius)",
-                                      backgroundColor: "var(--background-light)",
-                                    }}
-                                  >
-                                    {/* Premier slot : Bouton conditionnel en position unifiée (Indemnité ou Note de Frais) */}
-                                    <InfoItem>
-                                      <ButtonContainer>
-                                        {assignmentType === "Indemnité" ? (
-                                          <OMPaymentButton
-                                            onClick={() => handleOMPaymentClick(assignment.employeeId, assignmentType, assignment.assignationId)}
-                                            disabled={isGlobalLoading}
-                                          >
-                                            Indemnité
-                                          </OMPaymentButton>
-                                        ) : assignmentType === "Note de frais" ? (
-                                          <OMPaymentButton
-                                            onClick={() => handleOMNoteDeFraisClick(assignment.assignationId)}
-                                            disabled={isGlobalLoading}
-                                          >
-                                            Note de Frais
-                                          </OMPaymentButton>
-                                        ) : null}
-                                      </ButtonContainer>
-                                    </InfoItem>
-                                    {/* Deuxième slot : Toujours "OM PDF" */}
-                                    <InfoItem>
-                                      <ButtonContainer>
-                                        <ButtonOMPDF
-                                          onClick={() => handleExportPDF(assignment.employeeId)}
-                                          disabled={exportLoading.pdf}
-                                        >
-                                          <Download size={16} /> OM PDF
-                                        </ButtonOMPDF>
-                                      </ButtonContainer>
-                                    </InfoItem>
-                                    {/* Troisième slot : "Rendu" pour les deux types */}
-                                    <InfoItem>
-                                      {shouldShowRendu && (
-                                        <ButtonContainer>
-                                          <MissionReportButton
-                                            onClick={() => handleMissionReportClick(assignment.employeeId, assignment.assignationId)}
-                                            disabled={isGlobalLoading}
-                                          >
-                                            Rendu
-                                          </MissionReportButton>
-                                        </ButtonContainer>
-                                      )}
-                                    </InfoItem>
-                                    {/* Quatrième slot : Vide */}
-                                    <InfoItem />
-                                  </div>
-                                );
-                              })}
-                            </InfoGrid>
-                          )}
                         </ValidatorSection>
                       </ValidatorGrid>
                     </ValidatorCard>
                   )}
+                  
+                  <Separator />
 
                   <SectionTitle>Commentaires</SectionTitle>
                   <CommentSection>
-                    <CommentLabel htmlFor="new-comment">Nouveau Commentaire</CommentLabel>
                     <CommentInputGroup>
                       <CommentTextarea
                         id="new-comment"
@@ -1000,12 +947,57 @@ const DetailsMission: React.FC<DetailsMissionProps> = ({ missionId, userId, onCl
                     )}
                   </CommentsList>
                 </>
-              )}
-            </ContentArea>
-          )}
-        </PopupContent>
-      </PagePopup>
-    </PopupOverlay>
+              }
+            />
+            <Route
+              path="payment/:assignationId"
+              element={
+                missionPayment.assignmentDetails ? (
+                  <OMPayment
+                    missionPayment={missionPayment as MissionPayment}
+                    selectedAssignmentId={selectedAssignationId || ""}
+                    onBack={handleBackToMissionDetails}
+                    onExportPDF={handleExportPDF}
+                    onExportExcel={handleExportExcel}
+                    isLoading={{ exportExcel: exportExcelMutation.isPending }}
+                    formatDate={formatDate}
+                  />
+                ) : (
+                  <LoadingContainer>Chargement du paiement...</LoadingContainer>
+                )
+              }
+            />
+            <Route
+              path="note/:assignationId"
+              element={
+                selectedAssignationId ? (
+                  <OMNoteDeFrais
+                    selectedAssignmentId={selectedAssignationId}
+                    onBack={handleBackToMissionDetails}
+                  />
+                ) : (
+                  <LoadingContainer>Chargement de la note de frais...</LoadingContainer>
+                )
+              }
+            />
+            <Route
+              path="report/:assignationId"
+              element={
+                selectedAssignationId ? (
+                  <MissionReport
+                    userId={userId}
+                    assignationId={selectedAssignationId}
+                    onBack={handleBackToMissionDetails}
+                  />
+                ) : (
+                  <LoadingContainer>Chargement du rapport...</LoadingContainer>
+                )
+              }
+            />
+          </Routes>
+        </ContentArea>
+      )}
+    </>
   );
 };
 

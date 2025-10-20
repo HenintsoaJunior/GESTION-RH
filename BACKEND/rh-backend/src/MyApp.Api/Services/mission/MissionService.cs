@@ -34,7 +34,8 @@ namespace MyApp.Api.Services.mission
         private readonly IMissionAssignationService _missionAssignationService;
         private readonly INotificationsService _notificationsService;
         private readonly ILogger<MissionService> _logger;
-        private readonly ILogService _logService; 
+        private readonly ILogService _logService;
+        private readonly ILieuService _lieuService;
 
         public MissionService(
             IMissionRepository repository,
@@ -45,7 +46,8 @@ namespace MyApp.Api.Services.mission
             IUserService userService,
             IEmployeeService employeeService,
             INotificationsService notificationsService,
-            ILogService logService // injecté ici
+            ILogService logService,
+            ILieuService lieuService
         )
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
@@ -57,6 +59,7 @@ namespace MyApp.Api.Services.mission
             _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
             _notificationsService = notificationsService ?? throw new ArgumentNullException(nameof(notificationsService));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
+            _lieuService = lieuService ?? throw new ArgumentNullException(nameof(lieuService));
         }
 
         public async Task<Mission?> VerifyMissionByNameAsync(string name)
@@ -181,13 +184,14 @@ namespace MyApp.Api.Services.mission
                                 recipientUserIds.Add(drh.UserId);
                         }
 
-                        _logger.LogInformation("Recipient User IDs for notification: {RecipientUserIds}", string.Join(", ", recipientUserIds));
-                
-                        // Créer une notification pour la création de la mission
+                        // Récupérer le nom du lieu pour l'affichage et le log
+                        var lieu = await _lieuService.GetByIdAsync(mission.LieuId);
+                        var lieuNom = lieu?.Nom ?? "lieu inconnu";
+
                         var notification = new NotificationFormDTO
                         {
                             Title = "Nouvelle mission créée",
-                            Message = $"La mission '{mission.Name}' a été créée pour le lieu ID {mission.LieuId} du {mission.StartDate:yyyy-MM-dd} au {mission.EndDate:yyyy-MM-dd}.",
+                            Message = $"La mission '{mission.Name}' a été créée pour le lieu {lieuNom} du {mission.StartDate:yyyy-MM-dd} au {mission.EndDate:yyyy-MM-dd}.",
                             Type = "mission",
                             RelatedTable = "mission",
                             RelatedMenu = "collaborateur",
@@ -200,8 +204,18 @@ namespace MyApp.Api.Services.mission
                         // Pass the existing transaction to NotificationsService
                         await _notificationsService.CreateAsync(notification, transaction);
 
+                        // Préparer les données pour le log avec LieuNom (sans LieuId)
+                        var logNewData = new
+                        {
+                            Nom = mission.Name,
+                            Description = mission.Description,
+                            DateDebut = mission.StartDate,
+                            DateFin = mission.EndDate,
+                            NomLieu = lieuNom
+                        };
+
                         // Log de création
-                        await _logService.LogAsync("CREATION MISSION", null, mission, missionDto.UserId, "Name,Description,StartDate,EndDate,LieuId");
+                        await _logService.LogAsync("INSERTION", "MISSION", null, logNewData, missionDto.UserId, "Nom,Description,DateDebut,DateFin,NomLieu");
                     }
 
                     await transaction.CommitAsync();
@@ -308,8 +322,6 @@ namespace MyApp.Api.Services.mission
                             return false;
                         }
 
-                        _logger.LogInformation("Assignation mise à jour avec succès pour AssignationId={AssignationId}",
-                            existingAssignation.AssignationId);
 
                         var employee = await _employeeService.GetByIdAsync(assignationDto.EmployeeId);
                         var superior = await _userService.GetSuperiorAsync(employee?.EmployeeCode);
@@ -321,13 +333,18 @@ namespace MyApp.Api.Services.mission
                             recipientUserIds.Add(drh.UserId);
                     }
                 }
-                
-                _logger.LogInformation("Recipient User IDs for notification: {RecipientUserIds}", string.Join(", ", recipientUserIds));
-                // Créer une notification pour la mise à jour de la mission
+
+                // Récupérer le nom du lieu pour l'affichage et le log (ancien et nouveau si changé)
+                var oldLieu = await _lieuService.GetByIdAsync(oldEntity.LieuId);
+                var oldLieuNom = oldLieu?.Nom ?? "lieu inconnu";
+
+                var newLieu = await _lieuService.GetByIdAsync(entity.LieuId);
+                var newLieuNom = newLieu?.Nom ?? "lieu inconnu";
+
                 var notification = new NotificationFormDTO
                 {
                     Title = "Mission mise à jour",
-                    Message = $"La mission '{entity.Name}' a été mise à jour pour le lieu ID {entity.LieuId} du {entity.StartDate:yyyy-MM-dd} au {entity.EndDate:yyyy-MM-dd}.",
+                    Message = $"La mission '{entity.Name}' a été mise à jour pour le lieu {newLieuNom} du {entity.StartDate:yyyy-MM-dd} au {entity.EndDate:yyyy-MM-dd}.",
                     Type = "mission",
                     RelatedTable = "mission",
                     RelatedMenu = "collaborateur",
@@ -337,12 +354,29 @@ namespace MyApp.Api.Services.mission
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // Pass the existing transaction to NotificationsService
                 await _notificationsService.CreateAsync(notification, transaction);
 
-                // Log mission update
-                await _logService.LogAsync("MODIFICATION MISSION", oldEntity, entity, mission.UserId,
-                    "Name,Description,StartDate,EndDate,LieuId");
+                // Préparer les données pour le log avec LieuNom (sans LieuId)
+                var logOldData = new
+                {
+                    Nom = oldEntity.Name,
+                    Description = oldEntity.Description,
+                    DateDebut = oldEntity.StartDate,
+                    DateFin = oldEntity.EndDate,
+                    NomLieu = oldLieuNom
+                };
+
+                var logNewData = new
+                {
+                    Nom = entity.Name,
+                    Description = entity.Description,
+                    DateDebut = entity.StartDate,
+                    DateFin = entity.EndDate,
+                    NomLieu = newLieuNom
+                };
+
+                // Log de modification
+                await _logService.LogAsync("MODIFICATION", "MISSION", logOldData, logNewData, mission.UserId, "Nom,Description,DateDebut,DateFin,NomLieu");
 
                 await transaction.CommitAsync();
                 return true;
@@ -366,7 +400,7 @@ namespace MyApp.Api.Services.mission
                 await _repository.SaveChangesAsync();
 
                 // Log de suppression
-                await _logService.LogAsync("SUPPRESSION MISSION", entity, null, userId);
+                await _logService.LogAsync("SUPPRESSION", entity, null, userId);
 
                 return true;
             }
