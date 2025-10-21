@@ -411,18 +411,35 @@ namespace MyApp.Api.Entities.mission
             TimeSpan arrivalTime, TimeSpan departureTime, 
             TimeSpan expenseStart, TimeSpan expenseEnd)
         {
-            bool presentEveningPart = arrivalTime <= expenseStart && departureTime > expenseStart;
-            bool presentMorningPart = arrivalTime < expenseEnd && departureTime >= expenseEnd;
-            bool presentFullNight = arrivalTime <= expenseStart && departureTime >= expenseEnd;
-
-            return presentEveningPart || presentMorningPart || presentFullNight;
+            var normalizedEnd = NormalizeOvernightEnd(expenseEnd, true);
+            
+            TimeSpan normalizedDeparture = departureTime;
+            if (departureTime < expenseStart) 
+            {
+                normalizedDeparture = departureTime.Add(TimeSpan.FromHours(24));
+            }
+            
+            bool presentEvening = arrivalTime <= expenseStart && normalizedDeparture > expenseStart;
+            bool presentMorningNight = arrivalTime < normalizedEnd && normalizedDeparture >= expenseEnd.Add(TimeSpan.FromHours(24));  // Ajusté pour fin
+            
+            bool partialEvening = arrivalTime >= expenseStart && arrivalTime < TimeSpan.FromHours(24) && normalizedDeparture > arrivalTime;
+            
+            return presentEvening || presentMorningNight || partialEvening;
         }
-
         private bool IsEmployeePresentRegular(
             TimeSpan arrivalTime, TimeSpan departureTime, 
             TimeSpan expenseStart, TimeSpan expenseEnd)
         {
             return arrivalTime <= expenseEnd && departureTime > expenseStart;
+        }
+
+        private TimeSpan NormalizeOvernightEnd(TimeSpan expenseEnd, bool spansOvernight)
+        {
+            if (spansOvernight)
+            {
+                return expenseEnd.Add(TimeSpan.FromHours(24));
+            }
+            return expenseEnd;
         }
 
         private bool CanEmployeeBenefitFromArrival(
@@ -438,7 +455,12 @@ namespace MyApp.Api.Entities.mission
 
         private bool CanBenefitOvernightFromArrival(TimeSpan arrivalTime, TimeSpan expenseStart, TimeSpan expenseEnd)
         {
-            return arrivalTime <= expenseEnd || arrivalTime <= expenseStart;
+            var normalizedEnd = NormalizeOvernightEnd(expenseEnd, true);
+            
+            bool arrivesDuringEvening = arrivalTime >= expenseStart && arrivalTime < TimeSpan.FromHours(24);
+            bool arrivesBeforeMorning = arrivalTime <= normalizedEnd; 
+            
+            return arrivesDuringEvening || arrivesBeforeMorning;
         }
 
         private bool CanBenefitRegularFromArrival(TimeSpan arrivalTime, TimeSpan expenseEnd)
@@ -459,7 +481,14 @@ namespace MyApp.Api.Entities.mission
 
         private bool CanBenefitOvernightFromDeparture(TimeSpan departureTime, TimeSpan expenseStart, TimeSpan expenseEnd)
         {
-            return departureTime > expenseStart || departureTime <= expenseEnd;
+            var normalizedEnd = NormalizeOvernightEnd(expenseEnd, true);
+            
+            bool departsAfterEvening = departureTime > expenseStart;
+            bool departsAfterMorning = departureTime >= normalizedEnd; 
+            
+            bool departsDuringMorning = departureTime > TimeSpan.Zero && departureTime <= expenseEnd;
+            
+            return departsAfterEvening || departsAfterMorning || departsDuringMorning;
         }
 
         private bool CanBenefitRegularFromDeparture(TimeSpan departureTime, TimeSpan expenseStart)

@@ -93,6 +93,27 @@ interface UpdateMissionReportRequest {
   assignationId: string;
 }
 
+// Hook for creating a mission report
+export const useCreateMissionReport = () => {
+  const queryClient = useQueryClient();
+  return useMutation<ApiResponse<CreateMissionReportResponseData>, Error, CreateMissionReportRequest>({
+    mutationFn: async (data) => {
+      try {
+        const response = await api.post('/api/MissionReport', data);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MISSION_REPORTS_BASE_KEY });
+    },
+  });
+};
+
 // Hook for fetching all mission reports
 export const useMissionReports = () => {
   return useQuery<ApiResponse<MissionReport[]>, Error>({
@@ -128,27 +149,6 @@ export const useMissionReport = (missionReportId: string) => {
       }
     },
     enabled: !!missionReportId,
-  });
-};
-
-// Hook for creating a mission report
-export const useCreateMissionReport = () => {
-  const queryClient = useQueryClient();
-  return useMutation<ApiResponse<CreateMissionReportResponseData>, Error, CreateMissionReportRequest>({
-    mutationFn: async (data) => {
-      try {
-        const response = await api.post('/api/MissionReport', data);
-        return response.data;
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-          return error.response.data;
-        }
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: MISSION_REPORTS_BASE_KEY });
-    },
   });
 };
 

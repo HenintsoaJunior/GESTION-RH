@@ -25,12 +25,16 @@ namespace MyApp.Api.Repositories.mission
 
         public async Task<IEnumerable<ExpenseReportType>> GetAllAsync()
         {
-            return await _context.ExpenseReportTypes.ToListAsync();
+            return await _context.ExpenseReportTypes
+                .AsNoTracking()
+                .ToListAsync();
         }
 
         public async Task<ExpenseReportType?> GetByIdAsync(string id)
         {
-            return await _context.ExpenseReportTypes.FindAsync(id);
+            return await _context.ExpenseReportTypes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ert => ert.ExpenseReportTypeId == id);
         }
 
         public async Task AddAsync(ExpenseReportType entity)
@@ -44,10 +48,17 @@ namespace MyApp.Api.Repositories.mission
             return Task.CompletedTask;
         }
 
-        public Task DeleteAsync(ExpenseReportType entity)
+        public async Task DeleteAsync(ExpenseReportType entity)
         {
+            var entry = _context.Entry(entity);
+            if (entry.State != EntityState.Detached)
+            {
+                entry.State = EntityState.Detached;
+            }
+
+        
             _context.ExpenseReportTypes.Remove(entity);
-            return Task.CompletedTask;
+            await Task.CompletedTask;
         }
 
         public async Task SaveChangesAsync()

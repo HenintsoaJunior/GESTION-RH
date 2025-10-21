@@ -14,13 +14,13 @@ namespace MyApp.Api.Controllers.mission
     {
 
         [HttpGet("{id}")]
-        // [AllowAnonymous]
+        [AllowAnonymous]
         public async Task<ActionResult> GetByIdMissionAsync(string id)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
 
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -52,13 +52,13 @@ namespace MyApp.Api.Controllers.mission
 
 
         [HttpPost]
-        // [AllowAnonymous]
+        [AllowAnonymous]
         public async Task<ActionResult> Create([FromBody] MissionDTOForm mission)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
 
             if (mission == null)
             {
@@ -84,13 +84,13 @@ namespace MyApp.Api.Controllers.mission
 
         // Met à jour une mission existante
         [HttpPut("{id}")]
-        // [AllowAnonymous]
+        [AllowAnonymous]
         public async Task<ActionResult> Update(string id, [FromBody] MissionDTOForm mission)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
 
             if (string.IsNullOrWhiteSpace(id))
             {

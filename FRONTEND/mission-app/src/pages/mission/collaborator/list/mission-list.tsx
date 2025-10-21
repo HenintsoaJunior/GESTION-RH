@@ -150,6 +150,7 @@ const MissionList: React.FC = () => {
   const missionTypes = ["International", "National"];
 
   const statusOptions = [
+    { label: "À valider", value: "pending approval" },
     { label: "En cours", value: "in progress" },
     { label: "Terminé", value: "completed" },
     { label: "Planifié", value: "planned" },

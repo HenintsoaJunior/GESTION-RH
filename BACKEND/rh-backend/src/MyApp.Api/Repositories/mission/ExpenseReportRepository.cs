@@ -74,10 +74,15 @@ namespace MyApp.Api.Repositories.mission
             return Task.CompletedTask;
         }
 
-        public Task DeleteAsync(ExpenseReport entity)
+        public async Task DeleteAsync(ExpenseReport entity)
         {
+            if (entity.ExpenseReportType != null)
+            {
+                entity.ExpenseReportType = null;
+            }
+
             _context.ExpenseReports.Remove(entity);
-            return Task.CompletedTask;
+            await Task.CompletedTask; 
         }
 
         public async Task SaveChangesAsync()
@@ -98,7 +103,6 @@ namespace MyApp.Api.Repositories.mission
                 query = query.Where(er => er.Status == status);
             }
 
-            // Get distinct MissionAssignation IDs
             var assignationIdsQuery = query
                 .Select(er => er.AssignationId)
                 .Distinct();
@@ -110,7 +114,6 @@ namespace MyApp.Api.Repositories.mission
                 return (null, 0);
             }
 
-            // Get MissionAssignations for the distinct IDs with pagination
             var result = await assignationIdsQuery
                 .OrderBy(id => id)
                 .Skip((pageNumber - 1) * pageSize)

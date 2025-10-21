@@ -29,30 +29,34 @@ const MissionTable = ({
     appliedFilters,
 }) => {
     const getStatusBadge = (status) => {
-        const normalizedStatus = (status || "").toLowerCase().trim();
+  const normalizedStatus = (status || "").toLowerCase().trim();
 
-        const statusTextMap = {
-            "in progress": "En Cours",
-            "planned": "Planifié",
-            "completed": "Terminé",
-            "cancelled": "Annulé",
-        };
+  const statusTextMap = {
+    "pending approval": "À valider",
+    "in progress": "En cours",
+    "planned": "Planifié",
+    "completed": "Terminé",
+    "cancelled": "Annulé",
+  };
 
-        const statusClassName =
-            normalizedStatus === "in progress"
-                ? "status-progress"
-                : normalizedStatus === "planned"
-                    ? "status-pending"
-                    : normalizedStatus === "completed"
-                        ? "status-completed"
-                        : normalizedStatus === "cancelled"
-                            ? "status-cancelled"
-                            : "status-unknown"; 
+  const statusClassName =
+    normalizedStatus === "pending approval"
+      ? "status-waiting"
+      : normalizedStatus === "in progress"
+      ? "status-progress"
+      : normalizedStatus === "planned"
+      ? "status-pending"
+      : normalizedStatus === "completed"
+      ? "status-completed"
+      : normalizedStatus === "cancelled"
+      ? "status-cancelled"
+      : "status-unknown";
 
-        const displayText = statusTextMap[normalizedStatus] || "Inconnu";
+  const displayText = statusTextMap[normalizedStatus] || "Inconnu";
 
-        return <StatusBadge className={statusClassName}>{displayText}</StatusBadge>;
-    };
+  return <StatusBadge className={statusClassName}>{displayText}</StatusBadge>;
+};
+
 
     const renderActionButtons = (assignment) => {
         const missionPermissions = permissions[assignment.missionId] || { canModify: false, canCancel: false };
