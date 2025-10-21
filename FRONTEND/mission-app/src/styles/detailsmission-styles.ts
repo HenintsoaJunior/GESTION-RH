@@ -1,4 +1,6 @@
 import styled from "styled-components";
+import isPropValid from "@emotion/is-prop-valid";
+import type { Chart } from "chart.js";
 
 interface AvatarProps {
   size?: string;
@@ -7,6 +9,15 @@ interface AvatarProps {
 interface ValidatorNameProps {
   bold?: boolean;
   large?: boolean;
+}
+
+interface ChartWithCenterTextOptions {
+  plugins?: {
+    centerText?: {
+      display: boolean;
+      text: string;
+    };
+  };
 }
 
 export const LoadingContainer = styled.div`
@@ -713,4 +724,403 @@ export const ReportHeader = styled.div`
 export const ReportActions = styled.div`
     display: flex;
     gap: 10px;
+`;
+
+// === STYLED COMPONENTS AMÉLIORÉS ===
+export const ModernCard = styled.div`
+    background: var(--bg-primary);
+    padding: var(--spacing-3xl);
+    margin-bottom: var(--spacing-3xl);
+    width: 100%;
+    box-sizing: border-box;
+`;
+
+export const TwoColumnLayout = styled.div<{ $hasLeft?: boolean }>`
+    display: grid;
+    grid-template-columns: ${({ $hasLeft = false }) => ($hasLeft ? "1fr 1fr" : "1fr")};
+    gap: var(--spacing-3xl);
+    margin-bottom: var(--spacing-4xl);
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+export const ResponsiveTableWrapper = styled.div`
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+
+    @media (max-width: 768px) {
+        font-size: var(--font-size-sm);
+    }
+`;
+
+export const FolderContainer = styled.div`
+    background: #FEF3C7;
+    margin-bottom: var(--spacing-lg);
+    overflow: hidden;
+    transition: all var(--transition-speed) ease;
+    width: 100%;
+    box-sizing: border-box;
+`;
+
+export const FolderHeader = styled.button.withConfig({
+    shouldForwardProp: (prop: string) => isPropValid(prop) && !prop.startsWith('$'),
+})<{ $isOpen: boolean }>`
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    background: ${(props) => (props.$isOpen ? "var(--warning-bg)" : "transparent")};
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color);
+    box-sizing: border-box;
+
+    &:hover {
+        background: var(--warning-icon-bg);
+    }
+
+    .folder-icon {
+        font-size: 1.5rem;
+    }
+
+    .chevron {
+        margin-left: auto;
+        transition: transform var(--transition-speed) ease;
+        transform: ${(props) => (props.$isOpen ? "rotate(0deg)" : "rotate(-90deg)")};
+    }
+`;
+
+export const AttachmentsList = styled.div`
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    width: 100%;
+    box-sizing: border-box;
+`;
+
+export const AttachmentItem = styled.div`
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-primary);
+    margin-bottom: var(--spacing-sm);
+    transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+
+    &:hover {
+        transform: translateX(4px);
+    }
+
+    .file-info {
+        flex: 1;
+        min-width: 0;
+
+        .file-name {
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-color);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-size {
+            font-size: var(--font-size-xs);
+            color: var(--text-muted);
+        }
+    }
+
+    .actions {
+        display: flex;
+        gap: var(--spacing-sm);
+        flex-shrink: 0;
+    }
+`;
+
+export const IconButton = styled.button.withConfig({
+    shouldForwardProp: (prop: string) => isPropValid(prop) && !prop.startsWith('$'),
+})<{ $variant?: "primary"; $download?: boolean }>`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm);
+    background: ${(props) => (props.$variant === "primary" ? "var(--primary-color)" : "var(--bg-secondary)")};
+    color: ${(props) =>
+        props.$variant === "primary" ? "var(--text-white)" : props.$download ? "var(--primary-color)" : "var(--text-color)"};
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: var(--border-radius-sm);
+
+    &:hover {
+        background: ${(props) => (props.$variant === "primary" ? "var(--primary-hover)" : "var(--border-color)")};
+        transform: scale(1.05);
+    }
+
+    &:active {
+        transform: scale(0.95);
+    }
+`;
+
+export const ChartCard = styled(ModernCard)`
+    display: flex;
+    flex-direction: column;
+    min-height: 300px;
+
+    h4 {
+        margin: 0 0 var(--spacing-xl) 0;
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--text-color);
+    }
+
+    .chart-content {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 250px;
+    }
+`;
+
+export const ModalOverlay = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--overlay-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+`;
+
+export const ModalContentStyled = styled.div`
+    background: var(--bg-primary);
+    padding: var(--spacing-3xl);
+    border-radius: var(--border-radius-md);
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 800px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+`;
+
+export const ModalHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+`;
+
+export const ModalTitle = styled.h3`
+    margin: 0;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color);
+`;
+
+export const ModalCloseButton = styled(IconButton)`
+    background: var(--bg-secondary);
+    &:hover {
+        background: var(--border-color);
+    }
+`;
+
+export const ModalBody = styled.div`
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+`;
+
+export const FilePreview = styled.iframe`
+    width: 100%;
+    height: 500px;
+    border: none;
+`;
+
+export const ImagePreview = styled.img`
+    max-width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+`;
+
+export const ErrorMessage = styled.p`
+    color: var(--error-color);
+    text-align: center;
+    font-size: var(--font-size-md);
+`;
+
+// === PLUGIN CENTER TEXT (avec protection) ===
+export const centerTextPlugin = {
+    id: "centerText",
+    beforeDraw(chart: Chart & { options: ChartWithCenterTextOptions }) {
+        // Vérification critique : ne s'exécute que si explicitement activé
+        if (!chart.options.plugins?.centerText?.display) {
+            return;
+        }
+        
+        const { ctx, chartArea } = chart;
+        const text = chart.options.plugins.centerText.text;
+        
+        // Vérifier que toutes les données nécessaires existent
+        if (!ctx || !chartArea || !text) {
+            return;
+        }
+        
+        ctx.save();
+        ctx.font = "bold 16px Arial";
+        ctx.fillStyle = "#333";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const centerX = (chartArea.left + chartArea.right) / 2;
+        const centerY = (chartArea.top + chartArea.bottom) / 2;
+        ctx.fillText(text, centerX, centerY);
+        ctx.restore();
+    },
+};
+
+export const Badge = styled.span<{ $type: string }>`
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    background: ${(props) => {
+        const colors = {
+            Transport: "var(--info-bg)",
+            Hébergement: "var(--warning-bg)",
+            Restauration: "var(--success-bg)",
+            Autres: "var(--info-icon-bg)",
+        };
+        return colors[props.$type as keyof typeof colors] || "var(--bg-light)";
+    }};
+    color: var(--text-color);
+    border-radius: var(--border-radius-sm);
+`;
+
+export const ExpenseTypeContainer = styled.div`
+  background: var(--bg-primary);
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: var(--shadow-md);
+  }
+`;
+
+export const AccordionHeaderStyled = styled.button.withConfig({
+  shouldForwardProp: (prop: string) => isPropValid(prop) && !prop.startsWith('$'),
+})<{ $isOpen: boolean }>`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: ${(props) => (props.$isOpen ? 'var(--warning-bg)' : 'var(--bg-secondary)')};
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+
+  &:hover {
+    background: var(--warning-icon-bg);
+  }
+
+  .chevron {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+    transform: ${(props) => (props.$isOpen ? "rotate(0deg)" : "rotate(-90deg)")};
+  }
+`;
+
+export const AccordionContentStyled = styled.div<{ $isOpen: boolean }>`
+  display: ${(props) => (props.$isOpen ? "block" : "none")};
+  padding: 1rem;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+`;
+
+export const AttachmentSection = styled.div`
+  padding: 1.5rem;
+  border: 2px dashed var(--primary-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  margin-top: 1rem;
+`;
+
+
+export const AttachmentCategory = styled.div`
+  margin-bottom: 1.5rem;
+`;
+
+export const CategoryTitle = styled.p`
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+  font-style: italic;
+`;
+
+export const DraftBadge = styled.span`
+  font-size: 10px;
+  color: var(--primary-color);
+  font-style: italic;
+  background: var(--warning-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+`;
+
+export const UploadButton = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--success-color);
+  color: var(--text-white);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--success-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+
+export const ModalContent = styled.div`
+  background: var(--bg-primary);
+  padding: 24px;
+  border-radius: 8px;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 800px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
 `;

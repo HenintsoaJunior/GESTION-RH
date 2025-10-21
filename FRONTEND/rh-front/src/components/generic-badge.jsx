@@ -9,16 +9,18 @@ export function GenericBadge({
   customRenderer,
 }) {
   const defaultConfig = {
-    default: { class: "status-default", label: "Défaut" },
-    success: { class: "status-success", label: "Succès" },
-    error: { class: "status-error", label: "Erreur" },
-    warning: { class: "status-warning", label: "Attention" },
-    info: { class: "status-info", label: "Info" },
-    pending: { class: "status-pending", label: "En attente" },
-    progress: { class: "status-progress", label: "En cours" },
-    approved: { class: "status-approved", label: "Approuvé" },
-    cancelled: { class: "status-cancelled", label: "Annulé" },
-  };
+  default: { class: "status-default", label: "Défaut" },
+  success: { class: "status-success", label: "Succès" },
+  error: { class: "status-error", label: "Erreur" },
+  warning: { class: "status-warning", label: "Attention" },
+  info: { class: "status-info", label: "Info" },
+  pending: { class: "status-pending", label: "En attente" },
+  progress: { class: "status-progress", label: "En cours" },
+  approved: { class: "status-approved", label: "Approuvé" },
+  cancelled: { class: "status-cancelled", label: "Annulé" },
+  waiting: { class: "status-waiting", label: "À valider" },
+};
+
 
   const config = { ...defaultConfig, ...statusConfig };
   const statusKey = value?.toLowerCase() || defaultStatus;

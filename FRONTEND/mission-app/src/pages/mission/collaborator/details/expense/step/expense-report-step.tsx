@@ -1,9 +1,8 @@
+// ExpenseReportStep.tsx
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from "react";
 import { Trash2, Plus, ChevronDown, FileText, Paperclip, Upload, Loader2, Eye, Download, X } from "lucide-react";
-import styled from "styled-components";
-import isPropValid from "@emotion/is-prop-valid";
 
 import {
   FormTable,
@@ -19,307 +18,29 @@ import {
 import { useCreateExpenseReport, useExpenseReportsByAssignationId } from "@/api/mission/expense/services";
 import Alert from "@/components/alert";
 
-// Helper function to format expense report data for API submission
-const formatExpenseReportForInsertion = (formData: any) => {
-  const { userId, assignationId, expenseLinesByType, attachments } = formData;
-  
-  return {
-    userId,
-    assignationId,
-    expenseLinesByType,
-    attachments: attachments || [],
-  };
-};
+import {
+  ExpenseTypeContainer,
+  AccordionHeaderStyled,
+  AccordionContentStyled,
+  AttachmentSection,
+  AttachmentsList,
+  AttachmentCategory,
+  CategoryTitle,
+  AttachmentItem,
+  IconButton,
+  DraftBadge,
+  UploadButton,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  FilePreview,
+  ImagePreview,
+  ErrorMessage,
+  Separator
+} from "@/styles/detailsmission-styles";
 
-// === DESIGN MODERNE ===
-const COLORS = {
-  primary: "#4F46E5",
-  primaryHover: "#4338CA",
-  secondary: "#10B981",
-  accent: "#F59E0B",
-  danger: "#EF4444",
-  background: "#F9FAFB",
-  cardBg: "#FFFFFF",
-  border: "#E5E7EB",
-  text: {
-    primary: "#111827",
-    secondary: "#6B7280",
-    light: "#9CA3AF",
-  },
-  folder: {
-    bg: "#FEF3C7",
-    border: "#F59E0B",
-    hover: "#FDE68A",
-  },
-};
-
-// === STYLED COMPONENTS ===
-const SectionTitle = styled.h3`
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: ${COLORS.primary};
-  border-bottom: 2px solid ${COLORS.primary};
-  padding-bottom: 0.5rem;
-  margin-bottom: 1rem;
-  margin-top: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const ExpenseTypeContainer = styled.div`
-  background: ${COLORS.cardBg};
-  margin-bottom: 16px;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-
-  &:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const AccordionHeaderStyled = styled.button.withConfig({
-  shouldForwardProp: (prop: string) => isPropValid(prop) && !prop.startsWith('$'),
-})<{ $isOpen: boolean }>`
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  background: ${(props) => (props.$isOpen ? COLORS.folder.bg : COLORS.background)};
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-  font-weight: 600;
-  color: ${COLORS.text.primary};
-
-  &:hover {
-    background: ${COLORS.folder.hover};
-  }
-
-  .chevron {
-    margin-left: auto;
-    transition: transform 0.3s ease;
-    transform: ${(props) => (props.$isOpen ? "rotate(0deg)" : "rotate(-90deg)")};
-  }
-`;
-
-const AccordionContentStyled = styled.div<{ $isOpen: boolean }>`
-  display: ${(props) => (props.$isOpen ? "block" : "none")};
-  padding: 1rem;
-  background: white;
-  border-top: 1px solid ${COLORS.border};
-`;
-
-const AttachmentSection = styled.div`
-  padding: 1.5rem;
-  border: 2px dashed ${COLORS.primary};
-  border-radius: 8px;
-  background: ${COLORS.background};
-  margin-top: 1rem;
-`;
-
-const AttachmentsList = styled.div`
-  margin-top: 1rem;
-  border-top: 1px solid ${COLORS.border};
-  padding-top: 1rem;
-`;
-
-const AttachmentCategory = styled.div`
-  margin-bottom: 1.5rem;
-`;
-
-const CategoryTitle = styled.p`
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: ${COLORS.text.primary};
-  margin-bottom: 0.5rem;
-  font-style: italic;
-`;
-
-const AttachmentItem = styled.div<{ $isExisting?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: ${(props) => (props.$isExisting ? "#f0f9ff" : COLORS.cardBg)};
-  margin-bottom: 8px;
-  border-radius: 6px;
-  border: 1px solid ${COLORS.border};
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateX(4px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-
-  .file-info {
-    flex: 1;
-    min-width: 0;
-
-    .file-name {
-      font-weight: 500;
-      color: ${COLORS.text.primary};
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .file-size {
-      font-size: 0.75rem;
-      color: ${COLORS.text.secondary};
-    }
-  }
-
-  .actions {
-    display: flex;
-    gap: 8px;
-  }
-`;
-
-const IconButton = styled.button.withConfig({
-  shouldForwardProp: (prop: string) => isPropValid(prop) && !prop.startsWith('$'),
-})<{ $variant?: "primary" | "success" | "danger" }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  background: ${(props) =>
-    props.$variant === "primary"
-      ? COLORS.primary
-      : props.$variant === "success"
-      ? COLORS.secondary
-      : props.$variant === "danger"
-      ? COLORS.danger
-      : COLORS.background};
-  color: ${(props) => (props.$variant ? "white" : COLORS.text.primary)};
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover:not(:disabled) {
-    opacity: 0.9;
-    transform: scale(1.05);
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.95);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const DraftBadge = styled.span`
-  font-size: 10px;
-  color: ${COLORS.primary};
-  font-style: italic;
-  background: ${COLORS.folder.bg};
-  padding: 2px 6px;
-  border-radius: 4px;
-`;
-
-const UploadButton = styled.label`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: ${COLORS.secondary};
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: #059669;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-`;
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 20px;
-`;
-
-const ModalContent = styled.div`
-  background: ${COLORS.cardBg};
-  padding: 24px;
-  border-radius: 8px;
-  max-width: 90vw;
-  max-height: 90vh;
-  width: 800px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-`;
-
-const ModalTitle = styled.h3`
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: ${COLORS.text.primary};
-`;
-
-const ModalBody = styled.div`
-  flex: 1;
-  overflow: auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const FilePreview = styled.iframe`
-  width: 100%;
-  height: 500px;
-  border: none;
-`;
-
-const ImagePreview = styled.img`
-  max-width: 100%;
-  max-height: 500px;
-  object-fit: contain;
-`;
-
-const ErrorMessage = styled.p`
-  color: ${COLORS.danger};
-  text-align: center;
-  font-size: 1rem;
-`;
-
-// === HELPER FUNCTIONS ===
 const readFileAsBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -405,7 +126,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ isOpen, onClose, co
       <ModalContent onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
           <ModalTitle>{content.fileName || "Prévisualisation"}</ModalTitle>
-          <IconButton onClick={onClose}>
+          <IconButton type="button" onClick={onClose}>
             <X size={20} />
           </IconButton>
         </ModalHeader>
@@ -455,16 +176,12 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
       try {
         setHasLoadedReports(true);
         
-        // expenseReportsData.data contient déjà ExpenseReportsResponseData
         const responseData = expenseReportsData.data;
 
         if (!responseData) {
           throw new Error("Réponse API invalide.");
         }
 
-        // responseData.data contient le tableau ExpenseReport[]
-        // Nous devons vérifier la structure exacte de la réponse API
-        // Si la réponse contient { data: { reports: [], attachments: [] } }
         const reports = (responseData as any).reports || [];
         const existingAttachmentsData = (responseData as any).attachments || [];
 
@@ -520,6 +237,7 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
   }, [formData.expenseLinesByType, openSections]);
 
   const toggleSection = (typeId: string) => {
+    console.log('Opening typeId:', typeId);
     setOpenSections((prev) => ({ ...prev, [typeId]: !prev[typeId] }));
   };
 
@@ -555,7 +273,13 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
     const { name, value } = e.target;
     const currentLines = expenseLinesByType[typeId] || [];
     const newLines = [...currentLines];
-    newLines[lineIndex] = { ...newLines[lineIndex], [name]: value };
+    
+    let processedValue = value;
+    if (name === 'amount' || name === 'rate') {
+      processedValue = value;
+    }
+    
+    newLines[lineIndex] = { ...newLines[lineIndex], [name]: processedValue };
 
     handleInputChange({ target: { name: "expenseLinesByType", value: { ...expenseLinesByType, [typeId]: newLines } } });
   };
@@ -624,16 +348,55 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
   const handleSubmitExpenseReport = async () => {
     if (isSubmitting || isLoading) return;
 
+    if (!formData.userId) {
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: "Utilisateur non identifié. Veuillez vous reconnecter.",
+      });
+      return;
+    }
+
+    if (!formData.assignationId) {
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: "ID d'assignation manquant.",
+      });
+      return;
+    }
+
+    if (Object.keys(expenseLinesByType).length === 0) {
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: "Veuillez ajouter au moins une ligne de frais.",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      const normalizedExpenseLinesByType: Record<string, any[]> = {};
+      Object.entries(formData.expenseLinesByType).forEach(([typeId, lines]) => {
+        normalizedExpenseLinesByType[typeId] = (lines as any[]).map(line => ({
+          ...line,
+          amount: typeof line.amount === 'string' ? parseFloat(line.amount) : line.amount,
+          rate: typeof line.rate === 'string' ? parseFloat(line.rate) : line.rate,
+        }));
+      });
+      
       const dataToSubmit = {
-        ...formData,
+        userId: String(formData.userId),
+        assignationId: String(formData.assignationId),
+        expenseLinesByType: normalizedExpenseLinesByType,
         attachments: attachments,
       };
 
-      const formattedData = formatExpenseReportForInsertion(dataToSubmit);
-      const response = await createExpenseReport(formattedData);
+      console.log("dataToSubmit FINAL:", JSON.stringify(dataToSubmit, null, 2));
+
+      const response = await createExpenseReport(dataToSubmit);
       
       console.log("Rapport de frais créé:", response);
       
@@ -645,11 +408,12 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
 
       setAttachments([]);
       handleInputChange({ target: { name: "attachments", value: [] } });
-      setHasLoadedReports(false);
+      handleInputChange({ target: { name: "expenseLinesByType", value: {} } });
       
-      // Refetch to get updated data
+      setHasLoadedReports(false);
       await refetchExpenseReports();
     } catch (error: any) {
+      console.error("Erreur lors de la création:", error);
       setAlert({
         isOpen: true,
         type: "error",
@@ -666,11 +430,6 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
     <>
       <Alert type={alert.type} message={alert.message} isOpen={alert.isOpen} onClose={() => setAlert({ ...alert, isOpen: false })} />
 
-      <SectionTitle>
-        <FileText size={22} />
-        Récapitulatif des Frais
-      </SectionTitle>
-
       <FormInput type="hidden" name="assignationId" value={formData.assignationId || ""} onChange={handleInputChange} />
       <FormInput type="hidden" name="userId" value={formData.userId || ""} onChange={handleInputChange} />
 
@@ -682,7 +441,7 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
 
         return (
           <ExpenseTypeContainer key={typeId}>
-            <AccordionHeaderStyled onClick={() => toggleSection(typeId)} $isOpen={isOpen}>
+            <AccordionHeaderStyled type="button" onClick={() => toggleSection(typeId)} $isOpen={isOpen}>
               <FileText size={20} />
               <span>
                 <strong>{type.type}</strong> ({currentLines.length} ligne{currentLines.length > 1 ? "s" : ""})
@@ -693,18 +452,25 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
             <AccordionContentStyled $isOpen={isOpen}>
               {fieldsForType.length > 0 ? (
                 <div style={{ overflowX: "auto", marginBottom: "1rem" }}>
-                  <FormTable style={{ minWidth: "800px", width: "100%", borderCollapse: "collapse" }}>
+                  <FormTable 
+                    style={{ 
+                      minWidth: "800px", 
+                      width: "100%", 
+                      borderCollapse: "collapse",
+                      border: "1px solid var(--border-color)"
+                    }}
+                  >
                     <thead>
                       <tr>
                         {fieldsForType.map((field: any) => (
                           <th
                             key={field.name}
                             style={{
-                              backgroundColor: "#e0e7ff",
-                              padding: "0.5rem",
-                              border: `1px solid ${COLORS.border}`,
+                              backgroundColor: "var(--primary-light)",
+                              padding: "0.75rem",
+                              border: "1px solid var(--border-color)",
                               fontSize: "0.875rem",
-                              color: COLORS.text.primary,
+                              color: "var(--text-color)",
                               textAlign: "left",
                             }}
                           >
@@ -717,12 +483,12 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
                         ))}
                         <th
                           style={{
-                            backgroundColor: "#e0e7ff",
-                            padding: "0.5rem",
-                            border: `1px solid ${COLORS.border}`,
+                            backgroundColor: "var(--primary-light)",
+                            padding: "0.75rem",
+                            border: "1px solid var(--border-color)",
                             fontSize: "0.875rem",
                             textAlign: "center",
-                            width: "60px",
+                            width: "80px",
                           }}
                         >
                           Actions
@@ -732,18 +498,23 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
                     <tbody>
                       {currentLines.length > 0 ? (
                         currentLines.map((line: any, lineIndex: number) => (
-                          <tr key={lineIndex}>
+                          <tr 
+                            key={lineIndex} 
+                            style={{ 
+                              backgroundColor: lineIndex % 2 === 0 ? "var(--bg-secondary)" : "var(--bg-primary)"
+                            }}
+                          >
                             {fieldsForType.map((field: any) => (
-                              <FormFieldCell key={field.name}>
+                              <FormFieldCell key={field.name} style={{ padding: "0.75rem", border: "1px solid var(--border-color)" }}>
                                 {renderFieldInput(line, lineIndex, field, typeId)}
                                 {getLineError(typeId, lineIndex, field.name).length > 0 && (
-                                  <div style={{ color: "red", fontSize: "12px", marginTop: "4px" }}>
+                                  <div style={{ color: "var(--danger-color)", fontSize: "12px", marginTop: "4px" }}>
                                     {getLineError(typeId, lineIndex, field.name).join(", ")}
                                   </div>
                                 )}
                               </FormFieldCell>
                             ))}
-                            <FormFieldCell style={{ textAlign: "center" }}>
+                            <FormFieldCell style={{ textAlign: "center", padding: "0.75rem", border: "1px solid var(--border-color)" }}>
                               <RemoveItem type="button" onClick={() => handleRemoveLine(typeId, lineIndex)} disabled={isSubmitting}>
                                 <Trash2 size={16} />
                               </RemoveItem>
@@ -751,12 +522,32 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
                           </tr>
                         ))
                       ) : (
-                        <tr>
-                          <td
-                            colSpan={fieldsForType.length + 1}
-                            style={{ textAlign: "center", padding: "15px", fontStyle: "italic", color: COLORS.text.secondary }}
+                        <tr style={{ backgroundColor: "var(--info-bg)" }}>
+                          <td 
+                            colSpan={fieldsForType.length + 1} 
+                            style={{ 
+                              textAlign: "center", 
+                              padding: "1.5rem", 
+                              fontStyle: "italic", 
+                              color: "var(--text-secondary)",
+                              border: "1px solid var(--border-color)"
+                            }}
                           >
-                            Aucune ligne de frais ajoutée. Cliquez sur "Ajouter une ligne" pour commencer.
+                            <Button 
+                              type="button" 
+                              onClick={() => handleAddLine(typeId, fieldsForType)} 
+                              disabled={isSubmitting}
+                              style={{ 
+                                background: "var(--primary-color)", 
+                                color: "var(--text-white)", 
+                                padding: "8px 16px", 
+                                borderRadius: "4px",
+                                fontSize: "0.875rem"
+                              }}
+                            >
+                              <Plus size={14} style={{ marginRight: "4px" }} /> 
+                              Ajouter la première ligne de frais
+                            </Button>
                           </td>
                         </tr>
                       )}
@@ -764,7 +555,12 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
                   </FormTable>
                 </div>
               ) : (
-                <p style={{ padding: "0 10px" }}>Aucun champ de formulaire n'est défini pour ce type de rapport.</p>
+                <div style={{ padding: "1rem", textAlign: "center", color: "var(--text-secondary)" }}>
+                  <p>Aucun champ de formulaire n'est défini pour ce type de rapport.</p>
+                  <Button type="button" onClick={() => handleAddLine(typeId, defaultFields)} disabled={isSubmitting}>
+                    Ajouter une ligne avec champs par défaut
+                  </Button>
+                </div>
               )}
 
               <FormActions style={{ justifyContent: "flex-start" }}>
@@ -777,10 +573,7 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
         );
       })}
 
-      <SectionTitle>
-        <Paperclip size={22} />
-        Pièces Jointes
-      </SectionTitle>
+      <Separator />
 
       <AttachmentSection>
         <input type="file" id="file-upload" multiple onChange={handleAttachmentChange} disabled={isSubmitting} style={{ display: "none" }} />
@@ -791,14 +584,14 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
 
         {totalAttachments > 0 && (
           <AttachmentsList>
-            <p style={{ fontWeight: "bold", color: COLORS.text.primary, marginBottom: "1rem" }}>Fichiers joints ({totalAttachments}):</p>
+            <p style={{ fontWeight: "bold", color: "var(--text-color)", marginBottom: "1rem" }}>Fichiers joints ({totalAttachments}):</p>
 
             {existingAttachments.length > 0 && (
               <AttachmentCategory>
                 <CategoryTitle>📁 Fichiers existants:</CategoryTitle>
                 {existingAttachments.map((file: any, index: number) => (
-                  <AttachmentItem key={`existing-${index}`} $isExisting>
-                    <FileText size={24} color={COLORS.primary} />
+                  <AttachmentItem key={`existing-${index}`} style={{ background: 'var(--info-bg)' }}>
+                    <FileText size={24} color="var(--primary-color)" />
                     <div className="file-info">
                       <div className="file-name">
                         <strong>{file.fileName}</strong>
@@ -808,22 +601,29 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
                     </div>
                     <div className="actions">
                       <IconButton
+                        type="button"
                         onClick={() => handleFileView(file.fileContent, file.fileName, setModalContent, setModalOpen, file.fileType)}
                         title="Prévisualiser"
                       >
                         <Eye size={16} />
                       </IconButton>
-                      <IconButton onClick={() => handleFileDownload(file.fileContent, file.fileName)} title="Télécharger" $variant="primary">
+                      <IconButton 
+                        type="button"
+                        onClick={() => handleFileDownload(file.fileContent, file.fileName)} 
+                        title="Télécharger" 
+                        $variant="primary"
+                      >
                         <Download size={16} />
                       </IconButton>
                       <IconButton
-                        $variant="danger"
+                        type="button"
                         onClick={() => {
                           const updatedExisting = existingAttachments.filter((_: any, i: number) => i !== index);
                           setExistingAttachments(updatedExisting);
                         }}
                         disabled={isSubmitting}
                         title="Supprimer"
+                        style={{ background: 'var(--danger-color)', color: 'var(--text-white)' }}
                       >
                         <Trash2 size={16} />
                       </IconButton>
@@ -838,7 +638,7 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
                 <CategoryTitle>📎 Nouveaux fichiers à joindre:</CategoryTitle>
                 {attachments.map((file: any, index: number) => (
                   <AttachmentItem key={`new-${index}`}>
-                    <Paperclip size={24} color={COLORS.secondary} />
+                    <Paperclip size={24} color="var(--success-color)" />
                     <div className="file-info">
                       <div className="file-name">
                         <strong>{file.fileName}</strong>
@@ -847,15 +647,27 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
                     </div>
                     <div className="actions">
                       <IconButton
+                        type="button"
                         onClick={() => handleFileView(file.fileContent, file.fileName, setModalContent, setModalOpen, file.fileType)}
                         title="Prévisualiser"
                       >
                         <Eye size={16} />
                       </IconButton>
-                      <IconButton onClick={() => handleFileDownload(file.fileContent, file.fileName)} title="Télécharger" $variant="primary">
+                      <IconButton 
+                        type="button"
+                        onClick={() => handleFileDownload(file.fileContent, file.fileName)} 
+                        title="Télécharger" 
+                        $variant="primary"
+                      >
                         <Download size={16} />
                       </IconButton>
-                      <IconButton $variant="danger" onClick={() => handleRemoveAttachment(index)} disabled={isSubmitting} title="Supprimer">
+                      <IconButton 
+                        type="button"
+                        onClick={() => handleRemoveAttachment(index)} 
+                        disabled={isSubmitting} 
+                        title="Supprimer"
+                        style={{ background: 'var(--danger-color)', color: 'var(--text-white)' }}
+                      >
                         <Trash2 size={16} />
                       </IconButton>
                     </div>
@@ -867,7 +679,7 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
         )}
 
         {fieldErrors.attachments && fieldErrors.attachments.length > 0 && (
-          <div style={{ color: COLORS.danger, fontSize: "12px", marginTop: "1rem", textAlign: "center" }}>
+          <div style={{ color: "var(--danger-color)", fontSize: "12px", marginTop: "1rem", textAlign: "center" }}>
             {fieldErrors.attachments.join(", ")}
           </div>
         )}
@@ -879,7 +691,7 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
           onClick={handleSubmitExpenseReport}
           disabled={isSubmitting || isLoading || Object.keys(expenseLinesByType).length === 0}
           style={{
-            background: isSubmitting || isLoading ? COLORS.text.light : COLORS.primary,
+            background: isSubmitting || isLoading ? 'var(--text-light)' : 'var(--primary-color)',
             padding: "12px 32px",
             fontSize: "1rem",
             fontWeight: "600",

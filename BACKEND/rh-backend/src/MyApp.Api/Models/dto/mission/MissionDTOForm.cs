@@ -17,6 +17,7 @@ namespace MyApp.Api.Models.dto.mission
         public string Name { get; set; } = null!;
 
         public string? Description { get; set; }
+        public string? Status { get; set; }
 
         [Required(ErrorMessage = "La date de début est requise.")]
         public DateTime StartDate { get; set; }

@@ -30,15 +30,17 @@ namespace MyApp.Api.Services.mission
     public class MissionValidationService : IMissionValidationService
     {
         private readonly IMissionValidationRepository _repository;
+        private readonly IMissionRepository _missionRepository; // Add this
         private readonly IMissionAssignationService _missionAssignationService;
         private readonly IMissionBudgetService _missionBudgetService;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly IUserService _userService;
-        private readonly ILogger<MissionValidationService> _logger; // Updated to use MissionValidationService
-        private readonly ILogService _logService; // Added ILogService
+        private readonly ILogger<MissionValidationService> _logger;
+        private readonly ILogService _logService;
 
         public MissionValidationService(
             IMissionValidationRepository repository,
+            IMissionRepository missionRepository, // Add this
             IMissionAssignationService missionAssignationService,
             IMissionBudgetService missionBudgetService,
             ISequenceGenerator sequenceGenerator,
@@ -47,6 +49,7 @@ namespace MyApp.Api.Services.mission
             ILogService logService)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _missionRepository = missionRepository ?? throw new ArgumentNullException(nameof(missionRepository)); // Add this
             _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
             _missionBudgetService = missionBudgetService ?? throw new ArgumentNullException(nameof(missionBudgetService));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
@@ -252,12 +255,27 @@ namespace MyApp.Api.Services.mission
                 var lastValidation = await _repository.ValidateAsync(validation.MissionValidationId, validation.MissionAssignationId);
                 if (!lastValidation) result = "Validation effectuée avec succès.";
                 var missionAssignation = await _missionAssignationService.GetByAssignationIdAsync(validation.MissionAssignationId);
-                if (missionAssignation == null) result = "Aucune validation à faire.";
 
-                if (lastValidation && missionAssignation != null)
+                if (missionAssignation == null) 
+                {
+                    result = "Aucune validation à faire.";
+                    return result;  // Early return to avoid null ref
+                }
+
+                var mission = await _missionRepository.GetByIdAsync(missionAssignation.MissionId);  // Use repo instead of service
+                
+                if (lastValidation && missionAssignation != null && mission != null)
                 {
                     missionAssignation.IsValidated = 1;
+                    mission.Status = "planned";
+                    
                     await _missionAssignationService.UpdateAsync(validation.MissionAssignationId, missionAssignation);
+                    
+                    // Directly update mission via repo (no DTO mapping needed)
+                    mission.UpdatedAt = DateTime.UtcNow;  // Good practice for updates
+                    await _missionRepository.UpdateAsync(mission);
+                    await _missionRepository.SaveChangesAsync();  // Persist the change
+                    
                     result = "Validation effectuée avec succès et mission validée";
 
                     if (validation.Type.Equals("Indemnité"))
@@ -326,7 +344,6 @@ namespace MyApp.Api.Services.mission
                 throw;
             }
         }
-
         public async Task<MissionValidation?> VerifyMissionValidationByMissionIdAsync(string missionId)
         {
             try

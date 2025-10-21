@@ -250,6 +250,14 @@ export const StatusBadge = styled.span`
     background: #cce5ff;
     color: #004085;
   }
+  &.status-waiting {
+   background-color: #fef3c7; /* jaune clair pour indiquer attente */
+   color: #b45309; /* texte marron foncé/orange */
+   border: 1px solid #fde68a;
+   border-radius: 12px;
+   padding: 3px 8px;
+   font-weight: 500;
+  }
   &.status-pending {
     background: #fff3cd;
     color: #856404;

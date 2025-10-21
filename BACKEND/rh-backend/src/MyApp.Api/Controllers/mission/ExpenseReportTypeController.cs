@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Services.mission;
@@ -19,12 +20,31 @@ namespace MyApp.Api.Controllers.mission
 
         // GET: api/ExpenseReportType
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ExpenseReportType>>> GetAll()
+        [AllowAnonymous]
+        public async Task<ActionResult> GetAll()
         {
-            var types = await _service.GetAllAsync();
-            return Ok(types);
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var types = await _service.GetAllAsync();
+                return Ok(new { data = types, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
         }
 
+//
         // GET: api/ExpenseReportType/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<ExpenseReportType>> GetById(string id)
