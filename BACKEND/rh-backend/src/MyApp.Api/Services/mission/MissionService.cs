@@ -1,11 +1,13 @@
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Models.dto.notifications;
+using MyApp.Api.Models.dto.prevision;
 using MyApp.Api.Models.list.mission;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Services.employee;
 using MyApp.Api.Services.logs;
 using MyApp.Api.Services.notifications;
+using MyApp.Api.Services.prevision;
 using MyApp.Api.Services.users;
 using MyApp.Api.Utils.generator;
 
@@ -30,12 +32,15 @@ namespace MyApp.Api.Services.mission
         private readonly IMissionValidationService _validationService;
         private readonly IUserService _userService;
         private readonly IEmployeeService _employeeService;
+        private readonly ICategoriesOfEmployeeService _categoriesOfEmployeeService;
+        private readonly ICompensationScaleService _compensationScaleService;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly IMissionAssignationService _missionAssignationService;
         private readonly INotificationsService _notificationsService;
         private readonly ILogger<MissionService> _logger;
         private readonly ILogService _logService;
         private readonly ILieuService _lieuService;
+        private readonly IPrevisionPriceService _previsionPriceService;
 
         public MissionService(
             IMissionRepository repository,
@@ -45,9 +50,12 @@ namespace MyApp.Api.Services.mission
             IMissionValidationService validationService,
             IUserService userService,
             IEmployeeService employeeService,
+            ICategoriesOfEmployeeService categoriesOfEmployeeService,
+            ICompensationScaleService compensationScaleService,
             INotificationsService notificationsService,
             ILogService logService,
-            ILieuService lieuService
+            ILieuService lieuService,
+            IPrevisionPriceService previsionPriceService
         )
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
@@ -57,9 +65,12 @@ namespace MyApp.Api.Services.mission
             _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
+            _categoriesOfEmployeeService = categoriesOfEmployeeService ?? throw new ArgumentNullException(nameof(categoriesOfEmployeeService));
+            _compensationScaleService = compensationScaleService ?? throw new ArgumentNullException(nameof(compensationScaleService));
             _notificationsService = notificationsService ?? throw new ArgumentNullException(nameof(notificationsService));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
             _lieuService = lieuService ?? throw new ArgumentNullException(nameof(lieuService));
+            _previsionPriceService = previsionPriceService ?? throw new ArgumentNullException(nameof(previsionPriceService));
         }
 
         public async Task<Mission?> VerifyMissionByNameAsync(string name)
@@ -146,18 +157,31 @@ namespace MyApp.Api.Services.mission
                     await _repository.AddAsync(mission);
                     await _repository.SaveChangesAsync();
 
-                    // Création mission assignation + validations
                     if (missionDto.Assignations.Count > 0)
                     {
-                        var recipientUserIds = new List<string> { missionDto.UserId }; // Inclure le créateur
+                        var recipientUserIds = new List<string> { missionDto.UserId }; 
+                        var totalPayments = new List<decimal>(); 
 
                         foreach (var missionAssignation in missionDto.Assignations.Select(assignationDto => new MissionAssignation(missionId, assignationDto)))
                         {
                             var assignation = await _missionAssignationService.CreateAsync(missionAssignation);
 
-                            var drh = await _userService.GetDrhAsync();
                             var employee = await _employeeService.GetByIdAsync(missionAssignation.EmployeeId)
-                                        ?? throw new InvalidOperationException($"Employé avec ID {assignation.EmployeeId} introuvable.");
+                                        ?? throw new InvalidOperationException($"Employé avec ID {missionAssignation.EmployeeId} introuvable.");
+                            missionAssignation.Employee = employee;
+
+                            var missionPaiement = new MissionPaiement(_categoriesOfEmployeeService);
+                            var (totalAmount, dateDebut) = await missionPaiement.GenerateTotalPaiementAsync(missionAssignation, _compensationScaleService);
+                            totalPayments.Add(totalAmount);
+
+                            var previsionPriceDtoForm = new PrevisionPriceDtoForm()
+                            {
+                                Amount = totalAmount,
+                                DepartureDate = dateDebut
+                            };
+                            await _previsionPriceService.AddAsync(previsionPriceDtoForm);
+
+                            var drh = await _userService.GetDrhAsync();
 
                             var superior = await _userService.GetSuperiorAsync(employee.EmployeeCode);
                             _logger.LogInformation("Mission creator est {UserId}", missionDto.UserId);
@@ -183,15 +207,16 @@ namespace MyApp.Api.Services.mission
                             if (!string.IsNullOrWhiteSpace(drh?.UserId) && !recipientUserIds.Contains(drh.UserId))
                                 recipientUserIds.Add(drh.UserId);
                         }
+                        
 
-                        // Récupérer le nom du lieu pour l'affichage et le log
                         var lieu = await _lieuService.GetByIdAsync(mission.LieuId);
                         var lieuNom = lieu?.Nom ?? "lieu inconnu";
+                        var grandTotal = totalPayments.Sum();
 
                         var notification = new NotificationFormDTO
                         {
                             Title = "Nouvelle mission créée",
-                            Message = $"La mission '{mission.Name}' a été créée pour le lieu {lieuNom} du {mission.StartDate:yyyy-MM-dd} au {mission.EndDate:yyyy-MM-dd}.",
+                            Message = $"La mission '{mission.Name}' a été créée pour le lieu {lieuNom} du {mission.StartDate:yyyy-MM-dd} au {mission.EndDate:yyyy-MM-dd}. Montant total estimé: {grandTotal:C}.",
                             Type = "mission",
                             RelatedTable = "mission",
                             RelatedMenu = "collaborateur",
@@ -201,21 +226,19 @@ namespace MyApp.Api.Services.mission
                             CreatedAt = DateTime.UtcNow
                         };
 
-                        // Pass the existing transaction to NotificationsService
                         await _notificationsService.CreateAsync(notification, transaction);
 
-                        // Préparer les données pour le log avec LieuNom (sans LieuId)
                         var logNewData = new
                         {
                             Nom = mission.Name,
                             Description = mission.Description,
                             DateDebut = mission.StartDate,
                             DateFin = mission.EndDate,
-                            NomLieu = lieuNom
+                            NomLieu = lieuNom,
+                            MontantTotal = grandTotal
                         };
 
-                        // Log de création
-                        await _logService.LogAsync("INSERTION", "MISSION", null, logNewData, missionDto.UserId, "Nom,Description,DateDebut,DateFin,NomLieu");
+                        await _logService.LogAsync("INSERTION", "MISSION", null, logNewData, missionDto.UserId, "Nom,Description,DateDebut,DateFin,NomLieu,MontantTotal");
                     }
 
                     await transaction.CommitAsync();
@@ -233,7 +256,6 @@ namespace MyApp.Api.Services.mission
                 throw;
             }
         }
-
         public async Task<bool> UpdateAsync(string id, MissionDTOForm? mission)
         {
             await using var transaction = await _repository.BeginTransactionAsync();

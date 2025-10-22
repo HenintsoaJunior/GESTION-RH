@@ -21,7 +21,6 @@ import {
     StatusBadge,
 } from "@/styles/table-styles";
 import Pagination from "@/components/pagination"; 
-
 // Types from previous context
 interface FormattedMission {
   id: string;
@@ -94,22 +93,6 @@ interface MissionCardsProps {
 }
 
 
-const COLORS = {
-    primary: "#2684ff", // Bleu
-    primaryHover: "#0057d9",
-    urgent: "#dc3545", // Rouge (Urgence)
-    urgentLight: "#f8d7da",
-    dueSoon: "#ffc107", // Jaune (Échéance proche)
-    dueSoonLight: "#fff3cd",
-    normal: "#28a745", // Vert (Délai normal)
-    normalLight: "#d4edda",
-    textPrimary: "var(--text-primary)",
-    textSecondary: "var(--text-secondary)",
-    background: "white",
-    border: "#e1e5e9",
-    referenceBg: "#f1f3f5", // Arrière-plan pour la référence
-};
-
 // ========================================================================================
 // STYLES REDESSINÉS
 // ========================================================================================
@@ -122,8 +105,8 @@ const CardsPaginationContainer = styled.div`
 
 const CardsContainer = styled.div`
     display: grid;
-    /* FORCE 2 COLONNES : S'étend sur les grands écrans pour améliorer l'espacement entre les cartes. */
-    grid-template-columns: repeat(2, 1fr); 
+    /* FORCE 3 COLONNES : S'étend sur les grands écrans pour afficher trois cartes par ligne. */
+    grid-template-columns: repeat(3, 1fr); 
     gap: var(--spacing-md);
     padding: var(--spacing-md);
 
@@ -134,8 +117,8 @@ const CardsContainer = styled.div`
 `;
 
 const Card = styled.div`
-    background: ${COLORS.background};
-    border: 1px solid ${COLORS.border};
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
     border-radius: 10px;
     /* Structure de la carte : Indicateur (80px) | Contenu */
     display: grid;
@@ -152,13 +135,13 @@ const Card = styled.div`
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 
     &:hover {
-        background-color: #f8f9fa;
+        background-color: var(--bg-secondary);
         transform: translateY(-3px);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
     }
 `;
 
-const IndicatorBlock = styled.div<{ $isUrgent: boolean; $daysUntilDue: number }>`
+const IndicatorBlock = styled.div<{ $daysUntilDue: number }>`
     grid-area: indicator;
     display: flex;
     flex-direction: column;
@@ -169,31 +152,31 @@ const IndicatorBlock = styled.div<{ $isUrgent: boolean; $daysUntilDue: number }>
     font-weight: bold;
     text-align: center;
     min-height: 100%;
-    border-right: 1px solid ${COLORS.border};
+    border-right: 1px solid var(--border-color);
     
-    ${({ $isUrgent, $daysUntilDue }) => {
-        let bgColor, color;
+    ${({ $daysUntilDue }) => {
+        let bgVar, colorVar;
         
         if ($daysUntilDue < 0) {
-            bgColor = COLORS.urgentLight; // Retard
-            color = COLORS.urgent;
-        } else if ($isUrgent) {
+            bgVar = 'var(--error-bg)';
+            colorVar = 'var(--error-color)';
+        } else if ($daysUntilDue <= 3) {
             // URGENT (<= 3 jours)
-            bgColor = COLORS.urgentLight;
-            color = COLORS.urgent;
-        } else if ($daysUntilDue >= 0 && $daysUntilDue <= 7) {
+            bgVar = 'var(--error-bg)';
+            colorVar = 'var(--error-color)';
+        } else if ($daysUntilDue <= 7) {
             // PROCHE (4 à 7 jours)
-            bgColor = COLORS.dueSoonLight;
-            color = COLORS.dueSoon;
+            bgVar = 'var(--warning-bg)';
+            colorVar = 'var(--warning-color)';
         } else {
             // NORMAL (> 7 jours)
-            bgColor = COLORS.normalLight;
-            color = COLORS.normal;
+            bgVar = 'var(--success-bg)';
+            colorVar = 'var(--success-color)';
         }
 
         return css`
-            background-color: ${bgColor};
-            color: ${color};
+            background-color: ${bgVar};
+            color: ${colorVar};
         `;
     }}
 `;
@@ -222,7 +205,7 @@ const CardHeader = styled.div`
 const CardTitle = styled.h3`
     font-size: var(--font-size-lg);
     font-weight: 700;
-    color: ${COLORS.textPrimary};
+    color: var(--text-color);
     margin: 0;
     line-height: 1.2;
     flex: 1;
@@ -251,7 +234,7 @@ const InfoLine = styled.div`
 `;
 
 const InfoLabel = styled.span`
-    color: ${COLORS.textSecondary};
+    color: var(--text-secondary);
     font-weight: 500;
     display: flex;
     align-items: center;
@@ -259,7 +242,7 @@ const InfoLabel = styled.span`
 `;
 
 const InfoValue = styled.span`
-    color: ${COLORS.textPrimary};
+    color: var(--text-color);
     text-align: right;
     font-weight: 600;
     max-width: 60%;
@@ -269,14 +252,14 @@ const InfoValue = styled.span`
 const ReferenceText = styled.div`
     grid-area: reference;
     font-size: var(--font-size-xs);
-    color: ${COLORS.textSecondary};
-    background-color: ${COLORS.referenceBg};
+    color: var(--text-secondary);
+    background-color: var(--bg-light);
     padding: 8px 12px;
     border-radius: 0 0 10px 10px;
     margin: 12px -16px -16px -16px;
     text-align: center;
     font-weight: 600;
-    border-top: 1px solid ${COLORS.border};
+    border-top: 1px solid var(--border-color);
 `;
 
 // ========================================================================================
@@ -296,6 +279,23 @@ const MissionCards: React.FC<MissionCardsProps> = ({
     handlePageSizeChange,
     appliedFilters,
 }) => {
+    /**
+     * Formate le nom du demandeur : prend le prénom et le rôle entre parenthèses.
+     * Ex: "Miantsafitia RAKOTOARIMANANA (DRH)" -> "Miantsafitia (DRH)"
+     */
+    const formatRequesterName = (fullName: string): string => {
+        if (!fullName || fullName === "Non spécifié") return fullName;
+
+        // Extraire le prénom (première partie avant espace)
+        const firstName = fullName.split(' ')[0];
+
+        // Extraire le rôle entre parenthèses
+        const match = fullName.match(/\(([^)]+)\)/);
+        const role = match ? `(${match[1]})` : '';
+
+        return `${firstName} ${role}`;
+    };
+
     /**
      * Retourne le badge de statut stylisé.
      */
@@ -355,7 +355,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
         }
 
         return (
-            <IndicatorBlock $isUrgent={isUrgent} $daysUntilDue={daysUntilDue}>
+            <IndicatorBlock $daysUntilDue={daysUntilDue}>
                 <Icon size={20} />
                 <IndicatorValue>
                     {displayValue}
@@ -393,9 +393,9 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                     <InfoLine>
                                         <InfoLabel>
                                             <User size={14} />
-                                            Demandeur
+                                            Missionnaire
                                         </InfoLabel>
-                                        <InfoValue>{mission.requestedBy || "Non spécifié"}</InfoValue>
+                                        <InfoValue>{formatRequesterName(mission.requestedBy || "Non spécifié")}</InfoValue>
                                     </InfoLine>
                                     <InfoLine>
                                         <InfoLabel>
@@ -419,13 +419,6 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                         <InfoValue>
                                             {formatDate(mission.departureDate)} - {formatDate(mission.returnDate)}
                                         </InfoValue>
-                                    </InfoLine>
-                                    <InfoLine>
-                                        <InfoLabel>
-                                            <ClockIcon size={14} />
-                                            Échéance
-                                        </InfoLabel>
-                                        <InfoValue>{formatDate(mission.dueDate)}</InfoValue>
                                     </InfoLine>
                                 </CardInfo>
 

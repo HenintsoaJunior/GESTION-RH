@@ -517,7 +517,7 @@
 }
 
 .champ-valeur--code {
-  font-family: "Courier New", monospace;
+  font-family: var(--font-family);
   font-size: var(--font-size-sm);
 }
 

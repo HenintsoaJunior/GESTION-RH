@@ -3,7 +3,7 @@ import { Lock } from 'lucide-react';
 
 // Styled Components
 const ErrorContainer = styled.div`
-  font-family: 'Source Sans Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: var(--font-family);
   background: transparent;
   padding: 0;
   margin: 0;

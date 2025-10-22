@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -51,6 +52,7 @@ import {
     CommentActionButton,
 } from "@/styles/comment-styles";
 
+import {getStatusBadgeClass} from "@/utils/status"
 // Types from previous context
 interface AlertState {
   isOpen: boolean;
@@ -378,7 +380,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                 <InfoGrid>
                   <InfoItem><InfoLabel>Motif</InfoLabel><InfoValue>{selectedMission.description}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Type de mission</InfoLabel><InfoValue>{selectedMission.missionType || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Statut de la mission</InfoLabel><InfoValue>{selectedMission.missionStatus || "Non spécifié"}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Statut de la mission</InfoLabel><InfoValue>{getStatusBadgeClass(selectedMission.missionStatus)}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Lieu</InfoLabel><InfoValue>{selectedMission.location}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Transport</InfoLabel><InfoValue>{selectedMission.transport || "Non spécifié"}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Date de début</InfoLabel><InfoValue>{formatDate(selectedMission.requestDate)}</InfoValue></InfoItem>
@@ -390,9 +392,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                   <InfoItem><InfoLabel>Durée</InfoLabel><InfoValue>{selectedMission.estimatedDuration || "Non spécifiée"}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Fonds alloués</InfoLabel><InfoValue>{selectedMission.allocatedFund || 0} MGA</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Type d'assignation</InfoLabel><InfoValue>{selectedMission.assignationType || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>ID de l'employé</InfoLabel><InfoValue>{selectedMission.employeeId || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>ID de la mission</InfoLabel><InfoValue>{selectedMission.missionId || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>ID de l'assignation</InfoLabel><InfoValue>{selectedMission.missionAssignationId || "Non spécifié"}</InfoValue></InfoItem>
+                 <InfoItem><InfoLabel>ID de l'assignation</InfoLabel><InfoValue>{selectedMission.missionAssignationId || "Non spécifié"}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Créée le</InfoLabel><InfoValue>{formatDate(selectedMission.createdAt)}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Modifiée le</InfoLabel><InfoValue>{formatDate(selectedMission.updatedAt) || "Non spécifiée"}</InfoValue></InfoItem>
                 </InfoGrid>

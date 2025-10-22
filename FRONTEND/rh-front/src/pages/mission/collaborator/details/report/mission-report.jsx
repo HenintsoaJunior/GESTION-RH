@@ -89,7 +89,7 @@ const ReportTextContainer = styled.div`
     border: 1px solid #e0e0e0;
     border-radius: 4px;
     margin-bottom: 20px;
-    font-family: 'Times New Roman', Times, serif;
+    font-family: var(--font-family);
     font-size: 16px;
     line-height: 1.6;
     color: #333;

@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS notification_recipients;
 DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS prevision_price;
 DROP TABLE IF EXISTS logs;
 DROP TABLE IF EXISTS mission_comments;
 DROP TABLE IF EXISTS comments;
@@ -277,7 +278,7 @@ CREATE TABLE transport(
 CREATE TABLE compensation_scale(
    compensation_scale_id VARCHAR(50),
    amount DECIMAL(15,2),
-   place VARCHAR(150) DEFAULT 'National', --National, Afrique, Europe, ...
+   place VARCHAR(150) DEFAULT 'National',
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    transport_id VARCHAR(50),
@@ -287,6 +288,15 @@ CREATE TABLE compensation_scale(
    FOREIGN KEY(transport_id) REFERENCES transport(transport_id),
    FOREIGN KEY(expense_type_id) REFERENCES expense_type(expense_type_id),
    FOREIGN KEY(employee_category_id) REFERENCES employee_categories(employee_category_id)
+);
+
+CREATE TABLE prevision_price(
+   prevision_id VARCHAR(50),
+   amount DECIMAL(15,2),
+   departure_date DATE NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(prevision_id)
 );
 
 CREATE TABLE lieu (
