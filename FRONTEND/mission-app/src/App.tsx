@@ -10,6 +10,7 @@ import ProfilePage from '@/layouts/profil-page';
 import MissionList from '@/pages/mission/collaborator/list/mission-list';
 import DetailsMission from '@/pages/mission/collaborator/details/mission-details';
 import MissionValidationPage from '@/pages/mission/validation';
+import TresoPage from '@/pages/mission/treso';
 function App() {
   return (
     <Routes>
@@ -30,6 +31,12 @@ function App() {
         <Route path="/mission/collaborateur" element={<MissionList />} />
         <Route path="/mission/collaborateur/:missionId/*" element={<DetailsMission />} />
         <Route path="/mission/to-validate" element={<MissionValidationPage />} />
+
+        {/* TRESO */}
+        <Route path="/treasury" element={<TresoPage />} />
+
+
+
         
         {/* ERROR */}
         <Route path="/403" element={<Error403Page />} />

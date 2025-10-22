@@ -6,15 +6,31 @@ import styled from 'styled-components';
 
 export const ProfilePageContainer = styled.div`
   font-family: var(--font-family, 'Arial, sans-serif');
-  background-color: var(--bg-primary, #ffffff);
-  padding: var(--spacing-4xl, 40px);
+  background: var(--bg-primary);
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 0;
+  margin-bottom: var(--spacing-lg);
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  border: none;
+  border-top: 5px solid var(--border-color);
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-left: var(--spacing-3xl);
+  padding-right: var(--spacing-3xl);
+  padding-bottom: var(--spacing-lg);
+  padding-top: var(--spacing-md);
   min-height: 100vh;
 
-  @media (max-width: 1024px) {
-    padding: var(--spacing-lg, 16px);
+  @media (max-width: 768px) {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
   }
 `;
-
 export const ProfileContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;

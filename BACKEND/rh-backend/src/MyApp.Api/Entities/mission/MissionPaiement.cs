@@ -482,7 +482,7 @@ namespace MyApp.Api.Entities.mission
             var normalizedEnd = NormalizeOvernightEnd(expenseEnd, true);
             
             TimeSpan normalizedDeparture = departureTime;
-            if (departureTime < expenseStart) 
+            if (departureTime < expenseStart)
             {
                 normalizedDeparture = departureTime.Add(TimeSpan.FromHours(24));
             }
