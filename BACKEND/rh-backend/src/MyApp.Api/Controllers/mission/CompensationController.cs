@@ -54,6 +54,58 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
+        [HttpGet("total-paid")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetTotalPaidAmount()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var totalAmount = await _compensationService.GetTotalPaidAmountAsync();
+                var responseData = new { TotalPaidAmount = totalAmount };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("total-notpaid")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetTotalNotPaidAmount()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var totalAmount = await _compensationService.GetTotalNotPaidAmountAsync();
+                var responseData = new { TotalNotPaidAmount = totalAmount };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
         //
         [HttpGet]
         public async Task<IActionResult> GetAll()
@@ -149,32 +201,6 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
-        [HttpGet("total-paid")]
-        public async Task<IActionResult> GetTotalPaidAmount()
-        {
-            try
-            {
-                var totalAmount = await _compensationService.GetTotalPaidAmountAsync();
-                return Ok(new { TotalPaidAmount = totalAmount });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "An error occurred while retrieving total paid amount", Error = ex.Message });
-            }
-        }
         
-        [HttpGet("total-notpaid")]
-        public async Task<IActionResult> GetTotalNotPaidAmount()
-        {
-            try
-            {
-                var totalAmount = await _compensationService.GetTotalNotPaidAmountAsync();
-                return Ok(new { TotalNotPaidAmount = totalAmount });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "An error occurred while retrieving total paid amount", Error = ex.Message });
-            }
-        }
     }
 }

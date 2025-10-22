@@ -1,4 +1,3 @@
-// ExpenseReportStep.tsx
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from "react";
@@ -40,6 +39,13 @@ import {
   ErrorMessage,
   Separator
 } from "@/styles/detailsmission-styles";
+
+interface Attachment {
+  fileName: string;
+  fileContent: string;
+  fileSize: number;
+  fileType: string;
+}
 
 const readFileAsBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -145,7 +151,23 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ isOpen, onClose, co
 };
 
 // === MAIN COMPONENT ===
-const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputChange, expenseReportTypes = [] }: any) => {
+interface ExpenseReportStepProps {
+  formData: any;
+  fieldErrors: any;
+  isSubmitting: boolean;
+  handleInputChange: (e: any) => void;
+  expenseReportTypes: any[];
+  onSubmitSuccess?: () => void;
+}
+
+const ExpenseReportStep = ({ 
+  formData, 
+  fieldErrors, 
+  isSubmitting, 
+  handleInputChange, 
+  expenseReportTypes = [], 
+  onSubmitSuccess 
+}: ExpenseReportStepProps) => {
   const userId = JSON.parse(localStorage.getItem("user") || "{}")?.userId || null;
 
   useEffect(() => {
@@ -155,8 +177,8 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
   }, [userId, formData.userId, handleInputChange]);
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-  const [attachments, setAttachments] = useState(formData.attachments || []);
-  const [existingAttachments, setExistingAttachments] = useState<any[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>(formData.attachments || []);
+  const [existingAttachments, setExistingAttachments] = useState<Attachment[]>([]);
   const [hasLoadedReports, setHasLoadedReports] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<any>({});
@@ -206,7 +228,7 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
         }
 
         if (existingAttachmentsData && Array.isArray(existingAttachmentsData) && existingAttachmentsData.length > 0) {
-          setExistingAttachments(existingAttachmentsData);
+          setExistingAttachments(existingAttachmentsData as Attachment[]);
         }
       } catch (error: any) {
         setAlert({
@@ -391,7 +413,7 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
         userId: String(formData.userId),
         assignationId: String(formData.assignationId),
         expenseLinesByType: normalizedExpenseLinesByType,
-        attachments: attachments,
+        attachments: [...attachments, ...existingAttachments],
       };
 
       console.log("dataToSubmit FINAL:", JSON.stringify(dataToSubmit, null, 2));
@@ -412,6 +434,11 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
       
       setHasLoadedReports(false);
       await refetchExpenseReports();
+
+      // Appel du callback parent pour basculer vers la vue liste
+      if (onSubmitSuccess) {
+        onSubmitSuccess();
+      }
     } catch (error: any) {
       console.error("Erreur lors de la création:", error);
       setAlert({
@@ -589,7 +616,7 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
             {existingAttachments.length > 0 && (
               <AttachmentCategory>
                 <CategoryTitle>📁 Fichiers existants:</CategoryTitle>
-                {existingAttachments.map((file: any, index: number) => (
+                {existingAttachments.map((file: Attachment, index: number) => (
                   <AttachmentItem key={`existing-${index}`} style={{ background: 'var(--info-bg)' }}>
                     <FileText size={24} color="var(--primary-color)" />
                     <div className="file-info">
@@ -618,8 +645,13 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
                       <IconButton
                         type="button"
                         onClick={() => {
-                          const updatedExisting = existingAttachments.filter((_: any, i: number) => i !== index);
+                          const updatedExisting = existingAttachments.filter((_: Attachment, i: number) => i !== index);
                           setExistingAttachments(updatedExisting);
+                          const updatedAttachments = attachments.filter((att: Attachment) => 
+                            !existingAttachments.some((ex: Attachment, exIdx: number) => exIdx === index && att.fileName === ex.fileName && att.fileContent === ex.fileContent)
+                          );
+                          setAttachments(updatedAttachments);
+                          handleInputChange({ target: { name: "attachments", value: updatedAttachments } });
                         }}
                         disabled={isSubmitting}
                         title="Supprimer"
@@ -636,7 +668,7 @@ const ExpenseReportStep = ({ formData, fieldErrors, isSubmitting, handleInputCha
             {attachments.length > 0 && (
               <AttachmentCategory>
                 <CategoryTitle>📎 Nouveaux fichiers à joindre:</CategoryTitle>
-                {attachments.map((file: any, index: number) => (
+                {attachments.map((file: Attachment, index: number) => (
                   <AttachmentItem key={`new-${index}`}>
                     <Paperclip size={24} color="var(--success-color)" />
                     <div className="file-info">
