@@ -434,6 +434,18 @@ CREATE SEQUENCE seq_group_id
     CACHE 50;
 GO
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_prevision_id')
+    DROP SEQUENCE seq_prevision_id;
+GO
+CREATE SEQUENCE seq_prevision_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
 
 
 

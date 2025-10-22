@@ -1,4 +1,4 @@
-    using System.Globalization;
+using System.Globalization;
 using DocumentFormat.OpenXml.Bibliography;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Services.employee;
@@ -174,6 +174,41 @@ namespace MyApp.Api.Entities.mission
             };
         }
 
+        public async Task<(decimal TotalAmount, DateTime DateDebut)> GenerateTotalPaiementAsync(
+            MissionAssignation missionAssignation, 
+            ICompensationScaleService compensationScaleService)
+        {
+            // Validation avec vérification null
+            if (missionAssignation == null)
+            {
+                throw new ArgumentNullException(nameof(missionAssignation));
+            }
+
+            ValidateInputs(missionAssignation, compensationScaleService);
+
+            var dateDebut = missionAssignation.DepartureDate;
+
+            var latestCategory = await GetLatestEmployeeCategory(missionAssignation);
+            if (latestCategory?.EmployeeCategory == null)
+            {
+                return (0m, dateDebut);
+            }
+
+            var compensationScales = await GetCompensationScales(compensationScaleService, latestCategory);
+
+            // Conversion en liste pour éviter les énumérations multiples
+            var compensationScalesList = compensationScales.ToList();
+
+            if (!compensationScalesList.Any())
+            {
+                return (0m, dateDebut);
+            }
+
+            var totalAmount = GenerateTotalPaymentsForDates(missionAssignation, compensationScalesList);
+
+            return (totalAmount, dateDebut);
+        }
+
         private void ValidateInputs(MissionAssignation missionAssignation, ICompensationScaleService compensationScaleService)
         {
             if (missionAssignation == null)
@@ -241,6 +276,39 @@ namespace MyApp.Api.Entities.mission
             }
 
             return dailyPaiements;
+        }
+
+        private decimal GenerateTotalPaymentsForDates(
+            MissionAssignation missionAssignation, 
+            IEnumerable<CompensationScale> compensationScales)
+        {
+            if (!IsValidDuration(missionAssignation))
+            {
+                return 0m;
+            }
+
+            var scales = compensationScales.ToList();
+            var dates = GenerateDateRangeWithTime(missionAssignation);
+            var totalAmount = 0m;
+
+            foreach (var date in dates)
+            {
+                var dailyTotal = CalculateDailyTotalForDate(missionAssignation, scales, date);
+                totalAmount += dailyTotal;
+            }
+
+            return totalAmount;
+        }
+
+        private decimal CalculateDailyTotalForDate(
+            MissionAssignation missionAssignation, 
+            IEnumerable<CompensationScale> compensationScales, 
+            DateTime date)
+        {
+            var filteredCompensationScales = FilterCompensationScalesByTime(
+                compensationScales, missionAssignation, date).ToList();
+
+            return filteredCompensationScales.Sum(cs => cs?.Amount ?? 0);
         }
 
         private bool IsValidDuration(MissionAssignation missionAssignation)

@@ -1296,7 +1296,7 @@ body {
   position: absolute;
   z-index: 1070;
   display: block;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-family);
   font-size: 12px;
   font-weight: normal;
   line-height: 1.4;
