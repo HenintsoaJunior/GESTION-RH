@@ -106,6 +106,25 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
+        [HttpGet("by-status")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetByStatus([FromQuery] string? status)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+            try
+            {
+                var results = await _compensationService.GetCompensationsByStatusAsync(status);
+                return Ok(new { Data = results,status = 200 ,message = "success" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving compensations by status", Error = ex.Message });
+            }
+        }
+
         //
         [HttpGet]
         public async Task<IActionResult> GetAll()
@@ -184,20 +203,6 @@ namespace MyApp.Api.Controllers.mission
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "An error occurred while updating the compensation status", error = ex.Message });
-            }
-        }
-
-        [HttpGet("by-status")]
-        public async Task<IActionResult> GetByStatus([FromQuery] string? status)
-        {
-            try
-            {
-                var results = await _compensationService.GetCompensationsByStatusAsync(status);
-                return Ok(results);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "An error occurred while retrieving compensations by status", Error = ex.Message });
             }
         }
 

@@ -14,6 +14,8 @@ namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
+        
+        public DbSet<MissionReportAttachment> MissionReportAttachments { get; set; }
         public DbSet<ExpenseReportAttachment> ExpenseReportAttachments { get; set; }
         public DbSet<Notifications> Notifications { get; set; }
         public DbSet<NotificationRecipients> NotificationRecipients { get; set; }

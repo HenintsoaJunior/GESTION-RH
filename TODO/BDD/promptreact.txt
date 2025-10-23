@@ -294,34 +294,122 @@ export const useUserHabilitationBulk = () => {
 };
 L’API appelée est :
 
-curl -X 'POST' \
-  'http://localhost:5183/api/UserRole/bulk/remove' \
-  -H 'accept: */*' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "userIds": [
-    "07e12d3a-8606-424e-9baf-fbe6f797af63"
-  ],
-  "roleIds": [
-    "ROLE_003"
-  ]
-}'
+curl -X 'GET' \
+  'http://localhost:5183/api/MissionValidation/by-assignation-id/MA002' \
+  -H 'accept: */*'
 
 Et la réponse JSON est :
 
 {
-  "data": {
-    "userIds": [
-      "07e12d3a-8606-424e-9baf-fbe6f797af63"
-    ],
-    "roleIds": [
-      "ROLE_003"
-    ]
-  },
+  "data": [
+    {
+      "missionValidationId": "MVAL-000004",
+      "status": null,
+      "validationDate": "2024-01-02T14:30:00",
+      "missionCreator": "07e12d3a-8606-424e-9baf-fbe6f797af63",
+      "creator": null,
+      "missionId": "M002",
+      "mission": null,
+      "missionAssignationId": "MA002",
+      "missionAssignation": {
+        "assignationId": "MA002",
+        "employeeId": "EMP_0002",
+        "missionId": "M001",
+        "transportId": "tr001",
+        "departureDate": "2024-01-10T00:00:00",
+        "departureTime": "08:00:00",
+        "returnDate": "2024-01-15T00:00:00",
+        "returnTime": "17:00:00",
+        "duration": 5,
+        "isValidated": 1,
+        "employee": null,
+        "mission": null,
+        "transport": null,
+        "type": "Indemnité",
+        "allocatedFund": 1500000,
+        "createdAt": "2025-10-15T13:46:32.683",
+        "updatedAt": null
+      },
+      "toWhom": "002b1f12-e8c5-4a30-81ca-e8532855de71",
+      "validator": {
+        "userId": "002b1f12-e8c5-4a30-81ca-e8532855de71",
+        "matricule": "00182",
+        "email": "sedera.rasolomanana@ravinala-airports.aero",
+        "name": "Dealilalaina Sedera RASOLOMANANA (DRH)",
+        "position": "Directrice des Ressources Humaines",
+        "department": "DRH",
+        "superiorId": "ec738732-6e94-4288-be4a-c098408d199d",
+        "superiorName": "Daniel LEFEBVRE (DGE)",
+        "status": null,
+        "signature": null,
+        "userType": null,
+        "refreshToken": null,
+        "refreshTokenExpiry": null,
+        "userRoles": [],
+        "userHabilitations": [],
+        "createdAt": "2025-10-14T19:10:55.323",
+        "updatedAt": "2025-10-14T19:10:55.323"
+      },
+      "type": "DRH",
+      "createdAt": "2024-01-02T09:05:00",
+      "updatedAt": null
+    },
+    {
+      "missionValidationId": "MVAL-000003",
+      "status": "En attente",
+      "validationDate": "2024-01-02T14:00:00",
+      "missionCreator": "07e12d3a-8606-424e-9baf-fbe6f797af63",
+      "creator": null,
+      "missionId": "M002",
+      "mission": null,
+      "missionAssignationId": "MA002",
+      "missionAssignation": {
+        "assignationId": "MA002",
+        "employeeId": "EMP_0002",
+        "missionId": "M001",
+        "transportId": "tr001",
+        "departureDate": "2024-01-10T00:00:00",
+        "departureTime": "08:00:00",
+        "returnDate": "2024-01-15T00:00:00",
+        "returnTime": "17:00:00",
+        "duration": 5,
+        "isValidated": 1,
+        "employee": null,
+        "mission": null,
+        "transport": null,
+        "type": "Indemnité",
+        "allocatedFund": 1500000,
+        "createdAt": "2025-10-15T13:46:32.683",
+        "updatedAt": null
+      },
+      "toWhom": "76c25f37-2089-4e81-8329-1b63d880b71a",
+      "validator": {
+        "userId": "76c25f37-2089-4e81-8329-1b63d880b71a",
+        "matricule": "00358",
+        "email": "hery.rasolofondramanambe@ravinala-airports.aero",
+        "name": "Herinomenjanaharilala Sedera RASOLOFONDRAMANAMBE (DRH)",
+        "position": "Chef de Département Développement RH et Rémunération",
+        "department": "DRH",
+        "superiorId": "002b1f12-e8c5-4a30-81ca-e8532855de71",
+        "superiorName": "Dealilalaina Sedera RASOLOMANANA (DRH)",
+        "status": null,
+        "signature": null,
+        "userType": 0,
+        "refreshToken": "yh7mSsXeWs6uSDUezSNPRwLZxO1TOgQroljVV0Fb2tU=",
+        "refreshTokenExpiry": "2025-10-22T11:24:12.527",
+        "userRoles": [],
+        "userHabilitations": [],
+        "createdAt": "2025-10-14T19:10:55.367",
+        "updatedAt": "2025-10-14T19:10:55.367"
+      },
+      "type": "Directeur de tutelle",
+      "createdAt": "2024-01-02T09:00:00",
+      "updatedAt": null
+    }
+  ],
   "status": 200,
   "message": "success"
 }
-
 🎯 Objectif final :
 Créer un hook qui renvoie les données de cette API en respectant la structure et les conventions de React Query et Axios.
 

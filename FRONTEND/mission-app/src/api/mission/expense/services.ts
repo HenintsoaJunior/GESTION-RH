@@ -4,6 +4,7 @@ import api from '@/utils/axios-config';
 import axios from 'axios';
 
 // Query keys
+const EXPENSE_REPORT_KEY = ['expense-report', 'total-notreimbursed'] as const;
 const EXPENSE_REPORT_TYPES_BASE_KEY = ['expenseReportTypes'] as const;
 const EXPENSE_REPORTS_BY_ASSIGNATION_BASE_KEY = ['expenseReportsByAssignation'] as const;
 const TOTAL_REIMBURSED_AMOUNT_BASE_KEY = ['totalReimbursedAmount'] as const;
@@ -13,6 +14,7 @@ const TOTAL_NOT_REIMBURSED_COUNT_BASE_KEY = ['totalNotReimbursedCount'] as const
 const TOTAL_AMOUNT_BY_ASSIGNATION_BASE_KEY = ['totalAmountByAssignation'] as const;
 const STATUS_BY_ASSIGNATION_BASE_KEY = ['statusByAssignation'] as const;
 const DISTINCT_MISSION_ASSIGNATIONS_BASE_KEY = ['distinctMissionAssignations'] as const;
+
 
 // Interfaces for nested objects
 interface Employee {
@@ -90,11 +92,16 @@ export interface ExpenseLine {
   type: string;
   currencyUnit: string;
   amount: number;
+  amountMga?: number;
   rate: number;
   assignationId?: string;
   expenseReportTypeId?: string;
   userId?: string;
   customFields: Record<string, unknown>;
+}
+
+export interface TotalNotReimbursed {
+  totalNotReimbursedAmount: number;
 }
 
 export interface Attachment {
@@ -103,6 +110,7 @@ export interface Attachment {
   fileSize: number;
   fileType: string;
 }
+
 
 // Generic API response interface
 interface ApiResponse<T> {
@@ -156,6 +164,8 @@ type ReimburseResponseData = {
   affectedIds?: string[];
   message?: string;
 };
+
+type TotalNotReimbursedResponse = ApiResponse<TotalNotReimbursed>;
 
 // Request interfaces
 export interface CreateExpenseReportRequest {
@@ -432,6 +442,24 @@ export const useDistinctMissionAssignations = (options: { status?: string; pageN
         queryParams.append("pageSize", pageSize.toString());
 
         const response = await api.get(`/api/ExpenseReport/distinct-mission-assignations?${queryParams}`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+
+export const useTotalNotReimbursed = () => {
+  return useQuery<TotalNotReimbursedResponse, Error>({
+    queryKey: EXPENSE_REPORT_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/ExpenseReport/total-notreimbursed');
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {

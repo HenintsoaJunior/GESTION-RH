@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/axios-config';
 import axios from 'axios';
+
 // Query keys
 const MISSION_REPORTS_BASE_KEY = ['missionReports'] as const;
 const MISSION_REPORT_BY_ID_BASE_KEY = ['missionReport'] as const;
+const MISSION_REPORT_ATTACHMENTS_BASE_KEY = ['missionReportAttachments'] as const;
 
 // Interfaces for nested objects
 interface User {
@@ -33,8 +35,6 @@ interface MissionAssignation {
   transportId: string | null;
   departureDate: string;
   departureTime: string;
-  returnDate: string;
-  returnTime: string;
   duration: string | null;
   isValidated: boolean | null;
   employee: unknown | null;
@@ -57,6 +57,30 @@ export interface MissionReport {
   updatedAt: string | null;
 }
 
+export interface Attachment {
+  attachmentId: string;
+  missionReportId: string;
+  fileName: string;
+  fileContent: string;
+  fileSize: number;
+  fileType: string;
+  uploadedAt: string;
+}
+
+export interface MissionReportAttachmentDTO {
+  FileName: string;
+  FileContent: string; // base64
+  FileSize: number;
+  FileType: string;
+}
+
+export interface MissionReportDTOForm {
+  Text: string;
+  UserId: string;
+  AssignationId: string;
+  Attachments: MissionReportAttachmentDTO[];
+}
+
 // Generic API response interface
 interface ApiResponse<T> {
   data: T;
@@ -65,7 +89,7 @@ interface ApiResponse<T> {
 }
 
 interface CreateMissionReportResponseData {
-  missionReportId: string;
+  MissionReportId: string;
 }
 
 interface UpdateMissionReportResponseData {
@@ -80,23 +104,10 @@ interface DeleteMissionReportResponseData {
   };
 }
 
-// Request interfaces
-interface CreateMissionReportRequest {
-  text: string;
-  userId: string;
-  assignationId: string;
-}
-
-interface UpdateMissionReportRequest {
-  text: string;
-  userId: string;
-  assignationId: string;
-}
-
 // Hook for creating a mission report
 export const useCreateMissionReport = () => {
   const queryClient = useQueryClient();
-  return useMutation<ApiResponse<CreateMissionReportResponseData>, Error, CreateMissionReportRequest>({
+  return useMutation<ApiResponse<CreateMissionReportResponseData>, Error, MissionReportDTOForm>({
     mutationFn: async (data) => {
       try {
         const response = await api.post('/api/MissionReport', data);
@@ -152,10 +163,30 @@ export const useMissionReport = (missionReportId: string) => {
   });
 };
 
+// Hook for fetching attachments of a mission report
+export const useMissionReportAttachments = (missionReportId: string) => {
+  return useQuery<ApiResponse<Attachment[]>, Error>({
+    queryKey: [...MISSION_REPORT_ATTACHMENTS_BASE_KEY, missionReportId],
+    queryFn: async () => {
+      try {
+        const response = await api.get(`/api/MissionReport/${missionReportId}/attachments`);
+        console.log('Mission Report Attachments Response:', response.data);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!missionReportId,
+  });
+};
+
 // Hook for updating a mission report
 export const useUpdateMissionReport = () => {
   const queryClient = useQueryClient();
-  return useMutation<ApiResponse<UpdateMissionReportResponseData>, Error, { id: string; data: UpdateMissionReportRequest }>({
+  return useMutation<ApiResponse<UpdateMissionReportResponseData>, Error, { id: string; data: MissionReportDTOForm }>({
     mutationFn: async ({ id, data }) => {
       if (!id) {
         throw new Error('Mission Report ID is required for update');
@@ -173,6 +204,7 @@ export const useUpdateMissionReport = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: MISSION_REPORTS_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: [...MISSION_REPORT_BY_ID_BASE_KEY, id] });
+      queryClient.invalidateQueries({ queryKey: [...MISSION_REPORT_ATTACHMENTS_BASE_KEY, id] });
     },
   });
 };
@@ -197,6 +229,7 @@ export const useDeleteMissionReport = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: MISSION_REPORTS_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: [...MISSION_REPORT_BY_ID_BASE_KEY, id] });
+      queryClient.invalidateQueries({ queryKey: [...MISSION_REPORT_ATTACHMENTS_BASE_KEY, id] });
     },
   });
 };

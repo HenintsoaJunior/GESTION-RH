@@ -4,6 +4,7 @@ import api from '@/utils/axios-config';
 
 const COMPENSATIONS_BY_EMPLOYEE_AND_MISSION_KEY = ['compensationsByEmployeeAndMission'] as const;
 const TOTAL_NOT_PAID_KEY = ['compensation', 'total-notpaid'] as const;
+const COMPENSATIONS_BY_STATUS_KEY = ['compensationsByStatus'] as const;
 
 export interface MissionAssignationSearchFilters {
   employeeId?: string;
@@ -193,6 +194,13 @@ type CompensationsByEmployeeAndMissionResponse = ApiResponse<{
   compensations: Compensation[];
 }>;
 
+export type CompensationsByStatusResponse = ApiResponse<{
+  data: Array<{
+    assignation: MissionAssignation;
+    compensations: Compensation[];
+  }>;
+}>;
+
 interface TotalNotPaid {
   totalNotPaidAmount: number;
 }
@@ -320,6 +328,23 @@ export const useExportMissionAssignationExcel = () => {
       window.URL.revokeObjectURL(urlBlob);
 
       return { fileName, status: "success" };
+    },
+  });
+};
+
+export const useCompensationsByStatus = () => {
+  return useQuery<CompensationsByStatusResponse, Error>({
+    queryKey: COMPENSATIONS_BY_STATUS_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Compensation/by-status');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
     },
   });
 };

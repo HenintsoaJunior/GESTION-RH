@@ -7,10 +7,6 @@ namespace MyApp.Api.Models.dto.mission
     {
         [MaxLength(50)]
         public string? Status { get; set; }
-
-        public int Page { get; set; } = 1;
-
-        public int PageSize { get; set; } = 10;
     }
 
     public class ExpenseReportDTOForm
@@ -43,6 +39,8 @@ namespace MyApp.Api.Models.dto.mission
         public string CurrencyUnit { get; set; } = string.Empty;
 
         public decimal Amount { get; set; }
+
+        public decimal AmountMga { get; set; }
 
         public decimal Rate { get; set; }
 

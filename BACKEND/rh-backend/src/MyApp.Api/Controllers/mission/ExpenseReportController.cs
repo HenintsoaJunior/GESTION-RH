@@ -152,20 +152,21 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpGet("distinct-mission-assignations")]
-        [AllowAnonymous]
-        public async Task<ActionResult> GetDistinctMissionAssignations([FromQuery] MissionAssignationQueryDTO query)
+        // [AllowAnonymous]
+        public async Task<ActionResult> GetDistinctMissionAssignations([FromQuery] MissionAssignationQueryDTO query, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            if (!User.Identity?.IsAuthenticated ?? true)
-            {
-                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            // {
+            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            // }
 
             try
             {
-                var (items, totalCount) = await _service.GetDistinctMissionAssignationsAsync(query.Status, query.Page, query.PageSize);
-                var responseData = new { items, totalCount, pageNumber = query.Page, pageSize = query.PageSize };
+                var (items, totalCount) = await _service.GetDistinctMissionAssignationsAsync(query.Status, page, pageSize);
+                var responseData = new { items, totalCount, pageNumber = page, pageSize = pageSize };
                 return Ok(new { data = responseData, status = 200, message = "success" });
             }
+
             catch (ArgumentException ex)
             {
                 _logger.LogWarning("Paramètres invalides pour GetDistinctMissionAssignations: {Message}", ex.Message);

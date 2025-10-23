@@ -16,7 +16,7 @@ import {
 import { Line, Doughnut } from 'react-chartjs-2';
 import { usePrevision } from '@/api/prevision/services'; 
 import { useTotalNotPaid } from '@/api/compensation/services';
-import { useTotalNotReimbursed } from '@/api/expense/services';
+import { useTotalNotReimbursed } from '@/api/mission/expense/services';
 import { formatDate } from '@/utils/date-converter'; 
 
 ChartJS.register(

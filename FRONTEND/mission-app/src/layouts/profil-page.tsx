@@ -20,11 +20,9 @@ import {
   InfoLabel,
   InfoValue,
   FieldEmpty,
-  // STYLES POUR LES RÔLES SIMPLES
   RolesContainer,
   RoleBadge,
 } from '@/styles/profil-styles'; 
-// Import du hook React Query pour les infos utilisateur
 import { useUserInfo } from '@/api/users/services';
 
 interface Role {
