@@ -11,11 +11,16 @@ namespace MyApp.Api.Controllers.mission
     public class MissionReportController : ControllerBase
     {
         private readonly IMissionReportService _service;
+        private readonly IMissionReportAttachmentService _attachmentService;
         private readonly ILogger<MissionReportController> _logger;
 
-        public MissionReportController(IMissionReportService service, ILogger<MissionReportController> logger)
+        public MissionReportController(
+            IMissionReportService service, 
+            IMissionReportAttachmentService attachmentService,
+            ILogger<MissionReportController> logger)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
+            _attachmentService = attachmentService ?? throw new ArgumentNullException(nameof(attachmentService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
         
@@ -100,6 +105,37 @@ namespace MyApp.Api.Controllers.mission
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la récupération du rapport de mission {MissionReportId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        // GET: api/MissionReport/{id}/attachments
+        [HttpGet("{id}/attachments")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetAttachmentsByMissionReportId(string id)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrEmpty(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Mission report ID cannot be null or empty" });
+            }
+
+            try
+            {
+                var attachments = await _attachmentService.GetByMissionReportIdAsync(id);
+                return Ok(new { data = attachments, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des pièces jointes pour le rapport de mission {MissionReportId}", id);
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }

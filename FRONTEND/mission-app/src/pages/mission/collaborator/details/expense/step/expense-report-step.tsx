@@ -15,6 +15,7 @@ import {
 } from "@/styles/form-container";
 
 import { useCreateExpenseReport, useExpenseReportsByAssignationId } from "@/api/mission/expense/services";
+import { useCurrencies,useConvertToMGA } from "@/api/devise/services";
 import Alert from "@/components/alert";
 
 import {
@@ -185,6 +186,7 @@ const ExpenseReportStep = ({
 
   const { mutateAsync: createExpenseReport } = useCreateExpenseReport();
   const { data: expenseReportsData, refetch: refetchExpenseReports } = useExpenseReportsByAssignationId(formData.assignationId);
+  const { data: currenciesData } = useCurrencies();
 
   const [isLoading, setIsLoading] = useState(false);
   const [alert, setAlert] = useState<{ isOpen: boolean; type: "success" | "error" | "warning" | "info"; message: string }>({ 
@@ -192,6 +194,8 @@ const ExpenseReportStep = ({
     type: "info", 
     message: "" 
   });
+
+  const currencyCodes = currenciesData ? [...new Set([currenciesData.base, ...Object.keys(currenciesData.rates)])].sort() : [];
 
   const fetchExistingReports = useCallback(async () => {
     if (formData.assignationId && !hasLoadedReports && expenseReportsData) {
@@ -319,6 +323,19 @@ const ExpenseReportStep = ({
       style: { width: "100%", minWidth: field.width ? field.width : "120px" },
     };
 
+    if (field.name === "currencyUnit") {
+      return (
+        <FormInput as="select" {...commonProps}>
+          <option value="">Sélectionnez une devise...</option>
+          {currencyCodes.map((code) => (
+            <option key={code} value={code}>
+              {code}
+            </option>
+          ))}
+        </FormInput>
+      );
+    }
+
     if (field.type === "number") {
       return <FormInput type="number" {...commonProps} min="0" step="0.01" />;
     }
@@ -405,6 +422,7 @@ const ExpenseReportStep = ({
         normalizedExpenseLinesByType[typeId] = (lines as any[]).map(line => ({
           ...line,
           amount: typeof line.amount === 'string' ? parseFloat(line.amount) : line.amount,
+          amountMga: typeof line.amountMga === 'string' ? parseFloat(line.amountMga) : line.amountMga,
           rate: typeof line.rate === 'string' ? parseFloat(line.rate) : line.rate,
         }));
       });

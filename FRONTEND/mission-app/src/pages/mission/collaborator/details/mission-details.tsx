@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Download, CheckCircle, Send, Edit2, Trash2, X, ArrowLeft } from "lucide-react";
+import { Download, CheckCircle, Send, Edit2, Trash2, X, ArrowLeft, Loader2 } from "lucide-react";
 import { useParams, useNavigate, Routes, Route } from "react-router-dom";
 import ValidationStepper from "@/pages/stepper/index";
 import Alert from "@/components/alert";
@@ -472,10 +472,9 @@ const DetailsMission: React.FC = () => {
     refetch: refetchMissionData,
   } = useMissionData(missionId || "");
 
-  const [exportLoading, setExportLoading] = useState({
-    pdf: false,
-    excel: false,
-  });
+  // État pour le chargement et la génération PDF par employeeId
+  const [pdfLoading, setPdfLoading] = useState<Record<string, boolean>>({});
+  const [pdfGenerated, setPdfGenerated] = useState<Record<string, boolean>>({});
 
   const [selectedAssignationId, setSelectedAssignationId] = useState<string | null>(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -546,15 +545,19 @@ const DetailsMission: React.FC = () => {
         showAlert("error", "Mission ID et Employee ID sont requis pour générer l'ordre de mission.");
         return;
       }
-      setExportLoading((prev) => ({ ...prev, pdf: true }));
+
+      setPdfLoading((prev) => ({ ...prev, [employeeId]: true }));
       try {
         const data = { missionId, employeeId };
         await generateOrderMutation.mutateAsync(data);
+        // Marquer comme généré avec succès
+        setPdfGenerated((prev) => ({ ...prev, [employeeId]: true }));
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
         showAlert("error", errorMessage || "Erreur lors de la génération de l'ordre de mission.");
+        // Ne pas marquer comme généré en cas d'erreur
       } finally {
-        setExportLoading((prev) => ({ ...prev, pdf: false }));
+        setPdfLoading((prev) => ({ ...prev, [employeeId]: false }));
       }
     },
     [missionId, showAlert, generateOrderMutation]
@@ -603,8 +606,8 @@ const DetailsMission: React.FC = () => {
   );
 
   const isGlobalLoading = useMemo(() => {
-    return missionLoading || commentsLoading || exportLoading.pdf || exportLoading.excel || compensationsLoading;
-  }, [missionLoading, commentsLoading, exportLoading, compensationsLoading]);
+    return missionLoading || commentsLoading || exportExcelMutation.isPending || compensationsLoading;
+  }, [missionLoading, commentsLoading, exportExcelMutation.isPending, compensationsLoading]);
 
   const handleBackToMissionDetails = useCallback(() => {
     navigate(-1);
@@ -731,6 +734,9 @@ const DetailsMission: React.FC = () => {
                               const initials = `${employee.firstName?.[0] || ''}${employee.lastName?.[0] || ''}`.toUpperCase();
                               const assignmentType = assignation.type;
                               const shouldShowRendu = assignmentType === "Indemnité" || assignmentType === "Note de frais";
+                              const employeeId = employee.employeeId;
+                              const isLoadingPdf = pdfLoading[employeeId] || false;
+                              const isGeneratedPdf = pdfGenerated[employeeId] || false;
                               return (
                                 <div
                                   key={`${assignation.assignationId}-${index}`}
@@ -822,11 +828,27 @@ const DetailsMission: React.FC = () => {
                                       <ButtonOMPDF
                                         onClick={(e) => {
                                           e.preventDefault();
-                                          handleExportPDF(assignation.employee.employeeId);
+                                          e.stopPropagation(); // Empêche toute propagation qui pourrait causer un rechargement
+                                          handleExportPDF(employeeId);
                                         }}
-                                        disabled={exportLoading.pdf}
+                                        disabled={isLoadingPdf}
                                       >
-                                        <Download size={16} /> OM PDF
+                                        {isLoadingPdf ? (
+                                          <>
+                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                            Génération...
+                                          </>
+                                        ) : isGeneratedPdf ? (
+                                          <>
+                                            <CheckCircle size={16} className="mr-2" />
+                                            Régénérer OM PDF
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Download size={16} className="mr-2" />
+                                            OM PDF
+                                          </>
+                                        )}
                                       </ButtonOMPDF>
                                       {shouldShowRendu && (
                                         <MissionReportButton
