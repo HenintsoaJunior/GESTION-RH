@@ -61,6 +61,7 @@ interface ExpenseLine {
     type?: string;
     currencyUnit?: string;
     amount?: number;
+    amountMGA?: number;
     rate?: number;
 }
 
@@ -221,13 +222,13 @@ const ExpenseTypeDoughnutChart: React.FC<ExpenseTypeDoughnutChartProps> = ({ exp
         const totals: Record<string, number> = {};
         (expenseReports || []).forEach((report) => {
             const type = report.type || "Autres";
-            totals[type] = (totals[type] || 0) + (report.amount || 0);
+            totals[type] = (totals[type] || 0) + (report.amountMGA || 0);
         });
         return totals;
     }, [expenseReports]);
 
     const totalAmount = useMemo(
-        () => (expenseReports || []).reduce((sum: number, report) => sum + (report.amount || 0), 0),
+        () => (expenseReports || []).reduce((sum: number, report) => sum + (report.amountMGA || 0), 0),
         [expenseReports]
     );
 
@@ -285,7 +286,7 @@ const ExpenseTypeDoughnutChart: React.FC<ExpenseTypeDoughnutChartProps> = ({ exp
                         const value = tooltipItem.raw as number;
                         const total = (tooltipItem.dataset.data as number[]).reduce((a: number, b: number) => a + b, 0);
                         const percentage = total ? ((value / total) * 100).toFixed(1) : "0";
-                        return `${label}: ${formatNumber(value)},00 (${percentage}%)`;
+                        return `${label}: ${formatNumber(value)},00 MGA (${percentage}%)`;
                     },
                 },
             },
@@ -304,7 +305,7 @@ const ExpenseTypeDoughnutChart: React.FC<ExpenseTypeDoughnutChartProps> = ({ exp
 
     return (
         <ChartCard>
-            <h4>Répartition par Type</h4>
+            <h4>Répartition par Type (en MGA)</h4>
             <div className="chart-content">
                 <Doughnut data={chartData} options={options} />
             </div>
@@ -374,9 +375,9 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
         return groups;
     }, [attachments, employeeInfo.id, employeeInfo.fullName]);
 
-    const totalAmount = useMemo(
-        () => fullExpenseData.totalAmount ?? (expenseReports || []).reduce((sum: number, report) => sum + (report.amount || 0), 0),
-        [fullExpenseData.totalAmount, expenseReports]
+    const totalAmountMGA = useMemo(
+        () => (expenseReports || []).reduce((sum: number, report) => sum + (report.amountMGA || 0), 0),
+        [expenseReports]
     );
 
     const handleToggleFolder = useCallback((userId: string) => {
@@ -435,6 +436,7 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
                                             <TableHeader>Type</TableHeader>
                                             <TableHeader>Devise</TableHeader>
                                             <TableHeader>Montant</TableHeader>
+                                            <TableHeader>Montant MGA</TableHeader>
                                             <TableHeader>Taux</TableHeader>
                                         </tr>
                                     </thead>
@@ -448,15 +450,16 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
                                                 </TableCell>
                                                 <TableCell>{report.currencyUnit || "MGA"}</TableCell>
                                                 <TableCell>{report.amount ? `${formatNumber(report.amount)},00` : "-"}</TableCell>
+                                                <TableCell>{report.amountMGA ? `${formatNumber(report.amountMGA)},00` : "-"}</TableCell>
                                                 <TableCell>{report.rate ? `${report.rate}` : "-"}</TableCell>
                                             </tr>
                                         ))}
                                         <TotalRow>
-                                            <TableCell colSpan={4}>
-                                                <strong>Total</strong>
+                                            <TableCell colSpan={5}>
+                                                <strong>Total (en MGA)</strong>
                                             </TableCell>
                                             <TableCell>
-                                                <strong>{totalAmount ? `${formatNumber(totalAmount)},00` : "0,00"}</strong>
+                                                <strong>{totalAmountMGA ? `${formatNumber(totalAmountMGA)},00` : "0,00"}</strong>
                                             </TableCell>
                                             <TableCell></TableCell>
                                         </TotalRow>

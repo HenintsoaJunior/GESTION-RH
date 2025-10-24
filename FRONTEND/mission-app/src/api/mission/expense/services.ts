@@ -92,7 +92,7 @@ export interface ExpenseLine {
   type: string;
   currencyUnit: string;
   amount: number;
-  amountMga?: number;
+  amountMGA: number;
   rate: number;
   assignationId?: string;
   expenseReportTypeId?: string;

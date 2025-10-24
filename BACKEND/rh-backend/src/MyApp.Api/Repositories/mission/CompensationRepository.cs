@@ -81,7 +81,7 @@ namespace MyApp.Api.Repositories.mission
         public async Task<decimal> GetTotalNotPaidAmountAsync()
         {
             return await _context.Compensations
-                .Where(c => c.Status == "not paid")
+                .Where(c => c.Status == "unpaid")
                 .SumAsync(c => c.TransportAmount + c.BreakfastAmount + c.LunchAmount + c.DinnerAmount + c.AccommodationAmount);
         }
 

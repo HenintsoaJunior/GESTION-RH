@@ -1,6 +1,7 @@
 ﻿using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Repositories.mission;
+using MyApp.Api.Services.currency;
 using MyApp.Api.Services.logs;
 using MyApp.Api.Utils.generator;
 
@@ -29,6 +30,7 @@ namespace MyApp.Api.Services.mission
         private readonly IExpenseReportRepository _repository;
         private readonly IExpenseReportAttachmentRepository _attachmentRepository;
         private readonly ISequenceGenerator _sequenceGenerator;
+        private readonly ICurrencyService _currencyService;
         private readonly ILogService _logService;
         private readonly ILogger<ExpenseReportService> _logger;
 
@@ -37,12 +39,14 @@ namespace MyApp.Api.Services.mission
             IExpenseReportAttachmentRepository attachmentRepository,
             ISequenceGenerator sequenceGenerator,
             ILogService logService,
+            ICurrencyService currencyService,
             ILogger<ExpenseReportService> logger)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _attachmentRepository = attachmentRepository ?? throw new ArgumentNullException(nameof(attachmentRepository));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
+            _currencyService = currencyService ?? throw new ArgumentNullException(nameof(currencyService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -362,34 +366,32 @@ namespace MyApp.Api.Services.mission
                             ExpenseReportTypeId = typeId,
                         };
 
+                        if (entity.AmountMGA == 0 && entity.Amount > 0)
+                        {
+                            entity.AmountMGA = _currencyService.ConvertToMGAAsync(entity.Amount, entity.CurrencyUnit).Result.ConvertedAmount;
+                        }
+
                         if (!string.IsNullOrWhiteSpace(lineDto.ExpenseReportId))
                         {
-                            // Update logic
                             entity.ExpenseReportId = lineDto.ExpenseReportId;
                             var existing = await _repository.GetByIdAsync(entity.ExpenseReportId);
                             if (existing != null)
                             {
+                                entity.Status = existing.Status ?? "pending";
                                 entitiesToUpdate.Add((existing, entity));
                                 affectedIds.Add(entity.ExpenseReportId);
                                 _logger.LogInformation("Mise à jour du rapport de frais avec l'ID: {ExpenseReportId}", entity.ExpenseReportId);
                             }
                             else
                             {
-                                // If ID provided but not found, treat as new insert
-                                _logger.LogWarning("Rapport de frais avec l'ID {ExpenseReportId} non trouvé, création d'un nouveau", entity.ExpenseReportId);
                                 entity.ExpenseReportId = _sequenceGenerator.GenerateSequence("seq_expense_report", "ER", 6, "-");
-                                if (entity.Amount <= 0)
-                                    throw new ArgumentException($"Montant invalide pour la ligne de type {typeId}", nameof(lineDto.Amount));
                                 entitiesToAdd.Add(entity);
                                 affectedIds.Add(entity.ExpenseReportId);
                             }
                         }
                         else
                         {
-                            // Insert logic
                             entity.ExpenseReportId = _sequenceGenerator.GenerateSequence("seq_expense_report", "ER", 6, "-");
-                            if (entity.Amount <= 0)
-                                throw new ArgumentException($"Montant invalide pour la ligne de type {typeId}", nameof(lineDto.Amount));
                             entitiesToAdd.Add(entity);
                             affectedIds.Add(entity.ExpenseReportId);
                         }
@@ -414,7 +416,7 @@ namespace MyApp.Api.Services.mission
                     await _repository.UpdateAsync(updated);
                 }
 
-                // Handle attachments intelligently
+                // Handle attachments: only add new ones, never delete
                 if (dto.Attachments != null && dto.Attachments.Any())
                 {
                     // Get existing attachments for this assignation
@@ -434,15 +436,16 @@ namespace MyApp.Api.Services.mission
                         // Insert only new attachments
                         var attachmentIds = await InsertAttachmentsAsync(newAttachments, dto.AssignationId);
                         affectedIds.AddRange(attachmentIds);
+                        _logger.LogInformation("Nouveaux attachments ajoutés: {Count}", newAttachments.Count);
                     }
                     else
                     {
-                        await DeleteAttachmentsByAssignationIdAsync(dto.AssignationId);
+                        _logger.LogInformation("Aucun nouveau attachment à ajouter (tous existent déjà)");
                     }
                 }
                 else
                 {
-                    await DeleteAttachmentsByAssignationIdAsync(dto.AssignationId);
+                    _logger.LogInformation("Aucun attachment fourni, aucun ajout effectué");
                 }
 
                 await _repository.SaveChangesAsync();

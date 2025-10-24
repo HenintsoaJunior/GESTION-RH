@@ -165,7 +165,7 @@ const useMissionValidationData = () => {
           signature: validator.signature || "",
           matricule: creator.matricule || "N/A",
           function: creator.position || "Fonction non spécifiée",
-          transport: missionAssignation.transport?.name || "Non spécifié",
+          transport: missionAssignation.transportId || "Non spécifié",
           departureTime: missionAssignation.departureTime || "Non spécifié",
           departureDate: missionAssignation.departureDate || (mission.startDate as string) || "Non spécifié",
           returnDate: missionAssignation.returnDate || (mission.endDate as string) || "Non spécifié",

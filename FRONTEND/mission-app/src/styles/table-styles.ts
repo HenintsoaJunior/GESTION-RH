@@ -668,7 +668,7 @@ export const ButtonSearch = styled.button`
   cursor: pointer;
   font-weight: 600;
   font-family: var(--font-family);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   box-shadow: var(--shadow-sm);
   height: 40px;
   line-height: 1;

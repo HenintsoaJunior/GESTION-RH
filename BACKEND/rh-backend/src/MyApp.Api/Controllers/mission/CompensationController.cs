@@ -107,13 +107,13 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpGet("by-status")]
-        [AllowAnonymous]
+        // [AllowAnonymous]
         public async Task<IActionResult> GetByStatus([FromQuery] string? status)
         {
-            if (!User.Identity?.IsAuthenticated ?? true)
-            {
-                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            // {
+            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            // }
             try
             {
                 var results = await _compensationService.GetCompensationsByStatusAsync(status);

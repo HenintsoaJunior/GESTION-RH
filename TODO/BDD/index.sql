@@ -403,7 +403,7 @@ CREATE TABLE compensation(
    lunch_amount DECIMAL(15,2),
    dinner_amount DECIMAL(15,2),
    accommodation_amount DECIMAL(15,2),
-   status VARCHAR(50) DEFAULT 'not paid',
+   status VARCHAR(50) DEFAULT 'unpaid',
    payment_date DATETIME,
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
