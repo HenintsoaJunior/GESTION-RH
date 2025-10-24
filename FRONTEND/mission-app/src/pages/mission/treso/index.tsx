@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+"use client";
+import React from 'react';
+import { useNavigate } from "react-router-dom";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -31,7 +33,7 @@ ChartJS.register(
 );
 
 const TresoPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'indemnite' | 'notes'>('indemnite');
+  const navigate = useNavigate();
 
   const { data: previsionData, isLoading: previsionLoading, error: previsionError } = usePrevision();
   const { data: notPaidData, isLoading: notPaidLoading, error: notPaidError } = useTotalNotPaid();
@@ -134,14 +136,6 @@ const TresoPage: React.FC = () => {
     fontWeight: 'var(--font-weight-medium)',
   };
 
-  const activeTabStyle = {
-    ...tabStyle,
-    backgroundColor: 'var(--primary-color)',
-    color: 'var(--text-white)',
-    borderColor: 'var(--primary-color)',
-    boxShadow: 'var(--shadow-sm)',
-  };
-
   const chartsContainerStyle = {
     display: 'flex',
     width: '100%',
@@ -170,25 +164,12 @@ const TresoPage: React.FC = () => {
     gap: 'var(--spacing-sm)',
   };
 
-  const tabContentStyle = {
-    padding: 'var(--spacing-2xl)',
-    border: `1px solid var(--border-color)`,
-    borderRadius: 'var(--border-radius-md)',
-    backgroundColor: 'var(--bg-primary)',
+  const handleIndemniteClick = () => {
+    navigate('/treasury/compensation');
   };
 
-  const headingStyle = {
-    margin: '0 0 var(--spacing-md) 0',
-    color: 'var(--text-color)',
-    fontSize: 'var(--font-size-lg)',
-    fontFamily: 'var(--font-family)',
-  };
-
-  const totalStyle = {
-    margin: '0',
-    color: 'var(--text-secondary)',
-    fontSize: 'var(--font-size-md)',
-    fontFamily: 'var(--font-family)',
+  const handleNotesClick = () => {
+    navigate('/treso/notes-de-frais');
   };
 
   return (
@@ -204,33 +185,17 @@ const TresoPage: React.FC = () => {
       <div style={tabsContainerStyle}>
         <div style={tabsButtonsStyle}>
           <button
-            style={activeTab === 'indemnite' ? activeTabStyle : tabStyle}
-            onClick={() => setActiveTab('indemnite')}
+            style={tabStyle}
+            onClick={handleIndemniteClick}
           >
             INDEMNITÉ
           </button>
           <button
-            style={activeTab === 'notes' ? activeTabStyle : tabStyle}
-            onClick={() => setActiveTab('notes')}
+            style={tabStyle}
+            onClick={handleNotesClick}
           >
             NOTE DE FRAIS
           </button>
-        </div>
-        <div style={tabContentStyle}>
-          {activeTab === 'indemnite' && (
-            <div>
-              <h3 style={headingStyle}>Indemnité (Non Payées)</h3>
-              <p style={totalStyle}>Total : {totalNotPaid.toLocaleString()} €</p>
-              {/* Ici, vous pouvez ajouter un graphique ou une table détaillée pour les indemnités */}
-            </div>
-          )}
-          {activeTab === 'notes' && (
-            <div>
-              <h3 style={headingStyle}>Note de Frais (Non Remboursées)</h3>
-              <p style={totalStyle}>Total : {totalNotReimbursed.toLocaleString()} €</p>
-              {/* Ici, vous pouvez ajouter un graphique ou une table détaillée pour les notes de frais */}
-            </div>
-          )}
         </div>
       </div>
     </ContentArea>

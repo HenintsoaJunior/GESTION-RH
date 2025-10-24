@@ -9,7 +9,7 @@ public class ComposationDTO
     public decimal LunchAmount { get; set; }
     public decimal DinnerAmount { get; set; }
     public decimal AccommodationAmount { get; set; }
-    public string Status { get; set; } = "not paid";
+    public string Status { get; set; } = "unpaid";
     public DateTime? PaymentDate { get; set; }
     public string AssignationId { get; set; } = null!;
     public string EmployeeId { get; set; } = null!;

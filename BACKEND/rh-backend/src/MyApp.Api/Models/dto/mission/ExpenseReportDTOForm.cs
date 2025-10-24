@@ -40,7 +40,7 @@ namespace MyApp.Api.Models.dto.mission
 
         public decimal Amount { get; set; }
 
-        public decimal AmountMga { get; set; }
+        public decimal AmountMGA { get; set; }
 
         public decimal Rate { get; set; }
 

@@ -11,6 +11,7 @@ import MissionList from '@/pages/mission/collaborator/list/mission-list';
 import DetailsMission from '@/pages/mission/collaborator/details/mission-details';
 import MissionValidationPage from '@/pages/mission/validation';
 import TresoPage from '@/pages/mission/treso';
+import Compensation from '@/pages/mission/treso/components/compensation';
 function App() {
   return (
     <Routes>
@@ -34,8 +35,7 @@ function App() {
 
         {/* TRESO */}
         <Route path="/treasury" element={<TresoPage />} />
-
-
+        <Route path="/treasury/compensation" element={<Compensation />} />
 
         
         {/* ERROR */}

@@ -1,3 +1,5 @@
+@import url("https://use.typekit.net/oov2wcw.css");
+
 :root {
   /* === Couleurs principales === */
   --primary-color: #69b42e; /* Second bloc */
@@ -72,7 +74,7 @@
   --radius-lg: 12px; /* Second bloc */
 
   /* === Typographie === */
-    --font-family: 'Century Gothic', sans-serif; /* Modifié */
+  --font-family: century-gothic, sans-serif;
   --font-size-xs: 12px; /* Second bloc */
   --font-size-sm: 14px; /* Second bloc */
   --font-size-md: 16px; /* Second bloc */

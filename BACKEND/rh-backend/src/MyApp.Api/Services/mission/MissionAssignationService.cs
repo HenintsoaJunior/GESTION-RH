@@ -551,7 +551,7 @@ namespace MyApp.Api.Services.mission
                     AssignationId = missionAssignation.AssignationId,
                     EmployeeId = missionAssignation.EmployeeId,
                     PaymentDate = dailyPaiement.Date,
-                    Status = "not paid",
+                    Status = "unpaid",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = null,
                     TransportAmount = CalculateTransportAmount(dailyPaiement.CompensationScales?.ToList() ?? new List<CompensationScale>(), missionAssignation.TransportId),

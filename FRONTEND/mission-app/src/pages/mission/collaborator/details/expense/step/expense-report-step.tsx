@@ -15,7 +15,7 @@ import {
 } from "@/styles/form-container";
 
 import { useCreateExpenseReport, useExpenseReportsByAssignationId } from "@/api/mission/expense/services";
-import { useCurrencies,useConvertToMGA } from "@/api/devise/services";
+import { useCurrencies } from "@/api/currency/services";
 import Alert from "@/components/alert";
 
 import {
@@ -195,7 +195,8 @@ const ExpenseReportStep = ({
     message: "" 
   });
 
-  const currencyCodes = currenciesData ? [...new Set([currenciesData.base, ...Object.keys(currenciesData.rates)])].sort() : [];
+  const bases = currenciesData?.base ? [currenciesData.base] : [];
+  const currencyCodes = currenciesData ? [...new Set([...bases, ...Object.keys(currenciesData.rates)])].sort() : [];
 
   const fetchExistingReports = useCallback(async () => {
     if (formData.assignationId && !hasLoadedReports && expenseReportsData) {
@@ -422,7 +423,6 @@ const ExpenseReportStep = ({
         normalizedExpenseLinesByType[typeId] = (lines as any[]).map(line => ({
           ...line,
           amount: typeof line.amount === 'string' ? parseFloat(line.amount) : line.amount,
-          amountMga: typeof line.amountMga === 'string' ? parseFloat(line.amountMga) : line.amountMga,
           rate: typeof line.rate === 'string' ? parseFloat(line.rate) : line.rate,
         }));
       });

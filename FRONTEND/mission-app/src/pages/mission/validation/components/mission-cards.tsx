@@ -3,24 +3,36 @@
 import React from "react";
 // Importations Lucide-React
 import {
-    Clock,
+    Clock as ClockIcon,
     CheckCircle,
     XCircle,
     Calendar,
     MapPin,
     User,
     FileText,
-    Clock as ClockIcon,
     AlertTriangle,
-    CheckCircle as ValidIcon,
 } from "lucide-react";
-import styled, { css } from "styled-components";
 import {
     Loading,
     NoDataMessage,
     StatusBadge,
 } from "@/styles/table-styles";
 import Pagination from "@/components/pagination"; 
+import {
+    CardsPaginationContainer,
+    MissionCardsContainer as CardsContainer,
+    Card,
+    IndicatorBlock,
+    IndicatorValue,
+    IndicatorText,
+    CardHeader,
+    CardTitle,
+    CardInfo,
+    InfoLine,
+    InfoLabel,
+    InfoValue,
+    ReferenceText,
+} from "@/styles/card-styles";
 // Types from previous context
 interface FormattedMission {
   id: string;
@@ -92,176 +104,6 @@ interface MissionCardsProps {
   appliedFilters: AppliedFilters;
 }
 
-
-// ========================================================================================
-// STYLES REDESSINÉS
-// ========================================================================================
-
-const CardsPaginationContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-`;
-
-const CardsContainer = styled.div`
-    display: grid;
-    /* FORCE 3 COLONNES : S'étend sur les grands écrans pour afficher trois cartes par ligne. */
-    grid-template-columns: repeat(3, 1fr); 
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
-
-    /* Adaptation pour les petits écrans (mobile) */
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-    }
-`;
-
-const Card = styled.div`
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    /* Structure de la carte : Indicateur (80px) | Contenu */
-    display: grid;
-    grid-template-columns: 80px 1fr;
-    grid-template-rows: auto auto;
-    grid-template-areas:
-        "indicator header"
-        "indicator info"
-        "reference reference";
-    gap: 12px;
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-
-    &:hover {
-        background-color: var(--bg-secondary);
-        transform: translateY(-3px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-    }
-`;
-
-const IndicatorBlock = styled.div<{ $daysUntilDue: number }>`
-    grid-area: indicator;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    border-radius: 8px;
-    font-weight: bold;
-    text-align: center;
-    min-height: 100%;
-    border-right: 1px solid var(--border-color);
-    
-    ${({ $daysUntilDue }) => {
-        let bgVar, colorVar;
-        
-        if ($daysUntilDue < 0) {
-            bgVar = 'var(--error-bg)';
-            colorVar = 'var(--error-color)';
-        } else if ($daysUntilDue <= 3) {
-            // URGENT (<= 3 jours)
-            bgVar = 'var(--error-bg)';
-            colorVar = 'var(--error-color)';
-        } else if ($daysUntilDue <= 7) {
-            // PROCHE (4 à 7 jours)
-            bgVar = 'var(--warning-bg)';
-            colorVar = 'var(--warning-color)';
-        } else {
-            // NORMAL (> 7 jours)
-            bgVar = 'var(--success-bg)';
-            colorVar = 'var(--success-color)';
-        }
-
-        return css`
-            background-color: ${bgVar};
-            color: ${colorVar};
-        `;
-    }}
-`;
-
-const IndicatorValue = styled.div`
-    font-size: 24px;
-    margin-top: 4px;
-    line-height: 1;
-`;
-
-const IndicatorText = styled.div`
-    font-size: 10px;
-    font-weight: normal;
-    margin-top: 2px;
-    text-transform: uppercase;
-`;
-
-const CardHeader = styled.div`
-    grid-area: header;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: var(--spacing-xs);
-`;
-
-const CardTitle = styled.h3`
-    font-size: var(--font-size-lg);
-    font-weight: 700;
-    color: var(--text-color);
-    margin: 0;
-    line-height: 1.2;
-    flex: 1;
-    margin-right: var(--spacing-sm);
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-`;
-
-// ESPACEMENT AMÉLIORÉ
-const CardInfo = styled.div`
-    grid-area: info;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm); /* Espacement augmenté */
-    padding-left: var(--spacing-sm);
-    padding-top: var(--spacing-xs);
-`;
-
-const InfoLine = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: var(--font-size-sm);
-    padding-right: var(--spacing-sm);
-`;
-
-const InfoLabel = styled.span`
-    color: var(--text-secondary);
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-`;
-
-const InfoValue = styled.span`
-    color: var(--text-color);
-    text-align: right;
-    font-weight: 600;
-    max-width: 60%;
-    word-wrap: break-word;
-`;
-
-const ReferenceText = styled.div`
-    grid-area: reference;
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
-    background-color: var(--bg-light);
-    padding: 8px 12px;
-    border-radius: 0 0 10px 10px;
-    margin: 12px -16px -16px -16px;
-    text-align: center;
-    font-weight: 600;
-    border-top: 1px solid var(--border-color);
-`;
-
 // ========================================================================================
 // COMPOSANT PRINCIPAL MISSIONCARDS
 // ========================================================================================
@@ -301,10 +143,10 @@ const MissionCards: React.FC<MissionCardsProps> = ({
      */
     const getStatusBadge = (status: string) => {
         const statusInfo = {
-            pending: { icon: Clock, text: "En attente", class: "status-pending" },
+            pending: { icon: ClockIcon, text: "En attente", class: "status-pending" },
             approved: { icon: CheckCircle, text: "Validé", class: "status-approved" },
             rejected: { icon: XCircle, text: "Rejetée", class: "status-cancelled" },
-        }[status] || { icon: Clock, text: "Inconnu", class: "status-pending" };
+        }[status] || { icon: ClockIcon, text: "Inconnu", class: "status-pending" };
 
         const Icon = statusInfo.icon;
         return (
@@ -345,7 +187,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
             text = `Proche (${daysUntilDue}J)`;
             displayValue = daysUntilDue;
         } else if (daysUntilDue >= 0) {
-            Icon = ValidIcon;
+            Icon = CheckCircle;
             text = "Délai normal";
             displayValue = daysUntilDue;
         } else {
