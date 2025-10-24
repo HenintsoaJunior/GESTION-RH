@@ -1,0 +1,36 @@
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import api from '@/utils/axios-config';
+
+const PREVISION_KEY = ['prevision'] as const;
+
+interface PrevisionPrice {
+  previsionId: string;
+  amount : number;
+  departureDate : string;
+}
+
+interface ApiResponse<T> {
+  data: T | null;
+  status: number;
+  message: string;
+}
+
+type PrevisionPriceResponse = ApiResponse<PrevisionPrice[]>;
+
+export const usePrevision = () => {
+  return useQuery<PrevisionPriceResponse, Error>({
+    queryKey: PREVISION_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Prevision');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};

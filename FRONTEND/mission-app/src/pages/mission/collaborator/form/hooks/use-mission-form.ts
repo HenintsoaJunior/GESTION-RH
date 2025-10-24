@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable prefer-const */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLieux, type Lieu } from "@/api/lieu/services";
 import { useEmployees, type Employee } from "@/api/collaborator/services";
@@ -229,7 +227,7 @@ const useMissionForm = ({
     missionStartDate?: string | null
   ): MissionDurationResult => {
     if (!departureDate || !returnDate) {
-      return { missionDuration: "", error: "La date de départ et la date de retour doivent être fournies." };
+      return { missionDuration: "", error: undefined };
     }
 
     const departure = new Date(departureDate);
@@ -266,19 +264,19 @@ const useMissionForm = ({
   }, []);
 
   const validateStep1 = useCallback((): boolean => {
-    let errors: FieldErrors = {};
+    const errors: FieldErrors = {};
     if (!formData.missionTitle) errors.missionTitle = ["Le titre de la mission est requis."];
     if (!formData.location) errors.lieuId = ["Le lieu est requis."];
-    if (!formData.startDate) errors.startDate = ["La date de début est requise."];
-    if (!formData.endDate) errors.endDate = ["La date de fin est requise."];
     if (!formData.missionType) errors.missionType = ["Le type de mission est requis."];
-    if (formData.endDate && formData.startDate) {
-      const start = new Date(formData.startDate);
-      const end = new Date(formData.endDate);
-      if (end < start) {
-        errors.endDate = ["La date de fin doit être postérieure ou égale à la date de début."];
-      }
-    }
+
+    const beneficiary = formData.beneficiary;
+    if (!beneficiary.beneficiary) errors["beneficiary.beneficiary"] = ["Le bénéficiaire est requis."];
+    if (!beneficiary.matricule) errors["beneficiary.matricule"] = ["Le matricule est requis."];
+    if (!beneficiary.function) errors["beneficiary.function"] = ["La fonction est requise."];
+    if (!beneficiary.base) errors["beneficiary.base"] = ["Le site est requis."];
+    if (!beneficiary.direction) errors["beneficiary.direction"] = ["La direction est requise."];
+    if (!beneficiary.department) errors["beneficiary.department"] = ["Le département est requis."];
+    if (!beneficiary.service) errors["beneficiary.service"] = ["Le service est requis."];
 
     setFieldErrors((prev) => {
       const updatedErrors = { ...prev, ...errors };
@@ -294,10 +292,19 @@ const useMissionForm = ({
   }, [formData]);
 
   const validateStep2 = useCallback((): boolean => {
-    let errors: FieldErrors = {};
+    const errors: FieldErrors = {};
     const beneficiary = formData.beneficiary;
 
-    if (!beneficiary.beneficiary) errors["beneficiary.beneficiary"] = ["Le bénéficiaire est requis."];
+    if (!formData.startDate) errors.startDate = ["La date de début est requise."];
+    if (!formData.endDate) errors.endDate = ["La date de fin est requise."];
+    if (formData.endDate && formData.startDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      if (end < start) {
+        errors.endDate = ["La date de fin doit être postérieure ou égale à la date de début."];
+      }
+    }
+
     if (!beneficiary.departureDate) errors["beneficiary.departureDate"] = ["La date de départ est requise."];
     if (!beneficiary.returnDate) errors["beneficiary.returnDate"] = ["La date de retour est requise."];
     if (!beneficiary.departureTime) errors["beneficiary.departureTime"] = ["L'heure de départ est requise."];
@@ -322,7 +329,7 @@ const useMissionForm = ({
       }
     }
 
-    const fieldsToClean = ["beneficiary.beneficiary", "beneficiary.departureDate", "beneficiary.returnDate", "beneficiary.departureTime", "beneficiary.returnTime", "beneficiary.missionDuration"];
+    const fieldsToClean = ["beneficiary.departureDate", "beneficiary.returnDate", "beneficiary.departureTime", "beneficiary.returnTime", "beneficiary.missionDuration"];
     fieldsToClean.forEach(field => {
       const formKey = field.split(".").pop() as keyof BeneficiaryFormData;
       const formValue = formData.beneficiary[formKey];
@@ -347,7 +354,7 @@ const useMissionForm = ({
   }, [formData, calculateMissionDuration]);
 
   const validateStep3 = useCallback((): boolean => {
-    let errors: FieldErrors = {};
+    const errors: FieldErrors = {};
     if (!formData.type) {
       errors.type = ["Le type de compensation est requis."];
     }
@@ -487,6 +494,15 @@ const useMissionForm = ({
         } else {
           updatedErrors[fieldKey] = [`${name} est requis.`];
         }
+
+        // Clear related beneficiary errors when beneficiary is selected
+        if (name === "beneficiary" && value) {
+          const relatedFields = ["matricule", "function", "base", "direction", "department", "service"];
+          relatedFields.forEach((field) => {
+            delete updatedErrors[`beneficiary.${field}`];
+          });
+        }
+
         return updatedErrors;
       });
     } else if (section === "compensation") {
@@ -540,11 +556,34 @@ const useMissionForm = ({
 
       setFieldErrors((prev) => {
         const updatedErrors = { ...prev };
-        if (value) {
-          delete updatedErrors[name];
-        } else {
-          updatedErrors[name] = [`${name} est requis.`];
+        let errorKey = name;
+        let errorMessage = "";
+        switch (name) {
+          case "missionTitle":
+            errorMessage = "Le titre de la mission est requis.";
+            break;
+          case "missionType":
+            errorMessage = "Le type de mission est requis.";
+            break;
+          case "startDate":
+            errorMessage = "La date de début est requise.";
+            break;
+          case "endDate":
+            errorMessage = "La date de fin est requise.";
+            break;
+          case "location":
+            errorKey = "lieuId";
+            errorMessage = "Le lieu est requis.";
+            break;
+          default:
+            errorMessage = `${name} est requis.`;
         }
+        if (value) {
+          delete updatedErrors[errorKey];
+        } else if (name !== "description") {
+          updatedErrors[errorKey] = [errorMessage];
+        }
+
         return updatedErrors;
       });
     }
@@ -710,9 +749,10 @@ const useMissionForm = ({
         setIsSubmitting(false);
 
         onClose();
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Submit error:", error);
-        showAlert("error", error.message || "Une erreur est survenue lors de la soumission");
+        const errorMessage = error instanceof Error ? error.message : "Une erreur est survenue lors de la soumission";
+        showAlert("error", errorMessage);
         setHasClickedSubmit(false);
         setIsSubmitting(false);
       }
@@ -742,22 +782,22 @@ const useMissionForm = ({
 
     const data = missionResponse.data;
     const assignationData = data;
-    const employeeData = assignationData.employee || {};
-    const transportData = assignationData.transport || {};
-    const missionData = assignationData.mission || {};
+    const employeeData = assignationData.employee ?? {};
+    const transportData = assignationData.transport ?? {};
+    const missionData = assignationData.mission ?? {};
 
-    const selectedEmployee = employeeSuggestions.find(e => e.id === employeeData.employeeId);
-    const selectedTransport = transportSuggestions.find(t => t.id === transportData.transportId);
+    const selectedEmployee = employeeSuggestions.find(e => e.id === (employeeData as unknown as Partial<Employee>).employeeId);
+    const selectedTransport = transportSuggestions.find(t => t.id === (transportData as unknown as Partial<Transport>).transportId);
     const selectedRegion = regions.find(r => r.lieuId === missionData.lieuId);
 
     setFormData((prev) => {
       const name = missionData.name || "";
       const location = selectedRegion 
         ? `${selectedRegion.nom}${selectedRegion.pays ? `/${selectedRegion.pays}` : ""}` 
-        : (missionData as any).lieu?.nom || "";
+        : (missionData as { lieu?: { nom: string } }).lieu?.nom || "";
 
       const beneficiaryDetails = selectedEmployee ? {
-        beneficiary: selectedEmployee.displayName || `${employeeData.lastName} ${employeeData.firstName}`,
+        beneficiary: selectedEmployee.displayName || `${(employeeData as unknown as Partial<Employee>).lastName || ''} ${(employeeData as unknown as Partial<Employee>).firstName || ''}`,
         employeeId: selectedEmployee.id || "",
         matricule: selectedEmployee.employeeCode || "",
         function: selectedEmployee.jobTitle || "",
@@ -766,8 +806,8 @@ const useMissionForm = ({
         department: selectedEmployee.department || "",
         service: selectedEmployee.service || "",
         costCenter: selectedEmployee.costCenter || "",
-        transport: selectedTransport?.type || transportData.type || "",
-        transportId: selectedTransport?.id || transportData.transportId || null,
+        transport: selectedTransport?.type || (transportData as unknown as Partial<Transport>).type || "",
+        transportId: selectedTransport?.id || (transportData as unknown as Partial<Transport>).transportId || null,
         departureDate: assignationData.departureDate?.substring(0, 10) || "",
         departureTime: assignationData.departureTime || "",
         missionDuration: assignationData.duration?.toString() || "",

@@ -1,8 +1,10 @@
 DROP TABLE IF EXISTS notification_recipients;
 DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS prevision_price;
 DROP TABLE IF EXISTS logs;
 DROP TABLE IF EXISTS mission_comments;
 DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS mission_report_attachments;
 DROP TABLE IF EXISTS mission_report;
 DROP TABLE IF EXISTS expense_report_attachments;
 DROP TABLE IF EXISTS expense_report;
@@ -277,7 +279,7 @@ CREATE TABLE transport(
 CREATE TABLE compensation_scale(
    compensation_scale_id VARCHAR(50),
    amount DECIMAL(15,2),
-   place VARCHAR(150) DEFAULT 'National', --National, Afrique, Europe, ...
+   place VARCHAR(150) DEFAULT 'National',
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    transport_id VARCHAR(50),
@@ -287,6 +289,15 @@ CREATE TABLE compensation_scale(
    FOREIGN KEY(transport_id) REFERENCES transport(transport_id),
    FOREIGN KEY(expense_type_id) REFERENCES expense_type(expense_type_id),
    FOREIGN KEY(employee_category_id) REFERENCES employee_categories(employee_category_id)
+);
+
+CREATE TABLE prevision_price(
+   prevision_id VARCHAR(50),
+   amount DECIMAL(15,2),
+   departure_date DATE NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   PRIMARY KEY(prevision_id)
 );
 
 CREATE TABLE lieu (
@@ -392,7 +403,7 @@ CREATE TABLE compensation(
    lunch_amount DECIMAL(15,2),
    dinner_amount DECIMAL(15,2),
    accommodation_amount DECIMAL(15,2),
-   status VARCHAR(50) DEFAULT 'not paid',
+   status VARCHAR(50) DEFAULT 'unpaid',
    payment_date DATETIME,
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
@@ -418,6 +429,7 @@ CREATE TABLE expense_report(
    type VARCHAR(50) CHECK(type IN('CB', 'ESP')), --carte bancaire ou espèces
    currency_unit VARCHAR(50),
    amount DECIMAL(15,2),
+   amount_mga DECIMAL(15,2),
    rate DECIMAL(15,2),
    status VARCHAR(50) DEFAULT 'pending',
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -454,6 +466,17 @@ CREATE TABLE mission_report(
    FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id)
 );
 
+CREATE TABLE mission_report_attachments (
+   attachment_id VARCHAR(50),
+   mission_report_id VARCHAR(50) NOT NULL,
+   file_name VARCHAR(255) NOT NULL,
+   file_content VARBINARY(MAX),
+   file_size INT,
+   file_type VARCHAR(100),
+   uploaded_at DATETIME DEFAULT GETDATE(),
+   PRIMARY KEY(attachment_id),
+   FOREIGN KEY(mission_report_id) REFERENCES mission_report(mission_report_id) ON DELETE CASCADE
+);
 
 CREATE TABLE logs(
    log_id VARCHAR(50),

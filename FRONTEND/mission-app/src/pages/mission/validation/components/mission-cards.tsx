@@ -3,25 +3,36 @@
 import React from "react";
 // Importations Lucide-React
 import {
-    Clock,
+    Clock as ClockIcon,
     CheckCircle,
     XCircle,
     Calendar,
     MapPin,
     User,
     FileText,
-    Clock as ClockIcon,
     AlertTriangle,
-    CheckCircle as ValidIcon,
 } from "lucide-react";
-import styled, { css } from "styled-components";
 import {
     Loading,
     NoDataMessage,
     StatusBadge,
 } from "@/styles/table-styles";
 import Pagination from "@/components/pagination"; 
-
+import {
+    CardsPaginationContainer,
+    MissionCardsContainer as CardsContainer,
+    Card,
+    IndicatorBlock,
+    IndicatorValue,
+    IndicatorText,
+    CardHeader,
+    CardTitle,
+    CardInfo,
+    InfoLine,
+    InfoLabel,
+    InfoValue,
+    ReferenceText,
+} from "@/styles/card-styles";
 // Types from previous context
 interface FormattedMission {
   id: string;
@@ -93,192 +104,6 @@ interface MissionCardsProps {
   appliedFilters: AppliedFilters;
 }
 
-
-const COLORS = {
-    primary: "#2684ff", // Bleu
-    primaryHover: "#0057d9",
-    urgent: "#dc3545", // Rouge (Urgence)
-    urgentLight: "#f8d7da",
-    dueSoon: "#ffc107", // Jaune (Échéance proche)
-    dueSoonLight: "#fff3cd",
-    normal: "#28a745", // Vert (Délai normal)
-    normalLight: "#d4edda",
-    textPrimary: "var(--text-primary)",
-    textSecondary: "var(--text-secondary)",
-    background: "white",
-    border: "#e1e5e9",
-    referenceBg: "#f1f3f5", // Arrière-plan pour la référence
-};
-
-// ========================================================================================
-// STYLES REDESSINÉS
-// ========================================================================================
-
-const CardsPaginationContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-`;
-
-const CardsContainer = styled.div`
-    display: grid;
-    /* FORCE 2 COLONNES : S'étend sur les grands écrans pour améliorer l'espacement entre les cartes. */
-    grid-template-columns: repeat(2, 1fr); 
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
-
-    /* Adaptation pour les petits écrans (mobile) */
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-    }
-`;
-
-const Card = styled.div`
-    background: ${COLORS.background};
-    border: 1px solid ${COLORS.border};
-    border-radius: 10px;
-    /* Structure de la carte : Indicateur (80px) | Contenu */
-    display: grid;
-    grid-template-columns: 80px 1fr;
-    grid-template-rows: auto auto;
-    grid-template-areas:
-        "indicator header"
-        "indicator info"
-        "reference reference";
-    gap: 12px;
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-
-    &:hover {
-        background-color: #f8f9fa;
-        transform: translateY(-3px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-    }
-`;
-
-const IndicatorBlock = styled.div<{ $isUrgent: boolean; $daysUntilDue: number }>`
-    grid-area: indicator;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    border-radius: 8px;
-    font-weight: bold;
-    text-align: center;
-    min-height: 100%;
-    border-right: 1px solid ${COLORS.border};
-    
-    ${({ $isUrgent, $daysUntilDue }) => {
-        let bgColor, color;
-        
-        if ($daysUntilDue < 0) {
-            bgColor = COLORS.urgentLight; // Retard
-            color = COLORS.urgent;
-        } else if ($isUrgent) {
-            // URGENT (<= 3 jours)
-            bgColor = COLORS.urgentLight;
-            color = COLORS.urgent;
-        } else if ($daysUntilDue >= 0 && $daysUntilDue <= 7) {
-            // PROCHE (4 à 7 jours)
-            bgColor = COLORS.dueSoonLight;
-            color = COLORS.dueSoon;
-        } else {
-            // NORMAL (> 7 jours)
-            bgColor = COLORS.normalLight;
-            color = COLORS.normal;
-        }
-
-        return css`
-            background-color: ${bgColor};
-            color: ${color};
-        `;
-    }}
-`;
-
-const IndicatorValue = styled.div`
-    font-size: 24px;
-    margin-top: 4px;
-    line-height: 1;
-`;
-
-const IndicatorText = styled.div`
-    font-size: 10px;
-    font-weight: normal;
-    margin-top: 2px;
-    text-transform: uppercase;
-`;
-
-const CardHeader = styled.div`
-    grid-area: header;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: var(--spacing-xs);
-`;
-
-const CardTitle = styled.h3`
-    font-size: var(--font-size-lg);
-    font-weight: 700;
-    color: ${COLORS.textPrimary};
-    margin: 0;
-    line-height: 1.2;
-    flex: 1;
-    margin-right: var(--spacing-sm);
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-`;
-
-// ESPACEMENT AMÉLIORÉ
-const CardInfo = styled.div`
-    grid-area: info;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm); /* Espacement augmenté */
-    padding-left: var(--spacing-sm);
-    padding-top: var(--spacing-xs);
-`;
-
-const InfoLine = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: var(--font-size-sm);
-    padding-right: var(--spacing-sm);
-`;
-
-const InfoLabel = styled.span`
-    color: ${COLORS.textSecondary};
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-`;
-
-const InfoValue = styled.span`
-    color: ${COLORS.textPrimary};
-    text-align: right;
-    font-weight: 600;
-    max-width: 60%;
-    word-wrap: break-word;
-`;
-
-const ReferenceText = styled.div`
-    grid-area: reference;
-    font-size: var(--font-size-xs);
-    color: ${COLORS.textSecondary};
-    background-color: ${COLORS.referenceBg};
-    padding: 8px 12px;
-    border-radius: 0 0 10px 10px;
-    margin: 12px -16px -16px -16px;
-    text-align: center;
-    font-weight: 600;
-    border-top: 1px solid ${COLORS.border};
-`;
-
 // ========================================================================================
 // COMPOSANT PRINCIPAL MISSIONCARDS
 // ========================================================================================
@@ -297,14 +122,31 @@ const MissionCards: React.FC<MissionCardsProps> = ({
     appliedFilters,
 }) => {
     /**
+     * Formate le nom du demandeur : prend le prénom et le rôle entre parenthèses.
+     * Ex: "Miantsafitia RAKOTOARIMANANA (DRH)" -> "Miantsafitia (DRH)"
+     */
+    const formatRequesterName = (fullName: string): string => {
+        if (!fullName || fullName === "Non spécifié") return fullName;
+
+        // Extraire le prénom (première partie avant espace)
+        const firstName = fullName.split(' ')[0];
+
+        // Extraire le rôle entre parenthèses
+        const match = fullName.match(/\(([^)]+)\)/);
+        const role = match ? `(${match[1]})` : '';
+
+        return `${firstName} ${role}`;
+    };
+
+    /**
      * Retourne le badge de statut stylisé.
      */
     const getStatusBadge = (status: string) => {
         const statusInfo = {
-            pending: { icon: Clock, text: "En attente", class: "status-pending" },
+            pending: { icon: ClockIcon, text: "En attente", class: "status-pending" },
             approved: { icon: CheckCircle, text: "Validé", class: "status-approved" },
             rejected: { icon: XCircle, text: "Rejetée", class: "status-cancelled" },
-        }[status] || { icon: Clock, text: "Inconnu", class: "status-pending" };
+        }[status] || { icon: ClockIcon, text: "Inconnu", class: "status-pending" };
 
         const Icon = statusInfo.icon;
         return (
@@ -345,7 +187,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
             text = `Proche (${daysUntilDue}J)`;
             displayValue = daysUntilDue;
         } else if (daysUntilDue >= 0) {
-            Icon = ValidIcon;
+            Icon = CheckCircle;
             text = "Délai normal";
             displayValue = daysUntilDue;
         } else {
@@ -355,7 +197,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
         }
 
         return (
-            <IndicatorBlock $isUrgent={isUrgent} $daysUntilDue={daysUntilDue}>
+            <IndicatorBlock $daysUntilDue={daysUntilDue}>
                 <Icon size={20} />
                 <IndicatorValue>
                     {displayValue}
@@ -393,9 +235,9 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                     <InfoLine>
                                         <InfoLabel>
                                             <User size={14} />
-                                            Demandeur
+                                            Missionnaire
                                         </InfoLabel>
-                                        <InfoValue>{mission.requestedBy || "Non spécifié"}</InfoValue>
+                                        <InfoValue>{formatRequesterName(mission.requestedBy || "Non spécifié")}</InfoValue>
                                     </InfoLine>
                                     <InfoLine>
                                         <InfoLabel>
@@ -419,13 +261,6 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                         <InfoValue>
                                             {formatDate(mission.departureDate)} - {formatDate(mission.returnDate)}
                                         </InfoValue>
-                                    </InfoLine>
-                                    <InfoLine>
-                                        <InfoLabel>
-                                            <ClockIcon size={14} />
-                                            Échéance
-                                        </InfoLabel>
-                                        <InfoValue>{formatDate(mission.dueDate)}</InfoValue>
                                     </InfoLine>
                                 </CardInfo>
 

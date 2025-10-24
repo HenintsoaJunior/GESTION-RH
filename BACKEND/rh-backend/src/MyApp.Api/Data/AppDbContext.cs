@@ -6,6 +6,7 @@ using MyApp.Api.Entities.logs;
 using MyApp.Api.Entities.menu;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Entities.notifications;
+using MyApp.Api.Entities.prevision;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.users;
 
@@ -13,6 +14,8 @@ namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
+        
+        public DbSet<MissionReportAttachment> MissionReportAttachments { get; set; }
         public DbSet<ExpenseReportAttachment> ExpenseReportAttachments { get; set; }
         public DbSet<Notifications> Notifications { get; set; }
         public DbSet<NotificationRecipients> NotificationRecipients { get; set; }
@@ -57,6 +60,7 @@ namespace MyApp.Api.Data
         public DbSet<Menu> Menus { get; set; }
         
         public DbSet<MenuRole> MenuRoles { get; set; }
+        public DbSet<PrevisionPrice> PrevisionPrices { get; set; }
         public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

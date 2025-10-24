@@ -40,6 +40,10 @@ namespace MyApp.Api.Entities.mission
         public decimal Amount { get; set; } = 0m; 
 
         [Required]
+        [Column("amount_mga", TypeName = "decimal(15,2)")]
+        public decimal AmountMGA { get; set; } = 0m; 
+
+        [Required]
         [Column("rate", TypeName = "decimal(15,2)")]
         public decimal Rate { get; set; } = 0m;
 
@@ -69,6 +73,7 @@ namespace MyApp.Api.Entities.mission
             Type = dto.Type ?? string.Empty;
             CurrencyUnit = dto.CurrencyUnit ?? string.Empty;
             Amount = dto.Amount;
+            AmountMGA = dto.AmountMGA;
             Rate = dto.Rate;
             Status = "pending";
             AssignationId = dto.AssignationId ?? string.Empty;

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import api from '@/utils/axios-config';
 import { SEARCH_LOGS_BASE_KEY } from '@/api/logs/services';
-import { USER_INFOS_BASE_KEY } from '../users/services';
+import { USER_INFOS_BASE_KEY,USER_HABILITATIONSROLE_KEY } from '../users/services';
 
 const ROLES_KEY = ['roles'] as const;
 const ROLES_INFO_KEY = ['rolesInfo'] as const;
@@ -277,8 +277,11 @@ export const useCreateRoleWithHabilitations = () => {
       }
     },
     onSuccess: () => {
+      
+      queryClient.invalidateQueries({ queryKey: USER_HABILITATIONSROLE_KEY });
       queryClient.invalidateQueries({ queryKey: ROLES_KEY });
       queryClient.invalidateQueries({ queryKey: ROLES_INFO_KEY });
+      queryClient.invalidateQueries({ queryKey: USER_INFOS_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: HABILITATIONS_KEY });
       queryClient.invalidateQueries({ queryKey: HABILITATIONS_GROUPS_KEY });
       queryClient.invalidateQueries({ queryKey: HABILITATIONS_BY_ROLES_KEY });
@@ -302,6 +305,7 @@ export const useUpdateRole = () => {
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: USER_HABILITATIONSROLE_KEY });
       queryClient.invalidateQueries({ queryKey: USER_INFOS_BASE_KEY });
       queryClient.refetchQueries({ queryKey: SEARCH_LOGS_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: ROLES_KEY });

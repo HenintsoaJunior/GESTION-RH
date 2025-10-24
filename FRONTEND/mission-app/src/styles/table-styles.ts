@@ -250,6 +250,14 @@ export const StatusBadge = styled.span`
     background: #cce5ff;
     color: #004085;
   }
+  &.status-waiting {
+   background-color: #fef3c7; /* jaune clair pour indiquer attente */
+   color: #b45309; /* texte marron foncé/orange */
+   border: 1px solid #fde68a;
+   border-radius: 12px;
+   padding: 3px 8px;
+   font-weight: 500;
+  }
   &.status-pending {
     background: #fff3cd;
     color: #856404;
@@ -432,7 +440,7 @@ export const FormInputSearch = styled.input`
   box-sizing: border-box;
   line-height: 1.2;
   padding: var(--spacing-xs);
-  padding-right: var(--spacing-xl);
+  padding-right: var(--spacing-3xl);
 
   &:hover {
     border: 1px solid var(--primary-color);
@@ -450,14 +458,60 @@ export const FormInputSearch = styled.input`
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    padding-right: var(--spacing-3xl);
     background: #f5f5f5
       url("data:image/svg+xml;utf8,<svg fill='%2369B42E' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>")
       no-repeat right var(--spacing-sm) center;
     background-size: 16px;
   }
-`;
 
+  &[type="date"] {
+    cursor: pointer;
+    background-color: #f5f5f5;
+
+    &::-webkit-calendar-picker-indicator {
+      right: var(--spacing-xs);
+      cursor: pointer;
+    }
+
+    &::-webkit-datetime-edit {
+      padding: 0 var(--spacing-sm);
+    }
+
+    &::-webkit-datetime-edit-text {
+      color: var(--text-input);
+      padding: 0 var(--spacing-xs);
+    }
+
+    &::-webkit-datetime-edit-month-field,
+    &::-webkit-datetime-edit-day-field,
+    &::-webkit-datetime-edit-year-field {
+      color: var(--text-input);
+      padding: 0 var(--spacing-xs);
+      font-weight: 500;
+    }
+
+    &::-webkit-datetime-edit-fields-wrapper {
+      padding: 0;
+    }
+
+    &::-webkit-inner-spin-button {
+      display: none;
+      -webkit-appearance: none;
+    }
+
+    &::-moz-calendar-picker {
+      padding: 0 var(--spacing-sm);
+    }
+
+    &[type="date"]:invalid {
+      color: var(--text-muted);
+    }
+
+    &[type="date"]:focus {
+      background-color: #ffffff;
+    }
+  }
+`;
 export const Separator = styled.hr`
   border: none;
   border-top: 1px solid var(--border-light);
@@ -614,7 +668,7 @@ export const ButtonSearch = styled.button`
   cursor: pointer;
   font-weight: 600;
   font-family: var(--font-family);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   box-shadow: var(--shadow-sm);
   height: 40px;
   line-height: 1;

@@ -1,19 +1,19 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { ArrowLeft, Download } from "lucide-react";
 import {
     DetailSection,
     SectionTitle,
-    InfoGrid,
-    InfoItem,
-    InfoLabel,
-    InfoValue,
     IndemnityTable,
     TableHeader,
     TableCell,
     TotalRow,
     ActionButton,
+    PageHeader,
+    HeaderLeft,
+    BtnBack,
+    HeaderActions,
+    Separator,
 } from "@/styles/detailsmission-styles";
 import { NoDataMessage } from "@/styles/table-styles";
 import { formatNumber } from "@/utils/format";
@@ -21,14 +21,13 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearSca
 import type {
     ChartData,
     ChartOptions,
+    TooltipItem,
 } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
 import styled from "styled-components";
 
-// Enregistrement des éléments Chart.js nécessaires
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
-// Define styled-components outside the component
 const ChartGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -131,7 +130,7 @@ const createTooltipCallback = (
 ) => {
     return {
         callbacks: {
-            label: function (tooltipItem: any) {
+            label: function (tooltipItem: TooltipItem<'bar'>) {
                 const label = tooltipItem.label || "";
                 const value = tooltipItem.raw as number;
                 return `${label}: ${formatNumber(value)}${unit} MGA`;
@@ -176,7 +175,7 @@ const IndemnityDoughnutChart: React.FC<{ indemnityDetails: IndemnityDetail[] }> 
             },
             tooltip: {
                 callbacks: {
-                    label: function (tooltipItem: any) {
+                    label: function (tooltipItem: TooltipItem<'doughnut'>) {
                         const label = tooltipItem.label || "";
                         const value = tooltipItem.raw as number;
                         const total = tooltipItem.dataset.data.reduce((a: number, b: number) => a + b, 0);
@@ -256,6 +255,7 @@ const DailyIndemnityBarChart: React.FC<{ indemnityDetails: IndemnityDetail[]; fo
 };
 
 const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmentId, onBack, onExportExcel, isLoading, formatDate }) => {
+    console.log(selectedAssignmentId);
     const indemnityDetails: IndemnityDetail[] = missionPayment.dailyPaiements.map((item: DailyPaiement) => {
         const amounts = {
             breakfast: 0,
@@ -291,26 +291,28 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
 
     return (
         <>
-            <div className="page-header">
-                <div className="header-left">
-                    <button onClick={onBack} className="btn-back" title="Retour aux assignations">
+            <PageHeader>
+                <HeaderLeft>
+                    <BtnBack onClick={onBack} title="Retour aux assignations">
                         <ArrowLeft className="w-5 h-5" />
-                    </button>
+                    </BtnBack>
+                </HeaderLeft>
+                {/* <div className="header-center">
                     <div className="header-title-section">
                         <h1 className="page-title">Détails du Paiement</h1>
                         <p className="page-subtitle">Mission #{selectedAssignmentId}</p>
                     </div>
-                </div>
-                <div className="header-actions">
+                </div> */}
+                <HeaderActions>
                     <ActionButton
                         onClick={onExportExcel}
                         disabled={isLoading.exportExcel}
                     >
                         <Download size={16} /> Excel
                     </ActionButton>
-                </div>
-            </div>
-
+                </HeaderActions>
+            </PageHeader>
+            <Separator />
             {missionPayment.assignmentDetails ? (
                 <>
                     <SectionTitle>Analyse Visuelle des Montants</SectionTitle>
@@ -320,35 +322,7 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
                             <DailyIndemnityBarChart indemnityDetails={indemnityDetails} formatDate={formatDate} />
                         </ChartGrid>
                     </DetailSection>
-
-                    <SectionTitle>Informations Générales</SectionTitle>
-                    <DetailSection>
-                        <InfoGrid>
-                            {[
-                                { label: "Collaborateur", value: missionPayment.assignmentDetails.beneficiary },
-                                { label: "Matricule", value: missionPayment.assignmentDetails.matricule },
-                                { label: "Mission", value: missionPayment.assignmentDetails.missionTitle },
-                                { label: "Fonction", value: missionPayment.assignmentDetails.function },
-                                { label: "Site", value: missionPayment.assignmentDetails.base },
-                                { label: "Moyen de transport", value: missionPayment.assignmentDetails.meansOfTransport },
-                                { label: "Direction", value: missionPayment.assignmentDetails.direction },
-                                { label: "Département/Service", value: missionPayment.assignmentDetails.departmentService },
-                                { label: "Centre de coût", value: missionPayment.assignmentDetails.costCenter },
-                                { label: "Date de départ", value: formatDate(missionPayment.assignmentDetails.departureDate) },
-                                { label: "Heure de départ", value: missionPayment.assignmentDetails.departureTime },
-                                { label: "Durée de la mission", value: `${missionPayment.assignmentDetails.missionDuration} jours` },
-                                { label: "Date de retour", value: formatDate(missionPayment.assignmentDetails.returnDate) },
-                                { label: "Heure de retour", value: missionPayment.assignmentDetails.returnTime },
-                                { label: "Date debut mission", value: formatDate(missionPayment.assignmentDetails.startDate) },
-                            ].map((item, index) => (
-                                <InfoItem key={index}>
-                                    <InfoLabel>{item.label}</InfoLabel>
-                                    <InfoValue>{item.value}</InfoValue>
-                                </InfoItem>
-                            ))}
-                        </InfoGrid>
-                    </DetailSection>
-
+                    <Separator />
                     <SectionTitle>Régularisation des Indemnités de Mission</SectionTitle>
                     <IndemnityTable>
                         <thead>

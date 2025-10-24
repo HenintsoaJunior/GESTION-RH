@@ -458,10 +458,12 @@ VALUES
 
 INSERT INTO habilitation_groups (group_id, label)
 VALUES
-    ('HABG_001', 'Admin');
+    ('HABG_001', 'Admin'),
+    ('HABG_002', 'Projet');
 
 INSERT INTO habilitations (habilitation_id, group_id, label)
 VALUES
+--Admin
 --Utilisateur
     ('HAB_001', 'HABG_001', 'voir page utilisateurs'),
     ('HAB_002', 'HABG_001', 'modifier role utilisateur(s)'),
@@ -473,7 +475,13 @@ VALUES
     ('HAB_006', 'HABG_001', 'creer role et habilitation(s)'),
     ('HAB_007', 'HABG_001', 'modifier role'),
     ('HAB_008', 'HABG_001', 'suprimer role'),
-    ('HAB_009', 'HABG_001', 'voir page access');
+    ('HAB_009', 'HABG_001', 'voir page access'),
+--Projet
+    ('HAB_010', 'HABG_002', 'voir page mission'),
+    ('HAB_011', 'HABG_002', 'modifier mission'),
+    ('HAB_012', 'HABG_002', 'annuler mission'),
+    ('HAB_013', 'HABG_002', 'ajouter mission'),
+    ('HAB_014', 'HABG_002', 'voir details mission');
 
 INSERT INTO role_habilitation (habilitation_id, role_id)
 VALUES
@@ -590,8 +598,8 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_3', 'collaborateur', 'fa-users', '/mission/collaborateur', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE());
--- ('menu2_5', 'treso', 'fa-money-bill-alt', '/treasury', 1, 5, 'treasury', 'navigation', GETDATE(), GETDATE()),
+('menu2_3', 'collaborateur', 'fa-users', '/mission/collaborateur', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
+('menu2_5', 'treso', 'fa-money-bill-alt', '/treasury', 1, 5, 'treasury', 'navigation', GETDATE(), GETDATE());
 -- ('menu2_4', 'excel', 'fa-file-excel', '/assignments/excel', 1, 6, 'mission', 'navigation', GETDATE(), GETDATE()); 
 
 
@@ -602,8 +610,8 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),
 ('h4', NULL, 'menu2', GETDATE(), GETDATE()),
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
-('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE());
--- ('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE()),
+('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
+('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE());
 -- ('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE());
 
 
@@ -619,10 +627,10 @@ INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
 ('menu2_0', 'ROLE_002', GETDATE(), GETDATE()),
 ('menu2_3', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_3', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2_3', 'ROLE_003', GETDATE(), GETDATE());
--- ('menu2_5', 'ROLE_001', GETDATE(), GETDATE()),
--- ('menu2_5', 'ROLE_002', GETDATE(), GETDATE()),
--- ('menu2_5', 'ROLE_003', GETDATE(), GETDATE()),
+('menu2_3', 'ROLE_003', GETDATE(), GETDATE()),
+('menu2_5', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2_5', 'ROLE_002', GETDATE(), GETDATE()),
+('menu2_5', 'ROLE_003', GETDATE(), GETDATE());
 -- ('menu2_4', 'ROLE_001', GETDATE(), GETDATE()),
 -- ('menu2_4', 'ROLE_002', GETDATE(), GETDATE()),
 -- ('menu2_4', 'ROLE_003', GETDATE(), GETDATE());

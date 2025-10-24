@@ -1,4 +1,6 @@
 import styled from "styled-components";
+import isPropValid from "@emotion/is-prop-valid";
+import type { Chart } from "chart.js";
 
 interface AvatarProps {
   size?: string;
@@ -7,6 +9,15 @@ interface AvatarProps {
 interface ValidatorNameProps {
   bold?: boolean;
   large?: boolean;
+}
+
+interface ChartWithCenterTextOptions {
+  plugins?: {
+    centerText?: {
+      display: boolean;
+      text: string;
+    };
+  };
 }
 
 export const LoadingContainer = styled.div`
@@ -20,11 +31,29 @@ export const LoadingContainer = styled.div`
 `
 
 export const ContentArea = styled.div`
-  background: #f8f9fa;
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-lg);
-  margin-top: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
+  background: var(--bg-primary);
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 0;
+  margin-bottom: var(--spacing-lg);
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  border: none;
+  border-top: 5px solid var(--border-color);
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-left: var(--spacing-3xl);
+  padding-right: var(--spacing-3xl);
+  padding-bottom: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+
+  @media (max-width: 768px) {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+  }
 `
 
 export const StepHeader = styled.div`
@@ -34,7 +63,7 @@ export const StepHeader = styled.div`
 export const StepTitle = styled.h2`
   font-size: var(--font-size-lg);
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-color);
   margin-bottom: var(--spacing-sm);
 
   @media (max-width: 768px) {
@@ -55,33 +84,31 @@ export const StatusBadge = styled.span`
     white-space: nowrap;
 
     &.pending {
-        background-color: var(--warning-light, #fefce8);
-        color: var(--warning-dark, #a16207);
+        background-color: var(--warning-bg);
+        color: var(--warning-text);
     }
 
     &.approved {
-        background-color: var(--success-light, #ecfdf5);
-        color: var(--success-dark, #065f46);
+        background-color: var(--success-bg);
+        color: var(--success-text);
     }
 
     &.rejected {
-        background-color: var(--error-light, #fef2f2);
-        color: var(--error-dark, #b91c1c);
+        background-color: var(--error-bg);
+        color: var(--error-text);
     }
 `;
 
 export const ValidatorCard = styled.div`
   background: var(--bg-primary);
-  border-radius: var(--radius-sm);
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-md);
-  box-shadow: var(--shadow-sm);
 `
 
 export const ValidatorTitle = styled.h3`
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-color);
   margin-bottom: var(--spacing-md);
 `
 
@@ -103,7 +130,7 @@ export const ValidatorSection = styled.div`
 export const SectionTitle = styled.h4`
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-color);
   margin-bottom: var(--spacing-sm);
   margin-top: var(--spacing-md);
 
@@ -127,7 +154,7 @@ export const Avatar = styled.div<AvatarProps>`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: var(--text-white);
   font-size: ${(props) => (props.size === "50px" ? "1rem" : "0.9rem")};
   font-weight: 600;
   flex-shrink: 0;
@@ -139,7 +166,7 @@ export const ValidatorInfo = styled.div`
 `
 
 export const ValidatorName = styled.div<ValidatorNameProps>`
-  color: var(--text-primary);
+  color: var(--text-color);
   font-weight: ${(props) => (props.bold ? "600" : "500")};
   font-size: ${(props) => (props.large ? "var(--font-size-sm)" : "var(--font-size-xs)")};
 
@@ -173,9 +200,9 @@ export const InfoItem = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
-  border: 1px solid var(--border-light, #e0e0e0);
+  border: 1px solid var(--border-light);
   padding: var(--spacing-sm);
-  border-radius: var(--radius-xs, 4px);
+  border-radius: var(--radius-sm);
 `
 
 export const InfoLabel = styled.label`
@@ -189,7 +216,7 @@ export const InfoLabel = styled.label`
 `
 
 export const InfoValue = styled.div`
-  color: var(--text-primary);
+  color: var(--text-color);
   font-size: var(--font-size-xs);
   font-weight: 400;
 
@@ -208,12 +235,12 @@ export const CommentCard = styled.div`
 export const CommentTitle = styled.h3`
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-color);
   margin-bottom: var(--spacing-md);
 `
 
 export const CommentText = styled.div`
-  color: var(--text-primary);
+  color: var(--text-color);
   font-size: var(--font-size-xs);
   line-height: 1.6;
   margin-bottom: var(--spacing-md);
@@ -235,7 +262,7 @@ export const CommentDate = styled.div`
 `
 
 export const InfoAlert = styled.div`
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   padding: var(--spacing-md);
@@ -275,7 +302,7 @@ export const ActionButton = styled.button`
   font-size: var(--font-size-sm);
   box-shadow: var(--shadow-sm);
   background-color: var(--primary-color);
-  color: #ffffff;
+  color: var(--text-white);
   transition: all 0.2s ease;
 
   &:hover {
@@ -307,7 +334,7 @@ export const RejectButton = styled.button`
   font-size: var(--font-size-sm);
   box-shadow: var(--shadow-sm);
   background-color: var(--danger-color);
-  color: #ffffff;
+  color: var(--text-white);
   transition: all 0.2s ease;
 
   &:hover {
@@ -339,7 +366,7 @@ export const ActionButtonPDF = styled.button`
   font-size: var(--font-size-sm);
   box-shadow: var(--shadow-sm);
   background-color: var(--pdf-color);
-  color: #ffffff;
+  color: var(--text-white);
   transition: all 0.2s ease;
 
   &:hover {
@@ -368,30 +395,30 @@ export const StepCounter = styled.div`
 `
 
 export const DetailSection = styled.div`
-  background-color: var(--bg-primary, #ffffff);
-  padding: var(--spacing-md, 15px);
-  border-radius: var(--radius-sm, 8px);
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
-  margin-bottom: var(--spacing-lg, 20px);
+  background-color: var(--bg-primary);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-lg);
 `
 
 export const ActionSection = styled.div`
-  background: var(--bg-primary, #ffffff);
-  padding: var(--spacing-lg, 20px 30px);
-  border-top: 1px solid var(--border-light, #e0e0e0);
-  margin-top: var(--spacing-lg, 20px);
-  border-radius: 0 0 var(--radius-sm, 8px) var(--radius-sm, 8px);
+  background: var(--bg-primary);
+  padding: var(--spacing-lg) var(--spacing-3xl);
+  border-top: 1px solid var(--border-light);
+  margin-top: var(--spacing-lg);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
 `
 
 export const ActionButtons = styled.div`
   display: flex;
-  gap: var(--spacing-md, 15px);
-  margin-bottom: var(--spacing-lg, 20px);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
   flex-wrap: wrap;
 `
 
 export const SignatureUploadSection = styled.div`
-  margin-bottom: var(--spacing-lg, 20px);
+  margin-bottom: var(--spacing-lg);
 `
 
 export const FileInputWrapper = styled.div`
@@ -412,69 +439,77 @@ export const FileInputLabel = styled.label`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-xl, 30px) var(--spacing-lg, 20px);
-  border: 2px dashed var(--border-color, #ced4da);
-  border-radius: var(--radius-sm, 8px);
-  background-color: var(--bg-secondary, #f9f9f9);
+  padding: var(--spacing-xl) var(--spacing-lg);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
-  color: var(--text-secondary, #6c757d);
+  color: var(--text-secondary);
   font-weight: 500;
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
 
   &:hover {
-    border-color: var(--primary-color, #007bff);
-    background-color: var(--bg-hover, #f0f0f0);
+    border-color: var(--primary-color);
+    background-color: var(--bg-light);
   }
 
   &.has-file {
-    border-color: var(--success-color, #28a745);
-    background-color: var(--success-light, #d4edda);
-    color: var(--success-dark, #155724);
+    border-color: var(--success-color);
+    background-color: var(--success-bg);
+    color: var(--success-text);
   }
 `
 
 export const SignaturePreview = styled.div`
-  margin-top: var(--spacing-md, 15px);
+  margin-top: var(--spacing-md);
   text-align: center;
 
   ${InfoLabel} {
-    font-size: var(--font-size-xs, 0.75rem);
-    color: var(--text-muted, #adb5bd);
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
   }
 
   img {
     max-width: 200px;
     max-height: 80px;
-    border: 1px solid var(--border-light, #e0e0e0);
-    border-radius: var(--radius-xs, 4px);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
     object-fit: contain;
-    margin-top: var(--spacing-xs, 5px);
+    margin-top: var(--spacing-xs);
   }
 `
 
-export const Separator = styled.div`
-  height: 1px;
-  background-color: var(--border-light, #e0e0e0);
-  margin: var(--spacing-lg, 20px) 0;
+export const Separator = styled.hr`
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: var(--spacing-md) 0;
+  width: calc(100% + 2 * var(--spacing-3xl));
+  margin-left: calc(-1 * var(--spacing-3xl));
+  opacity: 0.6;
+
+  @media (max-width: 768px) {
+    width: calc(100% + 2 * var(--spacing-md));
+    margin-left: calc(-1 * var(--spacing-md));
+  }
 `
 
 export const SuccessMessage = styled.div`
   text-align: center;
-  padding: var(--spacing-xl, 30px);
+  padding: var(--spacing-xl);
 
   h3 {
-    color: var(--success-color, #28a745);
-    margin-bottom: var(--spacing-sm, 10px);
-    font-size: var(--font-size-lg, 1.25rem);
+    color: var(--success-color);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-lg);
     font-weight: 600;
   }
 
   p {
-    color: var(--text-secondary, #6c757d);
-    margin-bottom: var(--spacing-md, 15px);
-    font-size: var(--font-size-sm, 0.875rem);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-sm);
     line-height: 1.5;
   }
 `
@@ -482,24 +517,24 @@ export const SuccessMessage = styled.div`
 export const IndemnityTable = styled.table`
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: var(--spacing-lg, 20px);
-  background-color: var(--bg-primary, #ffffff);
+  margin-bottom: var(--spacing-lg);
+  background-color: var(--bg-primary);
 `
 
 export const TableHeader = styled.th`
-  padding: var(--spacing-sm, 10px);
-  background-color: var(--bg-primary, #ffffff);
-  border: 1px solid var(--border-light, #e0e0e0);
+  padding: var(--spacing-sm);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-light);
   font-weight: 600;
   text-align: left;
-  font-size: var(--font-size-sm, 0.875rem);
+  font-size: var(--font-size-sm);
 `
 
 export const TableCell = styled.td`
-  padding: var(--spacing-sm, 10px);
-  border: 1px solid var(--border-light, #e0e0e0);
-  font-size: var(--font-size-sm, 0.875rem);
-  background-color: var(--bg-primary, #ffffff);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-light);
+  font-size: var(--font-size-sm);
+  background-color: var(--bg-primary);
 `
 
 export const TotalRow = styled.tr`
@@ -507,43 +542,585 @@ export const TotalRow = styled.tr`
 `
 
 export const OMPaymentButton = styled(ActionButton)`
-  background-color: var(--success-color, #28a745);
-  border-color: var(--success-color, #28a745);
+  background-color: var(--success-color);
+  border: 1px solid var(--success-color);
 
   &:hover {
-    background-color: #ffffff;
-    color: var(--success-color, #28a745);
-    border-color: var(--success-color, #28a745);
+    background-color: var(--bg-primary);
+    color: var(--success-color);
+    border-color: var(--success-color);
   }
 `;
 
 export const ButtonOMPDF = styled(ActionButton)`
   background-color: var(--pdf-color);
-  border-color: var(--pdf-color);
-  margin-left: var(--spacing-sm, 10px);
+  border: 1px solid var(--pdf-color);
+  margin-left: var(--spacing-sm);
 
   &:hover {
     background-color: var(--pdf-hover);
-    color: #ffffff;
+    color: var(--text-white);
     border-color: var(--pdf-hover);
   }
 `;
 
 export const MissionReportButton = styled(ActionButton)`
   width: 103px;
-  background-color: var(--success-color, #28a745);
-  border-color: var(--success-color, #28a745);
+  background-color: var(--success-color);
+  border: 1px solid var(--success-color);
 
   &:hover {
-    background-color: #ffffff;
-    color: var(--success-color, #28a745);
-    border-color: var(--success-color, #28a745);
+    background-color: var(--bg-primary);
+    color: var(--success-color);
+    border-color: var(--success-color);
   }
 `;
 
 export const ButtonContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm, 10px);
-  margin-top: var(--spacing-sm, 10px);
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+`;
+
+export const PageHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-3xl);
+  background: var(--bg-primary);
+  margin-bottom: var(--spacing-lg);
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-sm) var(--spacing-md);
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+  }
+`;
+
+export const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+`;
+
+export const BtnBack = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+
+  &:hover {
+    background-color: var(--bg-light);
+    color: var(--text-color);
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-xs);
+  }
+`;
+
+export const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+`;
+
+export const SaveButton = styled(ActionButton)`
+    background-color: var(--success-color);
+    border: 1px solid var(--success-color);
+
+    &:hover {
+        background-color: var(--bg-primary);
+        color: var(--success-color);
+        border-color: var(--success-color);
+    }
+`;
+
+export const ToggleButton = styled(ActionButton)`
+    background-color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    margin-right: 10px;
+
+    &:hover {
+        background-color: var(--bg-primary);
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+`;
+
+export const EditButton = styled(ActionButton)`
+    background-color: var(--warning-color);
+    border: 1px solid var(--warning-color);
+    color: var(--text-color);
+    margin-right: 10px;
+
+    &:hover {
+        background-color: var(--bg-primary);
+        color: var(--warning-color);
+        border-color: var(--warning-color);
+    }
+`;
+
+export const DeleteButton = styled(ActionButton)`
+    background-color: var(--danger-color);
+    border: 1px solid var(--danger-color);
+
+    &:hover {
+        background-color: var(--bg-primary);
+        color: var(--danger-color);
+        border-color: var(--danger-color);
+    }
+`;
+
+export const CancelButton = styled(ActionButton)`
+    background-color: var(--accent-color);
+    border: 1px solid var(--accent-color);
+    margin-right: 10px;
+
+    &:hover {
+        background-color: var(--bg-primary);
+        color: var(--accent-color);
+        border-color: var(--accent-color);
+    }
+`;
+
+export const ReportTextContainer = styled.div`
+    background-color: var(--bg-primary);
+    padding: 20px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    margin-bottom: 20px;
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    line-height: 1.6;
+    color: var(--text-color);
+
+    & p {
+        margin: 0 0 10px 0;
+    }
+
+    & + & {
+        border-top: 1px solid var(--border-light);
+    }
+`;
+
+export const ReportHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-light);
+`;
+
+export const ReportActions = styled.div`
+    display: flex;
+    gap: 10px;
+`;
+
+// === STYLED COMPONENTS AMÉLIORÉS ===
+export const ModernCard = styled.div`
+    background: var(--bg-primary);
+    padding: var(--spacing-3xl);
+    margin-bottom: var(--spacing-3xl);
+    width: 100%;
+    box-sizing: border-box;
+`;
+
+export const TwoColumnLayout = styled.div<{ $hasLeft?: boolean }>`
+    display: grid;
+    grid-template-columns: ${({ $hasLeft = false }) => ($hasLeft ? "1fr 1fr" : "1fr")};
+    gap: var(--spacing-3xl);
+    margin-bottom: var(--spacing-4xl);
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+export const ResponsiveTableWrapper = styled.div`
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+
+    @media (max-width: 768px) {
+        font-size: var(--font-size-sm);
+    }
+`;
+
+export const FolderContainer = styled.div`
+    background: #FEF3C7;
+    margin-bottom: var(--spacing-lg);
+    overflow: hidden;
+    transition: all var(--transition-speed) ease;
+    width: 100%;
+    box-sizing: border-box;
+`;
+
+export const FolderHeader = styled.button.withConfig({
+    shouldForwardProp: (prop: string) => isPropValid(prop) && !prop.startsWith('$'),
+})<{ $isOpen: boolean }>`
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    background: ${(props) => (props.$isOpen ? "var(--warning-bg)" : "transparent")};
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color);
+    box-sizing: border-box;
+
+    &:hover {
+        background: var(--warning-icon-bg);
+    }
+
+    .folder-icon {
+        font-size: 1.5rem;
+    }
+
+    .chevron {
+        margin-left: auto;
+        transition: transform var(--transition-speed) ease;
+        transform: ${(props) => (props.$isOpen ? "rotate(0deg)" : "rotate(-90deg)")};
+    }
+`;
+
+export const AttachmentsList = styled.div`
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    width: 100%;
+    box-sizing: border-box;
+`;
+
+export const AttachmentItem = styled.div`
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-primary);
+    margin-bottom: var(--spacing-sm);
+    transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+
+    &:hover {
+        transform: translateX(4px);
+    }
+
+    .file-info {
+        flex: 1;
+        min-width: 0;
+
+        .file-name {
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-color);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-size {
+            font-size: var(--font-size-xs);
+            color: var(--text-muted);
+        }
+    }
+
+    .actions {
+        display: flex;
+        gap: var(--spacing-sm);
+        flex-shrink: 0;
+    }
+`;
+
+export const IconButton = styled.button.withConfig({
+    shouldForwardProp: (prop: string) => isPropValid(prop) && !prop.startsWith('$'),
+})<{ $variant?: "primary"; $download?: boolean }>`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm);
+    background: ${(props) => (props.$variant === "primary" ? "var(--primary-color)" : "var(--bg-secondary)")};
+    color: ${(props) =>
+        props.$variant === "primary" ? "var(--text-white)" : props.$download ? "var(--primary-color)" : "var(--text-color)"};
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: var(--border-radius-sm);
+
+    &:hover {
+        background: ${(props) => (props.$variant === "primary" ? "var(--primary-hover)" : "var(--border-color)")};
+        transform: scale(1.05);
+    }
+
+    &:active {
+        transform: scale(0.95);
+    }
+`;
+
+export const ChartCard = styled(ModernCard)`
+    display: flex;
+    flex-direction: column;
+    min-height: 300px;
+
+    h4 {
+        margin: 0 0 var(--spacing-xl) 0;
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--text-color);
+    }
+
+    .chart-content {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 250px;
+    }
+`;
+
+export const ModalOverlay = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--overlay-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+`;
+
+export const ModalContentStyled = styled.div`
+    background: var(--bg-primary);
+    padding: var(--spacing-3xl);
+    border-radius: var(--border-radius-md);
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 800px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+`;
+
+export const ModalHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+`;
+
+export const ModalTitle = styled.h3`
+    margin: 0;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color);
+`;
+
+export const ModalCloseButton = styled(IconButton)`
+    background: var(--bg-secondary);
+    &:hover {
+        background: var(--border-color);
+    }
+`;
+
+export const ModalBody = styled.div`
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+`;
+
+export const FilePreview = styled.iframe`
+    width: 100%;
+    height: 500px;
+    border: none;
+`;
+
+export const ImagePreview = styled.img`
+    max-width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+`;
+
+export const ErrorMessage = styled.p`
+    color: var(--error-color);
+    text-align: center;
+    font-size: var(--font-size-md);
+`;
+
+// === PLUGIN CENTER TEXT (avec protection) ===
+export const centerTextPlugin = {
+    id: "centerText",
+    beforeDraw(chart: Chart & { options: ChartWithCenterTextOptions }) {
+        // Vérification critique : ne s'exécute que si explicitement activé
+        if (!chart.options.plugins?.centerText?.display) {
+            return;
+        }
+        
+        const { ctx, chartArea } = chart;
+        const text = chart.options.plugins.centerText.text;
+        
+        // Vérifier que toutes les données nécessaires existent
+        if (!ctx || !chartArea || !text) {
+            return;
+        }
+        
+        ctx.save();
+        ctx.font = "bold 16px Arial";
+        ctx.fillStyle = "#333";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const centerX = (chartArea.left + chartArea.right) / 2;
+        const centerY = (chartArea.top + chartArea.bottom) / 2;
+        ctx.fillText(text, centerX, centerY);
+        ctx.restore();
+    },
+};
+
+export const Badge = styled.span<{ $type: string }>`
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    background: ${(props) => {
+        const colors = {
+            Transport: "var(--info-bg)",
+            Hébergement: "var(--warning-bg)",
+            Restauration: "var(--success-bg)",
+            Autres: "var(--info-icon-bg)",
+        };
+        return colors[props.$type as keyof typeof colors] || "var(--bg-light)";
+    }};
+    color: var(--text-color);
+    border-radius: var(--border-radius-sm);
+`;
+
+export const ExpenseTypeContainer = styled.div`
+  background: var(--bg-primary);
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: var(--shadow-md);
+  }
+`;
+
+export const AccordionHeaderStyled = styled.button.withConfig({
+  shouldForwardProp: (prop: string) => isPropValid(prop) && !prop.startsWith('$'),
+})<{ $isOpen: boolean }>`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: ${(props) => (props.$isOpen ? 'var(--warning-bg)' : 'var(--bg-secondary)')};
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+
+  &:hover {
+    background: var(--warning-icon-bg);
+  }
+
+  .chevron {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+    transform: ${(props) => (props.$isOpen ? "rotate(0deg)" : "rotate(-90deg)")};
+  }
+`;
+
+export const AccordionContentStyled = styled.div<{ $isOpen: boolean }>`
+  display: ${(props) => (props.$isOpen ? "block" : "none")};
+  padding: 1rem;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+`;
+
+export const AttachmentSection = styled.div`
+  padding: 1.5rem;
+  border: 2px dashed var(--primary-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  margin-top: 1rem;
+`;
+
+
+export const AttachmentCategory = styled.div`
+  margin-bottom: 1.5rem;
+`;
+
+export const CategoryTitle = styled.p`
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+  font-style: italic;
+`;
+
+export const DraftBadge = styled.span`
+  font-size: 10px;
+  color: var(--primary-color);
+  font-style: italic;
+  background: var(--warning-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+`;
+
+export const UploadButton = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--success-color);
+  color: var(--text-white);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--success-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+
+export const ModalContent = styled.div`
+  background: var(--bg-primary);
+  padding: 24px;
+  border-radius: 8px;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 800px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
 `;

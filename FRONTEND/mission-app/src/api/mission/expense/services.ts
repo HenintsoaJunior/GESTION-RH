@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/axios-config';
 import axios from 'axios';
 
 // Query keys
+const EXPENSE_REPORT_KEY = ['expense-report', 'total-notreimbursed'] as const;
 const EXPENSE_REPORT_TYPES_BASE_KEY = ['expenseReportTypes'] as const;
 const EXPENSE_REPORTS_BY_ASSIGNATION_BASE_KEY = ['expenseReportsByAssignation'] as const;
 const TOTAL_REIMBURSED_AMOUNT_BASE_KEY = ['totalReimbursedAmount'] as const;
@@ -12,6 +14,7 @@ const TOTAL_NOT_REIMBURSED_COUNT_BASE_KEY = ['totalNotReimbursedCount'] as const
 const TOTAL_AMOUNT_BY_ASSIGNATION_BASE_KEY = ['totalAmountByAssignation'] as const;
 const STATUS_BY_ASSIGNATION_BASE_KEY = ['statusByAssignation'] as const;
 const DISTINCT_MISSION_ASSIGNATIONS_BASE_KEY = ['distinctMissionAssignations'] as const;
+
 
 // Interfaces for nested objects
 interface Employee {
@@ -71,20 +74,34 @@ export interface ExpenseReportType {
   type: string;
   createdAt: string;
   updatedAt: string | null;
+  fields?: Array<{
+    name: keyof ExpenseLine;
+    label: string;
+    type: "text" | "number" | "select";
+    required: boolean;
+    placeholder?: string;
+    width?: string;
+    options?: string[];
+  }>;
 }
 
 export interface ExpenseLine {
-  expenseReportId: string;
+  expenseReportId?: string;
   titled: string;
   description: string | null;
   type: string;
   currencyUnit: string;
   amount: number;
+  amountMGA: number;
   rate: number;
-  assignationId: string;
-  expenseReportTypeId: string;
-  userId: string;
+  assignationId?: string;
+  expenseReportTypeId?: string;
+  userId?: string;
   customFields: Record<string, unknown>;
+}
+
+export interface TotalNotReimbursed {
+  totalNotReimbursedAmount: number;
 }
 
 export interface Attachment {
@@ -94,6 +111,7 @@ export interface Attachment {
   fileType: string;
 }
 
+
 // Generic API response interface
 interface ApiResponse<T> {
   data: T;
@@ -101,54 +119,53 @@ interface ApiResponse<T> {
   message: string;
 }
 
-// Specific response interfaces
-interface ExpenseReportTypesResponseData {
-  data: ExpenseReportType[];
-}
+// Specific response types
+export type ExpenseReportTypesResponseData = ExpenseReportType[];
 
-interface ExpenseReportsResponseData {
-  data: ExpenseReport[];
-}
+export type ExpenseReportsResponseData = {
+  reports: ExpenseReport[];
+  attachments: Attachment[];
+}[];
 
-interface TotalReimbursedAmountResponseData {
+type TotalReimbursedAmountResponseData = {
   totalReimbursedAmount: number;
-}
+};
 
-interface TotalNotReimbursedAmountResponseData {
+type TotalNotReimbursedAmountResponseData = {
   totalNotReimbursedAmount: number;
-}
+};
 
-interface TotalReimbursedCountResponseData {
+type TotalReimbursedCountResponseData = {
   totalReimbursedCount: number;
-}
+};
 
-interface TotalNotReimbursedCountResponseData {
+type TotalNotReimbursedCountResponseData = {
   totalNotReimbursedCount: number;
-}
+};
 
-interface TotalAmountByAssignationResponseData {
+type TotalAmountByAssignationResponseData = {
   totalAmount: number;
-}
+};
 
-interface StatusByAssignationResponseData {
-  data: string[];
-}
+export type StatusByAssignationResponseData = string[];
 
-interface DistinctMissionAssignationsResponseData {
+type DistinctMissionAssignationsResponseData = {
   items: MissionAssignation[];
   totalCount: number;
   pageNumber: number;
   pageSize: number;
-}
+};
 
-interface CreateExpenseReportResponseData {
+type CreateExpenseReportResponseData = {
   affectedIds: string[];
-}
+};
 
-interface ReimburseResponseData {
+type ReimburseResponseData = {
   affectedIds?: string[];
   message?: string;
-}
+};
+
+type TotalNotReimbursedResponse = ApiResponse<TotalNotReimbursed>;
 
 // Request interfaces
 export interface CreateExpenseReportRequest {
@@ -157,6 +174,35 @@ export interface CreateExpenseReportRequest {
   expenseLinesByType: Record<string, ExpenseLine[]>;
   attachments: Attachment[];
 }
+
+// Helper function to map data to API format (PascalCase)
+const mapToApiFormat = (data: CreateExpenseReportRequest) => {
+  return {
+    UserId: data.userId,
+    AssignationId: data.assignationId,
+    ExpenseLinesByType: Object.entries(data.expenseLinesByType).reduce((acc, [key, lines]) => {
+      acc[key] = lines.map(line => ({
+        Titled: line.titled,
+        Description: line.description,
+        Type: line.type,
+        CurrencyUnit: line.currencyUnit,
+        Amount: typeof line.amount === 'string' ? parseFloat(line.amount) : line.amount,
+        Rate: typeof line.rate === 'string' ? parseFloat(line.rate) : line.rate,
+        CustomFields: line.customFields || {},
+        // Propagate top-level IDs to each line to satisfy backend validation
+        UserId: data.userId,
+        AssignationId: data.assignationId,
+      }));
+      return acc;
+    }, {} as Record<string, any>),
+    Attachments: data.attachments.map(att => ({
+      FileName: att.fileName,
+      FileContent: att.fileContent,
+      FileSize: att.fileSize,
+      FileType: att.fileType,
+    })),
+  };
+};
 
 // Hook for fetching all expense report types
 export const useAllExpenseReportTypes = () => {
@@ -172,6 +218,36 @@ export const useAllExpenseReportTypes = () => {
         }
         throw error;
       }
+    },
+  });
+};
+
+// Hook for creating a new expense report
+export const useCreateExpenseReport = () => {
+  const queryClient = useQueryClient();
+  return useMutation<ApiResponse<CreateExpenseReportResponseData>, Error, CreateExpenseReportRequest>({
+    mutationFn: async (data) => {
+      try {
+        const apiPayload = mapToApiFormat(data);
+        
+        const response = await api.post('/api/ExpenseReport', apiPayload);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          throw new Error(error.response.data.message || "Erreur lors de la création du rapport");
+        }
+        throw error;
+      }
+    },
+    onSuccess: (_, variables) => {
+      const { assignationId } = variables;
+      queryClient.invalidateQueries({ queryKey: [...EXPENSE_REPORTS_BY_ASSIGNATION_BASE_KEY, assignationId] });
+      queryClient.invalidateQueries({ queryKey: TOTAL_REIMBURSED_AMOUNT_BASE_KEY });
+      queryClient.invalidateQueries({ queryKey: TOTAL_NOT_REIMBURSED_AMOUNT_BASE_KEY });
+      queryClient.invalidateQueries({ queryKey: TOTAL_REIMBURSED_COUNT_BASE_KEY });
+      queryClient.invalidateQueries({ queryKey: TOTAL_NOT_REIMBURSED_COUNT_BASE_KEY });
+      queryClient.invalidateQueries({ queryKey: [...TOTAL_AMOUNT_BY_ASSIGNATION_BASE_KEY, assignationId] });
+      queryClient.invalidateQueries({ queryKey: [...STATUS_BY_ASSIGNATION_BASE_KEY, assignationId] });
     },
   });
 };
@@ -314,31 +390,6 @@ export const useStatusByAssignationId = (assignationId?: string) => {
   });
 };
 
-// Hook for creating a new expense report
-export const useCreateExpenseReport = () => {
-  const queryClient = useQueryClient();
-  return useMutation<ApiResponse<CreateExpenseReportResponseData>, Error, CreateExpenseReportRequest>({
-    mutationFn: async (data) => {
-      try {
-        const response = await api.post('/api/ExpenseReport', data);
-        return response.data;
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-          return error.response.data;
-        }
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: EXPENSE_REPORT_TYPES_BASE_KEY });
-      queryClient.invalidateQueries({ queryKey: TOTAL_REIMBURSED_AMOUNT_BASE_KEY });
-      queryClient.invalidateQueries({ queryKey: TOTAL_NOT_REIMBURSED_AMOUNT_BASE_KEY });
-      queryClient.invalidateQueries({ queryKey: TOTAL_REIMBURSED_COUNT_BASE_KEY });
-      queryClient.invalidateQueries({ queryKey: TOTAL_NOT_REIMBURSED_COUNT_BASE_KEY });
-    },
-  });
-};
-
 // Hook for reimbursing expense reports by assignation ID
 export const useReimburseByAssignationId = () => {
   const queryClient = useQueryClient();
@@ -391,6 +442,24 @@ export const useDistinctMissionAssignations = (options: { status?: string; pageN
         queryParams.append("pageSize", pageSize.toString());
 
         const response = await api.get(`/api/ExpenseReport/distinct-mission-assignations?${queryParams}`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+
+export const useTotalNotReimbursed = () => {
+  return useQuery<TotalNotReimbursedResponse, Error>({
+    queryKey: EXPENSE_REPORT_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/ExpenseReport/total-notreimbursed');
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {

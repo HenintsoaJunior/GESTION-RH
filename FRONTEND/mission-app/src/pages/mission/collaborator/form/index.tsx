@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Save } from "lucide-react";
+import { Save, X } from "lucide-react";
 import * as FaIcons from "react-icons/fa";
 import {
     PopupOverlay,
@@ -21,9 +20,8 @@ import {
     GenericForm
 } from "@/styles/form-container";
 import Alert from "@/components/alert";
-import MissionInfoStep from "./components/mission-info-step";
-import CollaboratorStep from "./components/collaborator-step";
-import CompensationStep from "./components/compensation-step";
+import MissionCollaboratorStep from "./components/mission-info-step";
+import CompensationStep from "./components/date&compensation-step";
 import useMissionForm from "./hooks/use-mission-form";
 import Modal from 'react-modal';
 import React, { useEffect, useMemo, useCallback } from "react";
@@ -36,9 +34,37 @@ interface MissionFormProps {
   onFormSuccess: (type: string, message: string) => void;
 }
 
+interface Beneficiary {
+  beneficiary: string;
+  matricule: string;
+  function: string;
+  base: string;
+  direction: string;
+  department: string;
+  service: string;
+  costCenter: string;
+  transport: string;
+  departureDate: string;
+  departureTime: string;
+  returnDate: string;
+  returnTime: string;
+  missionDuration: string | number;
+}
+
+interface MissionFormData {
+  missionType?: string;
+  missionTitle?: string;
+  description?: string;
+  location?: string;
+  beneficiary: Beneficiary;
+  startDate?: string;
+  endDate?: string;
+  type: string;
+}
+
 interface UseMissionFormReturn {
   currentStep: number;
-  formData: any;
+  formData: MissionFormData;
   isSubmitting: boolean;
   hasClickedSubmit: boolean;
   alert: {
@@ -82,6 +108,14 @@ const MissionForm: React.FC<MissionFormProps> = ({
   initialStartDate, 
   onFormSuccess 
 }) => {
+    const hookReturn = useMissionForm({ 
+      isOpen, 
+      onClose, 
+      missionId: missionId?.toString(), 
+      initialStartDate, 
+      onFormSuccess 
+    });
+
     const {
         currentStep,
         formData,
@@ -101,13 +135,7 @@ const MissionForm: React.FC<MissionFormProps> = ({
         handlePrevious,
         handleSubmit,
         handleCancel,
-    } = useMissionForm({ 
-      isOpen, 
-      onClose, 
-      missionId: missionId?.toString(), 
-      initialStartDate, 
-      onFormSuccess 
-    }) as UseMissionFormReturn;
+    } = hookReturn as unknown as UseMissionFormReturn;
 
     // Configuration de Modal au montage du composant
     useEffect(() => {
@@ -162,7 +190,7 @@ const MissionForm: React.FC<MissionFormProps> = ({
                         aria-label="Fermer le formulaire"
                         title="Fermer"
                     >
-                        <FaIcons.FaTimes className="w-5 h-5" />
+                        <X className="w-5 h-5" />
                     </PopupClose>
                 </PopupHeader>
 
@@ -196,7 +224,7 @@ const MissionForm: React.FC<MissionFormProps> = ({
                                 aria-label="Fermer la modale"
                                 type="button"
                             >
-                                ×
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="modal-body">
@@ -214,66 +242,32 @@ const MissionForm: React.FC<MissionFormProps> = ({
                         </div>
                     </Modal>
 
-                    <FormContainer>
-                        {/* Stepper de navigation */}
-                        <StepperWrapper>
-                            <StepItem active={currentStep === 1}>
-                                <span>1</span> Informations
-                            </StepItem>
-                            <StepItem active={currentStep === 2}>
-                                <span>2</span> Détails
-                            </StepItem>
-                            <StepItem active={currentStep === 3}>
-                                <span>3</span> Type de Compensation
-                            </StepItem>
-                        </StepperWrapper>
+                    {/* Stepper de navigation */}
+                    <StepperWrapper>
+                        <StepItem active={currentStep === 1}>
+                            <span>1</span> Mission & Collaborateur
+                        </StepItem>
+                        <StepItem active={currentStep === 2}>
+                            <span>2</span> Date & Compensation
+                        </StepItem>
+                    </StepperWrapper>
 
+                    <FormContainer>
                         {/* Formulaire multi-étapes */}
                         <GenericForm id="combinedMissionForm" onSubmit={handleSubmit}>
-                            {/* Étape 1: Informations de base */}
+                            {/* Étape 1: Mission et Collaborateur */}
                             <StepContent active={currentStep === 1}>
-                                <MissionInfoStep
+                                <MissionCollaboratorStep
                                     formData={formData}
                                     fieldErrors={fieldErrors}
                                     isSubmitting={isProcessing}
                                     isLoading={isLoading}
                                     regionDisplayNames={regionDisplayNames}
-                                    handleInputChange={handleInputChange}
-                                    handleAddNewSuggestion={handleAddNewSuggestion}
-                                />
-                                <StepNavigation>
-                                    <NextButton
-                                        type="button"
-                                        onClick={handleNext}
-                                        disabled={isProcessing || isDataLoading}
-                                        aria-label="Passer à l'étape suivante"
-                                        title="Étape suivante"
-                                    >
-                                        Suivant <FaIcons.FaArrowRight className="w-4 h-4" />
-                                    </NextButton>
-                                </StepNavigation>
-                            </StepContent>
-
-                            {/* Étape 2: Collaborateurs et détails */}
-                            <StepContent active={currentStep === 2}>
-                                <CollaboratorStep
-                                    formData={formData}
-                                    fieldErrors={fieldErrors}
-                                    isSubmitting={isProcessing}
                                     suggestions={suggestions}
                                     handleInputChange={handleInputChange}
                                     handleAddNewSuggestion={handleAddNewSuggestion}
                                 />
                                 <StepNavigation>
-                                    <PreviousButton
-                                        type="button"
-                                        onClick={handlePrevious}
-                                        disabled={isProcessing}
-                                        aria-label="Revenir à l'étape précédente"
-                                        title="Étape précédente"
-                                    >
-                                        <FaIcons.FaArrowLeft className="w-4 h-4" /> Précédent
-                                    </PreviousButton>
                                     <NextButton
                                         type="button"
                                         onClick={handleNext}
@@ -286,8 +280,8 @@ const MissionForm: React.FC<MissionFormProps> = ({
                                 </StepNavigation>
                             </StepContent>
 
-                            {/* Étape 3: Type de compensation et soumission */}
-                            <StepContent active={currentStep === 3}>
+                            {/* Étape 2: Compensation et soumission */}
+                            <StepContent active={currentStep === 2}>
                                 <CompensationStep
                                     formData={formData}
                                     fieldErrors={fieldErrors}

@@ -7,45 +7,62 @@ import {
   FormLabel,
   FormLabelRequired,
   FormInput,
+  FormTextarea,
   StyledAutoCompleteInput,
   ErrorMessage,
 } from "@/styles/form-container";
 
-interface MissionInfoStepProps {
+interface MissionCollaboratorStepProps {
   formData: {
     missionType?: string;
     missionTitle?: string;
     description?: string;
     location?: string;
-    startDate?: string;
-    endDate?: string;
+    beneficiary: {
+      beneficiary: string;
+      matricule: string;
+      function: string;
+      base: string;
+      direction: string;
+      department: string;
+      service: string;
+      costCenter: string;
+      transport: string;
+    };
   };
   fieldErrors: { [key: string]: string[] };
   isSubmitting: boolean;
   isLoading: { regions: boolean };
   regionDisplayNames: string[];
+  suggestions: {
+    beneficiary: { displayName: string }[];
+    transport: { type: string }[];
+  };
   handleInputChange: (
-    e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } }
+    e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement> | { target: { name: string; value: string } },
+    section?: string
   ) => void;
   handleAddNewSuggestion: (type: string, value: string) => void;
 }
 
-const MissionInfoStep: React.FC<MissionInfoStepProps> = ({
+const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
   formData,
   fieldErrors,
   isSubmitting,
   isLoading,
   regionDisplayNames,
+  suggestions,
   handleInputChange,
   handleAddNewSuggestion,
 }) => {
   // Debug fieldErrors changes to confirm propagation
   useEffect(() => {
-    console.log("MissionInfoStep - fieldErrors:", fieldErrors);
+    console.log("MissionCollaboratorStep - fieldErrors:", fieldErrors);
   }, [fieldErrors]);
 
   return (
     <>
+      {/* Section Informations de la Mission */}
       <FormSectionTitle>Informations de la Mission</FormSectionTitle>
       <FormTable>
         <tbody>
@@ -101,13 +118,14 @@ const MissionInfoStep: React.FC<MissionInfoStepProps> = ({
           <FormRow>
             <FormFieldCell colSpan={2}>
               <FormLabel>Description</FormLabel>
-              <FormInput
-                type="text"
+              <FormTextarea
                 name="description"
                 value={formData.description || ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange(e)}
                 placeholder="Saisir une description..."
                 disabled={isSubmitting}
+                rows={3}
+                className={fieldErrors.description ? "input-error" : ""}
               />
               {fieldErrors.description && fieldErrors.description.length > 0 && (
                 <ErrorMessage>{fieldErrors.description.join(", ")}</ErrorMessage>
@@ -134,34 +152,161 @@ const MissionInfoStep: React.FC<MissionInfoStepProps> = ({
               )}
             </FormFieldCell>
           </FormRow>
+        </tbody>
+      </FormTable>
+
+      {/* Section Détails du Collaborateur */}
+      <FormSectionTitle>Détails du Missionaire</FormSectionTitle>
+      <FormTable>
+        <tbody>
           <FormRow className="dual-field-row">
             <FormFieldCell>
-              <FormLabelRequired>Date de début</FormLabelRequired>
-              <FormInput
-                type="date"
-                name="startDate"
-                value={formData.startDate || ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
+              <FormLabelRequired>MISSIONAIRE</FormLabelRequired>
+              <StyledAutoCompleteInput
+                value={formData.beneficiary.beneficiary}
+                onChange={(value: string) => handleInputChange({ target: { name: "beneficiary", value } }, "beneficiary")}
+                suggestions={suggestions.beneficiary.map((b) => b.displayName)}
+                placeholder={suggestions.beneficiary.length === 0 ? "Aucun employé disponible" : "Saisir ou sélectionner..."}
                 disabled={isSubmitting}
-                className={fieldErrors.startDate ? "input-error" : ""}
+                showAddOption={false}
+                fieldType="beneficiary"
+                fieldLabel="bénéficiaire"
+                addNewRoute="/employee/employee-form"
+                className={fieldErrors["beneficiary.beneficiary"] ? "error" : ""}
               />
-              {fieldErrors.startDate && fieldErrors.startDate.length > 0 && (
-                <ErrorMessage>{fieldErrors.startDate.join(", ")}</ErrorMessage>
+              {fieldErrors["beneficiary.beneficiary"] && fieldErrors["beneficiary.beneficiary"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.beneficiary"].join(", ")}</ErrorMessage>
               )}
             </FormFieldCell>
             <FormFieldCell>
-              <FormLabelRequired>Date de fin</FormLabelRequired>
+              <FormLabelRequired>Matricule</FormLabelRequired>
               <FormInput
-                type="date"
-                name="endDate"
-                value={formData.endDate || ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
+                type="text"
+                name="matricule"
+                value={formData.beneficiary.matricule}
+                placeholder="Saisir le matricule..."
                 disabled={isSubmitting}
-                className={fieldErrors.endDate ? "input-error" : ""}
+                readOnly={true}
+                className={fieldErrors["beneficiary.matricule"] ? "input-error" : ""}
               />
-              {fieldErrors.endDate && fieldErrors.endDate.length > 0 && (
-                <ErrorMessage>{fieldErrors.endDate.join(", ")}</ErrorMessage>
+              {fieldErrors["beneficiary.matricule"] && fieldErrors["beneficiary.matricule"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.matricule"].join(", ")}</ErrorMessage>
               )}
+            </FormFieldCell>
+          </FormRow>
+          <FormRow className="dual-field-row">
+            <FormFieldCell>
+              <FormLabelRequired>Fonction</FormLabelRequired>
+              <FormInput
+                type="text"
+                name="function"
+                value={formData.beneficiary.function}
+                placeholder="Saisir la fonction..."
+                disabled={isSubmitting}
+                readOnly={true}
+                className={fieldErrors["beneficiary.function"] ? "input-error" : ""}
+              />
+              {fieldErrors["beneficiary.function"] && fieldErrors["beneficiary.function"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.function"].join(", ")}</ErrorMessage>
+              )}
+            </FormFieldCell>
+            <FormFieldCell>
+              <FormLabelRequired>Site</FormLabelRequired>
+              <FormInput
+                type="text"
+                name="base"
+                value={formData.beneficiary.base}
+                placeholder="Saisir la base..."
+                disabled={isSubmitting}
+                readOnly={true}
+                className={fieldErrors["beneficiary.base"] ? "input-error" : ""}
+              />
+              {fieldErrors["beneficiary.base"] && fieldErrors["beneficiary.base"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.base"].join(", ")}</ErrorMessage>
+              )}
+            </FormFieldCell>
+          </FormRow>
+          <FormRow className="dual-field-row">
+            <FormFieldCell>
+              <FormLabelRequired>Direction</FormLabelRequired>
+              <FormInput
+                type="text"
+                name="direction"
+                value={formData.beneficiary.direction}
+                placeholder="Saisir la direction..."
+                disabled={isSubmitting}
+                readOnly={true}
+                className={fieldErrors["beneficiary.direction"] ? "input-error" : ""}
+              />
+              {fieldErrors["beneficiary.direction"] && fieldErrors["beneficiary.direction"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.direction"].join(", ")}</ErrorMessage>
+              )}
+            </FormFieldCell>
+            <FormFieldCell>
+              <FormLabelRequired>Département</FormLabelRequired>
+              <FormInput
+                type="text"
+                name="department"
+                value={formData.beneficiary.department}
+                placeholder="Saisir le département..."
+                disabled={isSubmitting}
+                readOnly={true}
+                className={fieldErrors["beneficiary.department"] ? "input-error" : ""}
+              />
+              {fieldErrors["beneficiary.department"] && fieldErrors["beneficiary.department"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.department"].join(", ")}</ErrorMessage>
+              )}
+            </FormFieldCell>
+          </FormRow>
+          <FormRow className="dual-field-row">
+            <FormFieldCell>
+              <FormLabelRequired>Service</FormLabelRequired>
+              <FormInput
+                type="text"
+                name="service"
+                value={formData.beneficiary.service}
+                placeholder="Saisir le service..."
+                disabled={isSubmitting}
+                readOnly={true}
+                className={fieldErrors["beneficiary.service"] ? "input-error" : ""}
+              />
+              {fieldErrors["beneficiary.service"] && fieldErrors["beneficiary.service"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.service"].join(", ")}</ErrorMessage>
+              )}
+            </FormFieldCell>
+            <FormFieldCell>
+              <FormLabel>Centre de coût</FormLabel>
+              <FormInput
+                type="text"
+                name="costCenter"
+                value={formData.beneficiary.costCenter}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
+                placeholder="Saisir le centre de coût..."
+                disabled={isSubmitting}
+              />
+            </FormFieldCell>
+          </FormRow>
+          <FormRow className="dual-field-row">
+            <FormFieldCell>
+              <FormLabel>Moyen de transport</FormLabel>
+              <StyledAutoCompleteInput
+                value={formData.beneficiary.transport}
+                onChange={(value: string) => handleInputChange({ target: { name: "transport", value } }, "beneficiary")}
+                suggestions={suggestions.transport.map((t) => t.type)}
+                placeholder={suggestions.transport.length === 0 ? "Aucun moyen de transport disponible" : "Saisir ou sélectionner un moyen de transport..."}
+                disabled={isSubmitting}
+                onAddNew={() => handleAddNewSuggestion("transport", formData.beneficiary.transport)}
+                fieldType="transport"
+                fieldLabel="moyen de transport"
+                addNewRoute="/transport/create"
+                className={fieldErrors["beneficiary.transport"] ? "error" : ""}
+              />
+              {fieldErrors["beneficiary.transport"] && fieldErrors["beneficiary.transport"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.transport"].join(", ")}</ErrorMessage>
+              )}
+            </FormFieldCell>
+            <FormFieldCell>
+              {/* Espace vide pour aligner */}
             </FormFieldCell>
           </FormRow>
         </tbody>
@@ -170,4 +315,4 @@ const MissionInfoStep: React.FC<MissionInfoStepProps> = ({
   );
 };
 
-export default MissionInfoStep;
+export default MissionCollaboratorStep;

@@ -19,17 +19,23 @@ namespace MyApp.Api.Services.mission
     public class MissionReportService : IMissionReportService
     {
         private readonly IMissionReportRepository _repository;
+        private readonly IMissionReportAttachmentRepository _attachmentRepository;
+        private readonly IMissionReportAttachmentService _attachmentService;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogService _logService;
         private readonly ILogger<MissionReportService> _logger;
 
         public MissionReportService(
             IMissionReportRepository repository,
+            IMissionReportAttachmentRepository attachmentRepository,
+            IMissionReportAttachmentService attachmentService,
             ISequenceGenerator sequenceGenerator,
             ILogService logService,
             ILogger<MissionReportService> logger)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _attachmentRepository = attachmentRepository ?? throw new ArgumentNullException(nameof(attachmentRepository));
+            _attachmentService = attachmentService ?? throw new ArgumentNullException(nameof(attachmentService));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -92,7 +98,7 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<string> CreateAsync(MissionReportDTOForm? dto)
+        public async Task<string> CreateAsync(MissionReportDTOForm dto)
         {
             try
             {
@@ -102,6 +108,11 @@ namespace MyApp.Api.Services.mission
                     throw new ArgumentNullException(nameof(dto), "Les données du rapport de mission ne peuvent pas être nulles");
                 }
 
+                if (string.IsNullOrWhiteSpace(dto.UserId))
+                    throw new ArgumentException("L'ID utilisateur est requis", nameof(dto.UserId));
+                if (string.IsNullOrWhiteSpace(dto.AssignationId))
+                    throw new ArgumentException("L'ID d'assignation est requis", nameof(dto.AssignationId));
+
                 var entity = new MissionReport(dto)
                 {
                     MissionReportId = _sequenceGenerator.GenerateSequence("seq_mission_report", "MR", 6, "-")
@@ -110,8 +121,38 @@ namespace MyApp.Api.Services.mission
                 await _repository.AddAsync(entity);
                 await _repository.SaveChangesAsync();
 
+                // Handle attachments intelligently
+                if (dto.Attachments != null && dto.Attachments.Any())
+                {
+                    // Get existing attachments for this mission report (should be empty for new)
+                    var existingAttachments = await _attachmentRepository.GetByMissionReportIdAsync(entity.MissionReportId);
+
+                    var existingAttachmentKeys = existingAttachments
+                        .Select(a => $"{a.FileName}|{a.FileSize}")
+                        .ToHashSet();
+
+                    // Filter out attachments that already exist
+                    var newAttachments = dto.Attachments
+                        .Where(a => !existingAttachmentKeys.Contains($"{a.FileName}|{a.FileSize}"))
+                        .ToList();
+
+                    if (newAttachments.Any())
+                    {
+                        // Insert only new attachments
+                        await _attachmentService.InsertAsync(newAttachments, entity.MissionReportId);
+                    }
+                    else
+                    {
+                        await _attachmentService.DeleteByMissionReportIdAsync(entity.MissionReportId);
+                    }
+                }
+                else
+                {
+                    await _attachmentService.DeleteByMissionReportIdAsync(entity.MissionReportId);
+                }
+
                 _logger.LogInformation("Rapport de mission créé avec l'ID: {MissionReportId}", entity.MissionReportId);
-                await _logService.LogAsync("INSERTION", null, entity, dto.UserId,"Text,AssignationId");
+                await _logService.LogAsync("INSERTION","RAPPORT MISSION", null, entity, dto.UserId,"Text");
 
                 return entity.MissionReportId;
             }
@@ -122,7 +163,7 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<bool> UpdateAsync(string id, MissionReportDTOForm? dto)
+        public async Task<bool> UpdateAsync(string id, MissionReportDTOForm dto)
         {
             try
             {
@@ -153,8 +194,48 @@ namespace MyApp.Api.Services.mission
                 await _repository.UpdateAsync(updated);
                 await _repository.SaveChangesAsync();
 
+                // Handle attachments intelligently
+                if (dto.Attachments != null && dto.Attachments.Any())
+                {
+                    // Get existing attachments for this mission report
+                    var existingAttachments = await _attachmentRepository.GetByMissionReportIdAsync(updated.MissionReportId);
+
+                    var dtoAttachmentKeys = dto.Attachments
+                        .Select(a => $"{a.FileName}|{a.FileSize}")
+                        .ToHashSet();
+
+                    var existingAttachmentKeys = existingAttachments
+                        .Select(a => $"{a.FileName}|{a.FileSize}")
+                        .ToHashSet();
+
+                    // Delete existing attachments that are no longer in dto
+                    var attachmentsToDelete = existingAttachments
+                        .Where(a => !dtoAttachmentKeys.Contains($"{a.FileName}|{a.FileSize}"))
+                        .ToList();
+
+                    if (attachmentsToDelete.Any())
+                    {
+                        await _attachmentService.DeleteAsync(attachmentsToDelete);
+                    }
+
+                    // Filter out attachments that already exist and insert new ones
+                    var newAttachments = dto.Attachments
+                        .Where(a => !existingAttachmentKeys.Contains($"{a.FileName}|{a.FileSize}"))
+                        .ToList();
+
+                    if (newAttachments.Any())
+                    {
+                        await _attachmentService.InsertAsync(newAttachments, updated.MissionReportId);
+                    }
+                }
+                else
+                {
+                    // If no attachments in dto, delete all existing
+                    await _attachmentService.DeleteByMissionReportIdAsync(updated.MissionReportId);
+                }
+
                 _logger.LogInformation("Rapport de mission mis à jour avec succès avec l'ID: {MissionReportId}", id);
-                await _logService.LogAsync("MODIFICATION", existing, updated, dto.UserId,"Text,AssignationId");
+                await _logService.LogAsync("MODIFICATION","RAPPORT MISSION", existing, updated, dto.UserId,"Text");
 
                 return true;
             }
@@ -182,11 +263,14 @@ namespace MyApp.Api.Services.mission
                     return false;
                 }
 
+                // Delete attachments first
+                await _attachmentService.DeleteByMissionReportIdAsync(id);
+
                 await _repository.DeleteAsync(existing);
                 await _repository.SaveChangesAsync();
 
                 _logger.LogInformation("Rapport de mission supprimé avec succès avec l'ID: {MissionReportId}", id);
-                await _logService.LogAsync("SUPPRESSION", existing, null, userId,"Text,AssignationId");
+                await _logService.LogAsync("SUPPRESSION","RAPPORT MISSION", existing, null, userId,"Text");
 
                 return true;
             }

@@ -36,6 +36,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.RegisterServicesAndRepositories();
+builder.Services.AddHttpClient<MyApp.Api.Services.currency.ICurrencyService, MyApp.Api.Services.currency.CurrencyService>();
 
 // Configure JWT authentication
 builder.Services.AddAuthentication(options =>

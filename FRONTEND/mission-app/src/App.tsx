@@ -8,8 +8,10 @@ import RoleList from '@/pages/access';
 import Error403Page from '@/pages/error/403';
 import ProfilePage from '@/layouts/profil-page';
 import MissionList from '@/pages/mission/collaborator/list/mission-list';
+import DetailsMission from '@/pages/mission/collaborator/details/mission-details';
 import MissionValidationPage from '@/pages/mission/validation';
-
+import TresoPage from '@/pages/mission/treso';
+import Compensation from '@/pages/mission/treso/components/compensation';
 function App() {
   return (
     <Routes>
@@ -18,7 +20,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       
       <Route element={<Template><Outlet /></Template>}>
-      <Route path="/profil-page" element={<ProfilePage />} />
+        <Route path="/profil-page" element={<ProfilePage />} />
         {/* ADMIN */}
         
         <Route path="/dashboard" element={<HomePage />} />
@@ -26,13 +28,18 @@ function App() {
         <Route path="/logs" element={<LogList />} />
         <Route path="/access/list" element={<RoleList />} />
         
-        {/* MISSION */}
+         {/* MISSION */}
         <Route path="/mission/collaborateur" element={<MissionList />} />
+        <Route path="/mission/collaborateur/:missionId/*" element={<DetailsMission />} />
         <Route path="/mission/to-validate" element={<MissionValidationPage />} />
+
+        {/* TRESO */}
+        <Route path="/treasury" element={<TresoPage />} />
+        <Route path="/treasury/compensation" element={<Compensation />} />
+
         
         {/* ERROR */}
         <Route path="/403" element={<Error403Page />} />
-
       </Route>
     </Routes>
   );

@@ -1,19 +1,9 @@
 "use client";
 
 import React from "react";
-import { StepperContainer, StepItem, StepCircle, StepLabel, StepSubtitle } from "@/styles/stepper-styles";
+import { StepperContainer, StepItem, StepCircle, StepLabel, StepSubtitle, ValidationDateText } from "@/styles/stepper-styles";
 import { Check, Clock, X } from "lucide-react";
-import styled from "styled-components";
 import { formatDateTime } from "@/utils/date-converter";
-
-// New styled component for ValidationDate
-const ValidationDateText = styled.p`
-  margin-top: var(--spacing-xs, 5px);
-  font-size: var(--font-size-sm, 0.875rem);
-  color: var(--text-secondary, #6c757d);
-  font-style: italic;
-  text-align: center;
-`;
 
 interface Step {
   id: string;

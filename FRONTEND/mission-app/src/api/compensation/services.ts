@@ -3,6 +3,8 @@ import axios from 'axios';
 import api from '@/utils/axios-config';
 
 const COMPENSATIONS_BY_EMPLOYEE_AND_MISSION_KEY = ['compensationsByEmployeeAndMission'] as const;
+const TOTAL_NOT_PAID_KEY = ['compensation', 'total-notpaid'] as const;
+const COMPENSATIONS_BY_STATUS_KEY = ['compensationsByStatus'] as const;
 
 export interface MissionAssignationSearchFilters {
   employeeId?: string;
@@ -164,7 +166,7 @@ export interface Compensation {
   lunchAmount: number;
   dinnerAmount: number;
   accommodationAmount: number;
-  totalAmount: number;
+  totalAmount?: number;
   paymentDate: string;
   status: string;
   assignationId: string;
@@ -176,7 +178,7 @@ export interface Compensation {
     phoneNumber: string;
     jobTitle: string;
     status: string;
-  };
+  } | null;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -191,6 +193,19 @@ type CompensationsByEmployeeAndMissionResponse = ApiResponse<{
   assignation: MissionAssignation;
   compensations: Compensation[];
 }>;
+
+export type CompensationsByStatusResponse = ApiResponse<{
+  data: Array<{
+    assignation: MissionAssignation;
+    compensations: Compensation[];
+  }>;
+}>;
+
+interface TotalNotPaid {
+  totalNotPaidAmount: number;
+}
+
+type TotalNotPaidResponse = ApiResponse<TotalNotPaid>;
 
 export interface GenerateMissionOrderData {
   missionId?: string;
@@ -227,6 +242,23 @@ export const useCompensationsByEmployeeAndMission = (employeeId: string | undefi
       }
     },
     enabled: !!employeeId && !!missionId,
+  });
+};
+
+export const useTotalNotPaid = () => {
+  return useQuery<TotalNotPaidResponse, Error>({
+    queryKey: TOTAL_NOT_PAID_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Compensation/total-notpaid');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
   });
 };
 
@@ -296,6 +328,25 @@ export const useExportMissionAssignationExcel = () => {
       window.URL.revokeObjectURL(urlBlob);
 
       return { fileName, status: "success" };
+    },
+  });
+};
+
+export const useCompensationsByStatus = (status: string = 'unpaid') => {
+  const queryKey = [...COMPENSATIONS_BY_STATUS_KEY, status] as const;
+
+  return useQuery<CompensationsByStatusResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      try {
+        const response = await api.get(`/api/Compensation/by-status?status=${status}`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
     },
   });
 };

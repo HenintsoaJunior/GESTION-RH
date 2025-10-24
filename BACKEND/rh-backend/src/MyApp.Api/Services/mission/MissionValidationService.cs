@@ -2,7 +2,8 @@
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Models.list.mission;
 using MyApp.Api.Repositories.mission;
-using MyApp.Api.Services.logs; 
+using MyApp.Api.Services.logs;
+using MyApp.Api.Services.users;
 using MyApp.Api.Utils.generator;
 
 namespace MyApp.Api.Services.mission
@@ -29,24 +30,30 @@ namespace MyApp.Api.Services.mission
     public class MissionValidationService : IMissionValidationService
     {
         private readonly IMissionValidationRepository _repository;
+        private readonly IMissionRepository _missionRepository; // Add this
         private readonly IMissionAssignationService _missionAssignationService;
         private readonly IMissionBudgetService _missionBudgetService;
         private readonly ISequenceGenerator _sequenceGenerator;
-        private readonly ILogger<MissionValidationService> _logger; // Updated to use MissionValidationService
-        private readonly ILogService _logService; // Added ILogService
+        private readonly IUserService _userService;
+        private readonly ILogger<MissionValidationService> _logger;
+        private readonly ILogService _logService;
 
         public MissionValidationService(
             IMissionValidationRepository repository,
+            IMissionRepository missionRepository, // Add this
             IMissionAssignationService missionAssignationService,
             IMissionBudgetService missionBudgetService,
             ISequenceGenerator sequenceGenerator,
+            IUserService userService,
             ILogger<MissionValidationService> logger,
             ILogService logService)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _missionRepository = missionRepository ?? throw new ArgumentNullException(nameof(missionRepository)); // Add this
             _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
             _missionBudgetService = missionBudgetService ?? throw new ArgumentNullException(nameof(missionBudgetService));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
@@ -67,13 +74,12 @@ namespace MyApp.Api.Services.mission
                     return false;
                 }
 
-                var originalMissionValidation = new MissionValidation
+                // Capturer l'état avant le rejet
+                var oldMissionValidation = new
                 {
-                    MissionValidationId = missionValidation.MissionValidationId,
-                    MissionId = missionValidation.MissionId,
-                    MissionAssignationId = missionValidation.MissionAssignationId,
-                    Status = missionValidation.Status,
-                    ValidationDate = missionValidation.ValidationDate,
+                    Statut = (string?)missionValidation.Status,
+                    DateValidation = missionValidation.ValidationDate,
+                    Type = (string?)missionValidation.Type
                 };
 
                 var result = await _repository.RejectedAsync(missionValidationId, missionAssignationId);
@@ -83,8 +89,21 @@ namespace MyApp.Api.Services.mission
                 }
 
                 var updatedMissionValidation = await _repository.GetByIdAsync(missionValidationId);
+                if (updatedMissionValidation == null)
+                {
+                    throw new InvalidOperationException($"Validation de mission introuvable après mise à jour: {missionValidationId}");
+                }
 
-                await _logService.LogAsync("REJET VALIDATION MISSION", originalMissionValidation, updatedMissionValidation, userId, "Status");
+                // Capturer l'état après le rejet
+                var newMissionValidation = new
+                {
+                    Statut = (string?)updatedMissionValidation.Status,
+                    DateValidation = updatedMissionValidation.ValidationDate,
+                    Type = (string?)updatedMissionValidation.Type
+                };
+
+                // Log du rejet avec éléments essentiels
+                await _logService.LogAsync("REJET", "MISSION_VALIDATION", oldMissionValidation, newMissionValidation, userId, "Statut,DateValidation,Type");
 
                 await transaction.CommitAsync();
                 return true;
@@ -111,24 +130,44 @@ namespace MyApp.Api.Services.mission
 
                 foreach (var validation in validations)
                 {
-                    var oldValidation = new MissionValidation
+                    var toWhomName = "Utilisateur inconnu";
+                    if (!string.IsNullOrWhiteSpace(validation.ToWhom))
                     {
-                        Status = validation.Status,
+                        var toWhomUser = await _userService.GetByIdAsync(validation.ToWhom);
+                        toWhomName = toWhomUser?.Name ?? "Utilisateur inconnu";
+                    }
+                    // Capturer l'état avant l'annulation
+                    var oldValidation = new
+                    {
+                        Statut = (string?)validation.Status,
+                        DateValidation = validation.ValidationDate,
+                        Type = (string?)validation.Type,
+                        NomValideur = toWhomName
                     };
+
                     if (validation.Status != "Annulé")
                     {
                         validation.Status = "Annulé";
                         validation.UpdatedAt = DateTime.UtcNow;
 
                         await _repository.UpdateAsync(validation);
+                        if (!string.IsNullOrWhiteSpace(validation.ToWhom))
+                        {
+                            var toWhomUser = await _userService.GetByIdAsync(validation.ToWhom);
+                            toWhomName = toWhomUser?.Name ?? "Utilisateur inconnu";
+                        }
+                        // Capturer l'état après l'annulation
+                        var newValidation = new
+                        {
+                            Statut = (string?)validation.Status,
+                            DateValidation = validation.ValidationDate,
+                            Type = (string?)validation.Type,
+                            NomValideur = toWhomName
 
-                        await _logService.LogAsync(
-                            "ANNULATION VALIDATION MISSION",
-                            oldValidation,
-                            validation,
-                            userId,
-                            "Status"
-                        );
+                        };
+
+                        // Log de l'annulation avec éléments essentiels
+                        await _logService.LogAsync("ANNULATION", "MISSION_VALIDATION", oldValidation, newValidation, userId, "Statut,DateValidation,Type");
                     }
                 }
                 await _repository.SaveChangesAsync();
@@ -151,7 +190,6 @@ namespace MyApp.Api.Services.mission
                     return [];
                 }
 
-                _logger.LogInformation("Récupération des validations de mission pour l'ID de mission: {MissionId}", missionId);
                 return await _repository.GetByMissionIdAsync(missionId);
             }
             catch (Exception ex)
@@ -192,22 +230,54 @@ namespace MyApp.Api.Services.mission
             try
             {
                 string? result = null;
+                var missionValidation = await _repository.GetByIdAsync(validation.MissionValidationId);
+
+                if (missionValidation == null)
+                {
+                    result = "Aucune validation trouvée.";
+                    return result;
+                }
+                var toWhomName = "Utilisateur inconnu";
+                if (!string.IsNullOrWhiteSpace(missionValidation.ToWhom))
+                {
+                    var toWhomUser = await _userService.GetByIdAsync(missionValidation.ToWhom);
+                    toWhomName = toWhomUser?.Name ?? "Utilisateur inconnu";
+                }
+                // Capturer l'état avant la validation
+                var oldMissionValidation = new
+                {
+                    Statut = (string?)missionValidation.Status,
+                    DateValidation = missionValidation.ValidationDate,
+                    Type = (string?)missionValidation.Type,
+                    NomValideur = toWhomName
+                };
+
                 var lastValidation = await _repository.ValidateAsync(validation.MissionValidationId, validation.MissionAssignationId);
-                // valider les demandes 
                 if (!lastValidation) result = "Validation effectuée avec succès.";
                 var missionAssignation = await _missionAssignationService.GetByAssignationIdAsync(validation.MissionAssignationId);
-                if (missionAssignation == null) result = "Aucune validation à faire.";
 
-                //si validation par DRH
-                if (lastValidation && missionAssignation != null)
+                if (missionAssignation == null) 
+                {
+                    result = "Aucune validation à faire.";
+                    return result;  // Early return to avoid null ref
+                }
+
+                var mission = await _missionRepository.GetByIdAsync(missionAssignation.MissionId);  // Use repo instead of service
+                
+                if (lastValidation && missionAssignation != null && mission != null)
                 {
                     missionAssignation.IsValidated = 1;
-                    //changer le isValidated de ce mission assignation en 1
+                    mission.Status = "planned";
+                    
                     await _missionAssignationService.UpdateAsync(validation.MissionAssignationId, missionAssignation);
+                    
+                    // Directly update mission via repo (no DTO mapping needed)
+                    mission.UpdatedAt = DateTime.UtcNow;  // Good practice for updates
+                    await _missionRepository.UpdateAsync(mission);
+                    await _missionRepository.SaveChangesAsync();  // Persist the change
+                    
                     result = "Validation effectuée avec succès et mission validée";
 
-                    _logger.LogInformation("Type de validation type={Type}  employeeID={EmployeeId} mission={MissionId}" , validation.Type,missionAssignation.EmployeeId,missionAssignation.MissionId);
-                    
                     if (validation.Type.Equals("Indemnité"))
                     {
                         await _missionAssignationService.GeneratePaiementsAsync(
@@ -238,11 +308,30 @@ namespace MyApp.Api.Services.mission
                     //     });
                     // }
                 }
-                // Log the creation
-                var missionValidation = await _repository.GetByIdAsync(validation.MissionValidationId);
+                
 
-                //mis a jour du budget de mission 
-                await _logService.LogAsync("VALIDATION DE MISSION", null, missionValidation, validation.UserId, "ValidationDate");
+                // Capturer l'état après la validation
+                var updatedMissionValidation = await _repository.GetByIdAsync(validation.MissionValidationId);
+
+                if (updatedMissionValidation == null)
+                {
+                    throw new InvalidOperationException($"Validation de mission introuvable après mise à jour: {validation.MissionValidationId}");
+                }
+                if (!string.IsNullOrWhiteSpace(updatedMissionValidation.ToWhom))
+                {
+                    var toWhomUser = await _userService.GetByIdAsync(updatedMissionValidation.ToWhom);
+                    toWhomName = toWhomUser?.Name ?? "Utilisateur inconnu";
+                }
+                var newMissionValidation = new
+                {
+                    Statut = (string?)updatedMissionValidation.Status,
+                    DateValidation = updatedMissionValidation.ValidationDate,
+                    Type = (string?)updatedMissionValidation.Type,
+                    NomValideur = toWhomName
+                };
+
+                // Log de la validation avec éléments essentiels
+                await _logService.LogAsync("VALIDATION", "MISSION_VALIDATION", oldMissionValidation, newMissionValidation, validation.UserId, "Statut,DateValidation,Type,NomValideur");
 
                 await transaction.CommitAsync();
                 return result;
@@ -255,7 +344,6 @@ namespace MyApp.Api.Services.mission
                 throw;
             }
         }
-
         public async Task<MissionValidation?> VerifyMissionValidationByMissionIdAsync(string missionId)
         {
             try
@@ -354,10 +442,26 @@ namespace MyApp.Api.Services.mission
                 await _repository.AddAsync(missionValidation);
                 await _repository.SaveChangesAsync();
 
-                _logger.LogInformation("Validation de mission créée avec l'ID: {MissionValidationId}", missionValidationId);
+                // Récupérer le nom de l'utilisateur pour ToWhom
+                var toWhomName = "Utilisateur inconnu";
+                if (!string.IsNullOrWhiteSpace(missionValidation.ToWhom))
+                {
+                    var toWhomUser = await _userService.GetByIdAsync(missionValidation.ToWhom);
+                    toWhomName = toWhomUser?.Name ?? "Utilisateur inconnu";
+                }
 
-                // Log the creation
-                await _logService.LogAsync("INSERTION", null, missionValidation, userId);
+                // Capturer les données pour le log avec éléments essentiels (ToWhomName au lieu de ToWhom)
+                var logNewData = new
+                {
+                    IdMission = (string?)missionValidation.MissionId,
+                    IdAssignationMission = (string?)missionValidation.MissionAssignationId,
+                    Statut = (string?)missionValidation.Status,
+                    Type = (string?)missionValidation.Type,
+                    NomValideur = toWhomName
+                };
+
+                // Log de création avec éléments essentiels
+                await _logService.LogAsync("INSERTION", "MISSION_VALIDATION", null, logNewData, userId, "IdMission,IdAssignationMission,Statut,Type,NomValideur");
 
                 return missionValidationId;
             }
@@ -370,6 +474,7 @@ namespace MyApp.Api.Services.mission
 
         public async Task<bool> UpdateAsync(string id, MissionValidationDTOForm? missionValidationDto, string userId)
         {
+            await using var transaction = await _repository.BeginTransactionAsync();
             try
             {
                 if (missionValidationDto == null)
@@ -385,6 +490,24 @@ namespace MyApp.Api.Services.mission
                     throw new InvalidOperationException($"La validation de mission avec l'ID {id} n'existe pas");
                 }
 
+                // Récupérer le nom de l'utilisateur pour ToWhom ancien
+                var oldToWhomName = "Utilisateur inconnu";
+                if (!string.IsNullOrWhiteSpace(existingMissionValidation.ToWhom))
+                {
+                    var oldToWhomUser = await _userService.GetByIdAsync(existingMissionValidation.ToWhom);
+                    oldToWhomName = oldToWhomUser?.Name ?? "Utilisateur inconnu";
+                }
+
+                // Capturer l'état avant la mise à jour
+                var oldMissionValidation = new
+                {
+                    IdMission = (string?)existingMissionValidation.MissionId,
+                    IdAssignationMission = (string?)existingMissionValidation.MissionAssignationId,
+                    Statut = (string?)existingMissionValidation.Status,
+                    Type = (string?)existingMissionValidation.Type,
+                    NomValideur = oldToWhomName
+                };
+
                 var newMissionValidation = new MissionValidation(missionValidationDto)
                 {
                     MissionValidationId = id
@@ -393,22 +516,46 @@ namespace MyApp.Api.Services.mission
                 await _repository.UpdateAsync(newMissionValidation);
                 await _repository.SaveChangesAsync();
 
-                _logger.LogInformation("Validation de mission mise à jour avec succès avec l'ID: {MissionValidationId}", id);
+                // Récupérer le nom de l'utilisateur pour ToWhom nouveau
+                var updatedMissionValidation = await _repository.GetByIdAsync(id);
+                if (updatedMissionValidation == null)
+                {
+                    throw new InvalidOperationException($"Validation de mission introuvable après mise à jour: {id}");
+                }
+                var newToWhomName = "Utilisateur inconnu";
+                if (!string.IsNullOrWhiteSpace(updatedMissionValidation.ToWhom))
+                {
+                    var newToWhomUser = await _userService.GetByIdAsync(updatedMissionValidation.ToWhom);
+                    newToWhomName = newToWhomUser?.Name ?? "Utilisateur inconnu";
+                }
 
-                // Log the modification
-                await _logService.LogAsync("MODIFICATION", existingMissionValidation, newMissionValidation, userId);
+                // Capturer l'état après la mise à jour
+                var logNewData = new
+                {
+                    IdMission = (string?)updatedMissionValidation.MissionId,
+                    IdAssignationMission = (string?)updatedMissionValidation.MissionAssignationId,
+                    Statut = (string?)updatedMissionValidation.Status,
+                    Type = (string?)updatedMissionValidation.Type,
+                    NomValideur = newToWhomName
+                };
 
+                // Log de mise à jour avec éléments essentiels
+                await _logService.LogAsync("MODIFICATION", "MISSION_VALIDATION", oldMissionValidation, logNewData, userId, "IdMission,IdAssignationMission,Statut,Type,NomValideur");
+
+                await transaction.CommitAsync();
                 return true;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la mise à jour de la validation de mission {MissionValidationId}", id);
+                await transaction.RollbackAsync();
                 throw;
             }
         }
 
         public async Task<bool> DeleteAsync(string id, string userId)
         {
+            await using var transaction = await _repository.BeginTransactionAsync();
             try
             {
                 if (string.IsNullOrWhiteSpace(id))
@@ -422,23 +569,44 @@ namespace MyApp.Api.Services.mission
                     return false;
                 }
 
+                // Récupérer le nom de l'utilisateur pour ToWhom
+                var toWhomName = "Utilisateur inconnu";
+                if (!string.IsNullOrWhiteSpace(existingMissionValidation.ToWhom))
+                {
+                    var toWhomUser = await _userService.GetByIdAsync(existingMissionValidation.ToWhom);
+                    toWhomName = toWhomUser?.Name ?? "Utilisateur inconnu";
+                }
+
+                // Capturer l'état avant la suppression
+                var oldMissionValidation = new
+                {
+                    IdMission = (string?)existingMissionValidation.MissionId,
+                    IdAssignationMission = (string?)existingMissionValidation.MissionAssignationId,
+                    Statut = (string?)existingMissionValidation.Status,
+                    Type = (string?)existingMissionValidation.Type,
+                    NomValideur = toWhomName
+                };
+
                 await _repository.DeleteAsync(existingMissionValidation);
                 await _repository.SaveChangesAsync();
 
-                // Log the deletion
-                await _logService.LogAsync("SUPPRESSION", existingMissionValidation, null, userId);
+                // Log de suppression avec éléments essentiels
+                await _logService.LogAsync("SUPPRESSION", "MISSION_VALIDATION", oldMissionValidation, null, userId, "IdMission,IdAssignationMission,Statut,Type,NomValideur");
 
+                await transaction.CommitAsync();
                 return true;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la suppression de la validation de mission {MissionValidationId}", id);
+                await transaction.RollbackAsync();
                 throw;
             }
         }
 
         public async Task<bool> UpdateStatusAsync(string id, string status, string userId)
         {
+            await using var transaction = await _repository.BeginTransactionAsync();
             try
             {
                 var existingMissionValidation = await _repository.GetByIdAsync(id);
@@ -447,26 +615,55 @@ namespace MyApp.Api.Services.mission
                     _logger.LogWarning("Validation de mission avec l'ID {MissionValidationId} n'existe pas", id);
                     return false;
                 }
-
-                var originalMissionValidation = new MissionValidation
+                var toWhomName = "Utilisateur inconnu";
+                if (!string.IsNullOrWhiteSpace(existingMissionValidation.ToWhom))
                 {
-                    MissionValidationId = existingMissionValidation.MissionValidationId,
-                    MissionId = existingMissionValidation.MissionId,
-                    // Copy other properties as needed
+                    var toWhomUser = await _userService.GetByIdAsync(existingMissionValidation.ToWhom);
+                    toWhomName = toWhomUser?.Name ?? "Utilisateur inconnu";
+                }
+                // Capturer l'état avant la mise à jour du statut
+                var oldMissionValidation = new
+                {
+                    Statut = (string?)existingMissionValidation.Status,
+                    DateValidation = existingMissionValidation.ValidationDate,
+                    Type = (string?)existingMissionValidation.Type,
+                    NomValideur = toWhomName
                 };
 
                 var result = await _repository.UpdateStatusAsync(id, status);
                 if (result)
                 {
-                   
-                    // Log the status update
-                    await _logService.LogAsync("MODIFICATION_STATUS", originalMissionValidation, existingMissionValidation, userId);
+                    var updatedMissionValidation = await _repository.GetByIdAsync(id);
+                    if (updatedMissionValidation == null)
+                    {
+                        throw new InvalidOperationException($"Validation de mission introuvable après mise à jour du statut: {id}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(updatedMissionValidation.ToWhom))
+                    {
+                        var toWhomUser = await _userService.GetByIdAsync(updatedMissionValidation.ToWhom);
+                        toWhomName = toWhomUser?.Name ?? "Utilisateur inconnu";
+                    }
+
+                    // Capturer l'état après la mise à jour du statut
+                    var newMissionValidation = new
+                    {
+                        Statut = (string?)updatedMissionValidation.Status,
+                        DateValidation = updatedMissionValidation.ValidationDate,
+                        Type = (string?)updatedMissionValidation.Type,
+                        NomValideur = toWhomName
+                    };
+
+                    // Log de mise à jour du statut avec éléments essentiels
+                    await _logService.LogAsync("MODIFICATION_STATUS", "MISSION_VALIDATION", oldMissionValidation, newMissionValidation, userId, "Statut,DateValidation,Type,NomValideur");
                 }
+
+                await transaction.CommitAsync();
                 return result;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la mise à jour du statut de la validation de mission {MissionValidationId}", id);
+                await transaction.RollbackAsync();
                 throw;
             }
         }

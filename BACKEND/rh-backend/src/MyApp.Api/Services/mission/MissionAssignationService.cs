@@ -551,7 +551,7 @@ namespace MyApp.Api.Services.mission
                     AssignationId = missionAssignation.AssignationId,
                     EmployeeId = missionAssignation.EmployeeId,
                     PaymentDate = dailyPaiement.Date,
-                    Status = "not paid",
+                    Status = "unpaid",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = null,
                     TransportAmount = CalculateTransportAmount(dailyPaiement.CompensationScales?.ToList() ?? new List<CompensationScale>(), missionAssignation.TransportId),
@@ -852,10 +852,10 @@ namespace MyApp.Api.Services.mission
 
         private async Task UpdateMissionStatusAsync(string missionId)
         {
-            var mission = await _missionRepository.GetByIdAsync(missionId); // Use repository
+            var mission = await _missionRepository.GetByIdAsync(missionId);
             if (mission != null)
             {
-                mission.Status = "planned ";
+                mission.Status = "pending approval";
                 mission.UpdatedAt = DateTime.UtcNow;
                 await _missionRepository.UpdateAsync(mission);
                 await _missionRepository.SaveChangesAsync();
