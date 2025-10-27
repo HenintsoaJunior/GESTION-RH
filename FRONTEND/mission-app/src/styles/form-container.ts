@@ -70,6 +70,7 @@ export const TableTitle = styled.h2`
   font-size: var(--font-size-2xl);
   font-weight: 600;
   color: var(--text-color);
+  font-family: var(--font-family);
 `;
 
 // Form Structure
@@ -93,6 +94,7 @@ export const FormTable = styled.table`
     font-size: var(--font-size-sm);
     letter-spacing: 0.025em;
     text-transform: uppercase;
+    font-family: var(--font-family);
   }
   @media (max-width: 480px) {
     display: block;
@@ -127,6 +129,7 @@ export const FormFieldCell = styled.td`
   font-size: var(--font-size-md);
   padding: var(--spacing-sm);
   vertical-align: top;
+  font-family: var(--font-family);
   @media (max-width: 480px) {
     display: block;
     width: 100%;
@@ -141,6 +144,7 @@ export const FormLabel = styled.label`
   display: block;
   letter-spacing: 0.025em;
   text-transform: uppercase;
+  font-family: var(--font-family);
 `;
 
 export const FormLabelRequired = styled(FormLabel)`
@@ -173,6 +177,7 @@ export const FormSelect = styled.select`
     font-size: var(--font-size-xs);
     background: var(--bg-primary);
     color: var(--text-input);
+    font-family: var(--font-family);
   }
 `;
 
@@ -269,6 +274,7 @@ export const AutoCompleteSuggestion = styled.div`
   cursor: pointer;
   border-bottom: 1px solid var(--border-light);
   color: var(--text-input);
+  font-family: var(--font-family);
   &:hover {
     background-color: var(--bg-secondary);
   }
@@ -336,6 +342,7 @@ export const FormSectionTitle = styled.h3`
   color: var(--text-color);
   position: relative;
   padding-bottom: var(--spacing-sm);
+  font-family: var(--font-family);
   
   &::after {
     content: "";
@@ -363,11 +370,13 @@ export const PositionsTable = styled.table`
     color: var(--text-secondary);
     font-size: var(--font-size-md);
     padding: var(--spacing-xs);
+    font-family: var(--font-family);
   }
   & td {
     vertical-align: middle;
     font-size: var(--font-size-xs);
     padding: var(--spacing-xs);
+    font-family: var(--font-family);
   }
   & td input,
   & td select,
@@ -561,6 +570,7 @@ export const AutocompleteSuggestion = styled.div`
   border-bottom: 1px solid var(--border-light);
   font-size: var(--font-size-xs);
   color: var(--text-input);
+  font-family: var(--font-family);
   &:hover {
     background-color: var(--bg-light);
   }
@@ -581,6 +591,7 @@ export const AutocompleteAddItem = styled.div`
   align-items: center;
   gap: var(--spacing-xs);
   font-size: var(--font-size-xs);
+  font-family: var(--font-family);
   &.enabled {
     color: var(--primary-color);
     &:hover {
@@ -649,6 +660,7 @@ export const BeneficiariesTable = styled.table`
     position: sticky;
     top: 0;
     z-index: 10;
+    font-family: var(--font-family);
     @media (max-width: 768px) {
       padding: var(--spacing-xs) var(--spacing-sm);
       font-size: 11px;
@@ -664,6 +676,7 @@ export const BeneficiariesTable = styled.table`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-family: var(--font-family);
     @media (max-width: 768px) {
       padding: var(--spacing-xs) var(--spacing-sm);
       font-size: 11px;
@@ -737,6 +750,7 @@ export const TableActionButton = styled.button`
   min-width: 32px;
   height: 32px;
   transform: scale(1);
+  font-family: var(--font-family);
   &:active {
     transform: scale(0.95);
   }
@@ -776,12 +790,14 @@ export const NoBeneficiaries = styled.div`
   background-color: var(--bg-secondary);
   border: 1px dashed var(--border-light);
   border-radius: var(--radius-sm);
+  font-family: var(--font-family);
 `;
 
 export const DateInfo = styled.div`
   display: block;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
+  font-family: var(--font-family);
   & + & {
     margin-top: 2px;
   }
@@ -795,6 +811,7 @@ export const DurationBadge = styled.span`
   font-size: 10px;
   font-weight: 600;
   display: inline-block;
+  font-family: var(--font-family);
 `;
 
 // CORRECTION: Utilisation de shouldForwardProp pour bloquer 'active'
@@ -818,7 +835,6 @@ export const StepperWrapper = styled.div`
 export const StepItem = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== 'active',
 })<{ active: boolean }>`
-
   display: flex;
   align-items: center;
   font-size: var(--font-size-md);
@@ -828,6 +844,7 @@ export const StepItem = styled.div.withConfig({
   z-index: 2;
   padding: 0 var(--spacing-md);
   background: var(--bg-primary);
+  font-family: var(--font-family);
   
   span {
     display: flex;
@@ -859,6 +876,7 @@ export const StepContent = styled.div.withConfig({
 })<{ active: boolean }>`
   display: ${({ active }) => (active ? "block" : "none")};
   animation: ${({ active }) => (active ? "fadeIn 0.3s ease-in" : "none")};
+  font-family: var(--font-family);
   
   @keyframes fadeIn {
     from {

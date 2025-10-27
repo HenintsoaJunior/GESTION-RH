@@ -73,7 +73,7 @@ namespace MyApp.Api.Entities.mission
             Type = dto.Type ?? string.Empty;
             CurrencyUnit = dto.CurrencyUnit ?? string.Empty;
             Amount = dto.Amount;
-            AmountMGA = dto.AmountMga;
+            AmountMGA = dto.AmountMGA;
             Rate = dto.Rate;
             Status = "pending";
             AssignationId = dto.AssignationId ?? string.Empty;

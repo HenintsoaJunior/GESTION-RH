@@ -87,8 +87,7 @@ namespace MyApp.Api.Controllers.mission
                     userId,
                     page,
                     pageSize,
-                    filter?.EmployeeId,
-                    filter?.Status);
+                    filter ?? new RequestFilterDto());
 
                 var responseData = new { Results = results, TotalCount = totalCount };
                 return Ok(new { data = responseData, status = 200, message = "success" });

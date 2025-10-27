@@ -121,22 +121,6 @@ const CompensationStep: React.FC<CompensationStepProps> = ({
               )}
             </FormFieldCell>
             <FormFieldCell>
-              <FormLabelRequired>Heure de départ</FormLabelRequired>
-              <FormInput
-                type="time"
-                name="departureTime"
-                value={formData.beneficiary.departureTime || ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
-                className={fieldErrors["beneficiary.departureTime"] ? "input-error" : ""}
-                disabled={isSubmitting}
-              />
-              {fieldErrors["beneficiary.departureTime"] && fieldErrors["beneficiary.departureTime"].length > 0 && (
-                <ErrorMessage>{fieldErrors["beneficiary.departureTime"].join(", ")}</ErrorMessage>
-              )}
-            </FormFieldCell>
-          </FormRow>
-          <FormRow className="dual-field-row">
-            <FormFieldCell>
               <FormLabelRequired>Date de retour</FormLabelRequired>
               <FormInput
                 type="date"
@@ -148,6 +132,23 @@ const CompensationStep: React.FC<CompensationStepProps> = ({
               />
               {fieldErrors["beneficiary.returnDate"] && fieldErrors["beneficiary.returnDate"].length > 0 && (
                 <ErrorMessage>{fieldErrors["beneficiary.returnDate"].join(", ")}</ErrorMessage>
+              )}
+            </FormFieldCell>
+          </FormRow>
+          <FormRow className="dual-field-row">
+            
+            <FormFieldCell>
+              <FormLabelRequired>Heure de départ</FormLabelRequired>
+              <FormInput
+                type="time"
+                name="departureTime"
+                value={formData.beneficiary.departureTime || ""}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
+                className={fieldErrors["beneficiary.departureTime"] ? "input-error" : ""}
+                disabled={isSubmitting}
+              />
+              {fieldErrors["beneficiary.departureTime"] && fieldErrors["beneficiary.departureTime"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.departureTime"].join(", ")}</ErrorMessage>
               )}
             </FormFieldCell>
             <FormFieldCell>

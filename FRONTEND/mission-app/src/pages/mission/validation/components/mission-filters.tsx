@@ -27,6 +27,8 @@ interface Filter {
   employeeId: string;
   employeeName: string;
   status: string;
+  validationDateFrom?: string;
+  validationDateTo?: string;
 }
 
 interface BeneficiarySuggestion {
@@ -149,6 +151,47 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
                           <option value="approved">Validé</option>
                           <option value="rejected">Rejeté</option>
                         </FormInputSearch>
+                      </FormFieldCell>
+                    </FormRow>
+                    <FormRow>
+                      <FormFieldCell colSpan={2} style={{ width: "100%" }}>
+                        <fieldset style={{ 
+                          display: "grid", 
+                          gridTemplateColumns: "1fr 1fr", 
+                          gap: "var(--spacing-md)",
+                          background: "var(--bg-primary, #ffffff)",
+                          padding: "var(--spacing-md)",
+                          border: "1px solid var(--border-color, #ddd)",
+                          borderRadius: "var(--border-radius, 4px)",
+                          margin: "0"
+                        }}>
+                          <legend style={{ 
+                            fontWeight: "var(--font-weight-semibold)",
+                            color: "var(--text-color)",
+                            padding: "0 var(--spacing-sm)",
+                            fontSize: "0.75rem"
+                          }}>
+                            Date Validation
+                          </legend>
+                          <div>
+                            <FormLabelSearch>Du</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.validationDateFrom || ""}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("validationDateFrom", e.target.value)}
+                              disabled={isLoading.missions}
+                            />
+                          </div>
+                          <div>
+                            <FormLabelSearch>Au</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.validationDateTo || ""}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("validationDateTo", e.target.value)}
+                              disabled={isLoading.missions}
+                            />
+                          </div>
+                        </fieldset>
                       </FormFieldCell>
                     </FormRow>
                   </tbody>

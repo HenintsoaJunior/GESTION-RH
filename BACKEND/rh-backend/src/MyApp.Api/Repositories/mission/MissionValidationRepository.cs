@@ -10,7 +10,7 @@ namespace MyApp.Api.Repositories.mission
     public interface IMissionValidationRepository
     {
         Task<IDbContextTransaction> BeginTransactionAsync();
-        Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize, string? employeeId = null, string? status = null);
+        Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize,RequestFilterDto requestFilterDto);
         Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<MissionValidation>> GetAllAsync();
@@ -56,54 +56,72 @@ namespace MyApp.Api.Repositories.mission
                 .ToListAsync();
         }
 
-        public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize, string? employeeId = null, string? status = null)
+        public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize, RequestFilterDto requestFilterDto)
         {
-            var query = _context.MissionValidations
-                .Include(mv => mv.Mission)
-#pragma warning disable CS8602
-                .ThenInclude(m => m.Lieu)
-#pragma warning restore CS8602
-                .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.Creator)
-                .Include(mv => mv.Validator)
-                .Where(mv => mv.ToWhom == userId)
-                .Where(mv => mv.Status != "cancel")
-                .Where(mv => mv.Status != null)
-                .AsQueryable();
+            string? employeeId = requestFilterDto.EmployeeId;
+            string? status = requestFilterDto.Status;
+            string? validationDateFrom = requestFilterDto.ValidationDateFrom;
+            string? validationDateTo = requestFilterDto.ValidationDateTo;
 
-            // Filtre sur EmployeeId (via MissionAssignation)
-            if (!string.IsNullOrWhiteSpace(employeeId))
+            // Construire la requête de base
             {
-                query = query
-                    .Join(
-                        _context.MissionAssignations,
-                        mv => mv.MissionAssignationId,
-                        ma => ma.AssignationId,
-                        (mv, ma) => new { MissionValidation = mv, MissionAssignation = ma }
-                    )
-                    .Where(x => x.MissionAssignation.EmployeeId == employeeId)
-                    .Select(x => x.MissionValidation);
+                var query = _context.MissionValidations
+                    .Include(mv => mv.Mission)
+        #pragma warning disable CS8602
+                    .ThenInclude(m => m.Lieu)
+        #pragma warning restore CS8602
+                    .Include(mv => mv.MissionAssignation)
+                        .ThenInclude(ma => ma!.Employee)
+                            .ThenInclude(e => e!.Department)
+                    .Include(mv => mv.MissionAssignation)
+                        .ThenInclude(ma => ma!.Employee)
+                            .ThenInclude(e => e!.Direction)
+                    .Include(mv => mv.MissionAssignation)
+                        .ThenInclude(ma => ma!.Employee)
+                            .ThenInclude(e => e!.Service)
+                    .Include(mv => mv.Creator)
+                    .Include(mv => mv.Validator)
+                    .Where(mv => mv.ToWhom == userId && mv.Status != "cancel" && mv.Status != null);
+
+                // Filtre sur EmployeeId (via MissionAssignation)
+                if (!string.IsNullOrWhiteSpace(employeeId))
+                {
+                    query = query.Where(mv => mv.MissionAssignation!.EmployeeId == employeeId);
+                }
+
+                // Filtre sur Status
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    query = query.Where(mv => mv.Status == status);
+                }
+
+                // Filtre sur ValidationDateFrom
+                if (!string.IsNullOrWhiteSpace(validationDateFrom))
+                {
+                    var fromDate = DateTime.Parse(validationDateFrom);
+                    query = query.Where(mv => mv.ValidationDate >= fromDate);
+                }
+
+                // Filtre sur ValidationDateTo
+                if (!string.IsNullOrWhiteSpace(validationDateTo))
+                {
+                    var toDate = DateTime.Parse(validationDateTo);
+                    query = query.Where(mv => mv.ValidationDate <= toDate);
+                }
+
+                // Compter le nombre total d'éléments après application des filtres
+                var totalCount = await query.CountAsync();
+
+                // Appliquer la pagination
+                var results = await query
+                    .OrderByDescending(mv => mv.ValidationDate)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                return (results, totalCount);
             }
-
-            // Filtre sur Status
-            if (!string.IsNullOrWhiteSpace(status))
-            {
-                query = query.Where(mv => mv.Status == status);
-            }
-
-            // Compter le nombre total d'éléments après application des filtres
-            var totalCount = await query.CountAsync();
-
-            // Appliquer la pagination
-            var results = await query
-                .OrderByDescending(mv => mv.ValidationDate)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return (results, totalCount);
         }
-
 
         public async Task<bool> RejectedAsync(string missionValidationId, string missionAssignationId)
         {

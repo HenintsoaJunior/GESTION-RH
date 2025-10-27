@@ -11,6 +11,8 @@ import MissionList from '@/pages/mission/collaborator/list/mission-list';
 import DetailsMission from '@/pages/mission/collaborator/details/mission-details';
 import MissionValidationPage from '@/pages/mission/validation';
 import TresoPage from '@/pages/mission/treso';
+import Compensation from '@/pages/mission/treso/components/compensation';
+import ProtectedHabilitationList from '@/pages/access/habilitation';
 function App() {
   return (
     <Routes>
@@ -26,6 +28,7 @@ function App() {
         <Route path="/utilisateur" element={<UserList />} />
         <Route path="/logs" element={<LogList />} />
         <Route path="/access/list" element={<RoleList />} />
+        <Route path="/habilitation" element={<ProtectedHabilitationList />} />
         
          {/* MISSION */}
         <Route path="/mission/collaborateur" element={<MissionList />} />
@@ -34,8 +37,7 @@ function App() {
 
         {/* TRESO */}
         <Route path="/treasury" element={<TresoPage />} />
-
-
+        <Route path="/treasury/compensation" element={<Compensation />} />
 
         
         {/* ERROR */}

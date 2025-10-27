@@ -236,7 +236,7 @@ const CompensationCards = ({
      */
     const getStatusBadge = (status) => {
         const statusInfo = {
-            "not paid": { icon: Clock, text: "Non payé", class: "status-pending" },
+            "unpaid": { icon: Clock, text: "Non payé", class: "status-pending" },
             "paid": { icon: CheckCircle, text: "Payé", class: "status-approved" },
         }[status] || { icon: Clock, text: "Inconnu", class: "status-pending" };
 

@@ -14,8 +14,9 @@
     {
         public string? EmployeeId { get; set; }
         public string? Status { get; set; }
+        public string? ValidationDateFrom { get; set; }
+        public string? ValidationDateTo { get; set; }
     }
-
     public class MissionValidationRejectionDTO
     {
         public string MissionValidationId { get; set; } = string.Empty;

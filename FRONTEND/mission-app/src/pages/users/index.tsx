@@ -1,5 +1,7 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom"; // Ajout pour les query params et navigation
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp, RefreshCw, X, List, Search } from "lucide-react";
 import axios, { AxiosError } from "axios";
@@ -112,10 +114,21 @@ const UserList: React.FC = () => {
   const [selectedUsersWithRoles, setSelectedUsersWithRoles] = useState<User[]>([]);
 
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams(); // Hook pour lire les query params
+  const navigate = useNavigate(); // Hook pour navigation (optionnel, pour mise à jour des params si besoin)
 
   const { data: allUsersResponse } = useUsers();
   const { data: departmentsResponse } = useDepartments();
   const { data: rolesResponse } = useRoles();
+
+  useEffect(() => {
+    const roleParam = searchParams[0].get("role");
+    if (roleParam && filters.role !== roleParam) {
+      setFilters((prev) => ({ ...prev, role: decodeURIComponent(roleParam) }));
+      setAppliedFilters((prev) => ({ ...prev, role: decodeURIComponent(roleParam) }));
+      setCurrentPage(1); 
+    }
+  }, [searchParams]);
 
   const searchFilters: UserSearchFilters = {
     name: appliedFilters.name || undefined,
@@ -186,6 +199,13 @@ const UserList: React.FC = () => {
     event.preventDefault();
     setAppliedFilters(filters);
     setCurrentPage(1);
+    const newParams = new URLSearchParams(searchParams[0]);
+    if (filters.role) {
+      newParams.set("role", encodeURIComponent(filters.role));
+    } else {
+      newParams.delete("role");
+    }
+    navigate(`?${newParams.toString()}`);
   };
 
   const handleResetFilters = (): void => {
@@ -193,6 +213,8 @@ const UserList: React.FC = () => {
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
     setCurrentPage(1);
+    // Nettoyer les query params
+    navigate("/utilisateur"); // Retour à l'URL propre
     setAlert({ isOpen: true, type: "info", message: "Filtres réinitialisés." });
   };
 
