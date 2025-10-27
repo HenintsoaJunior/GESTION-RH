@@ -32,7 +32,7 @@ ehthumbs.db
 
 # --- Visual Studio & .NET (BACKEND) ---
 
-
+/BACKEND/rh-backend/src/MyApp.Api/publish
 /BACKEND/rh-backend/src/MyApp.Api/appsettings.json
 /BACKEND/rh-backend/src/MyApp.Api/bin
 /BACKEND/rh-backend/src/MyApp.Api/Migrations
