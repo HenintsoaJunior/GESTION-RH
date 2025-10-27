@@ -1,1 +1,3 @@
 dotnet run --urls "http://0.0.0.0:5183"
+dotnet publish -c Release -o ./publish
+10.0.180.37

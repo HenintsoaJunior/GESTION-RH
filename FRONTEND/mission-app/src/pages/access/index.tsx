@@ -485,7 +485,6 @@ const RoleList: React.FC = () => {
         </FiltersToggle>
       )}
 
-      {/* === TABLEAU === */}
       <TableContainer>
         <TableHeader>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-lg)" }}>
