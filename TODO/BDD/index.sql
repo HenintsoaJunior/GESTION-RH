@@ -225,6 +225,7 @@ CREATE TABLE habilitations (
    habilitation_id VARCHAR(50) PRIMARY KEY,
    group_id VARCHAR(50),
    label VARCHAR(100) NOT NULL,
+   description TEXT,
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    FOREIGN KEY (group_id) REFERENCES habilitation_groups(group_id)

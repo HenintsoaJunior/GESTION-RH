@@ -15,6 +15,7 @@ export const USER_COLLABORATORS_BASE_KEY = ['userCollaborators'] as const;
 const USER_HABILITATION_BULK_BASE_KEY = ['userHabilitationBulk'] as const;
 export const BULK_REMOVE_USER_ROLES_KEY = ['bulkRemoveUserRoles'] as const;
 export const USER_HABILITATIONSROLE_KEY = ['userHabilitationsRole'] as const;
+export const ROLE_USER_COUNT_BASE_KEY = ['roleUserCount'] as const;
 
 export interface UserSearchFilters {
   name?: string;
@@ -116,6 +117,7 @@ type SearchUsersData = {
   users: User[];
   totalCount: number;
 };
+type RoleUserCountResponse = ApiResponse<number>;
 type SearchUsersResponse = ApiResponse<SearchUsersData>;
 type RolesResponse = ApiResponse<string[]>;
 type HabilitationResponse = ApiResponse<Habilitation[]>;
@@ -432,5 +434,29 @@ export const useUserHabilitationBulk = () => {
     onError: (error) => {
       console.error('Error in bulk user habilitation:', error);
     },
+  });
+};
+
+
+export const useRoleUserCount = (roleName: string | undefined) => {
+  const queryKey = [...ROLE_USER_COUNT_BASE_KEY, roleName] as const;
+
+  return useQuery<RoleUserCountResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (!roleName) {
+        throw new Error('roleName is required for fetching role user count');
+      }
+      try {
+        const response = await api.get(`/api/User/role/${roleName}/count`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!roleName,
   });
 };

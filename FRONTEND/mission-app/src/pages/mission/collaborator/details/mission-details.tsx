@@ -10,15 +10,11 @@ import OMNoteDeFrais from "../details/expense/om-note-de-frais";
 import {
   LoadingContainer,
   ContentArea,
-  ValidatorCard,
-  ValidatorGrid,
-  ValidatorSection,
   SectionTitle,
   ValidatorItem,
   Avatar,
   ValidatorInfo,
   ValidatorName,
-  ValidatorRole,
   InfoGrid,
   InfoItem,
   InfoLabel,
@@ -32,6 +28,10 @@ import {
   BtnBack,
   HeaderActions,
   Separator,
+  HeaderCenter,
+  HeaderTitleSection,
+  PageTitle,
+  PageSubtitle,
 } from "@/styles/detailsmission-styles";
 import {
   useSearchMissionAssignations,
@@ -503,7 +503,7 @@ const DetailsMission: React.FC = () => {
       const { assignation, compensations, totalAmount } = responseData;
       const dailyPaiements = compensations.map((comp: Compensation) => ({
         date: comp.paymentDate,
-        totalAmount: comp.totalAmount,
+        totalAmount: comp.totalAmount ?? 0,
         compensationScales: [
           ...(comp.transportAmount > 0 ? [{ amount: comp.transportAmount, transportId: assignation.transportId ?? undefined }] : []),
           ...(comp.breakfastAmount > 0 ? [{ amount: comp.breakfastAmount, expenseType: { type: "Petit Déjeuner" } }] : []),
@@ -634,6 +634,12 @@ const DetailsMission: React.FC = () => {
     return <LoadingContainer>Mission ID manquante</LoadingContainer>;
   }
 
+  const assignedPersonsNames = assignations.length > 0 
+    ? assignations.map(a => `${a.employee.firstName} ${a.employee.lastName}`).join(', ') 
+    : 'Aucune personne assignée';
+
+  const firstAssignation = assignations[0];
+
   return (
     <>
       <Alert
@@ -657,12 +663,14 @@ const DetailsMission: React.FC = () => {
                         <ArrowLeft className="w-5 h-5" />
                       </BtnBack>
                     </HeaderLeft>
-                    <div className="header-center">
-                      <div className="header-title-section">
-                        <h1 className="page-title">Détails de la Mission</h1>
-                        <p className="page-subtitle">Mission #{missionId}</p>
-                      </div>
-                    </div>
+                    <HeaderCenter>
+                      <HeaderTitleSection>
+                        <PageTitle>{assignedPersonsNames}</PageTitle>
+                        <PageSubtitle>
+                          {firstAssignation && ` N° Assignation: ${firstAssignation.assignationId}`}
+                        </PageSubtitle>
+                      </HeaderTitleSection>
+                    </HeaderCenter>
                     <HeaderActions>
                       {mission && (
                         <StatusBadge className={getStatusBadgeClass(mission.status)}>
@@ -675,210 +683,205 @@ const DetailsMission: React.FC = () => {
                   {validationSteps.length > 0 && (
                     <ValidationStepper steps={validationSteps} currentStep={0} />
                   )}
-
+                 
+                  <Separator />
+                  <SectionTitle>Personnes Assignées à la Mission</SectionTitle>
+                  {assignations.length > 0 ? (
+                    assignations.map((assignation, index) => {
+                      const employee = assignation.employee;
+                      const initials = `${employee.firstName?.[0] || ''}${employee.lastName?.[0] || ''}`.toUpperCase();
+                      const assignmentType = assignation.type;
+                      const shouldShowRendu = assignmentType === "Indemnité" || assignmentType === "Note de frais";
+                      const employeeId = employee.employeeId;
+                      const isLoadingPdf = pdfLoading[employeeId] || false;
+                      const isGeneratedPdf = pdfGenerated[employeeId] || false;
+                      return (
+                        <div
+                          key={`${assignation.assignationId}-${index}`}
+                          style={{
+                            marginBottom: "var(--spacing-md)",
+                            padding: "var(--spacing-md)",
+                            border: "1px solid var(--border-light)",
+                            borderRadius: "var(--radius-sm)",
+                            backgroundColor: "var(--bg-primary)",
+                          }}
+                        >
+                          <ValidatorItem style={{ marginBottom: "var(--spacing-md)" }}>
+                            <Avatar size="40px">{initials}</Avatar>
+                            <ValidatorInfo>
+                              <ValidatorName>
+                                {employee.firstName} {employee.lastName} ({employee.direction?.acronym})
+                              </ValidatorName>
+                            </ValidatorInfo>
+                          </ValidatorItem>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(3, 1fr)",
+                              gap: "var(--spacing-sm)",
+                            }}
+                          >
+                            <InfoItem>
+                              <InfoLabel>Matricule</InfoLabel>
+                              <InfoValue>{employee.employeeCode || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            <InfoItem>
+                              <InfoLabel>Fonction</InfoLabel>
+                              <InfoValue>{employee.jobTitle || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            <InfoItem>
+                              <InfoLabel>Site</InfoLabel>
+                              <InfoValue>{employee.site?.siteName || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            
+                            <InfoItem>
+                              <InfoLabel>Moyen de Transport</InfoLabel>
+                              <InfoValue>{assignation.transport?.type || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            <InfoItem>
+                              <InfoLabel>Direction</InfoLabel>
+                              <InfoValue>{employee.direction?.directionName || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            <InfoItem>
+                              <InfoLabel>Département</InfoLabel>
+                              <InfoValue>{employee.department?.departmentName || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            <InfoItem>
+                              <InfoLabel>Service</InfoLabel>
+                              <InfoValue>{employee.service?.serviceName || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                          </div>
+                          {isMissionFullyValidated && (
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "var(--spacing-sm)",
+                                justifyContent: "flex-start",
+                                marginTop: "calc(var(--spacing-md) + 20px)",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              {assignmentType === "Indemnité" ? (
+                                <OMPaymentButton
+                                  onClick={() => handleNavigateToPayment(assignation.employee.employeeId, assignation.assignationId)}
+                                  disabled={isGlobalLoading}
+                                >
+                                  Indemnité
+                                </OMPaymentButton>
+                              ) : assignmentType === "Note de frais" ? (
+                                <OMPaymentButton
+                                  onClick={() => handleNavigateToNote(assignation.assignationId)}
+                                  disabled={isGlobalLoading}
+                                >
+                                  Note de Frais
+                                </OMPaymentButton>
+                              ) : null}
+                              <ButtonOMPDF
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation(); // Empêche toute propagation qui pourrait causer un rechargement
+                                  handleExportPDF(employeeId);
+                                }}
+                                disabled={isLoadingPdf}
+                              >
+                                {isLoadingPdf ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                    Génération...
+                                  </>
+                                ) : isGeneratedPdf ? (
+                                  <>
+                                    <CheckCircle size={16} className="mr-2" />
+                                    Régénérer OM PDF
+                                  </>
+                                ) : (
+                                  <>
+                                    <Download size={16} className="mr-2" />
+                                    OM PDF
+                                  </>
+                                )}
+                              </ButtonOMPDF>
+                              {shouldShowRendu && (
+                                <MissionReportButton
+                                  onClick={() => handleNavigateToReport(assignation.assignationId, assignation.employee.employeeId)}
+                                  disabled={isGlobalLoading}
+                                >
+                                  Rendu
+                                </MissionReportButton>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "var(--spacing-md)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Aucune personne assignée à la mission {missionId || "inconnue"}.
+                    </div>
+                  )}
                   <Separator />
                   {mission && (
                     <>
                       <SectionTitle>Informations Générales de la Mission</SectionTitle>
                       <InfoGrid style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
                         <InfoItem>
-                          <InfoLabel>Nom de la Mission</InfoLabel>
-                          <InfoValue>{mission.name}</InfoValue>
+                          <InfoLabel>N° Assignation</InfoLabel>
+                          <InfoValue>{firstAssignation?.assignationId || "Non spécifié"}</InfoValue>
+                        </InfoItem>
+
+                        <InfoItem>
+                          <InfoLabel>Mission</InfoLabel>
+                          <InfoValue>
+                            {mission.name}
+                          </InfoValue>
                         </InfoItem>
                         <InfoItem>
-                          <InfoLabel>Description</InfoLabel>
-                          <InfoValue>{mission.description || "Aucune description"}</InfoValue>
+                          <InfoLabel>Type d'Assignation</InfoLabel>
+                          <InfoValue>{firstAssignation.type || "Non spécifié"}</InfoValue>
                         </InfoItem>
                         <InfoItem>
-                          <InfoLabel>Type de Mission</InfoLabel>
+                          <InfoLabel>Zone</InfoLabel>
                           <InfoValue>{mission.missionType}</InfoValue>
-                        </InfoItem>
-                        <InfoItem>
-                          <InfoLabel>Date de Début</InfoLabel>
-                          <InfoValue>{formatDate(mission.startDate)}</InfoValue>
-                        </InfoItem>
-                        <InfoItem>
-                          <InfoLabel>Date de Fin</InfoLabel>
-                          <InfoValue>{formatDate(mission.endDate)}</InfoValue>
                         </InfoItem>
                         <InfoItem>
                           <InfoLabel>Lieu/Pays</InfoLabel>
                           <InfoValue>{`${mission.lieu.nom} / ${mission.lieu.pays}`}</InfoValue>
                         </InfoItem>
+
+                        <InfoItem>
+                          <InfoLabel>Date de Début</InfoLabel>
+                          <InfoValue>{formatDate(mission.startDate)}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Date et Heure de Départ</InfoLabel>
+                          <InfoValue>{firstAssignation ? `${formatDate(firstAssignation.departureDate)} ${firstAssignation.departureTime || ''}` : "Non spécifié"}</InfoValue>
+                        </InfoItem>
                         
+                        <InfoItem>
+                          <InfoLabel>Date de Fin</InfoLabel>
+                          <InfoValue>{formatDate(mission.endDate)}</InfoValue>
+                        </InfoItem>
+                        
+                        <InfoItem>
+                          <InfoLabel>Date et Heure de Retour</InfoLabel>
+                          <InfoValue>{firstAssignation ? `${formatDate(firstAssignation.returnDate)} ${firstAssignation.returnTime || ''}` : "Non spécifié"}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Durée</InfoLabel>
+                          <InfoValue>{firstAssignation?.duration || 0} jours</InfoValue>
+                        </InfoItem>
+                        <InfoItem style={{ gridColumn: "span 3" }}>
+                          <InfoLabel>Description</InfoLabel>
+                          <InfoValue>{mission.description || "Aucune description"}</InfoValue>
+                        </InfoItem>
                       </InfoGrid>
                     </>
-                  )}
-                  {validationSteps.length > 0 && (
-                    <ValidatorCard>
-                      <ValidatorGrid style={{ gridTemplateColumns: "1fr 2fr" }}>
-                        <ValidatorSection>
-                          <SectionTitle>Valideurs</SectionTitle>
-                          {validationSteps.map((step) => (
-                            <ValidatorItem key={step.id}>
-                              <Avatar size="40px">{step.validator?.initials || "NA"}</Avatar>
-                              <ValidatorInfo>
-                                <ValidatorName>{step.validator?.name || "Non spécifié"}</ValidatorName>
-                                <ValidatorRole>
-                                  {step.title} - {step.subtitle}
-                                </ValidatorRole>
-                              </ValidatorInfo>
-                            </ValidatorItem>
-                          ))}
-                        </ValidatorSection>
-                        <ValidatorSection>
-                          <SectionTitle>Personnes Assignées à la Mission</SectionTitle>
-                          {assignations.length > 0 ? (
-                            assignations.map((assignation, index) => {
-                              const employee = assignation.employee;
-                              const initials = `${employee.firstName?.[0] || ''}${employee.lastName?.[0] || ''}`.toUpperCase();
-                              const assignmentType = assignation.type;
-                              const shouldShowRendu = assignmentType === "Indemnité" || assignmentType === "Note de frais";
-                              const employeeId = employee.employeeId;
-                              const isLoadingPdf = pdfLoading[employeeId] || false;
-                              const isGeneratedPdf = pdfGenerated[employeeId] || false;
-                              return (
-                                <div
-                                  key={`${assignation.assignationId}-${index}`}
-                                  style={{
-                                    marginBottom: "var(--spacing-md)",
-                                    padding: "var(--spacing-md)",
-                                    border: "1px solid var(--border-light)",
-                                    borderRadius: "var(--radius-sm)",
-                                    backgroundColor: "var(--bg-secondary)",
-                                  }}
-                                >
-                                  <ValidatorItem style={{ marginBottom: "var(--spacing-md)" }}>
-                                    <Avatar size="40px">{initials}</Avatar>
-                                    <ValidatorInfo>
-                                      <ValidatorName>
-                                        {employee.firstName} {employee.lastName} ({employee.direction?.acronym})
-                                      </ValidatorName>
-                                    </ValidatorInfo>
-                                  </ValidatorItem>
-                                  <div
-                                    style={{
-                                      display: "grid",
-                                      gridTemplateColumns: "repeat(3, 1fr)",
-                                      gap: "var(--spacing-sm)",
-                                    }}
-                                  >
-                                    <InfoItem>
-                                      <InfoLabel>N° Assignation</InfoLabel>
-                                      <InfoValue>{assignation.assignationId}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Matricule</InfoLabel>
-                                      <InfoValue>{employee.employeeCode || "Non spécifié"}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Fonction</InfoLabel>
-                                      <InfoValue>{employee.jobTitle || "Non spécifié"}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Site</InfoLabel>
-                                      <InfoValue>{employee.site?.siteName || "Non spécifié"}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Type d'Assignation</InfoLabel>
-                                      <InfoValue>{assignation.type || "Non spécifié"}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Moyen de Transport</InfoLabel>
-                                      <InfoValue>{assignation.transport?.type || "Non spécifié"}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Date et Heure de Départ</InfoLabel>
-                                      <InfoValue>{`${formatDate(assignation.departureDate)} ${assignation.departureTime || ''}`}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Date et Heure de Retour</InfoLabel>
-                                      <InfoValue>{`${formatDate(assignation.returnDate)} ${assignation.returnTime || ''}`}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Durée</InfoLabel>
-                                      <InfoValue>{assignation.duration} jours</InfoValue>
-                                    </InfoItem>
-                                  </div>
-                                  {isMissionFullyValidated && (
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        gap: "var(--spacing-sm)",
-                                        justifyContent: "flex-start",
-                                        marginTop: "calc(var(--spacing-md) + 20px)",
-                                        flexWrap: "wrap",
-                                      }}
-                                    >
-                                      {assignmentType === "Indemnité" ? (
-                                        <OMPaymentButton
-                                          onClick={() => handleNavigateToPayment(assignation.employee.employeeId, assignation.assignationId)}
-                                          disabled={isGlobalLoading}
-                                        >
-                                          Indemnité
-                                        </OMPaymentButton>
-                                      ) : assignmentType === "Note de frais" ? (
-                                        <OMPaymentButton
-                                          onClick={() => handleNavigateToNote(assignation.assignationId)}
-                                          disabled={isGlobalLoading}
-                                        >
-                                          Note de Frais
-                                        </OMPaymentButton>
-                                      ) : null}
-                                      <ButtonOMPDF
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation(); // Empêche toute propagation qui pourrait causer un rechargement
-                                          handleExportPDF(employeeId);
-                                        }}
-                                        disabled={isLoadingPdf}
-                                      >
-                                        {isLoadingPdf ? (
-                                          <>
-                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                            Génération...
-                                          </>
-                                        ) : isGeneratedPdf ? (
-                                          <>
-                                            <CheckCircle size={16} className="mr-2" />
-                                            Régénérer OM PDF
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Download size={16} className="mr-2" />
-                                            OM PDF
-                                          </>
-                                        )}
-                                      </ButtonOMPDF>
-                                      {shouldShowRendu && (
-                                        <MissionReportButton
-                                          onClick={() => handleNavigateToReport(assignation.assignationId, assignation.employee.employeeId)}
-                                          disabled={isGlobalLoading}
-                                        >
-                                          Rendu
-                                        </MissionReportButton>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <ValidatorItem>
-                              <div
-                                style={{
-                                  textAlign: "center",
-                                  padding: "var(--spacing-md)",
-                                  color: "var(--text-secondary)",
-                                }}
-                              >
-                                Aucune personne assignée à la mission {missionId || "inconnue"}.
-                              </div>
-                            </ValidatorItem>
-                          )}
-                        </ValidatorSection>
-                      </ValidatorGrid>
-                    </ValidatorCard>
                   )}
                   
                   <Separator />

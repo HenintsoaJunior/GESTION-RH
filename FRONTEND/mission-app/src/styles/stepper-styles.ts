@@ -56,6 +56,7 @@ export const StepperContainer = styled.div`
   position: relative;
   margin: var(--spacing-lg) 0;
   padding: 0;
+  font-family: var(--font-family);
 
   background: var(--bg-primary);
   border-radius: 0;
@@ -94,6 +95,7 @@ export const StepCircle = styled.div<StepCircleProps>`
   position: relative;
   z-index: 2;
   margin-bottom: 0.5rem;
+  font-family: var(--font-family);
 
   background-color: ${({ $status }) => {
     if ($status === "approved") return "var(--success-color)";
@@ -124,18 +126,20 @@ export const StepLabel = styled.div`
   font-weight: 500;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
+  font-family: var(--font-family);
 `;
 
 export const StepSubtitle = styled.div`
   text-align: center;
   font-size: 0.8rem;
   color: var(--text-muted);
+  font-family: var(--font-family);
 `;
 
 export const ValidationDateText = styled.p`
   margin-top: var(--spacing-xs);
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
-  font-style: italic;
   text-align: center;
+  font-family: var(--font-family);
 `;

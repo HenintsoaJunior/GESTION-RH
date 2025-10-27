@@ -6,6 +6,7 @@ export const App = styled.div`
   display: flex;
   min-height: 100vh;
   background-color: var(--bg-secondary);
+  font-family: var(--font-family);
 `;
 
 export const SidebarOverlay = styled.div`
@@ -34,6 +35,7 @@ export const Sidebar = styled.aside<{ $collapsed: boolean; $mobileOpen: boolean 
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  font-family: var(--font-family);
 
   ${({ $collapsed }) =>
     $collapsed &&
@@ -84,6 +86,7 @@ export const SidebarDivider = styled.div<{ $collapsed?: boolean }>`
   font-weight: var(--font-weight-semibold);
   letter-spacing: 1px;
   text-transform: uppercase;
+  font-family: var(--font-family);
 
   span {
     padding-right: 10px;
@@ -152,6 +155,7 @@ const NavButtonBase = css`
   border-radius: 0;
   font-weight: var(--font-weight-medium);
   text-decoration: none !important;
+  font-family: var(--font-family);
 
   &:hover {
     background-color: var(--bg-sidebar-hover);
@@ -304,6 +308,7 @@ export const Submenu = styled.ul<{ $level: number; $expanded: boolean }>`
       border-radius: var(--border-radius-sm);
       transition: all var(--transition-speed) ease;
       position: relative;
+      font-family: var(--font-family);
 
       &:hover {
         background-color: var(--primary-light);
@@ -387,12 +392,14 @@ export const SidebarFooterInfo = styled.div`
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     color: var(--text-sidebar);
+    font-family: var(--font-family);
   }
 
   .sidebar-footer-subtitle {
     font-size: var(--font-size-xs);
     color: var(--text-sidebar);
     opacity: 0.6;
+    font-family: var(--font-family);
   }
 
   .sidebar-footer-copyright {
@@ -402,6 +409,7 @@ export const SidebarFooterInfo = styled.div`
     text-align: center;
     padding-top: var(--spacing-xs);
     border-top: 1px solid var(--border-color);
+    font-family: var(--font-family);
   }
 `;
 
@@ -435,6 +443,7 @@ export const MainContent = styled.main<{ $collapsed: boolean }>`
   display: flex;
   flex-direction: column;
   background-color: var(--bg-secondary);
+  font-family: var(--font-family);
   @media (max-width: 768px) {
     margin-left: 0;
 
@@ -461,6 +470,7 @@ export const Header = styled.header<{ $collapsed?: boolean }>`
   right: 0;
   z-index: 999;
   transition: left var(--transition-speed) ease;
+  font-family: var(--font-family);
 
   ${({ $collapsed }) =>
     $collapsed &&
@@ -484,16 +494,6 @@ export const HeaderLeft = styled.div`
   align-items: center;
   gap: var(--spacing-md);
   flex-wrap: wrap;
-
-  h1 {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-medium);
-    color: var(--text-color);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 300px;
-  }
 `;
 
 export const HeaderCenter = styled.div`
@@ -528,6 +528,7 @@ export const SearchInput = styled.input`
   transition: all var(--transition-speed) ease;
   background-color: var(--white);
   color: var(--text-color);
+  font-family: var(--font-family);
 
   &:focus {
     border-color: var(--primary-color);
@@ -653,6 +654,7 @@ export const NotificationDropdown = styled.div`
   visibility: hidden;
   transform: translateY(10px);
   transition: all var(--transition-speed) ease;
+  font-family: var(--font-family);
 
   ${NotificationContainer}:hover & {
     opacity: 1;
@@ -680,11 +682,13 @@ export const NotificationItem = styled.div`
     color: var(--text-color);
     margin-bottom: 4px;
     font-weight: var(--font-weight-medium);
+    font-family: var(--font-family);
   }
 
   small {
     font-size: var(--font-size-xs);
     color: var(--text-placeholder);
+    font-family: var(--font-family);
   }
 `;
 
@@ -700,6 +704,7 @@ export const UserInfo = styled.div`
   align-items: flex-start;
   margin-right: 1rem;
   text-align: left;
+  font-family: var(--font-family);
 
   &.large {
     .user-name {
@@ -785,6 +790,7 @@ export const UserDropdownMenu = styled.div`
   visibility: hidden;
   transform: translateY(10px);
   transition: all var(--transition-speed) ease;
+  font-family: var(--font-family);
 
   ${UserProfileDropdown}:hover & {
     opacity: 1;
@@ -801,6 +807,7 @@ export const DropdownItem = styled(Link)`
   text-decoration: none;
   font-size: var(--font-size-xs);
   transition: all var(--transition-speed) ease;
+  font-family: var(--font-family);
 
   &:hover {
     background-color: var(--bg-light);
@@ -844,6 +851,7 @@ export const Content = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
+  font-family: var(--font-family);
 `;
 
 export const FooterCopyright = styled.div`
@@ -853,6 +861,7 @@ export const FooterCopyright = styled.div`
   font-size: var(--font-size-sm);
   color: black;
   font-weight: var(--font-weight-medium);
+  font-family: var(--font-family);
 `;
 
 export const TemplateFooter = styled.footer<{ $collapsed?: boolean }>`
@@ -893,10 +902,12 @@ export const DashboardContent = styled.div`
   border-radius: var(--border-radius-md);
   padding: var(--spacing-xl);
   box-shadow: var(--shadow-sm);
+  font-family: var(--font-family);
 
   h2 {
     margin-bottom: var(--spacing-xl);
     color: var(--primary-color);
+    font-family: var(--font-family);
   }
 `;
 
@@ -930,6 +941,7 @@ export const LanguageDropdown = styled.select`
   option {
     color: var(--text-color);
     background-color: var(--white);
+    font-family: var(--font-family);
   }
 
   @media (max-width: 1024px) {
@@ -975,6 +987,7 @@ export const Breadcrumb = styled.nav`
     font-size: var(--font-size-sm);
     padding: 0 6px;
     line-height: 1.5;
+    font-family: var(--font-family);
 
     &:hover {
       color: var(--primary-color);
@@ -1020,6 +1033,7 @@ export const MenuLoadingDots = styled.div<{ $collapsed?: boolean }>`
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   position: relative;
+  font-family: var(--font-family);
 
   &::after {
     content: '.';
@@ -1059,6 +1073,7 @@ export const MenuLoadingSpinner = styled.div<{ $collapsed?: boolean }>`
   color: var(--text-sidebar);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  font-family: var(--font-family);
 
   &::after {
     content: '';
@@ -1094,7 +1109,7 @@ export const FontTooltip = styled.div`
   position: absolute;
   z-index: 1070;
   display: block;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: var(--font-family);
   font-size: 12px;
   font-weight: normal;
   line-height: 1.4;

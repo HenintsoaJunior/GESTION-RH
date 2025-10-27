@@ -5,7 +5,7 @@ import styled from 'styled-components';
 // =================================================================
 
 export const ProfilePageContainer = styled.div`
-  font-family: var(--font-family, 'Arial, sans-serif');
+  font-family: var(--font-family);
   background: var(--bg-primary);
   border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -31,6 +31,7 @@ export const ProfilePageContainer = styled.div`
     padding-bottom: var(--spacing-md);
   }
 `;
+
 export const ProfileContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
@@ -86,6 +87,7 @@ export const AvatarText = styled.span`
   font-size: 3rem;
   font-weight: var(--font-weight-semibold, 600);
   color: var(--text-white, #ffffff);
+  font-family: var(--font-family);
 
   @media (max-width: 1024px) {
     font-size: 1.5rem;
@@ -102,6 +104,7 @@ export const MainName = styled.h1`
   font-weight: var(--font-weight-bold, 700);
   color: var(--text-primary, #333);
   margin: 0;
+  font-family: var(--font-family);
 
   @media (max-width: 1024px) {
     font-size: 1.25rem;
@@ -112,6 +115,7 @@ export const MainEmail = styled.p`
   font-size: var(--font-size-md, 1rem);
   color: var(--text-secondary, #666);
   margin: var(--spacing-xs, 4px) 0 0 0;
+  font-family: var(--font-family);
 `;
 
 // =================================================================
@@ -137,7 +141,6 @@ export const ProfileContent = styled.div`
 export const ProfileCard = styled.div`
   background: var(--bg-primary, #ffffff);
   padding: var(--spacing-3xl, 32px);
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
   margin-bottom: var(--spacing-3xl, 32px);
   border: 1px solid var(--border-light, #eee);
 `;
@@ -156,6 +159,7 @@ export const SectionTitle = styled.h2`
   margin-bottom: var(--spacing-2xl, 24px);
   padding-bottom: var(--spacing-sm, 8px);
   border-bottom: 1px solid var(--border-light, #eee);
+  font-family: var(--font-family);
 `;
 
 export const InfoGroup = styled.div`
@@ -175,6 +179,7 @@ export const InfoLabel = styled.label`
   color: var(--text-secondary, #666);
   flex-shrink: 0;
   margin-right: var(--spacing-xl, 24px);
+  font-family: var(--font-family);
 `;
 
 export const InfoValue = styled.p`
@@ -184,6 +189,7 @@ export const InfoValue = styled.p`
   word-break: break-word;
   margin: 0;
   text-align: right;
+  font-family: var(--font-family);
 `;
 
 export const FieldEmpty = styled.span`
@@ -191,6 +197,7 @@ export const FieldEmpty = styled.span`
   font-style: italic;
   font-weight: var(--font-weight-normal, 400);
   font-size: var(--font-size-md, 1rem);
+  font-family: var(--font-family);
 `;
 
 // =================================================================
@@ -214,6 +221,7 @@ export const RoleBadge = styled.span`
   background-color: var(--primary-light, #e0f0ff);
   color: var(--primary-dark, #0056b3);
   border: 1px solid var(--primary-color, #007bff);
+  font-family: var(--font-family);
 `;
 
 // =================================================================
@@ -260,6 +268,7 @@ export const RoleTitle = styled.h3`
   margin: 0;
   display: flex;
   align-items: center;
+  font-family: var(--font-family);
 
   &::before {
     content: '🔑'; /* Icône clé pour le rôle */
@@ -279,6 +288,7 @@ export const PermissionTitle = styled.p`
   font-weight: var(--font-weight-medium, 500);
   color: var(--text-primary, #333);
   margin: 0 0 var(--spacing-sm, 8px) 0;
+  font-family: var(--font-family);
 `;
 
 export const PermissionsGrid = styled.div`
@@ -297,6 +307,7 @@ export const PermissionBadge = styled.span`
   color: var(--text-secondary, #666);
   border: 1px solid var(--border-light, #e0e0e0);
   text-transform: lowercase;
+  font-family: var(--font-family);
 `;
 
 // =================================================================
@@ -331,6 +342,7 @@ export const LoadingText = styled.p`
   font-size: var(--font-size-lg, 1.125rem);
   color: var(--text-secondary, #666);
   margin: 0;
+  font-family: var(--font-family);
 `;
 
 export const ErrorContainer = styled.div`
@@ -354,6 +366,7 @@ export const ErrorText = styled.p`
   color: var(--danger-color, #dc3545);
   margin: 0 0 var(--spacing-2xl, 24px) 0;
   font-weight: var(--font-weight-medium, 500);
+  font-family: var(--font-family);
 `;
 
 export const ErrorButton = styled.button`
@@ -362,9 +375,8 @@ export const ErrorButton = styled.button`
   border-radius: var(--radius-md, 8px);
   cursor: pointer;
   font-weight: var(--font-weight-semibold, 600);
-  font-family: var(--font-family, 'Arial, sans-serif');
+  font-family: var(--font-family);
   font-size: var(--font-size-md, 1rem);
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
   background-color: var(--primary-color, #007bff);
   color: var(--text-white, #ffffff);
   transition: background-color 0.2s ease;

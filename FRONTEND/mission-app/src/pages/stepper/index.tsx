@@ -12,6 +12,9 @@ interface Step {
   status: string;
   hasIndicator: boolean;
   validationDate?: string;
+  validator: {
+    name: string;
+  };
 }
 
 interface ValidationStepperProps {
@@ -47,6 +50,9 @@ const ValidationStepper: React.FC<ValidationStepperProps> = ({ steps, currentSte
           <StepCircle $status={step.status}>
             {step.hasIndicator ? getStepIcon(step.status) : index + 1}
           </StepCircle>
+          <div style={{ textAlign: 'center', marginTop: '4px', fontSize: '12px', fontWeight: '500' }}>
+            {step.validator.name}
+          </div>
           <StepLabel>{step.title}</StepLabel>
           <StepSubtitle>{step.subtitle}</StepSubtitle>
           {step.validationDate && (

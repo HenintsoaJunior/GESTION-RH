@@ -33,45 +33,9 @@ import {
     InfoValue,
     ReferenceText,
 } from "@/styles/card-styles";
-// Types from previous context
-interface FormattedMission {
-  id: string;
-  title: string;
-  description: string;
-  requestedBy: string;
-  department: string;
-  status: string;
-  requestDate: string;
-  dueDate: string;
-  estimatedDuration: string;
-  location: string;
-  comments: string;
-  signature: string;
-  matricule: string;
-  function: string;
-  transport: string;
-  departureTime: string;
-  departureDate: string;
-  returnDate: string;
-  returnTime: string;
-  reference: string;
-  toWhom: string;
-  validationDate: string | null;
-  missionCreator: string;
-  superiorName: string;
-  email: string;
-  createdAt: string;
-  updatedAt: string | null;
-  missionAssignationId: string;
-  missionType: string;
-  missionStatus: string;
-  allocatedFund: number;
-  type: string;
-  assignationType: string;
-  employeeId: string;
-  missionId: string;
-}
+import type { FormattedMission } from "@/api/mission/validation/services";
 
+// Other types
 interface LoadingState {
   missions: boolean;
   comments: boolean;
@@ -209,7 +173,13 @@ const MissionCards: React.FC<MissionCardsProps> = ({
 
     return (
         <CardsPaginationContainer>
-            <CardsContainer>
+            <CardsContainer
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: '1.5rem', // Ajustez l'espacement si nécessaire
+                }}
+            >
                 {/* Affichage conditionnel du chargement, des données ou de l'absence de données */}
                 {isLoading.missions ? (
                     <Loading>Chargement des missions...</Loading>
@@ -237,7 +207,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                             <User size={14} />
                                             Missionnaire
                                         </InfoLabel>
-                                        <InfoValue>{formatRequesterName(mission.requestedBy || "Non spécifié")}</InfoValue>
+                                        <InfoValue>{formatRequesterName(mission.employeeName || "Non spécifié")}</InfoValue>
                                     </InfoLine>
                                     <InfoLine>
                                         <InfoLabel>
@@ -262,10 +232,19 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                             {formatDate(mission.departureDate)} - {formatDate(mission.returnDate)}
                                         </InfoValue>
                                     </InfoLine>
+                                    {mission.status === 'approved' && mission.validationDate && (
+                                        <InfoLine>
+                                            <InfoLabel>
+                                                <Calendar size={14} />
+                                                Date de validation
+                                            </InfoLabel>
+                                            <InfoValue>{formatDate(mission.validationDate)}</InfoValue>
+                                        </InfoLine>
+                                    )}
                                 </CardInfo>
 
                                 {/* 4. Référence */}
-                                <ReferenceText>RÉFÉRENCE: {mission.reference || "N/A"}</ReferenceText>
+                                <ReferenceText>RÉFÉRENCE: {mission.missionAssignationId || "N/A"}</ReferenceText>
                             </Card>
                         );
                     })

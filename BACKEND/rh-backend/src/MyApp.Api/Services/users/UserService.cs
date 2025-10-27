@@ -33,6 +33,7 @@ namespace MyApp.Api.Services.users
         Task<IEnumerable<UserInfoDto>> GetUsersInfo(string[] userIds);
 
         Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
+        Task<int> GetUserCountByRoleAsync(string role);
     }
 
     public class UserService : IUserService
@@ -200,6 +201,15 @@ namespace MyApp.Api.Services.users
         public async Task<IEnumerable<string>> GetDistinctDepartmentsAsync()
         {
             return await _repository.GetDistinctDepartmentsAsync();
+        }
+
+       
+        public async Task<int> GetUserCountByRoleAsync(string role)
+        {
+            if (string.IsNullOrWhiteSpace(role))
+                throw new ArgumentException("Role cannot be null or empty.", nameof(role));
+
+            return await _repository.GetUserCountByRoleAsync(role);
         }
         
         private static UserDto MapToDto(User user)

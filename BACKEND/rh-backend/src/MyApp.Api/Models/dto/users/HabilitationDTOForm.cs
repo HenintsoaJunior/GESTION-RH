@@ -6,6 +6,7 @@ namespace MyApp.Api.Models.dto.users
     {
         public string Label { get; set; } = null!;
         public string GroupId { get; set; } = null!;
+        public string? Description { get; set; }
     }
 
     public class UserHabilitationDTOForm

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronDown, ChevronUp, X, List, Search, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, X, List, Search, Plus, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   FiltersContainer,
@@ -31,9 +31,9 @@ import {
   Loading,
   NoDataMessage,
   Separator,
-  ActionsSelect,
-  SelectionInfo,
   StatusBadge,
+  EditButton,
+  CancelButton,
 } from "@/styles/table-styles";
 import { useEmployees } from "@/api/collaborator/services";
 import { useLieux } from "@/api/lieu/services";
@@ -94,7 +94,6 @@ const MissionList: React.FC = () => {
     employeeSearch: "",
     lieuSearch: "",
   });
-  const [selectedAssignations, setSelectedAssignations] = useState<string[]>([]);
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
   const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
@@ -113,8 +112,6 @@ const MissionList: React.FC = () => {
   const canModifyMission = useHasHabilitation(userId, "modifier mission");
   const canCancelMission = useHasHabilitation(userId, "annuler mission");
   const canAddMission = useHasHabilitation(userId, "ajouter mission");
-
-  const hasAnyHabilitation = canViewDetails || canModifyMission || canCancelMission;
 
   const { data: employeesResponse, isLoading: isEmployeesLoading } = useEmployees();
   const { data: lieuxResponse, isLoading: isLieuxLoading } = useLieux();
@@ -231,52 +228,30 @@ const MissionList: React.FC = () => {
     return activeTab === 'collaborateurs' && collaboratorsData.length === 0;
   }, [activeTab, collaboratorsResponse]);
 
-  const handleRowSelection = useCallback((assignationId: string, missionId: string) => {
-    if (selectedAssignations.includes(assignationId)) {
-      setSelectedAssignations([]);
-      setSelectedMissionId(null);
-    } else {
-      setSelectedAssignations([assignationId]);
-      setSelectedMissionId(missionId);
+  const handleRowClick = useCallback((missionId: string) => {
+    if (canViewDetails) {
+      navigate(`/mission/collaborateur/${missionId}`);
     }
-  }, [selectedAssignations]);
+  }, [canViewDetails, navigate]);
 
-  const handleActionsChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const action = e.target.value;
-    if (action === "details" && canViewDetails) {
-      if (selectedAssignations.length === 0) {
-        setAlert({ isOpen: true, type: "warning", message: "Veuillez sélectionner au moins une assignation." });
-      } else if (selectedMissionId) {
-        navigate(`/mission/collaborateur/${selectedMissionId}`);
-      }
-    } else if (action === "modifier" && canModifyMission) {
-      if (selectedAssignations.length === 0) {
-        setAlert({ isOpen: true, type: "warning", message: "Veuillez sélectionner au moins une assignation." });
-      } else if (selectedMissionId) {
-        setIsFormOpen(true);
-      }
-    } else if (action === "annuler" && canCancelMission) {
-      if (selectedAssignations.length === 0) {
-        setAlert({ isOpen: true, type: "warning", message: "Veuillez sélectionner au moins une assignation." });
-      } else {
-        setShowCancelModal(true);
-      }
+  const handleEditClick = useCallback((missionId: string) => {
+    if (canModifyMission) {
+      setSelectedMissionId(missionId);
+      setIsFormOpen(true);
     }
-    e.target.value = "";
-  }, [selectedAssignations, selectedMissionId, canViewDetails, canModifyMission, canCancelMission, navigate]);
+  }, [canModifyMission]);
+
+  const handleCancelClick = useCallback(() => {
+    if (canCancelMission) {
+      setShowCancelModal(true);
+    }
+  }, [canCancelMission]);
 
   const handleCancelConfirm = useCallback(() => {
-    setAlert({ isOpen: true, type: "success", message: "Assignation(s) annulée(s) avec succès." });
-    setSelectedAssignations([]);
-    setSelectedMissionId(null);
+    setAlert({ isOpen: true, type: "success", message: "Assignation annulée avec succès." });
     refetchSearch();
     setShowCancelModal(false);
   }, [refetchSearch]);
-
-  const selectedCountText = useMemo(
-    () => `${selectedAssignations.length} élément${selectedAssignations.length !== 1 ? "s" : ""} sélectionné${selectedAssignations.length !== 1 ? "s" : ""}`,
-    [selectedAssignations.length]
-  );
 
   const handleFilterSubmit = useCallback((event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -399,7 +374,6 @@ const MissionList: React.FC = () => {
   const appliedFiltersStr = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
 
   useEffect(() => {
-    setSelectedAssignations([]);
     setSelectedMissionId(null);
     setPage(1);
   }, [activeTab, appliedFiltersStr]);
@@ -437,7 +411,7 @@ const MissionList: React.FC = () => {
       {showCancelModal && (
         <Modal
           type="error"
-          message={`Êtes-vous sûr de vouloir annuler ${selectedAssignations.length} assignation${selectedAssignations.length > 1 ? 's' : ''} sélectionnée${selectedAssignations.length > 1 ? 's' : ''} ?`}
+          message="Êtes-vous sûr de vouloir annuler l'assignation ?"
           isOpen={showCancelModal}
           onClose={() => setShowCancelModal(false)}
           title="Confirmer l'annulation"
@@ -529,41 +503,83 @@ const MissionList: React.FC = () => {
                       </FormFieldCell>
                     </FormRow>
                     <FormRow>
-                      <FormFieldCell style={{ width: "25%" }}>
-                        <FormLabelSearch>Date Départ Du</FormLabelSearch>
-                        <FormInputSearch
-                          type="date"
-                          value={filters.minDepartureDate || ""}
-                          onChange={handleMinDepartureDateChange}
-                          disabled={isSearchLoading}
-                        />
+                      <FormFieldCell colSpan={2} style={{ width: "50%" }}>
+                        <fieldset style={{ 
+                          display: "grid", 
+                          gridTemplateColumns: "1fr 1fr", 
+                          gap: "var(--spacing-md)",
+                          background: "var(--bg-primary, #ffffff)",
+                          padding: "var(--spacing-md)",
+                          border: "1px solid var(--border-color, #ddd)",
+                          borderRadius: "var(--border-radius, 4px)",
+                          margin: "0"
+                        }}>
+                          <legend style={{ 
+                            fontWeight: "var(--font-weight-semibold)",
+                            color: "var(--text-color)",
+                            padding: "0 var(--spacing-sm)",
+                            fontSize: "0.75rem"
+                          }}>
+                            Date Départ
+                          </legend>
+                          <div>
+                            <FormLabelSearch>Du</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.minDepartureDate || ""}
+                              onChange={handleMinDepartureDateChange}
+                              disabled={isSearchLoading}
+                            />
+                          </div>
+                          <div>
+                            <FormLabelSearch>Au</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.maxDepartureDate || ""}
+                              onChange={handleMaxDepartureDateChange}
+                              disabled={isSearchLoading}
+                            />
+                          </div>
+                        </fieldset>
                       </FormFieldCell>
-                      <FormFieldCell style={{ width: "25%" }}>
-                        <FormLabelSearch>Date Départ Au</FormLabelSearch>
-                        <FormInputSearch
-                          type="date"
-                          value={filters.maxDepartureDate || ""}
-                          onChange={handleMaxDepartureDateChange}
-                          disabled={isSearchLoading}
-                        />
-                      </FormFieldCell>
-                      <FormFieldCell style={{ width: "25%" }}>
-                        <FormLabelSearch>Date Retour Du</FormLabelSearch>
-                        <FormInputSearch
-                          type="date"
-                          value={filters.minArrivalDate || ""}
-                          onChange={handleMinArrivalDateChange}
-                          disabled={isSearchLoading}
-                        />
-                      </FormFieldCell>
-                      <FormFieldCell style={{ width: "25%" }}>
-                        <FormLabelSearch>Date Retour Au</FormLabelSearch>
-                        <FormInputSearch
-                          type="date"
-                          value={filters.maxArrivalDate || ""}
-                          onChange={handleMaxArrivalDateChange}
-                          disabled={isSearchLoading}
-                        />
+                      <FormFieldCell colSpan={2} style={{ width: "50%" }}>
+                        <fieldset style={{ 
+                          display: "grid", 
+                          gridTemplateColumns: "1fr 1fr", 
+                          gap: "var(--spacing-md)",
+                          background: "var(--bg-primary, #ffffff)",
+                          padding: "var(--spacing-md)",
+                          border: "1px solid var(--border-color, #ddd)",
+                          borderRadius: "var(--border-radius, 4px)",
+                          margin: "0"
+                        }}>
+                          <legend style={{ 
+                            fontWeight: "var(--font-weight-semibold)",
+                            color: "var(--text-color)",
+                            padding: "0 var(--spacing-sm)",
+                            fontSize: "0.75rem"
+                          }}>
+                            Date Retour
+                          </legend>
+                          <div>
+                            <FormLabelSearch>Du</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.minArrivalDate || ""}
+                              onChange={handleMinArrivalDateChange}
+                              disabled={isSearchLoading}
+                            />
+                          </div>
+                          <div>
+                            <FormLabelSearch>Au</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.maxArrivalDate || ""}
+                              onChange={handleMaxArrivalDateChange}
+                              disabled={isSearchLoading}
+                            />
+                          </div>
+                        </fieldset>
                       </FormFieldCell>
                     </FormRow>
                   </tbody>
@@ -627,17 +643,8 @@ const MissionList: React.FC = () => {
         <TableHeader>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-lg)" }}>
             <TableTitle>Liste</TableTitle>
-            {hasAnyHabilitation && selectedAssignations.length > 0 && <SelectionInfo>{selectedCountText}</SelectionInfo>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-md)" }}>
-            {hasAnyHabilitation && selectedAssignations.length > 0 && (
-              <ActionsSelect value="" onChange={handleActionsChange}>
-                <option value="">Actions</option>
-                {canViewDetails && <option value="details">Details</option>}
-                {canModifyMission && <option value="modifier">Modifier</option>}
-                {canCancelMission && <option value="annuler">Annuler</option>}
-              </ActionsSelect>
-            )}
             {canAddMission && (
               <ButtonSearch title="Ajouter" onClick={handleOpenForm}>
                 <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
@@ -655,27 +662,27 @@ const MissionList: React.FC = () => {
                 <TableHeadCell>Mission</TableHeadCell>
                 <TableHeadCell>TYPE</TableHeadCell>
                 <TableHeadCell>Lieu</TableHeadCell>
-                <TableHeadCell>Statut</TableHeadCell>
+                <TableHeadCell style={{ width: "90px" }}>Statut</TableHeadCell>
                 <TableHeadCell>Date Départ</TableHeadCell>
                 <TableHeadCell>Date Retour</TableHeadCell>
+                <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
               </tr>
             </thead>
             <tbody>
               {isSearchLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7}>
+                  <TableCell colSpan={8}>
                     <Loading>Chargement des données...</Loading>
                   </TableCell>
                 </TableRow>
               ) : showNoCollaboratorsMessage ? (
                 <TableRow>
-                  <TableCell colSpan={7}>
+                  <TableCell colSpan={8}>
                     <NoDataMessage>Aucun collaborateur trouvé.</NoDataMessage>
                   </TableCell>
                 </TableRow>
               ) : assignations.length > 0 ? (
-                assignations.map((assignation: MissionAssignation, index: number) => {
-                  const isSelected = selectedAssignations.includes(assignation.assignationId);
+                assignations.map((assignation: MissionAssignation) => {
                   const rawStatus = assignation.mission.status;
                   const trimmedLowerStatus = rawStatus.trim().toLowerCase();
                   const frenchStatus = englishToFrench[trimmedLowerStatus] || rawStatus.trim();
@@ -683,13 +690,12 @@ const MissionList: React.FC = () => {
 
                   return (
                     <TableRow
-                      key={`${assignation.assignationId}-${index}`}
+                      key={assignation.assignationId}
                       style={{
-                        cursor: hasAnyHabilitation ? "pointer" : "default",
-                        backgroundColor: isSelected ? "var(--primary-light)" : "transparent",
+                        cursor: canViewDetails ? "pointer" : "default",
                       }}
-                      onClick={hasAnyHabilitation ? () => handleRowSelection(assignation.assignationId, assignation.mission.missionId) : undefined}
-                      title={hasAnyHabilitation ? "Clic pour sélectionner" : ""}
+                      onClick={() => handleRowClick(assignation.mission.missionId)}
+                      title={canViewDetails ? "Clic pour voir les détails" : ""}
                     >
                       <TableCell>
                         {assignation.employee.firstName} {assignation.employee.lastName}
@@ -700,12 +706,36 @@ const MissionList: React.FC = () => {
                       <TableCell><StatusBadge className={statusClass}>{frenchStatus}</StatusBadge></TableCell>
                       <TableCell>{new Date(assignation.departureDate).toLocaleDateString()}</TableCell>
                       <TableCell>{new Date(assignation.returnDate).toLocaleDateString()}</TableCell>
+                      <TableCell style={{ textAlign: "center" }}>
+                        {canModifyMission && (
+                          <EditButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(assignation.mission.missionId);
+                            }}
+                            title="Modifier"
+                          >
+                            <Edit size={16} />
+                          </EditButton>
+                        )}
+                        {canCancelMission && (
+                          <CancelButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelClick();
+                            }}
+                            title="Annuler"
+                          >
+                            <X size={16} />
+                          </CancelButton>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7}>
+                  <TableCell colSpan={8}>
                     <NoDataMessage>
                       {Object.values(appliedFilters).some(Boolean) ? "Aucune assignation ne correspond aux critères." : "Aucune assignation trouvée."}
                     </NoDataMessage>

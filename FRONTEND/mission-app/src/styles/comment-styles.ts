@@ -23,6 +23,7 @@ export const CommentButton = styled.button`
     display: flex;
     align-items: center;
     gap: 5px;
+    font-family: var(--font-family);
 
     &:hover {
         background-color: #ffffff;
@@ -45,6 +46,7 @@ export const CommentText = styled.p`
   font-size: var(--font-size-sm, 0.875rem);
   color: var(--text-primary, #343a40);
   margin-bottom: 5px;
+  font-family: var(--font-family);
 `;
 
 export const CommentLabel = styled.label`
@@ -53,6 +55,7 @@ export const CommentLabel = styled.label`
     font-weight: 600;
     color: var(--text-secondary, #6c757d);
     font-size: var(--font-size-sm, 0.875rem);
+    font-family: var(--font-family);
 `;
 
 export const CommentTextarea = styled.textarea`
@@ -61,7 +64,7 @@ export const CommentTextarea = styled.textarea`
     padding: var(--spacing-sm, 10px);
     border: 1px solid var(--border-color, #ced4da);
     border-radius: var(--radius-sm, 8px);
-    font-family: inherit;
+    font-family: var(--font-family);
     font-size: var(--font-size-sm, 0.875rem);
     resize: vertical;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -98,6 +101,7 @@ export const CommentContent = styled.div`
 export const CommentMeta = styled.div`
     font-size: var(--font-size-xs, 0.75rem);
     color: var(--text-secondary, #6c757d);
+    font-family: var(--font-family);
 `;
 
 export const CommentActions = styled.div`
@@ -116,6 +120,7 @@ export const CommentActionButton = styled.button`
     display: flex;
     align-items: center;
     gap: 4px;
+    font-family: var(--font-family);
 
     &:hover {
         background-color: var(--primary-color, #007bff);

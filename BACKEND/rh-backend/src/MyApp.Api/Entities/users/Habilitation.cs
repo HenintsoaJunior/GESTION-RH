@@ -21,6 +21,9 @@ public class Habilitation : BaseEntity
     [MaxLength(100)]
     public string Label { get; set; } = null!;
 
+    [Column("description")]
+    public string? Description { get; set; }
+
     [ForeignKey("GroupId")]
     public virtual HabilitationGroup? Group { get; set; }
 
@@ -32,5 +35,6 @@ public class Habilitation : BaseEntity
     {
         Label = dto.Label;
         GroupId = dto.GroupId;
+        Description = dto.Description;
     }
 }

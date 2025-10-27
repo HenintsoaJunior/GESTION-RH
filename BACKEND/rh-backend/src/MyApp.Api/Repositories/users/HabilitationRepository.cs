@@ -6,6 +6,7 @@ namespace MyApp.Api.Repositories.users;
 
 public interface IHabilitationRepository
 {
+    Task<(IEnumerable<Habilitation>, int)> GetAllPaginatedAsync(int page, int pageSize, string? label = null);
     Task<IEnumerable<Habilitation>> GetAllAsync();
     Task<Habilitation?> GetByIdAsync(string id);
     Task<IEnumerable<Habilitation>> GetByGroupIdsAsync(string[] groupIds);
@@ -22,6 +23,26 @@ public class HabilitationRepository : IHabilitationRepository
     public HabilitationRepository(AppDbContext context)
     {
         _context = context;
+    }
+
+    public async Task<(IEnumerable<Habilitation>, int)> GetAllPaginatedAsync(int page, int pageSize, string? label = null)
+    {
+        var query = _context.Habilitations
+            .OrderByDescending(h => h.CreatedAt)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(label))
+        {
+            query = query.Where(h => h.Label.Contains(label));
+        }
+
+        var totalCount = await query.CountAsync();
+        var results = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (results, totalCount);
     }
 
     public async Task<IEnumerable<Habilitation>> GetAllAsync()

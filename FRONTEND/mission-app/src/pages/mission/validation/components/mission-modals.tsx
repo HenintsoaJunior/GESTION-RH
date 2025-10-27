@@ -16,7 +16,6 @@ import {
     PopupActions
 } from "@/styles/popup-styles";
 import {
-    DetailSection,
     SectionTitle,
     InfoGrid,
     InfoItem,
@@ -32,10 +31,11 @@ import {
     FileInput,
     FileInputLabel,
     SignaturePreview,
+    SeparatorStyle,
     Separator,
     SuccessMessage,
     Avatar,
-    RejectButton,
+    RejectButton
 } from "@/styles/detailsmission-styles";
 import {
     CommentSection,
@@ -52,50 +52,13 @@ import {
     CommentActionButton,
 } from "@/styles/comment-styles";
 
-import {getStatusBadgeClass} from "@/utils/status"
+import {getStatusBadgeClass,englishToFrench} from "@/utils/status"
+import { type FormattedMission } from "@/api/mission/validation/services";
 // Types from previous context
 interface AlertState {
   isOpen: boolean;
   type: "success" | "error" | "warning" | "info" | undefined;
   message: string;
-}
-
-interface FormattedMission {
-  id: string;
-  title: string;
-  description: string;
-  requestedBy: string;
-  department: string;
-  status: string;
-  requestDate: string;
-  dueDate: string;
-  estimatedDuration: string;
-  location: string;
-  comments: string;
-  signature: string;
-  matricule: string;
-  function: string;
-  transport: string;
-  departureTime: string;
-  departureDate: string;
-  returnDate: string;
-  returnTime: string;
-  reference: string;
-  toWhom: string;
-  validationDate: string | null;
-  missionCreator: string;
-  superiorName: string;
-  email: string;
-  createdAt: string;
-  updatedAt: string | null;
-  missionAssignationId: string;
-  missionType: string;
-  missionStatus: string;
-  allocatedFund: number;
-  type: string;
-  assignationType: string;
-  employeeId: string;
-  missionId: string;
 }
 
 interface Comment {
@@ -327,14 +290,14 @@ const MissionModals: React.FC<MissionModalsProps> = ({
             <FileText size={24} style={{ marginRight: "10px", verticalAlign: "middle" }} />
             {actionCompleted
               ? `Résultat : ${getSuccessMessage().title}`
-              : `Validation d'Ordre de Mission N° ${selectedMission.reference || "N/A"}`}
+              : `Validation d'Ordre de Mission N° ${selectedMission.missionAssignationId || "N/A"}`}
           </PopupTitle>
           <PopupClose onClick={handleCloseModal} aria-label="Fermer la fenêtre" title="Fermer la fenêtre">
             <X size={24} />
           </PopupClose>
         </PopupHeader>
 
-        <PopupContent style={{ padding: "30px", background: "var(--bg-secondary)", borderBottom: isPending && !actionCompleted ? "none" : "1px solid var(--border-light)" }}>
+        <PopupContent style={{ padding: "30px", background: "var(--bg-primary)", borderBottom: isPending && !actionCompleted ? "none" : "1px solid var(--border-light)" }}>
           <Alert
             type={alert.type}
             message={alert.message}
@@ -350,10 +313,10 @@ const MissionModals: React.FC<MissionModalsProps> = ({
             </SuccessMessage>
           ) : (
             <>
-              <DetailSection>
                 <SectionTitle>Référence de la Mission</SectionTitle>
+                <SeparatorStyle />
                 <InfoGrid>
-                  <InfoItem><InfoLabel>N° de Mission</InfoLabel><InfoValue>{selectedMission.reference || "N/A"}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>N°</InfoLabel><InfoValue>{selectedMission.missionAssignationId || "N/A"}</InfoValue></InfoItem>
                   <InfoItem>
                     <InfoLabel>Statut Actuel</InfoLabel>
                     <StatusBadge className={statusClass}>
@@ -361,40 +324,44 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                     </StatusBadge>
                   </InfoItem>
                   <InfoItem><InfoLabel>Demandé le</InfoLabel><InfoValue>{formatDate(selectedMission.requestDate)}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Valideur</InfoLabel><InfoValue>{selectedMission.toWhom}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Date de validation</InfoLabel><InfoValue>{formatDate(selectedMission.validationDate) || "Non spécifiée"}</InfoValue></InfoItem>
                 </InfoGrid>
+                
 
-                <SectionTitle>Détails du Collaborateur</SectionTitle>
+                <SectionTitle>Détails du Missionnaire</SectionTitle>
                 <InfoGrid>
-                  <InfoItem><InfoLabel>Collaborateur</InfoLabel><InfoValue>{selectedMission.requestedBy}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Fonction</InfoLabel><InfoValue>{selectedMission.function || "Non spécifiée"}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Missionnaire</InfoLabel><InfoValue>{selectedMission.employeeName}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Fonction</InfoLabel><InfoValue>{selectedMission.employeeFunction || "Non spécifiée"}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Matricule</InfoLabel><InfoValue>{selectedMission.matricule || "N/A"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Direction</InfoLabel><InfoValue>{selectedMission.department}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Email</InfoLabel><InfoValue>{selectedMission.email || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Supérieur</InfoLabel><InfoValue>{selectedMission.superiorName || "Non spécifié"}</InfoValue></InfoItem>
-                </InfoGrid>
+                  <InfoItem><InfoLabel>Direction</InfoLabel><InfoValue>{selectedMission.direction || "Non spécifié"}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Département</InfoLabel><InfoValue>{selectedMission.department || "Non spécifié"}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Service</InfoLabel><InfoValue>{selectedMission.service || "Non spécifié"}</InfoValue></InfoItem>
+                   </InfoGrid>
 
                 <SectionTitle>Détails de la Mission</SectionTitle>
-                
+                <SeparatorStyle />
+
                 <InfoGrid>
-                  <InfoItem><InfoLabel>Motif</InfoLabel><InfoValue>{selectedMission.description}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Type de mission</InfoLabel><InfoValue>{selectedMission.missionType || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Statut de la mission</InfoLabel><InfoValue>{getStatusBadgeClass(selectedMission.missionStatus)}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Mission</InfoLabel><InfoValue>{selectedMission.missionName || "Non spécifié"}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Zone</InfoLabel><InfoValue>{selectedMission.missionType || "Non spécifié"}</InfoValue></InfoItem>
+                  <InfoItem>
+                  <InfoLabel>Statut de la mission</InfoLabel>
+                  <InfoValue>
+                  <StatusBadge className={getStatusBadgeClass(selectedMission.missionStatus)}>
+                  {englishToFrench[selectedMission.missionStatus.trim().toLowerCase()] || selectedMission.missionStatus.trim()}
+                  </StatusBadge>
+                  </InfoValue>
+                  </InfoItem>
+
                   <InfoItem><InfoLabel>Lieu</InfoLabel><InfoValue>{selectedMission.location}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Transport</InfoLabel><InfoValue>{selectedMission.transport || "Non spécifié"}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Date de début</InfoLabel><InfoValue>{formatDate(selectedMission.requestDate)}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Date et Heure de départ</InfoLabel><InfoValue>{formatDate(selectedMission.departureDate)} {selectedMission.departureTime ? `à ${selectedMission.departureTime}` : ''}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Date de fin</InfoLabel><InfoValue>{formatDate(selectedMission.dueDate)}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Date de départ</InfoLabel><InfoValue>{formatDate(selectedMission.departureDate)}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Heure de départ</InfoLabel><InfoValue>{selectedMission.departureTime || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Date de retour</InfoLabel><InfoValue>{formatDate(selectedMission.returnDate)}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Heure de retour</InfoLabel><InfoValue>{selectedMission.returnTime || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Durée</InfoLabel><InfoValue>{selectedMission.estimatedDuration || "Non spécifiée"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Fonds alloués</InfoLabel><InfoValue>{selectedMission.allocatedFund || 0} MGA</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Date et Heure de retour</InfoLabel><InfoValue>{formatDate(selectedMission.returnDate)} {selectedMission.returnTime ? `à ${selectedMission.returnTime}` : ''}</InfoValue></InfoItem>
+                  <InfoItem><InfoLabel>Durée</InfoLabel><InfoValue>{selectedMission.estimatedDuration || "Non spécifiée"} J</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Type d'assignation</InfoLabel><InfoValue>{selectedMission.assignationType || "Non spécifié"}</InfoValue></InfoItem>
-                 <InfoItem><InfoLabel>ID de l'assignation</InfoLabel><InfoValue>{selectedMission.missionAssignationId || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Créée le</InfoLabel><InfoValue>{formatDate(selectedMission.createdAt)}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Modifiée le</InfoLabel><InfoValue>{formatDate(selectedMission.updatedAt) || "Non spécifiée"}</InfoValue></InfoItem>
+                  <InfoItem style={{ gridColumn: "span 3" }}><InfoLabel>Description</InfoLabel><InfoValue>{selectedMission.description}</InfoValue></InfoItem>
+                  
                 </InfoGrid>
 
                 <SectionTitle>Commentaires</SectionTitle>
@@ -463,7 +430,6 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                     })
                   )}
                 </CommentsList>
-              </DetailSection>
 
               {!isPending && (
                 <InfoAlert>
