@@ -32,6 +32,7 @@ namespace MyApp.Api.Repositories.users
         Task<IEnumerable<string>> GetUserHabilitationAsync(string userId);
         Task<User?> GetDirectorByDepartmentAsync(string department);
         Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
+        Task<int> GetUserCountByRoleAsync(string role);
     }
 
     public class UserRepository : IUserRepository
@@ -401,6 +402,20 @@ namespace MyApp.Api.Repositories.users
             {
                 throw new InvalidOperationException($"Failed to save changes to the database: {ex.Message}", ex);
             }
+        }
+
+        // Nouvelle implémentation ajoutée
+        public async Task<int> GetUserCountByRoleAsync(string role)
+        {
+            if (string.IsNullOrWhiteSpace(role))
+                throw new ArgumentException("Role cannot be null or empty.", nameof(role));
+
+            return await _context.UserRoles
+                .AsNoTracking()
+                .Where(ur => ur.Role!.Name == role)
+                .Select(ur => ur.UserId)
+                .Distinct()
+                .CountAsync();
         }
     }
 }

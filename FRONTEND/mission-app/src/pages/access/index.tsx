@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom"; // Ajout pour la navigation
 import { ChevronDown, ChevronUp, X, List, Search, Plus } from "lucide-react";
 import {
   FiltersContainer,
@@ -32,7 +33,7 @@ import {
   SelectionInfo,
 } from "@/styles/table-styles";
 import { useRolesInfo, useUpdateRole, useDeleteRole } from "@/api/access/services";
-import { useHasHabilitation } from "@/api/users/services";
+import { useHasHabilitation, useRoleUserCount } from "@/api/users/services";
 import type { RoleWithGroupedHabilitations } from "@/api/access/services";
 import Alert from "@/components/alert";
 import Modal from "@/components/modal";
@@ -43,7 +44,6 @@ import axios from 'axios';
 
 interface FiltersState {
   name: string;
-  description: string;
 }
 
 interface AlertState {
@@ -52,14 +52,44 @@ interface AlertState {
   message: string;
 }
 
+const RoleCountCell: React.FC<{ roleName: string }> = ({ roleName }) => {
+  const navigate = useNavigate(); // Hook pour navigation
+  const { data } = useRoleUserCount(roleName);
+  const count = data?.data || 0;
+
+  const handleClick = useCallback(() => {
+    // Navigation vers la liste des utilisateurs avec filtre "Access" pré-rempli par le nom du rôle
+    navigate(`/utilisateur?role=${encodeURIComponent(roleName)}`);
+  }, [navigate, roleName]);
+
+  const userText = count === 1 ? "utilisateur" : "utilisateurs";
+
+  return (
+    <button
+      onClick={handleClick}
+      style={{
+        background: "none",
+        border: "none",
+        color: "var(--primary-color)",
+        cursor: "pointer",
+        textDecoration: "underline",
+        fontWeight: "bold",
+        padding: 0,
+        textAlign: "center",
+      }}
+      title={`Voir les ${count} ${userText}(s) avec ce rôle`}
+    >
+      Assigné à {count} {userText}
+    </button>
+  );
+};
+
 const RoleList: React.FC = () => {
   const [filters, setFilters] = useState<FiltersState>({
     name: "",
-    description: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<FiltersState>({
     name: "",
-    description: "",
   });
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [editingRole, setEditingRole] = useState<RoleWithGroupedHabilitations | null>(null);
@@ -105,7 +135,7 @@ const RoleList: React.FC = () => {
     return Array.from(groupsMap.values());
   }, [roles]);
 
-  const hasFilters: boolean = Object.values(filters).some((val: string) => (val || "").trim() !== "");
+  const hasFilters: boolean = (filters.name || "").trim() !== "";
 
   const filteredRoles = useMemo(() => {
     let filtered = roles;
@@ -113,12 +143,6 @@ const RoleList: React.FC = () => {
     if (appliedFilters.name) {
       filtered = filtered.filter((role) =>
         role.name.toLowerCase().includes(appliedFilters.name.toLowerCase())
-      );
-    }
-
-    if (appliedFilters.description) {
-      filtered = filtered.filter((role) =>
-        role.description.toLowerCase().includes(appliedFilters.description.toLowerCase())
       );
     }
 
@@ -232,7 +256,7 @@ const RoleList: React.FC = () => {
   }, [filters]);
 
   const handleResetFilters = useCallback((): void => {
-    const resetFilters: FiltersState = { name: "", description: "" };
+    const resetFilters: FiltersState = { name: "" };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
     setAlert({ isOpen: true, type: "info", message: "Filtres réinitialisés." });
@@ -298,19 +322,14 @@ const RoleList: React.FC = () => {
     setFilters((prev) => ({ ...prev, name: value }));
   }, []);
 
-  const handleDescriptionChange = useCallback((value: string): void => {
-    setFilters((prev) => ({ ...prev, description: value }));
-  }, []);
-
   const nameSuggestions = useMemo(() => roles.map((role) => role.name), [roles]);
-  const descriptionSuggestions = useMemo(() => [...new Set(roles.map((role) => role.description))], [roles]);
 
   const selectedCountText = useMemo(
     () => `${selectedRoles.length} élément${selectedRoles.length !== 1 ? "s" : ""} sélectionné${selectedRoles.length !== 1 ? "s" : ""}`,
     [selectedRoles.length]
   );
 
-  const filtersString = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
+  const filtersString = useMemo(() => appliedFilters.name, [appliedFilters.name]);
 
   useEffect(() => {
     setSelectedRoles([]);
@@ -416,7 +435,7 @@ const RoleList: React.FC = () => {
                 <FormTableSearch>
                   <tbody>
                     <FormRow>
-                      <FormFieldCell style={{ width: "50%" }}>
+                      <FormFieldCell style={{ width: "100%" }}>
                         <FormLabelSearch>Nom du rôle</FormLabelSearch>
                         <StyledAutoCompleteInput
                           value={filters.name || ""}
@@ -427,21 +446,6 @@ const RoleList: React.FC = () => {
                           disabled={isRolesLoading}
                           fieldType="role"
                           fieldLabel="rôle"
-                          showAddOption={false}
-                        />
-                      </FormFieldCell>
-
-                      <FormFieldCell style={{ width: "50%" }}>
-                        <FormLabelSearch>Description</FormLabelSearch>
-                        <StyledAutoCompleteInput
-                          value={filters.description || ""}
-                          onChange={handleDescriptionChange}
-                          suggestions={descriptionSuggestions}
-                          maxVisibleItems={5}
-                          placeholder="Rechercher par description..."
-                          disabled={isRolesLoading}
-                          fieldType="description"
-                          fieldLabel="description"
                           showAddOption={false}
                         />
                       </FormFieldCell>
@@ -550,29 +554,41 @@ const RoleList: React.FC = () => {
                           padding: "var(--spacing-xs)",
                         }}
                       >
-                        {editingRole?.roleId === role.roleId ? (
-                          <input
-                            type="text"
-                            value={editValues?.name || role.name}
-                            onChange={(e) =>
-                              setEditValues((prev) => ({ ...prev!, name: e.target.value }))
-                            }
-                            onBlur={handleBlur}
-                            onFocus={handleFocus}
-                            onKeyDown={handleKeyDown}
-                            autoFocus
-                            style={{
-                              width: "100%",
-                              boxSizing: "border-box",
-                              border: "1px solid var(--color-border)",
-                              padding: "var(--spacing-xs)",
-                              background: "white",
-                              margin: 0,
-                            }}
-                          />
-                        ) : (
-                          role.name
-                        )}
+                        <div>
+                          {editingRole?.roleId === role.roleId ? (
+                            <input
+                              type="text"
+                              value={editValues?.name || role.name}
+                              onChange={(e) =>
+                                setEditValues((prev) => ({ ...prev!, name: e.target.value }))
+                              }
+                              onBlur={handleBlur}
+                              onFocus={handleFocus}
+                              onKeyDown={handleKeyDown}
+                              autoFocus
+                              style={{
+                                width: "100%",
+                                boxSizing: "border-box",
+                                border: "1px solid var(--color-border)",
+                                padding: "var(--spacing-xs)",
+                                background: "white",
+                                margin: 0,
+                              }}
+                            />
+                          ) : (
+                            role.name
+                          )}
+                          {!editingRole && (
+                            <div style={{ 
+                              fontSize: "0.875rem", 
+                              color: "var(--text-secondary)", 
+                              marginTop: "4px",
+                              fontStyle: "italic"
+                            }}>
+                              <RoleCountCell roleName={role.name} />
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell 
                         style={{ 
@@ -679,7 +695,7 @@ const RoleList: React.FC = () => {
                 <TableRow>
                   <TableCell colSpan={2 + allGroups.length}>
                     <NoDataMessage>
-                      {Object.values(appliedFilters).some(Boolean)
+                      {appliedFilters.name
                         ? "Aucun rôle ne correspond aux critères."
                         : "Aucun rôle trouvé."}
                     </NoDataMessage>

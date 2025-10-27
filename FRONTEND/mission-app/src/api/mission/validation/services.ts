@@ -51,6 +51,61 @@ export interface Mission {
   updatedAt: string;
 }
 
+export interface Direction {
+  directionId: string;
+  directionName: string;
+  acronym: string;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface Department {
+  departmentId: string;
+  departmentName: string;
+  directionId: string;
+  direction: Direction;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface Service {
+  serviceId: string;
+  serviceName: string;
+  departmentId: string;
+  department: Department;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface Employee {
+  employeeId: string;
+  employeeCode: string | null;
+  lastName: string;
+  firstName: string;
+  phoneNumber: string | null;
+  email: string | null;
+  hireDate: string;
+  jobTitle: string | null;
+  contractEndDate: string | null;
+  status: string | null;
+  siteId: string;
+  site: unknown | null;
+  genderId: string;
+  gender: unknown | null;
+  contractTypeId: string;
+  contractType: unknown | null;
+  directionId: string;
+  direction: Direction | null;
+  departmentId: string | null;
+  department: Department | null;
+  serviceId: string | null;
+  service: Service | null;
+  unitId: string | null;
+  unit: unknown | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
 export interface MissionAssignation {
   assignationId: string;
   employeeId: string;
@@ -62,7 +117,7 @@ export interface MissionAssignation {
   returnTime: string;
   duration: number;
   isValidated: number | null;
-  employee: unknown | null;
+  employee: Employee | null;
   mission: Mission | null;
   transport: unknown | null;
   type: string;
@@ -91,10 +146,17 @@ export interface MissionValidation {
 export interface RequestFilter {
   employeeId?: string;
   status?: string;
+  validationDateFrom?: string;
+  validationDateTo?: string;
 }
 
 export interface MissionValidationRequestsResponse {
   results: MissionValidation[];
+  totalCount: number;
+}
+
+export interface FormattedMissionValidationRequestsResponse {
+  results: FormattedMission[];
   totalCount: number;
 }
 
@@ -119,6 +181,7 @@ export interface FormattedMission {
   returnDate: string;
   returnTime: string;
   reference: string;
+  missionName: string;
   toWhom: string;
   validationDate: string | null;
   missionCreator: string;
@@ -134,6 +197,11 @@ export interface FormattedMission {
   assignationType: string;
   employeeId: string;
   missionId: string;
+  employeeName: string;
+  direction: string;
+  service: string;
+  employeeEmail: string;
+  employeeFunction: string;
 }
 
 export interface MissionBudget {
@@ -141,6 +209,106 @@ export interface MissionBudget {
   budget: number;
   userId: string;
 }
+
+const formatMissionValidationToFormattedMission = (validation: MissionValidation): FormattedMission => {
+  const {
+    missionValidationId,
+    status: validationStatus,
+    validationDate,
+    missionCreator,
+    creator,
+    mission,
+    missionAssignation,
+    toWhom,
+    type: validationType,
+    createdAt,
+    updatedAt,
+  } = validation;
+
+  const {
+    name: missionName,
+    description,
+    missionType,
+    status: missionStatus,
+    endDate,
+    lieu,
+  } = mission;
+
+  const {
+    assignationId: missionAssignationId,
+    employee,
+    departureDate,
+    departureTime,
+    returnDate,
+    returnTime,
+    duration,
+    allocatedFund,
+    type: assignationType,
+    employeeId: empId,
+  } = missionAssignation;
+
+  const {
+    employeeCode,
+    jobTitle,
+    department,
+    direction,
+    service,
+    firstName,
+    lastName,
+    email: empEmail,
+  } = employee || {};
+
+  const departmentName = department?.departmentName || '';
+  const directionName = direction?.directionName || '';
+  const serviceName = service?.serviceName || '';
+  const employeeFullName = `${firstName || ''} ${lastName || ''}`.trim() || '';
+  const employeeEmailValue = empEmail || '';
+  const employeeFunctionValue = jobTitle || '';
+
+  return {
+    id: missionValidationId,
+    title: missionName,
+    description,
+    requestedBy: creator.name,
+    department: departmentName,
+    status: validationStatus,
+    requestDate: createdAt,
+    dueDate: endDate,
+    estimatedDuration: duration.toString(),
+    location: lieu?.nom || '',
+    comments: '',
+    signature: creator.signature || '',
+    matricule: employeeCode || '',
+    function: employeeFunctionValue,
+    transport: '',
+    departureTime,
+    departureDate,
+    returnDate,
+    returnTime,
+    reference: mission.missionId,
+    missionName: mission.name,
+    toWhom,
+    validationDate,
+    missionCreator,
+    superiorName: creator.superiorName,
+    email: creator.email,
+    createdAt,
+    updatedAt,
+    missionAssignationId,
+    missionType,
+    missionStatus,
+    allocatedFund,
+    type: validationType,
+    assignationType,
+    employeeId: empId || '',
+    missionId: mission.missionId,
+    employeeName: employeeFullName,
+    direction: directionName,
+    service: serviceName,
+    employeeEmail: employeeEmailValue,
+    employeeFunction: employeeFunctionValue,
+  };
+};
 
 export const useGetMissionValidationsByAssignationId = (assignationId: string | undefined) => {
   const queryKey = [...MISSION_VALIDATIONS_BY_ASSIGNATION_ID_KEY, assignationId] as const;
@@ -176,7 +344,7 @@ export const useGetMissionValidationRequests = (
 ) => {
   const queryKey = [...MISSION_VALIDATION_REQUESTS_KEY, userId, page, pageSize, filter] as const;
 
-  return useQuery<MissionValidationRequestsResponse, Error>({
+  return useQuery<FormattedMissionValidationRequestsResponse, Error>({
     queryKey,
     queryFn: async () => {
       if (!userId) {
@@ -196,11 +364,21 @@ export const useGetMissionValidationRequests = (
         if (filter?.status) {
           params.append('status', filter.status);
         }
+        if (filter?.validationDateFrom) {
+          params.append('validationDateFrom', filter.validationDateFrom);
+        }
+        if (filter?.validationDateTo) {
+          params.append('validationDateTo', filter.validationDateTo);
+        }
         const response = await api.get(`/api/MissionValidation/requests/${userId}?${params.toString()}`);
         if (response.data.status !== 200) {
           throw new Error(response.data.message || 'Failed to fetch mission validation requests');
         }
-        return response.data.data;
+        const rawData = response.data.data;
+        return {
+          results: rawData.results.map(formatMissionValidationToFormattedMission),
+          totalCount: rawData.totalCount,
+        };
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
           throw new Error(error.response.data.message || 'An error occurred while fetching mission validation requests');

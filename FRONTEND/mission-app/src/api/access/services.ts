@@ -10,6 +10,7 @@ export const SEARCH_ROLES_BASE_KEY = ['searchRoles'] as const;
 export const HABILITATIONS_KEY = ['habilitations'] as const;
 const HABILITATIONS_GROUPS_KEY = ['habilitationsGroups'] as const;
 export const HABILITATIONS_BY_ROLES_KEY = ['habilitationsByRoles'] as const;
+export const HABILITATIONS_PAGINATED_KEY = ['habilitationsPaginated'] as const;
 
 export interface RoleSearchFilters {
   name?: string;
@@ -49,10 +50,11 @@ export interface Role {
   updatedAt: string | null;
 }
 
-interface Habilitation {
+export interface Habilitation {
   habilitationId: string;
   groupId: string;
   label: string;
+  description: string;
   group: null;
   roleHabilitations: RoleHabilitation[];
   createdAt: string;
@@ -134,6 +136,18 @@ export interface DeleteRoleRequest {
   userId: string;
 }
 
+// Nouvelle interface pour la réponse paginée des habilitations
+export interface HabilitationsPaginatedResponse {
+  data: {
+    items: Habilitation[];
+    total: number;
+    page: number;
+    pageSize: number;
+  };
+  status: number;
+  message: string;
+}
+
 interface ApiResponse<T> {
   data: T | null;
   status: number;
@@ -194,6 +208,27 @@ export const useHabilitations = () => {
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
           return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useHabilitationsPaginated = (page: number = 1, pageSize: number = 10, label: string = '') => {
+  return useQuery<HabilitationsPaginatedResponse, Error>({
+    queryKey: [...HABILITATIONS_PAGINATED_KEY, page, pageSize, label],
+    queryFn: async () => {
+      try {
+        let url = `/api/Habilitation?page=${page}&pageSize=${pageSize}`;
+        if (label.trim()) {
+          url += `&label=${encodeURIComponent(label)}`;
+        }
+        const response = await api.get(url);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          throw new Error(error.response.data.message || 'Erreur lors de la récupération des habilitations');
         }
         throw error;
       }

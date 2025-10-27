@@ -273,6 +273,36 @@ public class UserController : ControllerBase
         }
     }
 
+    [HttpGet("role/{role}/count")]
+    [AllowAnonymous]
+    public async Task<ActionResult> GetUserCountByRole(string role)
+    {
+        if (!User.Identity?.IsAuthenticated ?? true)
+        {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
+
+        try
+        {
+            if (string.IsNullOrEmpty(role))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Role cannot be empty." });
+            }
+
+            var count = await _userService.GetUserCountByRoleAsync(role);
+            return Ok(new { data = count, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+        }
+    }
+
 ///
 /// 
 /// 

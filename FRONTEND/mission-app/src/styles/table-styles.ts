@@ -94,12 +94,14 @@ export const StatNumber = styled.div`
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: var(--spacing-xs);
+  font-family: var(--font-family);
 `;
 
 export const StatLabel = styled.div`
   font-size: var(--font-size-sm);
   color: var(--text-muted);
   font-weight: 500;
+  font-family: var(--font-family);
 `;
 
 export const TableContainer = styled.div`
@@ -166,6 +168,7 @@ export const TableTitle = styled.h2`
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+  font-family: var(--font-family);
 `;
 
 export const TableRow = styled.tr<TableRowProps>`
@@ -182,6 +185,7 @@ export const TableCell = styled.td`
   border-right: 1px solid var(--border-light); 
   font-size: var(--font-size-sm);
   color: var(--text-primary);
+  font-family: var(--font-family);
 
   &:first-child {
     border-left: none;
@@ -211,6 +215,7 @@ export const TableHeadCell = styled.th`
   color: var(--text-secondary);
   background: var(--bg-secondary);
   white-space: nowrap;
+  font-family: var(--font-family);
 
   border-top: none; 
   &:first-child {
@@ -231,12 +236,14 @@ export const Loading = styled.div`
   text-align: center;
   padding: var(--spacing-md);
   color: var(--text-muted);
+  font-family: var(--font-family);
 `;
 
 export const NoDataMessage = styled.div`
   text-align: center;
   padding: var(--spacing-md);
   color: var(--text-muted);
+  font-family: var(--font-family);
 `;
 
 export const StatusBadge = styled.span`
@@ -245,6 +252,7 @@ export const StatusBadge = styled.span`
   font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
+  font-family: var(--font-family);
 
   &.status-progress {
     background: #cce5ff;
@@ -322,6 +330,7 @@ export const FiltersTitle = styled.h2`
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--text-primary);
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: var(--font-size-md);
@@ -413,6 +422,7 @@ export const FormFieldCell = styled.td`
   font-size: var(--font-size-md);
   padding: var(--spacing-xs);
   vertical-align: top;
+  font-family: var(--font-family);
 
   @media (max-width: 480px) {
     display: block;
@@ -426,6 +436,7 @@ export const FormLabelSearch = styled.label`
   font-weight: 500;
   color: var(--text-secondary);
   display: block;
+  font-family: var(--font-family);
 `;
 
 export const FormInputSearch = styled.input`
@@ -600,6 +611,7 @@ export const AutoCompleteSuggestion = styled.div`
   cursor: pointer;
   border-bottom: 1px solid var(--border-light);
   color: var(--text-input);
+  font-family: var(--font-family);
 
   &:hover {
     background-color: var(--bg-secondary);
@@ -876,6 +888,52 @@ export const ButtonConfirm = styled.button`
   }
 `;
 
+export const IconButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+  background: transparent;
+  margin-left: var(--spacing-xs);
+
+  &:hover {
+    background-color: var(--bg-secondary);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  @media (max-width: 768px) {
+    width: 28px;
+    height: 28px;
+  }
+`;
+
+export const EditButton = styled(IconButton)`
+  color: var(--primary-color);
+
+  &:hover {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+  }
+`;
+
+export const CancelButton = styled(IconButton)`
+  color: var(--error-color);
+
+  &:hover {
+    background-color: var(--error-bg);
+    color: var(--error-color);
+  }
+`;
+
 export const FiltersToggle = styled.div`
   margin-bottom: 21px;
   margin-top: var(--spacing-lg); 
@@ -988,6 +1046,7 @@ export const LegendColor = styled.div<LegendColorProps>`
 export const LegendLabel = styled.span`
   font-size: var(--font-size-sm);
   color: var(--text-primary);
+  font-family: var(--font-family);
 `;
 
 export const LegendNote = styled.div`
@@ -996,6 +1055,7 @@ export const LegendNote = styled.div`
   border-radius: var(--radius-md);
   font-size: var(--font-size-xs);
   color: var(--text-muted);
+  font-family: var(--font-family);
 `;
 
 export const ActionButtons = styled.div`
@@ -1027,6 +1087,7 @@ export const PaginationContainer = styled.div`
 export const PaginationInfo = styled.div`
   font-size: var(--font-size-sm);
   color: var(--text-muted);
+  font-family: var(--font-family);
 `;
 
 export const PaginationControls = styled.div`
@@ -1043,6 +1104,7 @@ export const PaginationButton = styled.button`
   cursor: pointer;
   font-size: var(--font-size-sm);
   transition: all 0.2s;
+  font-family: var(--font-family);
 
   &:hover {
     background: var(--bg-secondary);
@@ -1058,6 +1120,7 @@ export const PaginationButton = styled.button`
 export const PaginationDots = styled.div`
   color: var(--text-muted);
   padding: 0 var(--spacing-sm);
+  font-family: var(--font-family);
 `;
 
 export const PaginationOptions = styled.div`
@@ -1078,6 +1141,7 @@ export const PaginationLabel = styled.div`
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   font-weight: 600;
+  font-family: var(--font-family);
 `;
 
 export const PaginationSelect = styled.select`
@@ -1195,6 +1259,7 @@ export const SelectionInfo = styled.span`
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
   font-weight: 500;
+  font-family: var(--font-family);
 `;
 
 export const RoleBadge = styled.span`
@@ -1207,6 +1272,7 @@ export const RoleBadge = styled.span`
   font-weight: 500;
   margin-right: 4px;
   margin-bottom: 4px;
+  font-family: var(--font-family);
 `;
 
 export const RolesContainer = styled.div`

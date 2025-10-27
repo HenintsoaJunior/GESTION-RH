@@ -14,7 +14,6 @@ import {
   MainEmail,
   ProfileContent,
   ProfileCard,
-  KeyInfoCard,
   SectionTitle,
   InfoGroup,
   InfoLabel,
@@ -90,26 +89,26 @@ const ProfilePage = () => {
               <MainEmail>{user?.email || notSpecified}</MainEmail>
             </ProfileHeaderInfo>
           </ProfileHeader>
-
-          <KeyInfoCard>
-            <SectionTitle>Clés de Poste</SectionTitle>
-            <InfoGroup>
-              <InfoLabel>Poste</InfoLabel>
-              {displayValue(user?.position)}
-            </InfoGroup>
-            <InfoGroup>
-              <InfoLabel>Matricule</InfoLabel>
-              {displayValue(user?.matricule)}
-            </InfoGroup>
-            <InfoGroup>
-              <InfoLabel>Supérieur</InfoLabel>
-              {displayValue(user?.superiorName)}
-            </InfoGroup>
-          </KeyInfoCard>
         </SidebarColumn>
 
         <ContentColumn>
           <ProfileContent>
+            <ProfileCard>
+              <SectionTitle>Clés de Poste</SectionTitle>
+              <InfoGroup>
+                <InfoLabel>Poste</InfoLabel>
+                {displayValue(user?.position)}
+              </InfoGroup>
+              <InfoGroup>
+                <InfoLabel>Matricule</InfoLabel>
+                {displayValue(user?.matricule)}
+              </InfoGroup>
+              <InfoGroup>
+                <InfoLabel>Supérieur</InfoLabel>
+                {displayValue(user?.superiorName)}
+              </InfoGroup>
+            </ProfileCard>
+
             <ProfileCard>
               <SectionTitle>Détails de l'Organisation</SectionTitle>
               <InfoGroup>

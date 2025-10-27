@@ -224,7 +224,8 @@ const useMissionForm = ({
   const calculateMissionDuration = useCallback((
     departureDate: string,
     returnDate: string,
-    missionStartDate?: string | null
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _missionStartDate?: string | null
   ): MissionDurationResult => {
     if (!departureDate || !returnDate) {
       return { missionDuration: "", error: undefined };
@@ -232,7 +233,6 @@ const useMissionForm = ({
 
     const departure = new Date(departureDate);
     const returnD = new Date(returnDate);
-    const missionStart = missionStartDate ? new Date(missionStartDate) : null;
 
     if (isNaN(departure.getTime()) || isNaN(returnD.getTime())) {
       return { missionDuration: "", error: "Les dates de départ ou de retour sont invalides." };
@@ -240,13 +240,6 @@ const useMissionForm = ({
 
     if (returnD < departure) {
       return { missionDuration: "", error: "La date de retour doit être postérieure ou égale à la date de départ." };
-    }
-
-    if (missionStart && departure < missionStart) {
-      return {
-        missionDuration: "",
-        error: "La date de départ doit être supérieure ou égale à la date de début de la mission.",
-      };
     }
 
     const durationMs = returnD.getTime() - departure.getTime();
@@ -317,15 +310,6 @@ const useMissionForm = ({
         errors["beneficiary.departureDate"] = [...(errors["beneficiary.departureDate"] || []), error];
         errors["beneficiary.returnDate"] = [...(errors["beneficiary.returnDate"] || []), error];
         errors["beneficiary.missionDuration"] = [...(errors["beneficiary.missionDuration"] || []), error];
-      }
-    }
-
-    if (beneficiary.returnDate && formData.endDate) {
-      const returnDate = new Date(beneficiary.returnDate);
-      const endDate = new Date(formData.endDate);
-      if (returnDate > endDate) {
-        const endDateError = "La date de retour doit être antérieure ou égale à la date de fin de la mission.";
-        errors["beneficiary.returnDate"] = [...(errors["beneficiary.returnDate"] || []).filter(e => e !== endDateError), endDateError];
       }
     }
 

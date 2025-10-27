@@ -13,7 +13,7 @@ export const PaginationContainer = styled.div`
   padding: 16px;
   background-color: var(--bg-primary, #ffffff);
   border-top: 1px solid var(--bg-light, #f5f5f5);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-family);
   font-size: 14px;
   color: var(--text-color, #333);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -37,6 +37,7 @@ export const PageSizeSelector = styled.div`
 export const PaginationLabel = styled.label`
   font-size: 14px;
   color: var(--text-color, #333);
+  font-family: var(--font-family);
 `;
 
 export const Select = styled.select`
@@ -49,6 +50,7 @@ export const Select = styled.select`
   cursor: pointer;
   appearance: none;
   transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  font-family: var(--font-family);
 
   &:focus {
     outline: none;
@@ -71,6 +73,7 @@ export const Select = styled.select`
 export const PaginationInfo = styled.div`
   font-size: 14px;
   color: var(--text-muted-color, #6b7280);
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     text-align: center;
@@ -106,6 +109,7 @@ export const PaginationButton = styled.button<PaginationButtonProps>`
   line-height: 1.5;
   text-align: center;
   user-select: none;
+  font-family: var(--font-family);
 
   ${({ $isArrow }) =>
     $isArrow &&
@@ -165,4 +169,5 @@ export const PaginationEllipsis = styled.span`
   padding: 8px 0;
   color: var(--text-muted-color, #6b7280);
   font-size: 16px;
+  font-family: var(--font-family);
 `;

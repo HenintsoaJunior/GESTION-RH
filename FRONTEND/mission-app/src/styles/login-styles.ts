@@ -8,6 +8,7 @@ export const LoginContainer = styled.div`
   justify-content: center;
   background-color: var(--bg-secondary);
   padding: var(--spacing-md);
+  font-family: var(--font-family);
 `;
 
 export const LoginCard = styled.div`
@@ -20,6 +21,7 @@ export const LoginCard = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  font-family: var(--font-family);
 `;
 
 export const LogoContainer = styled.div`
@@ -40,6 +42,7 @@ export const LoginTitle = styled.h2`
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
   color: var(--text-color);
+  font-family: var(--font-family);
 `;
 
 export const Separator = styled.div`
@@ -54,6 +57,7 @@ export const LoginDescription = styled.p`
   text-align: center;
   font-size: var(--font-size-sm);
   color: var(--text-muted);
+  font-family: var(--font-family);
 `;
 
 export const LoginForm = styled.form`
@@ -61,6 +65,7 @@ export const LoginForm = styled.form`
   flex-direction: column;
   gap: var(--spacing-2xl);
   width: 100%;
+  font-family: var(--font-family);
 `;
 
 export const FormGroup = styled.div`
@@ -74,6 +79,7 @@ export const FormLabel = styled.label`
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--text-color);
+  font-family: var(--font-family);
 `;
 
 const FormInputBase = `
@@ -152,6 +158,7 @@ export const ErrorMessage = styled.p`
   font-size: var(--font-size-sm);
   text-align: center;
   color: var(--danger-color);
+  font-family: var(--font-family);
 `;
 
 export const LoginButton = styled.button`
@@ -168,6 +175,7 @@ export const LoginButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: background-color var(--transition-speed);
+  font-family: var(--font-family);
 
   &:hover:not(:disabled) {
     background-color: var(--primary-hover);

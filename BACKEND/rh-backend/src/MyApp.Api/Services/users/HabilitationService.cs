@@ -9,6 +9,7 @@ namespace MyApp.Api.Services.users;
 
 public interface IHabilitationService
 {
+    Task<(IEnumerable<Habilitation>, int)> GetAllPaginatedAsync(int page, int pageSize, string? label = null);
     Task<IEnumerable<Habilitation>> GetAllAsync();
     Task<Habilitation?> GetByIdAsync(string id);
     Task<IEnumerable<Habilitation>> GetByGroupIdsAsync(string[] groupIds);
@@ -34,6 +35,20 @@ public class HabilitationService : IHabilitationService
         _logService = logService;
         _sequenceGenerator = sequenceGenerator;
         _logger = logger;
+    }
+
+    public async Task<(IEnumerable<Habilitation>, int)> GetAllPaginatedAsync(int page, int pageSize, string? label = null)
+    {
+        try
+        {
+            _logger.LogInformation("Récupération paginée des habilitations, page: {Page}, pageSize: {PageSize}, label: {Label}", page, pageSize, label ?? "Aucun");
+            return await _repository.GetAllPaginatedAsync(page, pageSize, label);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération paginée des habilitations");
+            throw;
+        }
     }
 
     public async Task<IEnumerable<Habilitation>> GetAllAsync()

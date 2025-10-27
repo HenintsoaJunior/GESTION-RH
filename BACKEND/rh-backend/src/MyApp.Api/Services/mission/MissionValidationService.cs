@@ -10,7 +10,7 @@ namespace MyApp.Api.Services.mission
 {
     public interface IMissionValidationService
     {
-        Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize, string? employeeId = null, string? status = null);
+        Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize, RequestFilterDto requestFilterDto);
         Task<string?> ValidateAsync(Validation validation, MissionBudgetDTOForm missionBudget);
         Task<MissionValidation?> VerifyMissionValidationByMissionIdAsync(string missionId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
@@ -199,7 +199,7 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize, string? employeeId = null, string? status = null)
+        public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize,RequestFilterDto requestFilterDto)
         {
             try
             {
@@ -213,13 +213,13 @@ namespace MyApp.Api.Services.mission
                     throw new ArgumentException("Les paramètres de pagination doivent être supérieurs à 0", nameof(page));
                 }
 
-                var (results, totalCount) = await _repository.GetRequestAsync(userId, page, pageSize, employeeId, status);
+                var (results, totalCount) = await _repository.GetRequestAsync(userId, page, pageSize,requestFilterDto);
                 return (results, totalCount);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la récupération des demandes pour userId: {UserId}, employeeId: {EmployeeId}, status: {Status}",
-                    userId, employeeId ?? "none", status ?? "none");
+                    userId, requestFilterDto.EmployeeId ?? "none", requestFilterDto.Status ?? "none");
                 throw;
             }
         }
