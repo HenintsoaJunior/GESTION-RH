@@ -16,6 +16,7 @@ const USER_HABILITATION_BULK_BASE_KEY = ['userHabilitationBulk'] as const;
 export const BULK_REMOVE_USER_ROLES_KEY = ['bulkRemoveUserRoles'] as const;
 export const USER_HABILITATIONSROLE_KEY = ['userHabilitationsRole'] as const;
 export const ROLE_USER_COUNT_BASE_KEY = ['roleUserCount'] as const;
+export const USER_AVAILABILITY_KEY = ['userAvailability'] as const;
 
 export interface UserSearchFilters {
   name?: string;
@@ -105,6 +106,16 @@ export interface UseUserHabilitationBulkParams {
   userId: string;
 }
 
+export interface UserAvailabilityUpdateDto {
+  userId: string;
+  status: string;
+}
+
+interface UserAvailabilityData {
+  userId: string;
+  status: string;
+}
+
 interface ApiResponse<T> {
   data: T | null;
   status: number;
@@ -123,6 +134,8 @@ type RolesResponse = ApiResponse<string[]>;
 type HabilitationResponse = ApiResponse<Habilitation[]>;
 export type UserInfosResponse = ApiResponse<UserInfo[]>;
 type BulkHabilitationResponse = ApiResponse<BulkHabilitationData>;
+type UserAvailabilityResponse = ApiResponse<UserAvailabilityData>;
+type UpdateUserAvailabilityResponse = ApiResponse<UserAvailabilityData>;
 
 export interface UserRoleBulkDto {
   userIds: string[];
@@ -458,5 +471,54 @@ export const useRoleUserCount = (roleName: string | undefined) => {
       }
     },
     enabled: !!roleName,
+  });
+};
+
+export const useUserAvailability = (userId: string | undefined) => {
+  const queryKey = [...USER_AVAILABILITY_KEY, userId] as const;
+
+  return useQuery<UserAvailabilityResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error('userId is required for fetching user availability');
+      }
+      try {
+        const response = await api.get(`/api/UserAvailability/${userId}`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!userId,
+  });
+};
+
+export const useUpdateUserAvailability = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<UpdateUserAvailabilityResponse, Error, UserAvailabilityUpdateDto>({
+    mutationKey: ['updateUserAvailability'],
+    mutationFn: async (dto: UserAvailabilityUpdateDto) => {
+      try {
+        const response = await api.put(`/api/UserAvailability/${dto.userId}`, dto);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: USER_AVAILABILITY_KEY });
+      queryClient.invalidateQueries({ queryKey: [...USER_AVAILABILITY_KEY, variables.userId] });
+    },
+    onError: (error) => {
+      console.error('Error updating user availability:', error);
+    },
   });
 };

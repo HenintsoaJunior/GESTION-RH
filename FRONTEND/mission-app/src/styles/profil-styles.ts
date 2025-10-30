@@ -224,6 +224,19 @@ export const RoleBadge = styled.span`
   font-family: var(--font-family);
 `;
 
+export const StatusBadge = styled(RoleBadge)<{ variant?: 'disponible' | 'absent' }>`
+  background-color: ${({ variant }) => variant === 'absent' ? 'var(--danger-light, #ffebee)' : 'var(--success-light, #e8f5e8)'};
+  color: ${({ variant }) => variant === 'absent' ? 'var(--danger-color, #d32f2f)' : 'var(--success-color, #388e3c)'};
+  border-color: ${({ variant }) => variant === 'absent' ? 'var(--danger-color, #d32f2f)' : 'var(--success-color, #388e3c)'};
+  text-transform: capitalize;
+  font-weight: var(--font-weight-semibold, 600);
+
+  @media (max-width: 1024px) {
+    font-size: var(--font-size-xs, 0.75rem);
+    padding: var(--spacing-xs, 2px) var(--spacing-sm, 6px);
+  }
+`;
+
 // =================================================================
 // NOUVEAUX STYLES POUR LES RÔLES ET PERMISSIONS DÉTAILLÉS (ACCORDÉON)
 // =================================================================
@@ -383,5 +396,39 @@ export const ErrorButton = styled.button`
 
   &:hover {
     background-color: var(--primary-hover, #0056b3);
+  }
+`;
+
+// Ajouts à effectuer dans profil-styles.ts pour les nouveaux composants
+
+export const StatusToggleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md, 12px);
+  margin-top: var(--spacing-sm, 8px);
+  flex-wrap: wrap;
+`;
+
+export const StatusToggleButton = styled.button`
+  padding: var(--spacing-xs, 4px) var(--spacing-md, 12px);
+  border: 1px solid var(--border-light, #ddd);
+  border-radius: var(--radius-md, 8px);
+  background-color: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #333);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-family);
+
+  &:hover {
+    background-color: var(--primary-light, #e0f0ff);
+    border-color: var(--primary-color, #007bff);
+  }
+
+  @media (max-width: 768px) {
+    font-size: var(--font-size-xs, 0.75rem);
+    padding: var(--spacing-xs, 2px) var(--spacing-sm, 8px);
   }
 `;

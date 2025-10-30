@@ -8,13 +8,13 @@ using MyApp.Api.Entities.mission;
 using MyApp.Api.Entities.notifications;
 using MyApp.Api.Entities.prevision;
 using MyApp.Api.Entities.site;
+using MyApp.Api.Entities.tmp;
 using MyApp.Api.Entities.users;
 
 namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
-        
         public DbSet<MissionReportAttachment> MissionReportAttachments { get; set; }
         public DbSet<ExpenseReportAttachment> ExpenseReportAttachments { get; set; }
         public DbSet<Notifications> Notifications { get; set; }
@@ -23,11 +23,11 @@ namespace MyApp.Api.Data
         public DbSet<Comments> Comments { get; set; }
         public DbSet<Compensation> Compensations { get; set; }
         public DbSet<MissionReport> MissionReports { get; set; }
-        public DbSet<ExpenseReport>  ExpenseReports { get; set; }
-        public DbSet<ExpenseReportType>  ExpenseReportTypes { get; set; }
-        public DbSet<MissionBudget>  MissionBudgets { get; set; }
-        public DbSet<Log>  Logs { get; set; }
-        public DbSet<MissionValidation>  MissionValidations { get; set; }
+        public DbSet<ExpenseReport> ExpenseReports { get; set; }
+        public DbSet<ExpenseReportType> ExpenseReportTypes { get; set; }
+        public DbSet<MissionBudget> MissionBudgets { get; set; }
+        public DbSet<Log> Logs { get; set; }
+        public DbSet<MissionValidation> MissionValidations { get; set; }
         public DbSet<CategoriesOfEmployee> CategoriesOfEmployees { get; set; }
         public DbSet<MissionAssignation> MissionAssignations { get; set; }
         public DbSet<Lieu> Lieux { get; set; }
@@ -49,21 +49,25 @@ namespace MyApp.Api.Data
         public DbSet<Service> Services { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<Direction> Directions { get; set; }
+        public DbSet<UserAvailability> UserAvailabilities { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<User> Users { get; set; }
-        public DbSet<Role>  Roles { get; set; }
+        public DbSet<Role> Roles { get; set; }
         public DbSet<Habilitation> Habilitations { get; set; }
         public DbSet<HabilitationGroup> HabilitationGroups { get; set; }
         public DbSet<RoleHabilitation> RoleHabilitations { get; set; }
         public DbSet<UserHabilitation> UserHabilitations { get; set; }
         public DbSet<Module> Modules { get; set; }
         public DbSet<Menu> Menus { get; set; }
-        
+        public DbSet<TmpEmployee> TmpEmployees { get; set; }
         public DbSet<MenuRole> MenuRoles { get; set; }
         public DbSet<PrevisionPrice> PrevisionPrices { get; set; }
         public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<Menu>()
                 .HasIndex(m => m.MenuKey)
                 .IsUnique();
@@ -79,6 +83,22 @@ namespace MyApp.Api.Data
                 .WithMany(r => r.UserRoles)
                 .HasForeignKey(ur => ur.RoleId)
                 .OnDelete(DeleteBehavior.ClientCascade);
+
+            modelBuilder.Entity<Employee>(entity =>
+            {
+                entity.HasKey(e => e.EmployeeId);
+
+                entity.HasIndex(e => e.JobTitle);
+                entity.HasIndex(e => e.LastName);
+                entity.HasIndex(e => e.FirstName);
+                entity.HasIndex(e => e.DirectionId);
+                entity.HasIndex(e => e.ContractTypeId);
+                entity.HasIndex(e => e.EmployeeCode);
+                entity.HasIndex(e => e.SiteId);
+                entity.HasIndex(e => e.GenderId);
+
+                entity.HasIndex(e => new { e.LastName, e.FirstName });
+            });
         }
     }
 }

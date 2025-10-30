@@ -934,6 +934,15 @@ export const CancelButton = styled(IconButton)`
   }
 `;
 
+export const DeleteButton = styled(IconButton)`
+  color: var(--error-color);
+
+  &:hover {
+    background-color: var(--error-bg);
+    color: var(--error-color);
+  }
+`;
+
 export const FiltersToggle = styled.div`
   margin-bottom: 21px;
   margin-top: var(--spacing-lg); 

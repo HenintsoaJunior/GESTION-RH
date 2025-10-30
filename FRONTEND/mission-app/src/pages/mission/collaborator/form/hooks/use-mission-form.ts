@@ -263,7 +263,7 @@ const useMissionForm = ({
     if (!formData.missionType) errors.missionType = ["Le type de mission est requis."];
 
     const beneficiary = formData.beneficiary;
-    if (!beneficiary.beneficiary) errors["beneficiary.beneficiary"] = ["Le bénéficiaire est requis."];
+    if (!beneficiary.beneficiary) errors["beneficiary.beneficiary"] = ["Le missionaire est requis."];
     if (!beneficiary.matricule) errors["beneficiary.matricule"] = ["Le matricule est requis."];
     if (!beneficiary.function) errors["beneficiary.function"] = ["La fonction est requise."];
     if (!beneficiary.base) errors["beneficiary.base"] = ["Le site est requis."];

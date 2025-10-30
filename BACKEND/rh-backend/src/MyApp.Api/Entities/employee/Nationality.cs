@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using MyApp.Api.Models.dto.employee;
 
 namespace MyApp.Api.Entities.employee
 {
@@ -20,5 +21,15 @@ namespace MyApp.Api.Entities.employee
         [Column("name")]
         [MaxLength(100)]
         public string Name { get; set; } = null!;
+
+        public Nationality()
+        {
+        }
+
+        public Nationality(CreateNationalityDTO dto)
+        {
+            Code = dto.Code ?? throw new ArgumentNullException(nameof(dto.Code));
+            Name = dto.Name ?? throw new ArgumentNullException(nameof(dto.Name));
+        }
     }
 }

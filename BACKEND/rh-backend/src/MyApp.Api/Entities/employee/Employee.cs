@@ -25,18 +25,16 @@ namespace MyApp.Api.Entities.employee
         [MaxLength(50)]
         public string LastName { get; set; } = default!;
 
-        [Required]
         [Column("first_name")]
         [MaxLength(100)]
-        public string FirstName { get; set; } = default!;
+        public string? FirstName { get; set; }
 
         [Column("phone_number")]
         [MaxLength(20)]
         public string? PhoneNumber { get; set; }
 
-        [Required]
         [Column("hire_date")]
-        public DateTime HireDate { get; set; }
+        public DateTime? HireDate { get; set; }
 
         [Column("job_title")]
         [MaxLength(100)]
@@ -65,10 +63,9 @@ namespace MyApp.Api.Entities.employee
         [ForeignKey("GenderId")]
         public Gender? Gender { get; set; }
 
-        [Required]
         [Column("contract_type_id")]
         [MaxLength(50)]
-        public string ContractTypeId { get; set; } = default!;
+        public string? ContractTypeId { get; set; }
 
         [ForeignKey("ContractTypeId")]
         public ContractType? ContractType { get; set; }

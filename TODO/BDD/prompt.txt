@@ -1,9 +1,473 @@
-CREATE TABLE prevision_price(
-   prevision_id VARCHAR(50),
-   amount DECIMAL(15,2),
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   PRIMARY KEY(prevision_id)
+CREATE TABLE tmp_employee(
+   tmp_employee_id VARCHAR(250) PRIMARY KEY,
+   site VARCHAR(50),
+   mle VARCHAR(50),
+   nom VARCHAR(100),
+   prenom VARCHAR(100),
+   sexe VARCHAR(50),
+   nationalite VARCHAR(50),
+   telephone VARCHAR(20),
+   date_anciennete DATE,
+   type_contrat VARCHAR(50),
+   intitule_poste VARCHAR(100),
+   categorie VARCHAR(50),
+   unite VARCHAR(100),
+   service VARCHAR(100),
+   department VARCHAR(100),
+   direction VARCHAR(100),
+   date_fin_contrat DATE,
 );
 
-Creer moi une 
+
+
+Creer moi une class pour les entite,service,repository,controller mais creer seulement la fonction ensertion et getAll
+prend example sur cette code :
+
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using MyApp.Api.Models.dto.users;
+
+namespace MyApp.Api.Entities.users
+{
+    [Table("user_availability")]
+    public class UserAvailability
+    {
+        [Key]
+        [Column("user_id")]
+        public string? UserId { get; set; }
+
+        [Required]
+        [Column("status")]
+        [MaxLength(20)]
+        public string Status { get; set; } = "disponible";
+
+        [Column("changed_at")]
+        public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
+
+        [ForeignKey("UserId")]
+        public User? User { get; set; }
+        public UserAvailability() { }
+        public UserAvailability(UserAvailabilityFormDTO dto)
+        {
+            UserId = dto.UserId;
+            Status = dto.Status ?? "disponible";
+            ChangedAt = DateTime.UtcNow;
+        }
+    }
+}
+
+
+
+using MyApp.Api.Data;
+using MyApp.Api.Entities.users;
+using MyApp.Api.Repositories.users;
+using MyApp.Api.Models.dto.users;
+
+namespace MyApp.Api.Services.users
+{
+    public interface IUserAvailabilityService
+    {
+        Task<IEnumerable<UserAvailability>> GetAllAsync(bool includeRelated = false);
+        Task<UserAvailability?> GetByIdAsync(string id, bool includeRelated = false);
+        Task<string> CreateAsync(UserAvailabilityFormDTO availability);
+        Task<bool> UpdateAsync(string id, UserAvailabilityFormDTO availability);
+        Task<bool> DeleteAsync(string id);
+    }
+
+    public class UserAvailabilityService : IUserAvailabilityService
+    {
+        private readonly IUserAvailabilityRepository _userAvailabilityRepository;
+        private readonly AppDbContext _context;
+
+        public UserAvailabilityService(
+            IUserAvailabilityRepository userAvailabilityRepository,
+            AppDbContext context)
+        {
+            _userAvailabilityRepository = userAvailabilityRepository ?? throw new ArgumentNullException(nameof(userAvailabilityRepository));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        public async Task<IEnumerable<UserAvailability>> GetAllAsync(bool includeRelated = false)
+        {
+            return await _userAvailabilityRepository.GetAllAsync(includeRelated);
+        }
+
+        public async Task<UserAvailability?> GetByIdAsync(string id, bool includeRelated = false)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentException("User ID cannot be null or empty", nameof(id));
+            }
+
+            return await _userAvailabilityRepository.GetByIdAsync(id, includeRelated);
+        }
+
+        public async Task<string> CreateAsync(UserAvailabilityFormDTO availability)
+        {
+            if (availability == null)
+            {
+                throw new ArgumentNullException(nameof(availability), "Availability cannot be null");
+            }
+            if (string.IsNullOrWhiteSpace(availability.UserId))
+            {
+                throw new ArgumentException("UserId cannot be null or empty", nameof(availability.UserId));
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var existing = await _userAvailabilityRepository.GetByIdAsync(availability.UserId);
+                if (existing != null)
+                {
+                    throw new InvalidOperationException($"Availability for user {availability.UserId} already exists");
+                }
+
+                var availabilityEntity = new UserAvailability(availability);
+
+                await _userAvailabilityRepository.AddAsync(availabilityEntity);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return availabilityEntity.UserId!;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateAsync(string id, UserAvailabilityFormDTO availability)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentException("User ID cannot be null or empty", nameof(id));
+            }
+            if (availability == null)
+            {
+                throw new ArgumentNullException(nameof(availability), "Availability cannot be null");
+            }
+
+            var existingAvailability = await _userAvailabilityRepository.GetByIdAsync(id, includeRelated: true);
+            if (existingAvailability == null)
+            {
+                throw new InvalidOperationException($"Availability with User ID {id} does not exist");
+            }
+
+            // Update only allowed fields from DTO
+            existingAvailability.Status = availability.Status ?? "disponible";
+            existingAvailability.ChangedAt = DateTime.UtcNow;
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                _userAvailabilityRepository.Update(existingAvailability);
+                await _userAvailabilityRepository.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteAsync(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentException("User ID cannot be null or empty", nameof(id));
+            }
+
+            var existingAvailability = await _userAvailabilityRepository.GetByIdAsync(id, includeRelated: true);
+            if (existingAvailability == null)
+            {
+                return false;
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                _userAvailabilityRepository.Delete(existingAvailability);
+                await _userAvailabilityRepository.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+    }
+}
+
+
+using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Data;
+using MyApp.Api.Entities.users;
+
+namespace MyApp.Api.Repositories.users
+{
+    public interface IUserAvailabilityRepository
+    {
+        Task<IEnumerable<UserAvailability>> GetAllAsync(bool includeRelated = false);
+        Task<UserAvailability?> GetByIdAsync(string id, bool includeRelated = false);
+        Task AddAsync(UserAvailability availability);
+        void Update(UserAvailability availability);
+        void Delete(UserAvailability availability);
+        Task SaveChangesAsync();
+    }
+
+    public class UserAvailabilityRepository : IUserAvailabilityRepository
+    {
+        private readonly AppDbContext _context;
+
+        public UserAvailabilityRepository(AppDbContext context)
+        {
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        public async Task<IEnumerable<UserAvailability>> GetAllAsync(bool includeRelated = false)
+        {
+            IQueryable<UserAvailability> query = _context.UserAvailabilities
+                .OrderByDescending(c => c.ChangedAt);
+
+            if (includeRelated)
+            {
+                query = query
+                    .Include(c => c.User);
+            }
+
+            return await query.ToListAsync();
+        }
+
+        public async Task<UserAvailability?> GetByIdAsync(string id, bool includeRelated = false)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return null;
+            }
+
+            IQueryable<UserAvailability> query = _context.UserAvailabilities;
+
+            if (includeRelated)
+            {
+                query = query
+                    .Include(c => c.User);
+            }
+
+            return await query.FirstOrDefaultAsync(c => c.UserId == id);
+        }
+
+        public async Task AddAsync(UserAvailability availability)
+        {
+            if (availability == null)
+            {
+                throw new ArgumentNullException(nameof(availability));
+            }
+
+            await _context.UserAvailabilities.AddAsync(availability);
+        }
+
+        public void Update(UserAvailability availability)
+        {
+            if (availability == null)
+            {
+                throw new ArgumentNullException(nameof(availability));
+            }
+
+            _context.UserAvailabilities.Update(availability);
+            // SaveChangesAsync is called in the service layer to ensure transaction consistency
+        }
+
+        public void Delete(UserAvailability availability)
+        {
+            if (availability == null)
+            {
+                throw new ArgumentNullException(nameof(availability));
+            }
+
+            _context.UserAvailabilities.Remove(availability);
+            // SaveChangesAsync is called in the service layer to ensure transaction consistency
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
+        }
+    }
+}
+
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MyApp.Api.Models.dto.users;
+using MyApp.Api.Services.users;
+
+namespace MyApp.Api.Controllers.users
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class UserAvailabilityController : ControllerBase
+    {
+        private readonly IUserAvailabilityService _userAvailabilityService;
+
+        public UserAvailabilityController(IUserAvailabilityService userAvailabilityService)
+        {
+            _userAvailabilityService = userAvailabilityService ?? throw new ArgumentNullException(nameof(userAvailabilityService));
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<ActionResult> CreateAvailability([FromBody] UserAvailabilityFormDTO availability)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (availability == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Availability data cannot be null" });
+            }
+
+            try
+            {
+                var userId = await _userAvailabilityService.CreateAsync(availability);
+                var responseData = new { UserId = userId };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { data = (object?)null, status = 409, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("{userId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetAvailabilityByUserId(string userId)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "User ID cannot be null or empty" });
+            }
+
+            try
+            {
+                var availability = await _userAvailabilityService.GetByIdAsync(userId);
+                var responseData = availability != null 
+                    ? new { UserId = availability.UserId!, Status = availability.Status } 
+                    : new { UserId = userId, Status = "disponible" };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpPut("{userId}")]
+        // [AllowAnonymous]
+        public async Task<ActionResult> UpdateAvailability(string userId, [FromBody] UserAvailabilityFormDTO availability)
+        {
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            // {
+            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            // }
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "User ID cannot be null or empty" });
+            }
+
+            if (availability == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Availability data cannot be null" });
+            }
+
+            try
+            {
+                var updated = await _userAvailabilityService.UpdateAsync(userId, availability);
+                if (!updated)
+                {
+                    return NotFound(new { data = (object?)null, status = 404, message = $"Availability for User ID {userId} not found" });
+                }
+                return Ok(new { data = new { UserId = userId, Status = availability.Status }, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(new { data = (object?)null, status = 404, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+        
+        [HttpDelete("{userId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> DeleteAvailability(string userId)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "User ID cannot be null or empty" });
+            }
+
+            try
+            {
+                var deleted = await _userAvailabilityService.DeleteAsync(userId);
+                if (!deleted)
+                {
+                    return NotFound(new { data = (object?)null, status = 404, message = $"Availability for User ID {userId} not found" });
+                }
+
+                var responseData = new { 
+                    message = $"Availability for User ID {userId} successfully deleted",
+                    data = new { UserId = userId }
+                };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+    }
+}

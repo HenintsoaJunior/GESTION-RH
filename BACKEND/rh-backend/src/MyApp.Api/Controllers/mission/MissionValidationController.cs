@@ -59,17 +59,17 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpGet("requests/{userId}")]
-        [AllowAnonymous]
+        // [AllowAnonymous]
         public async Task<ActionResult> GetRequests(
             string userId,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] RequestFilterDto? filter = null)
         {
-            if (!User.Identity?.IsAuthenticated ?? true)
-            {
-                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            // {
+            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            // }
 
             if (string.IsNullOrWhiteSpace(userId))
             {

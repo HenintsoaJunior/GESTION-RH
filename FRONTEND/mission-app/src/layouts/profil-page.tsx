@@ -21,8 +21,11 @@ import {
   FieldEmpty,
   RolesContainer,
   RoleBadge,
+  StatusBadge,
+  StatusToggleContainer, 
+  StatusToggleButton,
 } from '@/styles/profil-styles'; 
-import { useUserInfo } from '@/api/users/services';
+import { useUserInfo, useUserAvailability, useUpdateUserAvailability } from '@/api/users/services';
 
 interface Role {
   role: {
@@ -38,10 +41,12 @@ interface User {
   superiorName?: string;
   department?: string;
   roles?: Role[];
+  status?: 'disponible' | 'absent';
 }
 
 const ProfilePage = () => {
   const [userId, setUserId] = useState<string | undefined>(undefined);
+  const [currentStatus, setCurrentStatus] = useState<'disponible' | 'absent'>('disponible');
 
   useEffect(() => {
     const fetchUserId = () => {
@@ -64,8 +69,16 @@ const ProfilePage = () => {
   }, []);
 
   const { data: userInfosResponse } = useUserInfo(userId);
+  const { data: availabilityResponse } = useUserAvailability(userId);
+  const { mutate: updateStatus } = useUpdateUserAvailability();
 
   const user = useMemo(() => userInfosResponse?.data?.[0] || null, [userInfosResponse]) as User | null;
+
+  const fetchedStatus = availabilityResponse?.data?.status || 'disponible';
+
+  useEffect(() => {
+    setCurrentStatus(fetchedStatus as 'disponible' | 'absent');
+  }, [fetchedStatus]);
 
   const userRoles = user?.roles || [];
   const notSpecified = 'Non spécifié';
@@ -73,6 +86,20 @@ const ProfilePage = () => {
   const displayValue = (value: string | undefined) => (
     value ? <InfoValue>{value}</InfoValue> : <FieldEmpty>{notSpecified}</FieldEmpty>
   );
+
+  // Fonction pour afficher le badge de statut
+  const displayStatus = (status: 'disponible' | 'absent') => (
+    <StatusBadge variant={status}>
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </StatusBadge>
+  );
+
+  // Fonction pour toggler le statut
+  const toggleStatus = () => {
+    if (!userId) return;
+    const newStatus = currentStatus === 'disponible' ? 'absent' : 'disponible';
+    updateStatus({ userId, status: newStatus });
+  };
 
   return (
     <ProfilePageContainer>
@@ -89,6 +116,30 @@ const ProfilePage = () => {
               <MainEmail>{user?.email || notSpecified}</MainEmail>
             </ProfileHeaderInfo>
           </ProfileHeader>
+
+          {/* Nouvelle carte dédiée au statut, positionnée en haut de la sidebar pour une meilleure visibilité */}
+          <ProfileCard>
+            <SectionTitle>Statut</SectionTitle>
+            <StatusToggleContainer>
+              {displayStatus(currentStatus)}
+              <StatusToggleButton onClick={toggleStatus}>
+                Modifier
+              </StatusToggleButton>
+            </StatusToggleContainer>
+          </ProfileCard>
+
+          <ProfileCard>
+            <SectionTitle>Rôles</SectionTitle>
+            {userRoles.length > 0 ? (
+              <RolesContainer>
+                {userRoles.map((userRole: Role, index: number) => (
+                  <RoleBadge key={index}>{userRole.role.name}</RoleBadge>
+                ))}
+              </RolesContainer>
+            ) : (
+              <FieldEmpty>{notSpecified}</FieldEmpty>
+            )}
+          </ProfileCard>
         </SidebarColumn>
 
         <ContentColumn>
@@ -115,20 +166,6 @@ const ProfilePage = () => {
                 <InfoLabel>Département</InfoLabel>
                 {displayValue(user?.department)}
               </InfoGroup>
-            </ProfileCard>
-
-            {/* AFFICHAGE SIMPLE DES RÔLES SANS LISTE DÉROULANTE */}
-            <ProfileCard>
-              <SectionTitle>Rôles</SectionTitle>
-              {userRoles.length > 0 ? (
-                <RolesContainer>
-                  {userRoles.map((userRole: Role, index: number) => (
-                    <RoleBadge key={index}>{userRole.role.name}</RoleBadge>
-                  ))}
-                </RolesContainer>
-              ) : (
-                <FieldEmpty>{notSpecified}</FieldEmpty>
-              )}
             </ProfileCard>
           </ProfileContent>
         </ContentColumn>

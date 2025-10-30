@@ -439,7 +439,7 @@ const UserList: React.FC = () => {
                     disabled={!hasFilters || isUsersLoading || isSyncLoading}
                     title="Effacer"
                   >
-                    Effacer
+                    Effacer filtres
                   </ButtonReset>
                   <ButtonSearch
                     type="submit"

@@ -1,11 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.direction;
+using MyApp.Api.Models.dto.direction;
 
 namespace MyApp.Api.Repositories.direction
 {
     public interface IServiceRepository
     {
+        Task<(IEnumerable<Service>, int)> SearchAsync(ServiceSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Service>> GetAllAsync();
         Task<Service?> GetByIdAsync(string id);
         Task AddAsync(Service service);
@@ -21,6 +23,31 @@ namespace MyApp.Api.Repositories.direction
         public ServiceRepository(AppDbContext context)
         {
             _context = context;
+        }
+
+        public async Task<(IEnumerable<Service>, int)> SearchAsync(ServiceSearchFiltersDTO filters, int page, int pageSize)
+        {
+            var query = _context.Services.Include(s => s.Department).AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filters.Name))
+            {
+                query = query.Where(s => s.ServiceName.Contains(filters.Name));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filters.DepartmentId))
+            {
+                query = query.Where(s => s.DepartmentId == filters.DepartmentId);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var results = await query
+                .OrderByDescending(s => s.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (results, totalCount);
         }
 
         public async Task<IEnumerable<Service>> GetAllAsync()
@@ -44,11 +71,19 @@ namespace MyApp.Api.Repositories.direction
             await _context.Services.AddAsync(service);
         }
 
-        public Task UpdateAsync(Service service)
+        public async Task UpdateAsync(Service updatedService)
         {
-            service.UpdatedAt = DateTime.Now;
-            _context.Services.Update(service);
-            return Task.CompletedTask;
+            var existing = await _context.Services.FindAsync(updatedService.ServiceId);
+            if (existing == null)
+            {
+                throw new InvalidOperationException($"Service with ID {updatedService.ServiceId} not found.");
+            }
+
+            _context.Entry(existing).CurrentValues.SetValues(updatedService);
+            existing.UpdatedAt = DateTime.Now;
+
+            // Note: This assumes navigation properties like Department are not updated here.
+            // If needed, handle separately (e.g., update DepartmentId and let EF handle the FK).
         }
 
         public async Task DeleteAsync(string id)

@@ -1,0 +1,140 @@
+Voici une **version améliorée, claire et structurée** de ton prompt, optimisée pour une équipe de développeurs (en français technique, bien organisée et prête à être exécutée) 👇
+
+---
+
+## 🚀 Intégration complète du **backend** et du **frontend** pour la fonctionnalité **Direction**
+
+### 🎯 Objectif
+
+Finaliser l’intégration du module **Direction** en ajoutant :
+
+* la **pagination**
+* un **filtre par nom**
+* et le **CRUD complet** dans le frontend React.
+
+Ce module doit suivre la même architecture et logique que celle déjà utilisée pour **Mission** (`MissionRepository`, `MissionService`, `mission-list.tsx`, etc.).
+
+---
+
+## 🔧 BACKEND (.NET)
+
+**Structure concernée :**
+
+* `Controllers/DirectionController.cs`
+* `Services/DirectionService.cs`
+* `Repositories/DirectionRepository.cs`
+* `Entities/Direction.cs`
+
+### 🧩 À faire :
+
+1. **Ajouter une méthode de recherche avec pagination et filtre par nom.**
+
+   * Inspire-toi de la logique utilisée dans :
+
+     * `MissionRepository` → méthode `Search`
+     * `MissionService` → méthode `Search`
+   * La méthode doit permettre :
+
+     * de filtrer les Directions par **nom** (`Name`),
+     * et de paginer les résultats (ex. : `page`, `pageSize`).
+
+2. **Modifier le contrôleur (`DirectionController`)** :
+
+   * Ajouter une route `GET /api/directions/search`
+   * Les paramètres acceptés :
+
+     ```csharp
+     [FromQuery] string? name, [FromQuery] int page = 1, [FromQuery] int pageSize = 10
+     ```
+   * Retourner un objet paginé contenant :
+
+     ```json
+     {
+       "data": [ ... ],
+       "totalCount": 100,
+       "page": 1,
+       "pageSize": 10
+     }
+     ```
+
+---
+
+## 💻 FRONTEND (React + TypeScript)
+
+**Emplacement du projet :**
+
+```
+FRONTEND/mission-app/src
+```
+
+### 🗂️ Structure à créer :
+
+```
+src/
+ └── api/
+      └── direction/
+           ├── directionApi.ts      // CRUD + Search
+ └── pages/
+      └── referentiel/
+           └── direction-list.tsx   // Page principale CRUD Direction
+```
+
+### 🧩 Étapes d’implémentation :
+
+#### 1. API (dans `src/api/direction`)
+
+Créer un fichier **`directionApi.ts`** qui expose les fonctions suivantes :
+
+* `getDirections(params)` → GET avec pagination et filtre (nom)
+* `createDirection(data)` → POST
+* `updateDirection(id, data)` → PUT
+* `deleteDirection(id)` → DELETE
+
+➡️ **Inspiration** : regarde les fichiers API déjà présents dans `src/api/mission/`.
+
+---
+
+#### 2. Page React (dans `src/pages/referentiel/direction-list.tsx`)
+
+Créer la page **`direction-list.tsx`** sur le modèle de **`mission-list.tsx`** :
+
+* Table paginée affichant la liste des directions
+* Barre de recherche filtrant par **nom**
+* Bouton **Ajouter** ouvrant un formulaire de création/modification
+* Bouton **Modifier** réutilisant la logique d’édition existante
+* Bouton **Supprimer** affichant une boîte de dialogue :
+
+  > « Voulez-vous vraiment supprimer cet élément ? »
+
+➡️ Réutiliser les composants communs (table, modale, pagination, etc.).
+
+---
+
+#### 3. Routing
+
+Dans **`App.tsx`**, ajouter la nouvelle route :
+
+```tsx
+{
+  path: '/referentiel/direction',
+  element: <DirectionList />
+}
+```
+
+---
+
+### ✅ Résumé des livrables
+
+| Type     | Fichier / Classe                           | Description                              |
+| -------- | ------------------------------------------ | ---------------------------------------- |
+| Backend  | `DirectionRepository.cs`                   | Méthode de recherche paginée avec filtre |
+| Backend  | `DirectionService.cs`                      | Appelle la méthode de recherche du repo  |
+| Backend  | `DirectionController.cs`                   | Endpoint `GET /api/directions/search`    |
+| Frontend | `src/api/direction/directionApi.ts`        | Hooks API CRUD + Search                  |
+| Frontend | `src/pages/referentiel/direction-list.tsx` | Page CRUD avec filtre et pagination      |
+| Routing  | `App.tsx`                                  | Route `/referentiel/direction`           |
+
+---
+
+Souhaites-tu que je te **transforme ce prompt en plan d’implémentation étape par étape** (avec les snippets de code pour chaque fichier) ?
+👉 Cela te donnerait un guide directement exécutable pour ton équipe.

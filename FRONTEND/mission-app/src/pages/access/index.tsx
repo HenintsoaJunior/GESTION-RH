@@ -462,7 +462,7 @@ const RoleList: React.FC = () => {
                     disabled={!hasFilters || isRolesLoading}
                     title="Effacer"
                   >
-                    Effacer
+                    Effacer filtres
                   </ButtonReset>
                   <ButtonSearch type="submit" disabled={isRolesLoading} title="Rechercher">
                     <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />

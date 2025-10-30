@@ -31,7 +31,7 @@ import {
     FileInput,
     FileInputLabel,
     SignaturePreview,
-    SeparatorStyle,
+    // SeparatorStyle,
     Separator,
     SuccessMessage,
     Avatar,
@@ -313,8 +313,9 @@ const MissionModals: React.FC<MissionModalsProps> = ({
             </SuccessMessage>
           ) : (
             <>
+            <Separator />
                 <SectionTitle>Référence de la Mission</SectionTitle>
-                <SeparatorStyle />
+                
                 <InfoGrid>
                   <InfoItem><InfoLabel>N°</InfoLabel><InfoValue>{selectedMission.missionAssignationId || "N/A"}</InfoValue></InfoItem>
                   <InfoItem>
@@ -337,9 +338,10 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                   <InfoItem><InfoLabel>Service</InfoLabel><InfoValue>{selectedMission.service || "Non spécifié"}</InfoValue></InfoItem>
                    </InfoGrid>
 
-                <SectionTitle>Détails de la Mission</SectionTitle>
-                <SeparatorStyle />
+                <Separator />
 
+                <SectionTitle>Détails de la Mission</SectionTitle>
+               
                 <InfoGrid>
                   <InfoItem><InfoLabel>Mission</InfoLabel><InfoValue>{selectedMission.missionName || "Non spécifié"}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Zone</InfoLabel><InfoValue>{selectedMission.missionType || "Non spécifié"}</InfoValue></InfoItem>

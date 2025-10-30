@@ -423,8 +423,8 @@ const LogList: React.FC = () => {
   const logs = searchResponse?.data?.logs || [];
   const totalEntries = searchResponse?.data?.totalCount || 0;
 
-  const fieldCellStyle = (width: string) => ({
-    width,
+  const fieldCellStyle = () => ({
+    flex: "1 1 0",
     padding: "0 var(--spacing-md)",
   });
 
@@ -465,9 +465,9 @@ const LogList: React.FC = () => {
               <Separator />
               <FormTableSearch>
                 <tbody>
-                  <FormRow>
+                  <FormRow style={{ display: "flex", gap: "var(--spacing-md)" }}>
                     {/* Champ Utilisateur */}
-                    <FormFieldCell style={fieldCellStyle("33.33%")}>
+                    <FormFieldCell style={fieldCellStyle()}>
                       <FormLabelSearch>Utilisateur</FormLabelSearch>
                       <StyledAutoCompleteInput
                         value={displayFilters.userName || ""}
@@ -482,7 +482,7 @@ const LogList: React.FC = () => {
                       />
                     </FormFieldCell>
                     {/* Champ Nom de la table */}
-                    <FormFieldCell style={fieldCellStyle("33.33%")}>
+                    <FormFieldCell style={fieldCellStyle()}>
                       <FormLabelSearch>Nom de la table</FormLabelSearch>
                       <FormInputSearch
                         type="text"
@@ -493,7 +493,7 @@ const LogList: React.FC = () => {
                       />
                     </FormFieldCell>
                     {/* Champ Action */}
-                    <FormFieldCell style={fieldCellStyle("33.33%")}>
+                    <FormFieldCell style={fieldCellStyle()}>
                       <FormLabelSearch>Action</FormLabelSearch>
                       <StyledAutoCompleteInput
                         value={displayFilters.action || ""}
@@ -509,25 +509,44 @@ const LogList: React.FC = () => {
                     </FormFieldCell>
                   </FormRow>
                   <FormRow style={{ marginTop: "var(--spacing-md)" }}>
-                    {/* Champ Date min */}
-                    <FormFieldCell style={fieldCellStyle("50%")}>
-                      <FormLabelSearch>Du</FormLabelSearch>
-                      <FormInputSearch
-                        type="date"
-                        value={displayFilters.minCreatedAt || ""}
-                        onChange={(e) => handleMinCreatedAtChange(e.target.value)}
-                        disabled={isLogsLoading}
-                      />
-                    </FormFieldCell>
-                    {/* Champ Date max */}
-                    <FormFieldCell style={fieldCellStyle("50%")}>
-                      <FormLabelSearch>Au</FormLabelSearch>
-                      <FormInputSearch
-                        type="date"
-                        value={displayFilters.maxCreatedAt || ""}
-                        onChange={(e) => handleMaxCreatedAtChange(e.target.value)}
-                        disabled={isLogsLoading}
-                      />
+                    <FormFieldCell style={{ flex: "1 1 100%" }}>
+                      <fieldset style={{ 
+                        display: "grid", 
+                        gridTemplateColumns: "1fr 1fr", 
+                        gap: "var(--spacing-md)",
+                        background: "var(--bg-primary, #ffffff)",
+                        padding: "var(--spacing-md)",
+                        border: "1px solid var(--border-color, #ddd)",
+                        borderRadius: "var(--border-radius, 4px)",
+                        margin: "0"
+                      }}>
+                        <legend style={{ 
+                          fontWeight: "var(--font-weight-semibold)",
+                          color: "var(--text-color)",
+                          padding: "0 var(--spacing-sm)",
+                          fontSize: "0.75rem"
+                        }}>
+                          Date de Création
+                        </legend>
+                        <div>
+                          <FormLabelSearch>Du</FormLabelSearch>
+                          <FormInputSearch
+                            type="date"
+                            value={displayFilters.minCreatedAt || ""}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleMinCreatedAtChange(e.target.value)}
+                            disabled={isLogsLoading}
+                          />
+                        </div>
+                        <div>
+                          <FormLabelSearch>Au</FormLabelSearch>
+                          <FormInputSearch
+                            type="date"
+                            value={displayFilters.maxCreatedAt || ""}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleMaxCreatedAtChange(e.target.value)}
+                            disabled={isLogsLoading}
+                          />
+                        </div>
+                      </fieldset>
                     </FormFieldCell>
                   </FormRow>
                 </tbody>
@@ -539,8 +558,8 @@ const LogList: React.FC = () => {
                   onClick={handleResetFilters}
                   disabled={!hasFilters || isLogsLoading}
                   title="Effacer"
-                >
-                  Effacer
+                > 
+                  Effacer filtres
                 </ButtonReset>
                 <ButtonSearch
                   type="button"

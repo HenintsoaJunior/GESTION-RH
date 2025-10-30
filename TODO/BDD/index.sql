@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS tmp_employee;
 DROP TABLE IF EXISTS notification_recipients;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS prevision_price;
@@ -16,6 +17,7 @@ DROP TABLE IF EXISTS compensation_scale;
 DROP TABLE IF EXISTS employee_nationalities;
 DROP TABLE IF EXISTS user_habilitations;
 DROP TABLE IF EXISTS role_habilitation;
+DROP TABLE IF EXISTS user_availability; 
 DROP TABLE IF EXISTS user_role;
 DROP TABLE IF EXISTS categories_of_employee;
 DROP TABLE IF EXISTS mission;
@@ -135,15 +137,15 @@ CREATE TABLE employees(
    employee_id VARCHAR(50),
    employee_code VARCHAR(50),
    last_name VARCHAR(50) NOT NULL,
-   first_name VARCHAR(100) NOT NULL,
+   first_name VARCHAR(100),
    phone_number VARCHAR(20) NULL,
-   hire_date DATE NOT NULL,
+   hire_date DATE,
    job_title VARCHAR(100) NULL,
    contract_end_date DATE NULL,
    status VARCHAR(50) DEFAULT 'Actif',
    site_id VARCHAR(50) NOT NULL,
    gender_id VARCHAR(50) NOT NULL,
-   contract_type_id VARCHAR(50) NOT NULL,
+   contract_type_id VARCHAR(50) NULL,
    direction_id VARCHAR(50) NOT NULL,
    department_id VARCHAR(50),
    service_id VARCHAR(50),
@@ -211,6 +213,13 @@ CREATE TABLE user_role (
     FOREIGN KEY (role_id) REFERENCES role(role_id)
         ON UPDATE CASCADE
         ON DELETE CASCADE
+);
+
+CREATE TABLE user_availability (
+    user_id VARCHAR(250) PRIMARY KEY,
+    status VARCHAR(20) NOT NULL DEFAULT 'disponible' CHECK (status IN ('disponible', 'absent')),
+    changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE habilitation_groups (
@@ -571,4 +580,25 @@ CREATE TABLE notification_recipients (
    PRIMARY KEY(notification_id, user_id),
    FOREIGN KEY(notification_id) REFERENCES notifications(notification_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id)
+);
+
+
+CREATE TABLE tmp_employee(
+   tmp_employee_id VARCHAR(250) PRIMARY KEY,
+   site VARCHAR(50),
+   mle VARCHAR(50),
+   nom VARCHAR(100),
+   prenom VARCHAR(100),
+   sexe VARCHAR(50),
+   nationalite VARCHAR(50),
+   telephone VARCHAR(20),
+   date_anciennete DATE,
+   type_contrat VARCHAR(50),
+   intitule_poste VARCHAR(100),
+   categorie VARCHAR(50),
+   unite VARCHAR(100),
+   service VARCHAR(100),
+   department VARCHAR(100),
+   direction VARCHAR(100),
+   date_fin_contrat DATE,
 );

@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.dto.employee;
 
 namespace MyApp.Api.Entities.employee
 {
@@ -22,5 +23,15 @@ namespace MyApp.Api.Entities.employee
 
         [ForeignKey("EmployeeCategoryId")]
         public EmployeeCategory? EmployeeCategory { get; set; }
+
+        public CategoriesOfEmployee()
+        {
+        }
+
+        public CategoriesOfEmployee(CreateCategoriesOfEmployeeDTO dto)
+        {
+            EmployeeId = dto.EmployeeId ?? throw new ArgumentNullException(nameof(dto.EmployeeId));
+            EmployeeCategoryId = dto.EmployeeCategoryId ?? throw new ArgumentNullException(nameof(dto.EmployeeCategoryId));
+        }
     }
 }

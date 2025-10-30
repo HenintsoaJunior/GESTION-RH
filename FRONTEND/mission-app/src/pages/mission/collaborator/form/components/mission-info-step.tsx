@@ -275,19 +275,15 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
               )}
             </FormFieldCell>
             <FormFieldCell>
-              <FormLabel>Centre de coût</FormLabel>
               <FormInput
-                type="text"
+                type="hidden"
                 name="costCenter"
                 value={formData.beneficiary.costCenter}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
                 placeholder="Saisir le centre de coût..."
                 disabled={isSubmitting}
               />
-            </FormFieldCell>
-          </FormRow>
-          <FormRow className="dual-field-row">
-            <FormFieldCell>
+
               <FormLabel>Moyen de transport</FormLabel>
               <StyledAutoCompleteInput
                 value={formData.beneficiary.transport}
@@ -304,11 +300,10 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
               {fieldErrors["beneficiary.transport"] && fieldErrors["beneficiary.transport"].length > 0 && (
                 <ErrorMessage>{fieldErrors["beneficiary.transport"].join(", ")}</ErrorMessage>
               )}
-            </FormFieldCell>
-            <FormFieldCell>
-              {/* Espace vide pour aligner */}
+
             </FormFieldCell>
           </FormRow>
+         
         </tbody>
       </FormTable>
     </>
