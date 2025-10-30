@@ -148,6 +148,8 @@ export interface RequestFilter {
   status?: string;
   validationDateFrom?: string;
   validationDateTo?: string;
+  requestDateFrom?: string;
+  requestDateTo?: string;
 }
 
 export interface MissionValidationRequestsResponse {
@@ -369,6 +371,12 @@ export const useGetMissionValidationRequests = (
         }
         if (filter?.validationDateTo) {
           params.append('validationDateTo', filter.validationDateTo);
+        }
+        if (filter?.requestDateFrom) {
+          params.append('requestDateFrom', filter.requestDateFrom);
+        }
+        if (filter?.requestDateTo) {
+          params.append('requestDateTo', filter.requestDateTo);
         }
         const response = await api.get(`/api/MissionValidation/requests/${userId}?${params.toString()}`);
         if (response.data.status !== 200) {

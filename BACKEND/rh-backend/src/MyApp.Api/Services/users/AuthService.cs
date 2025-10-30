@@ -96,7 +96,7 @@ public class AuthService : IAuthService
             }
         }
 
-        return new ValidationResult { Message = "Invalid credentials in fallback mode", Type = "invalid_credentials" };
+        return new ValidationResult { Message = "Authentification échouée.", Type = "invalid_credentials" };
     }
 
     [SupportedOSPlatform("windows")]

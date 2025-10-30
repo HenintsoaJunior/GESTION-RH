@@ -24,6 +24,8 @@ interface Filter {
   status: string;
   validationDateFrom?: string;
   validationDateTo?: string;
+  requestDateFrom?: string;
+  requestDateTo?: string;
 }
 
 interface BeneficiarySuggestion {
@@ -75,6 +77,8 @@ const useMissionValidationData = () => {
     status: "",
     validationDateFrom: "",
     validationDateTo: "",
+    requestDateFrom: "",
+    requestDateTo: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<Filter>({
     employeeId: "",
@@ -82,6 +86,8 @@ const useMissionValidationData = () => {
     status: "",
     validationDateFrom: "",
     validationDateTo: "",
+    requestDateFrom: "",
+    requestDateTo: "",
   });
   const [suggestions, setSuggestions] = useState<Suggestions>({
     beneficiary: [],
@@ -114,8 +120,10 @@ const useMissionValidationData = () => {
       status: appliedFilters.status,
       validationDateFrom: appliedFilters.validationDateFrom,
       validationDateTo: appliedFilters.validationDateTo,
+      requestDateFrom: appliedFilters.requestDateFrom,
+      requestDateTo: appliedFilters.requestDateTo,
     }),
-    [appliedFilters.employeeId, appliedFilters.status, appliedFilters.validationDateFrom, appliedFilters.validationDateTo]
+    [appliedFilters.employeeId, appliedFilters.status, appliedFilters.validationDateFrom, appliedFilters.validationDateTo, appliedFilters.requestDateFrom, appliedFilters.requestDateTo]
   );
   const { data: missionsResponse, isLoading: missionsLoading } = useGetMissionValidationRequests(
     userId,
@@ -360,6 +368,8 @@ const useMissionValidationData = () => {
       status: "",
       validationDateFrom: "",
       validationDateTo: "",
+      requestDateFrom: "",
+      requestDateTo: "",
     };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
@@ -385,7 +395,10 @@ const useMissionValidationData = () => {
     };
 
     try {
-      const missionType = mission.type || mission.assignationType || "Non spécifié";
+      const missionType =  mission.assignationType || "Non spécifié";
+
+      console.log("MissionType for validation:", missionType); 
+
       await validateMission(missionId, mission.missionAssignationId, action, missionType, comment, missionBudget);
 
       if (comment.trim()) {

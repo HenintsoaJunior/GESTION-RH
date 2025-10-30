@@ -41,11 +41,19 @@ namespace MyApp.Api.Repositories.site
             await _context.Sites.AddAsync(site);
         }
 
-        public Task UpdateAsync(Site site)
+        public async Task UpdateAsync(Site updatedSite)
         {
-            site.UpdatedAt = DateTime.Now;
-            _context.Sites.Update(site);
-            return Task.CompletedTask;
+            var existingSite = await _context.Sites.FirstOrDefaultAsync(s => s.SiteId == updatedSite.SiteId);
+            if (existingSite == null)
+            {
+                throw new InvalidOperationException($"Site with ID {updatedSite.SiteId} not found.");
+            }
+
+            existingSite.SiteName = updatedSite.SiteName;
+            existingSite.Code = updatedSite.Code;
+            existingSite.Longitude = updatedSite.Longitude;
+            existingSite.Latitude = updatedSite.Latitude;
+            existingSite.UpdatedAt = DateTime.Now;
         }
 
         public async Task DeleteAsync(string id)

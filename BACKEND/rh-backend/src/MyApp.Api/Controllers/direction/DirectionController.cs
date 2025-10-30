@@ -1,161 +1,215 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using MyApp.Api.Entities.direction;
-using MyApp.Api.Services.direction;
-using System;
-using System.Threading.Tasks;
 using MyApp.Api.Models.dto.direction;
+using MyApp.Api.Services.direction;
 
 namespace MyApp.Api.Controllers.direction
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class DirectionController(
-        IDirectionService directionService,
-        ILogger<DirectionController> logger)
-        : ControllerBase
+    public class DirectionController : ControllerBase
     {
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Direction>>> GetAll()
+        private readonly IDirectionService _directionService;
+        private readonly ILogger<DirectionController> _logger;
+
+        public DirectionController(IDirectionService directionService, ILogger<DirectionController> logger)
         {
+            _directionService = directionService ?? throw new ArgumentNullException(nameof(directionService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        [HttpGet("search")]
+        [AllowAnonymous]
+        public async Task<ActionResult<object>> Search([FromQuery] string? name, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var filters = new DirectionSearchFiltersDTO { Name = name };
+            var (results, totalCount) = await _directionService.SearchAsync(filters, page, pageSize);
+            return Ok(new
+            {
+                data = results,
+                totalCount,
+                page,
+                pageSize
+            });
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetAll()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
             try
             {
-                logger.LogInformation("Récupération de toutes les directions");
-                var directions = await directionService.GetAllAsync();
-                return Ok(directions);
+                _logger.LogInformation("Retrieving all directions");
+                var directions = await _directionService.GetAllAsync();
+                var responseData = directions;
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                logger.LogError(ex, "Erreur lors de la récupération de toutes les directions");
-                return StatusCode(500, "Une erreur est survenue lors de la récupération des directions.");
+                _logger.LogError(e, "Error retrieving all directions");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Direction>> GetById(string id)
+        [AllowAnonymous]
+        public async Task<ActionResult> GetById(string id)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Direction ID cannot be null or empty" });
+            }
+
             try
             {
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    logger.LogWarning("Tentative de récupération d'une direction avec un ID null ou vide");
-                    return BadRequest("L'ID de la direction ne peut pas être null ou vide.");
-                }
-
-                logger.LogInformation("Récupération de la direction avec l'ID: {DirectionId}", id);
-                var direction = await directionService.GetByIdAsync(id);
+                _logger.LogInformation("Retrieving direction with ID: {DirectionId}", id);
+                var direction = await _directionService.GetByIdAsync(id);
                 if (direction == null)
                 {
-                    logger.LogWarning("Direction non trouvée pour l'ID: {DirectionId}", id);
-                    return NotFound();
+                    _logger.LogWarning("Direction not found for ID: {DirectionId}", id);
+                    return NotFound(new { data = (object?)null, status = 404, message = "Direction not found" });
                 }
-
-                return Ok(direction);
+                var responseData = direction;
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                logger.LogError(ex, "Erreur lors de la récupération de la direction avec l'ID: {DirectionId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la récupération de la direction.");
+                _logger.LogError(e, "Error retrieving direction with ID: {DirectionId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         [HttpPost]
-        public async Task<ActionResult<Direction>> Add([FromBody] DirectionDTOForm form)
+        [AllowAnonymous]
+        public async Task<ActionResult> Create([FromBody] DirectionDTOForm dto)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (dto == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Direction data cannot be null" });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ModelState });
+            }
+
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    logger.LogWarning("Données invalides lors de l'ajout d'une direction: {ModelStateErrors}", ModelState);
-                    return BadRequest(ModelState);
-                }
-
-                var direction = new Direction
-                {
-                    DirectionName = form.DirectionName,
-                    Acronym = form.Acronym
-                };
-
-                logger.LogInformation("Ajout d'une nouvelle direction: {DirectionName}", direction.DirectionName);
-                await directionService.AddAsync(direction);
-
-                logger.LogInformation("Direction créée avec succès avec l'ID: {DirectionId}", direction.DirectionId);
-                return CreatedAtAction(nameof(GetById), new { id = direction.DirectionId }, direction);
+                _logger.LogInformation("Creating new direction");
+                var createdDirection = await _directionService.AddAsync(dto);
+                var responseData = new { DirectionId = createdDirection.DirectionId };
+                return CreatedAtAction(nameof(GetById), new { id = createdDirection.DirectionId }, new { data = responseData, status = 201, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                logger.LogError(ex, "Erreur lors de l'ajout de la direction: {DirectionName}", form?.DirectionName);
-                return StatusCode(500, "Une erreur est survenue lors de l'ajout de la direction.");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error creating direction");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, Direction direction)
+        [AllowAnonymous]
+        public async Task<ActionResult> Update(string id, [FromBody] Direction direction)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Direction ID cannot be null or empty" });
+            }
+
+            if (direction == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Direction data cannot be null" });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ModelState });
+            }
+
+            if (id != direction.DirectionId)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "The ID in the URL does not match the entity." });
+            }
+
             try
             {
-                if (id != direction.DirectionId)
-                {
-                    logger.LogWarning("L'ID dans l'URL ({Id}) ne correspond pas à l'ID de la direction ({DirectionId})", id, direction.DirectionId);
-                    return BadRequest("L'ID dans l'URL ne correspond pas à l'ID de la direction.");
-                }
-
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    logger.LogWarning("Tentative de mise à jour d'une direction avec un ID null ou vide");
-                    return BadRequest("L'ID de la direction ne peut pas être null ou vide.");
-                }
-
-                logger.LogInformation("Vérification de l'existence de la direction avec l'ID: {DirectionId}", id);
-                var existingDirection = await directionService.GetByIdAsync(id);
-                if (existingDirection == null)
-                {
-                    logger.LogWarning("Direction non trouvée pour l'ID: {DirectionId}", id);
-                    return NotFound();
-                }
-
-                logger.LogInformation("Mise à jour de la direction avec l'ID: {DirectionId}", id);
-                await directionService.UpdateAsync(direction);
-
-                logger.LogInformation("Direction mise à jour avec succès pour l'ID: {DirectionId}", id);
-                return NoContent();
+                _logger.LogInformation("Updating direction with ID: {DirectionId}", id);
+                await _directionService.UpdateAsync(direction);
+                var responseData = new { message = $"Direction with ID {id} successfully updated", data = direction };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                logger.LogError(ex, "Erreur lors de la mise à jour de la direction avec l'ID: {DirectionId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la mise à jour de la direction.");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error updating direction with ID: {DirectionId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        [AllowAnonymous]
+        public async Task<ActionResult> Delete(string id)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Direction ID cannot be null or empty" });
+            }
+
             try
             {
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    logger.LogWarning("Tentative de suppression d'une direction avec un ID null ou vide");
-                    return BadRequest("L'ID de la direction ne peut pas être null ou vide.");
-                }
-
-                logger.LogInformation("Vérification de l'existence de la direction avec l'ID: {DirectionId}", id);
-                var direction = await directionService.GetByIdAsync(id);
+                _logger.LogInformation("Deleting direction with ID: {DirectionId}", id);
+                var direction = await _directionService.GetByIdAsync(id);
                 if (direction == null)
                 {
-                    logger.LogWarning("Direction non trouvée pour l'ID: {DirectionId}", id);
-                    return NotFound();
+                    _logger.LogWarning("Direction not found for ID: {DirectionId}", id);
+                    return NotFound(new { data = (object?)null, status = 404, message = "Direction not found" });
                 }
 
-                logger.LogInformation("Suppression de la direction avec l'ID: {DirectionId}", id);
-                await directionService.DeleteAsync(id);
-
-                logger.LogInformation("Direction supprimée avec succès pour l'ID: {DirectionId}", id);
-                return NoContent();
+                await _directionService.DeleteAsync(id);
+                var responseData = new { message = $"Direction with ID {id} successfully deleted", data = new { id } };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                logger.LogError(ex, "Erreur lors de la suppression de la direction avec l'ID: {DirectionId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la suppression de la direction.");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error deleting direction with ID: {DirectionId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
     }

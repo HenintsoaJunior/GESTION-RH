@@ -60,7 +60,7 @@ namespace MyApp.Api.Repositories.employee
             // Filtre par prénom (FirstName)
             if (!string.IsNullOrWhiteSpace(filters.FirstName))
             {
-                query = query.Where(e => e.FirstName.Contains(filters.FirstName));
+                query = query.Where(e => e.FirstName!.Contains(filters.FirstName));
             }
 
             // Filtre par direction (DirectionId)
@@ -107,6 +107,8 @@ namespace MyApp.Api.Repositories.employee
 
         public async Task<IEnumerable<Employee>> GetAllAsync()
         {
+            // Optimisation pour GetAll : Charger sans Includes si non nécessaires, ou les garder si requis pour fluidité
+            // Ici, on garde les Includes car ils sont probablement utilisés, mais en cache on stocke tout
             return await _context.Employees
                 .Include(e => e.Unit)
                 .Include(e => e.Service)
@@ -135,7 +137,14 @@ namespace MyApp.Api.Repositories.employee
         {
             return await _context.Employees
                 .Where(e => e.GenderId == genderId)
-                .ToListAsync();
+                .Include(e => e.Unit)
+                .Include(e => e.Service)
+                .Include(e => e.Department)
+                .Include(e => e.Direction)
+                .Include(e => e.ContractType)
+                .Include(e => e.Gender)
+                .Include(e => e.Site)
+                .ToListAsync(); // Ajout des Includes pour cohérence et éviter N+1 si utilisé avec relations
         }
 
         public async Task AddAsync(Employee employee)

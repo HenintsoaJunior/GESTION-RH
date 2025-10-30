@@ -90,7 +90,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
-
+builder.Services.AddMemoryCache();
 // Configuration des en-têtes forwarded
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {

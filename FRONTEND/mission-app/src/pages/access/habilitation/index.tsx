@@ -175,7 +175,7 @@ const HabilitationList: React.FC = () => {
                     disabled={!hasFilters || isSearchLoading}
                     title="Effacer"
                   >
-                    Effacer
+                    Effacer filtres
                   </ButtonReset>
                   <ButtonSearch type="submit" disabled={isSearchLoading} title="Rechercher">
                     <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />

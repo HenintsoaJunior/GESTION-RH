@@ -462,5 +462,22 @@ GO
 
 
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_tmp_employee_id')
+    DROP SEQUENCE seq_tmp_employee_id;
+GO
+CREATE SEQUENCE seq_tmp_employee_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+
+
+
+
 
 

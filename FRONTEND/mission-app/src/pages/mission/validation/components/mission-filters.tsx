@@ -29,6 +29,8 @@ interface Filter {
   status: string;
   validationDateFrom?: string;
   validationDateTo?: string;
+  requestDateFrom?: string;
+  requestDateTo?: string;
 }
 
 interface BeneficiarySuggestion {
@@ -85,6 +87,17 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
       employeeName: value,
       employeeId: value ? prev.employeeId : "",
     }));
+  };
+
+  const isFilterEmpty = (): boolean => {
+    return (
+      !filters.employeeName &&
+      !filters.status &&
+      !filters.validationDateFrom &&
+      !filters.validationDateTo &&
+      !filters.requestDateFrom &&
+      !filters.requestDateTo
+    );
   };
 
   return (
@@ -154,7 +167,7 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
                       </FormFieldCell>
                     </FormRow>
                     <FormRow>
-                      <FormFieldCell colSpan={2} style={{ width: "100%" }}>
+                      <FormFieldCell>
                         <fieldset style={{ 
                           display: "grid", 
                           gridTemplateColumns: "1fr 1fr", 
@@ -193,6 +206,45 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
                           </div>
                         </fieldset>
                       </FormFieldCell>
+                      <FormFieldCell>
+                        <fieldset style={{ 
+                          display: "grid", 
+                          gridTemplateColumns: "1fr 1fr", 
+                          gap: "var(--spacing-md)",
+                          background: "var(--bg-primary, #ffffff)",
+                          padding: "var(--spacing-md)",
+                          border: "1px solid var(--border-color, #ddd)",
+                          borderRadius: "var(--border-radius, 4px)",
+                          margin: "0"
+                        }}>
+                          <legend style={{ 
+                            fontWeight: "var(--font-weight-semibold)",
+                            color: "var(--text-color)",
+                            padding: "0 var(--spacing-sm)",
+                            fontSize: "0.75rem"
+                          }}>
+                            Date de Demande
+                          </legend>
+                          <div>
+                            <FormLabelSearch>Du</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.requestDateFrom || ""}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("requestDateFrom", e.target.value)}
+                              disabled={isLoading.missions}
+                            />
+                          </div>
+                          <div>
+                            <FormLabelSearch>Au</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.requestDateTo || ""}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("requestDateTo", e.target.value)}
+                              disabled={isLoading.missions}
+                            />
+                          </div>
+                        </fieldset>
+                      </FormFieldCell>
                     </FormRow>
                   </tbody>
                 </FormTableSearch>
@@ -200,9 +252,9 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
                   <ButtonReset
                     type="button"
                     onClick={handleResetFilters}
-                    disabled={isLoading.missions}
+                    disabled={isLoading.missions || isFilterEmpty()}
                   >
-                    Réinitialiser
+                    Effacer filtres
                   </ButtonReset>
                   <ButtonSearch type="submit" disabled={isLoading.missions}>
                     {isLoading.missions ? "Recherche..." : "Rechercher"}

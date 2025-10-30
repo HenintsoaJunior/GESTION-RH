@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Entities.direction;
 using MyApp.Api.Models.dto.direction;
@@ -7,152 +8,208 @@ namespace MyApp.Api.Controllers.direction
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class DepartmentController(
-        IDepartmentService departmentService,
-        ILogger<DepartmentController> logger)
-        : ControllerBase
+    public class DepartmentController : ControllerBase
     {
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Department>>> GetAll()
+        private readonly IDepartmentService _departmentService;
+        private readonly ILogger<DepartmentController> _logger;
+
+        public DepartmentController(IDepartmentService departmentService, ILogger<DepartmentController> logger)
         {
+            _departmentService = departmentService ?? throw new ArgumentNullException(nameof(departmentService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        [HttpGet("search")]
+        [AllowAnonymous]
+        public async Task<ActionResult<object>> Search([FromQuery] string? name, [FromQuery] string? directionId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var filters = new DepartmentSearchFiltersDTO { Name = name, DirectionId = directionId };
+            var (results, totalCount) = await _departmentService.SearchAsync(filters, page, pageSize);
+            return Ok(new
+            {
+                data = results,
+                totalCount,
+                page,
+                pageSize
+            });
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetAll()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
             try
             {
-                logger.LogInformation("Récupération de tous les départements");
-                var departments = await departmentService.GetAllAsync();
-                return Ok(departments);
+                _logger.LogInformation("Retrieving all departments");
+                var departments = await _departmentService.GetAllAsync();
+                var responseData = departments;
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                logger.LogError(ex, "Erreur lors de la récupération de tous les départements");
-                return StatusCode(500, "Une erreur est survenue lors de la récupération des départements.");
+                _logger.LogError(e, "Error retrieving all departments");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Department>> GetById(string id)
+        [AllowAnonymous]
+        public async Task<ActionResult> GetById(string id)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Department ID cannot be null or empty" });
+            }
+
             try
             {
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    logger.LogWarning("Tentative de récupération d'un département avec un ID null ou vide");
-                    return BadRequest("L'ID du département ne peut pas être null ou vide.");
-                }
-
-                logger.LogInformation("Récupération du département avec l'ID: {DepartmentId}", id);
-                var department = await departmentService.GetByIdAsync(id);
+                _logger.LogInformation("Retrieving department with ID: {DepartmentId}", id);
+                var department = await _departmentService.GetByIdAsync(id);
                 if (department == null)
                 {
-                    logger.LogWarning("Département non trouvé pour l'ID: {DepartmentId}", id);
-                    return NotFound();
+                    _logger.LogWarning("Department not found for ID: {DepartmentId}", id);
+                    return NotFound(new { data = (object?)null, status = 404, message = "Department not found" });
                 }
-
-                return Ok(department);
+                var responseData = department;
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                logger.LogError(ex, "Erreur lors de la récupération du département avec l'ID: {DepartmentId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la récupération du département.");
+                _logger.LogError(e, "Error retrieving department with ID: {DepartmentId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         [HttpPost]
-        public async Task<ActionResult<Department>> Add([FromBody] DepartmentDTOForm form)
+        [AllowAnonymous]
+        public async Task<ActionResult> Create([FromBody] DepartmentDTOForm dto)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (dto == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Department data cannot be null" });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ModelState });
+            }
+
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    logger.LogWarning("Données invalides lors de l'ajout d'un département: {ModelStateErrors}", ModelState);
-                    return BadRequest(ModelState);
-                }
-
-                var department = new Department
-                {
-                    DepartmentName = form.DepartmentName,
-                    DirectionId = form.DirectionId
-                };
-
-                logger.LogInformation("Ajout d'un nouveau département: {DepartmentName}", department.DepartmentName);
-                await departmentService.AddAsync(department);
-
-                logger.LogInformation("Département créé avec succès avec l'ID: {DepartmentId}", department.DepartmentId);
-                return CreatedAtAction(nameof(GetById), new { id = department.DepartmentId }, department);
+                _logger.LogInformation("Creating new department");
+                var createdDepartment = await _departmentService.AddAsync(dto);
+                var responseData = new { DepartmentId = createdDepartment.DepartmentId };
+                return CreatedAtAction(nameof(GetById), new { id = createdDepartment.DepartmentId }, new { data = responseData, status = 201, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                logger.LogError(ex, "Erreur lors de l'ajout du département: {DepartmentName}", form?.DepartmentName);
-                return StatusCode(500, "Une erreur est survenue lors de l'ajout du département.");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error creating department");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, Department department)
+        [AllowAnonymous]
+        public async Task<ActionResult> Update(string id, [FromBody] Department department)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Department ID cannot be null or empty" });
+            }
+
+            if (department == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Department data cannot be null" });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ModelState });
+            }
+
+            if (id != department.DepartmentId)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "The ID in the URL does not match the entity." });
+            }
+
             try
             {
-                if (id != department.DepartmentId)
-                {
-                    logger.LogWarning("L'ID dans l'URL ({Id}) ne correspond pas à l'ID du département ({DepartmentId})", id, department.DepartmentId);
-                    return BadRequest("L'ID dans l'URL ne correspond pas à l'ID du département.");
-                }
-
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    logger.LogWarning("Tentative de mise à jour d'un département avec un ID null ou vide");
-                    return BadRequest("L'ID du département ne peut pas être null ou vide.");
-                }
-
-                logger.LogInformation("Vérification de l'existence du département avec l'ID: {DepartmentId}", id);
-                var existingDepartment = await departmentService.GetByIdAsync(id);
-                if (existingDepartment == null)
-                {
-                    logger.LogWarning("Département non trouvé pour l'ID: {DepartmentId}", id);
-                    return NotFound();
-                }
-
-                logger.LogInformation("Mise à jour du département avec l'ID: {DepartmentId}", id);
-                await departmentService.UpdateAsync(department);
-
-                logger.LogInformation("Département mis à jour avec succès pour l'ID: {DepartmentId}", id);
-                return NoContent();
+                _logger.LogInformation("Updating department with ID: {DepartmentId}", id);
+                await _departmentService.UpdateAsync(department);
+                var responseData = new { message = $"Department with ID {id} successfully updated", data = department };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                logger.LogError(ex, "Erreur lors de la mise à jour du département avec l'ID: {DepartmentId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la mise à jour du département.");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error updating department with ID: {DepartmentId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        [AllowAnonymous]
+        public async Task<ActionResult> Delete(string id)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Department ID cannot be null or empty" });
+            }
+
             try
             {
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    logger.LogWarning("Tentative de suppression d'un département avec un ID null ou vide");
-                    return BadRequest("L'ID du département ne peut pas être null ou vide.");
-                }
-
-                logger.LogInformation("Vérification de l'existence du département avec l'ID: {DepartmentId}", id);
-                var department = await departmentService.GetByIdAsync(id);
+                _logger.LogInformation("Deleting department with ID: {DepartmentId}", id);
+                var department = await _departmentService.GetByIdAsync(id);
                 if (department == null)
                 {
-                    logger.LogWarning("Département non trouvé pour l'ID: {DepartmentId}", id);
-                    return NotFound();
+                    _logger.LogWarning("Department not found for ID: {DepartmentId}", id);
+                    return NotFound(new { data = (object?)null, status = 404, message = "Department not found" });
                 }
 
-                logger.LogInformation("Suppression du département avec l'ID: {DepartmentId}", id);
-                await departmentService.DeleteAsync(id);
-
-                logger.LogInformation("Département supprimé avec succès pour l'ID: {DepartmentId}", id);
-                return NoContent();
+                await _departmentService.DeleteAsync(id);
+                var responseData = new { message = $"Department with ID {id} successfully deleted", data = new { id } };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                logger.LogError(ex, "Erreur lors de la suppression du département avec l'ID: {DepartmentId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la suppression du département.");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error deleting department with ID: {DepartmentId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
     }

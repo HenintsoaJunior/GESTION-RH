@@ -1,8 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/utils/axios-config';
 
-const LIEUX_KEY = ['lieux'] as const;
+const LIEUX_BASE_KEY = ['lieux'] as const;
 
 export interface Lieu {
   lieuId: string;
@@ -15,27 +14,122 @@ export interface Lieu {
   updatedAt: string;
 }
 
-interface ApiResponse<T> {
+export interface LieuDTOForm {
+  nom: string;
+  adresse: string;
+  ville: string;
+  codePostal: string;
+  pays: string;
+}
+
+export interface LieuSearchFilters {
+  nom?: string;
+  pays?: string;
+}
+
+interface SearchData {
+  data: Lieu[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ApiResponse<T> {
   data: T | null;
   status: number;
   message: string;
 }
 
-type LieuxResponse = ApiResponse<Lieu[]>;
+type GetLieuxResponse = SearchData;
 
-export const useLieux = () => {
-  return useQuery<LieuxResponse, Error>({
-    queryKey: LIEUX_KEY,
+type GetAllLieuxResponse = ApiResponse<Lieu[]>;
+
+type GetLieuByIdResponse = ApiResponse<Lieu>;
+
+type CreateLieuResponse = ApiResponse<{ id: string; lieu: LieuDTOForm }>;
+
+export const useGetLieux = (filters: LieuSearchFilters = {}, page: number = 1, pageSize: number = 10) => {
+  const queryKey = [...LIEUX_BASE_KEY, { ...filters, page, pageSize }] as const;
+
+  return useQuery<GetLieuxResponse, Error>({
+    queryKey,
     queryFn: async () => {
-      try {
-        const response = await api.get('/api/Lieu');
-        return response.data;
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-          return error.response.data;
-        }
-        throw error;
-      }
+      const response = await api.post('/api/Lieu/search', {
+        Nom: filters.nom,
+        Pays: filters.pays,
+      }, {
+        params: { page, pageSize },
+      });
+      return response.data;
+    },
+  });
+};
+
+export const useGetAllLieux = () => {
+  const queryKey = [...LIEUX_BASE_KEY, 'getAll'] as const;
+
+  return useQuery<GetAllLieuxResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      const response = await api.get('/api/Lieu');
+      return response.data;
+    },
+  });
+};
+
+export const useLieux = useGetAllLieux;
+
+export const useGetLieuById = (lieuId: string) => {
+  const queryKey = [...LIEUX_BASE_KEY, lieuId] as const;
+
+  return useQuery<GetLieuByIdResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      const response = await api.get(`/api/Lieu/${lieuId}`);
+      return response.data;
+    },
+    enabled: !!lieuId,
+  });
+};
+
+export const useCreateLieu = () => {
+  return useMutation<CreateLieuResponse, Error, LieuDTOForm>({
+    mutationFn: async (data: LieuDTOForm) => {
+      const payload = {
+        Nom: data.nom,
+        Adresse: data.adresse,
+        Ville: data.ville,
+        CodePostal: data.codePostal,
+        Pays: data.pays,
+      };
+      const response = await api.post('/api/Lieu', payload);
+      return response.data;
+    },
+  });
+};
+
+export const useUpdateLieu = (lieuId: string) => {
+  return useMutation<ApiResponse<null>, Error, LieuDTOForm>({
+    mutationFn: async (data: LieuDTOForm) => {
+      const payload = {
+        LieuId: lieuId,
+        Nom: data.nom,
+        Adresse: data.adresse,
+        Ville: data.ville,
+        CodePostal: data.codePostal,
+        Pays: data.pays,
+      };
+      const response = await api.put(`/api/Lieu/${lieuId}`, payload);
+      return response.data;
+    },
+  });
+};
+
+export const useDeleteLieu = () => {
+  return useMutation<ApiResponse<null>, Error, string>({
+    mutationFn: async (lieuId: string) => {
+      const response = await api.delete(`/api/Lieu/${lieuId}`);
+      return response.data;
     },
   });
 };

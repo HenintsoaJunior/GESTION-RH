@@ -62,65 +62,79 @@ namespace MyApp.Api.Repositories.mission
             string? status = requestFilterDto.Status;
             string? validationDateFrom = requestFilterDto.ValidationDateFrom;
             string? validationDateTo = requestFilterDto.ValidationDateTo;
+            string? requestDateFrom = requestFilterDto.RequestDateFrom;
+            string? requestDateTo = requestFilterDto.RequestDateTo;
 
             // Construire la requête de base
-            {
-                var query = _context.MissionValidations
-                    .Include(mv => mv.Mission)
+            var query = _context.MissionValidations
+                .Include(mv => mv.Mission)
         #pragma warning disable CS8602
-                    .ThenInclude(m => m.Lieu)
+                .ThenInclude(m => m.Lieu)
         #pragma warning restore CS8602
-                    .Include(mv => mv.MissionAssignation)
-                        .ThenInclude(ma => ma!.Employee)
-                            .ThenInclude(e => e!.Department)
-                    .Include(mv => mv.MissionAssignation)
-                        .ThenInclude(ma => ma!.Employee)
-                            .ThenInclude(e => e!.Direction)
-                    .Include(mv => mv.MissionAssignation)
-                        .ThenInclude(ma => ma!.Employee)
-                            .ThenInclude(e => e!.Service)
-                    .Include(mv => mv.Creator)
-                    .Include(mv => mv.Validator)
-                    .Where(mv => mv.ToWhom == userId && mv.Status != "cancel" && mv.Status != null);
+                .Include(mv => mv.MissionAssignation)
+                    .ThenInclude(ma => ma!.Employee)
+                        .ThenInclude(e => e!.Department)
+                .Include(mv => mv.MissionAssignation)
+                    .ThenInclude(ma => ma!.Employee)
+                        .ThenInclude(e => e!.Direction)
+                .Include(mv => mv.MissionAssignation)
+                    .ThenInclude(ma => ma!.Employee)
+                        .ThenInclude(e => e!.Service)
+                .Include(mv => mv.Creator)
+                .Include(mv => mv.Validator)
+                .Where(mv => mv.ToWhom == userId && mv.Status != "cancel" && mv.Status != null);
 
-                // Filtre sur EmployeeId (via MissionAssignation)
-                if (!string.IsNullOrWhiteSpace(employeeId))
-                {
-                    query = query.Where(mv => mv.MissionAssignation!.EmployeeId == employeeId);
-                }
-
-                // Filtre sur Status
-                if (!string.IsNullOrWhiteSpace(status))
-                {
-                    query = query.Where(mv => mv.Status == status);
-                }
-
-                // Filtre sur ValidationDateFrom
-                if (!string.IsNullOrWhiteSpace(validationDateFrom))
-                {
-                    var fromDate = DateTime.Parse(validationDateFrom);
-                    query = query.Where(mv => mv.ValidationDate >= fromDate);
-                }
-
-                // Filtre sur ValidationDateTo
-                if (!string.IsNullOrWhiteSpace(validationDateTo))
-                {
-                    var toDate = DateTime.Parse(validationDateTo);
-                    query = query.Where(mv => mv.ValidationDate <= toDate);
-                }
-
-                // Compter le nombre total d'éléments après application des filtres
-                var totalCount = await query.CountAsync();
-
-                // Appliquer la pagination
-                var results = await query
-                    .OrderByDescending(mv => mv.ValidationDate)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                return (results, totalCount);
+            // Filtre sur EmployeeId (via MissionAssignation)
+            if (!string.IsNullOrWhiteSpace(employeeId))
+            {
+                query = query.Where(mv => mv.MissionAssignation!.EmployeeId == employeeId);
             }
+
+            // Filtre sur Status
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = query.Where(mv => mv.Status == status);
+            }
+
+            // Filtre sur ValidationDateFrom
+            if (!string.IsNullOrWhiteSpace(validationDateFrom))
+            {
+                var fromDate = DateTime.Parse(validationDateFrom);
+                query = query.Where(mv => mv.ValidationDate >= fromDate);
+            }
+
+            // Filtre sur ValidationDateTo
+            if (!string.IsNullOrWhiteSpace(validationDateTo))
+            {
+                var toDate = DateTime.Parse(validationDateTo);
+                query = query.Where(mv => mv.ValidationDate <= toDate);
+            }
+
+            // Filtre sur RequestDateFrom
+            if (!string.IsNullOrWhiteSpace(requestDateFrom))
+            {
+                var fromDate = DateTime.Parse(requestDateFrom);
+                query = query.Where(mv => mv.Mission!.CreatedAt >= fromDate);
+            }
+
+            // Filtre sur RequestDateTo
+            if (!string.IsNullOrWhiteSpace(requestDateTo))
+            {
+                var toDate = DateTime.Parse(requestDateTo);
+                query = query.Where(mv => mv.Mission!.CreatedAt <= toDate);
+            }
+
+            // Compter le nombre total d'éléments après application des filtres
+            var totalCount = await query.CountAsync();
+
+            // Appliquer la pagination
+            var results = await query
+                .OrderByDescending(mv => mv.ValidationDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (results, totalCount);
         }
 
         public async Task<bool> RejectedAsync(string missionValidationId, string missionAssignationId)

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.contract;
+using System;
 
 namespace MyApp.Api.Repositories.contract
 {
@@ -37,13 +38,21 @@ namespace MyApp.Api.Repositories.contract
 
         public async Task AddAsync(ContractType contractType)
         {
+            contractType.CreatedAt = DateTime.Now;
             await _context.ContractTypes.AddAsync(contractType);
         }
 
-        public Task UpdateAsync(ContractType contractType)
+        public async Task UpdateAsync(ContractType updatedContractType)
         {
-            _context.ContractTypes.Update(contractType);
-            return Task.CompletedTask;
+            var existingContractType = await _context.ContractTypes.FirstOrDefaultAsync(c => c.ContractTypeId == updatedContractType.ContractTypeId);
+            if (existingContractType == null)
+            {
+                throw new InvalidOperationException($"Contract Type with ID {updatedContractType.ContractTypeId} not found.");
+            }
+
+            existingContractType.Code = updatedContractType.Code;
+            existingContractType.Label = updatedContractType.Label;
+            existingContractType.UpdatedAt = DateTime.Now;
         }
 
         public async Task DeleteAsync(string id)

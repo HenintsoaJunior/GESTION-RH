@@ -1,6 +1,9 @@
-
+using MyApp.Api.Data;
 using MyApp.Api.Entities.site;
+using MyApp.Api.Models.dto.site;
 using MyApp.Api.Repositories.site;
+using MyApp.Api.Utils.generator;
+using System;
 
 namespace MyApp.Api.Services.site
 {
@@ -8,7 +11,7 @@ namespace MyApp.Api.Services.site
     {
         Task<IEnumerable<Site>> GetAllAsync();
         Task<Site?> GetByIdAsync(string id);
-        Task AddAsync(Site site);
+        Task<Site> AddAsync(CreateSiteDTO site);
         Task UpdateAsync(Site site);
         Task DeleteAsync(string id);
     }
@@ -16,10 +19,14 @@ namespace MyApp.Api.Services.site
     public class SiteService : ISiteService
     {
         private readonly ISiteRepository _repository;
+        private readonly AppDbContext _context;
+        private readonly ISequenceGenerator _sequenceGenerator;
 
-        public SiteService(ISiteRepository repository)
+        public SiteService(ISiteRepository repository, AppDbContext context, ISequenceGenerator sequenceGenerator)
         {
-            _repository = repository;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
 
         public async Task<IEnumerable<Site>> GetAllAsync()
@@ -32,10 +39,23 @@ namespace MyApp.Api.Services.site
             return await _repository.GetByIdAsync(id);
         }
 
-        public async Task AddAsync(Site site)
+        public async Task<Site> AddAsync(CreateSiteDTO site)
         {
-            await _repository.AddAsync(site);
-            await _repository.SaveChangesAsync();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var siteId = _sequenceGenerator.GenerateSequence("seq_site_id", "SITE", 6, "-");
+                var siteValue = new Site(site) { SiteId = siteId };
+                await _repository.AddAsync(siteValue);
+                await _repository.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return siteValue;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task UpdateAsync(Site site)

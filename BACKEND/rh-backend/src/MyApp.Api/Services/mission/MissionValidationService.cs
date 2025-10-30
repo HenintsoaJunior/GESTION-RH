@@ -275,9 +275,10 @@ namespace MyApp.Api.Services.mission
                     mission.UpdatedAt = DateTime.UtcNow;  // Good practice for updates
                     await _missionRepository.UpdateAsync(mission);
                     await _missionRepository.SaveChangesAsync();  // Persist the change
-                    
+
                     result = "Validation effectuée avec succès et mission validée";
 
+                    _logger.LogInformation("Génération des paiements pour l'assignation de mission {MissionAssignationId} avec la type {Type}", missionAssignation.AssignationId,validation.Type);
                     if (validation.Type.Equals("Indemnité"))
                     {
                         await _missionAssignationService.GeneratePaiementsAsync(

@@ -147,10 +147,13 @@ const MissionList: React.FC = () => {
   const missionTypes = ["International", "National"];
 
   const statusOptions = [
-    { label: "À valider", value: "pending approval" },
-    { label: "En cours", value: "in progress" },
-    { label: "Terminé", value: "completed" },
+    { label: "Mission en cours de validation", value: "pending approval" },
+    { label: "Paiement en cours", value: "payment in progress" },
+    { label: "Indemnité payée", value: "indemnity paid" },
+    { label: "Note de frais payée", value: "expense note paid" },
     { label: "Planifié", value: "planned" },
+    { label: "En cours d'exécution", value: "in progress" },
+    { label: "Terminé", value: "completed" },
   ];
 
   const hasFilters: boolean = Object.values({ 
@@ -276,7 +279,6 @@ const MissionList: React.FC = () => {
     };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
-    setAlert({ isOpen: true, type: "info", message: "Filtres réinitialisés." });
     setPage(1);
   }, []);
 
@@ -378,6 +380,23 @@ const MissionList: React.FC = () => {
     setPage(1);
   }, [activeTab, appliedFiltersStr]);
 
+  useEffect(() => {
+    if (activeTab === 'mes') {
+      setFilters((prev) => ({
+        ...prev,
+        employeeId: "",
+        selectedEmployee: null,
+        employeeSearch: "",
+      }));
+      setAppliedFilters((prev) => ({
+        ...prev,
+        employeeId: "",
+        selectedEmployee: null,
+        employeeSearch: "",
+      }));
+    }
+  }, [activeTab]);
+
   const handlePageSizeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setPageSize(Number(e.target.value));
     setPage(1);
@@ -388,6 +407,28 @@ const MissionList: React.FC = () => {
     { key: 'mes' as const, label: 'Mes missions' },
     { key: 'collaborateurs' as const, label: 'Missions de mes collaborateurs' },
   ];
+
+  const showEmployeeFilter = activeTab !== 'mes';
+  const numCols = showEmployeeFilter ? 4 : 3;
+  const fieldWidth = showEmployeeFilter ? "25%" : "33.333%";
+
+  const fieldsetStyle = { 
+    display: "grid", 
+    gridTemplateColumns: "1fr 1fr", 
+    gap: "var(--spacing-md)",
+    background: "var(--bg-primary, #ffffff)",
+    padding: "var(--spacing-md)",
+    border: "1px solid var(--border-color, #ddd)",
+    borderRadius: "var(--border-radius, 4px)",
+    margin: "0"
+  };
+
+  const legendStyle = { 
+    fontWeight: "var(--font-weight-semibold)",
+    color: "var(--text-color)",
+    padding: "0 var(--spacing-sm)",
+    fontSize: "0.75rem"
+  };
 
   return (
     <>
@@ -411,7 +452,7 @@ const MissionList: React.FC = () => {
       {showCancelModal && (
         <Modal
           type="error"
-          message="Êtes-vous sûr de vouloir annuler l'assignation ?"
+          message="Êtes-vous sûr de vouloir annuler la mission ?"
           isOpen={showCancelModal}
           onClose={() => setShowCancelModal(false)}
           title="Confirmer l'annulation"
@@ -447,21 +488,23 @@ const MissionList: React.FC = () => {
                 <FormTableSearch>
                   <tbody>
                     <FormRow>
-                      <FormFieldCell style={{ width: "25%" }}>
-                        <FormLabelSearch>Collaborateur</FormLabelSearch>
-                        <StyledAutoCompleteInput
-                          value={filters.employeeSearch || ""}
-                          onChange={handleEmployeeChange}
-                          suggestions={filteredEmployeeSuggestions}
-                          maxVisibleItems={5}
-                          placeholder="Sélectionner un employé..."
-                          disabled={isEmployeesLoading || isSearchLoading}
-                          fieldType="employee"
-                          fieldLabel="employé"
-                          showAddOption={false}
-                        />
-                      </FormFieldCell>
-                      <FormFieldCell style={{ width: "25%" }}>
+                      {showEmployeeFilter && (
+                        <FormFieldCell style={{ width: "25%" }}>
+                          <FormLabelSearch>Collaborateur</FormLabelSearch>
+                          <StyledAutoCompleteInput
+                            value={filters.employeeSearch || ""}
+                            onChange={handleEmployeeChange}
+                            suggestions={filteredEmployeeSuggestions}
+                            maxVisibleItems={5}
+                            placeholder="Sélectionner un employé..."
+                            disabled={isEmployeesLoading || isSearchLoading}
+                            fieldType="employee"
+                            fieldLabel="employé"
+                            showAddOption={false}
+                          />
+                        </FormFieldCell>
+                      )}
+                      <FormFieldCell style={{ width: fieldWidth }}>
                         <FormLabelSearch>Type de mission</FormLabelSearch>
                         <StyledSelect
                           value={filters.missionType}
@@ -474,7 +517,7 @@ const MissionList: React.FC = () => {
                           ))}
                         </StyledSelect>
                       </FormFieldCell>
-                      <FormFieldCell style={{ width: "25%" }}>
+                      <FormFieldCell style={{ width: fieldWidth }}>
                         <FormLabelSearch>Lieu</FormLabelSearch>
                         <StyledAutoCompleteInput
                           value={filters.lieuSearch || ""}
@@ -488,7 +531,7 @@ const MissionList: React.FC = () => {
                           showAddOption={false}
                         />
                       </FormFieldCell>
-                      <FormFieldCell style={{ width: "25%" }}>
+                      <FormFieldCell style={{ width: fieldWidth }}>
                         <FormLabelSearch>Statut</FormLabelSearch>
                         <StyledSelect
                           value={filters.status}
@@ -503,83 +546,59 @@ const MissionList: React.FC = () => {
                       </FormFieldCell>
                     </FormRow>
                     <FormRow>
-                      <FormFieldCell colSpan={2} style={{ width: "50%" }}>
-                        <fieldset style={{ 
+                      <FormFieldCell colSpan={numCols} style={{ width: "100%" }}>
+                        <div style={{ 
                           display: "grid", 
                           gridTemplateColumns: "1fr 1fr", 
-                          gap: "var(--spacing-md)",
-                          background: "var(--bg-primary, #ffffff)",
-                          padding: "var(--spacing-md)",
-                          border: "1px solid var(--border-color, #ddd)",
-                          borderRadius: "var(--border-radius, 4px)",
-                          margin: "0"
+                          gap: "var(--spacing-md)"
                         }}>
-                          <legend style={{ 
-                            fontWeight: "var(--font-weight-semibold)",
-                            color: "var(--text-color)",
-                            padding: "0 var(--spacing-sm)",
-                            fontSize: "0.75rem"
-                          }}>
-                            Date Départ
-                          </legend>
-                          <div>
-                            <FormLabelSearch>Du</FormLabelSearch>
-                            <FormInputSearch
-                              type="date"
-                              value={filters.minDepartureDate || ""}
-                              onChange={handleMinDepartureDateChange}
-                              disabled={isSearchLoading}
-                            />
-                          </div>
-                          <div>
-                            <FormLabelSearch>Au</FormLabelSearch>
-                            <FormInputSearch
-                              type="date"
-                              value={filters.maxDepartureDate || ""}
-                              onChange={handleMaxDepartureDateChange}
-                              disabled={isSearchLoading}
-                            />
-                          </div>
-                        </fieldset>
-                      </FormFieldCell>
-                      <FormFieldCell colSpan={2} style={{ width: "50%" }}>
-                        <fieldset style={{ 
-                          display: "grid", 
-                          gridTemplateColumns: "1fr 1fr", 
-                          gap: "var(--spacing-md)",
-                          background: "var(--bg-primary, #ffffff)",
-                          padding: "var(--spacing-md)",
-                          border: "1px solid var(--border-color, #ddd)",
-                          borderRadius: "var(--border-radius, 4px)",
-                          margin: "0"
-                        }}>
-                          <legend style={{ 
-                            fontWeight: "var(--font-weight-semibold)",
-                            color: "var(--text-color)",
-                            padding: "0 var(--spacing-sm)",
-                            fontSize: "0.75rem"
-                          }}>
-                            Date Retour
-                          </legend>
-                          <div>
-                            <FormLabelSearch>Du</FormLabelSearch>
-                            <FormInputSearch
-                              type="date"
-                              value={filters.minArrivalDate || ""}
-                              onChange={handleMinArrivalDateChange}
-                              disabled={isSearchLoading}
-                            />
-                          </div>
-                          <div>
-                            <FormLabelSearch>Au</FormLabelSearch>
-                            <FormInputSearch
-                              type="date"
-                              value={filters.maxArrivalDate || ""}
-                              onChange={handleMaxArrivalDateChange}
-                              disabled={isSearchLoading}
-                            />
-                          </div>
-                        </fieldset>
+                          <fieldset style={fieldsetStyle}>
+                            <legend style={legendStyle}>
+                              Date Départ
+                            </legend>
+                            <div>
+                              <FormLabelSearch>Du</FormLabelSearch>
+                              <FormInputSearch
+                                type="date"
+                                value={filters.minDepartureDate || ""}
+                                onChange={handleMinDepartureDateChange}
+                                disabled={isSearchLoading}
+                              />
+                            </div>
+                            <div>
+                              <FormLabelSearch>Au</FormLabelSearch>
+                              <FormInputSearch
+                                type="date"
+                                value={filters.maxDepartureDate || ""}
+                                onChange={handleMaxDepartureDateChange}
+                                disabled={isSearchLoading}
+                              />
+                            </div>
+                          </fieldset>
+                          <fieldset style={fieldsetStyle}>
+                            <legend style={legendStyle}>
+                              Date Retour
+                            </legend>
+                            <div>
+                              <FormLabelSearch>Du</FormLabelSearch>
+                              <FormInputSearch
+                                type="date"
+                                value={filters.minArrivalDate || ""}
+                                onChange={handleMinArrivalDateChange}
+                                disabled={isSearchLoading}
+                              />
+                            </div>
+                            <div>
+                              <FormLabelSearch>Au</FormLabelSearch>
+                              <FormInputSearch
+                                type="date"
+                                value={filters.maxArrivalDate || ""}
+                                onChange={handleMaxArrivalDateChange}
+                                disabled={isSearchLoading}
+                              />
+                            </div>
+                          </fieldset>
+                        </div>
                       </FormFieldCell>
                     </FormRow>
                   </tbody>
@@ -592,9 +611,9 @@ const MissionList: React.FC = () => {
                     type="button"
                     onClick={handleResetFilters}
                     disabled={!hasFilters || isSearchLoading}
-                    title="Effacer"
+                    title="Effacer filtre"
                   >
-                    Effacer
+                    Effacer filtres
                   </ButtonReset>
                   <ButtonSearch type="submit" disabled={isSearchLoading} title="Rechercher">
                     <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
@@ -745,14 +764,15 @@ const MissionList: React.FC = () => {
             </tbody>
           </DataTable>
         </div>
-      </TableContainer>
-      <Pagination
+        <Pagination
         currentPage={page}
         pageSize={pageSize}
         totalEntries={totalCount}
         onPageChange={setPage}
         onPageSizeChange={handlePageSizeChange}
       />
+      </TableContainer>
+      
     </>
   );
 };

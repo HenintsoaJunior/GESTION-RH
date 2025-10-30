@@ -1,200 +1,200 @@
-INSERT INTO direction (direction_id, direction_name, acronym, created_at, updated_at)
-VALUES 
-    ('DR_0001', 'Direction Technique', 'DTE', GETDATE(), NULL),
-    ('DR_0002', 'Direction Commerciale et Marketing', 'DCM', GETDATE(), NULL),
-    ('DR_0003', 'Direction Qualité, Risques, Sécurité et Environnement', 'QRS', GETDATE(), NULL),
-    ('DR_0004', 'Direction Ressources Humaines', 'DRH', GETDATE(), NULL),
-    ('DR_0005', 'Direction des Systèmes d''Information', 'DSI', GETDATE(), NULL),
-    ('DR_0006', 'Direction des Opérations', 'DOP', GETDATE(), NULL),
-    ('DR_0007', 'Direction Administrative et Financière', 'DAF', GETDATE(), NULL),
-    ('DR_0008', 'Direction Juridique et Assurances', 'DJA', GETDATE(), NULL),
-    ('DR_0009', 'Direction Générale', 'DGE', GETDATE(), NULL),
-    ('DR_0010', 'Communication et Relations Publiques', 'COM', GETDATE(), NULL);
+-- INSERT INTO direction (direction_id, direction_name, acronym, created_at, updated_at)
+-- VALUES 
+--     ('DR_0001', 'Direction Technique', 'DTE', GETDATE(), NULL),
+--     ('DR_0002', 'Direction Commerciale et Marketing', 'DCM', GETDATE(), NULL),
+--     ('DR_0003', 'Direction Qualité, Risques, Sécurité et Environnement', 'QRS', GETDATE(), NULL),
+--     ('DR_0004', 'Direction Ressources Humaines', 'DRH', GETDATE(), NULL),
+--     ('DR_0005', 'Direction des Systèmes d''Information', 'DSI', GETDATE(), NULL),
+--     ('DR_0006', 'Direction des Opérations', 'DOP', GETDATE(), NULL),
+--     ('DR_0007', 'Direction Administrative et Financière', 'DAF', GETDATE(), NULL),
+--     ('DR_0008', 'Direction Juridique et Assurances', 'DJA', GETDATE(), NULL),
+--     ('DR_0009', 'Direction Générale', 'DGE', GETDATE(), NULL),
+--     ('DR_0010', 'Communication et Relations Publiques', 'COM', GETDATE(), NULL);
 
-INSERT INTO department (department_id, department_name, direction_id, created_at, updated_at)
-VALUES 
-    ('DP_0001', 'Bâtiments et Génie Civil', 'DR_0001', GETDATE(), NULL),
-    ('DP_0002', 'Électricité et Mécanique', 'DR_0001', GETDATE(), NULL),
-    ('DP_0003', 'Maintenance', 'DR_0001', GETDATE(), NULL),
-    ('DP_0004', 'Maintenance Multi-Technique', 'DR_0001', GETDATE(), NULL),
-    ('DP_0005', 'Commercial', 'DR_0002', GETDATE(), NULL),
-    ('DP_0006', 'Frêt', 'DR_0002', GETDATE(), NULL),
-    ('DP_0007', 'Département Aéronautique', 'DR_0002', GETDATE(), NULL),
-    ('DP_0008', 'Département Non Aéronautique', 'DR_0002', GETDATE(), NULL),
-    ('DP_0009', 'Qualité et Gestion de Risques', 'DR_0003', GETDATE(), NULL),
-    ('DP_0010', 'Sécurité au Travail', 'DR_0003', GETDATE(), NULL),
-    ('DP_0011', 'Environnement', 'DR_0003', GETDATE(), NULL),
-    ('DP_0012', 'Responsabilité Sociétale des Entreprises', 'DR_0003', GETDATE(), NULL),
-    ('DP_0013', 'Ressources Humaines', 'DR_0004', GETDATE(), NULL),
-    ('DP_0014', 'Rémunération', 'DR_0004', GETDATE(), NULL),
-    ('DP_0015', 'Relations Sociales', 'DR_0004', GETDATE(), NULL),
-    ('DP_0016', 'Développement RH', 'DR_0004', GETDATE(), NULL),
-    ('DP_0017', 'Informatique', 'DR_0005', GETDATE(), NULL),
-    ('DP_0018', 'Infrastructures et Production IT', 'DR_0005', GETDATE(), NULL),
-    ('DP_0019', 'Transformation Digitale', 'DR_0005', GETDATE(), NULL),
-    ('DP_0020', 'Exploitation NOS', 'DR_0006', GETDATE(), NULL),
-    ('DP_0021', 'Exploitation TNR', 'DR_0006', GETDATE(), NULL),
-    ('DP_0022', 'Terminal et Landside', 'DR_0006', GETDATE(), NULL),
-    ('DP_0023', 'Airside', 'DR_0006', GETDATE(), NULL),
-    ('DP_0024', 'Méthodes-Documents et Suivi', 'DR_0006', GETDATE(), NULL),
-    ('DP_0025', 'SCAI', 'DR_0006', GETDATE(), NULL),
-    ('DP_0026', 'Comptabilité', 'DR_0007', GETDATE(), NULL),
-    ('DP_0027', 'Finances et Comptabilité', 'DR_0007', GETDATE(), NULL),
-    ('DP_0028', 'Achats', 'DR_0007', GETDATE(), NULL),
-    ('DP_0029', 'Facturation et Statistiques', 'DR_0007', GETDATE(), NULL),
-    ('DP_0030', 'Ingénierie & Contrôle Financier', 'DR_0007', GETDATE(), NULL),
-    ('DP_0031', 'Trésorerie', 'DR_0007', GETDATE(), NULL),
-    ('DP_0032', 'Juridique', 'DR_0008', GETDATE(), NULL),
-    ('DP_0033', 'Secrétariat Général', 'DR_0008', GETDATE(), NULL),
-    ('DP_0034', 'Direction Générale', 'DR_0009', GETDATE(), NULL),
-    ('DP_0035', 'Communication', 'DR_0010', GETDATE(), NULL);
+-- INSERT INTO department (department_id, department_name, direction_id, created_at, updated_at)
+-- VALUES 
+--     ('DP_0001', 'Bâtiments et Génie Civil', 'DR_0001', GETDATE(), NULL),
+--     ('DP_0002', 'Électricité et Mécanique', 'DR_0001', GETDATE(), NULL),
+--     ('DP_0003', 'Maintenance', 'DR_0001', GETDATE(), NULL),
+--     ('DP_0004', 'Maintenance Multi-Technique', 'DR_0001', GETDATE(), NULL),
+--     ('DP_0005', 'Commercial', 'DR_0002', GETDATE(), NULL),
+--     ('DP_0006', 'Frêt', 'DR_0002', GETDATE(), NULL),
+--     ('DP_0007', 'Département Aéronautique', 'DR_0002', GETDATE(), NULL),
+--     ('DP_0008', 'Département Non Aéronautique', 'DR_0002', GETDATE(), NULL),
+--     ('DP_0009', 'Qualité et Gestion de Risques', 'DR_0003', GETDATE(), NULL),
+--     ('DP_0010', 'Sécurité au Travail', 'DR_0003', GETDATE(), NULL),
+--     ('DP_0011', 'Environnement', 'DR_0003', GETDATE(), NULL),
+--     ('DP_0012', 'Responsabilité Sociétale des Entreprises', 'DR_0003', GETDATE(), NULL),
+--     ('DP_0013', 'Ressources Humaines', 'DR_0004', GETDATE(), NULL),
+--     ('DP_0014', 'Rémunération', 'DR_0004', GETDATE(), NULL),
+--     ('DP_0015', 'Relations Sociales', 'DR_0004', GETDATE(), NULL),
+--     ('DP_0016', 'Développement RH', 'DR_0004', GETDATE(), NULL),
+--     ('DP_0017', 'Informatique', 'DR_0005', GETDATE(), NULL),
+--     ('DP_0018', 'Infrastructures et Production IT', 'DR_0005', GETDATE(), NULL),
+--     ('DP_0019', 'Transformation Digitale', 'DR_0005', GETDATE(), NULL),
+--     ('DP_0020', 'Exploitation NOS', 'DR_0006', GETDATE(), NULL),
+--     ('DP_0021', 'Exploitation TNR', 'DR_0006', GETDATE(), NULL),
+--     ('DP_0022', 'Terminal et Landside', 'DR_0006', GETDATE(), NULL),
+--     ('DP_0023', 'Airside', 'DR_0006', GETDATE(), NULL),
+--     ('DP_0024', 'Méthodes-Documents et Suivi', 'DR_0006', GETDATE(), NULL),
+--     ('DP_0025', 'SCAI', 'DR_0006', GETDATE(), NULL),
+--     ('DP_0026', 'Comptabilité', 'DR_0007', GETDATE(), NULL),
+--     ('DP_0027', 'Finances et Comptabilité', 'DR_0007', GETDATE(), NULL),
+--     ('DP_0028', 'Achats', 'DR_0007', GETDATE(), NULL),
+--     ('DP_0029', 'Facturation et Statistiques', 'DR_0007', GETDATE(), NULL),
+--     ('DP_0030', 'Ingénierie & Contrôle Financier', 'DR_0007', GETDATE(), NULL),
+--     ('DP_0031', 'Trésorerie', 'DR_0007', GETDATE(), NULL),
+--     ('DP_0032', 'Juridique', 'DR_0008', GETDATE(), NULL),
+--     ('DP_0033', 'Secrétariat Général', 'DR_0008', GETDATE(), NULL),
+--     ('DP_0034', 'Direction Générale', 'DR_0009', GETDATE(), NULL),
+--     ('DP_0035', 'Communication', 'DR_0010', GETDATE(), NULL);
 
-INSERT INTO service (service_id, service_name, department_id, created_at, updated_at)
-VALUES 
-    ('SR_0001', 'Conception Technique', 'DP_0001', GETDATE(), NULL),
-    ('SR_0002', 'Maintenance Électrique', 'DP_0002', GETDATE(), NULL),
-    ('SR_0003', 'Maintenance Générale', 'DP_0003', GETDATE(), NULL),
-    ('SR_0004', 'Maintenance Multi-Technique', 'DP_0004', GETDATE(), NULL),
-    ('SR_0005', 'Ventes Commerciales', 'DP_0005', GETDATE(), NULL),
-    ('SR_0006', 'Gestion du Frêt', 'DP_0006', GETDATE(), NULL),
-    ('SR_0007', 'Opérations Aéronautiques', 'DP_0007', GETDATE(), NULL),
-    ('SR_0008', 'Opérations Non Aéronautiques', 'DP_0008', GETDATE(), NULL),
-    ('SR_0009', 'Contrôle Qualité', 'DP_0009', GETDATE(), NULL),
-    ('SR_0010', 'Sécurité au Travail', 'DP_0010', GETDATE(), NULL),
-    ('SR_0011', 'Gestion Environnementale', 'DP_0011', GETDATE(), NULL),
-    ('SR_0012', 'RSE', 'DP_0012', GETDATE(), NULL),
-    ('SR_0013', 'Recrutement', 'DP_0013', GETDATE(), NULL),
-    ('SR_0014', 'Gestion des Rémunérations', 'DP_0014', GETDATE(), NULL),
-    ('SR_0015', 'Relations Sociales', 'DP_0015', GETDATE(), NULL),
-    ('SR_0016', 'Formation et Développement', 'DP_0016', GETDATE(), NULL),
-    ('SR_0017', 'Support Informatique', 'DP_0017', GETDATE(), NULL),
-    ('SR_0018', 'Gestion des Infrastructures IT', 'DP_0018', GETDATE(), NULL),
-    ('SR_0019', 'Transformation Numérique', 'DP_0019', GETDATE(), NULL),
-    ('SR_0020', 'Opérations NOS', 'DP_0020', GETDATE(), NULL),
-    ('SR_0021', 'Opérations TNR', 'DP_0021', GETDATE(), NULL),
-    ('SR_0022', 'Gestion Terminal et Landside', 'DP_0022', GETDATE(), NULL),
-    ('SR_0023', 'Opérations Airside', 'DP_0023', GETDATE(), NULL),
-    ('SR_0024', 'Méthodes et Suivi', 'DP_0024', GETDATE(), NULL),
-    ('SR_0025', 'SCAI', 'DP_0025', GETDATE(), NULL),
-    ('SR_0026', 'Comptabilité Générale', 'DP_0026', GETDATE(), NULL),
-    ('SR_0027', 'Finances', 'DP_0027', GETDATE(), NULL),
-    ('SR_0028', 'Achats', 'DP_0028', GETDATE(), NULL),
-    ('SR_0029', 'Facturation', 'DP_0029', GETDATE(), NULL),
-    ('SR_0030', 'Contrôle Financier', 'DP_0030', GETDATE(), NULL),
-    ('SR_0031', 'Trésorerie', 'DP_0031', GETDATE(), NULL),
-    ('SR_0032', 'Conseil Juridique', 'DP_0032', GETDATE(), NULL),
-    ('SR_0033', 'Secrétariat Général', 'DP_0033', GETDATE(), NULL),
-    ('SR_0034', 'Administration Générale', 'DP_0034', GETDATE(), NULL),
-    ('SR_0035', 'Communication Interne et Externe', 'DP_0035', GETDATE(), NULL);
-
-
-INSERT INTO units (unit_id, unit_name, service_id, created_at, updated_at)
-VALUES 
-    ('UN_0001', 'TNRDRH', 'SR_0013', GETDATE(), GETDATE()),
-    ('UN_0002', 'TNRDRH', 'SR_0014', GETDATE(), GETDATE()),
-    ('UN_0003', 'TNRDRH', 'SR_0015', GETDATE(), GETDATE()),
-    ('UN_0004', 'TNRDRH', 'SR_0016', GETDATE(), GETDATE()),
-    ('UN_0005', 'TNRDAF', 'SR_0026', GETDATE(), GETDATE()),
-    ('UN_0006', 'TNRDAF', 'SR_0034', GETDATE(), GETDATE()),
-    ('UN_0007', 'TNRDAF', 'SR_0028', GETDATE(), GETDATE()),
-    ('UN_0008', 'TNRDAF', 'SR_0029', GETDATE(), GETDATE()),
-    ('UN_0009', 'TNRDAF', 'SR_0027', GETDATE(), GETDATE()),
-    ('UN_0010', 'TNRDAF', 'SR_0030', GETDATE(), GETDATE()),
-    ('UN_0011', 'TNRDAF', 'SR_0031', GETDATE(), GETDATE()),
-    ('UN_0012', 'TNRDCM', 'SR_0005', GETDATE(), GETDATE()),
-    ('UN_0013', 'TNRDCM', 'SR_0006', GETDATE(), GETDATE()),
-    ('UN_0014', 'TNRDCM', 'SR_0005', GETDATE(), GETDATE()),
-    ('UN_0015', 'TNRDCM', 'SR_0007', GETDATE(), GETDATE()),
-    ('UN_0016', 'TNRDCM', 'SR_0008', GETDATE(), GETDATE()),
-    ('UN_0017', 'TNRDCM', 'SR_0005', GETDATE(), GETDATE()),
-    ('UN_0018', 'TNRDJA', 'SR_0032', GETDATE(), GETDATE()),
-    ('UN_0019', 'TNRQRS', 'SR_0009', GETDATE(), GETDATE()),
-    ('UN_0020', 'TNRQRS', 'SR_0012', GETDATE(), GETDATE()),
-    ('UN_0021', 'TNRQRS', 'SR_0010', GETDATE(), GETDATE()),
-    ('UN_0022', 'TNRQRS', 'SR_0011', GETDATE(), GETDATE()),
-    ('UN_0023', 'TNRQRS', 'SR_0012', GETDATE(), GETDATE()),
-    ('UN_0024', 'TNRDOP', 'SR_0021', GETDATE(), GETDATE()),
-    ('UN_0025', 'TNRDOP', 'SR_0025', GETDATE(), GETDATE()),
-    ('UN_0026', 'TNRDOP', 'SR_0022', GETDATE(), GETDATE()),
-    ('UN_0027', 'TNRDOP', 'SR_0021', GETDATE(), GETDATE()),
-    ('UN_0028', 'TNRDOP', 'SR_0024', GETDATE(), GETDATE()),
-    ('UN_0029', 'TNRDOP', 'SR_0023', GETDATE(), GETDATE()),
-    ('UN_0030', 'TNRDOP', 'SR_0017', GETDATE(), GETDATE()),
-    ('UN_0031', 'TNRDOP', 'SR_0003', GETDATE(), GETDATE()),
-    ('UN_0032', 'TNRDTE', 'SR_0001', GETDATE(), GETDATE()),
-    ('UN_0033', 'TNRDTE', 'SR_0002', GETDATE(), GETDATE()),
-    ('UN_0034', 'TNRDTE', 'SR_0003', GETDATE(), GETDATE()),
-    ('UN_0035', 'TNRDTE', 'SR_0004', GETDATE(), GETDATE()),
-    ('UN_0036', 'TNRDTE', 'SR_0003', GETDATE(), GETDATE()),
-    ('UN_0037', 'TNRDGE', 'SR_0033', GETDATE(), GETDATE()),
-    ('UN_0038', 'TNRDGE', 'SR_0035', GETDATE(), GETDATE()),
-    ('UN_0039', 'TNRDGE', 'SR_0005', GETDATE(), GETDATE()),
-    ('UN_0040', 'TNRDGE', 'SR_0009', GETDATE(), GETDATE()),
-    ('UN_0041', 'TNRDGE', 'SR_0010', GETDATE(), GETDATE()),
-    ('UN_0042', 'TNRQHS', 'SR_0010', GETDATE(), GETDATE()),
-    ('UN_0043', 'NOSDOP', 'SR_0020', GETDATE(), GETDATE()),
-    ('UN_0044', 'NOSDOP', 'SR_0022', GETDATE(), GETDATE()),
-    ('UN_0045', 'NOSDOP', 'SR_0021', GETDATE(), GETDATE()),
-    ('UN_0046', 'TNRDMT', 'SR_0003', GETDATE(), GETDATE()),
-    ('UN_0047', 'TNRDMT', 'SR_0003', GETDATE(), GETDATE()),
-    ('UN_0048', 'TNRDMT', 'SR_0003', GETDATE(), GETDATE()),
-    ('UN_0049', 'TNRCOM', 'SR_0035', GETDATE(), GETDATE()),
-    ('UN_0050', 'TNRDMA', 'SR_0005', GETDATE(), GETDATE()),
-    ('UN_0051', 'TNRDMA', 'SR_0005', GETDATE(), GETDATE()),
-    ('UN_0052', 'TNRDMA', 'SR_0005', GETDATE(), GETDATE()),
-    ('UN_0053', 'TNRJUR', 'SR_0033', GETDATE(), GETDATE()),
-    ('UN_0054', 'TNRDSI', 'SR_0017', GETDATE(), GETDATE()),
-    ('UN_0055', 'TNRDSI', 'SR_0018', GETDATE(), GETDATE()),
-    ('UN_0056', 'TNRDSI', 'SR_0019', GETDATE(), GETDATE()),
-    ('UN_0057', 'TNRDOR', 'SR_0021', GETDATE(), GETDATE()),
-    ('UN_0058', 'TNRORA', 'SR_0021', GETDATE(), GETDATE()),
-    ('UN_0059', 'NOSDGE', 'SR_0010', GETDATE(), GETDATE()),
-    ('UN_0060', 'NOSDTE', 'SR_0003', GETDATE(), GETDATE()),
-    ('UN_0061', 'NOSQHS', 'SR_0010', GETDATE(), GETDATE()),
-    ('UN_0062', 'NOSDSI', 'SR_0017', GETDATE(), GETDATE());
+-- INSERT INTO service (service_id, service_name, department_id, created_at, updated_at)
+-- VALUES 
+--     ('SR_0001', 'Conception Technique', 'DP_0001', GETDATE(), NULL),
+--     ('SR_0002', 'Maintenance Électrique', 'DP_0002', GETDATE(), NULL),
+--     ('SR_0003', 'Maintenance Générale', 'DP_0003', GETDATE(), NULL),
+--     ('SR_0004', 'Maintenance Multi-Technique', 'DP_0004', GETDATE(), NULL),
+--     ('SR_0005', 'Ventes Commerciales', 'DP_0005', GETDATE(), NULL),
+--     ('SR_0006', 'Gestion du Frêt', 'DP_0006', GETDATE(), NULL),
+--     ('SR_0007', 'Opérations Aéronautiques', 'DP_0007', GETDATE(), NULL),
+--     ('SR_0008', 'Opérations Non Aéronautiques', 'DP_0008', GETDATE(), NULL),
+--     ('SR_0009', 'Contrôle Qualité', 'DP_0009', GETDATE(), NULL),
+--     ('SR_0010', 'Sécurité au Travail', 'DP_0010', GETDATE(), NULL),
+--     ('SR_0011', 'Gestion Environnementale', 'DP_0011', GETDATE(), NULL),
+--     ('SR_0012', 'RSE', 'DP_0012', GETDATE(), NULL),
+--     ('SR_0013', 'Recrutement', 'DP_0013', GETDATE(), NULL),
+--     ('SR_0014', 'Gestion des Rémunérations', 'DP_0014', GETDATE(), NULL),
+--     ('SR_0015', 'Relations Sociales', 'DP_0015', GETDATE(), NULL),
+--     ('SR_0016', 'Formation et Développement', 'DP_0016', GETDATE(), NULL),
+--     ('SR_0017', 'Support Informatique', 'DP_0017', GETDATE(), NULL),
+--     ('SR_0018', 'Gestion des Infrastructures IT', 'DP_0018', GETDATE(), NULL),
+--     ('SR_0019', 'Transformation Numérique', 'DP_0019', GETDATE(), NULL),
+--     ('SR_0020', 'Opérations NOS', 'DP_0020', GETDATE(), NULL),
+--     ('SR_0021', 'Opérations TNR', 'DP_0021', GETDATE(), NULL),
+--     ('SR_0022', 'Gestion Terminal et Landside', 'DP_0022', GETDATE(), NULL),
+--     ('SR_0023', 'Opérations Airside', 'DP_0023', GETDATE(), NULL),
+--     ('SR_0024', 'Méthodes et Suivi', 'DP_0024', GETDATE(), NULL),
+--     ('SR_0025', 'SCAI', 'DP_0025', GETDATE(), NULL),
+--     ('SR_0026', 'Comptabilité Générale', 'DP_0026', GETDATE(), NULL),
+--     ('SR_0027', 'Finances', 'DP_0027', GETDATE(), NULL),
+--     ('SR_0028', 'Achats', 'DP_0028', GETDATE(), NULL),
+--     ('SR_0029', 'Facturation', 'DP_0029', GETDATE(), NULL),
+--     ('SR_0030', 'Contrôle Financier', 'DP_0030', GETDATE(), NULL),
+--     ('SR_0031', 'Trésorerie', 'DP_0031', GETDATE(), NULL),
+--     ('SR_0032', 'Conseil Juridique', 'DP_0032', GETDATE(), NULL),
+--     ('SR_0033', 'Secrétariat Général', 'DP_0033', GETDATE(), NULL),
+--     ('SR_0034', 'Administration Générale', 'DP_0034', GETDATE(), NULL),
+--     ('SR_0035', 'Communication Interne et Externe', 'DP_0035', GETDATE(), NULL);
 
 
-INSERT INTO site (site_id, site_name, code, longitude, latitude, created_at, updated_at)
-VALUES 
-    ('ST_0001', 'Antananarivo', 'TNR', NULL, NULL, GETDATE(), NULL),
-    ('ST_0002', 'Nosy Be', 'NOS', NULL, NULL, GETDATE(), NULL);
+-- INSERT INTO units (unit_id, unit_name, service_id, created_at, updated_at)
+-- VALUES 
+--     ('UN_0001', 'TNRDRH', 'SR_0013', GETDATE(), GETDATE()),
+--     ('UN_0002', 'TNRDRH', 'SR_0014', GETDATE(), GETDATE()),
+--     ('UN_0003', 'TNRDRH', 'SR_0015', GETDATE(), GETDATE()),
+--     ('UN_0004', 'TNRDRH', 'SR_0016', GETDATE(), GETDATE()),
+--     ('UN_0005', 'TNRDAF', 'SR_0026', GETDATE(), GETDATE()),
+--     ('UN_0006', 'TNRDAF', 'SR_0034', GETDATE(), GETDATE()),
+--     ('UN_0007', 'TNRDAF', 'SR_0028', GETDATE(), GETDATE()),
+--     ('UN_0008', 'TNRDAF', 'SR_0029', GETDATE(), GETDATE()),
+--     ('UN_0009', 'TNRDAF', 'SR_0027', GETDATE(), GETDATE()),
+--     ('UN_0010', 'TNRDAF', 'SR_0030', GETDATE(), GETDATE()),
+--     ('UN_0011', 'TNRDAF', 'SR_0031', GETDATE(), GETDATE()),
+--     ('UN_0012', 'TNRDCM', 'SR_0005', GETDATE(), GETDATE()),
+--     ('UN_0013', 'TNRDCM', 'SR_0006', GETDATE(), GETDATE()),
+--     ('UN_0014', 'TNRDCM', 'SR_0005', GETDATE(), GETDATE()),
+--     ('UN_0015', 'TNRDCM', 'SR_0007', GETDATE(), GETDATE()),
+--     ('UN_0016', 'TNRDCM', 'SR_0008', GETDATE(), GETDATE()),
+--     ('UN_0017', 'TNRDCM', 'SR_0005', GETDATE(), GETDATE()),
+--     ('UN_0018', 'TNRDJA', 'SR_0032', GETDATE(), GETDATE()),
+--     ('UN_0019', 'TNRQRS', 'SR_0009', GETDATE(), GETDATE()),
+--     ('UN_0020', 'TNRQRS', 'SR_0012', GETDATE(), GETDATE()),
+--     ('UN_0021', 'TNRQRS', 'SR_0010', GETDATE(), GETDATE()),
+--     ('UN_0022', 'TNRQRS', 'SR_0011', GETDATE(), GETDATE()),
+--     ('UN_0023', 'TNRQRS', 'SR_0012', GETDATE(), GETDATE()),
+--     ('UN_0024', 'TNRDOP', 'SR_0021', GETDATE(), GETDATE()),
+--     ('UN_0025', 'TNRDOP', 'SR_0025', GETDATE(), GETDATE()),
+--     ('UN_0026', 'TNRDOP', 'SR_0022', GETDATE(), GETDATE()),
+--     ('UN_0027', 'TNRDOP', 'SR_0021', GETDATE(), GETDATE()),
+--     ('UN_0028', 'TNRDOP', 'SR_0024', GETDATE(), GETDATE()),
+--     ('UN_0029', 'TNRDOP', 'SR_0023', GETDATE(), GETDATE()),
+--     ('UN_0030', 'TNRDOP', 'SR_0017', GETDATE(), GETDATE()),
+--     ('UN_0031', 'TNRDOP', 'SR_0003', GETDATE(), GETDATE()),
+--     ('UN_0032', 'TNRDTE', 'SR_0001', GETDATE(), GETDATE()),
+--     ('UN_0033', 'TNRDTE', 'SR_0002', GETDATE(), GETDATE()),
+--     ('UN_0034', 'TNRDTE', 'SR_0003', GETDATE(), GETDATE()),
+--     ('UN_0035', 'TNRDTE', 'SR_0004', GETDATE(), GETDATE()),
+--     ('UN_0036', 'TNRDTE', 'SR_0003', GETDATE(), GETDATE()),
+--     ('UN_0037', 'TNRDGE', 'SR_0033', GETDATE(), GETDATE()),
+--     ('UN_0038', 'TNRDGE', 'SR_0035', GETDATE(), GETDATE()),
+--     ('UN_0039', 'TNRDGE', 'SR_0005', GETDATE(), GETDATE()),
+--     ('UN_0040', 'TNRDGE', 'SR_0009', GETDATE(), GETDATE()),
+--     ('UN_0041', 'TNRDGE', 'SR_0010', GETDATE(), GETDATE()),
+--     ('UN_0042', 'TNRQHS', 'SR_0010', GETDATE(), GETDATE()),
+--     ('UN_0043', 'NOSDOP', 'SR_0020', GETDATE(), GETDATE()),
+--     ('UN_0044', 'NOSDOP', 'SR_0022', GETDATE(), GETDATE()),
+--     ('UN_0045', 'NOSDOP', 'SR_0021', GETDATE(), GETDATE()),
+--     ('UN_0046', 'TNRDMT', 'SR_0003', GETDATE(), GETDATE()),
+--     ('UN_0047', 'TNRDMT', 'SR_0003', GETDATE(), GETDATE()),
+--     ('UN_0048', 'TNRDMT', 'SR_0003', GETDATE(), GETDATE()),
+--     ('UN_0049', 'TNRCOM', 'SR_0035', GETDATE(), GETDATE()),
+--     ('UN_0050', 'TNRDMA', 'SR_0005', GETDATE(), GETDATE()),
+--     ('UN_0051', 'TNRDMA', 'SR_0005', GETDATE(), GETDATE()),
+--     ('UN_0052', 'TNRDMA', 'SR_0005', GETDATE(), GETDATE()),
+--     ('UN_0053', 'TNRJUR', 'SR_0033', GETDATE(), GETDATE()),
+--     ('UN_0054', 'TNRDSI', 'SR_0017', GETDATE(), GETDATE()),
+--     ('UN_0055', 'TNRDSI', 'SR_0018', GETDATE(), GETDATE()),
+--     ('UN_0056', 'TNRDSI', 'SR_0019', GETDATE(), GETDATE()),
+--     ('UN_0057', 'TNRDOR', 'SR_0021', GETDATE(), GETDATE()),
+--     ('UN_0058', 'TNRORA', 'SR_0021', GETDATE(), GETDATE()),
+--     ('UN_0059', 'NOSDGE', 'SR_0010', GETDATE(), GETDATE()),
+--     ('UN_0060', 'NOSDTE', 'SR_0003', GETDATE(), GETDATE()),
+--     ('UN_0061', 'NOSQHS', 'SR_0010', GETDATE(), GETDATE()),
+--     ('UN_0062', 'NOSDSI', 'SR_0017', GETDATE(), GETDATE());
 
-INSERT INTO nationalities (nationality_id, code, name)
-VALUES 
-    ('NAT_0001', 'MG', 'Malagasy'),
-    ('NAT_0002', 'FR', 'Français'),
-    ('NAT_0003', 'US', 'Américain');
 
-INSERT INTO genders (gender_id, code, label, created_at, updated_at)
-VALUES 
-    ('GEN_0001', 'M', 'Masculin', GETDATE(), NULL),
-    ('GEN_0002', 'F', 'Féminin', GETDATE(), NULL),
-    ('GEN_0003', 'NB', 'Non-binaire', GETDATE(), NULL);
+-- INSERT INTO site (site_id, site_name, code, longitude, latitude, created_at, updated_at)
+-- VALUES 
+--     ('ST_0001', 'Antananarivo', 'TNR', NULL, NULL, GETDATE(), NULL),
+--     ('ST_0002', 'Nosy Be', 'NOS', NULL, NULL, GETDATE(), NULL);
 
-INSERT INTO contract_types (contract_type_id, code, label, created_at, updated_at)
-VALUES 
-    ('CT_0001', 'CDI', 'Contrat à Durée Indéterminée', GETDATE(), NULL),
-    ('CT_0002', 'CDD', 'Contrat à Durée Déterminée', GETDATE(), NULL),
-    ('CT_0003', 'CTT', 'Contrat de Travail Temporaire', GETDATE(), NULL);
+-- INSERT INTO nationalities (nationality_id, code, name)
+-- VALUES 
+--     ('NAT_0001', 'MG', 'Malagasy'),
+--     ('NAT_0002', 'FR', 'Français'),
+--     ('NAT_0003', 'US', 'Américain');
+
+-- INSERT INTO genders (gender_id, code, label, created_at, updated_at)
+-- VALUES 
+--     ('GEN_0001', 'M', 'Masculin', GETDATE(), NULL),
+--     ('GEN_0002', 'F', 'Féminin', GETDATE(), NULL),
+--     ('GEN_0003', 'NB', 'Non-binaire', GETDATE(), NULL);
+
+-- INSERT INTO contract_types (contract_type_id, code, label, created_at, updated_at)
+-- VALUES 
+--     ('CT_0001', 'CDI', 'Contrat à Durée Indéterminée', GETDATE(), NULL),
+--     ('CT_0002', 'CDD', 'Contrat à Durée Déterminée', GETDATE(), NULL),
+--     ('CT_0003', 'CTT', 'Contrat de Travail Temporaire', GETDATE(), NULL);
 
 
-INSERT INTO employee_categories (employee_category_id, code, label, created_at, updated_at)
-VALUES 
-    ('EC_0001', 'CAD', 'Cadre', GETDATE(), NULL),
-    ('EC_0002', 'EMP', 'Employé', GETDATE(), NULL),
-    ('EC_0003', 'TEC', 'Technicien', GETDATE(), NULL);
+-- INSERT INTO employee_categories (employee_category_id, code, label, created_at, updated_at)
+-- VALUES 
+--     ('EC_0001', 'CAD', 'Cadre', GETDATE(), NULL),
+--     ('EC_0002', 'EMP', 'Employé', GETDATE(), NULL),
+--     ('EC_0003', 'TEC', 'Technicien', GETDATE(), NULL);
 
-INSERT INTO employees (employee_id, employee_code, last_name, first_name, phone_number, hire_date, job_title, contract_end_date, site_id, gender_id, contract_type_id, direction_id, department_id, service_id, unit_id)
-VALUES 
-    ('EMP_0001', 'ST154', 'RAKOTOARIMANANA', 'Miantsafitia', '038 89 499 77', '2025-05-01', 'Stagiaire RH', '2025-12-31', 'ST_0001', 'GEN_0001', 'CT_0003', 'DR_0004', 'DP_0013', 'SR_0013', 'UN_0001'),
-    ('EMP_0002', 'ST155', 'ANDRIAMBOLOLONA', 'Mandaniaina', '034 11 245 79', '2025-05-01', 'Stagiaire RH', '2025-12-31', 'ST_0001', 'GEN_0001', 'CT_0003', 'DR_0004', 'DP_0013', 'SR_0013', 'UN_0001'),
-    ('EMP_0003', '00446', 'RAKOTOMAVO', 'Christelle', '034 36 865 57', '2025-01-27', 'Chef(fe) de Projet SI et Innov', NULL, 'ST_0001', 'GEN_0002', 'CT_0001', 'DR_0005', 'DP_0019', 'SR_0019', 'UN_0056');
+-- INSERT INTO employees (employee_id, employee_code, last_name, first_name, phone_number, hire_date, job_title, contract_end_date, site_id, gender_id, contract_type_id, direction_id, department_id, service_id, unit_id)
+-- VALUES 
+--     ('EMP_0001', 'ST154', 'RAKOTOARIMANANA', 'Miantsafitia', '038 89 499 77', '2025-05-01', 'Stagiaire RH', '2025-12-31', 'ST_0001', 'GEN_0001', 'CT_0003', 'DR_0004', 'DP_0013', 'SR_0013', 'UN_0001'),
+--     ('EMP_0002', 'ST155', 'ANDRIAMBOLOLONA', 'Mandaniaina', '034 11 245 79', '2025-05-01', 'Stagiaire RH', '2025-12-31', 'ST_0001', 'GEN_0001', 'CT_0003', 'DR_0004', 'DP_0013', 'SR_0013', 'UN_0001'),
+--     ('EMP_0003', '00446', 'RAKOTOMAVO', 'Christelle', '034 36 865 57', '2025-01-27', 'Chef(fe) de Projet SI et Innov', NULL, 'ST_0001', 'GEN_0002', 'CT_0001', 'DR_0005', 'DP_0019', 'SR_0019', 'UN_0056');
 
-INSERT INTO categories_of_employee (employee_id, employee_category_id, created_at, updated_at)
-VALUES 
-    ('EMP_0001', 'EC_0001', '2023-01-10', NULL),
-    ('EMP_0002', 'EC_0001', '2024-03-01', NULL), 
-    ('EMP_0003', 'EC_0001', '2022-06-15', NULL);
+-- INSERT INTO categories_of_employee (employee_id, employee_category_id, created_at, updated_at)
+-- VALUES 
+--     ('EMP_0001', 'EC_0001', '2023-01-10', NULL),
+--     ('EMP_0002', 'EC_0001', '2024-03-01', NULL), 
+--     ('EMP_0003', 'EC_0001', '2022-06-15', NULL);
 
 
 INSERT INTO role (role_id, name, description, created_at, updated_at)
@@ -450,6 +450,18 @@ INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superi
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( 'ffc8ccc9-4a59-4341-8177-ece440fe1b8e', '00173', 'Andriantsoa Rianando RANDRIANANDRAINA (DOP)', 'rianando.randrianandraina@ravinala-airports.aero', 'Superviseur Maintenance AOCC', 'DOP', '3a60fbce-8356-4415-bbad-82e9280fe08a', 'Andrianina Luc RAKOTOMANDIMBY (DOP)', null, null, null);
 
 
+INSERT INTO user_availability (user_id, status, changed_at)
+SELECT 
+    u.user_id, 
+    'disponible' AS status, 
+    CURRENT_TIMESTAMP AS changed_at
+FROM users u
+WHERE NOT EXISTS (
+    SELECT 1 
+    FROM user_availability ua 
+    WHERE ua.user_id = u.user_id
+);
+
 INSERT INTO user_role (user_id, role_id)
 VALUES
     ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_001'),
@@ -532,6 +544,7 @@ VALUES
 ('exp002', 'Déjeuner',        '12:00:00', '13:30:00', GETDATE(), GETDATE()),
 ('exp003', 'Dinner',           '18:30:00', '20:00:00', GETDATE(), GETDATE()),
 ('exp004', 'Hébergement',     '21:00:00', '05:00:00', GETDATE(), GETDATE());
+
 INSERT INTO transport (transport_id, type, created_at, updated_at)
 VALUES 
 ('tr001', 'Voiture', GETDATE(), GETDATE()),
@@ -579,15 +592,17 @@ VALUES
 -- MENU DYNAMIQUE
 -- ============================
 
--- Insertion des modules
+-- Insertion des modules (ajout du nouveau module 'referentiel' au-dessus de 'import')
 INSERT INTO module (module_id, module_name, description, created_at, updated_at) VALUES
 ('user', 'Utilisateurs', 'Gestion des utilisateurs et rôles', GETDATE(), GETDATE()),
 ('habilitation', 'Droit & Accès', 'Gestion des droits et autorisations', GETDATE(), GETDATE()),
 ('mission', 'Suivi des Missions', 'Gestion des missions, assignations et paiements', GETDATE(), GETDATE()),
 ('logs', 'Logs', 'Suivi et journalisation des actions utilisateurs et systèmes', GETDATE(), GETDATE()),
-('treasury', 'Trésorerie', 'Gestion des flux financiers et de la trésorerie', GETDATE(), GETDATE()); 
+('treasury', 'Trésorerie', 'Gestion des flux financiers et de la trésorerie', GETDATE(), GETDATE()),
+('referentiel', 'Référentiel', 'Gestion des données référentielles', GETDATE(), GETDATE()),
+('import', 'Import', 'Gestion des imports de données et fichiers', GETDATE(), GETDATE()); 
 
--- Insertion des menus
+-- Insertion des menus (ajout du menu pour 'referentiel' en position 3 dans 'administration', au-dessus de 'import' décalé à 4, et 'logs' à 5)
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu0', 'utilisateurs', 'fa-users', '/utilisateur', 1, 1, 'user', 'administration', GETDATE(), GETDATE());
 
@@ -596,39 +611,47 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 ('menu_hab_2', 'access', 'fa-list', '/access/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
 
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_logs', 'logs', 'fa-file-alt', '/logs', 1, 4, 'logs', 'administration', GETDATE(), GETDATE());
+('menu_referentiel', 'referentiel', 'fa-database', '/referentiel', 1, 3, 'referentiel', 'administration', GETDATE(), GETDATE()),  -- Position 3 pour Référentiel (au-dessus de Import)
+('menu_import', 'import', 'fa-upload', '/import', 1, 4, 'import', 'administration', GETDATE(), GETDATE()),  -- Import décalé à position 4
+('menu_logs', 'logs', 'fa-file-alt', '/logs', 1, 5, 'logs', 'administration', GETDATE(), GETDATE());  -- Logs décalé à position 5
 
 -- Navigation: mission
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_3', 'collaborateur', 'fa-users', '/mission/collaborateur', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
+('menu2_3', 'Missions', 'fa-list', '/mission/list', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
+('menu2_4', 'Missions archivées', 'fa-archive', '/mission/archived', 1, 6, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_5', 'treso', 'fa-money-bill-alt', '/treasury', 1, 5, 'treasury', 'navigation', GETDATE(), GETDATE());
 
--- Ajout du menu Habilitation sous Droit & Accès
+-- Ajout du menu Habilitation sous Droit & Accès (position ajustée à 6 pour cohérence après décalage)
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_hab_3', 'Habilitation', 'fa-key', '/habilitation', 1, 4, 'habilitation', 'administration', GETDATE(), GETDATE());
+('menu_hab_3', 'Habilitation', 'fa-key', '/habilitation', 1, 6, 'habilitation', 'administration', GETDATE(), GETDATE());
 
--- Insertion de la hiérarchie des menus
+-- Insertion de la hiérarchie des menus (ajout de la hiérarchie pour 'referentiel' comme top-level dans administration, au-dessus de 'import')
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
 ('h0', NULL, 'menu0', GETDATE(), GETDATE()),
 ('h_hab', NULL, 'menu_hab', GETDATE(), GETDATE()),
 ('h_hab_2', 'menu_hab', 'menu_hab_2', GETDATE(), GETDATE()),
-('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),
+('h_referentiel', NULL, 'menu_referentiel', GETDATE(), GETDATE()),  -- Hiérarchie pour Référentiel (top-level, au-dessus de Import)
+('h_import', NULL, 'menu_import', GETDATE(), GETDATE()),  -- Hiérarchie pour Import (top-level)
+('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),  -- Logs reste top-level
 ('h4', NULL, 'menu2', GETDATE(), GETDATE()),
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
 ('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
+('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE()),
 ('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE());
 
 -- Ajout de la hiérarchie pour le nouveau menu (enfant de menu_hab)
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
 ('h_hab_3', 'menu_hab', 'menu_hab_3', GETDATE(), GETDATE());
 
--- Insertion des rôles pour les menus
+-- Insertion des rôles pour les menus (ajout des rôles pour 'referentiel')
 INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
 ('menu0', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu_hab', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu_hab_2', 'ROLE_001', GETDATE(), GETDATE()),
+('menu_referentiel', 'ROLE_001', GETDATE(), GETDATE()),  -- Rôles pour Référentiel
+('menu_import', 'ROLE_001', GETDATE(), GETDATE()),  -- Rôles pour Import
 ('menu_logs', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2', 'ROLE_002', GETDATE(), GETDATE()),
@@ -638,6 +661,9 @@ INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
 ('menu2_3', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_3', 'ROLE_002', GETDATE(), GETDATE()),
 ('menu2_3', 'ROLE_003', GETDATE(), GETDATE()),
+('menu2_4', 'ROLE_001', GETDATE(), GETDATE()),
+('menu2_4', 'ROLE_002', GETDATE(), GETDATE()),
+('menu2_4', 'ROLE_003', GETDATE(), GETDATE()),
 ('menu2_5', 'ROLE_001', GETDATE(), GETDATE()),
 ('menu2_5', 'ROLE_002', GETDATE(), GETDATE()),
 ('menu2_5', 'ROLE_003', GETDATE(), GETDATE());

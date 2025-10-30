@@ -1,0 +1,660 @@
+"use client";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { ChevronDown, ChevronUp, X, List, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  FiltersContainer,
+  FiltersHeader,
+  FiltersTitle,
+  FiltersControls,
+  FilterControlButton,
+  FiltersSection,
+  FormTableSearch,
+  FormRow,
+  FormFieldCell,
+  FormLabelSearch,
+  StyledAutoCompleteInput,
+  StyledSelect,
+  FormInputSearch,
+  FiltersActions,
+  ButtonReset,
+  ButtonSearch,
+  TableContainer,
+  DataTable,
+  TableTitle,
+  TableHeader,
+  TableHeadCell,
+  TableRow,
+  TableCell,
+  FiltersToggle,
+  ButtonShowFilters,
+  Loading,
+  NoDataMessage,
+  Separator,
+  StatusBadge,
+} from "@/styles/table-styles";
+import { useEmployees } from "@/api/collaborator/services";
+import { useLieux } from "@/api/lieu/services";
+import { useSearchMissionAssignations } from "@/api/mission/services";
+import { useUserCollaborators } from "@/api/users/services";
+import { useHasHabilitation } from "@/api/users/services";
+import type { MissionAssignationSearchFilters, MissionAssignation, Lieu } from "@/api/mission/services";
+import type { Employee as CollabEmployee } from "@/api/collaborator/services";
+import type { UserInfo, UserInfosResponse } from "@/api/users/services";
+import Alert from "@/components/alert";
+import Pagination from "@/components/pagination";
+import { getStatusBadgeClass, englishToFrench } from "@/utils/status";
+import ProtectedRoute from "@/components/protected-route";
+
+interface FiltersState extends Omit<MissionAssignationSearchFilters, 'matricule' | 'missionId' | 'transportId' | 'status'> {
+  selectedEmployee?: CollabEmployee | null;
+  selectedLieu?: Lieu | null;
+  employeeSearch?: string;
+  lieuSearch?: string;
+}
+
+interface AlertState {
+  isOpen: boolean;
+  type: "info" | "success" | "error" | "warning";
+  message: string;
+}
+
+const MissionListArchive: React.FC = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'toutes' | 'mes' | 'collaborateurs'>('toutes');
+  const [filters, setFilters] = useState<FiltersState>({
+    employeeId: "",
+    missionType: "",
+    lieuId: "",
+    minDepartureDate: null,
+    maxDepartureDate: null,
+    minArrivalDate: null,
+    maxArrivalDate: null,
+    selectedEmployee: null,
+    selectedLieu: null,
+    employeeSearch: "",
+    lieuSearch: "",
+  });
+  const [appliedFilters, setAppliedFilters] = useState<FiltersState>({
+    employeeId: "",
+    missionType: "",
+    lieuId: "",
+    minDepartureDate: null,
+    maxDepartureDate: null,
+    minArrivalDate: null,
+    maxArrivalDate: null,
+    selectedEmployee: null,
+    selectedLieu: null,
+    employeeSearch: "",
+    lieuSearch: "",
+  });
+  const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [isHidden, setIsHidden] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [totalCount, setTotalCount] = useState<number>(0);
+
+  const userData = JSON.parse(localStorage.getItem("user") || "{}");
+  const matricule = userData?.matricule || "";
+  const userId = userData?.userId || "";
+
+  const canViewDetails = useHasHabilitation(userId, "voir details mission");
+
+  const { data: employeesResponse, isLoading: isEmployeesLoading } = useEmployees();
+  const { data: lieuxResponse, isLoading: isLieuxLoading } = useLieux();
+  const { data: collaboratorsResponse }: { data?: UserInfosResponse } = useUserCollaborators(userId);
+
+  const employees = useMemo(() => employeesResponse?.data || [], [employeesResponse?.data]) as CollabEmployee[];
+  const lieux = useMemo(() => lieuxResponse?.data || [], [lieuxResponse?.data]);
+
+  const employeeSuggestions = useMemo(() =>
+    employees.map((emp) => `${emp.firstName} ${emp.lastName}`),
+    [employees]
+  );
+
+  const filteredEmployeeSuggestions = useMemo(() =>
+    employeeSuggestions.filter((sug) =>
+      sug.toLowerCase().includes((filters.employeeSearch || "").toLowerCase())
+    ),
+    [employeeSuggestions, filters.employeeSearch]
+  );
+
+  const lieuSuggestions = useMemo(() =>
+    lieux.map((lieu: Lieu) => lieu.nom),
+    [lieux]
+  );
+
+  const filteredLieuSuggestions = useMemo(() =>
+    lieuSuggestions.filter((sug) =>
+      sug.toLowerCase().includes((filters.lieuSearch || "").toLowerCase())
+    ),
+    [lieuSuggestions, filters.lieuSearch]
+  );
+
+  const missionTypes = ["International", "National"];
+
+  const hasFilters: boolean = Object.values({ 
+    ...filters, 
+    selectedEmployee: null, 
+    selectedLieu: null,
+    employeeSearch: filters.employeeSearch || "",
+    lieuSearch: filters.lieuSearch || "",
+    minDepartureDate: filters.minDepartureDate || "",
+    maxDepartureDate: filters.maxDepartureDate || "",
+    minArrivalDate: filters.minArrivalDate || "",
+    maxArrivalDate: filters.maxArrivalDate || "",
+  }).some((val) => (val || "").trim() !== "");
+
+  const queryFilters: MissionAssignationSearchFilters = useMemo(() => {
+    const filtersBase: Partial<MissionAssignationSearchFilters> = {
+      status: "completed", // Toujours filtré sur les missions terminées
+    };
+
+    if (appliedFilters.employeeId) {
+      filtersBase.employeeId = appliedFilters.employeeId;
+    }
+    if (appliedFilters.missionType) {
+      filtersBase.missionType = appliedFilters.missionType;
+    }
+    if (appliedFilters.lieuId) {
+      filtersBase.lieuId = appliedFilters.lieuId;
+    }
+    if (appliedFilters.minDepartureDate) {
+      filtersBase.minDepartureDate = appliedFilters.minDepartureDate;
+    }
+    if (appliedFilters.maxDepartureDate) {
+      filtersBase.maxDepartureDate = appliedFilters.maxDepartureDate;
+    }
+    if (appliedFilters.minArrivalDate) {
+      filtersBase.minArrivalDate = appliedFilters.minArrivalDate;
+    }
+    if (appliedFilters.maxArrivalDate) {
+      filtersBase.maxArrivalDate = appliedFilters.maxArrivalDate;
+    }
+
+    switch (activeTab) {
+      case 'mes': {
+        filtersBase.matricule = [matricule || ""];
+        break;
+      }
+      case 'collaborateurs': {
+        const collaboratorsData = collaboratorsResponse?.data as UserInfo[] || [];
+        const collaboratorsMatricules = collaboratorsData.map((c) => c.matricule).filter(Boolean);
+        if (collaboratorsMatricules.length > 0) {
+          filtersBase.matricule = collaboratorsMatricules;
+        }
+        break;
+      }
+      default: {
+        filtersBase.matricule = [""];
+        break;
+      }
+    }
+
+    return filtersBase as MissionAssignationSearchFilters;
+  }, [appliedFilters, activeTab, matricule, collaboratorsResponse]);
+
+  const { data: searchResponse, isLoading: isSearchLoading } = useSearchMissionAssignations(
+    queryFilters,
+    page,
+    pageSize
+  );
+
+  const assignations = useMemo(() => searchResponse?.data?.data || [], [searchResponse?.data?.data]);
+
+  const showNoCollaboratorsMessage = useMemo(() => {
+    const collaboratorsData = collaboratorsResponse?.data as UserInfo[] || [];
+    return activeTab === 'collaborateurs' && collaboratorsData.length === 0;
+  }, [activeTab, collaboratorsResponse]);
+
+  const handleRowClick = useCallback((missionId: string) => {
+    if (canViewDetails) {
+      navigate(`/mission/collaborateur/${missionId}`);
+    }
+  }, [canViewDetails, navigate]);
+
+  const handleFilterSubmit = useCallback((event: React.FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    setAppliedFilters(filters);
+    setPage(1);
+  }, [filters]);
+
+  const handleResetFilters = useCallback((): void => {
+    const resetFilters: FiltersState = {
+      employeeId: "",
+      missionType: "",
+      lieuId: "",
+      minDepartureDate: null,
+      maxDepartureDate: null,
+      minArrivalDate: null,
+      maxArrivalDate: null,
+      selectedEmployee: null,
+      selectedLieu: null,
+      employeeSearch: "",
+      lieuSearch: "",
+    };
+    setFilters(resetFilters);
+    setAppliedFilters(resetFilters);
+    setPage(1);
+  }, []);
+
+  const handleEmployeeChange = useCallback((value: string): void => {
+    setFilters((prev) => ({ ...prev, employeeSearch: value }));
+    const matchedEmployee = employees.find((emp) =>
+      `${emp.firstName} ${emp.lastName}` === value
+    );
+    if (matchedEmployee) {
+      setFilters((prev) => ({
+        ...prev,
+        selectedEmployee: matchedEmployee,
+        employeeId: matchedEmployee.employeeId,
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        selectedEmployee: null,
+        employeeId: "",
+      }));
+    }
+  }, [employees]);
+
+  const handleLieuChange = useCallback((value: string): void => {
+    setFilters((prev) => ({ ...prev, lieuSearch: value }));
+    const matchedLieu = lieux.find((lieu: Lieu) => lieu.nom === value);
+    if (matchedLieu) {
+      setFilters((prev) => ({
+        ...prev,
+        selectedLieu: matchedLieu,
+        lieuId: matchedLieu.lieuId,
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        selectedLieu: null,
+        lieuId: "",
+      }));
+    }
+  }, [lieux]);
+
+  const handleMissionTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>): void => {
+    setFilters((prev) => ({ ...prev, missionType: e.target.value }));
+  }, []);
+
+  const handleMinDepartureDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    setFilters((prev) => ({ ...prev, minDepartureDate: e.target.value || null }));
+  }, []);
+
+  const handleMaxDepartureDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    setFilters((prev) => ({ ...prev, maxDepartureDate: e.target.value || null }));
+  }, []);
+
+  const handleMinArrivalDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    setFilters((prev) => ({ ...prev, minArrivalDate: e.target.value || null }));
+  }, []);
+
+  const handleMaxArrivalDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    setFilters((prev) => ({ ...prev, maxArrivalDate: e.target.value || null }));
+  }, []);
+
+  useEffect(() => {
+    if (searchResponse) {
+      if (searchResponse.status === 200 && searchResponse.data) {
+        setTotalCount(searchResponse.data.totalCount || 0);
+      } else {
+        setTotalCount(0);
+        setAlert({
+          isOpen: true,
+          type: "error",
+          message: searchResponse.message || "Erreur lors du chargement des missions terminées",
+        });
+      }
+    }
+  }, [searchResponse]);
+
+  const appliedFiltersStr = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, appliedFiltersStr]);
+
+  useEffect(() => {
+    if (activeTab === 'mes') {
+      setFilters((prev) => ({
+        ...prev,
+        employeeId: "",
+        selectedEmployee: null,
+        employeeSearch: "",
+      }));
+      setAppliedFilters((prev) => ({
+        ...prev,
+        employeeId: "",
+        selectedEmployee: null,
+        employeeSearch: "",
+      }));
+    }
+  }, [activeTab]);
+
+  const handlePageSizeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPageSize(Number(e.target.value));
+    setPage(1);
+  }, []);
+
+  const tabTitles = [
+    { key: 'toutes' as const, label: 'Toutes les missions terminées' },
+    { key: 'mes' as const, label: 'Mes missions terminées' },
+    { key: 'collaborateurs' as const, label: 'Missions terminées de mes collaborateurs' },
+  ];
+
+  const showEmployeeFilter = activeTab !== 'mes';
+  const numCols = showEmployeeFilter ? 3 : 2; // Retiré le statut, donc ajusté
+  const fieldWidth = showEmployeeFilter ? "33.333%" : "50%";
+
+  const fieldsetStyle = { 
+    display: "grid", 
+    gridTemplateColumns: "1fr 1fr", 
+    gap: "var(--spacing-md)",
+    background: "var(--bg-primary, #ffffff)",
+    padding: "var(--spacing-md)",
+    border: "1px solid var(--border-color, #ddd)",
+    borderRadius: "var(--border-radius, 4px)",
+    margin: "0"
+  };
+
+  const legendStyle = { 
+    fontWeight: "var(--font-weight-semibold)",
+    color: "var(--text-color)",
+    padding: "0 var(--spacing-sm)",
+    fontSize: "0.75rem"
+  };
+
+  return (
+    <>
+      <Alert
+        type={alert.type}
+        message={alert.message}
+        isOpen={alert.isOpen}
+        onClose={() => setAlert({ ...alert, isOpen: false })}
+      />
+
+      {!isHidden && (
+        <FiltersContainer $isMinimized={isMinimized}>
+          <FiltersHeader>
+            <FiltersTitle>Filtre</FiltersTitle>
+            <FiltersControls>
+              <FilterControlButton
+                $isMinimized={isMinimized}
+                onClick={() => setIsMinimized((p) => !p)}
+                title={isMinimized ? "Développer" : "Réduire"}
+              >
+                {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              </FilterControlButton>
+              <FilterControlButton $isClose onClick={() => setIsHidden(true)} title="Fermer">
+                <X size={16} />
+              </FilterControlButton>
+            </FiltersControls>
+          </FiltersHeader>
+
+          {!isMinimized && (
+            <FiltersSection>
+              <Separator />
+              <form onSubmit={handleFilterSubmit}>
+                <FormTableSearch>
+                  <tbody>
+                    <FormRow>
+                      {showEmployeeFilter && (
+                        <FormFieldCell style={{ width: "33.333%" }}>
+                          <FormLabelSearch>Collaborateur</FormLabelSearch>
+                          <StyledAutoCompleteInput
+                            value={filters.employeeSearch || ""}
+                            onChange={handleEmployeeChange}
+                            suggestions={filteredEmployeeSuggestions}
+                            maxVisibleItems={5}
+                            placeholder="Sélectionner un employé..."
+                            disabled={isEmployeesLoading || isSearchLoading}
+                            fieldType="employee"
+                            fieldLabel="employé"
+                            showAddOption={false}
+                          />
+                        </FormFieldCell>
+                      )}
+                      <FormFieldCell style={{ width: fieldWidth }}>
+                        <FormLabelSearch>Type de mission</FormLabelSearch>
+                        <StyledSelect
+                          value={filters.missionType}
+                          onChange={handleMissionTypeChange}
+                          disabled={isSearchLoading}
+                        >
+                          <option value="">Tous</option>
+                          {missionTypes.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </StyledSelect>
+                      </FormFieldCell>
+                      <FormFieldCell style={{ width: fieldWidth }}>
+                        <FormLabelSearch>Lieu</FormLabelSearch>
+                        <StyledAutoCompleteInput
+                          value={filters.lieuSearch || ""}
+                          onChange={handleLieuChange}
+                          suggestions={filteredLieuSuggestions}
+                          maxVisibleItems={5}
+                          placeholder="Sélectionner un lieu..."
+                          disabled={isLieuxLoading || isSearchLoading}
+                          fieldType="lieu"
+                          fieldLabel="lieu"
+                          showAddOption={false}
+                        />
+                      </FormFieldCell>
+                    </FormRow>
+                    <FormRow>
+                      <FormFieldCell colSpan={numCols} style={{ width: "100%" }}>
+                        <div style={{ 
+                          display: "grid", 
+                          gridTemplateColumns: "1fr 1fr", 
+                          gap: "var(--spacing-md)"
+                        }}>
+                          <fieldset style={fieldsetStyle}>
+                            <legend style={legendStyle}>
+                              Date Départ
+                            </legend>
+                            <div>
+                              <FormLabelSearch>Du</FormLabelSearch>
+                              <FormInputSearch
+                                type="date"
+                                value={filters.minDepartureDate || ""}
+                                onChange={handleMinDepartureDateChange}
+                                disabled={isSearchLoading}
+                              />
+                            </div>
+                            <div>
+                              <FormLabelSearch>Au</FormLabelSearch>
+                              <FormInputSearch
+                                type="date"
+                                value={filters.maxDepartureDate || ""}
+                                onChange={handleMaxDepartureDateChange}
+                                disabled={isSearchLoading}
+                              />
+                            </div>
+                          </fieldset>
+                          <fieldset style={fieldsetStyle}>
+                            <legend style={legendStyle}>
+                              Date Retour
+                            </legend>
+                            <div>
+                              <FormLabelSearch>Du</FormLabelSearch>
+                              <FormInputSearch
+                                type="date"
+                                value={filters.minArrivalDate || ""}
+                                onChange={handleMinArrivalDateChange}
+                                disabled={isSearchLoading}
+                              />
+                            </div>
+                            <div>
+                              <FormLabelSearch>Au</FormLabelSearch>
+                              <FormInputSearch
+                                type="date"
+                                value={filters.maxArrivalDate || ""}
+                                onChange={handleMaxArrivalDateChange}
+                                disabled={isSearchLoading}
+                              />
+                            </div>
+                          </fieldset>
+                        </div>
+                      </FormFieldCell>
+                    </FormRow>
+                  </tbody>
+                </FormTableSearch>
+
+                <Separator />
+
+                <FiltersActions>
+                  <ButtonReset
+                    type="button"
+                    onClick={handleResetFilters}
+                    disabled={!hasFilters || isSearchLoading}
+                    title="Effacer filtre"
+                  >
+                    Effacer filtres
+                  </ButtonReset>
+                  <ButtonSearch type="submit" disabled={isSearchLoading} title="Rechercher">
+                    <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                    Rechercher
+                  </ButtonSearch>
+                </FiltersActions>
+              </form>
+            </FiltersSection>
+          )}
+        </FiltersContainer>
+      )}
+
+      {isHidden && (
+        <FiltersToggle>
+          <ButtonShowFilters type="button" onClick={() => setIsHidden(false)}>
+            <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+            Afficher les filtres
+          </ButtonShowFilters>
+        </FiltersToggle>
+      )}
+
+      <div style={{ display: "flex", gap: "0", marginBottom: "var(--spacing-md)" }}>
+        {tabTitles.map((tab, index) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              padding: "var(--spacing-sm) var(--spacing-md)",
+              background: "transparent",
+              color: activeTab === tab.key ? "var(--primary-color)" : "var(--text-color)",
+              border: "none",
+              borderBottom: activeTab === tab.key ? "3px solid var(--primary-color)" : "1px solid var(--border-color)",
+              borderRight: index < tabTitles.length - 1 ? "1px solid var(--border-color)" : "none",
+              borderRadius: "0",
+              cursor: "pointer",
+              fontWeight: activeTab === tab.key ? "var(--font-weight-semibold)" : "var(--font-weight-normal)",
+              fontFamily: "var(--font-family)",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <TableContainer>
+        <TableHeader>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-lg)" }}>
+            <TableTitle>Archive des Missions Terminées</TableTitle>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-md)" }}>
+            {/* Pas de bouton Ajouter en mode archive */}
+          </div>
+        </TableHeader>
+
+        <div className="table-wrapper" style={{ overflowX: "auto" }}>
+          <DataTable>
+            <thead>
+              <tr>
+                <TableHeadCell>Collaborateur</TableHeadCell>
+                <TableHeadCell>Mission</TableHeadCell>
+                <TableHeadCell>TYPE</TableHeadCell>
+                <TableHeadCell>Lieu</TableHeadCell>
+                <TableHeadCell style={{ width: "90px" }}>Statut</TableHeadCell>
+                <TableHeadCell>Date Départ</TableHeadCell>
+                <TableHeadCell>Date Retour</TableHeadCell>
+                <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
+              </tr>
+            </thead>
+            <tbody>
+              {isSearchLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8}>
+                    <Loading>Chargement des données...</Loading>
+                  </TableCell>
+                </TableRow>
+              ) : showNoCollaboratorsMessage ? (
+                <TableRow>
+                  <TableCell colSpan={8}>
+                    <NoDataMessage>Aucun collaborateur trouvé.</NoDataMessage>
+                  </TableCell>
+                </TableRow>
+              ) : assignations.length > 0 ? (
+                assignations.map((assignation: MissionAssignation) => {
+                  const rawStatus = assignation.mission.status;
+                  const trimmedLowerStatus = rawStatus.trim().toLowerCase();
+                  const frenchStatus = englishToFrench[trimmedLowerStatus] || rawStatus.trim();
+                  const statusClass = getStatusBadgeClass(rawStatus);
+
+                  return (
+                    <TableRow
+                      key={assignation.assignationId}
+                      style={{
+                        cursor: canViewDetails ? "pointer" : "default",
+                      }}
+                      onClick={() => handleRowClick(assignation.mission.missionId)}
+                      title={canViewDetails ? "Clic pour voir les détails" : ""}
+                    >
+                      <TableCell>
+                        {assignation.employee.firstName} {assignation.employee.lastName}
+                      </TableCell>
+                      <TableCell>{assignation.mission.name}</TableCell>
+                      <TableCell>{assignation.mission.missionType.toUpperCase()}</TableCell>
+                      <TableCell>{assignation.mission.lieu.nom}</TableCell>
+                      <TableCell><StatusBadge className={statusClass}>{frenchStatus}</StatusBadge></TableCell>
+                      <TableCell>{new Date(assignation.departureDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(assignation.returnDate).toLocaleDateString()}</TableCell>
+                      <TableCell style={{ textAlign: "center" }}>
+                        {/* Pas de boutons Modifier ou Annuler en mode archive */}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8}>
+                    <NoDataMessage>
+                      {Object.values(appliedFilters).some(Boolean) ? "Aucune mission terminée ne correspond aux critères." : "Aucune mission terminée trouvée."}
+                    </NoDataMessage>
+                  </TableCell>
+                </TableRow>
+              )}
+            </tbody>
+          </DataTable>
+        </div>
+        <Pagination
+          currentPage={page}
+          pageSize={pageSize}
+          totalEntries={totalCount}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      </TableContainer>
+    </>
+  );
+};
+
+const ProtectedMissionListArchive: React.FC = () => (
+  <ProtectedRoute requiredHabilitation="voir page mission">
+    <MissionListArchive />
+  </ProtectedRoute>
+);
+
+export default ProtectedMissionListArchive;

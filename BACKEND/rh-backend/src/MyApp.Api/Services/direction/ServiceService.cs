@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
+using MyApp.Api.Data;
 using MyApp.Api.Entities.direction;
+using MyApp.Api.Models.dto.direction;
 using MyApp.Api.Repositories.direction;
 using MyApp.Api.Utils.generator;
 
@@ -7,9 +9,10 @@ namespace MyApp.Api.Services.direction
 {
     public interface IServiceService
     {
+        Task<(IEnumerable<Service>, int)> SearchAsync(ServiceSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Service>> GetAllAsync();
         Task<Service?> GetByIdAsync(string id);
-        Task AddAsync(Service service);
+        Task<Service> AddAsync(ServiceDTOForm dto);
         Task UpdateAsync(Service service);
         Task DeleteAsync(string id);
     }
@@ -17,17 +20,34 @@ namespace MyApp.Api.Services.direction
     public class ServiceService : IServiceService
     {
         private readonly IServiceRepository _repository;
+        private readonly AppDbContext _context;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<ServiceService> _logger;
 
         public ServiceService(
             IServiceRepository repository,
+            AppDbContext context,
             ISequenceGenerator sequenceGenerator,
             ILogger<ServiceService> logger)
         {
-            _repository = repository;
-            _sequenceGenerator = sequenceGenerator;
-            _logger = logger;
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public async Task<(IEnumerable<Service>, int)> SearchAsync(ServiceSearchFiltersDTO filters, int page, int pageSize)
+        {
+            try
+            {
+                _logger.LogInformation("Recherche des services avec filtres, page={Page}, pageSize={PageSize}", page, pageSize);
+                return await _repository.SearchAsync(filters, page, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la recherche des services");
+                throw;
+            }
         }
 
         public async Task<IEnumerable<Service>> GetAllAsync()
@@ -64,29 +84,31 @@ namespace MyApp.Api.Services.direction
             }
         }
 
-        public async Task AddAsync(Service service)
+        public async Task<Service> AddAsync(ServiceDTOForm dto)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                if (service == null)
+                if (dto == null)
                 {
-                    throw new ArgumentNullException(nameof(service), "Le service ne peut pas être null");
+                    throw new ArgumentNullException(nameof(dto), "Le DTO de service ne peut pas être null");
                 }
 
-                if (string.IsNullOrWhiteSpace(service.ServiceId))
-                {
-                    service.ServiceId = _sequenceGenerator.GenerateSequence("seq_service_id", "SRV", 6, "-");
-                    _logger.LogInformation("ID généré pour le service: {ServiceId}", service.ServiceId);
-                }
+                var serviceId = _sequenceGenerator.GenerateSequence("seq_service_id", "SRV", 6, "-");
+
+                var service = new Service(dto) { ServiceId = serviceId };
 
                 await _repository.AddAsync(service);
                 await _repository.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 _logger.LogInformation("Service ajouté avec succès avec l'ID: {ServiceId}", service.ServiceId);
+                return service;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de l'ajout du service avec l'ID: {ServiceId}", service?.ServiceId);
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Erreur lors de l'ajout du service");
                 throw;
             }
         }
