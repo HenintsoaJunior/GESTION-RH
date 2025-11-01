@@ -27,7 +27,7 @@ namespace MyApp.Api.Entities.mission
         public string? Description { get; set; }
         
         [Column("status")]
-        [MaxLength(10)]
+        [MaxLength(20)]
         public string Status { get; set; } = "En Cours";
         
         [Column("start_date")]

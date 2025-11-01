@@ -289,74 +289,143 @@ namespace MyApp.Api.Services.mission
                     UpdatedAt = entity.UpdatedAt
                 };
 
-                // Update mission fields
+                // Update mission fields (ajout de Type et Status si pertinent)
                 entity.MissionType = mission.MissionType;
                 entity.Name = mission.Name;
-                entity.Description = mission.Description;
+                entity.Description = mission.Description ?? entity.Description; // Optionnel, garde l'ancien si null
                 entity.StartDate = mission.StartDate;
                 entity.EndDate = mission.EndDate;
                 entity.LieuId = mission.LieuId;
+                entity.Status = mission.Status ?? entity.Status; // Optionnel
+                // entity.Type = mission.Type; // Décommentez si l'entité a ce champ
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 await _repository.UpdateAsync(entity);
                 await _repository.SaveChangesAsync();
 
+                // NOUVEAU : Récupérer toutes les assignations actuelles pour synchronisation
+                var currentAssignations = await _missionAssignationService.GetAllByMissionIdAsync(id); // Assumez que cette méthode existe ; sinon, implémentez-la
+                var dtoEmployeeIds = mission.Assignations?.Select(a => a.EmployeeId).ToHashSet() ?? new HashSet<string>();
                 var recipientUserIds = new List<string> { mission.UserId }; // Inclure le créateur
+
+                // 1. Updater/Créer les assignations du DTO
                 if (mission.Assignations != null && mission.Assignations.Any())
                 {
                     foreach (var assignationDto in mission.Assignations)
                     {
-                        var existingAssignation = await _missionAssignationService.GetByEmployeeIdMissionIdAsync(
-                            assignationDto.EmployeeId, id);
+                        var existingAssignation = currentAssignations.FirstOrDefault(a => a.EmployeeId == assignationDto.EmployeeId);
+                        string? newAssignationId = null;
 
-                        if (existingAssignation == null)
+                        MissionAssignation updatedOrNewAssignation;
+                        if (existingAssignation != null)
                         {
-                            _logger.LogWarning("Aucune assignation existante trouvée pour EmployeeId={EmployeeId}, MissionId={MissionId}. Aucune nouvelle assignation ne sera créée.",
-                                assignationDto.EmployeeId, id);
-                            continue;
+                            // Update existante
+                            updatedOrNewAssignation = new MissionAssignation
+                            {
+                                AssignationId = existingAssignation.AssignationId,
+                                EmployeeId = assignationDto.EmployeeId,
+                                MissionId = id,
+                                TransportId = assignationDto.TransportId,
+                                DepartureDate = assignationDto.DepartureDate,
+                                DepartureTime = assignationDto.DepartureTime,
+                                ReturnDate = assignationDto.ReturnDate,
+                                ReturnTime = assignationDto.ReturnTime,
+                                Type = assignationDto.Type,
+                                Duration = await _missionAssignationService.CalculateDuration(
+                                    assignationDto.DepartureDate, assignationDto.ReturnDate),
+                                UpdatedAt = DateTime.UtcNow
+                            };
+
+                            var updateResult = await _missionAssignationService.UpdateAsync(existingAssignation.AssignationId, updatedOrNewAssignation);
+                            if (!updateResult)
+                            {
+                                _logger.LogWarning("Échec de la mise à jour de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}",
+                                    assignationDto.EmployeeId, id);
+                                await transaction.RollbackAsync();
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            // Créer nouvelle assignation
+                            updatedOrNewAssignation = new MissionAssignation
+                            {
+                                AssignationId = Guid.NewGuid().ToString(), // Ou auto-généré
+                                EmployeeId = assignationDto.EmployeeId,
+                                MissionId = id,
+                                TransportId = assignationDto.TransportId,
+                                DepartureDate = assignationDto.DepartureDate,
+                                DepartureTime = assignationDto.DepartureTime,
+                                ReturnDate = assignationDto.ReturnDate,
+                                ReturnTime = assignationDto.ReturnTime,
+                                Type = assignationDto.Type,
+                                Duration = await _missionAssignationService.CalculateDuration(
+                                    assignationDto.DepartureDate, assignationDto.ReturnDate),
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
+                            };
+
+                            var createResult = await _missionAssignationService.CreateAsync(updatedOrNewAssignation);
+                            if (string.IsNullOrEmpty(createResult.assignationId))
+                            {
+                                _logger.LogWarning("Échec de la création de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}",
+                                    assignationDto.EmployeeId, id);
+                                await transaction.RollbackAsync();
+                                return false;
+                            }
+                            newAssignationId = createResult.assignationId;
                         }
 
-                        var updatedAssignation = new MissionAssignation
-                        {
-                            AssignationId = existingAssignation.AssignationId,
-                            EmployeeId = assignationDto.EmployeeId,
-                            MissionId = id,
-                            TransportId = assignationDto.TransportId,
-                            DepartureDate = assignationDto.DepartureDate,
-                            DepartureTime = assignationDto.DepartureTime,
-                            ReturnDate = assignationDto.ReturnDate,
-                            ReturnTime = assignationDto.ReturnTime,
-                            Type = assignationDto.Type,
-                            Duration = await _missionAssignationService.CalculateDuration(
-                                assignationDto.DepartureDate,
-                                assignationDto.ReturnDate),
-                            UpdatedAt = DateTime.UtcNow
-                        };
-
-                        var updateResult = await _missionAssignationService.UpdateAsync(
-                            existingAssignation.AssignationId, updatedAssignation);
-
-                        if (!updateResult)
-                        {
-                            _logger.LogWarning("Échec de la mise à jour de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}",
-                                assignationDto.EmployeeId, id);
-                            await transaction.RollbackAsync();
-                            return false;
-                        }
-
-
-                        var employee = await _employeeService.GetByIdAsync(assignationDto.EmployeeId);
-                        var superior = await _userService.GetSuperiorAsync(employee?.EmployeeCode);
+                        // Récupérer l'employé et les destinataires pour notifications
+                        var employee = await _employeeService.GetByIdAsync(assignationDto.EmployeeId)
+                            ?? throw new InvalidOperationException($"Employé avec ID {assignationDto.EmployeeId} introuvable.");
+                        
+                        var superior = await _userService.GetSuperiorAsync(employee.EmployeeCode);
                         var drh = await _userService.GetDrhAsync();
                         
                         if (!string.IsNullOrWhiteSpace(superior?.UserId) && !recipientUserIds.Contains(superior.UserId))
                             recipientUserIds.Add(superior.UserId);
                         if (!string.IsNullOrWhiteSpace(drh?.UserId) && !recipientUserIds.Contains(drh.UserId))
                             recipientUserIds.Add(drh.UserId);
+
+                        // Créer les validations seulement pour les nouvelles assignations
+                        if (newAssignationId != null)
+                        {
+                            var missionValidationDtoForm = new MissionValidationDTOForm
+                            {
+                                MissionId = id,
+                                MissionAssignationId = newAssignationId,
+                                MissionCreator = mission.UserId,
+                                Status = "pending",
+                                ToWhom = superior?.UserId,
+                                Type = "Directeur de tutelle"
+                            };
+                            await _validationService.CreateAsync(missionValidationDtoForm, mission.UserId);
+
+                            missionValidationDtoForm.Status = null;
+                            missionValidationDtoForm.ToWhom = drh?.UserId;
+                            missionValidationDtoForm.Type = "DRH";
+                            await _validationService.CreateAsync(missionValidationDtoForm, mission.UserId);
+                        }
                     }
                 }
 
-                // Récupérer le nom du lieu pour l'affichage et le log (ancien et nouveau si changé)
+                // 2. Supprimer les assignations actuelles non présentes dans le DTO
+                var toDeleteEmployeeIds = currentAssignations.Where(a => !dtoEmployeeIds.Contains(a.EmployeeId)).Select(a => a.EmployeeId);
+                foreach (var empIdToDelete in toDeleteEmployeeIds)
+                {
+                    var assignationToDelete = currentAssignations.First(a => a.EmployeeId == empIdToDelete);
+                    var deleteResult = await _missionAssignationService.DeleteAsync(assignationToDelete.AssignationId);
+                    if (!deleteResult)
+                    {
+                        _logger.LogWarning("Échec de la suppression de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}",
+                            empIdToDelete, id);
+                        await transaction.RollbackAsync();
+                        return false;
+                    }
+
+                }
+
                 var oldLieu = await _lieuService.GetByIdAsync(oldEntity.LieuId);
                 var oldLieuNom = oldLieu?.Nom ?? "lieu inconnu";
 
@@ -366,7 +435,7 @@ namespace MyApp.Api.Services.mission
                 var notification = new NotificationFormDTO
                 {
                     Title = "Mission mise à jour",
-                    Message = $"La mission '{entity.Name}' a été mise à jour pour le lieu {newLieuNom} du {entity.StartDate:yyyy-MM-dd} au {entity.EndDate:yyyy-MM-dd}.",
+                    Message = $"La mission '{entity.Name}' a été mise à jour pour le lieu {newLieuNom} du {entity.StartDate:yyyy-MM-dd} au {entity.EndDate:yyyy-MM-dd}.", // Optionnel : Ajoutez détails sur assignations changées
                     Type = "mission",
                     RelatedTable = "mission",
                     RelatedMenu = "collaborateur",
@@ -378,7 +447,7 @@ namespace MyApp.Api.Services.mission
 
                 await _notificationsService.CreateAsync(notification, transaction);
 
-                // Préparer les données pour le log avec LieuNom (sans LieuId)
+                // Préparer les données pour le log (inchangé, mais vous pourriez ajouter des infos sur assignations)
                 var logOldData = new
                 {
                     Nom = oldEntity.Name,
@@ -397,7 +466,6 @@ namespace MyApp.Api.Services.mission
                     NomLieu = newLieuNom
                 };
 
-                // Log de modification
                 await _logService.LogAsync("MODIFICATION", "MISSION", logOldData, logNewData, mission.UserId, "Nom,Description,DateDebut,DateFin,NomLieu");
 
                 await transaction.CommitAsync();
@@ -410,7 +478,6 @@ namespace MyApp.Api.Services.mission
                 throw;
             }
         }
-
         public async Task<bool> DeleteAsync(string id, string userId)
         {
             try

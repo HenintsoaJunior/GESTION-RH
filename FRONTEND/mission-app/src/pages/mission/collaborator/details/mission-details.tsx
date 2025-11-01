@@ -9,6 +9,7 @@ import OMPayment from "./payment/om-payment";
 import OMNoteDeFrais from "../details/expense/om-note-de-frais";
 import {
   LoadingContainer,
+  LoadingSpinner,
   ContentArea,
   SectionTitle,
   ValidatorItem,
@@ -484,6 +485,16 @@ const DetailsMission: React.FC = () => {
     totalAmount: 0,
   });
 
+  const [isDelayedLoading, setIsDelayedLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsDelayedLoading(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const generateOrderMutation = useGenerateMissionOrder();
   const exportExcelMutation = useExportMissionAssignationExcel();
   const { data: compensationsResponse, isLoading: compensationsLoading } = useCompensationsByEmployeeAndMission(
@@ -609,6 +620,8 @@ const DetailsMission: React.FC = () => {
     return missionLoading || commentsLoading || exportExcelMutation.isPending || compensationsLoading;
   }, [missionLoading, commentsLoading, exportExcelMutation.isPending, compensationsLoading]);
 
+  const effectiveLoading = isGlobalLoading || isDelayedLoading;
+
   const handleBackToMissionDetails = useCallback(() => {
     navigate(-1);
   }, [navigate]);
@@ -631,7 +644,12 @@ const DetailsMission: React.FC = () => {
   }, [navigate]);
 
   if (!missionId) {
-    return <LoadingContainer>Mission ID manquante</LoadingContainer>;
+    return (
+      <LoadingContainer>
+        <LoadingSpinner />
+        Mission ID manquante
+      </LoadingContainer>
+    );
   }
 
   const assignedPersonsNames = assignations.length > 0 
@@ -648,8 +666,10 @@ const DetailsMission: React.FC = () => {
         isOpen={alert.isOpen}
         onClose={handleAlertClose}
       />
-      {isGlobalLoading ? (
-        <LoadingContainer>Chargement des informations de la mission...</LoadingContainer>
+      {effectiveLoading ? (
+        <LoadingContainer>
+          <LoadingSpinner />
+        </LoadingContainer>
       ) : (
         <ContentArea>
           <Routes>
@@ -988,7 +1008,10 @@ const DetailsMission: React.FC = () => {
                     formatDate={formatDate}
                   />
                 ) : (
-                  <LoadingContainer>Chargement du paiement...</LoadingContainer>
+                  <LoadingContainer>
+                    <LoadingSpinner />
+                    Chargement du paiement...
+                  </LoadingContainer>
                 )
               }
             />
@@ -1001,7 +1024,10 @@ const DetailsMission: React.FC = () => {
                     onBack={handleBackToMissionDetails}
                   />
                 ) : (
-                  <LoadingContainer>Chargement de la note de frais...</LoadingContainer>
+                  <LoadingContainer>
+                    <LoadingSpinner />
+                    Chargement de la note de frais...
+                  </LoadingContainer>
                 )
               }
             />
@@ -1015,7 +1041,10 @@ const DetailsMission: React.FC = () => {
                     onBack={handleBackToMissionDetails}
                   />
                 ) : (
-                  <LoadingContainer>Chargement du rapport...</LoadingContainer>
+                  <LoadingContainer>
+                    <LoadingSpinner />
+                    Chargement du rapport...
+                  </LoadingContainer>
                 )
               }
             />

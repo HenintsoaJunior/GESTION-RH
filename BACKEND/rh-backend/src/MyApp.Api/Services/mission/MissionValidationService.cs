@@ -25,6 +25,7 @@ namespace MyApp.Api.Services.mission
         Task<bool> CancelValidationsByMissionIdAsync(string missionId, string userId);
         Task<bool> RejectedAsync(string missionValidationId, string missionAssignationId, string userId);
         Task<MissionStatsValidation> GetStatisticsAsync(string? matricule = null);
+        Task<bool> HasAnyValidatorValidatedAsync(string missionId);
     }
 
     public class MissionValidationService : IMissionValidationService
@@ -56,6 +57,26 @@ namespace MyApp.Api.Services.mission
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
+        }
+
+        public async Task<bool> HasAnyValidatorValidatedAsync(string missionId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(missionId))
+                {
+                    _logger.LogWarning("Tentative de vérification de validation avec un ID de mission null ou vide");
+                    return false;
+                }
+
+                var validations = await GetByMissionIdAsync(missionId);
+                return validations?.Any(v => v.Status == "approved" || v.ValidationDate.HasValue) ?? false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la vérification si un validateur a déjà validé la mission {MissionId}", missionId);
+                throw;
+            }
         }
 
         public async Task<bool> RejectedAsync(string missionValidationId, string missionAssignationId, string userId)
@@ -267,7 +288,7 @@ namespace MyApp.Api.Services.mission
                 if (lastValidation && missionAssignation != null && mission != null)
                 {
                     missionAssignation.IsValidated = 1;
-                    mission.Status = "planned";
+                    mission.Status = "Payment in progress";
                     
                     await _missionAssignationService.UpdateAsync(validation.MissionAssignationId, missionAssignation);
                     

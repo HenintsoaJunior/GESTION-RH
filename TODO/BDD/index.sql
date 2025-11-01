@@ -247,7 +247,7 @@ CREATE TABLE role_habilitation(
    updated_at DATETIME,
    PRIMARY KEY(habilitation_id, role_id),
    FOREIGN KEY(habilitation_id) REFERENCES habilitations(habilitation_id),
-   FOREIGN KEY(role_id) REFERENCES role(role_id)
+   FOREIGN KEY(role_id) REFERENCES role(role_id) ON DELETE CASCADE
 );
 
 CREATE TABLE user_habilitations (
@@ -354,7 +354,7 @@ CREATE TABLE mission_assignation (
    employee_id VARCHAR(50) NOT NULL,
    PRIMARY KEY (assignation_id),
    FOREIGN KEY (transport_id) REFERENCES transport(transport_id),
-   FOREIGN KEY (mission_id) REFERENCES mission(mission_id),
+   FOREIGN KEY (mission_id) REFERENCES mission(mission_id) ON DELETE CASCADE,
    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
 );
 
@@ -370,12 +370,11 @@ CREATE TABLE mission_validation(
    mission_id VARCHAR(50) NOT NULL,
    mission_assignation_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(mission_validation_id),
-   FOREIGN KEY(to_whom) REFERENCES users(user_id),
-   FOREIGN KEY(mission_creator) REFERENCES users(user_id),
-   FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
-   FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id)
+   FOREIGN KEY(to_whom) REFERENCES users(user_id) ON DELETE NO ACTION,
+   FOREIGN KEY(mission_creator) REFERENCES users(user_id) ON DELETE NO ACTION,
+   FOREIGN KEY(mission_id) REFERENCES mission(mission_id) ON DELETE NO ACTION, 
+   FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE
 );
-
 
 CREATE TABLE comments(
    comment_id VARCHAR(50),
@@ -391,7 +390,7 @@ CREATE TABLE mission_comments(
    mission_id VARCHAR(50),
    comment_id VARCHAR(50),
    PRIMARY KEY(mission_id, comment_id),
-   FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
+   FOREIGN KEY(mission_id) REFERENCES mission(mission_id) ON DELETE CASCADE,
    FOREIGN KEY(comment_id) REFERENCES comments(comment_id)
 );
 
@@ -420,7 +419,7 @@ CREATE TABLE compensation(
    assignation_id VARCHAR(50) NOT NULL,
    employee_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(compensation_id),
-   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id),
+   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE,
    FOREIGN KEY(employee_id) REFERENCES employees(employee_id)
 );
 
@@ -447,7 +446,7 @@ CREATE TABLE expense_report(
    assignation_id VARCHAR(50) NOT NULL,
    expense_report_type_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(expense_report_id),
-   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id),
+   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE,
    FOREIGN KEY(expense_report_type_id) REFERENCES expense_report_type(expense_report_type_id)
 );
 
@@ -473,7 +472,7 @@ CREATE TABLE mission_report(
    assignation_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(mission_report_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id),
-   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id)
+   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE
 );
 
 CREATE TABLE mission_report_attachments (
@@ -536,7 +535,7 @@ CREATE TABLE menu_role (
    created_at DATETIME NOT NULL DEFAULT GETDATE(),
    updated_at DATETIME NOT NULL DEFAULT GETDATE(),
    FOREIGN KEY (menu_id) REFERENCES menu(menu_id),
-   FOREIGN KEY (role_id) REFERENCES role(role_id)
+   FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE
 );
 
 CREATE TABLE menu_hierarchy (

@@ -18,13 +18,13 @@ namespace MyApp.Api.Controllers.mission
 
 
         [HttpPost("search")]
-        [AllowAnonymous]
+        // [AllowAnonymous]
         public async Task<ActionResult> Search([FromBody] MissionAssignationSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            if (!User.Identity?.IsAuthenticated ?? true)
-            {
-                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            // {
+            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            // }
 
             if (page < 1 || pageSize < 1)
             {

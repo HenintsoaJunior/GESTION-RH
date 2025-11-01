@@ -84,8 +84,8 @@ const UserList: React.FC = () => {
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = userData?.userId;
 
-  const canModifyRoles = useHasHabilitation(userId, "modifier role utilisateur(s)");
-  const canDeleteRoles = useHasHabilitation(userId, "suprimer role utilisateur(s)");
+  const canModifyRoles = useHasHabilitation(userId, "Modifier le rôle des utilisateur(s)");
+  const canDeleteRoles = useHasHabilitation(userId, "Supprimer le rôle des utilisateur(s)");
   const hasAnyHabilitation = canModifyRoles || canDeleteRoles;
 
   const [suggestions, setSuggestions] = useState<SuggestionsState>({ users: [] });
@@ -565,21 +565,22 @@ const UserList: React.FC = () => {
             </tbody>
           </DataTable>
         </div>
+        <Pagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalEntries={totalEntries}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+            setPageSize(Number(e.target.value))
+          }
+        />
       </TableContainer>
-      <Pagination
-        currentPage={currentPage}
-        pageSize={pageSize}
-        totalEntries={totalEntries}
-        onPageChange={setCurrentPage}
-        onPageSizeChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-          setPageSize(Number(e.target.value))
-        }
-      />
+      
     </>
   );
 };
 const ProtectedUserList: React.FC = () => (
-  <ProtectedRoute requiredHabilitation="voir page utilisateurs">
+  <ProtectedRoute requiredHabilitation="Voir la page des utilisateurs">
     <UserList />
   </ProtectedRoute>
 );

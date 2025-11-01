@@ -35,6 +35,7 @@ namespace MyApp.Api.Services.mission
         Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null);
         Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null);
         Task<byte[]> GenerateMissionOrderPDFAsync(string employeeId, string missionId);
+        Task<IEnumerable<MissionAssignation>> GetAllByMissionIdAsync(string missionId);
     }
 
     public class MissionAssignationService : IMissionAssignationService
@@ -53,7 +54,7 @@ namespace MyApp.Api.Services.mission
 
         public MissionAssignationService(
             IMissionAssignationRepository repository,
-            IMissionRepository missionRepository, 
+            IMissionRepository missionRepository,
             ISequenceGenerator sequenceGenerator,
             ICompensationScaleService compensationScaleService,
             ICategoriesOfEmployeeService categoriesOfEmployeeService,
@@ -76,7 +77,25 @@ namespace MyApp.Api.Services.mission
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
+        
+        public async Task<IEnumerable<MissionAssignation>> GetAllByMissionIdAsync(string missionId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(missionId))
+                    throw new ArgumentException("L'ID de la mission ne peut pas être vide.", nameof(missionId));
 
+                var entities = await _repository.GetAllByMissionIdAsync(missionId);
+                var results = entities.Select(CreateMissionAssignationFromEntity).ToList();
+                _logger.LogDebug("Récupéré {Count} assignations pour la mission {MissionId}", results.Count, missionId);
+                return results;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des assignations pour la mission {MissionId}", missionId);
+                throw new Exception($"Erreur lors de la récupération des assignations de mission {missionId} : {ex.Message}", ex);
+            }
+        }
         public async Task<byte[]> GenerateMissionOrderPDFAsync(string employeeId, string missionId)
         {
             var missionAssignation = await _repository.GetByIdAsync(employeeId, missionId);

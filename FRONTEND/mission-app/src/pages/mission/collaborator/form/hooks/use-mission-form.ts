@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLieux, type Lieu } from "@/api/lieu/services";
-import { useEmployees, type Employee } from "@/api/collaborator/services";
 import { useTransports, type Transport } from "@/api/transport/services";
 import {
   useCreateMission,
@@ -12,6 +11,9 @@ import {
   type UpdateMissionResponseData,
   type ApiResponse,
 } from "@/api/mission/services";
+import { useUserCollaboratorsMatricules } from "@/api/users/services";
+import { useGetEmployeesByMatriculesSimple } from "@/api/collaborator/services";
+import { type Employee } from "@/api/collaborator/services";
 
 interface MissionFormProps {
   isOpen: boolean;
@@ -124,7 +126,7 @@ const useMissionForm = ({
       costCenter: "",
       transport: "",
       transportId: null,
-      departureDate: "",
+      departureDate: initialStartDate || "",
       departureTime: "",
       missionDuration: "",
       returnDate: "",
@@ -148,11 +150,22 @@ const useMissionForm = ({
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const { data: lieuxData, isLoading: isRegionsLoading } = useLieux();
-  const { data: employeesData, isLoading: isEmployeesLoading } = useEmployees();
   const { data: transportsData, isLoading: isTransportsLoading } = useTransports();
   const { data: missionResponse, isLoading: isMissionDetailLoading } = useGetMissionAssignationByMissionId(
     missionId || ""
   );
+
+  const userData = useMemo(() => {
+    return JSON.parse(localStorage.getItem("user") || "{}");
+  }, []);
+  const userId = userData?.userId;
+
+  const { data: collaboratorsMatriculesResponse } = useUserCollaboratorsMatricules(userId);
+  const matricules = useMemo(() => {
+    return collaboratorsMatriculesResponse?.data || [];
+  }, [collaboratorsMatriculesResponse]);
+
+  const { data: employeesData, isLoading: isEmployeesLoading } = useGetEmployeesByMatriculesSimple(matricules);
 
   const employeeSuggestions: EmployeeSuggestion[] = useMemo(() => {
     return (employeesData?.data || []).map((emp: Employee) => ({
@@ -476,7 +489,11 @@ const useMissionForm = ({
         if (value) {
           delete updatedErrors[fieldKey];
         } else {
-          updatedErrors[fieldKey] = [`${name} est requis.`];
+          let errorMessage = `${name} est requis.`;
+          if (name === "beneficiary") {
+            errorMessage = "Le missionaire est requis.";
+          }
+          updatedErrors[fieldKey] = [errorMessage];
         }
 
         // Clear related beneficiary errors when beneficiary is selected
@@ -511,9 +528,15 @@ const useMissionForm = ({
         }
 
         if (name === "startDate") {
+          // Set default departureDate to startDate if departureDate is empty
+          let updatedBeneficiary = prev.beneficiary;
+          if (!prev.beneficiary.departureDate) {
+            updatedBeneficiary = { ...prev.beneficiary, departureDate: value || "" };
+          }
+
           const { missionDuration, error } = calculateMissionDuration(
-            prev.beneficiary.departureDate,
-            prev.beneficiary.returnDate,
+            updatedBeneficiary.departureDate,
+            updatedBeneficiary.returnDate,
             value
           );
           setFieldErrors((prevErrors) => {
@@ -531,7 +554,7 @@ const useMissionForm = ({
           });
           return {
             ...updatedFormData,
-            beneficiary: { ...prev.beneficiary, missionDuration },
+            beneficiary: { ...updatedBeneficiary, missionDuration },
           };
         }
 
@@ -623,7 +646,7 @@ const useMissionForm = ({
         costCenter: "",
         transport: "",
         transportId: null,
-        departureDate: "",
+        departureDate: initialStartDate || "",
         departureTime: "",
         missionDuration: "",
         returnDate: "",
@@ -667,7 +690,6 @@ const useMissionForm = ({
       setFieldErrors({});
 
       try {
-        const userData = JSON.parse(localStorage.getItem("user") || "{}");
         const userId = userData?.userId || "";
 
         const locationName = formData.location.split("/")[0];
@@ -749,6 +771,7 @@ const useMissionForm = ({
       suggestions.beneficiary,
       suggestions.transport,
       missionId,
+      userData,
       validateStep1,
       validateStep2,
       validateStep3,

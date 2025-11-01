@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
+using MyApp.Api.Models.dto.compensation_scale;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Services.logs;
 using MyApp.Api.Utils.generator;
@@ -16,6 +17,7 @@ namespace MyApp.Api.Services.mission
         Task<string> CreateAsync(CompensationScaleDTOForm? dto);
         Task<bool> UpdateAsync(string id, CompensationScaleDTOForm? dto);
         Task<bool> DeleteAsync(string id, string userId);
+        Task<List<string>> BulkSyncAsync(BulkCompensationScaleSyncRequest request, string userId);
     }
 
     public class CompensationScaleService : ICompensationScaleService
@@ -101,7 +103,7 @@ namespace MyApp.Api.Services.mission
                 }
                 var entity = new CompensationScale(dto)
                 {
-                    CompensationScaleId = _sequenceGenerator.GenerateSequence("seq_compensation_scale", "CMP", 6, "-")
+                    CompensationScaleId = _sequenceGenerator.GenerateSequence("seq_compensation_scale_id", "CMP", 6, "-")
                 };
 
                 await _repository.AddAsync(entity);
@@ -188,6 +190,95 @@ namespace MyApp.Api.Services.mission
             {
                 await transaction.RollbackAsync();
                 _logger.LogError(ex, "Erreur lors de DeleteAsync CompensationScale");
+                throw;
+            }
+        }
+
+        public async Task<List<string>> BulkSyncAsync(BulkCompensationScaleSyncRequest request, string userId)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            if (request.CategoryIds == null || !request.CategoryIds.Any())
+                throw new ArgumentException("At least one CategoryId is required", nameof(request.CategoryIds));
+
+            await using var transaction = await _repository.BeginTransactionAsync();
+            try
+            {
+                // Delete existing scales for the categories
+                await _repository.BulkDeleteByCategoryIdsAsync(request.CategoryIds);
+
+                // Prepare new scales from combined CompensationScales
+                var allNewScales = new List<CompensationScale>();
+                var createdIds = new List<string>();
+
+                // Separate transport and expense scales from CompensationScales
+                var transportScales = request.CompensationScales?
+                    .Where(cs => !string.IsNullOrEmpty(cs.TransportId))
+                    .Select(cs => (Amount: cs.Amount, Place: cs.Place ?? string.Empty, TypeId: cs.TransportId!))
+                    .ToList() ?? new List<(decimal Amount, string Place, string TypeId)>();
+
+                var expenseScales = request.CompensationScales?
+                    .Where(cs => !string.IsNullOrEmpty(cs.ExpenseTypeId))
+                    .Select(cs => (Amount: cs.Amount, Place: cs.Place ?? string.Empty, TypeId: cs.ExpenseTypeId!))
+                    .ToList() ?? new List<(decimal Amount, string Place, string TypeId)>();
+
+                foreach (var categoryId in request.CategoryIds)
+                {
+                    // Transport scales
+                    foreach (var (amount, place, typeId) in transportScales)
+                    {
+                        var scale = new CompensationScale
+                        {
+                            CompensationScaleId = _sequenceGenerator.GenerateSequence("seq_compensation_scale_id", "CMP", 6, "-"),
+                            Amount = amount,
+                            Place = place,
+                            TransportId = typeId,
+                            EmployeeCategoryId = categoryId,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = null // Will be set on first update if needed
+                        };
+                        allNewScales.Add(scale);
+                        createdIds.Add(scale.CompensationScaleId);
+                    }
+
+                    // Expense scales
+                    foreach (var (amount, place, typeId) in expenseScales)
+                    {
+                        var scale = new CompensationScale
+                        {
+                            CompensationScaleId = _sequenceGenerator.GenerateSequence("seq_compensation_scale_id", "CMP", 6, "-"),
+                            Amount = amount,
+                            Place = place,
+                            ExpenseTypeId = typeId,
+                            EmployeeCategoryId = categoryId,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = null
+                        };
+                        allNewScales.Add(scale);
+                        createdIds.Add(scale.CompensationScaleId);
+                    }
+                }
+
+                // Bulk insert new scales
+                if (allNewScales.Any())
+                {
+                    await _repository.BulkAddAsync(allNewScales);
+                    await _repository.SaveChangesAsync();
+
+                    // Log for bulk operation (simplified, log as one entry or loop if needed)
+                    // For now, log a summary
+                    _logger.LogInformation("Bulk sync completed for {CategoryCount} categories, created {ScaleCount} scales", request.CategoryIds.Count, allNewScales.Count);
+                    // Optionally: await _logService.LogAsync("BULK_SYNC", null, allNewScales, userId, "All fields");
+                }
+
+                await transaction.CommitAsync();
+                return createdIds.Distinct().ToList(); // Return unique IDs if any duplicates (unlikely)
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Erreur lors de BulkSyncAsync CompensationScale for categories {Categories}", string.Join(",", request.CategoryIds));
                 throw;
             }
         }

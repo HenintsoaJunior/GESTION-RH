@@ -4,6 +4,7 @@ import api from '@/utils/axios-config';
 
 const EMPLOYEES_BASE_KEY = ['employees'] as const;
 const EMPLOYEES_KEY = ['employees'] as const;
+const EMPLOYEES_SIMPLE_KEY = ['employeesSimple'] as const;
 
 interface Site {
   siteId: string;
@@ -187,6 +188,47 @@ export const useGetAllEmployees = () => {
       const response = await api.get('/api/Employee');
       return response.data;
     },
+  });
+};
+
+export const useGetAllEmployeesSimple = () => {
+  return useQuery<GetAllEmployeesResponse, Error>({
+    queryKey: EMPLOYEES_SIMPLE_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Employee/simple');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useGetEmployeesByMatriculesSimple = (matricules: string[]) => {
+  const sortedMatricules = matricules.sort();
+  const queryKey = [...EMPLOYEES_SIMPLE_KEY, 'byMatricules', sortedMatricules] as const;
+
+  return useQuery<GetAllEmployeesResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (matricules.length === 0) {
+        return { data: [], status: 200, message: 'success' } as GetAllEmployeesResponse;
+      }
+      try {
+        const response = await api.post('/api/Employee/simple', matricules);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: matricules.length > 0,
   });
 };
 

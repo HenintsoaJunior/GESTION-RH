@@ -252,14 +252,15 @@ const DirectionList: React.FC = () => {
             )}
           </tbody>
         </DataTable>
+        <Pagination
+          currentPage={page}
+          pageSize={pageSize}
+          totalEntries={totalCount}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </TableContainer>
-      <Pagination
-        currentPage={page}
-        pageSize={pageSize}
-        totalEntries={totalCount}
-        onPageChange={setPage}
-        onPageSizeChange={handlePageSizeChange}
-      />
+      
     </>
   );
 };
