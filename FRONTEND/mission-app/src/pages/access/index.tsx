@@ -97,6 +97,8 @@ const RoleList: React.FC = () => {
   const [originalValues, setOriginalValues] = useState<{ name: string; description: string } | null>(null);
   const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [showConfirmUpdateModal, setShowConfirmUpdateModal] = useState<boolean>(false);
+  const [pendingEditValues, setPendingEditValues] = useState<{ name: string; description: string } | null>(null);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const [isHidden, setIsHidden] = useState<boolean>(false);
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
@@ -108,10 +110,10 @@ const RoleList: React.FC = () => {
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = userData?.userId;
 
-  const canCreateRole = useHasHabilitation(userId, "creer role et habilitation(s)");
-  const canModifyRole = useHasHabilitation(userId, "modifier role");
-  const canModifyHabilities = useHasHabilitation(userId, "modifier habilitation(s) du role");
-  const canDeleteRole = useHasHabilitation(userId, "suprimer role");
+  const canCreateRole = useHasHabilitation(userId, "Créer un rôle et ses habilitations");
+  const canModifyRole = useHasHabilitation(userId, "Modifier un rôle");
+  const canModifyHabilities = useHasHabilitation(userId, "Modifier les habilitations d’un rôle");
+  const canDeleteRole = useHasHabilitation(userId, "Supprimer un rôle");
   const hasAnyHabilitation = canCreateRole || canModifyRole || canModifyHabilities || canDeleteRole;
 
   const { data: rolesResponse, isLoading: isRolesLoading, refetch: refetchRoles } = useRolesInfo();
@@ -191,36 +193,9 @@ const RoleList: React.FC = () => {
       editValues.name !== originalValues.name || editValues.description !== originalValues.description;
 
     if (hasChanged) {
-      const request = {
-        name: editValues.name,
-        description: editValues.description,
-      };
-
-      updateRoleMutation.mutate(
-        { id: editingRole.roleId, request },
-        {
-          onSuccess: () => {
-            setAlert({ isOpen: true, type: "success", message: "Rôle mis à jour avec succès" });
-            // Sortir du mode édition immédiatement après succès
-            setEditingRole(null);
-            setEditValues(null);
-            setOriginalValues(null);
-          },
-          onError: (error: unknown) => {
-            let errorMessage = "Échec de la mise à jour du rôle";
-            if (axios.isAxiosError(error)) {
-              errorMessage = error.response?.data?.message || error.message || errorMessage;
-            } else if (error instanceof Error) {
-              errorMessage = error.message;
-            }
-            setAlert({
-              isOpen: true,
-              type: "error",
-              message: errorMessage,
-            });
-          },
-        }
-      );
+      setPendingEditValues(editValues);
+      setShowConfirmUpdateModal(true);
+      return;
     } else {
       if (blurTimeoutRef.current) {
         clearTimeout(blurTimeoutRef.current);
@@ -231,7 +206,7 @@ const RoleList: React.FC = () => {
         setOriginalValues(null);
       }, 150);
     }
-  }, [editingRole, editValues, originalValues, userId, updateRoleMutation]);
+  }, [editingRole, editValues, originalValues, userId]);
 
   const handleFocus = useCallback(() => {
     if (blurTimeoutRef.current) {
@@ -249,6 +224,63 @@ const RoleList: React.FC = () => {
     },
     [handleBlur]
   );
+
+  const handleCancelUpdateConfirm = useCallback(() => {
+    setShowConfirmUpdateModal(false);
+    if (originalValues && editingRole) {
+      setEditValues(originalValues);
+    }
+    setEditingRole(null);
+    setOriginalValues(null);
+    setPendingEditValues(null);
+  }, [originalValues, editingRole]);
+
+  const handleConfirmUpdate = useCallback(() => {
+    if (!pendingEditValues || !editingRole || !userId) {
+      handleCancelUpdateConfirm();
+      return;
+    }
+
+    const request = {
+      name: pendingEditValues.name,
+      description: pendingEditValues.description,
+    };
+
+    updateRoleMutation.mutate(
+      { id: editingRole.roleId, request },
+      {
+        onSuccess: () => {
+          setAlert({ isOpen: true, type: "success", message: "Rôle mis à jour avec succès" });
+          refetchRoles();
+          setShowConfirmUpdateModal(false);
+          setPendingEditValues(null);
+          setEditingRole(null);
+          setEditValues(null);
+          setOriginalValues(null);
+        },
+        onError: (error: unknown) => {
+          let errorMessage = "Échec de la mise à jour du rôle";
+          if (axios.isAxiosError(error)) {
+            errorMessage = error.response?.data?.message || error.message || errorMessage;
+          } else if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+          setAlert({
+            isOpen: true,
+            type: "error",
+            message: errorMessage,
+          });
+          if (originalValues && editingRole) {
+            setEditValues(originalValues);
+          }
+          setEditingRole(null);
+          setOriginalValues(null);
+          setPendingEditValues(null);
+          setShowConfirmUpdateModal(false);
+        },
+      }
+    );
+  }, [pendingEditValues, editingRole, userId, originalValues, updateRoleMutation, refetchRoles, handleCancelUpdateConfirm]);
 
   const handleFilterSubmit = useCallback((event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -405,6 +437,18 @@ const RoleList: React.FC = () => {
         title="Confirmer la suppression"
         confirmAction={handleDeleteConfirm}
         confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        showActions={true}
+      />
+
+      <Modal
+        type="warning"
+        message="Êtes-vous sûr de vouloir enregistrer les modifications du rôle ?"
+        isOpen={showConfirmUpdateModal}
+        onClose={handleCancelUpdateConfirm}
+        title="Confirmer les modifications"
+        confirmAction={handleConfirmUpdate}
+        confirmLabel="Enregistrer"
         cancelLabel="Annuler"
         showActions={true}
       />
@@ -710,7 +754,7 @@ const RoleList: React.FC = () => {
 };
 
 const ProtectedRoleList: React.FC = () => (
-  <ProtectedRoute requiredHabilitation="voir page access">
+  <ProtectedRoute requiredHabilitation="Voir la page des accès">
     <RoleList />
   </ProtectedRoute>
 );

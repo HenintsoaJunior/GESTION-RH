@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronDown, ChevronUp, X, List, Search, Plus, Edit } from "lucide-react";
+import { ChevronDown, ChevronUp, X, List, Search, Plus, Edit, Trash } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   FiltersContainer,
@@ -31,26 +31,39 @@ import {
   Loading,
   NoDataMessage,
   Separator,
-  StatusBadge,
-  EditButton,
+  EditorButton,
   CancelButton,
 } from "@/styles/table-styles";
-import { useEmployees } from "@/api/collaborator/services";
+import StatusFilter from "@/components/status";
+import { StatusBadge } from "@/components/status";
+import type { Status } from "@/components/status";
+import { useGetAllEmployeesSimple, useGetEmployeesByMatriculesSimple } from "@/api/collaborator/services";
 import { useLieux } from "@/api/lieu/services";
 import { useSearchMissionAssignations } from "@/api/mission/services";
-import { useUserCollaborators } from "@/api/users/services";
+import { useCancelMission, useDeleteMission } from "@/api/mission/services";
+import { useUserCollaborators, useUserCollaboratorsMatricules } from "@/api/users/services";
 import { useHasHabilitation } from "@/api/users/services";
 import type { MissionAssignationSearchFilters, MissionAssignation, Lieu } from "@/api/mission/services";
 import type { Employee as CollabEmployee } from "@/api/collaborator/services";
 import type { UserInfo, UserInfosResponse } from "@/api/users/services";
+import { useQueries } from "@tanstack/react-query";
+import api from '@/utils/axios-config';
 import Alert from "@/components/alert";
 import Modal from "@/components/modal";
 import Pagination from "@/components/pagination";
 import MissionForm from "../form/index";
-import { getStatusBadgeClass, englishToFrench } from "@/utils/status";
+import { englishToFrench } from "@/utils/status";
 import ProtectedRoute from "@/components/protected-route";
 
-interface FiltersState extends Omit<MissionAssignationSearchFilters, 'matricule' | 'missionId' | 'transportId'> {
+type TabKey = 'mes' | 'toutes' | 'collaborateurs';
+
+interface Tab {
+  key: TabKey;
+  label: string;
+}
+
+interface FiltersState extends Omit<MissionAssignationSearchFilters, 'matricule' | 'missionId' | 'transportId' | 'status'> {
+  status: string[];
   selectedEmployee?: CollabEmployee | null;
   selectedLieu?: Lieu | null;
   employeeSearch?: string;
@@ -65,12 +78,12 @@ interface AlertState {
 
 const MissionList: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'mes' | 'toutes' | 'collaborateurs'>('mes');
+  const [activeTab, setActiveTab] = useState<TabKey>('mes');
   const [filters, setFilters] = useState<FiltersState>({
     employeeId: "",
     missionType: "",
     lieuId: "",
-    status: "",
+    status: [],
     minDepartureDate: null,
     maxDepartureDate: null,
     minArrivalDate: null,
@@ -84,7 +97,7 @@ const MissionList: React.FC = () => {
     employeeId: "",
     missionType: "",
     lieuId: "",
-    status: "",
+    status: [],
     minDepartureDate: null,
     maxDepartureDate: null,
     minArrivalDate: null,
@@ -95,8 +108,10 @@ const MissionList: React.FC = () => {
     lieuSearch: "",
   });
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
+  const [selectedAssignation, setSelectedAssignation] = useState<MissionAssignation | null>(null);
   const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
   const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const [isHidden, setIsHidden] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
@@ -104,25 +119,68 @@ const MissionList: React.FC = () => {
   const [totalCount, setTotalCount] = useState<number>(0);
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
 
+  const statusOptions = [
+    { label: "Mission en cours de validation", value: "pending approval" },
+    { label: "Paiement en cours", value: "payment in progress" },
+    { label: "Indemnité payée", value: "indemnity paid" },
+    { label: "Note de frais payée", value: "expense note paid" },
+    { label: "Planifié", value: "planned" },
+    { label: "En cours d'exécution", value: "in progress" },
+    { label: "Terminé", value: "completed" },
+    { label: "Annulé", value: "canceled" },
+  ];
+
+  const finalStatuses = useMemo(() => new Set([
+    "in progress",
+    "completed",
+    "planned",
+    "payment in progress",
+    "indemnity paid",
+    "expense note paid",
+    "canceled"
+  ]), []);
+
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const matricule = userData?.matricule || "";
   const userId = userData?.userId || "";
 
-  const canViewDetails = useHasHabilitation(userId, "voir details mission");
-  const canModifyMission = useHasHabilitation(userId, "modifier mission");
-  const canCancelMission = useHasHabilitation(userId, "annuler mission");
-  const canAddMission = useHasHabilitation(userId, "ajouter mission");
+  const canViewDetails = useHasHabilitation(userId, "Voir les détails d’une mission");
+  const canModifyMission = useHasHabilitation(userId, "Modifier une mission");
+  const canCancelMission = useHasHabilitation(userId, "Annuler une mission");
+  const canAddMission = useHasHabilitation(userId, "Ajouter une mission");
+  const canViewAllMissions = useHasHabilitation(userId, "Voir les missions de tous les collaborateurs");
 
-  const { data: employeesResponse, isLoading: isEmployeesLoading } = useEmployees();
+  const { data: employeesResponse, isLoading: isEmployeesLoading } = useGetAllEmployeesSimple();
+  const { data: collaborateursMatriculesResponse } = useUserCollaboratorsMatricules(userId);
+  const { data: collaborateursEmployeesResponse, isLoading: isCollaboratorsEmployeesLoading } = useGetEmployeesByMatriculesSimple(collaborateursMatriculesResponse?.data || []);
   const { data: lieuxResponse, isLoading: isLieuxLoading } = useLieux();
   const { data: collaboratorsResponse }: { data?: UserInfosResponse } = useUserCollaborators(userId);
+  const { mutate: cancelMissionMutate } = useCancelMission();
+  const { mutate: deleteMissionMutate } = useDeleteMission();
 
   const employees = useMemo(() => employeesResponse?.data || [], [employeesResponse?.data]) as CollabEmployee[];
+  const collaborateursEmployees = useMemo(() => collaborateursEmployeesResponse?.data || [], [collaborateursEmployeesResponse]);
+  const currentEmployees = useMemo(() => activeTab === 'collaborateurs' ? collaborateursEmployees : employees, [activeTab, collaborateursEmployees, employees]);
   const lieux = useMemo(() => lieuxResponse?.data || [], [lieuxResponse?.data]);
 
+  const hasCollaborators = useMemo(() => (collaboratorsResponse?.data as UserInfo[] || []).length > 0, [collaboratorsResponse]);
+
+  const tabTitles = useMemo(() => {
+    const titles: Tab[] = [
+      { key: 'mes', label: 'Mes missions' },
+    ];
+    if (canViewAllMissions) {
+      titles.unshift({ key: 'toutes', label: 'Toutes les missions' });
+    }
+    if (hasCollaborators) {
+      titles.push({ key: 'collaborateurs', label: 'Missions de mes collaborateurs' });
+    }
+    return titles;
+  }, [hasCollaborators, canViewAllMissions]);
+
   const employeeSuggestions = useMemo(() =>
-    employees.map((emp) => `${emp.firstName} ${emp.lastName}`),
-    [employees]
+    currentEmployees.map((emp: CollabEmployee) => `${emp.firstName} ${emp.lastName}`),
+    [currentEmployees]
   );
 
   const filteredEmployeeSuggestions = useMemo(() =>
@@ -133,7 +191,7 @@ const MissionList: React.FC = () => {
   );
 
   const lieuSuggestions = useMemo(() =>
-    lieux.map((lieu: Lieu) => lieu.nom),
+    lieux.map((lieu: Lieu) => `${lieu.nom}/${lieu.pays}`),
     [lieux]
   );
 
@@ -146,16 +204,6 @@ const MissionList: React.FC = () => {
 
   const missionTypes = ["International", "National"];
 
-  const statusOptions = [
-    { label: "Mission en cours de validation", value: "pending approval" },
-    { label: "Paiement en cours", value: "payment in progress" },
-    { label: "Indemnité payée", value: "indemnity paid" },
-    { label: "Note de frais payée", value: "expense note paid" },
-    { label: "Planifié", value: "planned" },
-    { label: "En cours d'exécution", value: "in progress" },
-    { label: "Terminé", value: "completed" },
-  ];
-
   const hasFilters: boolean = Object.values({ 
     ...filters, 
     selectedEmployee: null, 
@@ -166,7 +214,12 @@ const MissionList: React.FC = () => {
     maxDepartureDate: filters.maxDepartureDate || "",
     minArrivalDate: filters.minArrivalDate || "",
     maxArrivalDate: filters.maxArrivalDate || "",
-  }).some((val) => (val || "").trim() !== "");
+  }).some((val) => {
+    if (Array.isArray(val)) {
+      return val.length > 0;
+    }
+    return (val || "").trim() !== "";
+  });
 
   const queryFilters: MissionAssignationSearchFilters = useMemo(() => {
     const filtersBase: Partial<MissionAssignationSearchFilters> = {};
@@ -180,7 +233,7 @@ const MissionList: React.FC = () => {
     if (appliedFilters.lieuId) {
       filtersBase.lieuId = appliedFilters.lieuId;
     }
-    if (appliedFilters.status) {
+    if (appliedFilters.status && appliedFilters.status.length > 0) {
       filtersBase.status = appliedFilters.status;
     }
     if (appliedFilters.minDepartureDate) {
@@ -209,6 +262,10 @@ const MissionList: React.FC = () => {
         }
         break;
       }
+      case 'toutes': {
+        // No matricule filter for all missions
+        break;
+      }
       default: {
         filtersBase.matricule = [""];
         break;
@@ -226,10 +283,61 @@ const MissionList: React.FC = () => {
 
   const assignations = useMemo(() => searchResponse?.data?.data || [], [searchResponse?.data?.data]);
 
-  const showNoCollaboratorsMessage = useMemo(() => {
-    const collaboratorsData = collaboratorsResponse?.data as UserInfo[] || [];
-    return activeTab === 'collaborateurs' && collaboratorsData.length === 0;
-  }, [activeTab, collaboratorsResponse]);
+  const missionIds = useMemo(
+    () => [...new Set(assignations.map((a: MissionAssignation) => a.mission.missionId))],
+    [assignations]
+  );
+
+  const validationQueries = useQueries({
+    queries: missionIds.map((missionId) => ({
+      queryKey: ['hasAnyValidatorValidated', missionId],
+      queryFn: async () => {
+        const response = await api.get(`/api/MissionValidation/has-any-validator-validated/${missionId}`);
+        if (response.data.status !== 200) {
+          throw new Error(response.data.message || 'Failed to check if any validator has validated');
+        }
+        return response.data.data;
+      },
+      enabled: !!missionId && !isSearchLoading,
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+
+  const validatedMissions = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    missionIds.forEach((missionId, index) => {
+      const query = validationQueries[index];
+      if (query.isSuccess) {
+        map[missionId] = query.data;
+      }
+    });
+    return map;
+  }, [missionIds, validationQueries]);
+
+  const hasActions = useMemo(() => {
+    return assignations.some((assignation: MissionAssignation) => {
+      const rawStatus = assignation.mission.status;
+      const trimmedLowerStatus = rawStatus.trim().toLowerCase();
+      const isValidated = validatedMissions[assignation.mission.missionId] || false;
+      const needsNonFinalAction = !finalStatuses.has(trimmedLowerStatus) && !isValidated && (canModifyMission || canCancelMission);
+      const needsDeleteAction = trimmedLowerStatus === 'canceled' && !isValidated && canModifyMission;
+      return needsNonFinalAction || needsDeleteAction;
+    });
+  }, [assignations, finalStatuses, validatedMissions, canModifyMission, canCancelMission]);
+
+  const getStatus = useCallback((statusKey: string): Status => {
+    const map: Record<string, Status> = {
+      'pending approval': { id: 'in-review', label: "Mission en cours de validation", color: '#60a5fa', category: 'progress' },
+      'payment in progress': { id: 'in-progress', label: "Paiement en cours", color: '#3b82f6', category: 'progress' },
+      'indemnity paid': { id: 'approved', label: "Indemnité payée", color: '#34d399', category: 'success' },
+      'expense note paid': { id: 'completed', label: "Note de frais payée", color: '#10b981', category: 'success' },
+      'planned': { id: 'scheduled', label: "Planifié", color: '#8b5cf6', category: 'progress' },
+      'in progress': { id: 'in-progress', label: "En cours d'exécution", color: '#3b82f6', category: 'progress' },
+      'completed': { id: 'completed', label: "Terminé", color: '#10b981', category: 'success' },
+      'canceled': { id: 'cancelled', label: "Annulé", color: '#6b7280', category: 'error' },
+    };
+    return map[statusKey] || { id: 'unknown', label: englishToFrench[statusKey] || statusKey, color: '#6b7280', category: 'error' as const };
+  }, []);
 
   const handleRowClick = useCallback((missionId: string) => {
     if (canViewDetails) {
@@ -244,17 +352,69 @@ const MissionList: React.FC = () => {
     }
   }, [canModifyMission]);
 
-  const handleCancelClick = useCallback(() => {
+  const handleCancelClick = useCallback((assignation: MissionAssignation) => {
     if (canCancelMission) {
+      setSelectedAssignation(assignation);
       setShowCancelModal(true);
     }
   }, [canCancelMission]);
 
+  const handleDeleteClick = useCallback((assignation: MissionAssignation) => {
+    if (canModifyMission) {
+      setSelectedAssignation(assignation);
+      setShowDeleteModal(true);
+    }
+  }, [canModifyMission]);
+
   const handleCancelConfirm = useCallback(() => {
-    setAlert({ isOpen: true, type: "success", message: "Assignation annulée avec succès." });
-    refetchSearch();
-    setShowCancelModal(false);
-  }, [refetchSearch]);
+    if (!selectedAssignation) return;
+    if (!userId) {
+      setAlert({ isOpen: true, type: "error", message: "Utilisateur non authentifié. Veuillez vous reconnecter." });
+      return;
+    }
+    cancelMissionMutate(
+      { 
+        missionId: selectedAssignation.mission.missionId, 
+        userId: userId
+      },
+      {
+        onSuccess: (data) => {
+          setAlert({ isOpen: true, type: "success", message: data.message || "Assignation annulée avec succès." });
+          refetchSearch();
+          setShowCancelModal(false);
+          setSelectedAssignation(null);
+        },
+        onError: (error) => {
+          setAlert({ isOpen: true, type: "error", message: (error as Error).message || "Erreur lors de l'annulation." });
+        }
+      }
+    );
+  }, [selectedAssignation, cancelMissionMutate, refetchSearch, userId]);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (!selectedAssignation) return;
+    if (!userId) {
+      setAlert({ isOpen: true, type: "error", message: "Utilisateur non authentifié. Veuillez vous reconnecter." });
+      return;
+    }
+    deleteMissionMutate(
+      { 
+        missionId: selectedAssignation.mission.missionId, 
+        userId: userId
+      },
+      {
+        onSuccess: (data) => {
+          setAlert({ isOpen: true, type: "success", message: data.message || "Assignation supprimée avec succès." });
+          refetchSearch();
+          setShowDeleteModal(false);
+          setSelectedAssignation(null);
+        },
+        onError: (error) => {
+          setAlert({ isOpen: true, type: "error", message: (error as Error).message || "Erreur lors de la suppression." });
+        }
+      }
+    );
+  }, [selectedAssignation, deleteMissionMutate, refetchSearch, userId]);
 
   const handleFilterSubmit = useCallback((event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -267,7 +427,7 @@ const MissionList: React.FC = () => {
       employeeId: "",
       missionType: "",
       lieuId: "",
-      status: "",
+      status: [],
       minDepartureDate: null,
       maxDepartureDate: null,
       minArrivalDate: null,
@@ -284,7 +444,7 @@ const MissionList: React.FC = () => {
 
   const handleEmployeeChange = useCallback((value: string): void => {
     setFilters((prev) => ({ ...prev, employeeSearch: value }));
-    const matchedEmployee = employees.find((emp) =>
+    const matchedEmployee = currentEmployees.find((emp: CollabEmployee) =>
       `${emp.firstName} ${emp.lastName}` === value
     );
     if (matchedEmployee) {
@@ -300,11 +460,11 @@ const MissionList: React.FC = () => {
         employeeId: "",
       }));
     }
-  }, [employees]);
+  }, [currentEmployees]);
 
   const handleLieuChange = useCallback((value: string): void => {
     setFilters((prev) => ({ ...prev, lieuSearch: value }));
-    const matchedLieu = lieux.find((lieu: Lieu) => lieu.nom === value);
+    const matchedLieu = lieux.find((lieu: Lieu) => `${lieu.nom}/${lieu.pays}` === value);
     if (matchedLieu) {
       setFilters((prev) => ({
         ...prev,
@@ -322,10 +482,6 @@ const MissionList: React.FC = () => {
 
   const handleMissionTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>): void => {
     setFilters((prev) => ({ ...prev, missionType: e.target.value }));
-  }, []);
-
-  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>): void => {
-    setFilters((prev) => ({ ...prev, status: e.target.value }));
   }, []);
 
   const handleMinDepartureDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -381,36 +537,41 @@ const MissionList: React.FC = () => {
   }, [activeTab, appliedFiltersStr]);
 
   useEffect(() => {
-    if (activeTab === 'mes') {
-      setFilters((prev) => ({
-        ...prev,
-        employeeId: "",
-        selectedEmployee: null,
-        employeeSearch: "",
-      }));
-      setAppliedFilters((prev) => ({
-        ...prev,
-        employeeId: "",
-        selectedEmployee: null,
-        employeeSearch: "",
-      }));
-    }
+    setFilters((prev) => ({
+      ...prev,
+      employeeId: "",
+      selectedEmployee: null,
+      employeeSearch: "",
+    }));
+    setAppliedFilters((prev) => ({
+      ...prev,
+      employeeId: "",
+      selectedEmployee: null,
+      employeeSearch: "",
+    }));
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'collaborateurs' && !hasCollaborators) {
+      setActiveTab('mes');
+    }
+  }, [activeTab, hasCollaborators]);
+
+  useEffect(() => {
+    if (activeTab === 'toutes' && !canViewAllMissions) {
+      setActiveTab('mes');
+    }
+  }, [activeTab, canViewAllMissions]);
 
   const handlePageSizeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setPageSize(Number(e.target.value));
     setPage(1);
   }, []);
 
-  const tabTitles = [
-    { key: 'toutes' as const, label: 'Toutes les missions' },
-    { key: 'mes' as const, label: 'Mes missions' },
-    { key: 'collaborateurs' as const, label: 'Missions de mes collaborateurs' },
-  ];
-
   const showEmployeeFilter = activeTab !== 'mes';
   const numCols = showEmployeeFilter ? 4 : 3;
   const fieldWidth = showEmployeeFilter ? "25%" : "33.333%";
+  const isCurrentEmployeesLoading = useMemo(() => activeTab === 'collaborateurs' ? isCollaboratorsEmployeesLoading : isEmployeesLoading, [activeTab, isCollaboratorsEmployeesLoading, isEmployeesLoading]);
 
   const fieldsetStyle = { 
     display: "grid", 
@@ -449,15 +610,29 @@ const MissionList: React.FC = () => {
         />
       )}
 
-      {showCancelModal && (
+      {showCancelModal && selectedAssignation && (
         <Modal
-          type="error"
-          message="Êtes-vous sûr de vouloir annuler la mission ?"
+          type="warning"
+          message="Êtes-vous sûr de vouloir annuler l'assignation de mission ?"
           isOpen={showCancelModal}
           onClose={() => setShowCancelModal(false)}
           title="Confirmer l'annulation"
           confirmAction={handleCancelConfirm}
           confirmLabel="Confirmer l'annulation"
+          cancelLabel="Annuler"
+          showActions={true}
+        />
+      )}
+
+      {showDeleteModal && selectedAssignation && (
+        <Modal
+          type="warning"
+          message="Êtes-vous sûr de vouloir supprimer l'assignation de mission ?"
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          title="Confirmer la suppression"
+          confirmAction={handleDeleteConfirm}
+          confirmLabel="Supprimer"
           cancelLabel="Annuler"
           showActions={true}
         />
@@ -497,7 +672,7 @@ const MissionList: React.FC = () => {
                             suggestions={filteredEmployeeSuggestions}
                             maxVisibleItems={5}
                             placeholder="Sélectionner un employé..."
-                            disabled={isEmployeesLoading || isSearchLoading}
+                            disabled={isCurrentEmployeesLoading || isSearchLoading}
                             fieldType="employee"
                             fieldLabel="employé"
                             showAddOption={false}
@@ -517,6 +692,16 @@ const MissionList: React.FC = () => {
                           ))}
                         </StyledSelect>
                       </FormFieldCell>
+
+                       <FormFieldCell style={{ width: fieldWidth }}>
+                        <FormLabelSearch>Statut</FormLabelSearch>
+                        <StatusFilter
+                          options={statusOptions}
+                          selectedStatuses={filters.status}
+                          onStatusChange={(statuses: string[]) => setFilters((prev) => ({ ...prev, status: statuses }))}
+                        />
+                      </FormFieldCell>
+                      
                       <FormFieldCell style={{ width: fieldWidth }}>
                         <FormLabelSearch>Lieu</FormLabelSearch>
                         <StyledAutoCompleteInput
@@ -531,19 +716,7 @@ const MissionList: React.FC = () => {
                           showAddOption={false}
                         />
                       </FormFieldCell>
-                      <FormFieldCell style={{ width: fieldWidth }}>
-                        <FormLabelSearch>Statut</FormLabelSearch>
-                        <StyledSelect
-                          value={filters.status}
-                          onChange={handleStatusChange}
-                          disabled={isSearchLoading}
-                        >
-                          <option value="">Tous</option>
-                          {statusOptions.map(({ label, value }) => (
-                            <option key={value} value={value}>{label}</option>
-                          ))}
-                        </StyledSelect>
-                      </FormFieldCell>
+                     
                     </FormRow>
                     <FormRow>
                       <FormFieldCell colSpan={numCols} style={{ width: "100%" }}>
@@ -684,28 +857,23 @@ const MissionList: React.FC = () => {
                 <TableHeadCell style={{ width: "90px" }}>Statut</TableHeadCell>
                 <TableHeadCell>Date Départ</TableHeadCell>
                 <TableHeadCell>Date Retour</TableHeadCell>
-                <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
+                {hasActions && <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>}
               </tr>
             </thead>
             <tbody>
               {isSearchLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={hasActions ? 8 : 7}>
                     <Loading>Chargement des données...</Loading>
-                  </TableCell>
-                </TableRow>
-              ) : showNoCollaboratorsMessage ? (
-                <TableRow>
-                  <TableCell colSpan={8}>
-                    <NoDataMessage>Aucun collaborateur trouvé.</NoDataMessage>
                   </TableCell>
                 </TableRow>
               ) : assignations.length > 0 ? (
                 assignations.map((assignation: MissionAssignation) => {
                   const rawStatus = assignation.mission.status;
                   const trimmedLowerStatus = rawStatus.trim().toLowerCase();
-                  const frenchStatus = englishToFrench[trimmedLowerStatus] || rawStatus.trim();
-                  const statusClass = getStatusBadgeClass(rawStatus);
+                  const status = getStatus(trimmedLowerStatus);
+                  const isFinal = finalStatuses.has(trimmedLowerStatus);
+                  const isValidated = validatedMissions[assignation.mission.missionId] || false;
 
                   return (
                     <TableRow
@@ -722,41 +890,61 @@ const MissionList: React.FC = () => {
                       <TableCell>{assignation.mission.name}</TableCell>
                       <TableCell>{assignation.mission.missionType.toUpperCase()}</TableCell>
                       <TableCell>{assignation.mission.lieu.nom}</TableCell>
-                      <TableCell><StatusBadge className={statusClass}>{frenchStatus}</StatusBadge></TableCell>
+                      <TableCell><StatusBadge status={status} /></TableCell>
                       <TableCell>{new Date(assignation.departureDate).toLocaleDateString()}</TableCell>
                       <TableCell>{new Date(assignation.returnDate).toLocaleDateString()}</TableCell>
-                      <TableCell style={{ textAlign: "center" }}>
-                        {canModifyMission && (
-                          <EditButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditClick(assignation.mission.missionId);
-                            }}
-                            title="Modifier"
-                          >
-                            <Edit size={16} />
-                          </EditButton>
-                        )}
-                        {canCancelMission && (
-                          <CancelButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCancelClick();
-                            }}
-                            title="Annuler"
-                          >
-                            <X size={16} />
-                          </CancelButton>
-                        )}
-                      </TableCell>
+                      {hasActions && (
+                        <TableCell style={{ textAlign: "center" }}>
+                          {(!isFinal && !isValidated && canModifyMission) && (
+                            <EditorButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditClick(assignation.mission.missionId);
+                              }}
+                              title="Modifier"
+                            >
+                              <Edit size={16} />
+                            </EditorButton>
+                          )}
+                          {(!isFinal && !isValidated && canCancelMission) && (
+                            <CancelButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCancelClick(assignation);
+                              }}
+                              title="Annuler"
+                            >
+                              <X size={16} />
+                            </CancelButton>
+                          )}
+                          {(isFinal && trimmedLowerStatus === 'canceled' && !isValidated && canModifyMission) && (
+                            <CancelButton
+                              className="delete-button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(assignation);
+                              }}
+                              title="Supprimer"
+                              style={{ color: "var(--danger-color, #dc3545)" }}
+                            >
+                              <Trash size={16} />
+                            </CancelButton>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={hasActions ? 8 : 7}>
                     <NoDataMessage>
-                      {Object.values(appliedFilters).some(Boolean) ? "Aucune assignation ne correspond aux critères." : "Aucune assignation trouvée."}
+                      {Object.values(appliedFilters).some((val) => {
+                        if (Array.isArray(val)) {
+                          return val.length > 0;
+                        }
+                        return (val || "").trim() !== "";
+                      }) ? "Aucune assignation ne correspond aux critères." : "Aucune assignation trouvée."}
                     </NoDataMessage>
                   </TableCell>
                 </TableRow>
@@ -765,20 +953,19 @@ const MissionList: React.FC = () => {
           </DataTable>
         </div>
         <Pagination
-        currentPage={page}
-        pageSize={pageSize}
-        totalEntries={totalCount}
-        onPageChange={setPage}
-        onPageSizeChange={handlePageSizeChange}
-      />
+          currentPage={page}
+          pageSize={pageSize}
+          totalEntries={totalCount}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </TableContainer>
-      
     </>
   );
 };
 
 const ProtectedMissionList: React.FC = () => (
-  <ProtectedRoute requiredHabilitation="voir page mission">
+  <ProtectedRoute requiredHabilitation="Voir la page des missions">
     <MissionList />
   </ProtectedRoute>
 );

@@ -292,5 +292,65 @@ namespace MyApp.Api.Controllers.employee
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
+
+        [HttpGet("simple")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetAllSimple()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                logger.LogInformation("Récupération simple de tous les employés");
+                var employees = await employeeService.GetAllEmployeeSimpleAsync();
+                return Ok(new { data = employees, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération simple de tous les employés");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Erreur lors de la récupération simple de tous les employés");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpPost("simple")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetByMatriculeSimple([FromBody] string[] matricules)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                if (matricules == null || matricules.Length == 0)
+                {
+                    logger.LogWarning("Tentative de récupération des employés avec matricules null ou vide");
+                    return BadRequest(new { data = (object?)null, status = 400, message = "Les matricules ne peuvent pas être null ou vides." });
+                }
+
+                logger.LogInformation("Récupération des employés par matricules: {MatriculeCount}", matricules.Length);
+                var employees = await employeeService.GetByMatriculeSimpleAsync(matricules);
+                return Ok(new { data = employees, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération des employés par matricules");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Erreur lors de la récupération des employés par matricules");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
     }
 }

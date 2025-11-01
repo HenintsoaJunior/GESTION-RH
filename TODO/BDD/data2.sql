@@ -14,7 +14,7 @@ VALUES
 ('exp002', 'Déjeuner',        '12:00:00', '13:30:00', GETDATE(), GETDATE()),
 ('exp003', 'Dinner',           '18:30:00', '20:00:00', GETDATE(), GETDATE()),
 ('exp004', 'Hébergement',     '21:00:00', '05:00:00', GETDATE(), GETDATE());
-
+  
 INSERT INTO transport (transport_id, type, created_at, updated_at)
 VALUES 
 ('tr001', 'Voiture', GETDATE(), GETDATE()),

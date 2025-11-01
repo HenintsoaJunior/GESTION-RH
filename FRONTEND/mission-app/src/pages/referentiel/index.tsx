@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Building2, Building, Settings, Layers, FileSignature, Truck, User, Users, MapPin, Map, Receipt } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   ContentArea,
@@ -69,6 +69,10 @@ const Referentiel: React.FC = () => {
     navigate('/referentiel/unit');
   };
 
+  const handleNavigateToTransport = () => {
+    navigate('/referentiel/transport');
+  };
+
   const handleNavigateToGenders = () => {
     navigate('/referentiel/genders');
   };
@@ -87,6 +91,14 @@ const Referentiel: React.FC = () => {
 
   const handleNavigateToLieu = () => {
     navigate('/referentiel/lieu');
+  };
+
+  const handleNavigateToExpenseType = () => {
+    navigate('/referentiel/expense-type');
+  };
+
+  const handleNavigateToCollaboratorCategory = () => {
+    navigate('/referentiel/collaborator-category');
   };
 
   return (
@@ -108,63 +120,93 @@ const Referentiel: React.FC = () => {
       <SectionTitle>Entités de Référence</SectionTitle>
       <ReferentielGrid>
         <InfoItem as={ReferentielButton} onClick={handleNavigateToDirection}>
+          <Building2 className="mx-auto mb-2 w-6 h-6 text-gray-400" />
           <InfoLabel>Direction</InfoLabel>
           <InfoValue>
             <span>Gérer les directions</span>
           </InfoValue>
         </InfoItem>
         <InfoItem as={ReferentielButton} onClick={handleNavigateToDepartement}>
+          <Building className="mx-auto mb-2 w-6 h-6 text-gray-400" />
           <InfoLabel>Département</InfoLabel>
           <InfoValue>
             <span>Gérer les départements</span>
           </InfoValue>
         </InfoItem>
         <InfoItem as={ReferentielButton} onClick={handleNavigateToService}>
+          <Settings className="mx-auto mb-2 w-6 h-6 text-gray-400" />
           <InfoLabel>Service</InfoLabel>
           <InfoValue>
             <span>Gérer les services</span>
           </InfoValue>
         </InfoItem>
 
-
         <InfoItem as={ReferentielButton} onClick={handleNavigateToUnit}>
-          <InfoLabel>Unit</InfoLabel>
+          <Layers className="mx-auto mb-2 w-6 h-6 text-gray-400" />
+          <InfoLabel>Unité</InfoLabel>
           <InfoValue>
-            <span>Gérer les unit</span>
+            <span>Gérer les unités</span>
           </InfoValue>
         </InfoItem>
 
-
         <InfoItem as={ReferentielButton} onClick={handleNavigateToContract}>
-          <InfoLabel>Type de contract</InfoLabel>
+          <FileSignature className="mx-auto mb-2 w-6 h-6 text-gray-400" />
+          <InfoLabel>Type de contrat</InfoLabel>
           <InfoValue>
-            <span>Gérer les type de contract</span>
+            <span>Gérer les types de contrats</span>
+          </InfoValue>
+        </InfoItem>
+
+        <InfoItem as={ReferentielButton} onClick={handleNavigateToTransport}>
+          <Truck className="mx-auto mb-2 w-6 h-6 text-gray-400" />
+          <InfoLabel>Transport</InfoLabel>
+          <InfoValue>
+            <span>Gérer les transports</span>
           </InfoValue>
         </InfoItem>
 
         <InfoItem as={ReferentielButton} onClick={handleNavigateToGenders}>
+          <User className="mx-auto mb-2 w-6 h-6 text-gray-400" />
           <InfoLabel>Genre</InfoLabel>
           <InfoValue>
-            <span>Gérer les Genre</span>
+            <span>Gérer les genres</span>
+          </InfoValue>
+        </InfoItem>
+
+        <InfoItem as={ReferentielButton} onClick={handleNavigateToCollaboratorCategory}>
+          <Users className="mx-auto mb-2 w-6 h-6 text-gray-400" />
+          <InfoLabel>Catégorie Collaborateur</InfoLabel>
+          <InfoValue>
+            <span>Gérer les catégories de collaborateurs</span>
           </InfoValue>
         </InfoItem>
 
         <InfoItem as={ReferentielButton} onClick={handleNavigateToCollaborateur}>
+          <Users className="mx-auto mb-2 w-6 h-6 text-gray-400" />
           <InfoLabel>Collaborateur</InfoLabel>
           <InfoValue>
             <span>Gérer les collaborateurs</span>
           </InfoValue>
         </InfoItem>
         <InfoItem as={ReferentielButton} onClick={handleNavigateToSite}>
+          <MapPin className="mx-auto mb-2 w-6 h-6 text-gray-400" />
           <InfoLabel>Site</InfoLabel>
           <InfoValue>
             <span>Gérer les sites</span>
           </InfoValue>
         </InfoItem>
         <InfoItem as={ReferentielButton} onClick={handleNavigateToLieu}>
+          <Map className="mx-auto mb-2 w-6 h-6 text-gray-400" />
           <InfoLabel>Lieu</InfoLabel>
           <InfoValue>
             <span>Gérer les lieux</span>
+          </InfoValue>
+        </InfoItem>
+        <InfoItem as={ReferentielButton} onClick={handleNavigateToExpenseType}>
+          <Receipt className="mx-auto mb-2 w-6 h-6 text-gray-400" />
+          <InfoLabel>Type de dépense</InfoLabel>
+          <InfoValue>
+            <span>Gérer les types de dépenses</span>
           </InfoValue>
         </InfoItem>
       </ReferentielGrid>

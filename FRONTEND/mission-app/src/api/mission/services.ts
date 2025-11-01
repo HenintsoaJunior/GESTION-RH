@@ -17,7 +17,7 @@ export interface MissionAssignationSearchFilters {
   maxDepartureDate?: string | null;
   minArrivalDate?: string | null;
   maxArrivalDate?: string | null;
-  status?: string;
+  status?: string[];
 }
 
 interface Site {
@@ -299,18 +299,11 @@ export const useCreateMission = () => {
 export const useUpdateMission = (missionId: string) => {
   return useMutation<ApiResponse<UpdateMissionResponseData>, Error, MissionDTOForm>({
     mutationFn: async (data: MissionDTOForm) => {
-      if (!missionId) {
-        throw new Error('Mission ID is required for update');
+      if (!missionId || !data.userId) {
+        throw new Error('Mission ID and userId are required for update');
       }
-      try {
-        const response = await api.put(`/api/Mission/${missionId}`, data);
-        return response.data;
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-          return error.response.data;
-        }
-        throw error;
-      }
+      const response = await api.put(`/api/Mission/${missionId}`, data);
+      return response.data;
     },
   });
 };
@@ -378,6 +371,40 @@ export const useGenerateMissionOrder = () => {
       window.URL.revokeObjectURL(urlBlob);
 
       return { fileName, status: "success" };
+    },
+  });
+};
+
+export interface CancelMissionData {
+  missionId: string;
+  userId: string;
+}
+
+export const useCancelMission = () => {
+  return useMutation<ApiResponse<null>, Error, CancelMissionData>({
+    mutationFn: async (data: CancelMissionData) => {
+      if (!data.missionId || !data.userId) {
+        throw new Error('Mission ID and userId are required for cancellation');
+      }
+      const response = await api.put(`/api/Mission/${data.missionId}/cancel/${data.userId}`);
+      return response.data;
+    },
+  });
+};
+
+export interface DeleteMissionData {
+  missionId: string;
+  userId: string;
+}
+
+export const useDeleteMission = () => {
+  return useMutation<ApiResponse<null>, Error, DeleteMissionData>({
+    mutationFn: async (data: DeleteMissionData) => {
+      if (!data.missionId || !data.userId) {
+        throw new Error('Mission ID and userId are required for deletion');
+      }
+      const response = await api.delete(`/api/Mission/${data.missionId}/${data.userId}`);
+      return response.data;
     },
   });
 };

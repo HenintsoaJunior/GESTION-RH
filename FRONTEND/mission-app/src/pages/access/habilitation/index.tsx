@@ -211,7 +211,6 @@ const HabilitationList: React.FC = () => {
           <DataTable>
             <thead>
               <tr>
-                <TableHeadCell>ID</TableHeadCell>
                 <TableHeadCell>Label</TableHeadCell>
                 <TableHeadCell>Description</TableHeadCell>
               </tr>
@@ -228,7 +227,6 @@ const HabilitationList: React.FC = () => {
                   <TableRow
                     key={habilitation.habilitationId}
                   >
-                    <TableCell>{habilitation.habilitationId}</TableCell>
                     <TableCell>{habilitation.label}</TableCell>
                     <TableCell>{habilitation.description}</TableCell>
                   </TableRow>
@@ -245,20 +243,21 @@ const HabilitationList: React.FC = () => {
             </tbody>
           </DataTable>
         </div>
+        <Pagination
+          currentPage={page}
+          pageSize={pageSize}
+          totalEntries={totalCount}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </TableContainer>
-      <Pagination
-        currentPage={page}
-        pageSize={pageSize}
-        totalEntries={totalCount}
-        onPageChange={setPage}
-        onPageSizeChange={handlePageSizeChange}
-      />
+      
     </>
   );
 };
 
 const ProtectedHabilitationList: React.FC = () => (
-  <ProtectedRoute requiredHabilitation="voir page access">
+  <ProtectedRoute requiredHabilitation="Voir la page des habilitations">
     <HabilitationList />
   </ProtectedRoute>
 );

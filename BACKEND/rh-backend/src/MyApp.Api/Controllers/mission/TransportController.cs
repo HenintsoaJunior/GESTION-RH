@@ -6,13 +6,19 @@ using MyApp.Api.Services.mission;
 
 namespace MyApp.Api.Controllers.mission
 {
-    [ApiController]
     [Route("api/[controller]")]
-    public class TransportController(
-        ITransportService transportService,
-        ILogger<TransportController> logger) // Added ILogger dependency
-        : ControllerBase
+    [ApiController]
+    public class TransportController : ControllerBase
     {
+        private readonly ITransportService _transportService;
+        private readonly ILogger<TransportController> _logger;
+
+        public TransportController(ITransportService transportService, ILogger<TransportController> logger)
+        {
+            _transportService = transportService ?? throw new ArgumentNullException(nameof(transportService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
         // Récupère la liste de tous les moyens de transport
         [HttpGet]
         [AllowAnonymous]
@@ -25,103 +31,181 @@ namespace MyApp.Api.Controllers.mission
 
             try
             {
-                var transports = await transportService.GetAllAsync();
-                return Ok(new { data = transports, status = 200, message = "success" });
-            }
-            catch (ArgumentException ex)
-            {
-                logger.LogError(ex, "Erreur lors de la récupération de tous les moyens de transport");
-                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+                _logger.LogInformation("Retrieving all transports");
+                var transports = await _transportService.GetAllAsync();
+                var responseData = transports;
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Erreur lors de la récupération de tous les moyens de transport");
+                _logger.LogError(e, "Error retrieving all transports");
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
-//
+
         // Récupère un moyen de transport par son identifiant
         [HttpGet("{id}")]
-        public async Task<ActionResult<Transport>> GetById(string id)
+        [AllowAnonymous]
+        public async Task<ActionResult> GetById(string id)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Transport ID cannot be null or empty" });
+            }
+
             try
             {
-                var transport = await transportService.GetByIdAsync(id);
-                if (transport != null) return Ok(transport);
-                logger.LogWarning("Moyen de transport avec ID {TransportId} non trouvé", id);
-                return NotFound();
+                _logger.LogInformation("Retrieving transport with ID: {TransportId}", id);
+                var transport = await _transportService.GetByIdAsync(id);
+                if (transport == null)
+                {
+                    _logger.LogWarning("Transport not found for ID: {TransportId}", id);
+                    return NotFound(new { data = (object?)null, status = 404, message = "Transport not found" });
+                }
+                var responseData = transport;
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                logger.LogError(ex, "Erreur lors de la récupération du moyen de transport avec ID {TransportId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la récupération du moyen de transport");
+                _logger.LogError(e, "Error retrieving transport with ID: {TransportId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         // Crée un nouveau moyen de transport
         [HttpPost]
-        public async Task<ActionResult<Transport>> Create([FromBody] TransportDTOForm transportDtoForm)
+        [AllowAnonymous]
+        public async Task<ActionResult> Create([FromBody] TransportDTOForm transportDtoForm)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (transportDtoForm == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Transport data cannot be null" });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ModelState });
+            }
+
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
+                _logger.LogInformation("Creating new transport");
                 var transport = new Transport
                 {
                     Type = transportDtoForm.Type
                 };
-
-                await transportService.CreateAsync(transport);
-                return CreatedAtAction(nameof(GetById), new { id = transport.TransportId }, transport);
+                await _transportService.CreateAsync(transport);
+                var responseData = new { TransportId = transport.TransportId };
+                return CreatedAtAction(nameof(GetById), new { id = transport.TransportId }, new { data = responseData, status = 201, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                logger.LogError(ex, "Erreur lors de la création d'un moyen de transport");
-                return StatusCode(500, "Une erreur est survenue lors de la création du moyen de transport");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
-        }
-
-        // Met à jour un moyen de transport existant
-        [HttpPut("{id}")]
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error creating transport");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }[HttpPut("{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult> Update(string id, [FromBody] Transport transport)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Transport ID cannot be null or empty" });
+            }
+
+            if (transport == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Transport data cannot be null" });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ModelState });
+            }
+
+            // Fix: Set ID from URL if missing/empty in body
+            if (string.IsNullOrWhiteSpace(transport.TransportId))
+            {
+                transport.TransportId = id;
+            }
+            else if (id != transport.TransportId)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "The ID in the URL does not match the entity." });
+            }
+
             try
             {
-                if (!ModelState.IsValid || id != transport.TransportId)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var updated = await transportService.UpdateAsync(transport);
-                if (updated) return NoContent();
-                logger.LogWarning("Échec de la mise à jour, moyen de transport avec ID {TransportId} introuvable", id);
-                return NotFound();
+                _logger.LogInformation("Updating transport with ID: {TransportId}", id);
+                await _transportService.UpdateAsync(transport);
+                var responseData = new { message = $"Transport with ID {id} successfully updated", data = transport };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                logger.LogError(ex, "Erreur lors de la mise à jour du moyen de transport avec ID {TransportId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la mise à jour du moyen de transport");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error updating transport with ID: {TransportId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         // Supprime un moyen de transport par son identifiant
         [HttpDelete("{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult> Delete(string id)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Transport ID cannot be null or empty" });
+            }
+
             try
             {
-                var deleted = await transportService.DeleteAsync(id);
-                if (deleted) return NoContent();
-                logger.LogWarning("Échec de suppression, moyen de transport avec ID {TransportId} introuvable", id);
-                return NotFound();
+                _logger.LogInformation("Deleting transport with ID: {TransportId}", id);
+                var transport = await _transportService.GetByIdAsync(id);
+                if (transport == null)
+                {
+                    _logger.LogWarning("Transport not found for ID: {TransportId}", id);
+                    return NotFound(new { data = (object?)null, status = 404, message = "Transport not found" });
+                }
+
+                await _transportService.DeleteAsync(id);
+                var responseData = new { message = $"Transport with ID {id} successfully deleted", data = new { id } };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                logger.LogError(ex, "Erreur lors de la suppression du moyen de transport avec ID {TransportId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la suppression du moyen de transport");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error deleting transport with ID: {TransportId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
     }

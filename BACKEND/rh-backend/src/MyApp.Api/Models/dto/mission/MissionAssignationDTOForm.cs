@@ -43,5 +43,5 @@ public class MissionAssignationSearchFiltersDTO
     public DateTime? MaxDepartureDate { get; set; }
     public DateTime? MinArrivalDate { get; set; }
     public DateTime? MaxArrivalDate { get; set; }
-    public string? Status { get; set; }
+    public string?[] Status { get; set; } = new string?[] { };
 }

@@ -269,34 +269,63 @@ VALUES
     ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_002'),
     ('ce796eb6-0f7e-4dbc-9c1e-de00f53de186', 'ROLE_003');
 
+-- ============================
+-- HABILITATION GROUPS
+-- ============================
+
 INSERT INTO habilitation_groups (group_id, label)
 VALUES
     ('HABG_001', 'Admin'),
-    ('HABG_002', 'Projet');
+    ('HABG_002', 'Gestion des Missions'),
+    ('HABG_003', 'Navigation');
+
+-- ============================
+-- HABILITATIONS
+-- ============================
 
 INSERT INTO habilitations (habilitation_id, group_id, label, description)
 VALUES
 -- Admin / Utilisateurs
-('HAB_001', 'HABG_001', 'voir page utilisateurs', 'Permet d’accéder et de visualiser la liste des utilisateurs du système.'),
-('HAB_002', 'HABG_001', 'modifier role utilisateur(s)', 'Autorise la modification des rôles attribués aux utilisateurs.'),
-('HAB_003', 'HABG_001', 'suprimer role utilisateur(s)', 'Permet de supprimer un ou plusieurs rôles associés à des utilisateurs.'),
+('HAB_001', 'HABG_001', 'Voir la page des utilisateurs', 'Permet d’accéder et de visualiser la liste des utilisateurs du système.'),
+('HAB_002', 'HABG_001', 'Modifier le rôle des utilisateur(s)', 'Autorise la modification des rôles attribués aux utilisateurs.'),
+('HAB_003', 'HABG_001', 'Supprimer le rôle des utilisateur(s)', 'Permet de supprimer un ou plusieurs rôles associés à des utilisateurs.'),
 
 -- Logs
-('HAB_004', 'HABG_001', 'voir page logs', 'Autorise l’accès à la page des journaux d’activités (logs) pour consulter les actions effectuées.'),
+('HAB_004', 'HABG_001', 'Voir la page des logs', 'Autorise l’accès à la page des journaux d’activités (logs) pour consulter les actions effectuées.'),
 
 -- Accès / Habilitations
-('HAB_005', 'HABG_001', 'modifier habilitation(s) du role', 'Permet de modifier les habilitations (permissions) attribuées à un rôle.'),
-('HAB_006', 'HABG_001', 'creer role et habilitation(s)', 'Autorise la création de nouveaux rôles ainsi que la définition de leurs habilitations.'),
-('HAB_007', 'HABG_001', 'modifier role', 'Permet de modifier les informations d’un rôle existant (nom, description, etc.).'),
-('HAB_008', 'HABG_001', 'suprimer role', 'Autorise la suppression d’un rôle du système.'),
-('HAB_009', 'HABG_001', 'voir page access', 'Permet de visualiser la page de gestion des accès et des rôles.'),
+('HAB_005', 'HABG_001', 'Modifier les habilitations d’un rôle', 'Permet de modifier les habilitations (permissions) attribuées à un rôle.'),
+('HAB_006', 'HABG_001', 'Créer un rôle et ses habilitations', 'Autorise la création de nouveaux rôles ainsi que la définition de leurs habilitations.'),
+('HAB_007', 'HABG_001', 'Modifier un rôle', 'Permet de modifier les informations d’un rôle existant (nom, description, etc.).'),
+('HAB_008', 'HABG_001', 'Supprimer un rôle', 'Autorise la suppression d’un rôle du système.'),
+('HAB_009', 'HABG_001', 'Voir la page des accès', 'Permet de visualiser la page de gestion des accès et des rôles.'),
+('HAB_010', 'HABG_001', 'Voir la page des habilitations', 'Permet de visualiser la page de gestion des habilitations.'),
 
--- Mission / Projet
-('HAB_010', 'HABG_002', 'voir page mission', 'Autorise la consultation de la liste des missions disponibles.'),
-('HAB_011', 'HABG_002', 'modifier mission', 'Permet de modifier les informations d’une mission (dates, participants, objectifs, etc.).'),
-('HAB_012', 'HABG_002', 'annuler mission', 'Autorise l’annulation d’une mission en cours ou planifiée.'),
-('HAB_013', 'HABG_002', 'ajouter mission', 'Permet d’ajouter une nouvelle mission dans le système.'),
-('HAB_014', 'HABG_002', 'voir details mission', 'Autorise la consultation des détails complets d’une mission spécifique.');
+-- Gestion des Missions
+('HAB_011', 'HABG_002', 'Voir la page des missions', 'Autorise la consultation de la liste des missions disponibles.'),
+('HAB_012', 'HABG_002', 'Modifier une mission', 'Permet de modifier les informations d’une mission (dates, participants, objectifs, etc.).'),
+('HAB_013', 'HABG_002', 'Annuler une mission', 'Autorise l’annulation d’une mission en cours ou planifiée.'),
+('HAB_014', 'HABG_002', 'Ajouter une mission', 'Permet d’ajouter une nouvelle mission dans le système.'),
+('HAB_015', 'HABG_002', 'Voir les détails d’une mission', 'Autorise la consultation des détails complets d’une mission spécifique.'),
+('HAB_028', 'HABG_002', 'Voir les missions de tous les collaborateurs', 'Autorise la consultation de la liste complète des missions assignées à l’ensemble des collaborateurs du système.'),
+
+-- Navigation / Accès aux modules et menus
+('HAB_016', 'HABG_003', 'Voir les utilisateurs', 'Permet d’accéder au menu et à la page des utilisateurs.'),
+('HAB_017', 'HABG_003', 'Voir les droits et accès', 'Permet d’accéder au menu Droit & Accès.'),
+('HAB_018', 'HABG_003', 'Voir les accès', 'Permet d’accéder au sous-menu Accès.'),
+('HAB_019', 'HABG_003', 'Voir le référentiel', 'Permet d’accéder au menu et à la page Référentiel.'),
+('HAB_020', 'HABG_003', 'Voir l’import', 'Permet d’accéder au menu et à la page Import.'),
+('HAB_021', 'HABG_003', 'Voir les logs', 'Permet d’accéder au menu et à la page Logs.'),
+('HAB_022', 'HABG_003', 'Voir les missions', 'Permet d’accéder au menu Mission.'),
+('HAB_023', 'HABG_003', 'Voir la validation des missions', 'Permet d’accéder au sous-menu Validation des missions.'),
+('HAB_024', 'HABG_003', 'Voir la liste des missions', 'Permet d’accéder au sous-menu Liste des missions.'),
+('HAB_025', 'HABG_003', 'Voir les missions archivées', 'Permet d’accéder au sous-menu Missions archivées.'),
+('HAB_026', 'HABG_003', 'Voir la trésorerie', 'Permet d’accéder au sous-menu et à la page Trésorerie.'),
+('HAB_027', 'HABG_003', 'Voir les habilitations', 'Permet d’accéder au sous-menu Habilitation.');
+
+-- ============================
+-- ROLE HABILITATION
+-- ============================
 
 INSERT INTO role_habilitation (habilitation_id, role_id)
 VALUES
@@ -308,9 +337,30 @@ VALUES
     ('HAB_006', 'ROLE_001'),
     ('HAB_007', 'ROLE_001'),
     ('HAB_008', 'ROLE_001'),
-    ('HAB_009', 'ROLE_001');
-    
+    ('HAB_009', 'ROLE_001'),
+    ('HAB_010', 'ROLE_001'),
+    ('HAB_011', 'ROLE_001'),
+    ('HAB_012', 'ROLE_001'),
+    ('HAB_013', 'ROLE_001'),
+    ('HAB_014', 'ROLE_001'),
+    ('HAB_015', 'ROLE_001'),
+    ('HAB_028', 'ROLE_001'),
+    ('HAB_016', 'ROLE_001'),
+    ('HAB_017', 'ROLE_001'),
+    ('HAB_018', 'ROLE_001'),
+    ('HAB_019', 'ROLE_001'),
+    ('HAB_020', 'ROLE_001'),
+    ('HAB_021', 'ROLE_001'),
+    ('HAB_022', 'ROLE_001'),
+    ('HAB_023', 'ROLE_001'),
+    ('HAB_024', 'ROLE_001'),
+    ('HAB_025', 'ROLE_001'),
+    ('HAB_026', 'ROLE_001'),
+    ('HAB_027', 'ROLE_001');
 
+-- ============================
+-- LIEU
+-- ============================
 
 INSERT INTO lieu (lieu_id, nom, adresse, ville, code_postal, pays, created_at, updated_at) VALUES
 ('1', 'Analamanga', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
@@ -338,7 +388,6 @@ INSERT INTO lieu (lieu_id, nom, adresse, ville, code_postal, pays, created_at, u
 ('23', 'Menabe', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
 ('24', 'Nosy Be', '', '', '', 'Madagascar', GETDATE(), GETDATE());
 
-
 -- ============================
 -- MENU DYNAMIQUE
 -- ============================
@@ -359,10 +408,10 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu_hab', 'Droit & Accès', 'fa-shield-alt', '/droit-access', 1, 2, 'habilitation', 'administration', GETDATE(), GETDATE()),
-('menu_hab_2', 'access', 'fa-list', '/access/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
+('menu_hab_2', 'accès', 'fa-list', '/access/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
 
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_referentiel', 'referentiel', 'fa-database', '/referentiel', 1, 3, 'referentiel', 'administration', GETDATE(), GETDATE()),  -- Position 3 pour Référentiel (au-dessus de Import)
+('menu_referentiel', 'référentiel', 'fa-database', '/referentiel', 1, 3, 'referentiel', 'administration', GETDATE(), GETDATE()),  -- Position 3 pour Référentiel (au-dessus de Import)
 ('menu_import', 'import', 'fa-upload', '/import', 1, 4, 'import', 'administration', GETDATE(), GETDATE()),  -- Import décalé à position 4
 ('menu_logs', 'logs', 'fa-file-alt', '/logs', 1, 5, 'logs', 'administration', GETDATE(), GETDATE());  -- Logs décalé à position 5
 
@@ -372,53 +421,23 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 ('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_3', 'Missions', 'fa-list', '/mission/list', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_4', 'Missions archivées', 'fa-archive', '/mission/archived', 1, 5, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_5', 'treso', 'fa-money-bill-alt', '/treasury', 1, 6, 'treasury', 'navigation', GETDATE(), GETDATE());
+('menu2_5', 'trésorerie', 'fa-money-bill-alt', '/treasury', 1, 6, 'treasury', 'navigation', GETDATE(), GETDATE());
 
--- Ajout du menu Habilitation sous Droit & Accès (position ajustée à 6 pour cohérence après décalage)
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu_hab_3', 'Habilitation', 'fa-key', '/habilitation', 1, 6, 'habilitation', 'administration', GETDATE(), GETDATE());
 
--- Insertion de la hiérarchie des menus (ajout de la hiérarchie pour 'referentiel' comme top-level dans administration, au-dessus de 'import')
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
 ('h0', NULL, 'menu0', GETDATE(), GETDATE()),
 ('h_hab', NULL, 'menu_hab', GETDATE(), GETDATE()),
 ('h_hab_2', 'menu_hab', 'menu_hab_2', GETDATE(), GETDATE()),
-('h_referentiel', NULL, 'menu_referentiel', GETDATE(), GETDATE()),  -- Hiérarchie pour Référentiel (top-level, au-dessus de Import)
-('h_import', NULL, 'menu_import', GETDATE(), GETDATE()),  -- Hiérarchie pour Import (top-level)
-('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),  -- Logs reste top-level
+('h_referentiel', NULL, 'menu_referentiel', GETDATE(), GETDATE()), 
+('h_import', NULL, 'menu_import', GETDATE(), GETDATE()),  
+('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),  
 ('h4', NULL, 'menu2', GETDATE(), GETDATE()),
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
 ('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
 ('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE()),
 ('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE());
 
--- Ajout de la hiérarchie pour le nouveau menu (enfant de menu_hab)
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
 ('h_hab_3', 'menu_hab', 'menu_hab_3', GETDATE(), GETDATE());
-
--- Insertion des rôles pour les menus (ajout des rôles pour 'referentiel')
-INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
-('menu0', 'ROLE_001', GETDATE(), GETDATE()),
-('menu_hab', 'ROLE_001', GETDATE(), GETDATE()),
-('menu_hab_2', 'ROLE_001', GETDATE(), GETDATE()),
-('menu_referentiel', 'ROLE_001', GETDATE(), GETDATE()),  -- Rôles pour Référentiel
-('menu_import', 'ROLE_001', GETDATE(), GETDATE()),  -- Rôles pour Import
-('menu_logs', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2', 'ROLE_003', GETDATE(), GETDATE()),
-('menu2_0', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2_0', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2_3', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2_3', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2_3', 'ROLE_003', GETDATE(), GETDATE()),
-('menu2_4', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2_4', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2_4', 'ROLE_003', GETDATE(), GETDATE()),
-('menu2_5', 'ROLE_001', GETDATE(), GETDATE()),
-('menu2_5', 'ROLE_002', GETDATE(), GETDATE()),
-('menu2_5', 'ROLE_003', GETDATE(), GETDATE());
-
--- Ajout des rôles pour le nouveau menu Habilitation (nécessaire pour l'affichage)
-INSERT INTO menu_role (menu_id, role_id, created_at, updated_at) VALUES
-('menu_hab_3', 'ROLE_001', GETDATE(), GETDATE());

@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
 import type { IconType } from "react-icons";
 import { useMenuHierarchy } from "@/api/menu/services";
+import { useHasHabilitation } from "@/api/users/services";
 import Header from "./header";
 import Footer from "./footer";
 import {
@@ -143,10 +144,77 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     }
   })();
 
+  // Habilitations pour les menus (seulement si userId existe)
+  const hasVoirUtilisateurs = useHasHabilitation(user.userId, "Voir les utilisateurs");
+  const hasVoirDroitAcces = useHasHabilitation(user.userId, "Voir les droits et accès");
+  const hasVoirAcces = useHasHabilitation(user.userId, "Voir les accès");
+  const hasVoirReferentiel = useHasHabilitation(user.userId, "Voir le référentiel");
+  const hasVoirImport = useHasHabilitation(user.userId, "Voir l’import");
+  const hasVoirLogs = useHasHabilitation(user.userId, "Voir les logs");
+  const hasVoirMission = useHasHabilitation(user.userId, "Voir les missions");
+  const hasVoirValidation = useHasHabilitation(user.userId, "Voir la validation des missions");
+  const hasVoirMissions = useHasHabilitation(user.userId, "Voir la liste des missions");
+  const hasVoirMissionsArchivees = useHasHabilitation(user.userId, "Voir les missions archivées");
+  const hasVoirTresorier = useHasHabilitation(user.userId, "Voir la trésorerie");
+  const hasVoirHabilitation = useHasHabilitation(user.userId, "Voir les habilitations");
+
+  const habilitationsMap = useMemo(() => ({
+    utilisateurs: hasVoirUtilisateurs,
+    "Droit & Accès": hasVoirDroitAcces,
+    accès: hasVoirAcces,
+    référentiel: hasVoirReferentiel,
+    import: hasVoirImport,
+    logs: hasVoirLogs,
+    mission: hasVoirMission,
+    validation: hasVoirValidation,
+    Missions: hasVoirMissions,
+    "Missions archivées": hasVoirMissionsArchivees,
+    trésorerie: hasVoirTresorier,
+    Habilitation: hasVoirHabilitation,
+  }), [
+    hasVoirUtilisateurs,
+    hasVoirDroitAcces,
+    hasVoirAcces,
+    hasVoirReferentiel,
+    hasVoirImport,
+    hasVoirLogs,
+    hasVoirMission,
+    hasVoirValidation,
+    hasVoirMissions,
+    hasVoirMissionsArchivees,
+    hasVoirTresorier,
+    hasVoirHabilitation,
+  ]);
+
+  const getHasAccess = useCallback((menuKey: string): boolean => {
+    return habilitationsMap[menuKey as keyof typeof habilitationsMap] ?? true;
+  }, [habilitationsMap]);
+
+  // Fonction récursive pour filtrer les menus basés sur les habilitations
+  const filterMenuItems = useCallback((items: MenuItem[]): MenuItem[] => {
+    return items.reduce<MenuItem[]>((acc, item) => {
+      const hasAccess = getHasAccess(item.menu.menuKey);
+      let filteredChildren: MenuItem[] = [];
+      if (item.children && item.children.length > 0) {
+        filteredChildren = filterMenuItems(item.children);
+      }
+      const hasVisibleChildren = filteredChildren.length > 0;
+      if (hasAccess || hasVisibleChildren) {
+        acc.push({
+          ...item,
+          children: filteredChildren,
+        });
+      }
+      return acc;
+    }, []);
+  }, [getHasAccess]);
+
   // Seulement récupérer les menus si authentifié
   const { data: menuData = [], isLoading: isMenuLoading } = useMenuHierarchy(
     isAuthenticated && user.userId ? user.userId : ""
   );
+
+  const filteredMenuData = useMemo(() => filterMenuItems(menuData), [menuData, filterMenuItems]);
 
   // Generate initials
   const getInitials = useCallback((name: string): string => {
@@ -301,7 +369,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         isActive: true,
       });
     } else {
-      const matchedResult = findMenuItemByPath(menuData, currentPath);
+      const matchedResult = findMenuItemByPath(filteredMenuData, currentPath);
       if (matchedResult) {
         const { item, parentKey, title } = matchedResult;
 
@@ -319,7 +387,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
             return null;
           };
 
-          const parentMenu = findParent(menuData, parentKey);
+          const parentMenu = findParent(filteredMenuData, parentKey);
           if (parentMenu) {
             breadcrumbs.push({
               title: getMenuLabel(parentMenu),
@@ -338,7 +406,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     }
 
     return breadcrumbs;
-  }, [location.pathname, location.hash, menuData, findMenuItemByPath, getMenuLabel]);
+  }, [location.pathname, location.hash, filteredMenuData, findMenuItemByPath, getMenuLabel]);
 
   // Initialize expanded menus
   const initializeExpandedMenus = useCallback((menuItems: MenuItem[]): Record<string, boolean> => {
@@ -357,16 +425,16 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
 
   // Initialize expanded on menu load
   useEffect(() => {
-    if (menuData.length > 0 && !isInitializedRef.current) {
-      const initialExpanded = initializeExpandedMenus(menuData);
+    if (filteredMenuData.length > 0 && !isInitializedRef.current) {
+      const initialExpanded = initializeExpandedMenus(filteredMenuData);
       setExpandedMenus(initialExpanded);
       isInitializedRef.current = true;
     }
-  }, [menuData, initializeExpandedMenus]);
+  }, [filteredMenuData, initializeExpandedMenus]);
 
   // Update active item etc. (modifié pour gérer le parentKey avec préfixe)
   useEffect(() => {
-    if (menuData.length === 0) return;
+    if (filteredMenuData.length === 0) return;
     const currentPath = location.pathname === "/" ? "/" : location.pathname + location.hash;
     if (lastLocationRef.current === currentPath) return;
     if (navigationUpdateRef.current) return;
@@ -374,7 +442,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     lastLocationRef.current = currentPath;
     navigationUpdateRef.current = true;
 
-    const matchedResult = findMenuItemByPath(menuData, currentPath);
+    const matchedResult = findMenuItemByPath(filteredMenuData, currentPath);
 
     if (matchedResult) {
       const { item, parentKey, title } = matchedResult;
@@ -416,7 +484,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     setTimeout(() => {
       navigationUpdateRef.current = false;
     }, 50);
-  }, [location.pathname, location.hash, menuData, findMenuItemByPath, activeItem, headerTitle]);
+  }, [location.pathname, location.hash, filteredMenuData, findMenuItemByPath, activeItem, headerTitle]);
 
   const toggleMobileSidebar = useCallback(() => {
     setMobileOpen((prev) => !prev);
@@ -546,7 +614,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
               onClick={setActive(
                 item.menu.menuKey,
                 menuLabel,
-                level === 0 ? null : findParentKey(menuData, item.menu.menuKey)
+                level === 0 ? null : findParentKey(filteredMenuData, item.menu.menuKey)
               )}
             >
               <div className="nav-icon-wrapper">
@@ -563,7 +631,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         </NavItem>
       );
     },
-    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel, menuData, findParentKey]
+    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel, filteredMenuData, findParentKey]
   );
 
   const renderSection = useCallback((sectionName: string, items: MenuItem[]) => {
@@ -583,17 +651,17 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   }, [isMenuLoading, collapsed, renderMenuItem]);
 
   const renderMenu = useCallback(() => {
-    const groupedMenu = groupMenuBySection(menuData);
+    const groupedMenu = groupMenuBySection(filteredMenuData);
 
     return (
       <SidebarNav>
         <NavUl>
-          {renderSection("NAVIGATION", groupedMenu.navigation)}
-          {renderSection("ADMINISTRATION", groupedMenu.administration)}
+          {groupedMenu.navigation.length > 0 && renderSection("NAVIGATION", groupedMenu.navigation)}
+          {groupedMenu.administration.length > 0 && renderSection("ADMINISTRATION", groupedMenu.administration)}
         </NavUl>
       </SidebarNav>
     );
-  }, [groupMenuBySection, menuData, renderSection]);
+  }, [groupMenuBySection, filteredMenuData, renderSection]);
 
   // Si en train de vérifier l'authentification, afficher un écran vide
   if (isCheckingAuth) {

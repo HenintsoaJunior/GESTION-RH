@@ -649,22 +649,23 @@ const LogList: React.FC = () => {
             </tbody>
           </DataTable>
         </div>
+        <Pagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalEntries={totalEntries}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+            setPageSize(Number(e.target.value))
+          }
+        />
       </TableContainer>
-      <Pagination
-        currentPage={currentPage}
-        pageSize={pageSize}
-        totalEntries={totalEntries}
-        onPageChange={setCurrentPage}
-        onPageSizeChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-          setPageSize(Number(e.target.value))
-        }
-      />
+      
     </>
   );
 };
 
 const ProtectedLogList: React.FC = () => (
-  <ProtectedRoute requiredHabilitation="voir page logs">
+  <ProtectedRoute requiredHabilitation="Voir la page des logs">
     <LogList />
   </ProtectedRoute>
 );

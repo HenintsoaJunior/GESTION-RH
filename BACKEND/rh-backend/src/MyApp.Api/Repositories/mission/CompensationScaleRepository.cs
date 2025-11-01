@@ -14,8 +14,10 @@ namespace MyApp.Api.Repositories.mission
         Task<IEnumerable<CompensationScale>> GetByEmployeeCategoryAsync(string employeeCategoryId);
         Task<IEnumerable<CompensationScale>> GetByCriteriaAsync(CompensationScaleDTOForm criteria);
         Task AddAsync(CompensationScale scale);
+        Task BulkAddAsync(IEnumerable<CompensationScale> scales);
         Task UpdateAsync(CompensationScale scale);
         Task DeleteAsync(CompensationScale scale);
+        Task BulkDeleteByCategoryIdsAsync(IEnumerable<string> categoryIds);
         Task SaveChangesAsync();
     }
 
@@ -89,6 +91,11 @@ namespace MyApp.Api.Repositories.mission
             await _context.CompensationScales.AddAsync(scale);
         }
 
+        public async Task BulkAddAsync(IEnumerable<CompensationScale> scales)
+        {
+            await _context.CompensationScales.AddRangeAsync(scales);
+        }
+
         public Task UpdateAsync(CompensationScale scale)
         {
             _context.CompensationScales.Update(scale);
@@ -99,6 +106,21 @@ namespace MyApp.Api.Repositories.mission
         {
             _context.CompensationScales.Remove(scale);
             return Task.CompletedTask;
+        }
+
+        public async Task BulkDeleteByCategoryIdsAsync(IEnumerable<string> categoryIds)
+        {
+            if (!categoryIds.Any())
+                return;
+
+            var entitiesToDelete = await _context.CompensationScales
+                .Where(c => categoryIds.Contains(c.EmployeeCategoryId))
+                .ToListAsync();
+
+            if (entitiesToDelete.Any())
+            {
+                _context.CompensationScales.RemoveRange(entitiesToDelete);
+            }
         }
 
         public async Task SaveChangesAsync()
