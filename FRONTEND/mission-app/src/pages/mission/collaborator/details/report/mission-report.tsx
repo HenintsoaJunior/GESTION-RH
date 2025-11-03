@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { ArrowLeft, Save, List, FileText, Edit2, Trash2, X, Upload, Eye, Download, Paperclip, ChevronDown } from "lucide-react";
-import { PageHeader, HeaderLeft, BtnBack, HeaderActions, SaveButton, ToggleButton, EditButton, DeleteButton, CancelButton, ReportTextContainer, ReportHeader, ReportActions } from "@/styles/detailsmission-styles";
+import {  Save, List, FileText, Edit2, Trash2, X, Upload, Eye, Download, Paperclip, ChevronDown } from "lucide-react";
+import { PageHeader, HeaderLeft, HeaderActions, SaveButton, ToggleButton, EditButton, DeleteButton, CancelButton, ReportTextContainer, ReportHeader, ReportActions } from "@/styles/detailsmission-styles";
 import { FolderContainer, FolderHeader, AttachmentsList, AttachmentItem, IconButton } from "@/styles/detailsmission-styles";
 import { ModalOverlay, ModalContentStyled, ModalHeader, ModalTitle, ModalCloseButton, ModalBody, FilePreview, ImagePreview, ErrorMessage } from "@/styles/detailsmission-styles";
 import Alert from "@/components/alert";
@@ -435,7 +435,7 @@ const useMissionReport = (
   };
 };
 
-const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assignationId, onBack }) => {
+const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assignationId }) => {
     const userId = propUserId || (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "{}")?.userId || null : null);
     const [viewMode, setViewMode] = useState<"form" | "list">("list");
     const [modalOpen, setModalOpen] = useState(false);
@@ -471,14 +471,6 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
         att.fileType
       );
     }, [setModalContent, setModalOpen]);
-
-    const handleBack = useCallback(() => {
-        if (onBack) {
-            onBack();
-        } else {
-            window.location.href = "/missions";
-        }
-    }, [onBack]);
 
     const toggleView = useCallback(() => {
         if (viewMode === "list" && hasExistingReport) {
@@ -541,16 +533,16 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
         <>
             <PageHeader>
                 <HeaderLeft>
-                    <BtnBack onClick={handleBack} title="Retour aux missions">
+                    {/* <BtnBack onClick={handleBack} title="Retour aux missions">
                         <ArrowLeft className="w-5 h-5" />
-                    </BtnBack>
+                    </BtnBack> */}
                 </HeaderLeft>
-                <div className="header-center">
+                {/* <div className="header-center">
                     <div className="header-title-section">
                         <h1 className="page-title">Rapport de Mission</h1>
                         <p className="page-subtitle">Assignation #{assignationId}</p>
                     </div>
-                </div>
+                </div> */}
                 <HeaderActions>
                     {shouldShowToggleButton && (
                         <ToggleButton

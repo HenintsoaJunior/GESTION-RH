@@ -18,10 +18,13 @@ import {
   FormFieldCell,
   FormLabelRequired,
   FormInput,
+  FormLabel,
+  StyledAutoCompleteInput,
   ErrorMessage
 } from "@/styles/form-container";
 import { useCreateLieu, useUpdateLieu } from '@/api/lieu/services';
-import type { Lieu, LieuDTOForm } from '@/api/lieu/services';
+import { useGetAllGeoZones } from '@/api/zones/services';
+import type { Lieu, LieuDTOForm, GeoZone } from '@/api/lieu/services';
 
 interface LieuFormProps {
   isOpen: boolean;
@@ -31,17 +34,36 @@ interface LieuFormProps {
 }
 
 const LieuForm: React.FC<LieuFormProps> = ({ isOpen, onClose, onFormSuccess, lieu }) => {
-  const [formData, setFormData] = useState<LieuDTOForm>({ nom: '', adresse: '', ville: '', codePostal: '', pays: '' });
+  const [formData, setFormData] = useState<LieuDTOForm>({ nom: '', ville: '', codePostal: '', pays: '', zoneId: '' });
+  const [zoneSearch, setZoneSearch] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
   const createLieuMutation = useCreateLieu();
   const lieuId = lieu?.lieuId || '';
   const updateLieuMutation = useUpdateLieu(lieuId);
+  const { data: geoZonesData } = useGetAllGeoZones();
+
+  const geoZones: GeoZone[] = useMemo(() => geoZonesData?.data || [], [geoZonesData]);
+
+  const zoneSuggestions = useMemo(() => geoZones.map((zone: GeoZone) => zone.name), [geoZones]);
+
+  const filteredZoneSuggestions = useMemo(() => 
+    zoneSuggestions.filter((sug) => sug.toLowerCase().includes(zoneSearch.toLowerCase())),
+    [zoneSuggestions, zoneSearch]
+  );
 
   useEffect(() => {
     if (lieu) {
-      setFormData({ nom: lieu.nom, adresse: lieu.adresse, ville: lieu.ville, codePostal: lieu.codePostal, pays: lieu.pays });
+      setFormData({ 
+        nom: lieu.nom, 
+        ville: lieu.ville ?? '', 
+        codePostal: lieu.codePostal ?? '', 
+        pays: lieu.pays, 
+        zoneId: lieu.zoneId ?? '' 
+      });
+      setZoneSearch(lieu.geoZone?.name || '');
     } else {
-      setFormData({ nom: '', adresse: '', ville: '', codePostal: '', pays: '' });
+      setFormData({ nom: '', ville: '', codePostal: '', pays: '', zoneId: '' });
+      setZoneSearch('');
     }
     setFieldErrors({});
   }, [lieu]);
@@ -76,22 +98,30 @@ const LieuForm: React.FC<LieuFormProps> = ({ isOpen, onClose, onFormSuccess, lie
     }
   }, [fieldErrors]);
 
+  const handleZoneChange = useCallback((value: string): void => {
+    setZoneSearch(value);
+    const matchedZone = geoZones.find((zone: GeoZone) => zone.name === value);
+    if (matchedZone) {
+      setFormData((prev) => ({ ...prev, zoneId: matchedZone.zoneId }));
+    } else {
+      setFormData((prev) => ({ ...prev, zoneId: '' }));
+    }
+    // Clear error on change
+    if (fieldErrors['zoneId']) {
+      setFieldErrors(prev => ({ ...prev, 'zoneId': [] }));
+    }
+  }, [geoZones, fieldErrors]);
+
   const validateForm = useCallback((): boolean => {
     const newErrors: { [key: string]: string[] } = {};
     if (!formData.nom.trim()) {
       newErrors.nom = ['Nom du lieu est requis'];
     }
-    if (!formData.adresse.trim()) {
-      newErrors.adresse = ['Adresse est requise'];
-    }
-    if (!formData.ville.trim()) {
-      newErrors.ville = ['Ville est requise'];
-    }
-    if (!formData.codePostal.trim()) {
-      newErrors.codePostal = ['Code postal est requis'];
-    }
     if (!formData.pays.trim()) {
       newErrors.pays = ['Pays est requis'];
+    }
+    if (formData.zoneId == null || !formData.zoneId.trim()) {
+      newErrors.zoneId = ['Zone géographique est requise'];
     }
     setFieldErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -145,7 +175,7 @@ const LieuForm: React.FC<LieuFormProps> = ({ isOpen, onClose, onFormSuccess, lie
               <FormTable>
                 <tbody>
                   <FormRow className="dual-field-row">
-                    <FormFieldCell style={{ width: '50%' }}>
+                    <FormFieldCell>
                       <FormLabelRequired>Nom du lieu</FormLabelRequired>
                       <FormInput
                         type="text"
@@ -159,7 +189,7 @@ const LieuForm: React.FC<LieuFormProps> = ({ isOpen, onClose, onFormSuccess, lie
                         <ErrorMessage>{fieldErrors.nom.join(", ")}</ErrorMessage>
                       )}
                     </FormFieldCell>
-                    <FormFieldCell style={{ width: '50%' }}>
+                    <FormFieldCell>
                       <FormLabelRequired>Pays</FormLabelRequired>
                       <FormInput
                         type="text"
@@ -174,29 +204,13 @@ const LieuForm: React.FC<LieuFormProps> = ({ isOpen, onClose, onFormSuccess, lie
                       )}
                     </FormFieldCell>
                   </FormRow>
-                  <FormRow>
-                    <FormFieldCell style={{ width: "100%" }}>
-                      <FormLabelRequired>Adresse</FormLabelRequired>
-                      <FormInput
-                        type="text"
-                        name="adresse"
-                        value={formData.adresse}
-                        onChange={handleChange}
-                        disabled={isProcessing}
-                        className={fieldErrors.adresse && fieldErrors.adresse.length > 0 ? "input-error" : ""}
-                      />
-                      {fieldErrors.adresse && fieldErrors.adresse.length > 0 && (
-                        <ErrorMessage>{fieldErrors.adresse.join(", ")}</ErrorMessage>
-                      )}
-                    </FormFieldCell>
-                  </FormRow>
                   <FormRow className="dual-field-row">
-                    <FormFieldCell style={{ width: '50%' }}>
-                      <FormLabelRequired>Ville</FormLabelRequired>
+                    <FormFieldCell>
+                      <FormLabel>Ville</FormLabel>
                       <FormInput
                         type="text"
                         name="ville"
-                        value={formData.ville}
+                        value={formData.ville ?? ''}
                         onChange={handleChange}
                         disabled={isProcessing}
                         className={fieldErrors.ville && fieldErrors.ville.length > 0 ? "input-error" : ""}
@@ -205,18 +219,37 @@ const LieuForm: React.FC<LieuFormProps> = ({ isOpen, onClose, onFormSuccess, lie
                         <ErrorMessage>{fieldErrors.ville.join(", ")}</ErrorMessage>
                       )}
                     </FormFieldCell>
-                    <FormFieldCell style={{ width: '50%' }}>
-                      <FormLabelRequired>Code Postal</FormLabelRequired>
+                    <FormFieldCell>
+                      <FormLabel>Code Postal</FormLabel>
                       <FormInput
                         type="text"
                         name="codePostal"
-                        value={formData.codePostal}
+                        value={formData.codePostal ?? ''}
                         onChange={handleChange}
                         disabled={isProcessing}
                         className={fieldErrors.codePostal && fieldErrors.codePostal.length > 0 ? "input-error" : ""}
                       />
                       {fieldErrors.codePostal && fieldErrors.codePostal.length > 0 && (
                         <ErrorMessage>{fieldErrors.codePostal.join(", ")}</ErrorMessage>
+                      )}
+                    </FormFieldCell>
+                  </FormRow>
+                  <FormRow>
+                    <FormFieldCell>
+                      <FormLabelRequired>Zone Géographique</FormLabelRequired>
+                      <StyledAutoCompleteInput
+                        value={zoneSearch}
+                        onChange={handleZoneChange}
+                        suggestions={filteredZoneSuggestions}
+                        maxVisibleItems={5}
+                        placeholder="Sélectionner une zone géographique..."
+                        disabled={isProcessing}
+                        fieldType="zone"
+                        fieldLabel="zone"
+                        showAddOption={false}
+                      />
+                      {fieldErrors.zoneId && fieldErrors.zoneId.length > 0 && (
+                        <ErrorMessage>{fieldErrors.zoneId.join(", ")}</ErrorMessage>
                       )}
                     </FormFieldCell>
                   </FormRow>

@@ -126,9 +126,18 @@ namespace MyApp.Api.Services.import
                         var dto = new TmpEmployeeFormDTO
                         {
                             Site = record.ContainsKey("Site") ? record["Site"] : string.Empty,
-                            Mle = record.ContainsKey("Mle") ? ("0" + record["Mle"]).TrimStart('0') != "" ? "0" + record["Mle"] : string.Empty : string.Empty,
+                            //Mle = record.ContainsKey("Mle") ? ("0" + record["Mle"]).TrimStart('0') != "" ? "0" + record["Mle"] : string.Empty : string.Empty,
+                            Mle = record.ContainsKey("Mle") && !string.IsNullOrEmpty(record["Mle"]?.ToString())
+                            ? record["Mle"].ToString().PadLeft(5, '0')
+                            : string.Empty,
+
                             Nom = record.ContainsKey("Nom") ? record["Nom"] : string.Empty,
                             Prenom = record.ContainsKey("Prénom") ? record["Prénom"] : string.Empty,
+                            DateNaissance = DateTime.TryParse(record.ContainsKey("Date de naissance") ? record["Date de naissance"] : string.Empty, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dn) ? dn : null,
+                            LieuNaissance = record.ContainsKey("Lieu de naissance") ? record["Lieu de naissance"] : string.Empty,
+                            NumeroCin = record.ContainsKey("Numéro CIN") ? record["Numéro CIN"] : string.Empty,
+                            DateCin = DateTime.TryParse(record.ContainsKey("Date CIN") ? record["Date CIN"] : string.Empty, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dc) ? dc : null,
+                            LieuCin = record.ContainsKey("Lieu CIN") ? record["Lieu CIN"] : string.Empty,
                             Sexe = record.ContainsKey("Sexe") ? record["Sexe"] : string.Empty,
                             Nationalite = record.ContainsKey("Nationalité") ? record["Nationalité"] : string.Empty,
                             Telephone = record.ContainsKey("Téléphone") ? record["Téléphone"] : string.Empty,
@@ -650,27 +659,24 @@ namespace MyApp.Api.Services.import
             {
                 var tmpEmployees = await _tmpEmployeeService.GetAllAsync();
 
-                // Group by employee code (Mle) to handle duplicates
                 var distinctEmployees = tmpEmployees
                     .Where(e => !string.IsNullOrWhiteSpace(e.Mle))
                     .GroupBy(e => e.Mle, StringComparer.OrdinalIgnoreCase)
-                    .Select(g => g.First()) // Take first occurrence of each employee code
+                    .Select(g => g.First())
                     .ToList();
 
                 int totalDistinct = distinctEmployees.Count;
 
-                // Counters for debugging
                 int skippedRequired = 0;
                 int skippedSite = 0;
                 int skippedGender = 0;
-                int skippedInvalidContractType = 0; // Seulement pour les types invalides (non pour les nulls)
+                int skippedInvalidContractType = 0;
                 int skippedDirection = 0;
-                int skippedCategory = 0; // Pour les catégories invalides
+                int skippedCategory = 0; 
                 int skippedExisting = 0;
                 int created = 0;
                 int errors = 0;
 
-                // Fetch all necessary lookup data
                 var allSites = await _siteService.GetAllAsync();
                 var allGenders = await _genderService.GetAllAsync();
                 var allContractTypes = await _contractTypeService.GetAllAsync();
@@ -680,7 +686,6 @@ namespace MyApp.Api.Services.import
                 var allUnits = await _unitService.GetAllAsync();
                 var allEmployeeCategories = await _employeeCategoryService.GetAllAsync();
 
-                // Create lookup dictionaries for better performance
                 var siteByCode = allSites
                 .Where(s => !string.IsNullOrWhiteSpace(s.Code))
                 .ToDictionary(s => s.Code!, s => s, StringComparer.OrdinalIgnoreCase);
@@ -730,7 +735,6 @@ namespace MyApp.Api.Services.import
                             continue;
                         }
 
-                        // Gestion optionnelle pour ContractType
                         string? contractTypeId = null;
                         if (!string.IsNullOrWhiteSpace(tmpEmployee.TypeContrat))
                         {
@@ -789,6 +793,11 @@ namespace MyApp.Api.Services.import
                             EmployeeCode = tmpEmployee.Mle,
                             LastName = tmpEmployee.Nom,
                             FirstName = tmpEmployee.Prenom,
+                            BirthDate = tmpEmployee.DateNaissance,
+                            BirthPlace = tmpEmployee.LieuNaissance,
+                            IdNumber = tmpEmployee.NumeroCin,
+                            IdIssueDate = tmpEmployee.DateCin,
+                            IdIssuePlace = tmpEmployee.LieuCin,
                             PhoneNumber = tmpEmployee.Telephone,
                             HireDate = tmpEmployee.DateAnciennete,
                             JobTitle = tmpEmployee.IntitulePoste,

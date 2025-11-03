@@ -36,7 +36,6 @@ export const MissionCardsContainer = styled.div`
 export const Card = styled.div`
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
     /* Structure de la carte : Indicateur (80px) | Contenu */
     display: grid;
     grid-template-columns: 80px 1fr;
@@ -52,7 +51,6 @@ export const Card = styled.div`
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 
     &:hover {
-        background-color: var(--bg-secondary);
         transform: translateY(-3px);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
     }
@@ -69,11 +67,15 @@ export const IndicatorBlock = styled.div<IndicatorBlockProps>`
     align-items: center;
     justify-content: center;
     padding: 8px;
-    border-radius: 8px;
     font-weight: bold;
     text-align: center;
-    min-height: 100%;
     border-right: 1px solid var(--border-color);
+    
+    /* Remplir toute la hauteur à gauche avec 1px d'espace */
+    align-self: stretch;
+    margin: 1px 0 1px 1px;
+    padding: 16px 8px;
+    border-radius: 3px 0 0 3px;
     
     ${({ $daysUntilDue }) => {
         let bgVar, colorVar;
@@ -176,7 +178,6 @@ export const ReferenceText = styled.div`
     color: var(--text-secondary);
     background-color: var(--bg-light);
     padding: 8px 12px;
-    border-radius: 0 0 10px 10px;
     margin: 12px -16px -16px -16px;
     text-align: center;
     font-weight: 600;
@@ -199,7 +200,6 @@ export const CardsContainerLegacy = styled.div`
 // Card principale
 export const CardLegacy = styled.div`
   background: var(--bg-primary);
-  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-light);
   overflow: hidden;
@@ -277,7 +277,6 @@ export const CardFooterLegacy = styled.div`
 export const CardActionButtonLegacy = styled.button`
   padding: var(--spacing-xs) var(--spacing-md);
   border: none;
-  border-radius: var(--radius-md);
   cursor: pointer;
   font-weight: 600;
   font-family: var(--font-family);
@@ -325,7 +324,6 @@ export const EmptyCardsState = styled.div`
   align-items: center;
   min-height: 200px;
   background: var(--bg-primary);
-  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-light);
 `;
@@ -338,7 +336,6 @@ export const LoadingCardsState = styled.div`
   align-items: center;
   min-height: 200px;
   background: var(--bg-primary);
-  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-light);
 `;

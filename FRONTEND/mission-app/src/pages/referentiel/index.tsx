@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { ArrowLeft, Building2, Building, Settings, Layers, FileSignature, Truck, User, Users, MapPin, Map, Receipt } from "lucide-react";
+import { ArrowLeft, Building2, Building, Settings, Layers, FileSignature, Truck, User, Users, MapPin, Map, Receipt, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   ContentArea,
@@ -94,11 +94,12 @@ const Referentiel: React.FC = () => {
   };
 
   const handleNavigateToExpenseType = () => {
-    navigate('/referentiel/expense-type');
+    navigate('/referentiel/compensation-scale');
   };
 
-  const handleNavigateToCollaboratorCategory = () => {
-    navigate('/referentiel/collaborator-category');
+
+  const handleNavigateToGeoZone = () => {
+    navigate('/referentiel/geo-zone');
   };
 
   return (
@@ -173,14 +174,6 @@ const Referentiel: React.FC = () => {
           </InfoValue>
         </InfoItem>
 
-        <InfoItem as={ReferentielButton} onClick={handleNavigateToCollaboratorCategory}>
-          <Users className="mx-auto mb-2 w-6 h-6 text-gray-400" />
-          <InfoLabel>Catégorie Collaborateur</InfoLabel>
-          <InfoValue>
-            <span>Gérer les catégories de collaborateurs</span>
-          </InfoValue>
-        </InfoItem>
-
         <InfoItem as={ReferentielButton} onClick={handleNavigateToCollaborateur}>
           <Users className="mx-auto mb-2 w-6 h-6 text-gray-400" />
           <InfoLabel>Collaborateur</InfoLabel>
@@ -200,6 +193,13 @@ const Referentiel: React.FC = () => {
           <InfoLabel>Lieu</InfoLabel>
           <InfoValue>
             <span>Gérer les lieux</span>
+          </InfoValue>
+        </InfoItem>
+        <InfoItem as={ReferentielButton} onClick={handleNavigateToGeoZone}>
+          <Globe className="mx-auto mb-2 w-6 h-6 text-gray-400" />
+          <InfoLabel>Zone</InfoLabel>
+          <InfoValue>
+            <span>Gérer les zones</span>
           </InfoValue>
         </InfoItem>
         <InfoItem as={ReferentielButton} onClick={handleNavigateToExpenseType}>

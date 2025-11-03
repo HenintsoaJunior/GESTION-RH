@@ -80,6 +80,7 @@ public class AuthService : IAuthService
             ["00418"] = ("1234", "damien.andriantsilavina@ravinala-airports.aero"),
             ["st144"] = ("1234", "kanto.randriamampianina@ravinala-airports.aero"),
             ["ST144"] = ("1234", "kanto.randriamampianina@ravinala-airports.aero"),
+            ["00386"] = ("1234", "dominique.rakotomamonjy@ravinala-airports.aero"),
         };
 
         if (hardcodedUsers.TryGetValue(username, out var info) && info.Password == password)

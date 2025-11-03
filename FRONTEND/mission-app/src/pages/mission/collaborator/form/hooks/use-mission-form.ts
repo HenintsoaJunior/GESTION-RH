@@ -172,8 +172,8 @@ const useMissionForm = ({
       id: emp.employeeId,
       name: `${emp.lastName} ${emp.firstName}`,
       displayName: `${emp.lastName} ${emp.firstName} (${emp.direction?.acronym || "N/A"})`,
-      employeeCode: emp.employeeCode,
-      jobTitle: emp.jobTitle,
+      employeeCode: emp.employeeCode || "",
+      jobTitle: emp.jobTitle || "",
       site: emp.site?.siteName || "",
       direction: emp.direction?.directionName || "",
       department: emp.department?.departmentName || "",
@@ -372,11 +372,11 @@ const useMissionForm = ({
     if (field === "location") {
       const newRegion: Lieu = { 
         lieuId: `temp-${Date.now()}`, 
-        nom: value, 
-        adresse: "", 
+        nom: value,
         ville: "", 
         codePostal: "", 
         pays: "Madagascar",
+        zoneId: "",
         createdAt: new Date().toISOString(),
         updatedAt: ""
       };

@@ -30,10 +30,13 @@ namespace MyApp.Api.Entities.mission
 
         [Column("payment_date")]
         public DateTime? PaymentDate { get; set; }
+
+        [Column("devise")]
+        public string Devise { get; set;  } = null!;
         
         [Column("status")]
         [MaxLength(50)]
-        public string Status { get; set; } = "not paid";
+        public string Status { get; set; } = "unpaid";
         
         [Column("assignation_id")]
         [MaxLength(50)]
@@ -50,7 +53,7 @@ namespace MyApp.Api.Entities.mission
         public Employee? Employee { get; set; }
         
         public Compensation() { }
-        public Compensation(ComposationDTO compensationDTO)
+        public Compensation(CompensationDTO compensationDTO)
         {
             TransportAmount = compensationDTO.TransportAmount;
             BreakfastAmount = compensationDTO.BreakfastAmount;
@@ -59,6 +62,7 @@ namespace MyApp.Api.Entities.mission
             AccommodationAmount = compensationDTO.AccommodationAmount;
             Status = compensationDTO.Status;
             PaymentDate = compensationDTO.PaymentDate;
+            Devise = compensationDTO.Devise;
             AssignationId = compensationDTO.AssignationId;
             EmployeeId = compensationDTO.EmployeeId;
             CreatedAt = compensationDTO.CreatedAt;

@@ -15,9 +15,7 @@ import {
   GenericForm,
   FormSectionTitle,
   FormTable,
-  FormRow,
   FormFieldCell,
-  FormLabelRequired,
   FormInput,
   ErrorMessage,
   FormActions,
@@ -27,18 +25,16 @@ import {
 import { useExpenseTypes } from "@/api/mission/expense/expense";
 import { useTransports } from "@/api/transport/services";
 import { useBulkCreateCompensationScales, type BulkCompensationScaleDTO } from "@/api/mission/compensation-scale/services";
+import type { CompensationScale } from "@/api/mission/compensation-scale/services";
 
 interface ScaleLine {
   scaleId?: string;
   typeId: string;
   typeLabel: string;
   amount: string;
-  place: string;
 }
 
 interface FormData {
-  label: string;
-  code: string;
   transports: ScaleLine[];
   expenses: ScaleLine[];
 }
@@ -47,38 +43,28 @@ interface FieldErrors {
   [key: string]: string[];
 }
 
-interface CategoryFormProps {
+interface CompensationScaleFormProps {
   isOpen: boolean;
   onClose: () => void;
   onFormSuccess: (message: string) => void;
-  category?: {
-    employeeCategoryId: string;
-    label: string;
-    code: string;
-    transportScales?: any[];
-    expenseScales?: any[];
-  } | null;
-  bulkCategories?: string[];
+  transports: CompensationScale[];
+  expenses: CompensationScale[];
 }
 
-const CategoryForm: React.FC<CategoryFormProps> = ({ 
+const CompensationScaleForm: React.FC<CompensationScaleFormProps> = ({ 
   isOpen, 
   onClose, 
-  onFormSuccess, 
-  category, 
-  bulkCategories = [] 
+  onFormSuccess,
+  transports,
+  expenses
 }) => {
-  const [formData, setFormData] = useState<FormData>({ label: '', code: '', transports: [], expenses: [] });
+  const [formData, setFormData] = useState<FormData>({ transports: [], expenses: [] });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const { data: expenseTypesResponse } = useExpenseTypes();
   const { data: transportResponse } = useTransports();
   const createBulkMutation = useBulkCreateCompensationScales();
-
-  const isBulkMode = bulkCategories.length > 0;
-  const isCreateMode = !category && !isBulkMode;
-  const isUpdateMode = !!category;
 
   const parseTime = (timeStr?: string): number | null => {
     if (!timeStr) return null;
@@ -129,75 +115,24 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      console.log('Form opened - Props:', { category, bulkCategories, isBulkMode, isUpdateMode, isCreateMode });
-      
-      if (category) {
-        const transports = (category.transportScales || []).map((scale: any) => ({
-          scaleId: scale.compensationScaleId,
-          typeId: scale.transport?.transportId || '',
-          typeLabel: scale.transport?.type || '',
-          amount: scale.amount?.toString() || '',
-          place: scale.place || '',
-        }));
-        const expenses = (category.expenseScales || []).map((scale: any) => ({
-          scaleId: scale.compensationScaleId,
-          typeId: scale.expenseType?.expenseTypeId || '',
-          typeLabel: scale.expenseType?.type || '',
-          amount: scale.amount?.toString() || '',
-          place: scale.place || '',
-        }));
-        setFormData({ 
-          label: category.label || '', 
-          code: category.code || '', 
-          transports, 
-          expenses 
-        });
-      } else if (isBulkMode) {
-        setFormData({ label: '', code: '', transports: [], expenses: [] });
-      } else {
-        setFormData({ label: '', code: '', transports: [], expenses: [] });
-      }
+      const transportLines = transports.map((scale: CompensationScale) => ({
+        scaleId: scale.compensationScaleId,
+        typeId: scale.transportId || '',
+        typeLabel: scale.transport?.type || '',
+        amount: scale.amount.toString(),
+      }));
+
+      const expenseLines = expenses.map((scale: CompensationScale) => ({
+        scaleId: scale.compensationScaleId,
+        typeId: scale.expenseTypeId || '',
+        typeLabel: scale.expenseType?.type || '',
+        amount: scale.amount.toString(),
+      }));
+
+      setFormData({ transports: transportLines, expenses: expenseLines });
       setFieldErrors({});
     }
-  }, [isOpen, category, isBulkMode, bulkCategories, isCreateMode, isUpdateMode]);
-
-  const popupTitle = useMemo(() => {
-    if (isBulkMode) {
-      return `Modifier les échelles pour ${bulkCategories.length} catégories`;
-    } else if (isUpdateMode) {
-      return `Modifier la catégorie "${category?.label}"`;
-    } else {
-      return 'Ajouter une catégorie';
-    }
-  }, [isBulkMode, bulkCategories.length, isUpdateMode, category?.label]);
-
-  const submitText = useMemo(() => {
-    if (isBulkMode) {
-      return 'Appliquer';
-    } else if (isUpdateMode) {
-      return 'Modifier';
-    } else {
-      return 'Ajouter';
-    }
-  }, [isBulkMode, isUpdateMode]);
-
-  const submittingText = useMemo(() => {
-    if (isBulkMode) {
-      return 'Application en cours...';
-    } else if (isUpdateMode) {
-      return 'Modification en cours...';
-    } else {
-      return 'Création en cours...';
-    }
-  }, [isBulkMode, isUpdateMode]);
-
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev: FormData) => ({ ...prev, [name]: value }));
-    if (fieldErrors[name as keyof FormData]) {
-      setFieldErrors(prev => ({ ...prev, [name]: [] }));
-    }
-  }, [fieldErrors]);
+  }, [isOpen, transports, expenses]);
 
   const handleTransportLineChange = useCallback((index: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const fullName = e.target.name;
@@ -250,7 +185,6 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       typeId: '',
       typeLabel: '',
       amount: '',
-      place: '',
     };
     setFormData((prev: FormData) => ({
       ...prev,
@@ -267,110 +201,52 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
 
   const validateForm = useCallback((): boolean => {
     const newErrors: FieldErrors = {};
-    if (isCreateMode) {
-      if (!formData.label.trim()) {
-        newErrors.label = ['Le label est requis.'];
-      }
-      if (!formData.code.trim()) {
-        newErrors.code = ['Le code est requis.'];
-      }
-    }
     setFieldErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, isCreateMode]);
+  }, []);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
     
     setIsSubmitting(true);
+
+    const transportScales = formData.transports
+      .filter((line) => line.typeId && line.amount)
+      .map((line) => ({
+        amount: parseFloat(line.amount),
+        transportId: line.typeId,
+      } as BulkCompensationScaleDTO));
+      
+    const expenseScales = formData.expenses
+      .filter((line) => line.typeId && line.amount)
+      .map((line) => ({
+        amount: parseFloat(line.amount),
+        expenseTypeId: line.typeId,
+      } as BulkCompensationScaleDTO));
+      
+    const compensationScales = [...transportScales, ...expenseScales];
     
-    let successMessage: string;
-    if (isBulkMode) {
-      successMessage = `Échelles appliquées à ${bulkCategories.length} catégories avec succès.`;
-    } else if (isUpdateMode) {
-      successMessage = 'Catégorie modifiée avec succès.';
-    } else {
-      successMessage = 'Catégorie créée avec succès.';
-    }
+    const bulkRequest = {
+      CompensationScales: compensationScales,
+    };
     
-    if (isCreateMode) {
-      setTimeout(() => {
+    createBulkMutation.mutate({ request: bulkRequest }, {
+      onSuccess: () => {
         setIsSubmitting(false);
-        onFormSuccess(successMessage);
-        setFormData({ label: '', code: '', transports: [], expenses: [] });
-      }, 1000);
-    } else {
-      let categoryIds: string[] = [];
-      
-      if (isBulkMode) {
-        console.log('Mode BULK - bulkCategories:', bulkCategories);
-        categoryIds = bulkCategories.filter(id => id && String(id).trim());
-      } else if (category?.employeeCategoryId) {
-        console.log('Mode SINGLE - category:', category);
-        const categoryId = String(category.employeeCategoryId).trim();
-        if (categoryId) {
-          categoryIds = [categoryId];
-        }
-      }
-      
-      console.log('CategoryIds finales:', categoryIds);
-      
-      if (categoryIds.length === 0) {
+        onFormSuccess('Échelles de compensation mises à jour avec succès.');
+        setFormData({ transports: [], expenses: [] });
+      },
+      onError: (error: any) => {
         setIsSubmitting(false);
+        const errorMessage = error?.response?.data?.message || error?.message || 'Une erreur est survenue';
         setFieldErrors(prev => ({ 
           ...prev, 
-          general: ['Aucune catégorie valide sélectionnée. Veuillez réessayer.'] 
+          general: [errorMessage] 
         }));
-        console.error('Aucun ID de catégorie valide:', { isBulkMode, bulkCategories, category, categoryIds });
-        return;
-      }
-      
-      const transportScales = formData.transports
-        .filter((line) => line.typeId && line.amount)
-        .map((line) => ({
-          amount: parseFloat(line.amount),
-          place: line.place || '',
-          transportId: line.typeId,
-        } as BulkCompensationScaleDTO));
-        
-      const expenseScales = formData.expenses
-        .filter((line) => line.typeId && line.amount)
-        .map((line) => ({
-          amount: parseFloat(line.amount),
-          place: line.place || '',
-          expenseTypeId: line.typeId,
-        } as BulkCompensationScaleDTO));
-        
-      const compensationScales = [...transportScales, ...expenseScales];
-      
-      const bulkRequest = {
-        CategoryIds: categoryIds,
-        CompensationScales: compensationScales,
-      };
-      
-      console.log('Requête API:', JSON.stringify(bulkRequest, null, 2));
-      
-      createBulkMutation.mutate({ request: bulkRequest }, {
-        onSuccess: () => {
-          console.log('Succès API');
-          setIsSubmitting(false);
-          onFormSuccess(successMessage);
-        },
-        onError: (error: any) => {
-          console.error('Erreur API complète:', error);
-          console.error('Erreur API response:', error?.response);
-          console.error('Erreur API response data:', error?.response?.data);
-          setIsSubmitting(false);
-          const errorMessage = error?.response?.data?.message || error?.message || 'Une erreur est survenue';
-          setFieldErrors(prev => ({ 
-            ...prev, 
-            general: [errorMessage] 
-          }));
-        },
-      });
-    }
-  }, [isBulkMode, bulkCategories, isUpdateMode, category, formData, isCreateMode, onFormSuccess, validateForm, createBulkMutation]);
+      },
+    });
+  }, [formData, onFormSuccess, validateForm, createBulkMutation]);
 
   const handleCancel = useCallback(() => {
     setFieldErrors({});
@@ -394,7 +270,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
     <PopupOverlay>
       <PagePopup>
         <PopupHeader>
-          <PopupTitle>{popupTitle}</PopupTitle>
+          <PopupTitle>Gestion des Échelles de Compensation</PopupTitle>
           <PopupClose
             onClick={handleCancel}
             disabled={isSubmitting}
@@ -407,47 +283,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
 
         <PopupContent>
           <FormContainer>
-            <GenericForm id="categoryForm" onSubmit={handleSubmit}>
-              {isCreateMode && (
-                <>
-                  <FormSectionTitle>Informations sur la Catégorie</FormSectionTitle>
-                  <FormTable>
-                    <tbody>
-                      <FormRow>
-                        <FormFieldCell>
-                          <FormLabelRequired>Label</FormLabelRequired>
-                          <FormInput
-                            type="text"
-                            name="label"
-                            value={formData.label}
-                            onChange={handleChange}
-                            disabled={isSubmitting}
-                            className={fieldErrors.label && fieldErrors.label.length > 0 ? "input-error" : ""}
-                          />
-                          {fieldErrors.label && fieldErrors.label.length > 0 && (
-                            <ErrorMessage>{fieldErrors.label.join(", ")}</ErrorMessage>
-                          )}
-                        </FormFieldCell>
-                        <FormFieldCell>
-                          <FormLabelRequired>Code</FormLabelRequired>
-                          <FormInput
-                            type="text"
-                            name="code"
-                            value={formData.code}
-                            onChange={handleChange}
-                            disabled={isSubmitting}
-                            className={fieldErrors.code && fieldErrors.code.length > 0 ? "input-error" : ""}
-                          />
-                          {fieldErrors.code && fieldErrors.code.length > 0 && (
-                            <ErrorMessage>{fieldErrors.code.join(", ")}</ErrorMessage>
-                          )}
-                        </FormFieldCell>
-                      </FormRow>
-                    </tbody>
-                  </FormTable>
-                </>
-              )}
-
+            <GenericForm id="compensationScaleForm" onSubmit={handleSubmit}>
               {fieldErrors.general && (
                 <ErrorMessage style={{ marginBottom: '1rem', textAlign: 'center' }}>
                   {fieldErrors.general.join(", ")}
@@ -455,17 +291,11 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
               )}
 
               <FormSectionTitle>Échelles de Transport</FormSectionTitle>
-              {isBulkMode && (
-                <p style={{ color: '#666', fontSize: '0.9em', marginBottom: '1rem' }}>
-                  Les échelles ajoutées seront appliquées à toutes les catégories sélectionnées.
-                </p>
-              )}
-              <FormTable style={{ minWidth: "600px", border: "1px solid var(--border-color)" }}>
+              <FormTable style={{ minWidth: "500px", border: "1px solid var(--border-color)" }}>
                 <thead>
                   <tr>
                     <th style={{ padding: "0.75rem", border: "1px solid var(--border-color)" }}>Type de Transport</th>
                     <th style={{ padding: "0.75rem", border: "1px solid var(--border-color)" }}>Montant (MGA)</th>
-                    <th style={{ padding: "0.75rem", border: "1px solid var(--border-color)" }}>Zone</th>
                     <th style={{ padding: "0.75rem", border: "1px solid var(--border-color)", width: "80px" }}>Actions</th>
                   </tr>
                 </thead>
@@ -485,16 +315,6 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
                           min="0"
                         />
                       </FormFieldCell>
-                      <FormFieldCell style={{ padding: "0.75rem", border: "1px solid var(--border-color)" }}>
-                        <FormInput
-                          type="text"
-                          name={`transports[${index}].place`}
-                          value={line.place}
-                          onChange={(e) => handleTransportLineChange(index, e)}
-                          disabled={isSubmitting}
-                          placeholder="Ex: Zone 1"
-                        />
-                      </FormFieldCell>
                       <FormFieldCell style={{ textAlign: "center", padding: "0.75rem", border: "1px solid var(--border-color)" }}>
                         <RemoveItem type="button" onClick={() => removeLine('transports', index)} disabled={isSubmitting}>
                           <Trash2 size={16} />
@@ -511,17 +331,11 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
               </div>
 
               <FormSectionTitle>Échelles de Dépenses</FormSectionTitle>
-              {isBulkMode && (
-                <p style={{ color: '#666', fontSize: '0.9em', marginBottom: '1rem' }}>
-                  Les échelles ajoutées seront appliquées à toutes les catégories sélectionnées.
-                </p>
-              )}
-              <FormTable style={{ minWidth: "600px", border: "1px solid var(--border-color)" }}>
+              <FormTable style={{ minWidth: "500px", border: "1px solid var(--border-color)" }}>
                 <thead>
                   <tr>
                     <th style={{ padding: "0.75rem", border: "1px solid var(--border-color)" }}>Type de Dépense</th>
                     <th style={{ padding: "0.75rem", border: "1px solid var(--border-color)" }}>Montant (MGA)</th>
-                    <th style={{ padding: "0.75rem", border: "1px solid var(--border-color)" }}>Zone</th>
                     <th style={{ padding: "0.75rem", border: "1px solid var(--border-color)", width: "80px" }}>Actions</th>
                   </tr>
                 </thead>
@@ -539,16 +353,6 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
                           onChange={(e) => handleExpenseLineChange(index, e)}
                           disabled={isSubmitting}
                           min="0"
-                        />
-                      </FormFieldCell>
-                      <FormFieldCell style={{ padding: "0.75rem", border: "1px solid var(--border-color)" }}>
-                        <FormInput
-                          type="text"
-                          name={`expenses[${index}].place`}
-                          value={line.place}
-                          onChange={(e) => handleExpenseLineChange(index, e)}
-                          disabled={isSubmitting}
-                          placeholder="Ex: Zone 1"
                         />
                       </FormFieldCell>
                       <FormFieldCell style={{ textAlign: "center", padding: "0.75rem", border: "1px solid var(--border-color)" }}>
@@ -581,12 +385,12 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
                   {isSubmitting ? (
                     <>
                       <Loader2 size={16} className="animate-spin mr-2" />
-                      {submittingText}
+                      Enregistrement en cours...
                     </>
                   ) : (
                     <>
                       <Save size={16} className="mr-2" />
-                      {submitText}
+                      Enregistrer
                     </>
                   )}
                 </ButtonPrimary>
@@ -599,4 +403,4 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   );
 };
 
-export default CategoryForm;
+export default CompensationScaleForm;

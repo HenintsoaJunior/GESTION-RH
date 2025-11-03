@@ -9,6 +9,8 @@ namespace MyApp.Api.Services.employee
     public interface ICategoriesOfEmployeeService
     {
         Task<IEnumerable<CategoriesOfEmployee>> GetCategoriesByEmployeeIdAsync(string employeeId, DateTime date);
+        Task<IEnumerable<CategoriesOfEmployee>> GetCategoriesByEmployeeIdAsync(string employeeId);
+        
         Task<CategoriesOfEmployee> AddAsync(CreateCategoriesOfEmployeeDTO dto);
         Task UpdateAsync(CategoriesOfEmployee entity);
         Task DeleteAsync(CategoriesOfEmployee entity);
@@ -47,6 +49,25 @@ namespace MyApp.Api.Services.employee
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la récupération des catégories d'employé pour l'ID {EmployeeId} avant la date {Date}", employeeId, date);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<CategoriesOfEmployee>> GetCategoriesByEmployeeIdAsync(string employeeId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(employeeId))
+                {
+                    _logger.LogWarning("Tentative de récupération des catégories d'employé avec un ID d'employé null ou vide");
+                    return Enumerable.Empty<CategoriesOfEmployee>();
+                }
+
+                return await _repository.GetByEmployeeIdBeforeDateAsync(employeeId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des catégories d'employé pour l'ID {EmployeeId}", employeeId);
                 throw;
             }
         }

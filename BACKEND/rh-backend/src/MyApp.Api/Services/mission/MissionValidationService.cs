@@ -247,6 +247,9 @@ namespace MyApp.Api.Services.mission
 
         public async Task<string?> ValidateAsync(Validation validation, MissionBudgetDTOForm missionBudget)
         {
+            _logger.LogInformation("Début de validation pour MissionValidationId: {MissionValidationId}, MissionAssignationId: {MissionAssignationId}", 
+                validation.MissionValidationId, validation.MissionAssignationId);
+
             await using var transaction = await _repository.BeginTransactionAsync();
             try
             {
@@ -256,14 +259,17 @@ namespace MyApp.Api.Services.mission
                 if (missionValidation == null)
                 {
                     result = "Aucune validation trouvée.";
+                    _logger.LogWarning("Validation non trouvée pour ID: {MissionValidationId}", validation.MissionValidationId);
                     return result;
                 }
+
                 var toWhomName = "Utilisateur inconnu";
                 if (!string.IsNullOrWhiteSpace(missionValidation.ToWhom))
                 {
                     var toWhomUser = await _userService.GetByIdAsync(missionValidation.ToWhom);
                     toWhomName = toWhomUser?.Name ?? "Utilisateur inconnu";
                 }
+
                 // Capturer l'état avant la validation
                 var oldMissionValidation = new
                 {
@@ -274,24 +280,30 @@ namespace MyApp.Api.Services.mission
                 };
 
                 var lastValidation = await _repository.ValidateAsync(validation.MissionValidationId, validation.MissionAssignationId);
-                if (!lastValidation) result = "Validation effectuée avec succès.";
+                if (!lastValidation) 
+                {
+                    result = "Validation effectuée avec succès.";
+                    _logger.LogInformation("Validation effectuée pour MissionValidationId: {MissionValidationId}", validation.MissionValidationId);
+                }
+
                 var missionAssignation = await _missionAssignationService.GetByAssignationIdAsync(validation.MissionAssignationId);
 
-                if (missionAssignation == null) 
+                if (missionAssignation == null)
                 {
                     result = "Aucune validation à faire.";
+                    _logger.LogWarning("MissionAssignation non trouvée pour ID: {MissionAssignationId}", validation.MissionAssignationId);
                     return result;  // Early return to avoid null ref
                 }
 
                 var mission = await _missionRepository.GetByIdAsync(missionAssignation.MissionId);  // Use repo instead of service
-                
+
                 if (lastValidation && missionAssignation != null && mission != null)
                 {
                     missionAssignation.IsValidated = 1;
                     mission.Status = "Payment in progress";
-                    
+
                     await _missionAssignationService.UpdateAsync(validation.MissionAssignationId, missionAssignation);
-                    
+
                     // Directly update mission via repo (no DTO mapping needed)
                     mission.UpdatedAt = DateTime.UtcNow;  // Good practice for updates
                     await _missionRepository.UpdateAsync(mission);
@@ -299,14 +311,27 @@ namespace MyApp.Api.Services.mission
 
                     result = "Validation effectuée avec succès et mission validée";
 
-                    _logger.LogInformation("Génération des paiements pour l'assignation de mission {MissionAssignationId} avec la type {Type}", missionAssignation.AssignationId,validation.Type);
+                    _logger.LogInformation("Génération des paiements pour l'assignation de mission {MissionAssignationId} avec le type {Type} le Mission Type {missionType}", 
+                        missionAssignation.AssignationId, validation.Type,mission.MissionType);
+
                     if (validation.Type.Equals("Indemnité"))
                     {
                         await _missionAssignationService.GeneratePaiementsAsync(
-                                missionAssignation.EmployeeId,
-                                missionAssignation.MissionId);
+                            missionAssignation.EmployeeId,
+                            missionAssignation.MissionId);
                     }
-                    
+
+                    if (mission.MissionType.Equals("international"))
+                    {  
+                        if (validation.Type.Equals("Note de frais"))
+                        {
+                            await _missionAssignationService.GenerateExpensePaiementsAsync(
+                                missionAssignation.EmployeeId,
+                                missionAssignation.MissionId
+                            );
+                        } 
+                        
+                    }
 
                     //check si budget mission est suffisant
                     // if (validation.Type.Equals("Indemnité"))
@@ -330,7 +355,6 @@ namespace MyApp.Api.Services.mission
                     //     });
                     // }
                 }
-                
 
                 // Capturer l'état après la validation
                 var updatedMissionValidation = await _repository.GetByIdAsync(validation.MissionValidationId);
@@ -339,11 +363,13 @@ namespace MyApp.Api.Services.mission
                 {
                     throw new InvalidOperationException($"Validation de mission introuvable après mise à jour: {validation.MissionValidationId}");
                 }
+
                 if (!string.IsNullOrWhiteSpace(updatedMissionValidation.ToWhom))
                 {
                     var toWhomUser = await _userService.GetByIdAsync(updatedMissionValidation.ToWhom);
                     toWhomName = toWhomUser?.Name ?? "Utilisateur inconnu";
                 }
+
                 var newMissionValidation = new
                 {
                     Statut = (string?)updatedMissionValidation.Status,
@@ -356,16 +382,18 @@ namespace MyApp.Api.Services.mission
                 await _logService.LogAsync("VALIDATION", "MISSION_VALIDATION", oldMissionValidation, newMissionValidation, validation.UserId, "Statut,DateValidation,Type,NomValideur");
 
                 await transaction.CommitAsync();
+                _logger.LogInformation("Fin de validation réussie pour MissionValidationId: {MissionValidationId}", validation.MissionValidationId);
                 return result;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la validation de mission missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}",
-                    validation.MissionValidationId, validation.MissionAssignationId);
+                    validation.MissionValidationId, validation.MissionValidationId);
                 await transaction.RollbackAsync();
                 throw;
             }
         }
+        
         public async Task<MissionValidation?> VerifyMissionValidationByMissionIdAsync(string missionId)
         {
             try

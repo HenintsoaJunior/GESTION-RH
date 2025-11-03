@@ -9,8 +9,8 @@ import {
     Calendar,
     MapPin,
     User,
-    FileText,
     AlertTriangle,
+    ArrowRight,
 } from "lucide-react";
 import {
     Loading,
@@ -28,9 +28,6 @@ import {
     CardHeader,
     CardTitle,
     CardInfo,
-    InfoLine,
-    InfoLabel,
-    InfoValue,
     ReferenceText,
 } from "@/styles/card-styles";
 import type { FormattedMission } from "@/api/mission/validation/services";
@@ -86,20 +83,10 @@ const MissionCards: React.FC<MissionCardsProps> = ({
     appliedFilters,
 }) => {
     /**
-     * Formate le nom du demandeur : prend le prénom et le rôle entre parenthèses.
-     * Ex: "Miantsafitia RAKOTOARIMANANA (DRH)" -> "Miantsafitia (DRH)"
+     * Retourne le nom complet du missionnaire tel quel
      */
     const formatRequesterName = (fullName: string): string => {
-        if (!fullName || fullName === "Non spécifié") return fullName;
-
-        // Extraire le prénom (première partie avant espace)
-        const firstName = fullName.split(' ')[0];
-
-        // Extraire le rôle entre parenthèses
-        const match = fullName.match(/\(([^)]+)\)/);
-        const role = match ? `(${match[1]})` : '';
-
-        return `${firstName} ${role}`;
+        return fullName || "Non spécifié";
     };
 
     /**
@@ -140,29 +127,29 @@ const MissionCards: React.FC<MissionCardsProps> = ({
 
         if (daysUntilDue < 0) {
             Icon = XCircle;
-            text = `En retard (${Math.abs(daysUntilDue)}J)`;
-            displayValue = `+${Math.abs(daysUntilDue)}`;
+            text = `RETARD`;
+            displayValue = `+${Math.abs(daysUntilDue)}j`;
         } else if (isUrgent) {
             Icon = AlertTriangle;
-            text = daysUntilDue === 0 ? "Aujourd'hui" : `URGENT (${daysUntilDue}J)`;
-            displayValue = daysUntilDue;
+            text = daysUntilDue === 0 ? "AUJOURD'HUI" : `URGENT`;
+            displayValue = `${daysUntilDue}j`;
         } else if (isDueSoon) {
             Icon = ClockIcon;
-            text = `Proche (${daysUntilDue}J)`;
-            displayValue = daysUntilDue;
+            text = `BIENTÔT`;
+            displayValue = `${daysUntilDue}j`;
         } else if (daysUntilDue >= 0) {
             Icon = CheckCircle;
-            text = "Délai normal";
-            displayValue = daysUntilDue;
+            text = "OK";
+            displayValue = `${daysUntilDue}j`;
         } else {
             Icon = ClockIcon;
-            text = "Non défini";
-            displayValue = 'N/A';
+            text = "N/A";
+            displayValue = '--';
         }
 
         return (
             <IndicatorBlock $daysUntilDue={daysUntilDue}>
-                <Icon size={20} />
+                <Icon size={24} />
                 <IndicatorValue>
                     {displayValue}
                 </IndicatorValue>
@@ -177,7 +164,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                 style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '1.5rem', // Ajustez l'espacement si nécessaire
+                    gap: '1.5rem',
                 }}
             >
                 {/* Affichage conditionnel du chargement, des données ou de l'absence de données */}
@@ -185,7 +172,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                     <Loading>Chargement des missions...</Loading>
                 ) : missions && missions.length > 0 ? (
                     missions.map((mission) => {
-                        // Calcul des jours restants avant l'échéance de validation (basé sur la date de début de mission)
+                        // Calcul des jours restants avant l'échéance de validation
                         const daysUntilDue = getDaysUntilDue(mission.departureDate);
 
                         return (
@@ -200,51 +187,133 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                     {getStatusBadge(mission.status)}
                                 </CardHeader>
                                 
-                                {/* 3. Informations de la mission */}
+                                {/* 3. Informations de la mission - DESIGN AMÉLIORÉ */}
                                 <CardInfo>
-                                    <InfoLine>
-                                        <InfoLabel>
-                                            <User size={14} />
-                                            Missionnaire
-                                        </InfoLabel>
-                                        <InfoValue>{formatRequesterName(mission.employeeName || "Non spécifié")}</InfoValue>
-                                    </InfoLine>
-                                    <InfoLine>
-                                        <InfoLabel>
-                                            <FileText size={14} />
-                                            Matricule
-                                        </InfoLabel>
-                                        <InfoValue>{mission.matricule || "Non spécifié"}</InfoValue>
-                                    </InfoLine>
-                                    <InfoLine>
-                                        <InfoLabel>
-                                            <MapPin size={14} />
-                                            Destination
-                                        </InfoLabel>
-                                        <InfoValue>{mission.location || "Non spécifié"}</InfoValue>
-                                    </InfoLine>
-                                    <InfoLine>
-                                        <InfoLabel>
-                                            <Calendar size={14} />
-                                            Départ/Retour
-                                        </InfoLabel>
-                                        <InfoValue>
-                                            {formatDate(mission.departureDate)} - {formatDate(mission.returnDate)}
-                                        </InfoValue>
-                                    </InfoLine>
+                                    {/* Bloc principal - Missionnaire en vedette */}
+                                    <div style={{
+                                        background: 'var(--bg-light)',
+                                        padding: '12px',
+                                        borderRadius: '6px',
+                                        border: '1px solid var(--border-color)',
+                                    }}>
+                                        <div style={{ 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'space-between',
+                                            gap: '12px'
+                                        }}>
+                                            <div style={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: '10px',
+                                                flex: 1 
+                                            }}>
+                                                <User size={20} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
+                                                <div style={{ 
+                                                    fontSize: '15px', 
+                                                    fontWeight: '700',
+                                                    color: 'var(--text-color)',
+                                                }}>
+                                                    {formatRequesterName(mission.employeeName || "Non spécifié")}
+                                                </div>
+                                            </div>
+                                            <div style={{ 
+                                                background: 'var(--bg-primary)',
+                                                padding: '8px 12px',
+                                                borderRadius: '4px',
+                                                border: '1px solid var(--border-color)',
+                                            }}>
+                                                <div style={{ 
+                                                    fontSize: '10px', 
+                                                    color: 'var(--text-secondary)',
+                                                    marginBottom: '2px',
+                                                    textAlign: 'center'
+                                                }}>
+                                                    MAT.
+                                                </div>
+                                                <div style={{ 
+                                                    fontSize: '13px', 
+                                                    fontWeight: '700',
+                                                    color: 'var(--primary-color)',
+                                                    textAlign: 'center'
+                                                }}>
+                                                    {mission.matricule || "N/A"}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Destination */}
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '10px',
+                                        padding: '8px 0',
+                                        borderBottom: '1px solid var(--border-color)'
+                                    }}>
+                                        <MapPin size={16} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ 
+                                                fontSize: '13px', 
+                                                fontWeight: '600',
+                                                color: 'var(--text-color)',
+                                            }}>
+                                                {mission.location || "Non spécifié"}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Période */}
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '10px',
+                                        padding: '8px 0'
+                                    }}>
+                                        <Calendar size={16} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
+                                        <div style={{ 
+                                            flex: 1,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            fontSize: '12px',
+                                            fontWeight: '500'
+                                        }}>
+                                            <span>{formatDate(mission.departureDate)}</span>
+                                            <ArrowRight size={14} style={{ color: 'var(--text-secondary)' }} />
+                                            <span>{formatDate(mission.returnDate)}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Date de validation (si validée) */}
                                     {mission.status === 'approved' && mission.validationDate && (
-                                        <InfoLine>
-                                            <InfoLabel>
-                                                <Calendar size={14} />
-                                                Date de validation
-                                            </InfoLabel>
-                                            <InfoValue>{formatDate(mission.validationDate)}</InfoValue>
-                                        </InfoLine>
+                                        <div style={{
+                                            background: 'var(--success-bg)',
+                                            padding: '8px 12px',
+                                            borderRadius: '4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            marginTop: '4px'
+                                        }}>
+                                            <CheckCircle size={14} style={{ color: 'var(--success-color)' }} />
+                                            <div style={{ flex: 1 }}>
+                                                <span style={{ 
+                                                    fontSize: '11px', 
+                                                    color: 'var(--success-color)',
+                                                    fontWeight: '600'
+                                                }}>
+                                                    Validée le {formatDate(mission.validationDate)}
+                                                </span>
+                                            </div>
+                                        </div>
                                     )}
                                 </CardInfo>
 
                                 {/* 4. Référence */}
-                                <ReferenceText>RÉFÉRENCE: {mission.missionAssignationId || "N/A"}</ReferenceText>
+                                <ReferenceText>
+                                    {mission.missionAssignationId || "REF-N/A"}
+                                </ReferenceText>
                             </Card>
                         );
                     })

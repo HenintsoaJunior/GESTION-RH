@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace MyApp.Api.Models.dto.employee
@@ -13,6 +14,19 @@ namespace MyApp.Api.Models.dto.employee
 
         [MaxLength(50, ErrorMessage = "Le code employé ne peut pas dépasser 50 caractères.")]
         public string? EmployeeCode { get; set; }
+
+        public DateTime? BirthDate { get; set; }
+
+        [MaxLength(100, ErrorMessage = "Le lieu de naissance ne peut pas dépasser 100 caractères.")]
+        public string? BirthPlace { get; set; }
+
+        [MaxLength(50, ErrorMessage = "Le numéro CIN ne peut pas dépasser 50 caractères.")]
+        public string? IdNumber { get; set; }
+
+        public DateTime? IdIssueDate { get; set; }
+
+        [MaxLength(100, ErrorMessage = "Le lieu de délivrance du CIN ne peut pas dépasser 100 caractères.")]
+        public string? IdIssuePlace { get; set; }
 
         [MaxLength(20, ErrorMessage = "Le numéro de téléphone ne peut pas dépasser 20 caractères.")]
         public string? PhoneNumber { get; set; }

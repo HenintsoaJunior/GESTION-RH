@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from "react";
-import { useCompensationsByStatus, useTotalNotPaid, type Compensation } from "@/api/compensation/services";
+import { useCompensationsByStatus, useTotalNotPaid, type Compensation } from "@/api/compensation/national/services";
 
 interface Alert {
   isOpen: boolean;

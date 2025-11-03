@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import {
     DetailSection,
     SectionTitle,
@@ -11,7 +11,6 @@ import {
     ActionButton,
     PageHeader,
     HeaderLeft,
-    BtnBack,
     HeaderActions,
     Separator,
 } from "@/styles/detailsmission-styles";
@@ -254,7 +253,7 @@ const DailyIndemnityBarChart: React.FC<{ indemnityDetails: IndemnityDetail[]; fo
     );
 };
 
-const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmentId, onBack, onExportExcel, isLoading, formatDate }) => {
+const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmentId, onExportExcel, isLoading, formatDate }) => {
     console.log(selectedAssignmentId);
     const indemnityDetails: IndemnityDetail[] = missionPayment.dailyPaiements.map((item: DailyPaiement) => {
         const amounts = {
@@ -293,9 +292,7 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
         <>
             <PageHeader>
                 <HeaderLeft>
-                    <BtnBack onClick={onBack} title="Retour aux assignations">
-                        <ArrowLeft className="w-5 h-5" />
-                    </BtnBack>
+                    
                 </HeaderLeft>
                 {/* <div className="header-center">
                     <div className="header-title-section">

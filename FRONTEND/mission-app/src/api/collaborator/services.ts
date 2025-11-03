@@ -69,28 +69,33 @@ interface Unit {
 
 export interface Employee {
   employeeId: string;
-  employeeCode: string;
+  employeeCode: string | null;
   lastName: string;
-  firstName: string;
-  phoneNumber: string;
-  hireDate: string;
-  jobTitle: string;
+  firstName: string | null;
+  birthDate: string | null;
+  birthPlace: string | null;
+  idNumber: string | null;
+  idIssueDate: string | null;
+  idIssuePlace: string | null;
+  phoneNumber: string | null;
+  hireDate: string | null;
+  jobTitle: string | null;
   contractEndDate: string | null;
-  status: string;
+  status: string | null;
   siteId: string;
   site: Site;
   genderId: string;
   gender: Gender;
-  contractTypeId: string;
-  contractType: ContractType;
+  contractTypeId: string | null;
+  contractType: ContractType | null;
   directionId: string;
   direction: Direction;
-  departmentId: string;
-  department: Department;
-  serviceId: string;
-  service: Service;
-  unitId: string;
-  unit: Unit;
+  departmentId: string | null;
+  department: Department | null;
+  serviceId: string | null;
+  service: Service | null;
+  unitId: string | null;
+  unit: Unit | null;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -99,6 +104,11 @@ export interface EmployeeFormDTO {
   lastName: string;
   firstName?: string;
   employeeCode?: string;
+  birthDate?: string;
+  birthPlace?: string;
+  idNumber?: string;
+  idIssueDate?: string;
+  idIssuePlace?: string;
   phoneNumber?: string;
   hireDate?: string;
   jobTitle?: string;
@@ -277,6 +287,11 @@ export const useCreateEmployee = () => {
         LastName: data.lastName,
         FirstName: data.firstName,
         EmployeeCode: data.employeeCode,
+        BirthDate: data.birthDate,
+        BirthPlace: data.birthPlace,
+        IdNumber: data.idNumber,
+        IdIssueDate: data.idIssueDate,
+        IdIssuePlace: data.idIssuePlace,
         PhoneNumber: data.phoneNumber,
         HireDate: data.hireDate,
         JobTitle: data.jobTitle,
@@ -302,6 +317,11 @@ export const useUpdateEmployee = (employeeId: string) => {
         LastName: data.lastName,
         FirstName: data.firstName,
         EmployeeCode: data.employeeCode,
+        BirthDate: data.birthDate,
+        BirthPlace: data.birthPlace,
+        IdNumber: data.idNumber,
+        IdIssueDate: data.idIssueDate,
+        IdIssuePlace: data.idIssuePlace,
         PhoneNumber: data.phoneNumber,
         HireDate: data.hireDate,
         JobTitle: data.jobTitle,

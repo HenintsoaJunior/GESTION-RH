@@ -17,7 +17,7 @@ import {
 } from "@/styles/detailsmission-styles";
 import { Line, Doughnut } from 'react-chartjs-2';
 import { usePrevision } from '@/api/prevision/services'; 
-import { useTotalNotPaid } from '@/api/compensation/services';
+import { useTotalNotPaid } from '@/api/compensation/national/services';
 import { useTotalNotReimbursed } from '@/api/mission/expense/services';
 import { formatDate } from '@/utils/date-converter'; 
 

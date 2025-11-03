@@ -20,45 +20,30 @@ export interface ExpenseType {
   updatedAt: string;
 }
 
-export interface EmployeeCategory {
-  employeeCategoryId: string;
-  code: string;
-  label: string;
-  createdAt: string;
-  updatedAt: string | null;
-}
-
 export interface CompensationScale {
   compensationScaleId: string;
   amount: number;
-  place: string;
   transportId?: string;
   expenseTypeId?: string;
-  employeeCategoryId: string;
   transport?: Transport;
   expenseType?: ExpenseType;
-  employeeCategory: EmployeeCategory;
   createdAt: string;
   updatedAt: string | null;
 }
 
 export interface CompensationScaleDTOForm {
   amount: number;
-  place: string;
   transportId?: string;
   expenseTypeId?: string;
-  employeeCategoryId: string;
 }
 
 export interface BulkCompensationScaleDTO {
   amount: number;
-  place: string;
   transportId?: string;
   expenseTypeId?: string;
 }
 
 export interface BulkCompensationScaleSyncRequest {
-  CategoryIds: string[];
   CompensationScales: BulkCompensationScaleDTO[];
 }
 
@@ -111,24 +96,6 @@ export const useCompensationScale = (id: string) => {
   });
 };
 
-export const useCompensationScalesByCategory = (categoryId: string) => {
-  return useQuery<CompensationScalesResponse, Error>({
-    queryKey: [...COMPENSATION_SCALES_KEY, 'category', categoryId],
-    queryFn: async () => {
-      try {
-        const response = await api.get(`/api/CompensationScale/category/${categoryId}`);
-        return response.data;
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-          return error.response.data;
-        }
-        throw error;
-      }
-    },
-    enabled: !!categoryId
-  });
-};
-
 export const useCompensationScalesByCriteria = (criteria: CompensationScaleDTOForm, enabled = true) => {
   return useQuery<CompensationScalesResponse, Error>({
     queryKey: [...COMPENSATION_SCALES_KEY, 'criteria', JSON.stringify(criteria)],
@@ -146,7 +113,6 @@ export const useCompensationScalesByCriteria = (criteria: CompensationScaleDTOFo
     enabled: enabled && !!criteria
   });
 };
-
 
 export const useBulkCreateCompensationScales = () => {
   const queryClient = useQueryClient();
