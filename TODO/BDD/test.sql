@@ -360,33 +360,55 @@ VALUES
 
 -- ============================
 -- LIEU
--- ============================
+-- ===========================
 
-INSERT INTO lieu (lieu_id, nom, adresse, ville, code_postal, pays, created_at, updated_at) VALUES
-('1', 'Analamanga', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('2', 'Bongolava', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('3', 'Itasy', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('4', 'Vakinankaratra', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('5', 'Diana', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('6', 'Sava', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('7', 'Amoron''i Mania', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('8', 'Atsimo-Atsinanana', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('9', 'Haute Matsiatra', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('10', 'Ihorombe', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('11', 'Fitovinany', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('12', 'Vatovavy', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('13', 'Betsiboka', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('14', 'Boeny', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('15', 'Melaky', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('16', 'Sofia', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('17', 'Alaotra-Mangoro', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('18', 'Analanjirofo', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('19', 'Atsinanana', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('20', 'Androy', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('21', 'Anosy', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('22', 'Atsimo-Andrefana', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('23', 'Menabe', '', '', '', 'Madagascar', GETDATE(), GETDATE()),
-('24', 'Nosy Be', '', '', '', 'Madagascar', GETDATE(), GETDATE());
+INSERT INTO geo_zones (zone_id, name) VALUES
+('1', 'Afrique'),
+('2', 'Europe'),
+('3', 'Asie'),
+('4', 'Amérique du Nord'),
+('5', 'Amérique du Sud'),
+('6', 'Océanie'),
+('7', 'Antarctique'),
+('8', 'Moyen-Orient'),
+('9', 'Caraïbes'),
+('10', 'Asie du Sud-Est'),
+('11', 'Europe de l’Ouest'),
+('12', 'Europe de l’Est'),
+('13', 'Afrique du Nord'),
+('14', 'Afrique subsaharienne'),
+('15', 'Asie centrale'),
+('16', 'Asie de l’Est'),
+('17', 'Asie du Sud'),
+('18', 'Amérique centrale'),
+('19', 'Pacifique Sud');
+
+
+INSERT INTO lieu (lieu_id, nom, ville, code_postal, pays, zone_id, created_at, updated_at) VALUES
+('1', 'Analamanga', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('2', 'Bongolava', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('3', 'Itasy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('4', 'Vakinankaratra', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('5', 'Diana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('6', 'Sava', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('7', 'Amoron''i Mania', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('8', 'Atsimo-Atsinanana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('9', 'Haute Matsiatra', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('10', 'Ihorombe', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('11', 'Fitovinany', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('12', 'Vatovavy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('13', 'Betsiboka', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('14', 'Boeny', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('15', 'Melaky', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('16', 'Sofia', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('17', 'Alaotra-Mangoro', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('18', 'Analanjirofo', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('19', 'Atsinanana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('20', 'Androy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('21', 'Anosy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('22', 'Atsimo-Andrefana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('23', 'Menabe', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
+('24', 'Nosy Be', '', '', 'Madagascar', '1', GETDATE(), GETDATE());
 
 -- ============================
 -- MENU DYNAMIQUE
@@ -441,3 +463,138 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
 ('h_hab_3', 'menu_hab', 'menu_hab_3', GETDATE(), GETDATE());
+
+
+
+
+INSERT INTO expense_type (expense_type_id, type, time_start, time_end, created_at, updated_at)
+VALUES 
+('exp001', 'Petit Déjeuner', '06:30:00', '08:00:00', GETDATE(), GETDATE()),
+('exp002', 'Déjeuner',        '12:00:00', '13:30:00', GETDATE(), GETDATE()),
+('exp003', 'Dinner',           '18:30:00', '20:00:00', GETDATE(), GETDATE()),
+('exp004', 'Hébergement',     '21:00:00', '05:00:00', GETDATE(), GETDATE());
+  
+INSERT INTO transport (transport_id, type, created_at, updated_at)
+VALUES 
+('tr001', 'Voiture', GETDATE(), GETDATE()),
+('tr002', 'Avion', GETDATE(), GETDATE());
+
+INSERT INTO compensation_scale (
+  compensation_scale_id, amount, created_at, updated_at, 
+  transport_id, expense_type_id
+) VALUES 
+('comp001', 15000.00, GETDATE(), GETDATE(), 'tr001', NULL),
+('comp002', 50000.00, GETDATE(), GETDATE(), 'tr002', NULL),
+('comp003', 25000.00, GETDATE(), GETDATE(), NULL, 'exp001'),
+('comp004', 35000.00, GETDATE(), GETDATE(), NULL, 'exp002'),
+('comp005', 35000.00, GETDATE(), GETDATE(), NULL, 'exp003'),
+('comp006', 120000.00, GETDATE(), GETDATE(), NULL, 'exp004');
+
+
+
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp009', 34.0, GETDATE(), GETDATE(), 1, NULL, '1');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp010', 45.0, GETDATE(), GETDATE(), 1, NULL, '2');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp011', 34.0, GETDATE(), GETDATE(), 1, NULL, '3');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp012', 45.0, GETDATE(), GETDATE(), 1, NULL, '4');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp013', 34.0, GETDATE(), GETDATE(), 1, NULL, '5');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp014', 34.0, GETDATE(), GETDATE(), 1, NULL, '6');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp015', 34.0, GETDATE(), GETDATE(), 1, NULL, '7');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp016', 34.0, GETDATE(), GETDATE(), 1, NULL, '8');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp017', 34.0, GETDATE(), GETDATE(), 1, NULL, '9');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp018', 34.0, GETDATE(), GETDATE(), 1, NULL, '10');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp019', 34.0, GETDATE(), GETDATE(), 1, NULL, '11');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp020', 34.0, GETDATE(), GETDATE(), 1, NULL, '12');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp021', 34.0, GETDATE(), GETDATE(), 1, NULL, '13');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp022', 34.0, GETDATE(), GETDATE(), 1, NULL, '14');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp023', 34.0, GETDATE(), GETDATE(), 1, NULL, '15');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp024', 34.0, GETDATE(), GETDATE(), 1, NULL, '16');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp025', 34.0, GETDATE(), GETDATE(), 1, NULL, '17');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp026', 34.0, GETDATE(), GETDATE(), 1, NULL, '18');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp027', 34.0, GETDATE(), GETDATE(), 1, NULL, '19');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp028', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '1');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp029', 20.0, GETDATE(), GETDATE(), 0, 'exp001', '2');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp030', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '3');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp031', 20.0, GETDATE(), GETDATE(), 0, 'exp001', '4');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp032', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '5');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp033', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '6');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp034', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '7');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp035', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '8');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp036', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '9');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp037', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '10');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp038', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '11');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp039', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '12');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp040', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '13');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp041', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '14');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp042', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '15');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp043', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '16');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp044', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '17');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp045', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '18');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp046', 10.0, GETDATE(), GETDATE(), 0, 'exp001', '19');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp047', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '1');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp048', 30.0, GETDATE(), GETDATE(), 0, 'exp002', '2');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp049', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '3');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp050', 30.0, GETDATE(), GETDATE(), 0, 'exp002', '4');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp051', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '5');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp052', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '6');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp053', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '7');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp054', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '8');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp055', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '9');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp056', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '10');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp057', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '11');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp058', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '12');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp059', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '13');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp060', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '14');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp061', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '15');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp062', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '16');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp063', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '17');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp064', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '18');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp065', 20.0, GETDATE(), GETDATE(), 0, 'exp002', '19');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp066', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '1');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp067', 40.0, GETDATE(), GETDATE(), 0, 'exp003', '2');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp068', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '3');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp069', 40.0, GETDATE(), GETDATE(), 0, 'exp003', '4');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp070', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '5');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp071', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '6');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp072', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '7');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp073', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '8');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp074', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '9');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp075', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '10');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp076', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '11');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp077', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '12');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp078', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '13');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp079', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '14');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp080', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '15');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp081', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '16');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp082', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '17');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp083', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '18');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp084', 20.0, GETDATE(), GETDATE(), 0, 'exp003', '19');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp085', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '1');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp086', 200.0, GETDATE(), GETDATE(), 0, 'exp004', '2');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp087', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '3');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp088', 200.0, GETDATE(), GETDATE(), 0, 'exp004', '4');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp089', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '5');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp090', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '6');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp091', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '7');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp092', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '8');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp093', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '9');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp094', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '10');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp095', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '11');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp096', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '12');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp097', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '13');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp098', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '14');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp099', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '15');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp100', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '16');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp101', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '17');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp102', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '18');
+INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, is_transport, expense_type_id, zone_id) VALUES ('ex_comp103', 150.0, GETDATE(), GETDATE(), 0, 'exp004', '19');
+
+
+
+
+
+
+INSERT INTO expense_report_type (expense_report_type_id, type) 
+VALUES 
+('ERT001', 'FRAIS DE TRANSPORT/MISSION'),
+('ERT002', 'FRAIS DE RESTAURATION/RECEPTION'),
+('ERT003', 'AUTRE DEPENSE');

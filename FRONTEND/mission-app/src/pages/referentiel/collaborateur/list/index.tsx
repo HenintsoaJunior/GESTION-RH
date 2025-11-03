@@ -33,7 +33,7 @@ import { useGetSites } from '@/api/site/services';
 import { useGetGenders } from '@/api/gender/services';
 import { useGetContractTypes } from '@/api/contract/services';
 import { useGetAllDirections } from '@/api/direction/services';
-
+import { useGetNationalities } from '@/api/nationality/services';
 
 import Alert from "@/components/alert";
 import Modal from "@/components/modal";
@@ -44,6 +44,13 @@ import type { Site } from '@/api/site/services';
 import type { Gender } from '@/api/gender/services';
 import type { ContractType } from '@/api/contract/services';
 import type { Direction } from '@/api/direction/services';
+import type { Nationality } from '@/api/nationality/services';
+
+interface EmployeeWithDetails extends Employee {
+  nationality?: {
+    name: string;
+  };
+}
 
 interface FiltersState {
   jobTitle: string;
@@ -58,6 +65,8 @@ interface FiltersState {
   selectedSite?: Site | null;
   genderSearch?: string;
   selectedGender?: Gender | null;
+  nationalitySearch?: string;
+  selectedNationality?: Nationality | null;
 }
 
 interface AlertState {
@@ -86,6 +95,8 @@ const EmployeeList: React.FC = () => {
     selectedSite: null,
     genderSearch: '',
     selectedGender: null,
+    nationalitySearch: '',
+    selectedNationality: null,
   });
   const [appliedFilters, setAppliedFilters] = useState<FiltersState>({
     jobTitle: '',
@@ -100,6 +111,8 @@ const EmployeeList: React.FC = () => {
     selectedSite: null,
     genderSearch: '',
     selectedGender: null,
+    nationalitySearch: '',
+    selectedNationality: null,
   });
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -110,11 +123,13 @@ const EmployeeList: React.FC = () => {
   const { data: contractTypesResponse } = useGetContractTypes();
   const { data: sitesResponse } = useGetSites();
   const { data: gendersResponse } = useGetGenders();
+  const { data: nationalitiesResponse } = useGetNationalities();
 
   const allDirections = useMemo(() => directionsResponse?.data || [], [directionsResponse]);
   const allContractTypes = useMemo(() => contractTypesResponse?.data || [], [contractTypesResponse]);
   const allSites = useMemo(() => sitesResponse?.data || [], [sitesResponse]);
   const allGenders = useMemo(() => gendersResponse?.data || [], [gendersResponse]);
+  const allNationalities = useMemo(() => nationalitiesResponse?.data || [], [nationalitiesResponse]);
 
   const directionSuggestions = useMemo(() => allDirections.map((dir: Direction) => dir.directionName), [allDirections]);
   const filteredDirectionSuggestions = useMemo(() =>
@@ -148,6 +163,14 @@ const EmployeeList: React.FC = () => {
     [genderSuggestions, filters.genderSearch]
   );
 
+  const nationalitySuggestions = useMemo(() => allNationalities.map((nat: Nationality) => nat.name), [allNationalities]);
+  const filteredNationalitySuggestions = useMemo(() =>
+    nationalitySuggestions.filter((sug) =>
+      sug.toLowerCase().includes((filters.nationalitySearch || "").toLowerCase())
+    ),
+    [nationalitySuggestions, filters.nationalitySearch]
+  );
+
   const searchFilters: EmployeeSearchFiltersDTO = useMemo(() => ({
     jobTitle: appliedFilters.jobTitle.trim() || undefined,
     lastName: appliedFilters.lastName.trim() || undefined,
@@ -157,6 +180,7 @@ const EmployeeList: React.FC = () => {
     employeeCode: appliedFilters.employeeCode.trim() || undefined,
     siteId: appliedFilters.selectedSite?.siteId,
     genderId: appliedFilters.selectedGender?.genderId,
+    nationalityId: appliedFilters.selectedNationality?.nationalityId,
   }), [appliedFilters]);
 
   const { data: searchResponse, isLoading, error, refetch } = useGetEmployees(searchFilters, page, pageSize);
@@ -230,6 +254,8 @@ const EmployeeList: React.FC = () => {
       selectedSite: null,
       genderSearch: '',
       selectedGender: null,
+      nationalitySearch: '',
+      selectedNationality: null,
     };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
@@ -304,6 +330,22 @@ const EmployeeList: React.FC = () => {
       }));
     }
   }, [allGenders]);
+
+  const handleNationalityChange = useCallback((value: string): void => {
+    setFilters((prev) => ({ ...prev, nationalitySearch: value }));
+    const matchedNationality = allNationalities.find((nat: Nationality) => nat.name === value);
+    if (matchedNationality) {
+      setFilters((prev) => ({
+        ...prev,
+        selectedNationality: matchedNationality,
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        selectedNationality: null,
+      }));
+    }
+  }, [allNationalities]);
 
   const handlePageSizeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setPageSize(Number(e.target.value));
@@ -397,7 +439,7 @@ const EmployeeList: React.FC = () => {
                   </FormFieldCell>
                 </FormRow>
                 <FormRow>
-                  <FormFieldCell style={{ width: "25%" }}>
+                  <FormFieldCell style={{ width: "20%" }}>
                     <FormLabelSearch>Direction</FormLabelSearch>
                     <StyledAutoCompleteInput
                       value={filters.directionSearch || ""}
@@ -411,7 +453,7 @@ const EmployeeList: React.FC = () => {
                       showAddOption={false}
                     />
                   </FormFieldCell>
-                  <FormFieldCell style={{ width: "25%" }}>
+                  <FormFieldCell style={{ width: "20%" }}>
                     <FormLabelSearch>Type de contrat</FormLabelSearch>
                     <StyledAutoCompleteInput
                       value={filters.contractTypeSearch || ""}
@@ -425,7 +467,7 @@ const EmployeeList: React.FC = () => {
                       showAddOption={false}
                     />
                   </FormFieldCell>
-                  <FormFieldCell style={{ width: "25%" }}>
+                  <FormFieldCell style={{ width: "20%" }}>
                     <FormLabelSearch>Site</FormLabelSearch>
                     <StyledAutoCompleteInput
                       value={filters.siteSearch || ""}
@@ -439,7 +481,7 @@ const EmployeeList: React.FC = () => {
                       showAddOption={false}
                     />
                   </FormFieldCell>
-                  <FormFieldCell style={{ width: "25%" }}>
+                  <FormFieldCell style={{ width: "20%" }}>
                     <FormLabelSearch>Genre</FormLabelSearch>
                     <StyledAutoCompleteInput
                       value={filters.genderSearch || ""}
@@ -450,6 +492,20 @@ const EmployeeList: React.FC = () => {
                       disabled={isLoading}
                       fieldType="gender"
                       fieldLabel="gender"
+                      showAddOption={false}
+                    />
+                  </FormFieldCell>
+                  <FormFieldCell style={{ width: "20%" }}>
+                    <FormLabelSearch>Nationalité</FormLabelSearch>
+                    <StyledAutoCompleteInput
+                      value={filters.nationalitySearch || ""}
+                      onChange={handleNationalityChange}
+                      suggestions={filteredNationalitySuggestions}
+                      maxVisibleItems={5}
+                      placeholder="Sélectionner une nationalité..."
+                      disabled={isLoading}
+                      fieldType="nationality"
+                      fieldLabel="nationality"
                       showAddOption={false}
                     />
                   </FormFieldCell>
@@ -488,6 +544,8 @@ const EmployeeList: React.FC = () => {
               <TableHeadCell>Nom</TableHeadCell>
               <TableHeadCell>Prénom</TableHeadCell>
               <TableHeadCell>Code</TableHeadCell>
+              <TableHeadCell>Date de Naissance</TableHeadCell>
+              <TableHeadCell>Nationalité</TableHeadCell>
               <TableHeadCell>Poste</TableHeadCell>
               <TableHeadCell>Direction</TableHeadCell>
               <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
@@ -496,7 +554,7 @@ const EmployeeList: React.FC = () => {
           <tbody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6}>
+                <TableCell colSpan={8}>
                   <Loading>Chargement des données...</Loading>
                 </TableCell>
               </TableRow>
@@ -504,9 +562,11 @@ const EmployeeList: React.FC = () => {
               employees.map((emp) => (
                 <TableRow key={emp.employeeId}>
                   <TableCell>{emp.lastName}</TableCell>
-                  <TableCell>{emp.firstName}</TableCell>
+                  <TableCell>{emp.firstName || 'N/A'}</TableCell>
                   <TableCell>{emp.employeeCode}</TableCell>
-                  <TableCell>{emp.jobTitle}</TableCell>
+                  <TableCell>{emp.birthDate ? new Date(emp.birthDate).toLocaleDateString('fr-FR') : 'N/A'}</TableCell>
+                  <TableCell>{(emp as EmployeeWithDetails).nationality?.name || 'N/A'}</TableCell>
+                  <TableCell>{emp.jobTitle || 'N/A'}</TableCell>
                   <TableCell>{emp.direction?.directionName || 'N/A'}</TableCell>
                   <TableCell style={{ textAlign: "center" }}>
                     <EditButton onClick={() => handleEditClick(emp)}>
@@ -520,7 +580,7 @@ const EmployeeList: React.FC = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6}>
+                <TableCell colSpan={8}>
                   <NoDataMessage>
                     {hasFilters ? "Aucun employé ne correspond aux critères." : "Aucun employé trouvé."}
                   </NoDataMessage>

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import styled from "styled-components";
 import { ChevronDown, ChevronUp, X, List, Search, Plus, Edit, Trash } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -34,6 +35,10 @@ import {
   EditorButton,
   CancelButton,
 } from "@/styles/table-styles";
+import {
+  TabContainer,
+  TabButton,
+} from "@/styles/onglet-style";
 import StatusFilter from "@/components/status";
 import { StatusBadge } from "@/components/status";
 import type { Status } from "@/components/status";
@@ -75,6 +80,17 @@ interface AlertState {
   type: "info" | "success" | "error" | "warning";
   message: string;
 }
+
+const StyledTabContainer = styled.div`${TabContainer}`;
+
+type TabButtonProps = {
+  $isActive: boolean;
+  $hasBorderRight: boolean;
+};
+
+const StyledTabButton = styled.button<TabButtonProps>`
+  ${TabButton}
+`;
 
 const MissionList: React.FC = () => {
   const navigate = useNavigate();
@@ -808,28 +824,18 @@ const MissionList: React.FC = () => {
         </FiltersToggle>
       )}
 
-      <div style={{ display: "flex", gap: "0", marginBottom: "var(--spacing-md)" }}>
+      <StyledTabContainer>
         {tabTitles.map((tab, index) => (
-          <button
+          <StyledTabButton
             key={tab.key}
+            $isActive={activeTab === tab.key}
+            $hasBorderRight={index < tabTitles.length - 1}
             onClick={() => setActiveTab(tab.key)}
-            style={{
-              padding: "var(--spacing-sm) var(--spacing-md)",
-              background: "transparent",
-              color: activeTab === tab.key ? "var(--primary-color)" : "var(--text-color)",
-              border: "none",
-              borderBottom: activeTab === tab.key ? "3px solid var(--primary-color)" : "1px solid var(--border-color)",
-              borderRight: index < tabTitles.length - 1 ? "1px solid var(--border-color)" : "none",
-              borderRadius: "0",
-              cursor: "pointer",
-              fontWeight: activeTab === tab.key ? "var(--font-weight-semibold)" : "var(--font-weight-normal)",
-              fontFamily: "var(--font-family)",
-            }}
           >
             {tab.label}
-          </button>
+          </StyledTabButton>
         ))}
-      </div>
+      </StyledTabContainer>
 
       <TableContainer>
         <TableHeader>

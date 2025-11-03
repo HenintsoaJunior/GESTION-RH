@@ -108,15 +108,23 @@ export interface Employee {
   updatedAt: string | null;
 }
 
+export interface GeoZone {
+  zoneId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
 export interface Lieu {
   lieuId: string;
   nom: string;
-  adresse: string;
-  ville: string;
-  codePostal: string;
+  ville: string | null;
+  codePostal: string | null;
   pays: string;
+  zoneId: string | null;
+  geoZone?: GeoZone;
   createdAt: string;
-  updatedAt: string;
+  updatedAt: string | null;
 }
 
 interface Mission {
@@ -177,6 +185,10 @@ type SearchMissionAssignationsResponse = ApiResponse<SearchData>;
 
 export interface GenerateMissionOrderData {
   missionId?: string;
+  employeeId?: string;
+}
+
+export interface GenerateATDData {
   employeeId?: string;
 }
 
@@ -356,6 +368,73 @@ export const useGenerateMissionOrder = () => {
       const fileName = contentDisposition
         ? extractFilename(contentDisposition)
         : `OrdreMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+
+      // Create and trigger download
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = urlBlob;
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(urlBlob);
+
+      return { fileName, status: "success" };
+    },
+  });
+};
+
+
+export const useGenerateATD = () => {
+  return useMutation<GenerateMissionOrderResult, Error, GenerateATDData>({
+    mutationFn: async (data: GenerateATDData) => {
+      const url = "/api/MissionAssignation/ATD";
+
+      const config = {
+        responseType: 'blob' as const,
+        headers: {
+          Accept: "application/pdf",
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await api.post(url, {
+        employeeId: data.employeeId || null,
+      }, config);
+
+      const blob = response.data;
+
+      // Check if the blob is valid
+      if (!blob || blob.size === 0) {
+        throw new Error("Le fichier PDF généré est vide");
+      }
+
+      // Extract filename from content-disposition header or generate a default
+      const contentDisposition = response.headers['content-disposition'];
+      const extractFilename = (header?: string): string => {
+        if (!header) {
+          return `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+        }
+
+        const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const standardMatch = header.match(/filename="([^"]+)"/i);
+        if (standardMatch && standardMatch[1]) {
+          return standardMatch[1];
+        }
+
+        return `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      };
+
+      const fileName = contentDisposition
+        ? extractFilename(contentDisposition)
+        : `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
 
       // Create and trigger download
       const urlBlob = window.URL.createObjectURL(blob);

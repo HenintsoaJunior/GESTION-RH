@@ -15,6 +15,9 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using SpireDoc = Spire.Doc;
+using System.IO;
+using MyApp.Api.Services.mission;
+
 namespace MyApp.Api.Services.mission
 {
     public interface IMissionAssignationService
@@ -33,8 +36,10 @@ namespace MyApp.Api.Services.mission
         Task<bool> UpdateAsync(string assignationId, MissionAssignation missionAssignation);
         Task<bool> DeleteAsync(string assignationId);
         Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null);
+        Task<ExpensePaiementResult> GenerateExpensePaiementsAsync(string? employeeId = null, string? missionId = null);
         Task<byte[]> GenerateExcelReportAsync(string? employeeId = null, string? missionId = null);
         Task<byte[]> GenerateMissionOrderPDFAsync(string employeeId, string missionId);
+        Task<byte[]> GenerateATDPDFAsync(string employeeId);
         Task<IEnumerable<MissionAssignation>> GetAllByMissionIdAsync(string missionId);
     }
 
@@ -44,8 +49,9 @@ namespace MyApp.Api.Services.mission
         private readonly IMissionRepository _missionRepository; 
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ICompensationScaleService _compensationScaleService;
-        private readonly ICategoriesOfEmployeeService _categoriesOfEmployeeService;
+        private readonly IExpenseCompensationScaleService _expenseCompensationScaleService;
         private readonly IEmployeeService _employeeService;
+        private readonly ICategoriesOfEmployeeService _categoriesOfEmployeeService;
         private readonly ILieuService _lieuService;
         private readonly ITransportService _transportService;
         private readonly ICompensationService _compensationService;
@@ -57,8 +63,9 @@ namespace MyApp.Api.Services.mission
             IMissionRepository missionRepository,
             ISequenceGenerator sequenceGenerator,
             ICompensationScaleService compensationScaleService,
-            ICategoriesOfEmployeeService categoriesOfEmployeeService,
+            IExpenseCompensationScaleService expenseCompensationScaleService,
             IEmployeeService employeeService,
+            ICategoriesOfEmployeeService categoriesOfEmployeeService,
             ILieuService lieuService,
             ITransportService transportService,
             ICompensationService compensationService,
@@ -69,9 +76,10 @@ namespace MyApp.Api.Services.mission
             _missionRepository = missionRepository ?? throw new ArgumentNullException(nameof(missionRepository));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
             _compensationScaleService = compensationScaleService ?? throw new ArgumentNullException(nameof(compensationScaleService));
-            _categoriesOfEmployeeService = categoriesOfEmployeeService ?? throw new ArgumentNullException(nameof(categoriesOfEmployeeService));
+            _expenseCompensationScaleService = expenseCompensationScaleService ?? throw new ArgumentNullException(nameof(expenseCompensationScaleService));
             _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
             _lieuService = lieuService ?? throw new ArgumentNullException(nameof(lieuService));
+            _categoriesOfEmployeeService = categoriesOfEmployeeService ?? throw new ArgumentNullException(nameof(categoriesOfEmployeeService));
             _transportService = transportService ?? throw new ArgumentNullException(nameof(transportService));
             _compensationService = compensationService ?? throw new ArgumentNullException(nameof(compensationService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -96,6 +104,7 @@ namespace MyApp.Api.Services.mission
                 throw new Exception($"Erreur lors de la récupération des assignations de mission {missionId} : {ex.Message}", ex);
             }
         }
+
         public async Task<byte[]> GenerateMissionOrderPDFAsync(string employeeId, string missionId)
         {
             var missionAssignation = await _repository.GetByIdAsync(employeeId, missionId);
@@ -104,10 +113,9 @@ namespace MyApp.Api.Services.mission
             {
                 throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
             }
-            
+
             string templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\File\OM.docx"));
 
-            
             if (!File.Exists(templatePath))
             {
                 throw new FileNotFoundException("Le fichier modèle n'existe pas.", templatePath);
@@ -120,8 +128,8 @@ namespace MyApp.Api.Services.mission
                 { "${page}", "1" },
                 { "${titre_mission}", missionAssignation.Mission?.Name ?? "" },
                 { "${numero}",missionAssignation.AssignationId ?? "" },
-                { "${nom}", missionAssignation.Employee?.FirstName ?? "" },
-                { "${prenom}", missionAssignation.Employee?.LastName ?? "" },
+                { "${nom}", missionAssignation.Employee?.LastName ?? "" },  // Corrigé : nom = nom de famille (LastName)
+                { "${prenom}", missionAssignation.Employee?.FirstName ?? "" },  // Corrigé : prénom = FirstName
                 { "${fonction}", missionAssignation.Employee?.JobTitle ?? "" },
                 { "${matricule}", missionAssignation.Employee?.EmployeeCode ?? "" },
                 { "${direction}", missionAssignation.Employee?.Direction?.DirectionName ?? "" },
@@ -130,7 +138,156 @@ namespace MyApp.Api.Services.mission
                 { "${lieu}", missionAssignation.Mission?.Lieu?.Nom ?? "" },
                 { "${motif}", missionAssignation.Mission?.Description ?? "" },
                 { "${transport}", missionAssignation.Transport != null ? missionAssignation.Transport.Type ?? "" : "" },
-                { "${date_heure_depart}", missionAssignation.DepartureDate.ToString("dd/MM/yyyy HH:mm") ?? "" }
+                { "${date_heure_depart}", $"{missionAssignation.DepartureDate:dd/MM/yyyy} {missionAssignation.DepartureTime?.ToString(@"hh\:mm") ?? ""}" }  // Corrigé : format TimeSpan avec @"hh\:mm" (un seul \ avant :)
+                // Ajoutez ici si nécessaire pour le retour : { "${date_heure_retour}", $"{missionAssignation.ReturnDate:dd/MM/yyyy} {missionAssignation.ReturnTime?.ToString(@"hh\:mm") ?? ""}" }
+            };
+
+            using var memoryStream = new MemoryStream();
+
+            using (var fileStream = new FileStream(templatePath, FileMode.Open, FileAccess.Read))
+            {
+                await fileStream.CopyToAsync(memoryStream);
+            }
+
+            memoryStream.Position = 0;
+
+            using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(memoryStream, true))
+            {
+                if (wordDoc.MainDocumentPart == null || wordDoc.MainDocumentPart.Document == null)
+                {
+                    throw new InvalidOperationException("Le document Word ne contient pas de partie principale ou de document.");
+                }
+                var body = wordDoc.MainDocumentPart.Document.Body;
+
+                if (body != null)
+                {
+                    var textElements = body.Descendants<Text>().ToList();
+                    foreach (var text in textElements)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+
+                    var bodyRuns = body.Descendants<Run>().ToList();
+                    foreach (var run in bodyRuns)
+                    {
+                        string runText = string.Join("", run.Descendants<Text>().Select(t => t.Text));
+
+                        foreach (var replacement in replacements)
+                        {
+                            if (runText.Contains(replacement.Key))
+                            {
+                                run.RemoveAllChildren<Text>();
+                                string newText = runText.Replace(replacement.Key, replacement.Value);
+                                run.AppendChild(new Text(newText));
+                            }
+                        }
+                    }
+                }
+
+                foreach (var headerPart in wordDoc.MainDocumentPart.HeaderParts)
+                {
+                    var headerTexts = headerPart.Header.Descendants<Text>().ToList();
+                    foreach (var text in headerTexts)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+                }
+
+                foreach (var footerPart in wordDoc.MainDocumentPart.FooterParts)
+                {
+                    var footerTexts = footerPart.Footer.Descendants<Text>().ToList();
+                    foreach (var text in footerTexts)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+                }
+
+                wordDoc.MainDocumentPart.Document.Save();
+            }
+
+            memoryStream.Position = 0;
+            using var PDFStream = new MemoryStream();
+
+            SpireDoc.Document doc = new SpireDoc.Document();
+            doc.LoadFromStream(memoryStream, SpireDoc.FileFormat.Docx);
+            doc.SaveToStream(PDFStream, SpireDoc.FileFormat.PDF);
+
+            return PDFStream.ToArray();
+        }
+        
+        public async Task<byte[]> GenerateATDPDFAsync(string employeeId)
+        {
+            var employee = await _employeeService.GetByIdAsync(employeeId);
+            if (employee == null)
+            {
+                throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}");
+            }
+            var categories = await _categoriesOfEmployeeService.GetCategoriesByEmployeeIdAsync(employeeId, employee.HireDate!.Value);
+            var category = categories.FirstOrDefault();
+
+            string templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\File\ATD.docx"));
+
+            if (!File.Exists(templatePath))
+            {
+                throw new FileNotFoundException("Le fichier modèle n'existe pas.", templatePath);
+            }
+
+            var replacements = new Dictionary<string, string>
+            {
+                {
+                "${nom}", employee?.FirstName ?? ""
+                },
+                {
+                    "${prenom}", employee?.LastName ?? ""
+                },
+                {
+                    "${date_naissance}", employee?.BirthDate?.ToString("dd/MM/yyy") ?? ""
+                },
+                {
+                    "${lieu_naissance}", employee?.BirthPlace ?? ""
+                },
+                {
+                    "${numero_cin}", employee?.IdNumber ?? ""
+                },
+                {
+                    "${date_cin}", employee?.IdIssueDate?.ToString("dd/MM/yyy") ?? ""
+                },
+                {
+                    "${lieu_cin}", employee?.IdIssuePlace ?? ""
+                },
+                {
+                    "${poste}", employee?.JobTitle ?? ""
+                },
+                {
+                    "${date_embauche}", employee?.HireDate?.ToString("dd/MM/yyy") ?? ""
+                },
+                {
+                    "${categorie}",  category?.EmployeeCategory?.Label ?? ""
+                },
+                {
+                    "${date_delivrance}", DateTime.Now.ToString("dd/MM/yyy")
+                },
+                {
+                    "${contract_type}",  employee?.ContractType!.Label ?? ""
+                },
             };
 
             using var memoryStream = new MemoryStream();
@@ -211,25 +368,6 @@ namespace MyApp.Api.Services.mission
                     }
                 }
 
-                if (body != null)
-                {
-                    var bodyRuns2 = body.Descendants<Run>().ToList();
-                    foreach (var run in bodyRuns2)
-                    {
-                        string runText = string.Join("", run.Descendants<Text>().Select(t => t.Text));
-                        
-                        foreach (var replacement in replacements)
-                        {
-                            if (runText.Contains(replacement.Key))
-                            {
-                                run.RemoveAllChildren<Text>();
-                                string newText = runText.Replace(replacement.Key, replacement.Value);
-                                run.AppendChild(new Text(newText));
-                            }
-                        }
-                    }
-                }
-
                 wordDoc.MainDocumentPart.Document.Save();
             }
 
@@ -304,19 +442,15 @@ namespace MyApp.Api.Services.mission
             var endDate = DateTime.Parse(data.Last()[9]);
 
             var mission = await missionService.VerifyMissionByNameAsync(missionName);
-            if (mission != null) return mission;
-
-            var missionId = await missionService.CreateAsync(new MissionDTOForm
+            return mission ?? new Mission
             {
-                Name = missionName,
-                StartDate = startDate,
-                EndDate = endDate,
-                LieuId = lieuId
-            });
-
-            return new Mission
-            {
-                MissionId = missionId,
+                MissionId = await missionService.CreateAsync(new MissionDTOForm
+                {
+                    Name = missionName,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    LieuId = lieuId
+                }),
                 StartDate = startDate,
                 EndDate = endDate,
                 LieuId = lieuId
@@ -330,10 +464,12 @@ namespace MyApp.Api.Services.mission
             var pays = parts.Length == 2 ? parts[1] : null;
 
             var lieu = await _lieuService.VerifyLieuExistsAsync(nom, pays);
-            if (lieu != null) return lieu;
-
-            var lieuId = await _lieuService.CreateAsync(new LieuDTOForm { Nom = nom, Pays = pays });
-            return new Lieu { LieuId = lieuId };
+            return lieu ?? new Lieu
+            {
+                LieuId = await _lieuService.CreateAsync(new LieuDTOForm { Nom = nom, Pays = pays ?? string.Empty }),
+                Nom = nom,
+                Pays = pays ?? string.Empty
+            };
         }
 
         private async Task<List<string>> ValidateDataAsync(List<List<string>> data)
@@ -360,8 +496,7 @@ namespace MyApp.Api.Services.mission
                 MissionId = missionId
             };
             var (result, total) = await _repository.SearchAsync(filters, 1, 1);
-            var assignation = result.FirstOrDefault();
-            return assignation;
+            return result.FirstOrDefault();
         }
 
         public Task<int> CalculateDuration(DateTime start, DateTime end)
@@ -392,6 +527,129 @@ namespace MyApp.Api.Services.mission
             }
         }
 
+        public async Task<ExpensePaiementResult> GenerateExpensePaiementsAsync(string? employeeId = null, string? missionId = null)
+        {
+            try
+            {
+                var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId);
+
+                var assignations = missionAssignations as MissionAssignation[] ?? missionAssignations.ToArray();
+                if (assignations.Length == 0)
+                {
+                    return new ExpensePaiementResult
+                    {
+                        DailyPaiements = new List<DailyExpensePaiement>(),
+                        MissionAssignation = null,
+                        TransportAmount = 0m
+                    };
+                }
+
+                var paiementResults = new List<ExpensePaiementResult>();
+                foreach (var missionAssignation in assignations)
+                {
+                    var paiementResult = await GenerateExpensePaymentsForAssignation(missionAssignation);
+                    paiementResults.Add(paiementResult);
+                    LogExpensePaymentGenerationResult(paiementResult, missionAssignation.EmployeeId, missionAssignation.MissionId);
+
+                    await CreateExpenseCompensationsForResultAsync(paiementResult, missionAssignation);
+                }
+
+                return CombineExpensePaiementResults(paiementResults);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Erreur lors de la génération des paiements des frais : {ex.Message}", ex);
+            }
+        }
+
+        private async Task<ExpensePaiementResult> GenerateExpensePaymentsForAssignation(MissionAssignation missionAssignation)
+        {
+            var expensePaiement = new ExpensePaiement();
+            return await expensePaiement.GeneratePaiement(missionAssignation, _expenseCompensationScaleService);
+        }
+
+        private static void LogExpensePaymentGenerationResult(ExpensePaiementResult paiementResult, string employeeId, string missionId)
+        {
+            // Méthode conservée pour compatibilité mais sans logs
+        }
+
+        private static ExpensePaiementResult CombineExpensePaiementResults(List<ExpensePaiementResult> results)
+        {
+            if (results.Count == 1)
+                return results[0];
+
+            var combinedDailyPaiements = results.SelectMany(r => r.DailyPaiements).ToList();
+            var totalTransport = results.Sum(r => r.TransportAmount);
+            
+            return new ExpensePaiementResult
+            {
+                DailyPaiements = combinedDailyPaiements,
+                TransportAmount = totalTransport
+            };
+        }
+
+        private async Task CreateExpenseCompensationsForResultAsync(ExpensePaiementResult paiementResult, MissionAssignation missionAssignation)
+        {
+            if (paiementResult.DailyPaiements == null || !paiementResult.DailyPaiements.Any())
+            {
+                return;
+            }
+
+            foreach (var dailyPaiement in paiementResult.DailyPaiements)
+            {
+                var compensationDto = new CompensationDTO
+                {
+                    AssignationId = missionAssignation.AssignationId,
+                    EmployeeId = missionAssignation.EmployeeId,
+                    PaymentDate = dailyPaiement.Date,
+                    Devise = "EUR",
+                    Status = "unpaid",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = null,
+                    TransportAmount = 0m, // Transport is separate in ExpensePaiementResult
+                    BreakfastAmount = 0m,
+                    LunchAmount = 0m,
+                    DinnerAmount = 0m,
+                    AccommodationAmount = 0m
+                };
+
+                if (dailyPaiement.CompensationScales != null)
+                {
+                    foreach (var cs in dailyPaiement.CompensationScales)
+                    {
+                        if (cs?.ExpenseType?.Type == null) continue;
+
+                        var amount = cs.Amount;
+                        switch (cs.ExpenseType.Type)
+                        {
+                            case "Petit Déjeuner":
+                                compensationDto.BreakfastAmount += amount;
+                                break;
+                            case "Déjeuner":
+                                compensationDto.LunchAmount += amount;
+                                break;
+                            case "Dinner":
+                                compensationDto.DinnerAmount += amount;
+                                break;
+                            case "Hébergement":
+                                compensationDto.AccommodationAmount += amount;
+                                break;
+                        }
+                    }
+                }
+
+                try
+                {
+                    var compensationId = await _compensationService.CreateAsync(compensationDto);
+                    _logger.LogInformation("Compensation {CompensationId} créée pour la date {Date} de l'assignation {MissionId}", compensationId, dailyPaiement.Date, missionAssignation.MissionId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Erreur lors de la création de la compensation pour la date {Date} de l'assignation {MissionId}", dailyPaiement.Date, missionAssignation.MissionId);
+                }
+            }
+        }
+
         public async Task<IEnumerable<Employee>> GetEmployeesNotAssignedToMissionAsync(string missionId)
         {
             try
@@ -409,7 +667,7 @@ namespace MyApp.Api.Services.mission
 
         private async Task ValidateMissionExistsAsync(string missionId)
         {
-            var mission = await _missionRepository.GetByIdAsync(missionId); // Use repository
+            var mission = await _missionRepository.GetByIdAsync(missionId);
             if (mission == null)
             {
                 throw new InvalidOperationException($"Mission with ID {missionId} not found.");
@@ -479,7 +737,7 @@ namespace MyApp.Api.Services.mission
         {
             try
             {
-                return await _repository.GetByAssignationIdAsync(assignationId); // New repository method
+                return await _repository.GetByAssignationIdAsync(assignationId);
             }
             catch (Exception ex)
             {
@@ -565,11 +823,12 @@ namespace MyApp.Api.Services.mission
 
             foreach (var dailyPaiement in paiementResult.DailyPaiements)
             {
-                var compensationDto = new ComposationDTO
+                var compensationDto = new CompensationDTO
                 {
                     AssignationId = missionAssignation.AssignationId,
                     EmployeeId = missionAssignation.EmployeeId,
                     PaymentDate = dailyPaiement.Date,
+                    Devise = "MGA",
                     Status = "unpaid",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = null,
@@ -616,6 +875,7 @@ namespace MyApp.Api.Services.mission
                 }
             }
         }
+
         private async Task<MissionAssignation> GetMissionAssignationAsync(string employeeId, string missionId)
         {
             var missionAssignation = await GetByEmployeeIdMissionIdAsync(employeeId, missionId);
@@ -624,7 +884,7 @@ namespace MyApp.Api.Services.mission
 
         private async Task<MissionPaiementResult> GeneratePaymentsForAssignation(MissionAssignation missionAssignation)
         {
-            var missionPaiement = new MissionPaiement(_categoriesOfEmployeeService);
+            var missionPaiement = new MissionPaiement();
             return await missionPaiement.GeneratePaiement(missionAssignation, _compensationScaleService);
         }
 
@@ -857,6 +1117,7 @@ namespace MyApp.Api.Services.mission
                     ex);
             }
         }
+
         private static void SetCreationTimestamps(MissionAssignation missionAssignation)
         {
             missionAssignation.CreatedAt = DateTime.UtcNow;
@@ -885,7 +1146,7 @@ namespace MyApp.Api.Services.mission
         {
             try
             {
-                var existing = await _repository.GetByAssignationIdAsync(assignationId); // New repository method
+                var existing = await _repository.GetByAssignationIdAsync(assignationId);
                 if (existing == null) return false;
 
                 UpdateAssignationFields(existing, missionAssignation);
@@ -898,6 +1159,7 @@ namespace MyApp.Api.Services.mission
                 throw new Exception($"Error updating mission assignation: {ex.Message}", ex);
             }
         }
+
         private async Task<MissionAssignation?> GetExistingAssignationForUpdateAsync(MissionAssignation missionAssignation)
         {
             return await _repository.GetByIdAsync(missionAssignation.EmployeeId,
@@ -928,7 +1190,7 @@ namespace MyApp.Api.Services.mission
         {
             try
             {
-                var existing = await _repository.GetByAssignationIdAsync(assignationId); // New repository method
+                var existing = await _repository.GetByAssignationIdAsync(assignationId);
                 if (existing == null)
                 {
                     return false;

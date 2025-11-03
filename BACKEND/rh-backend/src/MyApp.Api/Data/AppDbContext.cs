@@ -10,11 +10,14 @@ using MyApp.Api.Entities.prevision;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.tmp;
 using MyApp.Api.Entities.users;
+using MyApp.Api.Entities.zones;
 
 namespace MyApp.Api.Data
 {
     public class AppDbContext : DbContext
     {
+        public DbSet<ExpenseCompensationScale> ExpenseCompensationScales { get; set; }
+        public DbSet<GeoZone> GeoZones { get; set; }
         public DbSet<MissionReportAttachment> MissionReportAttachments { get; set; }
         public DbSet<ExpenseReportAttachment> ExpenseReportAttachments { get; set; }
         public DbSet<Notifications> Notifications { get; set; }

@@ -26,8 +26,8 @@ import EmployeeList from '@/pages/referentiel/collaborateur/list';
 import LieuList from '@/pages/referentiel/lieu/list';
 import MissionListArchive from './pages/mission/collaborator/list/mission-list-archive';
 import TransportList from '@/pages/referentiel/transport/list';
-import ExpenseTypeList from '@/pages/referentiel/expense/list';
-import EmployeeCategoryList from '@/pages/referentiel/collaborateur/category/list';
+import GeoZoneList from '@/pages/referentiel/zone/list';
+import CompensationScalesPage from '@/pages/referentiel/compensation-scale';
 // import { useAuthSync } from '@/utils/use-auth-sync';
 function App() {
 
@@ -64,10 +64,9 @@ function App() {
         <Route path="/referentiel/collaborator" element={<EmployeeList />} />
         <Route path="/referentiel/lieu" element={<LieuList />} />
         <Route path="/referentiel/transport" element={<TransportList />} />
-        <Route path="/referentiel/expense-type" element={<ExpenseTypeList />} />
-        <Route path="/referentiel/collaborator-category" element={<EmployeeCategoryList />} />
+        <Route path="/referentiel/compensation-scale" element={<CompensationScalesPage />} />
+        <Route path="/referentiel/geo-zone" element={<GeoZoneList />} />
         
-
 
          {/* MISSION */}
         <Route path="/mission/list" element={<MissionList />} />

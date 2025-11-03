@@ -3,28 +3,38 @@ import api from '@/utils/axios-config';
 
 const LIEUX_BASE_KEY = ['lieux'] as const;
 
+export interface GeoZone {
+  zoneId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
 export interface Lieu {
   lieuId: string;
   nom: string;
-  adresse: string;
-  ville: string;
-  codePostal: string;
+  ville: string | null;
+  codePostal: string | null;
   pays: string;
+  zoneId: string | null;
+  geoZone?: GeoZone;
   createdAt: string;
-  updatedAt: string;
+  updatedAt: string | null;
 }
 
 export interface LieuDTOForm {
   nom: string;
-  adresse: string;
-  ville: string;
-  codePostal: string;
+  ville?: string | null;
+  codePostal?: string | null;
   pays: string;
+  zoneId?: string | null;
 }
 
 export interface LieuSearchFilters {
   nom?: string;
+  ville?: string;
   pays?: string;
+  zoneId?: string;
 }
 
 interface SearchData {
@@ -46,7 +56,7 @@ type GetAllLieuxResponse = ApiResponse<Lieu[]>;
 
 type GetLieuByIdResponse = ApiResponse<Lieu>;
 
-type CreateLieuResponse = ApiResponse<{ id: string; lieu: LieuDTOForm }>;
+type CreateLieuResponse = ApiResponse<{ id: string; lieu: Lieu }>;
 
 export const useGetLieux = (filters: LieuSearchFilters = {}, page: number = 1, pageSize: number = 10) => {
   const queryKey = [...LIEUX_BASE_KEY, { ...filters, page, pageSize }] as const;
@@ -54,12 +64,15 @@ export const useGetLieux = (filters: LieuSearchFilters = {}, page: number = 1, p
   return useQuery<GetLieuxResponse, Error>({
     queryKey,
     queryFn: async () => {
-      const response = await api.post('/api/Lieu/search', {
-        Nom: filters.nom,
-        Pays: filters.pays,
-      }, {
-        params: { page, pageSize },
+      const params = new URLSearchParams({
+        ...(filters.nom && { nom: filters.nom }),
+        ...(filters.ville && { ville: filters.ville }),
+        ...(filters.pays && { pays: filters.pays }),
+        ...(filters.zoneId && { zoneId: filters.zoneId }),
+        page: page.toString(),
+        pageSize: pageSize.toString(),
       });
+      const response = await api.get(`/api/Lieu/search?${params.toString()}`);
       return response.data;
     },
   });
@@ -97,10 +110,10 @@ export const useCreateLieu = () => {
     mutationFn: async (data: LieuDTOForm) => {
       const payload = {
         Nom: data.nom,
-        Adresse: data.adresse,
         Ville: data.ville,
         CodePostal: data.codePostal,
         Pays: data.pays,
+        ...(data.zoneId && { ZoneId: data.zoneId }),
       };
       const response = await api.post('/api/Lieu', payload);
       return response.data;
@@ -109,15 +122,15 @@ export const useCreateLieu = () => {
 };
 
 export const useUpdateLieu = (lieuId: string) => {
-  return useMutation<ApiResponse<null>, Error, LieuDTOForm>({
+  return useMutation<ApiResponse<Lieu>, Error, LieuDTOForm>({
     mutationFn: async (data: LieuDTOForm) => {
       const payload = {
         LieuId: lieuId,
         Nom: data.nom,
-        Adresse: data.adresse,
         Ville: data.ville,
         CodePostal: data.codePostal,
         Pays: data.pays,
+        ...(data.zoneId && { ZoneId: data.zoneId }),
       };
       const response = await api.put(`/api/Lieu/${lieuId}`, payload);
       return response.data;

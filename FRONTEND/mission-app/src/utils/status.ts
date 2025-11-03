@@ -1,7 +1,7 @@
 export const getStatusBadgeClass = (status: string) => {
   const normalized = status.trim().toLowerCase();
   switch (normalized) {
-    case "Mission en courss de validation":
+    case "Mission en cours de validation":
     case "pending approval":
       return "status-waiting";
     case "en cours":

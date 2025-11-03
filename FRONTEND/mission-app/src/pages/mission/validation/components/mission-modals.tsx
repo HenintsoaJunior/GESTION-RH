@@ -52,7 +52,7 @@ import {
     CommentActionButton,
 } from "@/styles/comment-styles";
 
-import {getStatusBadgeClass,englishToFrench} from "@/utils/status"
+// import {getStatusBadgeClass,englishToFrench} from "@/utils/status"
 import { type FormattedMission } from "@/api/mission/validation/services";
 // Types from previous context
 interface AlertState {
@@ -319,7 +319,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                 <InfoGrid>
                   <InfoItem><InfoLabel>N°</InfoLabel><InfoValue>{selectedMission.missionAssignationId || "N/A"}</InfoValue></InfoItem>
                   <InfoItem>
-                    <InfoLabel>Statut Actuel</InfoLabel>
+                    <InfoLabel>Statut Validation</InfoLabel>
                     <StatusBadge className={statusClass}>
                       {translateStatus(selectedMission.status).toUpperCase()}
                     </StatusBadge>
@@ -345,14 +345,14 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                 <InfoGrid>
                   <InfoItem><InfoLabel>Mission</InfoLabel><InfoValue>{selectedMission.missionName || "Non spécifié"}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Zone</InfoLabel><InfoValue>{selectedMission.missionType || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem>
+                  {/* <InfoItem>
                   <InfoLabel>Statut de la mission</InfoLabel>
                   <InfoValue>
                   <StatusBadge className={getStatusBadgeClass(selectedMission.missionStatus)}>
                   {englishToFrench[selectedMission.missionStatus.trim().toLowerCase()] || selectedMission.missionStatus.trim()}
                   </StatusBadge>
                   </InfoValue>
-                  </InfoItem>
+                  </InfoItem> */}
 
                   <InfoItem><InfoLabel>Lieu</InfoLabel><InfoValue>{selectedMission.location}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Transport</InfoLabel><InfoValue>{selectedMission.transport || "Non spécifié"}</InfoValue></InfoItem>

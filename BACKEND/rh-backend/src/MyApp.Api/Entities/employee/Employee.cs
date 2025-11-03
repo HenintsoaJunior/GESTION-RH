@@ -29,6 +29,24 @@ namespace MyApp.Api.Entities.employee
         [MaxLength(100)]
         public string? FirstName { get; set; }
 
+        [Column("birth_date")]
+        public DateTime? BirthDate { get; set; }
+
+        [Column("birth_place")]
+        [MaxLength(100)]
+        public string? BirthPlace { get; set; }
+
+        [Column("id_number")]
+        [MaxLength(50)]
+        public string? IdNumber { get; set; }
+
+        [Column("id_issue_date")]
+        public DateTime? IdIssueDate { get; set; }
+
+        [Column("id_issue_place")]
+        [MaxLength(100)]
+        public string? IdIssuePlace { get; set; }
+
         [Column("phone_number")]
         [MaxLength(20)]
         public string? PhoneNumber { get; set; }
@@ -42,10 +60,10 @@ namespace MyApp.Api.Entities.employee
 
         [Column("contract_end_date")]
         public DateTime? ContractEndDate { get; set; }
-        
+
         [Column("status")]
         [MaxLength(50)]
-        public string? Status { get; set; }
+        public string? Status { get; set; } = "Active";
 
         [Required]
         [Column("site_id")]
@@ -108,6 +126,11 @@ namespace MyApp.Api.Entities.employee
             EmployeeCode = form.EmployeeCode;
             LastName = form.LastName;
             FirstName = form.FirstName;
+            BirthDate = form.BirthDate;
+            BirthPlace = form.BirthPlace;
+            IdNumber = form.IdNumber;
+            IdIssueDate = form.IdIssueDate;
+            IdIssuePlace = form.IdIssuePlace;
             PhoneNumber = form.PhoneNumber;
             HireDate = form.HireDate;
             JobTitle = form.JobTitle;

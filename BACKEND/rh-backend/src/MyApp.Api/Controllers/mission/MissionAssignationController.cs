@@ -18,13 +18,13 @@ namespace MyApp.Api.Controllers.mission
 
 
         [HttpPost("search")]
-        // [AllowAnonymous]
+        [AllowAnonymous]
         public async Task<ActionResult> Search([FromBody] MissionAssignationSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
 
             if (page < 1 || pageSize < 1)
             {
@@ -88,14 +88,43 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
+        [HttpPost("ATD")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GenerateATD([FromBody] GenerateATTDTO generateATD)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var pdfBytes = await _service.GenerateATDPDFAsync(generateATD.EmployeeId);
+
+                var pdfName = $"OrdreMission-{generateATD.EmployeeId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
+
+                return File(pdfBytes, "application/pdf", pdfName);
+            }
+            catch (FileNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Template file not found for ATD {EmployeID}", generateATD.EmployeeId);
+                return NotFound(new { data = (object?)null, status = 404, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur serveur lors de la génération de l'attestation d'emploi pour {EmployeID}", generateATD.EmployeeId);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+            }
+        }
+
         [HttpGet("{assignationId}")]
-        // [AllowAnonymous]
+        [AllowAnonymous]
         public async Task<IActionResult> GetByAssignationId(string assignationId)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
             try
             {
                 var missionAssignation = await _service.GetByAssignationIdAsync(assignationId);

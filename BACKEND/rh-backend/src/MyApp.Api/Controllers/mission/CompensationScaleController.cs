@@ -76,34 +76,6 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
-        [HttpGet("category/{categoryId}")]
-        [AllowAnonymous]
-        public async Task<ActionResult> GetByEmployeeCategory(string categoryId)
-        {
-            if (!User.Identity?.IsAuthenticated ?? true)
-            {
-                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
-
-            if (string.IsNullOrWhiteSpace(categoryId))
-            {
-                return BadRequest(new { data = (object?)null, status = 400, message = "Category ID cannot be null or empty" });
-            }
-
-            try
-            {
-                _logger.LogInformation("Retrieving compensation scales by category ID: {CategoryId}", categoryId);
-                var results = await _service.GetByEmployeeCategoryAsync(categoryId);
-                var responseData = results;
-                return Ok(new { data = responseData, status = 200, message = "success" });
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Error retrieving compensation scales by category ID: {CategoryId}", categoryId);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
-            }
-        }
-
         [HttpPost("search")]
         [AllowAnonymous]
         public async Task<ActionResult> GetByCriteria([FromBody] CompensationScaleDTOForm criteria)
