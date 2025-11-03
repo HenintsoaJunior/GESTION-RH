@@ -16,6 +16,7 @@ namespace MyApp.Api.Repositories.users
         Task<IEnumerable<UserDto>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
         Task<User?> GetByEmailAsync(string email);
+        Task<User?> GetByMatriculeAsync(string matricule);
         Task AddAsync(User user);
         Task UpdateAsync(User user);
         Task DeleteAsync(User user);
@@ -24,6 +25,7 @@ namespace MyApp.Api.Repositories.users
         Task DeleteUsersAsync(List<User> users);
         Task SaveChangesAsync();
         Task<IEnumerable<User>> GetCollaboratorsAsync(string userId);
+        Task<IEnumerable<string>> GetCollaboratorsMatriculesAsync(string userId);
         Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId);
         Task<IEnumerable<User>> GetUsersInfo(string[] userIds);
         Task<User?> GetSuperiorAsync(string matricule);
@@ -220,6 +222,30 @@ namespace MyApp.Api.Repositories.users
                 .ToListAsync();
         }
 
+
+        public async Task<IEnumerable<string>> GetCollaboratorsMatriculesAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            var userMatricule = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.UserId == userId)
+                .Select(u => u.Matricule)
+                .FirstOrDefaultAsync();
+
+            if (string.IsNullOrWhiteSpace(userMatricule))
+                return Enumerable.Empty<string>();
+
+            var collaboratorsMatricules = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.SuperiorId == userId)
+                .Select(u => u.Matricule)
+                .ToListAsync();
+
+            return new[] { userMatricule }.Concat(collaboratorsMatricules);
+        }
+
         public async Task<(IEnumerable<UserDto>, int)> GetAllPaginatedAsync(int page, int pageSize)
         {
             var query = _context.Users
@@ -341,6 +367,16 @@ namespace MyApp.Api.Repositories.users
             return await _context.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.UserId == id);
+        }
+
+        public async Task<User?> GetByMatriculeAsync(string matricule)
+        {
+            if (string.IsNullOrWhiteSpace(matricule))
+                throw new ArgumentException("Matricule cannot be null or empty.", nameof(matricule));
+
+            return await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Matricule == matricule);
         }
 
         public async Task AddAsync(User user)

@@ -300,14 +300,15 @@ const ServiceList: React.FC = () => {
             )}
           </tbody>
         </DataTable>
-      </TableContainer>
-      <Pagination
+        <Pagination
         currentPage={page}
         pageSize={pageSize}
         totalEntries={totalCount}
         onPageChange={setPage}
         onPageSizeChange={handlePageSizeChange}
       />
+      </TableContainer>
+      
     </>
   );
 };

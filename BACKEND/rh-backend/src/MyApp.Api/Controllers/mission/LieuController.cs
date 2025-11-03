@@ -50,11 +50,17 @@ namespace MyApp.Api.Controllers.mission
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
             }
 
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Lieu ID cannot be null or empty" });
+            }
+
             try
             {
                 var lieu = await lieuService.GetByIdAsync(id);
                 if (lieu == null)
                 {
+                    logger.LogWarning("Lieu not found for ID: {LieuId}", id);
                     return NotFound(new { data = (object?)null, status = 404, message = "Lieu non trouvé" });
                 }
                 return Ok(new { data = lieu, status = 200, message = "success" });
@@ -74,11 +80,16 @@ namespace MyApp.Api.Controllers.mission
         // Crée un nouveau lieu à partir d'un formulaire
         [HttpPost]
         [AllowAnonymous]
-        public async Task<ActionResult> Create([FromBody] LieuDTOForm lieu)
+        public async Task<ActionResult> Create([FromBody] LieuDTOForm dto)
         {
+            if (dto == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Lieu data cannot be null" });
+            }
+
             if (!ModelState.IsValid)
             {
-                return BadRequest(new { data = (object?)null, status = 400, message = ModelState.ToString() });
+                return BadRequest(new { data = (object?)null, status = 400, message = ModelState });
             }
 
             if (!User.Identity?.IsAuthenticated ?? true)
@@ -88,8 +99,10 @@ namespace MyApp.Api.Controllers.mission
 
             try
             {
-                var id = await lieuService.CreateAsync(lieu);
-                return Ok(new { data = new { id, lieu }, status = 201, message = "created" });
+                logger.LogInformation("Creating new lieu");
+                var createdId = await lieuService.CreateAsync(dto);
+                var responseData = new { LieuId = createdId };
+                return CreatedAtAction(nameof(GetById), new { id = createdId }, new { data = responseData, status = 201, message = "success" });
             }
             catch (ArgumentException ex)
             {
@@ -108,14 +121,24 @@ namespace MyApp.Api.Controllers.mission
         [AllowAnonymous]
         public async Task<ActionResult> Update(string id, [FromBody] Lieu lieu)
         {
-            if (id != lieu.LieuId)
+            if (string.IsNullOrWhiteSpace(id))
             {
-                return BadRequest(new { data = (object?)null, status = 400, message = "L'ID dans l'URL ne correspond pas à l'ID du lieu" });
+                return BadRequest(new { data = (object?)null, status = 400, message = "Lieu ID cannot be null or empty" });
+            }
+
+            if (lieu == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Lieu data cannot be null" });
             }
 
             if (!ModelState.IsValid)
             {
-                return BadRequest(new { data = (object?)null, status = 400, message = ModelState.ToString() });
+                return BadRequest(new { data = (object?)null, status = 400, message = ModelState });
+            }
+
+            if (id != lieu.LieuId)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "The ID in the URL does not match the entity." });
             }
 
             if (!User.Identity?.IsAuthenticated ?? true)
@@ -125,12 +148,14 @@ namespace MyApp.Api.Controllers.mission
 
             try
             {
+                logger.LogInformation("Updating lieu with ID: {LieuId}", id);
                 var updated = await lieuService.UpdateAsync(lieu);
                 if (!updated)
                 {
                     return NotFound(new { data = (object?)null, status = 404, message = "Lieu non trouvé" });
                 }
-                return Ok(new { data = (object?)null, status = 200, message = "updated" });
+                var responseData = new { message = $"Lieu with ID {id} successfully updated", data = lieu };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
             catch (ArgumentException ex)
             {
@@ -154,14 +179,28 @@ namespace MyApp.Api.Controllers.mission
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
             }
 
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Lieu ID cannot be null or empty" });
+            }
+
             try
             {
+                logger.LogInformation("Deleting lieu with ID: {LieuId}", id);
+                var lieu = await lieuService.GetByIdAsync(id);
+                if (lieu == null)
+                {
+                    logger.LogWarning("Lieu not found for ID: {LieuId}", id);
+                    return NotFound(new { data = (object?)null, status = 404, message = "Lieu non trouvé" });
+                }
+
                 var deleted = await lieuService.DeleteAsync(id);
                 if (!deleted)
                 {
                     return NotFound(new { data = (object?)null, status = 404, message = "Lieu non trouvé" });
                 }
-                return Ok(new { data = (object?)null, status = 200, message = "deleted" });
+                var responseData = new { message = $"Lieu with ID {id} successfully deleted", data = new { id } };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
             catch (ArgumentException ex)
             {
@@ -176,35 +215,19 @@ namespace MyApp.Api.Controllers.mission
         }
 
         // Recherche paginée de lieux avec filtres
-        [HttpPost("search")]
+        [HttpGet("search")]
         [AllowAnonymous]
-        public async Task<ActionResult> Search([FromBody] LieuSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<ActionResult<object>> Search([FromQuery] string? nom, [FromQuery] string? ville, [FromQuery] string? pays, [FromQuery] string? zoneId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            if (!ModelState.IsValid)
+            var filters = new LieuSearchFiltersDTO { Nom = nom, Ville = ville, Pays = pays, ZoneId = zoneId };
+            var (results, totalCount) = await lieuService.SearchAsync(filters, page, pageSize);
+            return Ok(new
             {
-                return BadRequest(new { data = (object?)null, status = 400, message = ModelState.ToString() });
-            }
-
-            if (!User.Identity?.IsAuthenticated ?? true)
-            {
-                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
-
-            try
-            {
-                var (results, totalCount) = await lieuService.SearchAsync(filters, page, pageSize);
-                return Ok(new { data = results, totalCount, page, pageSize, status = 200, message = "success" });
-            }
-            catch (ArgumentException ex)
-            {
-                logger.LogError(ex, "Erreur lors de la recherche des lieux");
-                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors de la recherche des lieux");
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
-            }
+                data = results,
+                totalCount,
+                page,
+                pageSize
+            });
         }
     }
 }

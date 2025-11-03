@@ -134,7 +134,7 @@ const MissionListArchive: React.FC = () => {
 
   const missionTypes = ["International", "National"];
 
-  const hasFilters: boolean = Object.values({ 
+  const hasFilters = useMemo(() => Object.values({ 
     ...filters, 
     selectedEmployee: null, 
     selectedLieu: null,
@@ -144,11 +144,11 @@ const MissionListArchive: React.FC = () => {
     maxDepartureDate: filters.maxDepartureDate || "",
     minArrivalDate: filters.minArrivalDate || "",
     maxArrivalDate: filters.maxArrivalDate || "",
-  }).some((val) => (val || "").trim() !== "");
+  }).some((val) => (val || "").trim() !== ""), [filters]);
 
   const queryFilters: MissionAssignationSearchFilters = useMemo(() => {
     const filtersBase: Partial<MissionAssignationSearchFilters> = {
-      status: "completed", // Toujours filtré sur les missions terminées
+      status: ["completed"], // Toujours filtré sur les missions terminées
     };
 
     if (appliedFilters.employeeId) {
@@ -347,8 +347,20 @@ const MissionListArchive: React.FC = () => {
   ];
 
   const showEmployeeFilter = activeTab !== 'mes';
-  const numCols = showEmployeeFilter ? 3 : 2; // Retiré le statut, donc ajusté
+  const numCols = showEmployeeFilter ? 3 : 2;
   const fieldWidth = showEmployeeFilter ? "33.333%" : "50%";
+
+  const hasAppliedFilters = useMemo(() => Object.values({ 
+    ...appliedFilters, 
+    selectedEmployee: null, 
+    selectedLieu: null,
+    employeeSearch: appliedFilters.employeeSearch || "",
+    lieuSearch: appliedFilters.lieuSearch || "",
+    minDepartureDate: appliedFilters.minDepartureDate || "",
+    maxDepartureDate: appliedFilters.maxDepartureDate || "",
+    minArrivalDate: appliedFilters.minArrivalDate || "",
+    maxArrivalDate: appliedFilters.maxArrivalDate || "",
+  }).some((val) => (val || "").trim() !== ""), [appliedFilters]);
 
   const fieldsetStyle = { 
     display: "grid", 
@@ -580,19 +592,18 @@ const MissionListArchive: React.FC = () => {
                 <TableHeadCell style={{ width: "90px" }}>Statut</TableHeadCell>
                 <TableHeadCell>Date Départ</TableHeadCell>
                 <TableHeadCell>Date Retour</TableHeadCell>
-                <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
               </tr>
             </thead>
             <tbody>
               {isSearchLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={7}>
                     <Loading>Chargement des données...</Loading>
                   </TableCell>
                 </TableRow>
               ) : showNoCollaboratorsMessage ? (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={7}>
                     <NoDataMessage>Aucun collaborateur trouvé.</NoDataMessage>
                   </TableCell>
                 </TableRow>
@@ -621,17 +632,14 @@ const MissionListArchive: React.FC = () => {
                       <TableCell><StatusBadge className={statusClass}>{frenchStatus}</StatusBadge></TableCell>
                       <TableCell>{new Date(assignation.departureDate).toLocaleDateString()}</TableCell>
                       <TableCell>{new Date(assignation.returnDate).toLocaleDateString()}</TableCell>
-                      <TableCell style={{ textAlign: "center" }}>
-                        {/* Pas de boutons Modifier ou Annuler en mode archive */}
-                      </TableCell>
                     </TableRow>
                   );
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={7}>
                     <NoDataMessage>
-                      {Object.values(appliedFilters).some(Boolean) ? "Aucune mission terminée ne correspond aux critères." : "Aucune mission terminée trouvée."}
+                      {hasAppliedFilters ? "Aucune mission terminée ne correspond aux critères." : "Aucune mission terminée trouvée."}
                     </NoDataMessage>
                   </TableCell>
                 </TableRow>

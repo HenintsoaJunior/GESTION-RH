@@ -10,7 +10,7 @@ namespace MyApp.Api.Services.mission
     {
         Task<IEnumerable<Compensation>> GetAllAsync();
         Task<AssignationWithCompensationsDto> GetByEmployeeIdAsync(string employeeId, string missionId);
-        Task<string> CreateAsync(ComposationDTO compensation);
+        Task<string> CreateAsync(CompensationDTO compensation);
         Task<bool> UpdateStatusAsync(string employeeId, string assignationId, string status);
         Task<IEnumerable<AssignationWithCompensationsDto>> GetCompensationsByStatusAsync(string? status);
         Task<decimal> GetTotalPaidAmountAsync();
@@ -89,7 +89,7 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<string> CreateAsync(ComposationDTO compensation)
+        public async Task<string> CreateAsync(CompensationDTO compensation)
         {
             try
             {

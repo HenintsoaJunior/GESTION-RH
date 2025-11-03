@@ -4,6 +4,7 @@ import api from '@/utils/axios-config';
 
 const EMPLOYEES_BASE_KEY = ['employees'] as const;
 const EMPLOYEES_KEY = ['employees'] as const;
+const EMPLOYEES_SIMPLE_KEY = ['employeesSimple'] as const;
 
 interface Site {
   siteId: string;
@@ -68,28 +69,33 @@ interface Unit {
 
 export interface Employee {
   employeeId: string;
-  employeeCode: string;
+  employeeCode: string | null;
   lastName: string;
-  firstName: string;
-  phoneNumber: string;
-  hireDate: string;
-  jobTitle: string;
+  firstName: string | null;
+  birthDate: string | null;
+  birthPlace: string | null;
+  idNumber: string | null;
+  idIssueDate: string | null;
+  idIssuePlace: string | null;
+  phoneNumber: string | null;
+  hireDate: string | null;
+  jobTitle: string | null;
   contractEndDate: string | null;
-  status: string;
+  status: string | null;
   siteId: string;
   site: Site;
   genderId: string;
   gender: Gender;
-  contractTypeId: string;
-  contractType: ContractType;
+  contractTypeId: string | null;
+  contractType: ContractType | null;
   directionId: string;
   direction: Direction;
-  departmentId: string;
-  department: Department;
-  serviceId: string;
-  service: Service;
-  unitId: string;
-  unit: Unit;
+  departmentId: string | null;
+  department: Department | null;
+  serviceId: string | null;
+  service: Service | null;
+  unitId: string | null;
+  unit: Unit | null;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -98,6 +104,11 @@ export interface EmployeeFormDTO {
   lastName: string;
   firstName?: string;
   employeeCode?: string;
+  birthDate?: string;
+  birthPlace?: string;
+  idNumber?: string;
+  idIssueDate?: string;
+  idIssuePlace?: string;
   phoneNumber?: string;
   hireDate?: string;
   jobTitle?: string;
@@ -190,6 +201,47 @@ export const useGetAllEmployees = () => {
   });
 };
 
+export const useGetAllEmployeesSimple = () => {
+  return useQuery<GetAllEmployeesResponse, Error>({
+    queryKey: EMPLOYEES_SIMPLE_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Employee/simple');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useGetEmployeesByMatriculesSimple = (matricules: string[]) => {
+  const sortedMatricules = matricules.sort();
+  const queryKey = [...EMPLOYEES_SIMPLE_KEY, 'byMatricules', sortedMatricules] as const;
+
+  return useQuery<GetAllEmployeesResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (matricules.length === 0) {
+        return { data: [], status: 200, message: 'success' } as GetAllEmployeesResponse;
+      }
+      try {
+        const response = await api.post('/api/Employee/simple', matricules);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: matricules.length > 0,
+  });
+};
+
 export const useGetEmployee = (employeeId: string) => {
   const queryKey = [...EMPLOYEES_BASE_KEY, employeeId] as const;
 
@@ -235,6 +287,11 @@ export const useCreateEmployee = () => {
         LastName: data.lastName,
         FirstName: data.firstName,
         EmployeeCode: data.employeeCode,
+        BirthDate: data.birthDate,
+        BirthPlace: data.birthPlace,
+        IdNumber: data.idNumber,
+        IdIssueDate: data.idIssueDate,
+        IdIssuePlace: data.idIssuePlace,
         PhoneNumber: data.phoneNumber,
         HireDate: data.hireDate,
         JobTitle: data.jobTitle,
@@ -260,6 +317,11 @@ export const useUpdateEmployee = (employeeId: string) => {
         LastName: data.lastName,
         FirstName: data.firstName,
         EmployeeCode: data.employeeCode,
+        BirthDate: data.birthDate,
+        BirthPlace: data.birthPlace,
+        IdNumber: data.idNumber,
+        IdIssueDate: data.idIssueDate,
+        IdIssuePlace: data.idIssuePlace,
         PhoneNumber: data.phoneNumber,
         HireDate: data.hireDate,
         JobTitle: data.jobTitle,

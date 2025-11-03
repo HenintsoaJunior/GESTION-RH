@@ -59,17 +59,17 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpGet("requests/{userId}")]
-        // [AllowAnonymous]
+        [AllowAnonymous]
         public async Task<ActionResult> GetRequests(
             string userId,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] RequestFilterDto? filter = null)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
 
             if (string.IsNullOrWhiteSpace(userId))
             {
@@ -427,6 +427,39 @@ namespace MyApp.Api.Controllers.mission
             {
                 _logger.LogError(ex, "Error retrieving mission statistics with matricule: {Matricule}", matricule);
                 return StatusCode(500, "An error occurred while retrieving mission statistics.");
+            }
+        }
+
+        [HttpGet("has-any-validator-validated/{missionId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> HasAnyValidatorValidated(string missionId)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(missionId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'ID de la mission ne peut pas être null ou vide." });
+            }
+
+            try
+            {
+                var hasValidated = await _missionValidationService.HasAnyValidatorValidatedAsync(missionId);
+
+                var responseData = hasValidated;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erreur lors de la vérification si un validateur a validé la mission {MissionId}", missionId);
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
     }

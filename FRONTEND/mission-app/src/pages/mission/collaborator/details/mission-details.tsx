@@ -1,7 +1,12 @@
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Download, CheckCircle, Send, Edit2, Trash2, X, ArrowLeft, Loader2 } from "lucide-react";
-import { useParams, useNavigate, Routes, Route } from "react-router-dom";
+import styled from "styled-components";
+import { CheckCircle, Send, Edit2, Trash2, X, ArrowLeft, Loader2, FileText } from "lucide-react";
+import { useParams, useNavigate, Routes, Route, useLocation } from "react-router-dom";
+import {
+  TabContainer,
+  TabButton,
+} from "@/styles/onglet-style";
 import ValidationStepper from "@/pages/stepper/index";
 import Alert from "@/components/alert";
 import MissionReport from "./report/mission-report";
@@ -9,6 +14,7 @@ import OMPayment from "./payment/om-payment";
 import OMNoteDeFrais from "../details/expense/om-note-de-frais";
 import {
   LoadingContainer,
+  LoadingSpinner,
   ContentArea,
   SectionTitle,
   ValidatorItem,
@@ -20,8 +26,6 @@ import {
   InfoLabel,
   InfoValue,
   CommentText,
-  OMPaymentButton,
-  MissionReportButton,
   ButtonOMPDF,
   PageHeader,
   HeaderLeft,
@@ -36,6 +40,7 @@ import {
 import {
   useSearchMissionAssignations,
   useGenerateMissionOrder,
+  useGenerateATD,
   type MissionAssignation,
 } from "@/api/mission/services";
 import { useGetMissionValidationsByAssignationId } from "@/api/mission/validation/services";
@@ -49,7 +54,7 @@ import {
   useCompensationsByEmployeeAndMission,
   useExportMissionAssignationExcel,
   type Compensation,
-} from "@/api/compensation/services";
+} from "@/api/compensation/national/services";
 import { formatDate } from "@/utils/date-converter";
 import { StatusBadge } from "@/styles/table-styles";
 import { getStatusBadgeClass, englishToFrench } from "@/utils/status";
@@ -171,6 +176,17 @@ interface MissionValidation {
     position: string;
   };
 }
+
+const StyledTabContainer = styled.div`${TabContainer}`;
+
+type TabButtonProps = {
+  $isActive: boolean;
+  $hasBorderRight: boolean;
+};
+
+const StyledTabButton = styled.button<TabButtonProps>`
+  ${TabButton}
+`;
 
 const useAlert = () => {
   const [alert, setAlert] = useState<AlertState>({
@@ -443,9 +459,16 @@ const useMissionData = (
   };
 };
 
+interface Tab {
+  label: string;
+  onClick: () => void;
+  path: string;
+}
+
 const DetailsMission: React.FC = () => {
   const { missionId } = useParams<{ missionId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = userData?.userId || null;
   const { alert, showAlert, handleClose: handleAlertClose } = useAlert();
@@ -475,6 +498,11 @@ const DetailsMission: React.FC = () => {
   // État pour le chargement et la génération PDF par employeeId
   const [pdfLoading, setPdfLoading] = useState<Record<string, boolean>>({});
   const [pdfGenerated, setPdfGenerated] = useState<Record<string, boolean>>({});
+  // État pour les attestations
+  const [attestationEmployeLoading, setAttestationEmployeLoading] = useState<Record<string, boolean>>({});
+  const [attestationEmployeGenerated, setAttestationEmployeGenerated] = useState<Record<string, boolean>>({});
+  const [attestationHebergementLoading, setAttestationHebergementLoading] = useState<Record<string, boolean>>({});
+  const [attestationHebergementGenerated, setAttestationHebergementGenerated] = useState<Record<string, boolean>>({});
 
   const [selectedAssignationId, setSelectedAssignationId] = useState<string | null>(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -484,12 +512,25 @@ const DetailsMission: React.FC = () => {
     totalAmount: 0,
   });
 
+  const [isDelayedLoading, setIsDelayedLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsDelayedLoading(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const generateOrderMutation = useGenerateMissionOrder();
+  const generateATDMutation = useGenerateATD();
   const exportExcelMutation = useExportMissionAssignationExcel();
   const { data: compensationsResponse, isLoading: compensationsLoading } = useCompensationsByEmployeeAndMission(
     selectedEmployeeId ?? undefined,
     missionId
   );
+
+  const fullBasePath = `/mission/collaborateur/${missionId}`;
 
   useEffect(() => {
     if (missionId) {
@@ -563,6 +604,54 @@ const DetailsMission: React.FC = () => {
     [missionId, showAlert, generateOrderMutation]
   );
 
+  // Handlers pour les nouvelles attestations (à adapter avec les vraies mutations API)
+  const handleExportAttestationEmploye = useCallback(
+    async (employeeId: string) => {
+      if (!missionId || !employeeId) {
+        showAlert("error", "Mission ID et Employee ID sont requis pour générer l'attestation employé.");
+        return;
+      }
+
+      setAttestationEmployeLoading((prev) => ({ ...prev, [employeeId]: true }));
+      try {
+        const data = { missionId, employeeId };
+        await generateATDMutation.mutateAsync(data);
+        setAttestationEmployeGenerated((prev) => ({ ...prev, [employeeId]: true }));
+        // showAlert("success", "Attestation employé générée avec succès."); // Supprimé pour éviter l'alert info indésirable
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        showAlert("error", errorMessage || "Erreur lors de la génération de l'attestation employé.");
+      } finally {
+        setAttestationEmployeLoading((prev) => ({ ...prev, [employeeId]: false }));
+      }
+    },
+    [missionId, showAlert, generateATDMutation]
+  );
+
+  const handleExportAttestationHebergement = useCallback(
+    async (employeeId: string) => {
+      if (!missionId || !employeeId) {
+        showAlert("error", "Mission ID et Employee ID sont requis pour générer l'attestation hébergement.");
+        return;
+      }
+
+      setAttestationHebergementLoading((prev) => ({ ...prev, [employeeId]: true }));
+      try {
+        // TODO: Remplacer par la vraie mutation API pour générer l'attestation hébergement
+        // Ex: await generateAttestationHebergementMutation.mutateAsync({ missionId, employeeId });
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Simulation de chargement
+        setAttestationHebergementGenerated((prev) => ({ ...prev, [employeeId]: true }));
+        // showAlert("success", "Attestation hébergement générée avec succès."); // Supprimé pour éviter l'alert info indésirable
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        showAlert("error", errorMessage || "Erreur lors de la génération de l'attestation hébergement.");
+      } finally {
+        setAttestationHebergementLoading((prev) => ({ ...prev, [employeeId]: false }));
+      }
+    },
+    [missionId, showAlert]
+  );
+
   const handleExportExcel = useCallback(() => {
     exportExcelMutation.mutate({ missionId });
   }, [exportExcelMutation, missionId]);
@@ -609,36 +698,226 @@ const DetailsMission: React.FC = () => {
     return missionLoading || commentsLoading || exportExcelMutation.isPending || compensationsLoading;
   }, [missionLoading, commentsLoading, exportExcelMutation.isPending, compensationsLoading]);
 
+  const effectiveLoading = isGlobalLoading || isDelayedLoading;
+
   const handleBackToMissionDetails = useCallback(() => {
-    navigate(-1);
+    navigate("/mission/list");
   }, [navigate]);
 
   const handleNavigateToPayment = useCallback((employeeId: string, assignationId: string) => {
     setSelectedEmployeeId(employeeId);
     setSelectedAssignationId(assignationId);
-    navigate(`payment/${assignationId}`);
-  }, [navigate]);
+    navigate(`${fullBasePath}/payment/${assignationId}`);
+  }, [navigate, fullBasePath]);
 
   const handleNavigateToNote = useCallback((assignationId: string) => {
     setSelectedAssignationId(assignationId);
-    navigate(`note/${assignationId}`);
-  }, [navigate]);
+    navigate(`${fullBasePath}/note/${assignationId}`);
+  }, [navigate, fullBasePath]);
 
   const handleNavigateToReport = useCallback((assignationId: string, employeeId: string) => {
     setSelectedAssignationId(assignationId);
     setSelectedEmployeeId(employeeId);
-    navigate(`report/${assignationId}`);
-  }, [navigate]);
+    navigate(`${fullBasePath}/report/${assignationId}`);
+  }, [navigate, fullBasePath]);
+
+  const firstAssignation = assignations[0];
+
+  const tabs = useMemo((): Tab[] => {
+    if (!firstAssignation) return [];
+    const assignmentType = firstAssignation.type;
+    const employeeId = firstAssignation.employee.employeeId;
+    const shouldShowRendu = assignmentType === "Indemnité" || assignmentType === "Note de frais";
+    const tabList: Tab[] = [{
+      label: "Détails",
+      onClick: () => navigate(fullBasePath),
+      path: "",
+    }];
+    if (isMissionFullyValidated) {
+      if (assignmentType === "Indemnité") {
+        tabList.push({
+          label: "Indemnités",
+          onClick: () => handleNavigateToPayment(employeeId, firstAssignation.assignationId),
+          path: `payment/${firstAssignation.assignationId}`,
+        });
+      }
+      if (assignmentType === "Note de frais") {
+        tabList.push({
+          label: "Note de Frais",
+          onClick: () => handleNavigateToNote(firstAssignation.assignationId),
+          path: `note/${firstAssignation.assignationId}`,
+        });
+      }
+      if (shouldShowRendu) {
+        tabList.push({
+          label: "Rendu",
+          onClick: () => handleNavigateToReport(firstAssignation.assignationId, employeeId),
+          path: `report/${firstAssignation.assignationId}`,
+        });
+      }
+    }
+    return tabList;
+  }, [firstAssignation, handleNavigateToPayment, handleNavigateToNote, handleNavigateToReport, navigate, fullBasePath, isMissionFullyValidated]);
+
+  // Fonction pour rendre les onglets sans les boutons PDF
+  const renderTabsOnly = () => (
+    <StyledTabContainer>
+      {tabs.map((tab, tabIndex) => {
+        const fullPath = tab.path === "" ? fullBasePath : `${fullBasePath}/${tab.path}`;
+        return (
+          <StyledTabButton
+            key={tab.label}
+            $isActive={location.pathname === fullPath}
+            $hasBorderRight={tabIndex < tabs.length - 1}
+            onClick={tab.onClick}
+            disabled={isGlobalLoading}
+          >
+            {tab.label}
+          </StyledTabButton>
+        );
+      })}
+    </StyledTabContainer>
+  );
+
+  // Fonction pour rendre les boutons de génération (Ordre de Mission + nouvelles attestations) en horizontal
+  const renderGenerationButtons = () => {
+    const showHebergement = mission?.missionType === "international";
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "var(--spacing-sm)",
+          justifyContent: "flex-start",
+          marginTop: "10px",
+          marginBottom: "var(--spacing-md)",
+        }}
+      >
+        {assignations.flatMap((assignation) => {
+          const employeeId = assignation.employee.employeeId;
+          const isLoadingPdf = pdfLoading[employeeId] || false;
+          const isGeneratedPdf = pdfGenerated[employeeId] || false;
+          const isLoadingEmploye = attestationEmployeLoading[employeeId] || false;
+          const isGeneratedEmploye = attestationEmployeGenerated[employeeId] || false;
+          const isLoadingHebergement = attestationHebergementLoading[employeeId] || false;
+          const isGeneratedHebergement = attestationHebergementGenerated[employeeId] || false;
+
+          const buttons = [
+            <ButtonOMPDF
+              key={`pdf-${employeeId}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleExportPDF(employeeId);
+              }}
+              disabled={isLoadingPdf}
+            >
+              {isLoadingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Génération...
+                </>
+              ) : isGeneratedPdf ? (
+                <>
+                  <FileText size={16} className="mr-2" />
+                  Régénérer Ordre de Mission
+                </>
+              ) : (
+                <>
+                  <FileText size={16} className="mr-2" />
+                  Ordre de Mission
+                </>
+              )}
+            </ButtonOMPDF>,
+            <ButtonOMPDF
+              key={`employe-${employeeId}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleExportAttestationEmploye(employeeId);
+              }}
+              disabled={isLoadingEmploye}
+            >
+              {isLoadingEmploye ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Génération...
+                </>
+              ) : isGeneratedEmploye ? (
+                <>
+                  <FileText size={16} className="mr-2" />
+                  Régénérer Attestation Employé
+                </>
+              ) : (
+                <>
+                  <FileText size={16} className="mr-2" />
+                  Attestation Employé
+                </>
+              )}
+            </ButtonOMPDF>,
+          ];
+
+          if (showHebergement) {
+            buttons.push(
+              <ButtonOMPDF
+                key={`hebergement-${employeeId}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleExportAttestationHebergement(employeeId);
+                }}
+                disabled={isLoadingHebergement}
+              >
+                {isLoadingHebergement ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Génération...
+                  </>
+                ) : isGeneratedHebergement ? (
+                  <>
+                    <FileText size={16} className="mr-2" />
+                    Régénérer Attestation Hébergement
+                  </>
+                ) : (
+                  <>
+                    <FileText size={16} className="mr-2" />
+                    Attestation Hébergement
+                  </>
+                )}
+              </ButtonOMPDF>
+            );
+          }
+
+          return buttons;
+        })}
+      </div>
+    );
+  };
 
   if (!missionId) {
-    return <LoadingContainer>Mission ID manquante</LoadingContainer>;
+    return (
+      <LoadingContainer>
+        <LoadingSpinner />
+        Mission ID manquante
+      </LoadingContainer>
+    );
   }
 
   const assignedPersonsNames = assignations.length > 0 
     ? assignations.map(a => `${a.employee.firstName} ${a.employee.lastName}`).join(', ') 
     : 'Aucune personne assignée';
 
-  const firstAssignation = assignations[0];
+  const renderRestrictedAccess = () => (
+    <div
+      style={{
+        textAlign: "center",
+        padding: "var(--spacing-lg)",
+        color: "var(--text-secondary)",
+      }}
+    >
+      Accès restreint : La mission n'est pas encore validée.
+    </div>
+  );
 
   return (
     <>
@@ -648,53 +927,53 @@ const DetailsMission: React.FC = () => {
         isOpen={alert.isOpen}
         onClose={handleAlertClose}
       />
-      {isGlobalLoading ? (
-        <LoadingContainer>Chargement des informations de la mission...</LoadingContainer>
+      {effectiveLoading ? (
+        <LoadingContainer>
+          <LoadingSpinner />
+        </LoadingContainer>
       ) : (
         <ContentArea>
+          <PageHeader>
+            <HeaderLeft>
+              <BtnBack onClick={handleBackToMissionDetails} title="Retour aux missions">
+                <ArrowLeft className="w-5 h-5" />
+              </BtnBack>
+            </HeaderLeft>
+            <HeaderCenter>
+              <HeaderTitleSection>
+                <PageTitle>{assignedPersonsNames}</PageTitle>
+                <PageSubtitle>
+                  {firstAssignation && ` N° Assignation: ${firstAssignation.assignationId}`}
+                </PageSubtitle>
+              </HeaderTitleSection>
+            </HeaderCenter>
+            <HeaderActions>
+              {mission && (
+                <StatusBadge className={getStatusBadgeClass(mission.status)}>
+                  {englishToFrench[mission.status?.trim().toLowerCase()] || mission.status}
+                </StatusBadge>
+              )}
+            </HeaderActions>
+          </PageHeader>
+          <Separator />
+          {validationSteps.length > 0 && (
+            <ValidationStepper steps={validationSteps} currentStep={0} />
+          )}
           <Routes>
             <Route
               index
               element={
                 <>
-                  <PageHeader>
-                    <HeaderLeft>
-                      <BtnBack onClick={handleBackToMissionDetails} title="Retour aux missions">
-                        <ArrowLeft className="w-5 h-5" />
-                      </BtnBack>
-                    </HeaderLeft>
-                    <HeaderCenter>
-                      <HeaderTitleSection>
-                        <PageTitle>{assignedPersonsNames}</PageTitle>
-                        <PageSubtitle>
-                          {firstAssignation && ` N° Assignation: ${firstAssignation.assignationId}`}
-                        </PageSubtitle>
-                      </HeaderTitleSection>
-                    </HeaderCenter>
-                    <HeaderActions>
-                      {mission && (
-                        <StatusBadge className={getStatusBadgeClass(mission.status)}>
-                          {englishToFrench[mission.status?.trim().toLowerCase()] || mission.status}
-                        </StatusBadge>
-                      )}
-                    </HeaderActions>
-                  </PageHeader>
-                  <Separator />
-                  {validationSteps.length > 0 && (
-                    <ValidationStepper steps={validationSteps} currentStep={0} />
-                  )}
-                 
-                  <Separator />
+                  {renderTabsOnly()}
+                  <div style={{ marginTop: '50px' }} />
+                  {/* <Separator /> */}
+                  
                   <SectionTitle>Personnes Assignées à la Mission</SectionTitle>
                   {assignations.length > 0 ? (
                     assignations.map((assignation, index) => {
                       const employee = assignation.employee;
                       const initials = `${employee.firstName?.[0] || ''}${employee.lastName?.[0] || ''}`.toUpperCase();
-                      const assignmentType = assignation.type;
-                      const shouldShowRendu = assignmentType === "Indemnité" || assignmentType === "Note de frais";
-                      const employeeId = employee.employeeId;
-                      const isLoadingPdf = pdfLoading[employeeId] || false;
-                      const isGeneratedPdf = pdfGenerated[employeeId] || false;
+
                       return (
                         <div
                           key={`${assignation.assignationId}-${index}`}
@@ -751,66 +1030,6 @@ const DetailsMission: React.FC = () => {
                               <InfoValue>{employee.service?.serviceName || "Non spécifié"}</InfoValue>
                             </InfoItem>
                           </div>
-                          {isMissionFullyValidated && (
-                            <div
-                              style={{
-                                display: "flex",
-                                gap: "var(--spacing-sm)",
-                                justifyContent: "flex-start",
-                                marginTop: "calc(var(--spacing-md) + 20px)",
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              {assignmentType === "Indemnité" ? (
-                                <OMPaymentButton
-                                  onClick={() => handleNavigateToPayment(assignation.employee.employeeId, assignation.assignationId)}
-                                  disabled={isGlobalLoading}
-                                >
-                                  Indemnité
-                                </OMPaymentButton>
-                              ) : assignmentType === "Note de frais" ? (
-                                <OMPaymentButton
-                                  onClick={() => handleNavigateToNote(assignation.assignationId)}
-                                  disabled={isGlobalLoading}
-                                >
-                                  Note de Frais
-                                </OMPaymentButton>
-                              ) : null}
-                              <ButtonOMPDF
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation(); // Empêche toute propagation qui pourrait causer un rechargement
-                                  handleExportPDF(employeeId);
-                                }}
-                                disabled={isLoadingPdf}
-                              >
-                                {isLoadingPdf ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                    Génération...
-                                  </>
-                                ) : isGeneratedPdf ? (
-                                  <>
-                                    <CheckCircle size={16} className="mr-2" />
-                                    Régénérer OM PDF
-                                  </>
-                                ) : (
-                                  <>
-                                    <Download size={16} className="mr-2" />
-                                    OM PDF
-                                  </>
-                                )}
-                              </ButtonOMPDF>
-                              {shouldShowRendu && (
-                                <MissionReportButton
-                                  onClick={() => handleNavigateToReport(assignation.assignationId, assignation.employee.employeeId)}
-                                  disabled={isGlobalLoading}
-                                >
-                                  Rendu
-                                </MissionReportButton>
-                              )}
-                            </div>
-                          )}
                         </div>
                       );
                     })
@@ -825,6 +1044,7 @@ const DetailsMission: React.FC = () => {
                       Aucune personne assignée à la mission {missionId || "inconnue"}.
                     </div>
                   )}
+                  {isMissionFullyValidated && renderGenerationButtons()}
                   <Separator />
                   {mission && (
                     <>
@@ -977,46 +1197,82 @@ const DetailsMission: React.FC = () => {
             <Route
               path="payment/:assignationId"
               element={
-                missionPayment.assignmentDetails ? (
-                  <OMPayment
-                    missionPayment={missionPayment as MissionPayment}
-                    selectedAssignmentId={selectedAssignationId || ""}
-                    onBack={handleBackToMissionDetails}
-                    onExportPDF={handleExportPDF}
-                    onExportExcel={handleExportExcel}
-                    isLoading={{ exportExcel: exportExcelMutation.isPending }}
-                    formatDate={formatDate}
-                  />
-                ) : (
-                  <LoadingContainer>Chargement du paiement...</LoadingContainer>
-                )
+                <>
+                  {renderTabsOnly()}
+                  {isMissionFullyValidated && missionPayment.assignmentDetails ? (
+                    <OMPayment
+                      missionPayment={missionPayment as MissionPayment}
+                      selectedAssignmentId={selectedAssignationId || ""}
+                      onBack={handleBackToMissionDetails}
+                      onExportPDF={handleExportPDF}
+                      onExportExcel={handleExportExcel}
+                      isLoading={{ exportExcel: exportExcelMutation.isPending }}
+                      formatDate={formatDate}
+                    />
+                  ) : (
+                    <LoadingContainer>
+                      {isMissionFullyValidated ? (
+                        <>
+                          <LoadingSpinner />
+                          Chargement du paiement...
+                        </>
+                      ) : (
+                        renderRestrictedAccess()
+                      )}
+                    </LoadingContainer>
+                  )}
+                </>
               }
             />
             <Route
               path="note/:assignationId"
               element={
-                selectedAssignationId ? (
-                  <OMNoteDeFrais
-                    selectedAssignmentId={selectedAssignationId}
-                    onBack={handleBackToMissionDetails}
-                  />
-                ) : (
-                  <LoadingContainer>Chargement de la note de frais...</LoadingContainer>
-                )
+                <>
+                  {renderTabsOnly()}
+                  {isMissionFullyValidated && selectedAssignationId ? (
+                    <OMNoteDeFrais
+                      selectedAssignmentId={selectedAssignationId}
+                      onBack={handleBackToMissionDetails}
+                    />
+                  ) : (
+                    <LoadingContainer>
+                      {isMissionFullyValidated ? (
+                        <>
+                          <LoadingSpinner />
+                          Chargement de la note de frais...
+                        </>
+                      ) : (
+                        renderRestrictedAccess()
+                      )}
+                    </LoadingContainer>
+                  )}
+                </>
               }
             />
             <Route
               path="report/:assignationId"
               element={
-                selectedAssignationId ? (
-                  <MissionReport
-                    userId={userId}
-                    assignationId={selectedAssignationId}
-                    onBack={handleBackToMissionDetails}
-                  />
-                ) : (
-                  <LoadingContainer>Chargement du rapport...</LoadingContainer>
-                )
+                <>
+                  {renderTabsOnly()}
+                  {isMissionFullyValidated && selectedAssignationId ? (
+                    <MissionReport
+                      userId={userId}
+                      assignationId={selectedAssignationId}
+                      onBack={handleBackToMissionDetails}
+                    />
+                  ) : (
+                    <LoadingContainer>
+                      {isMissionFullyValidated ? (
+                        <>
+                          <LoadingSpinner />
+                          Chargement du rapport...
+                        </>
+                      ) : (
+                        renderRestrictedAccess()
+                      )}
+                    </LoadingContainer>
+                  )}
+                </>
               }
             />
           </Routes>

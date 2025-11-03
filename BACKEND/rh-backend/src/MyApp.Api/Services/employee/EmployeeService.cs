@@ -21,6 +21,8 @@ namespace MyApp.Api.Services.employee
         Task UpdateAsync(string id, EmployeeFormDTO employeeForm);
         Task DeleteAsync(string id);
         Task<EmployeeStats> GetStatisticsAsync();
+        Task<IEnumerable<Employee>> GetAllEmployeeSimpleAsync();
+        Task<IEnumerable<Employee>> GetByMatriculeSimpleAsync(string[] matricules);
     }
 
     public class EmployeeService : IEmployeeService
@@ -167,6 +169,20 @@ namespace MyApp.Api.Services.employee
             }
         }
 
+        public async Task<IEnumerable<Employee>> GetAllEmployeeSimpleAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération simple de tous les employés (sans cache)");
+                return await _repository.GetAllEmployeeSimpleAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération simple des employés");
+                throw;
+            }
+        }
+
         public async Task<Employee?> GetByIdAsync(string id)
         {
             try
@@ -203,6 +219,26 @@ namespace MyApp.Api.Services.employee
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la récupération des employés par genre: {GenderId}", genderId);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<Employee>> GetByMatriculeSimpleAsync(string[] matricules)
+        {
+            try
+            {
+                if (matricules == null || matricules.Length == 0)
+                {
+                    _logger.LogWarning("Tentative de récupération des employés avec matricules null ou vide");
+                    return Enumerable.Empty<Employee>();
+                }
+
+                _logger.LogInformation("Récupération des employés par matricules: {MatriculeCount}", matricules.Length);
+                return await _repository.GetByMatriculeSimpleAsync(matricules) ?? Enumerable.Empty<Employee>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des employés par matricules");
                 throw;
             }
         }

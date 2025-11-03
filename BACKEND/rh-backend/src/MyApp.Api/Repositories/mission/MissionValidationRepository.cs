@@ -68,9 +68,7 @@ namespace MyApp.Api.Repositories.mission
             // Construire la requête de base
             var query = _context.MissionValidations
                 .Include(mv => mv.Mission)
-        #pragma warning disable CS8602
-                .ThenInclude(m => m.Lieu)
-        #pragma warning restore CS8602
+                .ThenInclude(m => m!.Lieu)
                 .Include(mv => mv.MissionAssignation)
                     .ThenInclude(ma => ma!.Employee)
                         .ThenInclude(e => e!.Department)

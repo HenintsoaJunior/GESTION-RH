@@ -1,10 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery,useQueryClient } from '@tanstack/react-query';
 import { useCallback as useReactCallback } from 'react';
 import axios from 'axios';
 import api from '@/utils/axios-config';
 
 const MISSION_VALIDATIONS_BY_ASSIGNATION_ID_KEY = ['missionValidationsByAssignationId'] as const;
 const MISSION_VALIDATION_REQUESTS_KEY = ['missionValidationRequests'] as const;
+const HAS_ANY_VALIDATOR_VALIDATED_KEY = ['hasAnyValidatorValidated'] as const;
 
 export interface User {
   userId: string;
@@ -399,6 +400,8 @@ export const useGetMissionValidationRequests = (
 };
 
 export const useValidateMission = (userId: string) => {
+  const queryClient = useQueryClient();
+  
   return useReactCallback(async (
     missionValidationId: string, 
     missionAssignationId: string, 
@@ -439,7 +442,35 @@ export const useValidateMission = (userId: string) => {
     if (response.data.status !== 200) {
       throw new Error(response.data.message || `Failed to ${action} mission validation`);
     }
+
+    queryClient.invalidateQueries({ queryKey: HAS_ANY_VALIDATOR_VALIDATED_KEY });
     
     return response.data.data;
-  }, [userId]);
+  }, [userId, queryClient]);
+};
+
+export const useHasAnyValidatorValidated = (missionId: string | undefined) => {
+  const queryKey = [...HAS_ANY_VALIDATOR_VALIDATED_KEY, missionId] as const;
+
+  return useQuery<boolean, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (!missionId) {
+        throw new Error('missionId is required for checking if any validator has validated');
+      }
+      try {
+        const response = await api.get(`/api/MissionValidation/has-any-validator-validated/${missionId}`);
+        if (response.data.status !== 200) {
+          throw new Error(response.data.message || 'Failed to check if any validator has validated');
+        }
+        return response.data.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          throw new Error(error.response.data.message || 'An error occurred while checking if any validator has validated');
+        }
+        throw error;
+      }
+    },
+    enabled: !!missionId,
+  });
 };

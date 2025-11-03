@@ -2,7 +2,7 @@ using MyApp.Api.Entities.mission;
 
 namespace MyApp.Api.Models.dto.mission;
 
-public class ComposationDTO
+public class CompensationDTO
 {
     public decimal TransportAmount { get; set; }
     public decimal BreakfastAmount { get; set; }
@@ -11,6 +11,7 @@ public class ComposationDTO
     public decimal AccommodationAmount { get; set; }
     public string Status { get; set; } = "unpaid";
     public DateTime? PaymentDate { get; set; }
+    public string Devise { get; set; } = null!;
     public string AssignationId { get; set; } = null!;
     public string EmployeeId { get; set; } = null!;
     public DateTime CreatedAt { get; set; }

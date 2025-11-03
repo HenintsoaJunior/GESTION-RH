@@ -10,6 +10,8 @@ namespace MyApp.Api.Repositories.employee
         void Detach(Employee employee);
         Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Employee>> GetAllAsync();
+        Task<IEnumerable<Employee>> GetAllEmployeeSimpleAsync();
+        Task<IEnumerable<Employee>?> GetByMatriculeSimpleAsync(string[] matricules);
         Task<Employee?> GetByIdAsync(string id);
         Task<IEnumerable<Employee>> GetByGenderAsync(string genderId);
         Task AddAsync(Employee employee);
@@ -119,6 +121,31 @@ namespace MyApp.Api.Repositories.employee
                 .Include(e => e.Site)
                 .ToListAsync();
         }
+
+
+        public async Task<IEnumerable<Employee>> GetAllEmployeeSimpleAsync()
+        {
+            return await _context.Employees
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Employee>?> GetByMatriculeSimpleAsync(string[] matricules)
+        {
+            if (matricules == null || matricules.Length == 0)
+                return Enumerable.Empty<Employee>();
+
+            return await _context.Employees
+            .Include(e => e.Unit)
+                .Include(e => e.Service)
+                .Include(e => e.Department)
+                .Include(e => e.Direction)
+                .Include(e => e.ContractType)
+                .Include(e => e.Gender)
+                .Include(e => e.Site)
+                .Where(e => matricules.Contains(e.EmployeeCode))
+                .ToListAsync();
+        }
+        
 
         public async Task<Employee?> GetByIdAsync(string id)
         {

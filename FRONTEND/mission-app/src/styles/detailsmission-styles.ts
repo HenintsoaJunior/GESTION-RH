@@ -19,16 +19,48 @@ interface ChartWithCenterTextOptions {
     };
   };
 }
-
 export const LoadingContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
   padding: var(--spacing-2xl);
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  font-style: italic;
-  font-family: var(--font-family);
+  gap: 8px;
+`
+
+export const LoadingDot = styled.div<{ delay: number }>`
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  animation: bounce 1.4s infinite ease-in-out both;
+  animation-delay: ${props => props.delay}s;
+
+  @keyframes bounce {
+    0%, 80%, 100% {
+      transform: scale(0);
+      opacity: 0.5;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+`
+
+
+export const LoadingSpinner = styled.div`
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(var(--primary-color-rgb, 105, 180, 46), 0.1);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 `
 
 export const ContentArea = styled.div`

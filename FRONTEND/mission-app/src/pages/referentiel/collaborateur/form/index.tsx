@@ -31,6 +31,7 @@ import { useGetAllDirections } from '@/api/direction/services';
 import { useGetAllDepartments } from '@/api/department/services';
 import { useGetAllServices } from '@/api/service/services';
 import { useGetAllUnits } from '@/api/unit/services';
+import { useGetNationalities } from '@/api/nationality/services';
 
 import type { Employee, EmployeeFormDTO } from '@/api/collaborator/services';
 import type { Site } from '@/api/site/services';
@@ -40,6 +41,18 @@ import type { Direction } from '@/api/direction/services';
 import type { Department } from '@/api/department/services';
 import type { Service } from '@/api/service/services';
 import type { Unit } from '@/api/unit/services';
+import type { Nationality } from '@/api/nationality/services';
+
+interface ExtendedEmployeeFormDTO extends EmployeeFormDTO {
+  nationalityId: string;
+}
+
+type EmployeeWithNationality = Employee & {
+  nationalityId?: string;
+  nationality?: {
+    name: string;
+  };
+};
 
 interface EmployeeFormProps {
   isOpen: boolean;
@@ -49,16 +62,22 @@ interface EmployeeFormProps {
 }
 
 const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSuccess, employee }) => {
-  const [formData, setFormData] = useState<EmployeeFormDTO>({
+  const [formData, setFormData] = useState<ExtendedEmployeeFormDTO>({
     lastName: '',
     firstName: '',
     employeeCode: '',
+    birthDate: '',
+    birthPlace: '',
+    idNumber: '',
+    idIssueDate: '',
+    idIssuePlace: '',
     phoneNumber: '',
     hireDate: '',
     jobTitle: '',
     contractEndDate: '',
     siteId: '',
     genderId: '',
+    nationalityId: '',
     contractTypeId: '',
     directionId: '',
     departmentId: '',
@@ -68,6 +87,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
   const [siteSearch, setSiteSearch] = useState<string>('');
   const [genderSearch, setGenderSearch] = useState<string>('');
+  const [nationalitySearch, setNationalitySearch] = useState<string>('');
   const [contractTypeSearch, setContractTypeSearch] = useState<string>('');
   const [directionSearch, setDirectionSearch] = useState<string>('');
   const [departmentSearch, setDepartmentSearch] = useState<string>('');
@@ -81,6 +101,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
   // Fetch all related entities
   const { data: sitesResponse } = useGetSites();
   const { data: gendersResponse } = useGetGenders();
+  const { data: nationalitiesResponse } = useGetNationalities();
   const { data: contractTypesResponse } = useGetContractTypes();
   const { data: directionsResponse } = useGetAllDirections();
   const { data: departmentsResponse } = useGetAllDepartments();
@@ -89,6 +110,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
 
   const allSites = useMemo(() => sitesResponse?.data || [], [sitesResponse]);
   const allGenders = useMemo(() => gendersResponse?.data || [], [gendersResponse]);
+  const allNationalities = useMemo(() => nationalitiesResponse?.data || [], [nationalitiesResponse]);
   const allContractTypes = useMemo(() => contractTypesResponse?.data || [], [contractTypesResponse]);
   const allDirections = useMemo(() => directionsResponse?.data || [], [directionsResponse]);
   const allDepartments = useMemo(() => departmentsResponse?.data || [], [departmentsResponse]);
@@ -105,6 +127,11 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
   const filteredGenderSuggestions = useMemo(() => genderSuggestions.filter((sug) =>
     sug.toLowerCase().includes(genderSearch.toLowerCase())
   ), [genderSuggestions, genderSearch]);
+
+  const nationalitySuggestions = useMemo(() => allNationalities.map((nat: Nationality) => nat.name), [allNationalities]);
+  const filteredNationalitySuggestions = useMemo(() => nationalitySuggestions.filter((sug) =>
+    sug.toLowerCase().includes(nationalitySearch.toLowerCase())
+  ), [nationalitySuggestions, nationalitySearch]);
 
   const contractTypeSuggestions = useMemo(() => allContractTypes.map((ct: ContractType) => ct.label), [allContractTypes]);
   const filteredContractTypeSuggestions = useMemo(() => contractTypeSuggestions.filter((sug) =>
@@ -133,16 +160,23 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
 
   useEffect(() => {
     if (employee) {
+      const emp = employee as EmployeeWithNationality;
       setFormData({
         lastName: employee.lastName,
         firstName: employee.firstName || '',
         employeeCode: employee.employeeCode || '',
+        birthDate: employee.birthDate || '',
+        birthPlace: employee.birthPlace || '',
+        idNumber: employee.idNumber || '',
+        idIssueDate: employee.idIssueDate || '',
+        idIssuePlace: employee.idIssuePlace || '',
         phoneNumber: employee.phoneNumber || '',
         hireDate: employee.hireDate || '',
         jobTitle: employee.jobTitle || '',
         contractEndDate: employee.contractEndDate || '',
         siteId: employee.siteId,
         genderId: employee.genderId,
+        nationalityId: emp.nationalityId || '',
         contractTypeId: employee.contractTypeId || '',
         directionId: employee.directionId,
         departmentId: employee.departmentId || '',
@@ -151,6 +185,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
       });
       setSiteSearch(employee.site?.siteName || '');
       setGenderSearch(employee.gender?.label || '');
+      setNationalitySearch(emp.nationality?.name || '');
       setContractTypeSearch(employee.contractType?.label || '');
       setDirectionSearch(employee.direction?.directionName || '');
       setDepartmentSearch(employee.department?.departmentName || '');
@@ -161,12 +196,18 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
         lastName: '',
         firstName: '',
         employeeCode: '',
+        birthDate: '',
+        birthPlace: '',
+        idNumber: '',
+        idIssueDate: '',
+        idIssuePlace: '',
         phoneNumber: '',
         hireDate: '',
         jobTitle: '',
         contractEndDate: '',
         siteId: '',
         genderId: '',
+        nationalityId: '',
         contractTypeId: '',
         directionId: '',
         departmentId: '',
@@ -175,6 +216,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
       });
       setSiteSearch('');
       setGenderSearch('');
+      setNationalitySearch('');
       setContractTypeSearch('');
       setDirectionSearch('');
       setDepartmentSearch('');
@@ -207,9 +249,9 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: EmployeeFormDTO) => ({ ...prev, [name]: value }));
+    setFormData((prev: ExtendedEmployeeFormDTO) => ({ ...prev, [name]: value }));
     // Clear error on change
-    if (fieldErrors[name as keyof EmployeeFormDTO]) {
+    if (fieldErrors[name as keyof ExtendedEmployeeFormDTO]) {
       setFieldErrors(prev => ({ ...prev, [name]: [] }));
     }
   }, [fieldErrors]);
@@ -241,6 +283,20 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
       setFieldErrors(prev => ({ ...prev, 'genderId': [] }));
     }
   }, [allGenders, fieldErrors]);
+
+  const handleNationalityChange = useCallback((value: string): void => {
+    setNationalitySearch(value);
+    const matchedNationality = allNationalities.find((nat: Nationality) => nat.name === value);
+    if (matchedNationality) {
+      setFormData((prev) => ({ ...prev, nationalityId: matchedNationality.nationalityId }));
+    } else {
+      setFormData((prev) => ({ ...prev, nationalityId: '' }));
+    }
+    // Clear error on change
+    if (fieldErrors['nationalityId']) {
+      setFieldErrors(prev => ({ ...prev, 'nationalityId': [] }));
+    }
+  }, [allNationalities, fieldErrors]);
 
   const handleContractTypeChange = useCallback((value: string): void => {
     setContractTypeSearch(value);
@@ -334,13 +390,13 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
     e.preventDefault();
     if (!validateForm()) return;
     if (employee) {
-      updateEmployeeMutation.mutate(formData, {
+      updateEmployeeMutation.mutate(formData as EmployeeFormDTO, {
         onSuccess: () => {
           onFormSuccess('Employé modifié avec succès.');
         },
       });
     } else {
-      createEmployeeMutation.mutate(formData, {
+      createEmployeeMutation.mutate(formData as EmployeeFormDTO, {
         onSuccess: () => {
           onFormSuccess('Employé créé avec succès.');
         },
@@ -400,6 +456,76 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onFormSucc
                         value={formData.firstName}
                         onChange={handleInputChange}
                         disabled={isProcessing}
+                      />
+                    </FormFieldCell>
+                  </FormRow>
+                  <FormRow className="dual-field-row">
+                    <FormFieldCell>
+                      <FormLabel>Date de naissance</FormLabel>
+                      <FormInput
+                        type="date"
+                        name="birthDate"
+                        value={formData.birthDate}
+                        onChange={handleInputChange}
+                        disabled={isProcessing}
+                      />
+                    </FormFieldCell>
+                    <FormFieldCell>
+                      <FormLabel>Lieu de naissance</FormLabel>
+                      <FormInput
+                        type="text"
+                        name="birthPlace"
+                        value={formData.birthPlace}
+                        onChange={handleInputChange}
+                        disabled={isProcessing}
+                      />
+                    </FormFieldCell>
+                  </FormRow>
+                  <FormRow className="dual-field-row">
+                    <FormFieldCell>
+                      <FormLabel>Numéro CIN</FormLabel>
+                      <FormInput
+                        type="text"
+                        name="idNumber"
+                        value={formData.idNumber}
+                        onChange={handleInputChange}
+                        disabled={isProcessing}
+                      />
+                    </FormFieldCell>
+                    <FormFieldCell>
+                      <FormLabel>Date CIN</FormLabel>
+                      <FormInput
+                        type="date"
+                        name="idIssueDate"
+                        value={formData.idIssueDate}
+                        onChange={handleInputChange}
+                        disabled={isProcessing}
+                      />
+                    </FormFieldCell>
+                  </FormRow>
+                  <FormRow className="dual-field-row">
+                    <FormFieldCell>
+                      <FormLabel>Lieu CIN</FormLabel>
+                      <FormInput
+                        type="text"
+                        name="idIssuePlace"
+                        value={formData.idIssuePlace}
+                        onChange={handleInputChange}
+                        disabled={isProcessing}
+                      />
+                    </FormFieldCell>
+                    <FormFieldCell>
+                      <FormLabel>Nationalité</FormLabel>
+                      <StyledAutoCompleteInput
+                        value={nationalitySearch}
+                        onChange={handleNationalityChange}
+                        suggestions={filteredNationalitySuggestions}
+                        maxVisibleItems={5}
+                        placeholder="Sélectionner une nationalité..."
+                        disabled={isProcessing}
+                        fieldType="nationality"
+                        fieldLabel="nationality"
+                        showAddOption={false}
                       />
                     </FormFieldCell>
                   </FormRow>

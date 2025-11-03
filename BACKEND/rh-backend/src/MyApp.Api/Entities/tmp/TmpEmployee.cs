@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using MyApp.Api.Models.dto.tmp;
@@ -9,6 +10,7 @@ namespace MyApp.Api.Entities.tmp
     {
         [Key]
         [Column("tmp_employee_id")]
+        [MaxLength(250)]
         public string? TmpEmployeeId { get; set; }
 
         [Column("site")]
@@ -26,6 +28,24 @@ namespace MyApp.Api.Entities.tmp
         [Column("prenom")]
         [MaxLength(100)]
         public string? Prenom { get; set; }
+        
+        [Column("date_naissance")]
+        public DateTime? DateNaissance { get; set; }
+
+        [Column("lieu_naissance")]
+        [MaxLength(100)]
+        public string? LieuNaissance { get; set; }
+
+        [Column("numero_cin")]
+        [MaxLength(50)]
+        public string? NumeroCin { get; set; }
+
+        [Column("date_cin")]
+        public DateTime? DateCin { get; set; }
+
+        [Column("lieu_cin")]
+        [MaxLength(100)]
+        public string? LieuCin { get; set; }
 
         [Column("sexe")]
         [MaxLength(50)]
@@ -81,6 +101,11 @@ namespace MyApp.Api.Entities.tmp
             Mle = dto.Mle;
             Nom = dto.Nom;
             Prenom = dto.Prenom;
+            DateNaissance = dto.DateNaissance;
+            LieuNaissance = dto.LieuNaissance;
+            NumeroCin = dto.NumeroCin;
+            DateCin = dto.DateCin;
+            LieuCin = dto.LieuCin;
             Sexe = dto.Sexe;
             Nationalite = dto.Nationalite;
             Telephone = dto.Telephone;

@@ -17,6 +17,7 @@ export const BULK_REMOVE_USER_ROLES_KEY = ['bulkRemoveUserRoles'] as const;
 export const USER_HABILITATIONSROLE_KEY = ['userHabilitationsRole'] as const;
 export const ROLE_USER_COUNT_BASE_KEY = ['roleUserCount'] as const;
 export const USER_AVAILABILITY_KEY = ['userAvailability'] as const;
+export const USER_COLLABORATORS_MATRICULES_BASE_KEY = ['userCollaboratorsMatricules'] as const;
 
 export interface UserSearchFilters {
   name?: string;
@@ -145,6 +146,7 @@ export interface UserRoleBulkDto {
 
 type BulkCreateUserRolesResponse = ApiResponse<UserRoleBulkDto>;
 type BulkRemoveUserRolesResponse = ApiResponse<UserRoleBulkDto>;
+type MatriculesResponse = ApiResponse<string[]>;
 
 export const useDepartments = () => {
   return useQuery<DepartmentsResponse, Error>({
@@ -520,5 +522,29 @@ export const useUpdateUserAvailability = () => {
     onError: (error) => {
       console.error('Error updating user availability:', error);
     },
+  });
+};
+
+
+export const useUserCollaboratorsMatricules = (userId: string | undefined) => {
+  const queryKey = [...USER_COLLABORATORS_MATRICULES_BASE_KEY, userId] as const;
+
+  return useQuery<MatriculesResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error('userId is required for fetching collaborators matricules');
+      }
+      try {
+        const response = await api.get(`/api/User/${userId}/collaboratorsMatricules`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!userId,
   });
 };

@@ -1,7 +1,7 @@
 export const getStatusBadgeClass = (status: string) => {
   const normalized = status.trim().toLowerCase();
   switch (normalized) {
-    case "Mission en courss de validation":
+    case "Mission en cours de validation":
     case "pending approval":
       return "status-waiting";
     case "en cours":
@@ -23,6 +23,9 @@ export const getStatusBadgeClass = (status: string) => {
     case "note de frais payée":
     case "expense note paid":
       return "status-approved";
+    case "annulé":
+    case "canceled":
+      return "status-cancelled";
     default:
       return "status-pending";
   }
@@ -36,14 +39,16 @@ export const englishToFrench: Record<string, string> = {
   "payment in progress": "Paiement en cours",
   "indemnity paid": "Indemnité payée",
   "expense note paid": "Note de frais payée",
+  "canceled": "Annulé",
 };
 
 export const frenchToEnglish: Record<string, string> = {
-  "À valider": "Pending approval",
+  "Mission en cours de validation": "Pending approval",
   "En cours d'exécution": "In Progress",
   "Terminé": "Completed",
   "Planifié": "Planned",
   "Paiement en cours": "Payment in progress",
   "Indemnité payée": "Indemnity paid",
   "Note de frais payée": "Expense note paid",
+  "Annulé": "Canceled",
 };

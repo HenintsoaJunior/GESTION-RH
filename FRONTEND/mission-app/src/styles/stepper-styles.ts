@@ -16,14 +16,14 @@ export const StepItem = styled.div<StepItemProps>`
   position: relative;
   flex: 1;
   cursor: ${({ $isActive }) => ($isActive ? "pointer" : "default")};
-  padding: var(--spacing-md) 0;
+  padding: var(--spacing-sm) 0; /* Réduit de md à sm pour compacité */
 
   &:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: 35px;
+    top: 28px; /* Ajusté pour le cercle plus petit (32px) */
     right: -50%;
-    width: 100%;
+    width: 100%; /* Garde la largeur pour connexion fluide */
     height: 2px;
     background-color: ${({ $status }) =>
       $status === "approved" ? "var(--success-color)" : "var(--border-color)"};
@@ -35,12 +35,13 @@ export const StepItem = styled.div<StepItemProps>`
     align-items: center;
     flex: none;
     width: 100%;
+    padding: var(--spacing-xs) 0; /* Encore plus compact sur mobile */
 
     &:not(:last-child)::after {
       top: -50%;
       right: auto;
-      bottom: 20px;
-      left: 20px;
+      bottom: 16px; /* Réduit pour cercle plus petit */
+      left: 16px; /* Moins d'espace à gauche */
       width: 2px;
       height: 100%;
       background-color: ${({ $status }) =>
@@ -54,14 +55,14 @@ export const StepperContainer = styled.div`
   align-items: flex-start;
   justify-content: space-between;
   position: relative;
-  margin: var(--spacing-lg) 0;
-  padding: 0;
+  margin: var(--spacing-md) 0; /* Réduit de lg à md */
+  padding: 0 var(--spacing-lg); /* Latéraux réduits de 3xl à lg ; top/bottom gérés séparément */
   font-family: var(--font-family);
 
   background: var(--bg-primary);
   border-radius: 0;
   margin-top: 0;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-md); /* Réduit de lg à md */
   width: 100%;
   max-width: 100%;
   margin-left: auto;
@@ -69,32 +70,30 @@ export const StepperContainer = styled.div`
   border: none;
   overflow: hidden;
   box-sizing: border-box;
-  padding-left: var(--spacing-3xl);
-  padding-right: var(--spacing-3xl);
-  padding-bottom: var(--spacing-lg);
-  padding-top: var(--spacing-md);
+  padding-bottom: var(--spacing-md); /* Réduit de lg à md */
+  padding-top: var(--spacing-sm); /* Réduit de md à sm */
 
   @media (max-width: 768px) {
-    padding-left: var(--spacing-md);
-    padding-right: var(--spacing-md);
-    padding-bottom: var(--spacing-md);
+    padding-left: var(--spacing-sm); /* Réduit de md à sm */
+    padding-right: var(--spacing-sm);
+    padding-bottom: var(--spacing-sm);
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm); /* Ajout d'un gap réduit pour espacer les étapes verticalement */
   }
 `;
 
 export const StepCircle = styled.div<StepCircleProps>`
-  width: 40px;
-  height: 40px;
+  width: 32px; /* Réduit de 40px à 32px pour compacité */
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.8rem; /* Légèrement réduit pour fitting */
   position: relative;
   z-index: 2;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem; /* Réduit de 0.5rem à 0.25rem */
   font-family: var(--font-family);
 
   background-color: ${({ $status }) => {
@@ -110,7 +109,7 @@ export const StepCircle = styled.div<StepCircleProps>`
       : "var(--text-primary)"
   };
 
-  border: 3px solid ${({ $status }) => {
+  border: 2px solid ${({ $status }) => { /* Réduit de 3px à 2px */
     if ($status === "approved") return "var(--success-color)";
     if ($status === "in-progress" || $status === "pending") return "var(--warning-color)";
     if ($status === "rejected") return "var(--error-color)";
@@ -122,23 +121,23 @@ export const StepCircle = styled.div<StepCircleProps>`
 
 export const StepLabel = styled.div`
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* Légèrement réduit de 0.9rem */
   font-weight: 500;
   color: var(--text-primary);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.125rem; /* Réduit de 0.25rem */
   font-family: var(--font-family);
 `;
 
 export const StepSubtitle = styled.div`
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.75rem; /* Réduit de 0.8rem */
   color: var(--text-muted);
   font-family: var(--font-family);
 `;
 
 export const ValidationDateText = styled.p`
   margin-top: var(--spacing-xs);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs); /* Réduit de sm à xs pour plus de densité */
   color: var(--text-secondary);
   text-align: center;
   font-family: var(--font-family);

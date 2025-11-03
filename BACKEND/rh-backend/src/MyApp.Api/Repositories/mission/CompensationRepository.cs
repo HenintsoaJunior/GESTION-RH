@@ -32,7 +32,7 @@ namespace MyApp.Api.Repositories.mission
             return await _context.Compensations
                 .Include(c => c.Assignation)
                 .Include(c => c.Employee)
-                .OrderByDescending(c => c.CreatedAt)
+                .OrderByDescending(c => c.PaymentDate)
                 .ToListAsync();
         }
 
@@ -42,7 +42,7 @@ namespace MyApp.Api.Repositories.mission
                 .Where(c => c.EmployeeId == employeeId)
                 .Include(c => c.Assignation)
                 .Include(c => c.Employee)
-                .OrderByDescending(c => c.CreatedAt)
+                .OrderByDescending(c => c.PaymentDate)
                 .ToListAsync();
         }
 
@@ -50,7 +50,7 @@ namespace MyApp.Api.Repositories.mission
         {
             return await _context.Compensations
                 .Where(c => c.AssignationId == assignationId)
-                .OrderByDescending(c => c.CreatedAt)
+                .OrderByDescending(c => c.PaymentDate)
                 .ToListAsync();
         }
 
@@ -68,6 +68,7 @@ namespace MyApp.Api.Repositories.mission
                 .Include(c => c.Assignation)
                 .Include(c => c.Employee)
                 .Where(c => c.EmployeeId == employeeId && c.AssignationId == assignationId)
+                .OrderByDescending(c => c.PaymentDate)
                 .ToListAsync();
         }
 
@@ -84,8 +85,6 @@ namespace MyApp.Api.Repositories.mission
                 .Where(c => c.Status == "unpaid")
                 .SumAsync(c => c.TransportAmount + c.BreakfastAmount + c.LunchAmount + c.DinnerAmount + c.AccommodationAmount);
         }
-
-        
 
         public async Task AddAsync(Compensation compensation)
         {

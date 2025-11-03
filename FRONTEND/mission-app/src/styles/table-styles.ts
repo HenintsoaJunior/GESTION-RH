@@ -315,6 +315,21 @@ export const FiltersContainer = styled.div<FiltersContainerProps>`
   }
 `;
 
+export const FilterBar = styled.div`
+  padding: var(--spacing-md) var(--spacing-3xl);
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-md);
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
 export const FiltersHeader = styled.div`
   display: flex;
   justify-content: space-between;
@@ -920,10 +935,49 @@ export const EditButton = styled(IconButton)`
   color: var(--primary-color);
 
   &:hover {
-    background-color: var(--primary-light);
-    color: var(--primary-color);
+    background-color: var(--primary-transparent);
+    color: var(--primary-hover);
   }
 `;
+
+export  const EditActionButtonStyled = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  background-color: var(--primary-color);
+  color: white;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--primary-hover);
+  }
+
+  &:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+`;
+
+export const EditorButton = styled(IconButton)`
+  color: var(--primary-color);
+
+  &:hover {
+    background-color: var(--primary-color);
+    color: var(--primary-hover);
+  }
+`;
+
 
 export const CancelButton = styled(IconButton)`
   color: var(--error-color);
@@ -940,6 +994,23 @@ export const DeleteButton = styled(IconButton)`
   &:hover {
     background-color: var(--error-bg);
     color: var(--error-color);
+  }
+`;
+
+export const ToggleButton = styled(IconButton)`
+  width: 24px;
+  height: 24px;
+  color: var(--text-secondary);
+  margin-left: 0;
+
+  &:hover {
+    background-color: var(--bg-secondary);
+    color: var(--primary-color);
+  }
+
+  @media (max-width: 768px) {
+    width: 20px;
+    height: 20px;
   }
 `;
 
@@ -1288,4 +1359,216 @@ export const RolesContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+`;
+
+// Nouveaux styled-components pour les onglets et sections catégories (basés sur les classes Tailwind utilisées)
+export const TabsContainer = styled.div`
+  width: 100%;
+`;
+
+export const TabsList = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-light);
+  padding: 0;
+  margin: 0;
+`;
+
+export const TabsTrigger = styled.button`
+  padding: var(--spacing-md) var(--spacing-xl);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+  font-family: var(--font-family);
+
+  &:hover {
+    color: var(--primary-color);
+    background-color: var(--bg-tertiary);
+  }
+
+  &.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background-color: var(--bg-primary);
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+`;
+
+export const TabsContent = styled.div<{ $value?: string }>`
+  padding: var(--spacing-md) 0;
+  display: ${({ $value }) => ($value ? 'block' : 'none')};
+`;
+
+export const SearchContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+`;
+
+export const CategoryContainer = styled.div`
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: var(--spacing-md);
+`;
+
+export const CategoryHeader = styled.div`
+  cursor: pointer;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  transition: all 0.2s ease;
+  background-color: var(--bg-secondary);
+  font-weight: 600;
+  font-size: var(--font-size-lg);
+  font-family: var(--font-family);
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+`;
+
+export const CategoryTitle = styled.span`
+  color: var(--text-primary);
+`;
+
+export const CategoryContent = styled.div`
+  padding: var(--spacing-md);
+  background-color: var(--bg-primary);
+`;
+
+export const ScaleItem = styled.div`
+  border-left: 4px solid var(--primary-color);
+  background-color: var(--bg-tertiary);
+  padding: var(--spacing-md);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  margin-bottom: var(--spacing-sm);
+`;
+
+export const ScaleFields = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+`;
+
+export const KeyValueRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+`;
+
+export const KeyLabel = styled.span`
+  font-weight: 500;
+  color: var(--text-secondary);
+`;
+
+export const ValueSpan = styled.span`
+  color: var(--text-primary);
+`;
+
+export const DatesDiv = styled.div`
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid var(--border-light);
+  margin-top: var(--spacing-xs);
+`;
+
+export const CategorySection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-md) 0;
+`;
+
+export const SectionHeader = styled.h3`
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: var(--spacing-lg) 0 var(--spacing-sm) 0;
+  font-family: var(--font-family);
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: var(--spacing-xs);
+`;
+
+export const SectionSubTitle = styled.p`
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+  font-weight: 500;
+  font-family: var(--font-family);
+`;
+
+export const StyledDivider = styled.hr`
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-light), transparent);
+  margin: var(--spacing-md) 0;
+`;
+
+// Nouveaux composants pour les checkboxes
+export const CheckboxContainer = styled.label`
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  gap: var(--spacing-xs);
+  font-family: var(--font-family);
+`;
+
+export const CheckboxLabel = styled.span`
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-primary);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &::after {
+    content: '✓';
+    position: absolute;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  &:hover {
+    border-color: var(--primary-color);
+  }
+`;
+
+export const CheckboxInput = styled.input`
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+
+  &:checked + ${CheckboxLabel} {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+
+  &:checked + ${CheckboxLabel}::after {
+    opacity: 1;
+  }
 `;

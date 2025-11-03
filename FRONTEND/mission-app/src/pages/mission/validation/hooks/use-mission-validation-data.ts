@@ -15,7 +15,7 @@ import {
   type UpdateCommentParams,
   type DeleteCommentParams,
 } from "@/api/comment/services";
-import { useEmployees, type Employee } from "@/api/collaborator/services";
+import { useGetAllEmployeesSimple, type Employee } from "@/api/collaborator/services";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface Filter {
@@ -141,7 +141,7 @@ const useMissionValidationData = () => {
   const createCommentMutation = useCreateComment();
   const updateCommentMutation = useUpdateComment();
   const deleteCommentMutation = useDeleteComment();
-  const { data: employeesData, isLoading: employeesLoading } = useEmployees();
+  const { data: employeesData, isLoading: employeesLoading } = useGetAllEmployeesSimple();
 
   // Handle missions data
   useEffect(() => {
@@ -192,7 +192,7 @@ const useMissionValidationData = () => {
           beneficiary: (employeesData.data as Employee[]).map((emp) => ({
             id: emp.employeeId || "N/A",
             name: `${emp.lastName || "Inconnu"} ${emp.firstName || ""}`.trim(),
-            displayName: `${emp.lastName || "Inconnu"} ${emp.firstName || ""} (${emp.direction?.acronym || "N/A"})`.trim(),
+            displayName: `${emp.lastName || "Inconnu"} ${emp.firstName || ""}`.trim(),
             acronym: emp.direction?.acronym || "N/A",
           })),
         }));

@@ -11,11 +11,12 @@ namespace MyApp.Api.Repositories.mission
         Task<IDbContextTransaction> BeginTransactionAsync();
         Task<IEnumerable<CompensationScale>> GetAllAsync();
         Task<CompensationScale?> GetByIdAsync(string id);
-        Task<IEnumerable<CompensationScale>> GetByEmployeeCategoryAsync(string employeeCategoryId);
         Task<IEnumerable<CompensationScale>> GetByCriteriaAsync(CompensationScaleDTOForm criteria);
         Task AddAsync(CompensationScale scale);
+        Task BulkAddAsync(IEnumerable<CompensationScale> scales);
         Task UpdateAsync(CompensationScale scale);
         Task DeleteAsync(CompensationScale scale);
+        Task BulkDeleteAsync(IEnumerable<CompensationScale> scales);
         Task SaveChangesAsync();
     }
 
@@ -38,7 +39,6 @@ namespace MyApp.Api.Repositories.mission
             return await _context.CompensationScales
                 .Include(c => c.Transport)
                 .Include(c => c.ExpenseType)
-                .Include(c => c.EmployeeCategory)
                 .ToListAsync();
         }
 
@@ -48,18 +48,7 @@ namespace MyApp.Api.Repositories.mission
                 .AsNoTracking()
                 .Include(c => c.Transport)
                 .Include(c => c.ExpenseType)
-                .Include(c => c.EmployeeCategory)
                 .FirstOrDefaultAsync(c => c.CompensationScaleId == id);
-        }
-
-        public async Task<IEnumerable<CompensationScale>> GetByEmployeeCategoryAsync(string employeeCategoryId)
-        {
-            return await _context.CompensationScales
-                .Include(c => c.Transport)
-                .Include(c => c.ExpenseType)
-                .Include(c => c.EmployeeCategory)
-                .Where(c => c.EmployeeCategoryId == employeeCategoryId)
-                .ToListAsync();
         }
 
         public async Task<IEnumerable<CompensationScale>> GetByCriteriaAsync(CompensationScaleDTOForm criteria)
@@ -67,7 +56,6 @@ namespace MyApp.Api.Repositories.mission
             var query = _context.CompensationScales
                 .Include(c => c.Transport)
                 .Include(c => c.ExpenseType)
-                .Include(c => c.EmployeeCategory)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(criteria.TransportId))
@@ -75,9 +63,6 @@ namespace MyApp.Api.Repositories.mission
 
             if (!string.IsNullOrWhiteSpace(criteria.ExpenseTypeId))
                 query = query.Where(c => c.ExpenseTypeId == criteria.ExpenseTypeId);
-
-            if (!string.IsNullOrWhiteSpace(criteria.EmployeeCategoryId))
-                query = query.Where(c => c.EmployeeCategoryId == criteria.EmployeeCategoryId);
 
             return await query
                 .OrderBy(c => c.CreatedAt)
@@ -89,6 +74,11 @@ namespace MyApp.Api.Repositories.mission
             await _context.CompensationScales.AddAsync(scale);
         }
 
+        public async Task BulkAddAsync(IEnumerable<CompensationScale> scales)
+        {
+            await _context.CompensationScales.AddRangeAsync(scales);
+        }
+
         public Task UpdateAsync(CompensationScale scale)
         {
             _context.CompensationScales.Update(scale);
@@ -98,6 +88,15 @@ namespace MyApp.Api.Repositories.mission
         public Task DeleteAsync(CompensationScale scale)
         {
             _context.CompensationScales.Remove(scale);
+            return Task.CompletedTask;
+        }
+
+        public Task BulkDeleteAsync(IEnumerable<CompensationScale> scales)
+        {
+            if (scales?.Any() == true)
+            {
+                _context.CompensationScales.RemoveRange(scales);
+            }
             return Task.CompletedTask;
         }
 

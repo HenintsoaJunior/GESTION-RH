@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS mission_validation;
 DROP TABLE IF EXISTS compensation;
 DROP TABLE IF EXISTS mission_assignation;
 DROP TABLE IF EXISTS compensation_scale;
+DROP TABLE IF EXISTS expense_compensation_scale;
 DROP TABLE IF EXISTS employee_nationalities;
 DROP TABLE IF EXISTS user_habilitations;
 DROP TABLE IF EXISTS role_habilitation;
@@ -32,6 +33,7 @@ DROP TABLE IF EXISTS module;
 DROP TABLE IF EXISTS direction;
 DROP TABLE IF EXISTS site;
 DROP TABLE IF EXISTS lieu;
+DROP TABLE IF EXISTS geo_zones;
 DROP TABLE IF EXISTS transport;
 DROP TABLE IF EXISTS expense_type;
 DROP TABLE IF EXISTS expense_report_type;
@@ -138,11 +140,16 @@ CREATE TABLE employees(
    employee_code VARCHAR(50),
    last_name VARCHAR(50) NOT NULL,
    first_name VARCHAR(100),
+   birth_date DATE,
+   birth_place VARCHAR(100),
+   id_number VARCHAR(50),
+   id_issue_date DATE,
+   id_issue_place VARCHAR(100),
    phone_number VARCHAR(20) NULL,
    hire_date DATE,
    job_title VARCHAR(100) NULL,
    contract_end_date DATE NULL,
-   status VARCHAR(50) DEFAULT 'Actif',
+   status VARCHAR(50) DEFAULT 'Active',
    site_id VARCHAR(50) NOT NULL,
    gender_id VARCHAR(50) NOT NULL,
    contract_type_id VARCHAR(50) NULL,
@@ -162,6 +169,7 @@ CREATE TABLE employees(
    FOREIGN KEY(service_id) REFERENCES service(service_id),
    FOREIGN KEY(unit_id) REFERENCES units(unit_id)
 );
+
 
 CREATE TABLE categories_of_employee(
    employee_id VARCHAR(50),
@@ -247,7 +255,7 @@ CREATE TABLE role_habilitation(
    updated_at DATETIME,
    PRIMARY KEY(habilitation_id, role_id),
    FOREIGN KEY(habilitation_id) REFERENCES habilitations(habilitation_id),
-   FOREIGN KEY(role_id) REFERENCES role(role_id)
+   FOREIGN KEY(role_id) REFERENCES role(role_id) ON DELETE CASCADE
 );
 
 CREATE TABLE user_habilitations (
@@ -289,16 +297,34 @@ CREATE TABLE transport(
 CREATE TABLE compensation_scale(
    compensation_scale_id VARCHAR(50),
    amount DECIMAL(15,2),
-   place VARCHAR(150) DEFAULT 'National',
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    transport_id VARCHAR(50),
    expense_type_id VARCHAR(50),
-   employee_category_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(compensation_scale_id),
    FOREIGN KEY(transport_id) REFERENCES transport(transport_id),
+   FOREIGN KEY(expense_type_id) REFERENCES expense_type(expense_type_id)
+);
+
+CREATE TABLE geo_zones (
+   zone_id VARCHAR(50) PRIMARY KEY,
+   name VARCHAR(100) NOT NULL,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+);
+
+CREATE TABLE expense_compensation_scale(
+   expense_compensation_scale_id VARCHAR(50),
+   amount DECIMAL(15,2),
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   is_transport INT,
+   devise VARCHAR(50) DEFAULT 'EUR',
+   expense_type_id VARCHAR(50),
+   zone_id VARCHAR(50) NOT NULL 
+   PRIMARY KEY(expense_compensation_scale_id),
    FOREIGN KEY(expense_type_id) REFERENCES expense_type(expense_type_id),
-   FOREIGN KEY(employee_category_id) REFERENCES employee_categories(employee_category_id)
+   FOREIGN KEY(zone_id) REFERENCES geo_zones(zone_id)
 );
 
 CREATE TABLE prevision_price(
@@ -313,14 +339,14 @@ CREATE TABLE prevision_price(
 CREATE TABLE lieu (
    lieu_id VARCHAR(50) PRIMARY KEY,
    nom VARCHAR(255) NOT NULL,
-   adresse VARCHAR(500),
    ville VARCHAR(255),
    code_postal VARCHAR(20),
    pays VARCHAR(255) NOT NULL,
+   zone_id VARCHAR(50),
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME
+   updated_at DATETIME,
+   FOREIGN KEY(zone_id) REFERENCES geo_zones(zone_id)
 );
-
 
 CREATE TABLE mission (
    mission_id VARCHAR(50),
@@ -354,7 +380,7 @@ CREATE TABLE mission_assignation (
    employee_id VARCHAR(50) NOT NULL,
    PRIMARY KEY (assignation_id),
    FOREIGN KEY (transport_id) REFERENCES transport(transport_id),
-   FOREIGN KEY (mission_id) REFERENCES mission(mission_id),
+   FOREIGN KEY (mission_id) REFERENCES mission(mission_id) ON DELETE CASCADE,
    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
 );
 
@@ -370,12 +396,11 @@ CREATE TABLE mission_validation(
    mission_id VARCHAR(50) NOT NULL,
    mission_assignation_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(mission_validation_id),
-   FOREIGN KEY(to_whom) REFERENCES users(user_id),
-   FOREIGN KEY(mission_creator) REFERENCES users(user_id),
-   FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
-   FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id)
+   FOREIGN KEY(to_whom) REFERENCES users(user_id) ON DELETE NO ACTION,
+   FOREIGN KEY(mission_creator) REFERENCES users(user_id) ON DELETE NO ACTION,
+   FOREIGN KEY(mission_id) REFERENCES mission(mission_id) ON DELETE NO ACTION, 
+   FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE
 );
-
 
 CREATE TABLE comments(
    comment_id VARCHAR(50),
@@ -391,7 +416,7 @@ CREATE TABLE mission_comments(
    mission_id VARCHAR(50),
    comment_id VARCHAR(50),
    PRIMARY KEY(mission_id, comment_id),
-   FOREIGN KEY(mission_id) REFERENCES mission(mission_id),
+   FOREIGN KEY(mission_id) REFERENCES mission(mission_id) ON DELETE CASCADE,
    FOREIGN KEY(comment_id) REFERENCES comments(comment_id)
 );
 
@@ -415,12 +440,13 @@ CREATE TABLE compensation(
    accommodation_amount DECIMAL(15,2),
    status VARCHAR(50) DEFAULT 'unpaid',
    payment_date DATETIME,
+   devise VARCHAR(50) NOT NULL,
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    assignation_id VARCHAR(50) NOT NULL,
    employee_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(compensation_id),
-   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id),
+   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE,
    FOREIGN KEY(employee_id) REFERENCES employees(employee_id)
 );
 
@@ -447,7 +473,7 @@ CREATE TABLE expense_report(
    assignation_id VARCHAR(50) NOT NULL,
    expense_report_type_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(expense_report_id),
-   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id),
+   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE,
    FOREIGN KEY(expense_report_type_id) REFERENCES expense_report_type(expense_report_type_id)
 );
 
@@ -473,7 +499,7 @@ CREATE TABLE mission_report(
    assignation_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(mission_report_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id),
-   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id)
+   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE
 );
 
 CREATE TABLE mission_report_attachments (
@@ -536,7 +562,7 @@ CREATE TABLE menu_role (
    created_at DATETIME NOT NULL DEFAULT GETDATE(),
    updated_at DATETIME NOT NULL DEFAULT GETDATE(),
    FOREIGN KEY (menu_id) REFERENCES menu(menu_id),
-   FOREIGN KEY (role_id) REFERENCES role(role_id)
+   FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE
 );
 
 CREATE TABLE menu_hierarchy (
@@ -589,6 +615,11 @@ CREATE TABLE tmp_employee(
    mle VARCHAR(50),
    nom VARCHAR(100),
    prenom VARCHAR(100),
+   date_naissance DATE,
+   lieu_naissance VARCHAR(100),
+   numero_cin VARCHAR(50),
+   date_cin DATE,
+   lieu_cin VARCHAR(100),
    sexe VARCHAR(50),
    nationalite VARCHAR(50),
    telephone VARCHAR(20),
@@ -600,5 +631,5 @@ CREATE TABLE tmp_employee(
    service VARCHAR(100),
    department VARCHAR(100),
    direction VARCHAR(100),
-   date_fin_contrat DATE,
+   date_fin_contrat DATE
 );

@@ -418,7 +418,7 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
                             </div>
                         )}
                         <div>
-                            <SectionTitle>Analyse Visuelle</SectionTitle>
+                            {/* <SectionTitle>Analyse Visuelle</SectionTitle> */}
                             <ExpenseTypeDoughnutChart expenseReports={expenseReports} />
                         </div>
                     </TwoColumnLayout>
