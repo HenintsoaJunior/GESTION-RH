@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { ChevronDown, ChevronUp, X, List, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import styled from "styled-components";
 import {
   FiltersContainer,
   FiltersHeader,
@@ -9,9 +10,6 @@ import {
   FiltersControls,
   FilterControlButton,
   FiltersSection,
-  FormTableSearch,
-  FormRow,
-  FormFieldCell,
   FormLabelSearch,
   StyledAutoCompleteInput,
   StyledSelect,
@@ -31,20 +29,29 @@ import {
   Loading,
   NoDataMessage,
   Separator,
-  StatusBadge,
 } from "@/styles/table-styles";
-import { useEmployees } from "@/api/collaborator/services";
+import { TabContainer, TabButton } from "@/styles/onglet-style";
+import { StatusBadge } from "@/components/status";
+import type { Status } from "@/components/status";
+import { useGetAllEmployeesSimple, useGetEmployeesByMatriculesSimple } from "@/api/collaborator/services";
 import { useLieux } from "@/api/lieu/services";
 import { useSearchMissionAssignations } from "@/api/mission/services";
-import { useUserCollaborators } from "@/api/users/services";
+import { useUserCollaborators, useUserCollaboratorsMatricules } from "@/api/users/services";
 import { useHasHabilitation } from "@/api/users/services";
 import type { MissionAssignationSearchFilters, MissionAssignation, Lieu } from "@/api/mission/services";
 import type { Employee as CollabEmployee } from "@/api/collaborator/services";
 import type { UserInfo, UserInfosResponse } from "@/api/users/services";
 import Alert from "@/components/alert";
 import Pagination from "@/components/pagination";
-import { getStatusBadgeClass, englishToFrench } from "@/utils/status";
+import { englishToFrench } from "@/utils/status";
 import ProtectedRoute from "@/components/protected-route";
+
+type TabKey = 'mes' | 'toutes' | 'collaborateurs';
+
+interface Tab {
+  key: TabKey;
+  label: string;
+}
 
 interface FiltersState extends Omit<MissionAssignationSearchFilters, 'matricule' | 'missionId' | 'transportId' | 'status'> {
   selectedEmployee?: CollabEmployee | null;
@@ -59,9 +66,61 @@ interface AlertState {
   message: string;
 }
 
+const StyledTabContainer = styled.div`${TabContainer}`;
+
+type TabButtonProps = {
+  $isActive: boolean;
+  $hasBorderRight: boolean;
+};
+
+const StyledTabButton = styled.button<TabButtonProps>`
+  ${TabButton}
+`;
+
+const FilterGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+`;
+
+const FilterField = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const DateGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+`;
+
+const Fieldset = styled.fieldset`
+  background: var(--bg-primary, #ffffff);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: var(--border-radius, 4px);
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+`;
+
+const Legend = styled.legend`
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color);
+  padding: 0 var(--spacing-sm);
+  font-size: 0.75rem;
+  grid-column: 1 / -1;
+`;
+
+const DateField = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
 const MissionListArchive: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'toutes' | 'mes' | 'collaborateurs'>('toutes');
+  const [activeTab, setActiveTab] = useState<TabKey>('toutes');
   const [filters, setFilters] = useState<FiltersState>({
     employeeId: "",
     missionType: "",
@@ -100,17 +159,37 @@ const MissionListArchive: React.FC = () => {
   const userId = userData?.userId || "";
 
   const canViewDetails = useHasHabilitation(userId, "voir details mission");
+  const canViewAllMissions = useHasHabilitation(userId, "Voir les missions de tous les collaborateurs");
 
-  const { data: employeesResponse, isLoading: isEmployeesLoading } = useEmployees();
+  const { data: employeesResponse, isLoading: isEmployeesLoading } = useGetAllEmployeesSimple();
+  const { data: collaborateursMatriculesResponse } = useUserCollaboratorsMatricules(userId);
+  const { data: collaborateursEmployeesResponse, isLoading: isCollaboratorsEmployeesLoading } = useGetEmployeesByMatriculesSimple(collaborateursMatriculesResponse?.data || []);
   const { data: lieuxResponse, isLoading: isLieuxLoading } = useLieux();
   const { data: collaboratorsResponse }: { data?: UserInfosResponse } = useUserCollaborators(userId);
 
   const employees = useMemo(() => employeesResponse?.data || [], [employeesResponse?.data]) as CollabEmployee[];
+  const collaborateursEmployees = useMemo(() => collaborateursEmployeesResponse?.data || [], [collaborateursEmployeesResponse]);
+  const currentEmployees = useMemo(() => activeTab === 'collaborateurs' ? collaborateursEmployees : employees, [activeTab, collaborateursEmployees, employees]);
   const lieux = useMemo(() => lieuxResponse?.data || [], [lieuxResponse?.data]);
 
+  const hasCollaborators = useMemo(() => (collaboratorsResponse?.data as UserInfo[] || []).length > 0, [collaboratorsResponse]);
+
+  const tabTitles = useMemo(() => {
+    const titles: Tab[] = [
+      { key: 'mes', label: 'Mes missions terminées' },
+    ];
+    if (canViewAllMissions) {
+      titles.unshift({ key: 'toutes', label: 'Toutes les missions terminées' });
+    }
+    if (hasCollaborators) {
+      titles.push({ key: 'collaborateurs', label: 'Missions terminées de mes collaborateurs' });
+    }
+    return titles;
+  }, [hasCollaborators, canViewAllMissions]);
+
   const employeeSuggestions = useMemo(() =>
-    employees.map((emp) => `${emp.firstName} ${emp.lastName}`),
-    [employees]
+    currentEmployees.map((emp: CollabEmployee) => `${emp.firstName} ${emp.lastName}`),
+    [currentEmployees]
   );
 
   const filteredEmployeeSuggestions = useMemo(() =>
@@ -121,7 +200,7 @@ const MissionListArchive: React.FC = () => {
   );
 
   const lieuSuggestions = useMemo(() =>
-    lieux.map((lieu: Lieu) => lieu.nom),
+    lieux.map((lieu: Lieu) => `${lieu.nom}/${lieu.pays}`),
     [lieux]
   );
 
@@ -134,7 +213,7 @@ const MissionListArchive: React.FC = () => {
 
   const missionTypes = ["International", "National"];
 
-  const hasFilters = useMemo(() => Object.values({ 
+  const hasFilters: boolean = Object.values({ 
     ...filters, 
     selectedEmployee: null, 
     selectedLieu: null,
@@ -144,7 +223,12 @@ const MissionListArchive: React.FC = () => {
     maxDepartureDate: filters.maxDepartureDate || "",
     minArrivalDate: filters.minArrivalDate || "",
     maxArrivalDate: filters.maxArrivalDate || "",
-  }).some((val) => (val || "").trim() !== ""), [filters]);
+  }).some((val) => {
+    if (Array.isArray(val)) {
+      return val.length > 0;
+    }
+    return (val || "").trim() !== "";
+  });
 
   const queryFilters: MissionAssignationSearchFilters = useMemo(() => {
     const filtersBase: Partial<MissionAssignationSearchFilters> = {
@@ -186,8 +270,12 @@ const MissionListArchive: React.FC = () => {
         }
         break;
       }
+      case 'toutes': {
+        // No matricule filter for all missions
+        break;
+      }
       default: {
-        filtersBase.matricule = [""];
+        filtersBase.matricule = [matricule || ""];
         break;
       }
     }
@@ -202,6 +290,21 @@ const MissionListArchive: React.FC = () => {
   );
 
   const assignations = useMemo(() => searchResponse?.data?.data || [], [searchResponse?.data?.data]);
+
+  const getStatus = useCallback((statusKey: string): Status => {
+    const map: Record<string, Status> = {
+      'pending approval': { id: 'in-review', label: "Mission en cours de validation", color: '#60a5fa', category: 'progress' },
+      'payment in progress': { id: 'in-progress', label: "Paiement en cours", color: '#3b82f6', category: 'progress' },
+      'indemnity paid': { id: 'approved', label: "Indemnité payée", color: '#34d399', category: 'success' },
+      'expense note paid': { id: 'completed', label: "Note de frais payée", color: '#10b981', category: 'success' },
+      'planned': { id: 'scheduled', label: "Planifié", color: '#8b5cf6', category: 'progress' },
+      'in progress': { id: 'in-progress', label: "En cours d'exécution", color: '#3b82f6', category: 'progress' },
+      'completed': { id: 'completed', label: "Terminé", color: '#10b981', category: 'success' },
+      'canceled': { id: 'cancelled', label: "Annulé", color: '#6b7280', category: 'error' },
+      'mission rejected': { id: 'mission rejected', label: "Rejeté", color: '#ef4444', category: 'error' },
+    };
+    return map[statusKey] || { id: 'unknown', label: englishToFrench[statusKey] || statusKey, color: '#6b7280', category: 'error' as const };
+  }, []);
 
   const showNoCollaboratorsMessage = useMemo(() => {
     const collaboratorsData = collaboratorsResponse?.data as UserInfo[] || [];
@@ -241,7 +344,7 @@ const MissionListArchive: React.FC = () => {
 
   const handleEmployeeChange = useCallback((value: string): void => {
     setFilters((prev) => ({ ...prev, employeeSearch: value }));
-    const matchedEmployee = employees.find((emp) =>
+    const matchedEmployee = currentEmployees.find((emp: CollabEmployee) =>
       `${emp.firstName} ${emp.lastName}` === value
     );
     if (matchedEmployee) {
@@ -257,11 +360,11 @@ const MissionListArchive: React.FC = () => {
         employeeId: "",
       }));
     }
-  }, [employees]);
+  }, [currentEmployees]);
 
   const handleLieuChange = useCallback((value: string): void => {
     setFilters((prev) => ({ ...prev, lieuSearch: value }));
-    const matchedLieu = lieux.find((lieu: Lieu) => lieu.nom === value);
+    const matchedLieu = lieux.find((lieu: Lieu) => `${lieu.nom}/${lieu.pays}` === value);
     if (matchedLieu) {
       setFilters((prev) => ({
         ...prev,
@@ -319,36 +422,51 @@ const MissionListArchive: React.FC = () => {
   }, [activeTab, appliedFiltersStr]);
 
   useEffect(() => {
-    if (activeTab === 'mes') {
-      setFilters((prev) => ({
-        ...prev,
-        employeeId: "",
-        selectedEmployee: null,
-        employeeSearch: "",
-      }));
-      setAppliedFilters((prev) => ({
-        ...prev,
-        employeeId: "",
-        selectedEmployee: null,
-        employeeSearch: "",
-      }));
-    }
+    setFilters((prev) => ({
+      ...prev,
+      employeeId: "",
+      selectedEmployee: null,
+      employeeSearch: "",
+    }));
+    setAppliedFilters((prev) => ({
+      ...prev,
+      employeeId: "",
+      selectedEmployee: null,
+      employeeSearch: "",
+    }));
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'collaborateurs' && !hasCollaborators) {
+      setActiveTab('mes');
+    }
+  }, [activeTab, hasCollaborators]);
+
+  useEffect(() => {
+    if (activeTab === 'toutes' && !canViewAllMissions) {
+      setActiveTab('mes');
+    }
+  }, [activeTab, canViewAllMissions]);
 
   const handlePageSizeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setPageSize(Number(e.target.value));
     setPage(1);
   }, []);
 
-  const tabTitles = [
-    { key: 'toutes' as const, label: 'Toutes les missions terminées' },
-    { key: 'mes' as const, label: 'Mes missions terminées' },
-    { key: 'collaborateurs' as const, label: 'Missions terminées de mes collaborateurs' },
-  ];
-
   const showEmployeeFilter = activeTab !== 'mes';
-  const numCols = showEmployeeFilter ? 3 : 2;
-  const fieldWidth = showEmployeeFilter ? "33.333%" : "50%";
+
+  const isCurrentEmployeesLoading = useMemo(() => activeTab === 'collaborateurs' ? isCollaboratorsEmployeesLoading : isEmployeesLoading, [activeTab, isCollaboratorsEmployeesLoading, isEmployeesLoading]);
+
+  const truncateCellStyle = {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  };
+
+  const statusCellStyle = {
+    whiteSpace: 'normal' as const,
+    overflowWrap: 'break-word' as const,
+  };
 
   const hasAppliedFilters = useMemo(() => Object.values({ 
     ...appliedFilters, 
@@ -360,25 +478,12 @@ const MissionListArchive: React.FC = () => {
     maxDepartureDate: appliedFilters.maxDepartureDate || "",
     minArrivalDate: appliedFilters.minArrivalDate || "",
     maxArrivalDate: appliedFilters.maxArrivalDate || "",
-  }).some((val) => (val || "").trim() !== ""), [appliedFilters]);
-
-  const fieldsetStyle = { 
-    display: "grid", 
-    gridTemplateColumns: "1fr 1fr", 
-    gap: "var(--spacing-md)",
-    background: "var(--bg-primary, #ffffff)",
-    padding: "var(--spacing-md)",
-    border: "1px solid var(--border-color, #ddd)",
-    borderRadius: "var(--border-radius, 4px)",
-    margin: "0"
-  };
-
-  const legendStyle = { 
-    fontWeight: "var(--font-weight-semibold)",
-    color: "var(--text-color)",
-    padding: "0 var(--spacing-sm)",
-    fontSize: "0.75rem"
-  };
+  }).some((val) => {
+    if (Array.isArray(val)) {
+      return val.length > 0;
+    }
+    return (val || "").trim() !== "";
+  }), [appliedFilters]);
 
   return (
     <>
@@ -411,111 +516,101 @@ const MissionListArchive: React.FC = () => {
             <FiltersSection>
               <Separator />
               <form onSubmit={handleFilterSubmit}>
-                <FormTableSearch>
-                  <tbody>
-                    <FormRow>
-                      {showEmployeeFilter && (
-                        <FormFieldCell style={{ width: "33.333%" }}>
-                          <FormLabelSearch>Collaborateur</FormLabelSearch>
-                          <StyledAutoCompleteInput
-                            value={filters.employeeSearch || ""}
-                            onChange={handleEmployeeChange}
-                            suggestions={filteredEmployeeSuggestions}
-                            maxVisibleItems={5}
-                            placeholder="Sélectionner un employé..."
-                            disabled={isEmployeesLoading || isSearchLoading}
-                            fieldType="employee"
-                            fieldLabel="employé"
-                            showAddOption={false}
-                          />
-                        </FormFieldCell>
-                      )}
-                      <FormFieldCell style={{ width: fieldWidth }}>
-                        <FormLabelSearch>Type de mission</FormLabelSearch>
-                        <StyledSelect
-                          value={filters.missionType}
-                          onChange={handleMissionTypeChange}
-                          disabled={isSearchLoading}
-                        >
-                          <option value="">Tous</option>
-                          {missionTypes.map((type) => (
-                            <option key={type} value={type}>{type}</option>
-                          ))}
-                        </StyledSelect>
-                      </FormFieldCell>
-                      <FormFieldCell style={{ width: fieldWidth }}>
-                        <FormLabelSearch>Lieu</FormLabelSearch>
-                        <StyledAutoCompleteInput
-                          value={filters.lieuSearch || ""}
-                          onChange={handleLieuChange}
-                          suggestions={filteredLieuSuggestions}
-                          maxVisibleItems={5}
-                          placeholder="Sélectionner un lieu..."
-                          disabled={isLieuxLoading || isSearchLoading}
-                          fieldType="lieu"
-                          fieldLabel="lieu"
-                          showAddOption={false}
-                        />
-                      </FormFieldCell>
-                    </FormRow>
-                    <FormRow>
-                      <FormFieldCell colSpan={numCols} style={{ width: "100%" }}>
-                        <div style={{ 
-                          display: "grid", 
-                          gridTemplateColumns: "1fr 1fr", 
-                          gap: "var(--spacing-md)"
-                        }}>
-                          <fieldset style={fieldsetStyle}>
-                            <legend style={legendStyle}>
-                              Date Départ
-                            </legend>
-                            <div>
-                              <FormLabelSearch>Du</FormLabelSearch>
-                              <FormInputSearch
-                                type="date"
-                                value={filters.minDepartureDate || ""}
-                                onChange={handleMinDepartureDateChange}
-                                disabled={isSearchLoading}
-                              />
-                            </div>
-                            <div>
-                              <FormLabelSearch>Au</FormLabelSearch>
-                              <FormInputSearch
-                                type="date"
-                                value={filters.maxDepartureDate || ""}
-                                onChange={handleMaxDepartureDateChange}
-                                disabled={isSearchLoading}
-                              />
-                            </div>
-                          </fieldset>
-                          <fieldset style={fieldsetStyle}>
-                            <legend style={legendStyle}>
-                              Date Retour
-                            </legend>
-                            <div>
-                              <FormLabelSearch>Du</FormLabelSearch>
-                              <FormInputSearch
-                                type="date"
-                                value={filters.minArrivalDate || ""}
-                                onChange={handleMinArrivalDateChange}
-                                disabled={isSearchLoading}
-                              />
-                            </div>
-                            <div>
-                              <FormLabelSearch>Au</FormLabelSearch>
-                              <FormInputSearch
-                                type="date"
-                                value={filters.maxArrivalDate || ""}
-                                onChange={handleMaxArrivalDateChange}
-                                disabled={isSearchLoading}
-                              />
-                            </div>
-                          </fieldset>
-                        </div>
-                      </FormFieldCell>
-                    </FormRow>
-                  </tbody>
-                </FormTableSearch>
+                <FilterGrid>
+                  {showEmployeeFilter && (
+                    <FilterField>
+                      <FormLabelSearch>Collaborateur</FormLabelSearch>
+                      <StyledAutoCompleteInput
+                        value={filters.employeeSearch || ""}
+                        onChange={handleEmployeeChange}
+                        suggestions={filteredEmployeeSuggestions}
+                        maxVisibleItems={5}
+                        placeholder="Sélectionner un employé..."
+                        disabled={isCurrentEmployeesLoading || isSearchLoading}
+                        fieldType="employee"
+                        fieldLabel="employé"
+                        showAddOption={false}
+                      />
+                    </FilterField>
+                  )}
+                  <FilterField>
+                    <FormLabelSearch>Type de mission</FormLabelSearch>
+                    <StyledSelect
+                      value={filters.missionType}
+                      onChange={handleMissionTypeChange}
+                      disabled={isSearchLoading}
+                    >
+                      <option value="">Tous</option>
+                      {missionTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </StyledSelect>
+                  </FilterField>
+
+                  <FilterField>
+                    <FormLabelSearch>Lieu</FormLabelSearch>
+                    <StyledAutoCompleteInput
+                      value={filters.lieuSearch || ""}
+                      onChange={handleLieuChange}
+                      suggestions={filteredLieuSuggestions}
+                      maxVisibleItems={5}
+                      placeholder="Sélectionner un lieu..."
+                      disabled={isLieuxLoading || isSearchLoading}
+                      fieldType="lieu"
+                      fieldLabel="lieu"
+                      showAddOption={false}
+                    />
+                  </FilterField>
+                </FilterGrid>
+
+                <DateGrid style={{ marginTop: 'var(--spacing-md)' }}>
+                  <Fieldset>
+                    <Legend>
+                      Date Départ
+                    </Legend>
+                    <DateField>
+                      <FormLabelSearch>Du</FormLabelSearch>
+                      <FormInputSearch
+                        type="date"
+                        value={filters.minDepartureDate || ""}
+                        onChange={handleMinDepartureDateChange}
+                        disabled={isSearchLoading}
+                      />
+                    </DateField>
+                    <DateField>
+                      <FormLabelSearch>Au</FormLabelSearch>
+                      <FormInputSearch
+                        type="date"
+                        value={filters.maxDepartureDate || ""}
+                        onChange={handleMaxDepartureDateChange}
+                        disabled={isSearchLoading}
+                      />
+                    </DateField>
+                  </Fieldset>
+                  <Fieldset>
+                    <Legend>
+                      Date Retour
+                    </Legend>
+                    <DateField>
+                      <FormLabelSearch>Du</FormLabelSearch>
+                      <FormInputSearch
+                        type="date"
+                        value={filters.minArrivalDate || ""}
+                        onChange={handleMinArrivalDateChange}
+                        disabled={isSearchLoading}
+                      />
+                    </DateField>
+                    <DateField>
+                      <FormLabelSearch>Au</FormLabelSearch>
+                      <FormInputSearch
+                        type="date"
+                        value={filters.maxArrivalDate || ""}
+                        onChange={handleMaxArrivalDateChange}
+                        disabled={isSearchLoading}
+                      />
+                    </DateField>
+                  </Fieldset>
+                </DateGrid>
 
                 <Separator />
 
@@ -548,28 +643,18 @@ const MissionListArchive: React.FC = () => {
         </FiltersToggle>
       )}
 
-      <div style={{ display: "flex", gap: "0", marginBottom: "var(--spacing-md)" }}>
+      <StyledTabContainer>
         {tabTitles.map((tab, index) => (
-          <button
+          <StyledTabButton
             key={tab.key}
+            $isActive={activeTab === tab.key}
+            $hasBorderRight={index < tabTitles.length - 1}
             onClick={() => setActiveTab(tab.key)}
-            style={{
-              padding: "var(--spacing-sm) var(--spacing-md)",
-              background: "transparent",
-              color: activeTab === tab.key ? "var(--primary-color)" : "var(--text-color)",
-              border: "none",
-              borderBottom: activeTab === tab.key ? "3px solid var(--primary-color)" : "1px solid var(--border-color)",
-              borderRight: index < tabTitles.length - 1 ? "1px solid var(--border-color)" : "none",
-              borderRadius: "0",
-              cursor: "pointer",
-              fontWeight: activeTab === tab.key ? "var(--font-weight-semibold)" : "var(--font-weight-normal)",
-              fontFamily: "var(--font-family)",
-            }}
           >
             {tab.label}
-          </button>
+          </StyledTabButton>
         ))}
-      </div>
+      </StyledTabContainer>
 
       <TableContainer>
         <TableHeader>
@@ -582,7 +667,7 @@ const MissionListArchive: React.FC = () => {
         </TableHeader>
 
         <div className="table-wrapper" style={{ overflowX: "auto" }}>
-          <DataTable>
+          <DataTable style={{ tableLayout: 'auto', width: '100%' }}>
             <thead>
               <tr>
                 <TableHeadCell>Collaborateur</TableHeadCell>
@@ -611,8 +696,7 @@ const MissionListArchive: React.FC = () => {
                 assignations.map((assignation: MissionAssignation) => {
                   const rawStatus = assignation.mission.status;
                   const trimmedLowerStatus = rawStatus.trim().toLowerCase();
-                  const frenchStatus = englishToFrench[trimmedLowerStatus] || rawStatus.trim();
-                  const statusClass = getStatusBadgeClass(rawStatus);
+                  const status = getStatus(trimmedLowerStatus);
 
                   return (
                     <TableRow
@@ -626,10 +710,16 @@ const MissionListArchive: React.FC = () => {
                       <TableCell>
                         {assignation.employee.firstName} {assignation.employee.lastName}
                       </TableCell>
-                      <TableCell>{assignation.mission.name}</TableCell>
+                      <TableCell style={truncateCellStyle} title={assignation.mission.name}>
+                        {assignation.mission.name}
+                      </TableCell>
                       <TableCell>{assignation.mission.missionType.toUpperCase()}</TableCell>
-                      <TableCell>{assignation.mission.lieu.nom}</TableCell>
-                      <TableCell><StatusBadge className={statusClass}>{frenchStatus}</StatusBadge></TableCell>
+                      <TableCell style={truncateCellStyle} title={assignation.mission.lieu.nom}>
+                        {assignation.mission.lieu.nom}
+                      </TableCell>
+                      <TableCell style={statusCellStyle}>
+                        <StatusBadge status={status} />
+                      </TableCell>
                       <TableCell>{new Date(assignation.departureDate).toLocaleDateString()}</TableCell>
                       <TableCell>{new Date(assignation.returnDate).toLocaleDateString()}</TableCell>
                     </TableRow>
@@ -660,7 +750,7 @@ const MissionListArchive: React.FC = () => {
 };
 
 const ProtectedMissionListArchive: React.FC = () => (
-  <ProtectedRoute requiredHabilitation="voir page mission">
+  <ProtectedRoute requiredHabilitation="Voir les missions archivées">
     <MissionListArchive />
   </ProtectedRoute>
 );

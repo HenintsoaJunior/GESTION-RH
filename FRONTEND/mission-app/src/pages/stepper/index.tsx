@@ -38,6 +38,15 @@ const ValidationStepper: React.FC<ValidationStepperProps> = ({ steps, currentSte
     }
   };
 
+  const getValidationText = (status: string) => {
+    switch (status) {
+      case "rejected":
+        return "Rejeté le:";
+      default:
+        return "Validé le:";
+    }
+  };
+
   return (
     <StepperContainer>
       {steps.map((step: Step, index: number) => (
@@ -57,7 +66,7 @@ const ValidationStepper: React.FC<ValidationStepperProps> = ({ steps, currentSte
           <StepSubtitle>{step.subtitle}</StepSubtitle>
           {step.validationDate && (
             <ValidationDateText>
-              Validé le: {formatDateTime(step.validationDate)}
+              {getValidationText(step.status)} {formatDateTime(step.validationDate)}
             </ValidationDateText>
           )}
         </StepItem>

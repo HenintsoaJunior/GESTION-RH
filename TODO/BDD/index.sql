@@ -142,6 +142,7 @@ CREATE TABLE employees(
    first_name VARCHAR(100),
    birth_date DATE,
    birth_place VARCHAR(100),
+   categorie VARCHAR(50),
    id_number VARCHAR(50),
    id_issue_date DATE,
    id_issue_place VARCHAR(100),

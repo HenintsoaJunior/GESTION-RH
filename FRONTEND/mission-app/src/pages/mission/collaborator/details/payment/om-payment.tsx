@@ -8,11 +8,24 @@ import {
     TableHeader,
     TableCell,
     TotalRow,
-    ActionButton,
     PageHeader,
     HeaderLeft,
     HeaderActions,
     Separator,
+    FolderContainer, 
+    FolderHeader, 
+    AttachmentsList, 
+    AttachmentItem, 
+    IconButton,
+    ModalOverlay, 
+    ModalContentStyled, 
+    ModalHeader, 
+    ModalTitle,
+    ModalCloseButton, 
+    ModalBody, 
+    FilePreview, 
+    ImagePreview, 
+    ErrorMessage 
 } from "@/styles/detailsmission-styles";
 import { NoDataMessage } from "@/styles/table-styles";
 import { formatNumber } from "@/utils/format";
@@ -22,8 +35,16 @@ import type {
     ChartOptions,
     TooltipItem,
 } from "chart.js";
-import { Doughnut, Bar } from "react-chartjs-2";
+import { Doughnut } from "react-chartjs-2";
 import styled from "styled-components";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Eye, ChevronDown, Folder, FileText, X } from "lucide-react";
+import {
+  useGenerateIM,
+  usePreviewIM,
+  type GenerateIMData,
+  type PreviewPdfResult,
+} from "@/api/mission/services";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
@@ -109,33 +130,229 @@ interface IndemnityDetail {
     total: number;
 }
 
-interface IsLoading {
-    exportExcel: boolean;
-    // Add other loading states if needed
-}
-
 interface OMPaymentProps {
     missionPayment: MissionPayment;
     selectedAssignmentId: string;
     onBack: () => void;
-    onExportPDF?: (employeeId: string) => void;
     onExportExcel: () => void;
-    isLoading: IsLoading;
     formatDate: (date: string) => string;
+    missionId: string;
+    employeeId: string;
 }
 
-const createTooltipCallback = (
-    unit: string = ",00 "
-) => {
-    return {
-        callbacks: {
-            label: function (tooltipItem: TooltipItem<'bar'>) {
-                const label = tooltipItem.label || "";
-                const value = tooltipItem.raw as number;
-                return `${label}: ${formatNumber(value)}${unit} MGA`;
-            },
-        },
+// Types for attachments
+interface DocumentAttachment {
+  id: string;
+  name: string;
+  fileContent?: string; // Optional base64
+  fileName: string;
+  fileSize?: number;
+  fileType: string;
+  extension?: string;
+}
+
+interface ModalContent {
+  fileName?: string;
+  fileUrl?: string;
+  isBlobUrl?: boolean;
+  extension?: string;
+  error?: string;
+}
+
+const PREDEFINED_DOCUMENTS_PAYMENT: Omit<DocumentAttachment, 'fileContent'>[] = [
+  {
+    id: "im-excel",
+    name: "IM Excel",
+    fileName: "Indemnites_Mission.xlsx",
+    fileType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    extension: "xlsx",
+    fileSize: 2048,
+  },
+  {
+    id: "im-pdf",
+    name: "IM PDF",
+    fileName: "Indemnite_Mission.pdf",
+    fileType: "application/pdf",
+    extension: "pdf",
+    fileSize: 1024,
+  },
+];
+
+// FilePreviewModal Component
+interface FilePreviewModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  content: ModalContent;
+}
+
+const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ isOpen, onClose, content }) => {
+  useEffect(() => {
+    return () => {
+      if (content.isBlobUrl && content.fileUrl) {
+        window.URL.revokeObjectURL(content.fileUrl);
+      }
     };
+  }, [content.fileUrl, content.isBlobUrl]);
+
+  if (!isOpen) return null;
+
+  return (
+    <ModalOverlay onClick={onClose}>
+      <ModalContentStyled onClick={(e) => e.stopPropagation()}>
+        <ModalHeader>
+          <ModalTitle>{content.fileName || "Prévisualisation"}</ModalTitle>
+          <ModalCloseButton onClick={onClose} $variant="primary" style={{ color: 'black' }}>
+            <X size={20} />
+          </ModalCloseButton>
+        </ModalHeader>
+        <ModalBody>
+          {content.error ? (
+            <ErrorMessage>{content.error}</ErrorMessage>
+          ) : content.extension === "pdf" ? (
+            <FilePreview src={content.fileUrl} title={content.fileName} style={{ borderRadius: 0 }} />
+          ) : (
+            <ImagePreview src={content.fileUrl} alt={content.fileName || ""} />
+          )}
+        </ModalBody>
+      </ModalContentStyled>
+    </ModalOverlay>
+  );
+};
+
+// MissionAttachments Component (adapted for IM Excel and PDF)
+interface MissionAttachmentsProps {
+  documents: DocumentAttachment[];
+  onExportExcel: () => void;
+  onGenerateIM: () => Promise<void>;
+  onPreviewIM: (data: GenerateIMData) => Promise<PreviewPdfResult>;
+  employeeId: string;
+  missionId: string;
+}
+
+const MissionAttachments: React.FC<MissionAttachmentsProps> = ({ 
+  documents, 
+  onExportExcel,
+  onGenerateIM,
+  onPreviewIM,
+  employeeId,
+  missionId 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState<ModalContent>({});
+
+  const toggleOpen = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  const handlePreview = useCallback(async (doc: DocumentAttachment) => {
+    const content = doc.fileContent;
+    if (content) {
+      // handleFileView not needed here
+    } else {
+      let previewResult: PreviewPdfResult | undefined;
+      try {
+        switch (doc.id) {
+          case "im-excel":
+            setModalContent({ 
+              error: "Prévisualisation non disponible pour les fichiers Excel. Utilisez le bouton de téléchargement.",
+              fileName: doc.fileName 
+            });
+            setModalOpen(true);
+            return;
+          case "im-pdf":
+            previewResult = await onPreviewIM({ missionId, employeeId });
+            break;
+        }
+        if (previewResult) {
+          setModalContent({ 
+            fileUrl: previewResult.blobUrl, 
+            fileName: previewResult.fileName, 
+            isBlobUrl: true, 
+            extension: doc.extension || "pdf" 
+          });
+          setModalOpen(true);
+        }
+      } catch (error) {
+        setModalContent({ 
+          error: error instanceof Error ? error.message : "Erreur lors de la génération du fichier.", 
+          fileName: doc.fileName 
+        });
+        setModalOpen(true);
+      }
+    }
+  }, [onPreviewIM, employeeId, missionId]);
+
+  const handleDownload = useCallback(async (doc: DocumentAttachment) => {
+    try {
+      switch (doc.id) {
+        case "im-excel":
+          onExportExcel();
+          break;
+        case "im-pdf":
+          await onGenerateIM();
+          break;
+      }
+    } catch {
+      // Error handled elsewhere
+    }
+  }, [onExportExcel, onGenerateIM]);
+
+  const filteredDocuments = useMemo(() => documents, [documents]);
+
+  return (
+    <>
+      <FolderContainer style={{ marginTop: "var(--spacing-md)", width: "100%" }}>
+        <FolderHeader onClick={toggleOpen} $isOpen={isOpen}>
+          <Folder className="folder-icon" size={20} />
+          <span style={{ fontSize: "12px" }}>
+            Pièces Jointes · {filteredDocuments.length} document{filteredDocuments.length !== 1 ? "s" : ""}
+          </span>
+          <ChevronDown className="chevron" size={20} />
+        </FolderHeader>
+        {isOpen && (
+          <AttachmentsList style={{ width: "100%" }}>
+            {filteredDocuments.length > 0 ? (
+              filteredDocuments.map((doc) => (
+                <AttachmentItem key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "var(--spacing-sm)" }}>
+                  <FileText size={24} style={{ color: "var(--primary-color)", minWidth: "24px" }} />
+                  <div className="file-info" style={{ flex: 1, minWidth: 0, wordBreak: "break-word" }}>
+                    <div className="file-name" style={{ fontWeight: "bold", fontSize: "12px" }}>{doc.name}</div>
+                    <div className="file-size" style={{ fontSize: "12px" }}>{(doc.fileSize || 0).toLocaleString()} Ko</div>
+                  </div>
+                  <div className="actions" style={{ display: "flex", gap: "var(--spacing-xs)" }}>
+                    <IconButton
+                      onClick={() => handlePreview(doc)}
+                      title={`Prévisualiser ${doc.name}`}
+                      $variant="primary"
+                    >
+                      <Eye size={16} />
+                    </IconButton>
+                    <IconButton
+                      $download
+                      onClick={() => handleDownload(doc)}
+                      title={`Télécharger ${doc.name}`}
+                    >
+                      <Download size={16} />
+                    </IconButton>
+                  </div>
+                </AttachmentItem>
+              ))
+            ) : (
+              <p style={{ padding: "var(--spacing-xl)", textAlign: "center", color: "var(--text-muted)", fontSize: "12px" }}>
+                Aucune pièce jointe disponible
+              </p>
+            )}
+          </AttachmentsList>
+        )}
+      </FolderContainer>
+      <FilePreviewModal 
+        isOpen={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        content={modalContent} 
+      />
+    </>
+  );
 };
 
 const IndemnityDoughnutChart: React.FC<{ indemnityDetails: IndemnityDetail[] }> = ({ indemnityDetails }) => {
@@ -197,63 +414,7 @@ const IndemnityDoughnutChart: React.FC<{ indemnityDetails: IndemnityDetail[] }> 
     );
 };
 
-const DailyIndemnityBarChart: React.FC<{ indemnityDetails: IndemnityDetail[]; formatDate: (date: string) => string }> = ({ indemnityDetails, formatDate }) => {
-    const dailyTotals = indemnityDetails.map(item => ({
-        date: formatDate(item.date),
-        amount: item.total || 0,
-    }));
-
-    const hasData = dailyTotals.some(item => item.amount > 0);
-    if (!hasData) return <p>Données journalières insuffisantes.</p>;
-
-    const chartData: ChartData<'bar'> = {
-        labels: dailyTotals.map(item => item.date),
-        datasets: [
-            {
-                label: "Montant par jour",
-                data: dailyTotals.map(item => item.amount),
-                backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1,
-            },
-        ],
-    };
-
-    const options: ChartOptions<'bar'> = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            title: { display: false },
-            tooltip: createTooltipCallback(" MGA"),
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                title: { display: true, text: 'Montant Total (MGA)' },
-                ticks: {
-                    callback: function (value: number | string) {
-                        return formatNumber(Number(value));
-                    },
-                },
-            },
-            x: {
-                title: { display: true, text: 'Date' },
-            },
-        },
-    };
-
-    return (
-        <ChartCard>
-            <h4>Indemnité Totale par Jour</h4>
-            <div className="chart-content">
-                <Bar data={chartData} options={options} />
-            </div>
-        </ChartCard>
-    );
-};
-
-const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmentId, onExportExcel, isLoading, formatDate }) => {
+const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmentId, onExportExcel, formatDate, missionId, employeeId }) => {
     console.log(selectedAssignmentId);
     const indemnityDetails: IndemnityDetail[] = missionPayment.dailyPaiements.map((item: DailyPaiement) => {
         const amounts = {
@@ -288,25 +449,35 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
 
     const grandTotal = indemnityDetails.reduce((sum, item) => sum + item.total, 0);
 
+    const generateIMMutation = useGenerateIM();
+    const previewIMMutation = usePreviewIM();
+
+    const handleExportIM = useCallback(async (): Promise<void> => {
+      if (!missionId || !employeeId) {
+        throw new Error("Mission ID et Employee ID sont requis pour générer l'indemnité de mission.");
+      }
+      await generateIMMutation.mutateAsync({ missionId, employeeId });
+    }, [missionId, employeeId, generateIMMutation]);
+
+    const handlePreviewIM = useCallback(async (data: GenerateIMData): Promise<PreviewPdfResult> => {
+      if (!data.missionId || !data.employeeId) {
+        throw new Error("Mission ID et Employee ID sont requis pour prévisualiser l'indemnité de mission.");
+      }
+      const result = await previewIMMutation.mutateAsync(data);
+      return result;
+    }, [previewIMMutation]);
+
+    // Attachments setup
+    const documents = PREDEFINED_DOCUMENTS_PAYMENT.map(doc => ({ ...doc, fileContent: undefined } as DocumentAttachment));
+
     return (
         <>
             <PageHeader>
                 <HeaderLeft>
                     
                 </HeaderLeft>
-                {/* <div className="header-center">
-                    <div className="header-title-section">
-                        <h1 className="page-title">Détails du Paiement</h1>
-                        <p className="page-subtitle">Mission #{selectedAssignmentId}</p>
-                    </div>
-                </div> */}
                 <HeaderActions>
-                    <ActionButton
-                        onClick={onExportExcel}
-                        disabled={isLoading.exportExcel}
-                    >
-                        <Download size={16} /> Excel
-                    </ActionButton>
+                    {/* No standalone button, handled in attachments */}
                 </HeaderActions>
             </PageHeader>
             <Separator />
@@ -316,7 +487,19 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
                     <DetailSection>
                         <ChartGrid>
                             <IndemnityDoughnutChart indemnityDetails={indemnityDetails} />
-                            <DailyIndemnityBarChart indemnityDetails={indemnityDetails} formatDate={formatDate} />
+                            <ChartCard>
+                                <h4>Pièces Jointes</h4>
+                                <div className="chart-content">
+                                    <MissionAttachments
+                                        documents={documents}
+                                        onExportExcel={onExportExcel}
+                                        onGenerateIM={handleExportIM}
+                                        onPreviewIM={handlePreviewIM}
+                                        employeeId={employeeId}
+                                        missionId={missionId}
+                                    />
+                                </div>
+                            </ChartCard>
                         </ChartGrid>
                     </DetailSection>
                     <Separator />
@@ -336,15 +519,7 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
                         <tbody>
                             {indemnityDetails.map((item, index) => (
                                 <tr key={index}>
-                                    <TableCell>
-                                        {item.date
-                                            ? new Date(item.date).toLocaleDateString("fr-FR", {
-                                                  day: "numeric",
-                                                  month: "short",
-                                                  year: "2-digit",
-                                              })
-                                            : ""}
-                                    </TableCell>
+                                    <TableCell>{formatDate(item.date)}</TableCell>
                                     <TableCell>{item.transport ? `${formatNumber(item.transport)},00` : ""}</TableCell>
                                     <TableCell>{item.breakfast ? `${formatNumber(item.breakfast)},00` : ""}</TableCell>
                                     <TableCell>{item.lunch ? `${formatNumber(item.lunch)},00` : ""}</TableCell>

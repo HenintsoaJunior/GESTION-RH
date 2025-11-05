@@ -117,6 +117,40 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
+        [HttpPost("IM")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GenerateIM([FromBody] GenerateOMDTO generateIM)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+            if (generateIM == null || string.IsNullOrWhiteSpace(generateIM.MissionId))
+            {
+                _logger.LogWarning("Les données ou l'identifiant de la mission sont absents pour la génération de l'indemnité de mission.");
+                return BadRequest(new { data = (object?)null, status = 400, message = "Les données ou l'identifiant de la mission sont requis." });
+            }
+
+            try
+            {
+                var pdfBytes = await _service.GenerateIMPDFAsync(generateIM.EmployeeId, generateIM.MissionId);
+
+                var pdfName = $"IndemniteMission-{generateIM.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
+
+                return File(pdfBytes, "application/pdf", pdfName);
+            }
+            catch (FileNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Template file not found for IM {MissionId}", generateIM.MissionId);
+                return NotFound(new { data = (object?)null, status = 404, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur serveur lors de la génération de l'indemnité de mission pour la mission {MissionId}", generateIM.MissionId);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+            }
+        }
+
         [HttpGet("{assignationId}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetByAssignationId(string assignationId)

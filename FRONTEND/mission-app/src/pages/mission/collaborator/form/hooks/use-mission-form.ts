@@ -220,6 +220,37 @@ const useMissionForm = ({
     }));
   }, [employeeSuggestions, transportSuggestions]);
 
+  // Handle mission type changes for international missions
+  useEffect(() => {
+    if (formData.missionType === "international") {
+      setFormData((prev) => ({
+        ...prev,
+        type: "Note de frais",
+        beneficiary: {
+          ...prev.beneficiary,
+          transport: "",
+          transportId: null,
+        },
+      }));
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors["beneficiary.transport"];
+        delete newErrors.type;
+        return newErrors;
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        type: "Indemnité",
+      }));
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.type;
+        return newErrors;
+      });
+    }
+  }, [formData.missionType]);
+
   useEffect(() => {}, [fieldErrors]);
 
   const showAlert = useCallback((type: Alert["type"], message: string, errors: FieldErrors = {}) => {

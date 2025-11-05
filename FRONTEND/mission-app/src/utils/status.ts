@@ -26,6 +26,9 @@ export const getStatusBadgeClass = (status: string) => {
     case "annulé":
     case "canceled":
       return "status-cancelled";
+    case "rejeté":
+    case "rejected":
+      return "status-rejected";
     default:
       return "status-pending";
   }
@@ -40,6 +43,8 @@ export const englishToFrench: Record<string, string> = {
   "indemnity paid": "Indemnité payée",
   "expense note paid": "Note de frais payée",
   "canceled": "Annulé",
+  "rejected": "Rejeté",
+  "mission rejected": "Mission Rejeté",
 };
 
 export const frenchToEnglish: Record<string, string> = {
@@ -51,4 +56,6 @@ export const frenchToEnglish: Record<string, string> = {
   "Indemnité payée": "Indemnity paid",
   "Note de frais payée": "Expense note paid",
   "Annulé": "Canceled",
+  "Rejeté": "rejected",
+  "Mission Rejeté": "rejected",
 };

@@ -54,6 +54,7 @@ import {
 
 // import {getStatusBadgeClass,englishToFrench} from "@/utils/status"
 import { type FormattedMission } from "@/api/mission/validation/services";
+import { getInitials } from "@/utils/initials";
 // Types from previous context
 interface AlertState {
   isOpen: boolean;
@@ -167,9 +168,9 @@ const MissionModals: React.FC<MissionModalsProps> = ({
     }
   };
 
-  const handleAction = (action: string) => {
+  const handleAction = async (action: string) => {
     if (comment.trim() && comment !== originalComment && !commentSaved) {
-      handleSaveComment();
+      await handleSaveComment();
     }
     if (action === "validate") {
       setShowValidateModal(true);
@@ -230,18 +231,30 @@ const MissionModals: React.FC<MissionModalsProps> = ({
     }
   };
 
-  const confirmValidate = () => {
-    handleValidate(selectedMissionId!, "validate", comment, signature ? signature.preview || "" : "");
-    setActionType("validate");
-    setActionCompleted(true);
+  const confirmValidate = async () => {
+    try {
+      await handleValidate(selectedMissionId!, "validate", comment, signature ? signature.preview || "" : "");
+      setShowValidateModal(false);
+      setActionType("validate");
+      setActionCompleted(true);
+    } catch (error) {
+      setShowValidateModal(false);
+      // Error handling is already done in handleValidate
+    }
   };
 
-  const confirmReject = () => {
-    handleValidate(selectedMissionId!, "reject", comment, "");
-    setSignature(null);
-    handleUpdateSignature(selectedMissionId!, "");
-    setActionType("reject");
-    setActionCompleted(true);
+  const confirmReject = async () => {
+    try {
+      await handleValidate(selectedMissionId!, "reject", comment, "");
+      setShowRejectModal(false);
+      setSignature(null);
+      handleUpdateSignature(selectedMissionId!, "");
+      setActionType("reject");
+      setActionCompleted(true);
+    } catch (error) {
+      setShowRejectModal(false);
+      // Error handling is already done in handleValidate
+    }
   };
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -261,6 +274,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
   const statusClass = selectedMission?.status.toLowerCase() || "pending";
   const isPending = selectedMission?.status === "pending";
   const isCommentChanged = comment !== originalComment;
+  const isAnyConfirmOpen = showValidateModal || showRejectModal;
 
   const getSuccessMessage = () => {
     if (actionType === "validate") {
@@ -286,7 +300,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
     <PopupOverlay role="dialog" aria-labelledby="mission-details-title" aria-modal="true">
       <PagePopup onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ maxWidth: "800px", padding: "0" }}>
         <PopupHeader style={{ padding: "20px 30px", borderBottom: "1px solid var(--border-light)" }}>
-          <PopupTitle id="mission-details-title" style={{ fontSize: "1.6rem" }}>
+          <PopupTitle id="mission-details-title" style={{ fontSize: "1.4rem" }}>
             <FileText size={24} style={{ marginRight: "10px", verticalAlign: "middle" }} />
             {actionCompleted
               ? `Résultat : ${getSuccessMessage().title}`
@@ -336,7 +350,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                   <InfoItem><InfoLabel>Direction</InfoLabel><InfoValue>{selectedMission.direction || "Non spécifié"}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Département</InfoLabel><InfoValue>{selectedMission.department || "Non spécifié"}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Service</InfoLabel><InfoValue>{selectedMission.service || "Non spécifié"}</InfoValue></InfoItem>
-                   </InfoGrid>
+                </InfoGrid>
 
                 <Separator />
 
@@ -362,7 +376,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                   <InfoItem><InfoLabel>Date et Heure de retour</InfoLabel><InfoValue>{formatDate(selectedMission.returnDate)} {selectedMission.returnTime ? `à ${selectedMission.returnTime}` : ''}</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Durée</InfoLabel><InfoValue>{selectedMission.estimatedDuration || "Non spécifiée"} J</InfoValue></InfoItem>
                   <InfoItem><InfoLabel>Type d'assignation</InfoLabel><InfoValue>{selectedMission.assignationType || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem style={{ gridColumn: "span 3" }}><InfoLabel>Description</InfoLabel><InfoValue>{selectedMission.description}</InfoValue></InfoItem>
+                  <InfoItem style={{ gridColumn: "span 3" }}><InfoLabel>Description</InfoLabel><InfoValue>{selectedMission.description || "Aucune description"}</InfoValue></InfoItem>
                   
                 </InfoGrid>
 
@@ -372,9 +386,9 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                     <CommentText>Aucun commentaire pour cette mission.</CommentText>
                   ) : (
                     comments.map((commentItem) => {
-                      const initials = commentItem.creator?.name 
-                          ? commentItem.creator.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() 
-                          : 'NA';
+                      const creatorName = commentItem.creator?.name || 'Inconnu';
+                      const initials = getInitials(creatorName);
+                      const formattedDate = formatDate(commentItem.createdAt) || 'Inconnu';
                       return (
                         <CommentItem key={commentItem.commentId}>
                           <Avatar size="32px">{initials}</Avatar>
@@ -404,8 +418,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                               <>
                                 <CommentText>{commentItem.content || ''}</CommentText>
                                 <CommentMeta>
-                                  Par {commentItem.creator?.name || 'Inconnu'}  le{" "}
-                                  {formatDate(commentItem.createdAt) || 'Inconnu'}:
+                                  Par {creatorName} le {formattedDate}:
                                 </CommentMeta>
                               </>
                             )}
@@ -504,7 +517,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
               <ActionButton
                 className="validate"
                 onClick={() => handleAction("validate")}
-                disabled={!isPending}
+                disabled={!isPending || isAnyConfirmOpen}
               >
                 <CheckCircle size={16} />
                 Valider la Mission
@@ -512,7 +525,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
               <RejectButton
                 className="reject"
                 onClick={() => handleAction("reject")}
-                disabled={!isPending}
+                disabled={!isPending || isAnyConfirmOpen}
               >
                 <XCircle size={16} />
                 Rejeter la Mission

@@ -26,6 +26,7 @@ namespace MyApp.Api.Services.mission
         Task<bool> RejectedAsync(string missionValidationId, string missionAssignationId, string userId);
         Task<MissionStatsValidation> GetStatisticsAsync(string? matricule = null);
         Task<bool> HasAnyValidatorValidatedAsync(string missionId);
+        Task<bool> HasValidationLineAsync(string userId);
     }
 
     public class MissionValidationService : IMissionValidationService
@@ -59,6 +60,25 @@ namespace MyApp.Api.Services.mission
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
+        public async Task<bool> HasValidationLineAsync(string userId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    _logger.LogWarning("Tentative de vérification de ligne de validation avec un userId null ou vide");
+                    return false;
+                }
+
+                return await _repository.HasValidationLineAsync(userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la vérification de ligne de validation pour userId {UserId}", userId);
+                throw;
+            }
+        }
+
         public async Task<bool> HasAnyValidatorValidatedAsync(string missionId)
         {
             try
@@ -79,64 +99,6 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<bool> RejectedAsync(string missionValidationId, string missionAssignationId, string userId)
-        {
-            await using var transaction = await _repository.BeginTransactionAsync();
-            try
-            {
-                if (string.IsNullOrWhiteSpace(missionValidationId) || string.IsNullOrWhiteSpace(missionAssignationId) || string.IsNullOrWhiteSpace(userId))
-                {
-                    throw new ArgumentException("Les paramètres missionValidationId, missionAssignationId et userId ne peuvent pas être null ou vides");
-                }
-
-                var missionValidation = await _repository.GetByIdAsync(missionValidationId);
-                if (missionValidation == null || missionValidation.MissionAssignationId != missionAssignationId)
-                {
-                    return false;
-                }
-
-                // Capturer l'état avant le rejet
-                var oldMissionValidation = new
-                {
-                    Statut = (string?)missionValidation.Status,
-                    DateValidation = missionValidation.ValidationDate,
-                    Type = (string?)missionValidation.Type
-                };
-
-                var result = await _repository.RejectedAsync(missionValidationId, missionAssignationId);
-                if (!result)
-                {
-                    return false;
-                }
-
-                var updatedMissionValidation = await _repository.GetByIdAsync(missionValidationId);
-                if (updatedMissionValidation == null)
-                {
-                    throw new InvalidOperationException($"Validation de mission introuvable après mise à jour: {missionValidationId}");
-                }
-
-                // Capturer l'état après le rejet
-                var newMissionValidation = new
-                {
-                    Statut = (string?)updatedMissionValidation.Status,
-                    DateValidation = updatedMissionValidation.ValidationDate,
-                    Type = (string?)updatedMissionValidation.Type
-                };
-
-                // Log du rejet avec éléments essentiels
-                await _logService.LogAsync("REJET", "MISSION_VALIDATION", oldMissionValidation, newMissionValidation, userId, "Statut,DateValidation,Type");
-
-                await transaction.CommitAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors du rejet de la validation de mission {MissionValidationId} pour missionAssignationId {MissionAssignationId}",
-                    missionValidationId, missionAssignationId);
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
 
         public async Task<bool> CancelValidationsByMissionIdAsync(string missionId, string userId)
         {
@@ -220,7 +182,7 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize,RequestFilterDto requestFilterDto)
+        public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize, RequestFilterDto requestFilterDto)
         {
             try
             {
@@ -234,13 +196,86 @@ namespace MyApp.Api.Services.mission
                     throw new ArgumentException("Les paramètres de pagination doivent être supérieurs à 0", nameof(page));
                 }
 
-                var (results, totalCount) = await _repository.GetRequestAsync(userId, page, pageSize,requestFilterDto);
+                var (results, totalCount) = await _repository.GetRequestAsync(userId, page, pageSize, requestFilterDto);
                 return (results, totalCount);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la récupération des demandes pour userId: {UserId}, employeeId: {EmployeeId}, status: {Status}",
                     userId, requestFilterDto.EmployeeId ?? "none", requestFilterDto.Status ?? "none");
+                throw;
+            }
+        }
+
+        public async Task<bool> RejectedAsync(string missionValidationId, string missionAssignationId, string userId)
+        {
+            await using var transaction = await _repository.BeginTransactionAsync();
+            try
+            {
+                if (string.IsNullOrWhiteSpace(missionValidationId) || string.IsNullOrWhiteSpace(missionAssignationId) || string.IsNullOrWhiteSpace(userId))
+                {
+                    throw new ArgumentException("Les paramètres missionValidationId, missionAssignationId et userId ne peuvent pas être null ou vides");
+                }
+
+                var missionValidation = await _repository.GetByIdAsync(missionValidationId);
+                if (missionValidation == null || missionValidation.MissionAssignationId != missionAssignationId)
+                {
+                    return false;
+                }
+
+                var oldMissionValidation = new
+                {
+                    Statut = (string?)missionValidation.Status,
+                    DateValidation = missionValidation.ValidationDate,
+                    Type = (string?)missionValidation.Type
+                };
+
+                var result = await _repository.RejectedAsync(missionValidationId, missionAssignationId);
+                if (!result)
+                {
+                    return false;
+                }
+
+                var missionAssignation = await _missionAssignationService.GetByAssignationIdAsync(missionAssignationId);
+
+                if (missionAssignation == null)
+                {
+                    throw new InvalidOperationException($"MissionAssignation introuvable: {missionAssignationId}");
+                }
+
+                var mission = await _missionRepository.GetByIdAsync(missionAssignation.MissionId); 
+
+                if (mission != null)
+                {
+                    mission.Status = "mission rejected";
+                    mission.UpdatedAt = DateTime.UtcNow;
+                    await _missionRepository.UpdateAsync(mission);
+                    await _missionRepository.SaveChangesAsync();
+                }
+
+                var updatedMissionValidation = await _repository.GetByIdAsync(missionValidationId);
+                if (updatedMissionValidation == null)
+                {
+                    throw new InvalidOperationException($"Validation de mission introuvable après mise à jour: {missionValidationId}");
+                }
+
+                var newMissionValidation = new
+                {
+                    Statut = (string?)updatedMissionValidation.Status,
+                    DateValidation = updatedMissionValidation.ValidationDate,
+                    Type = (string?)updatedMissionValidation.Type
+                };
+
+                await _logService.LogAsync("REJET", "MISSION_VALIDATION", oldMissionValidation, newMissionValidation, userId, "Statut,DateValidation,Type");
+
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors du rejet de la validation de mission {MissionValidationId} pour missionAssignationId {MissionAssignationId}",
+                    missionValidationId, missionAssignationId);
+                await transaction.RollbackAsync();
                 throw;
             }
         }

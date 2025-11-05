@@ -1,23 +1,16 @@
-// TemplateFooter.tsx
+// template-footer.tsx
 "use client";
-
 import React from "react";
 import { TemplateFooter as StyledTemplateFooter, FooterCopyright } from "@/styles/template-styles";
 
-interface TemplateFooterProps {
-  collapsed?: boolean;
-}
-
-const TemplateFooter: React.FC<TemplateFooterProps> = ({ collapsed }) => {
+const TemplateFooter: React.FC = () => {
   const currentYear = new Date().getFullYear();
-
   return (
-    <StyledTemplateFooter $collapsed={collapsed}>
+    <StyledTemplateFooter>
       <FooterCopyright>
-        © {currentYear} Ravinala Airport
+        © {currentYear} Ravinala Airports
       </FooterCopyright>
     </StyledTemplateFooter>
   );
 };
-
 export default TemplateFooter;

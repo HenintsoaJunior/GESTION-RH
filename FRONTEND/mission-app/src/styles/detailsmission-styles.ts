@@ -703,13 +703,14 @@ export const HeaderActions = styled.div`
 `;
 
 export const SaveButton = styled(ActionButton)`
-    background-color: var(--success-color);
-    border: 1px solid var(--success-color);
+    color: var(--white);
+    background-color: var(--primary-color);
+    border: 1px solid var(--primary-color);
 
     &:hover {
-        background-color: var(--bg-primary);
-        color: var(--success-color);
-        border-color: var(--success-color);
+        background-color: var(--primary-hover);
+        color: var(--white);
+        border-color: var(--primary-color);
     }
 `;
 

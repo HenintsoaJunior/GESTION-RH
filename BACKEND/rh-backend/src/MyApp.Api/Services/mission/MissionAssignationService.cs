@@ -41,6 +41,7 @@ namespace MyApp.Api.Services.mission
         Task<byte[]> GenerateMissionOrderPDFAsync(string employeeId, string missionId);
         Task<byte[]> GenerateATDPDFAsync(string employeeId);
         Task<IEnumerable<MissionAssignation>> GetAllByMissionIdAsync(string missionId);
+        Task<byte[]> GenerateIMPDFAsync(string employeeId, string missionId);
     }
 
     public class MissionAssignationService : IMissionAssignationService
@@ -86,6 +87,329 @@ namespace MyApp.Api.Services.mission
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
         
+        private static void ApplyCenturyGothicFont(Run run)
+        {
+            if (run.RunProperties == null)
+            {
+                run.RunProperties = new RunProperties();
+            }
+            var rFonts = new RunFonts()
+            {
+                Ascii = "Century Gothic",
+                HighAnsi = "Century Gothic",
+                ComplexScript = "Century Gothic",
+                EastAsia = "Century Gothic"
+            };
+            run.RunProperties.AppendChild(rFonts);
+        }
+        public async Task<byte[]> GenerateIMPDFAsync(string employeeId, string missionId)
+        {
+            var missionAssignation = await _repository.GetByIdAsync(employeeId, missionId);
+            if (missionAssignation == null)
+            {
+                throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
+            }
+
+            var dto = await _compensationService.GetByEmployeeIdAsync(employeeId, missionId);
+            if (dto.Compensations == null || !dto.Compensations.Any())
+            {
+                throw new InvalidOperationException("Aucune compensation trouvée pour cette assignation de mission.");
+            }
+
+            string templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\File\IM.docx"));
+            if (!File.Exists(templatePath))
+            {
+                throw new FileNotFoundException("Le fichier modèle n'existe pas.", templatePath);
+            }
+
+            
+            
+            string datePart = missionAssignation.DepartureDate.ToString("dd/MM/yyyy");
+            TimeSpan? depTime = missionAssignation.DepartureTime;
+            string timePart = depTime.HasValue ? $"{depTime.Value.Hours:D2}:{depTime.Value.Minutes:D2}" : "";
+
+
+            string datePartReturn;
+            if (missionAssignation.ReturnDate is IFormattable formattableReturn)
+            {
+                datePartReturn = formattableReturn.ToString("dd/MM/yyyy", null) ?? string.Empty;
+            }
+            else
+            {
+                datePartReturn = System.Convert.ToString(missionAssignation.ReturnDate) ?? string.Empty;
+            }
+            TimeSpan? depTimeReturn = missionAssignation.ReturnTime;
+            string timePartReturn = depTimeReturn.HasValue ? $"{depTimeReturn.Value.Hours:D2}:{depTimeReturn.Value.Minutes:D2}" : "";
+            
+            var replacements = new Dictionary<string, string>
+            {
+                { "${ref}", missionAssignation.AssignationId ?? "" },
+                { "${date}", DateTime.Now.ToString("dd/MM/yyyy") },
+                { "${page}", "1" },
+                { "${titre_mission}", missionAssignation.Mission?.Name ?? "" },
+                { "${numero}",missionAssignation.AssignationId ?? "" },
+                { "${nom}", missionAssignation.Employee?.LastName ?? "" },
+                { "${prenom}", missionAssignation.Employee?.FirstName ?? "" },
+                { "${base}", missionAssignation.Employee?.Site?.Code ?? "" },
+                { "${categorie}", "C"+missionAssignation.Employee?.Category ?? "" },
+                { "${fonction}", missionAssignation.Employee?.JobTitle ?? "" },
+                { "${matricule}", missionAssignation.Employee?.EmployeeCode ?? "" },
+                { "${direction}", missionAssignation.Employee?.Direction?.DirectionName ?? "" },
+                { "${departement}", missionAssignation.Employee?.Department?.DepartmentName ?? "" },
+                { "${service}", missionAssignation.Employee?.Service?.ServiceName?? "" },
+                { "${lieu}", missionAssignation.Mission?.Lieu?.Nom ?? "" },
+                { "${motif}", missionAssignation.Mission?.Description ?? "" },
+                { "${transport}", missionAssignation.Transport != null ? missionAssignation.Transport.Type ?? "" : "" },
+                { "${date_heure_depart}", $"{datePart} {timePart}" },
+                { "${date_heure_retour}", $"{datePartReturn} {timePartReturn}" },
+                { "${date_creation}", DateTime.Now.ToString("dd/MM/yyyy") }
+
+            };
+
+            using var memoryStream = new MemoryStream();
+            using (var fileStream = new FileStream(templatePath, FileMode.Open, FileAccess.Read))
+            {
+                await fileStream.CopyToAsync(memoryStream);
+            }
+
+            memoryStream.Position = 0;
+            using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(memoryStream, true))
+            {
+                if (wordDoc.MainDocumentPart == null || wordDoc.MainDocumentPart.Document == null)
+                {
+                    throw new InvalidOperationException("Le document Word ne contient pas de partie principale ou de document.");
+                }
+
+                var body = wordDoc.MainDocumentPart.Document.Body;
+
+                // Remplacements textuels standards
+                if (body != null)
+                {
+                    var textElements = body.Descendants<Text>().ToList();
+                    foreach (var text in textElements)
+                    {
+                        if (text.Text != null)
+                        {
+                            foreach (var replacement in replacements)
+                            {
+                                if (text.Text.Contains(replacement.Key))
+                                {
+                                    text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                                }
+                            }
+                        }
+                    }
+
+                    var bodyRuns = body.Descendants<Run>().ToList();
+                    foreach (var run in bodyRuns)
+                    {
+                        string runText = string.Join("", run.Descendants<Text>().Select(t => t.Text ?? ""));
+                        foreach (var replacement in replacements)
+                        {
+                            if (runText.Contains(replacement.Key))
+                            {
+                                run.RemoveAllChildren<Text>();
+                                string newText = runText.Replace(replacement.Key, replacement.Value);
+                                run.AppendChild(new Text(newText));
+                            }
+                        }
+                    }
+                }
+
+                // Insertion du tableau pour ${tableau}
+                if (body != null)
+                {
+                    string placeholderText = "${tableau}";
+                    var paragraphs = body.Descendants<Paragraph>().ToList();
+                    Paragraph? targetParagraph = null;
+                    Run? runToRemove = null;
+                    foreach (var p in paragraphs)
+                    {
+                        string texts = string.Join("", p.Descendants<Text>().Select(t => t.Text ?? ""));
+                        if (texts.Contains(placeholderText))
+                        {
+                            targetParagraph = p;
+                            runToRemove = p.Descendants<Run>().FirstOrDefault(r =>
+                                r.Descendants<Text>().Any(t => (t.Text ?? "").Contains(placeholderText)));
+                            break;
+                        }
+                    }
+
+                    if (targetParagraph != null && runToRemove != null)
+                    {
+                        // Supprimer le run contenant le placeholder
+                        runToRemove.Remove();
+
+                        // Créer le tableau
+                        var table = new Table();
+                        var tableProperties = new TableProperties();
+                        tableProperties.Append(new TableStyle() { Val = "TableGrid" });
+                        table.AppendChild(tableProperties);
+
+                        // Ligne d'en-tête
+                        var headerRow = new TableRow();
+                        var headers = new[] { "Date", "Transport", "Petit Déjeuner", "Déjeuner", "Dîner", "Hébergement", "Montant Total" };
+                        var widths = new[] { "1500", "1200", "1500", "1200", "1200", "1500", "1500" }; // Dxa values
+                        for (int i = 0; i < headers.Length; i++)
+                        {
+                            var headerCell = new TableCell(new Paragraph(new Run(new Text(headers[i]))));
+                            ApplyCenturyGothicFont(headerCell.Descendants<Run>().First());
+                            var cellProperties = new TableCellProperties(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = widths[i] });
+                            // Ajouter des bordures solides à chaque cellule
+                            var borders = new TableCellBorders(
+                                new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                new BottomBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                new RightBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                new InsideHorizontalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
+                            );
+                            cellProperties.Append(borders);
+                            headerCell.Append(cellProperties);
+                            headerRow.Append(headerCell);
+                        }
+
+                        // Ajouter les propriétés pour répéter l'en-tête sur les nouvelles pages
+                        var headerRowProperties = new TableRowProperties(new TableHeader());
+                        headerRow.PrependChild(headerRowProperties);
+                        table.Append(headerRow);
+
+                        // Lignes de données
+                        foreach (var comp in dto.Compensations.OrderBy(c => c.PaymentDate))
+                        {
+                            var dataRow = new TableRow();
+                            var totalRowAmount = comp.TransportAmount + comp.BreakfastAmount + comp.LunchAmount + comp.DinnerAmount + comp.AccommodationAmount;
+                            var values = new[] {
+                                comp.PaymentDate?.ToString("dd/MM/yyyy") ?? "",
+                                $"{comp.TransportAmount:F2}",
+                                $"{comp.BreakfastAmount:F2}",
+                                $"{comp.LunchAmount:F2}",
+                                $"{comp.DinnerAmount:F2}",
+                                $"{comp.AccommodationAmount:F2}",
+                                $"{totalRowAmount:F2}"
+                            };
+
+                            for (int i = 0; i < values.Length; i++)
+                            {
+                                var dataCell = new TableCell(new Paragraph(new Run(new Text(values[i]))));
+                                ApplyCenturyGothicFont(dataCell.Descendants<Run>().First());
+                                var cellProperties = new TableCellProperties(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = widths[i] });
+                                // Ajouter des bordures solides à chaque cellule
+                                var borders = new TableCellBorders(
+                                    new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                    new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                    new BottomBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                    new RightBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                    new InsideHorizontalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                    new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
+                                );
+                                cellProperties.Append(borders);
+                                dataCell.Append(cellProperties);
+                                dataRow.Append(dataCell);
+                            }
+                            table.Append(dataRow);
+                        }
+
+                        // Ligne de total
+                        var totalTransport = dto.Compensations.Sum(c => c.TransportAmount);
+                        var totalPetitDej = dto.Compensations.Sum(c => c.BreakfastAmount);
+                        var totalDejeuner = dto.Compensations.Sum(c => c.LunchAmount);
+                        var totalDiner = dto.Compensations.Sum(c => c.DinnerAmount);
+                        var totalHebergement = dto.Compensations.Sum(c => c.AccommodationAmount);
+                        var grandTotal = totalTransport + totalPetitDej + totalDejeuner + totalDiner + totalHebergement;
+
+                        var totalRow = new TableRow();
+                        var totalValues = new[] {
+                            "Total",
+                            $"{totalTransport:F2}",
+                            $"{totalPetitDej:F2}",
+                            $"{totalDejeuner:F2}",
+                            $"{totalDiner:F2}",
+                            $"{totalHebergement:F2}",
+                            $"{grandTotal:F2}"
+                        };
+
+                        for (int i = 0; i < totalValues.Length; i++)
+                        {
+                            var totalCell = new TableCell(new Paragraph(new Run(new Text(totalValues[i]))));
+                            ApplyCenturyGothicFont(totalCell.Descendants<Run>().First());
+                            var cellProperties = new TableCellProperties(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = widths[i] });
+                            // Ajouter des bordures solides à chaque cellule
+                            var borders = new TableCellBorders(
+                                new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                new BottomBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                new RightBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                new InsideHorizontalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
+                            );
+                            cellProperties.Append(borders);
+                            totalCell.Append(cellProperties);
+
+                            if (i == 0 || i == totalValues.Length - 1)
+                            {
+                                // Bold for Total label and grand total
+                                var run = totalCell.Descendants<Run>().First();
+                                run.RunProperties ??= new RunProperties();
+                                run.RunProperties.Append(new Bold());
+                            }
+
+                            totalRow.Append(totalCell);
+                        }
+                        table.Append(totalRow);
+
+                        // Insérer le tableau après le paragraphe cible
+                        targetParagraph.InsertAfterSelf(table);
+                    }
+                }
+
+                // Remplacements dans les en-têtes et pieds de page
+                foreach (var headerPart in wordDoc.MainDocumentPart.HeaderParts)
+                {
+                    var headerTexts = headerPart.Header.Descendants<Text>().ToList();
+                    foreach (var text in headerTexts)
+                    {
+                        if (text.Text != null)
+                        {
+                            foreach (var replacement in replacements)
+                            {
+                                if (text.Text.Contains(replacement.Key))
+                                {
+                                    text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                foreach (var footerPart in wordDoc.MainDocumentPart.FooterParts)
+                {
+                    var footerTexts = footerPart.Footer.Descendants<Text>().ToList();
+                    foreach (var text in footerTexts)
+                    {
+                        if (text.Text != null)
+                        {
+                            foreach (var replacement in replacements)
+                            {
+                                if (text.Text.Contains(replacement.Key))
+                                {
+                                    text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                wordDoc.MainDocumentPart.Document.Save();
+            }
+
+            memoryStream.Position = 0;
+            using var PDFStream = new MemoryStream();
+            SpireDoc.Document doc = new SpireDoc.Document();
+            doc.LoadFromStream(memoryStream, SpireDoc.FileFormat.Docx);
+            doc.SaveToStream(PDFStream, SpireDoc.FileFormat.PDF);
+            return PDFStream.ToArray();
+        }
         public async Task<IEnumerable<MissionAssignation>> GetAllByMissionIdAsync(string missionId)
         {
             try
@@ -128,8 +452,8 @@ namespace MyApp.Api.Services.mission
                 { "${page}", "1" },
                 { "${titre_mission}", missionAssignation.Mission?.Name ?? "" },
                 { "${numero}",missionAssignation.AssignationId ?? "" },
-                { "${nom}", missionAssignation.Employee?.LastName ?? "" },  // Corrigé : nom = nom de famille (LastName)
-                { "${prenom}", missionAssignation.Employee?.FirstName ?? "" },  // Corrigé : prénom = FirstName
+                { "${nom}", missionAssignation.Employee?.LastName ?? "" },  
+                { "${prenom}", missionAssignation.Employee?.FirstName ?? "" }, 
                 { "${fonction}", missionAssignation.Employee?.JobTitle ?? "" },
                 { "${matricule}", missionAssignation.Employee?.EmployeeCode ?? "" },
                 { "${direction}", missionAssignation.Employee?.Direction?.DirectionName ?? "" },
@@ -138,8 +462,8 @@ namespace MyApp.Api.Services.mission
                 { "${lieu}", missionAssignation.Mission?.Lieu?.Nom ?? "" },
                 { "${motif}", missionAssignation.Mission?.Description ?? "" },
                 { "${transport}", missionAssignation.Transport != null ? missionAssignation.Transport.Type ?? "" : "" },
-                { "${date_heure_depart}", $"{missionAssignation.DepartureDate:dd/MM/yyyy} {missionAssignation.DepartureTime?.ToString(@"hh\:mm") ?? ""}" }  // Corrigé : format TimeSpan avec @"hh\:mm" (un seul \ avant :)
-                // Ajoutez ici si nécessaire pour le retour : { "${date_heure_retour}", $"{missionAssignation.ReturnDate:dd/MM/yyyy} {missionAssignation.ReturnTime?.ToString(@"hh\:mm") ?? ""}" }
+                { "${date_heure_depart}", $"{missionAssignation.DepartureDate:dd/MM/yyyy} {missionAssignation.DepartureTime?.ToString(@"hh\:mm") ?? ""}" },
+                { "${date_heure_retour}", $"{missionAssignation.ReturnDate:dd/MM/yyyy} {missionAssignation.ReturnTime?.ToString(@"hh\:mm") ?? ""}" }
             };
 
             using var memoryStream = new MemoryStream();
@@ -240,9 +564,7 @@ namespace MyApp.Api.Services.mission
             {
                 throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}");
             }
-            var categories = await _categoriesOfEmployeeService.GetCategoriesByEmployeeIdAsync(employeeId, employee.HireDate!.Value);
-            var category = categories.FirstOrDefault();
-
+        
             string templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\File\ATD.docx"));
 
             if (!File.Exists(templatePath))
@@ -280,7 +602,7 @@ namespace MyApp.Api.Services.mission
                     "${date_embauche}", employee?.HireDate?.ToString("dd/MM/yyy") ?? ""
                 },
                 {
-                    "${categorie}",  category?.EmployeeCategory?.Label ?? ""
+                    "${categorie}",  "C"+employee?.Category ?? ""
                 },
                 {
                     "${date_delivrance}", DateTime.Now.ToString("dd/MM/yyy")
