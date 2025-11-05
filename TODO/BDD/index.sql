@@ -142,7 +142,7 @@ CREATE TABLE employees(
    first_name VARCHAR(100),
    birth_date DATE,
    birth_place VARCHAR(100),
-   categorie VARCHAR(50),
+   category VARCHAR(50),
    id_number VARCHAR(50),
    id_issue_date DATE,
    id_issue_place VARCHAR(100),
@@ -319,7 +319,6 @@ CREATE TABLE expense_compensation_scale(
    amount DECIMAL(15,2),
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
-   is_transport INT,
    devise VARCHAR(50) DEFAULT 'EUR',
    expense_type_id VARCHAR(50),
    zone_id VARCHAR(50) NOT NULL 
@@ -439,6 +438,10 @@ CREATE TABLE compensation(
    lunch_amount DECIMAL(15,2),
    dinner_amount DECIMAL(15,2),
    accommodation_amount DECIMAL(15,2),
+   communication_amount DECIMAL(15,2),
+   visa_amount DECIMAL(15,2),
+   medical_expenses_amount DECIMAL(15,2),
+   taxes_amount DECIMAL(15,2),
    status VARCHAR(50) DEFAULT 'unpaid',
    payment_date DATETIME,
    devise VARCHAR(50) NOT NULL,
@@ -528,8 +531,6 @@ CREATE TABLE logs(
    PRIMARY KEY(log_id),
    FOREIGN KEY(user_id) REFERENCES users(user_id)
 );
-
-
 
 -- ============================
 -- MENU DYNAMIQUE

@@ -13,6 +13,15 @@ using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// builder.Services.AddCors(options =>
+// {
+//     options.AddPolicy("AllowFrontend", policy =>
+//     {
+//         policy.WithOrigins("http://10.0.180.37:8090")
+//               .AllowAnyMethod()
+//               .AllowAnyHeader();
+//     });
+// });
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>

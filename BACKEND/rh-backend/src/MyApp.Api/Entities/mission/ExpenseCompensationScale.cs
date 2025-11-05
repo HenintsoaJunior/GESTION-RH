@@ -16,9 +16,6 @@ namespace MyApp.Api.Entities.mission
         [Column("amount", TypeName = "decimal(15,2)")]
         public decimal Amount { get; set; }
         
-        [Column("is_transport")]
-        public int IsTransport { get; set; }
-        
         [Column("devise")]
         [MaxLength(50)]
         [DefaultValue("EUR")]
@@ -43,7 +40,6 @@ namespace MyApp.Api.Entities.mission
         public ExpenseCompensationScale(ExpenseCompensationScaleDTOForm expenseCompensationScaleDtoForm)
         {
             Amount = expenseCompensationScaleDtoForm.Amount;
-            IsTransport = expenseCompensationScaleDtoForm.IsTransport;
             Devise = expenseCompensationScaleDtoForm.Devise ?? "EUR";
             ExpenseTypeId = expenseCompensationScaleDtoForm.ExpenseTypeId;
             ZoneId = expenseCompensationScaleDtoForm.ZoneId;

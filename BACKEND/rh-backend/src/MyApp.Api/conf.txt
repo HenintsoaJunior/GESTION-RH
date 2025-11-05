@@ -1,0 +1,21 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=10.0.180.37;Database=GESTIONDEMISSION_DB;User ID=sa_gdm;Password=S@gmmXdb;TrustServerCertificate=True;"
+  },
+  "LdapSettings": {
+    "DomainPath": "LDAP://corp.ravinala",
+    "DomainPath1": "corp.ravinala"
+  },
+  "Jwt": {
+    "Key": "1OCnPqhST29HuMeQAg3KcxsmwymYUiymYOU8fCy+TRk=",
+    "Issuer": "http://10.0.180.37:8089",
+    "Audience": "http://10.0.180.37:8090"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}
