@@ -462,5 +462,38 @@ namespace MyApp.Api.Controllers.mission
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
+
+        [HttpGet("has-validation-line/{userId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> HasValidationLine(string userId)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'ID de l'utilisateur ne peut pas être null ou vide." });
+            }
+
+            try
+            {
+                var hasValidationLine = await _missionValidationService.HasValidationLineAsync(userId);
+
+                var responseData = hasValidationLine;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erreur lors de la vérification de ligne de validation pour userId {UserId}", userId);
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
     }
 }

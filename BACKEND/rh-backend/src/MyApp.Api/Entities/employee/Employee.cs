@@ -36,6 +36,10 @@ namespace MyApp.Api.Entities.employee
         [MaxLength(100)]
         public string? BirthPlace { get; set; }
 
+        [Column("category")]
+        [MaxLength(50)]
+        public string? Category { get; set; }
+        
         [Column("id_number")]
         [MaxLength(50)]
         public string? IdNumber { get; set; }
@@ -126,6 +130,7 @@ namespace MyApp.Api.Entities.employee
             EmployeeCode = form.EmployeeCode;
             LastName = form.LastName;
             FirstName = form.FirstName;
+            Category = form.Category;
             BirthDate = form.BirthDate;
             BirthPlace = form.BirthPlace;
             IdNumber = form.IdNumber;

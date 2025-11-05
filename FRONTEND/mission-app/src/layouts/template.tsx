@@ -1,3 +1,4 @@
+// template.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -6,11 +7,11 @@ import * as FaIcons from "react-icons/fa";
 import type { IconType } from "react-icons";
 import { useMenuHierarchy } from "@/api/menu/services";
 import { useHasHabilitation } from "@/api/users/services";
+import { useHasValidationLine } from "@/api/mission/validation/services";
 import Header from "./header";
 import Footer from "./footer";
 import {
   App,
-  SidebarOverlay,
   Sidebar,
   SidebarHeader,
   LogoContainer,
@@ -28,6 +29,7 @@ import {
 } from "@/styles/template-styles";
 
 import TemplateFooter from "./template-footer";
+import { getInitials } from "@/utils/initials";
 
 interface Menu {
   menuKey: string;
@@ -48,6 +50,7 @@ interface BreadcrumbItem {
   title: string;
   path: string;
   isActive: boolean;
+  clickable?: boolean;
 }
 
 interface User {
@@ -55,12 +58,6 @@ interface User {
   name: string;
   email: string;
   roles: { roleName: string }[];
-}
-
-interface Theme {
-  id: string;
-  name: string;
-  color: string;
 }
 
 interface TemplateProps {
@@ -77,12 +74,11 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const [collapsed] = useState<boolean>(false);
-  const [mobileOpen, setMobileOpen] = useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const [activeItem, setActiveItem] = useState<string>("dashboard");
   const [headerTitle, setHeaderTitle] = useState<string>("Dashboard");
-  const [theme, setTheme] = useState<string>(localStorage.getItem("theme") || "default");
+  const [theme,] = useState<string>(localStorage.getItem("theme") || "default");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
 
@@ -158,6 +154,8 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   const hasVoirTresorier = useHasHabilitation(user.userId, "Voir la trésorerie");
   const hasVoirHabilitation = useHasHabilitation(user.userId, "Voir les habilitations");
 
+  const { data: hasValidationLine = true } = useHasValidationLine(user.userId);
+
   const habilitationsMap = useMemo(() => ({
     utilisateurs: hasVoirUtilisateurs,
     "Droit & Accès": hasVoirDroitAcces,
@@ -166,7 +164,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     import: hasVoirImport,
     logs: hasVoirLogs,
     mission: hasVoirMission,
-    validation: hasVoirValidation,
+    validation: hasVoirValidation && hasValidationLine,
     Missions: hasVoirMissions,
     "Missions archivées": hasVoirMissionsArchivees,
     trésorerie: hasVoirTresorier,
@@ -184,6 +182,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     hasVoirMissionsArchivees,
     hasVoirTresorier,
     hasVoirHabilitation,
+    hasValidationLine,
   ]);
 
   const getHasAccess = useCallback((menuKey: string): boolean => {
@@ -215,26 +214,6 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   );
 
   const filteredMenuData = useMemo(() => filterMenuItems(menuData), [menuData, filterMenuItems]);
-
-  // Generate initials
-  const getInitials = useCallback((name: string): string => {
-    const cleanName = name.replace(/\s*\([^)]+\)\s*/g, "").trim();
-    const nameParts = cleanName.split(/\s+/);
-    const firstInitial = nameParts[0] ? nameParts[0][0] : "J";
-    const lastInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1][0] : "D";
-    return `${firstInitial}${lastInitial}`.toUpperCase();
-  }, []);
-
-  // Theme configuration
-  const themes = useMemo<Theme[]>(
-    () => [
-      { id: "default", name: "Défaut (Vert)", color: "#69B42E" },
-      { id: "gray", name: "Gris", color: "#9d9d9c" },
-      { id: "warm", name: "Chaud", color: "#e30613" },
-      { id: "light", name: "Clair", color: "#c6dc96" },
-    ],
-    []
-  );
 
   // Get icon component
   const getIconComponent = useCallback((iconName: string): IconType => {
@@ -346,8 +325,9 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
 
     breadcrumbs.push({
       title: "Accueil",
-      path: "/",
+      path: "/dashboard",
       isActive: currentPath === "/",
+      clickable: true,
     });
 
     if (currentPath === "/system") {
@@ -393,6 +373,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
               title: getMenuLabel(parentMenu),
               path: parentMenu.link,
               isActive: false,
+              clickable: false,
             });
           }
         }
@@ -486,32 +467,9 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     }, 50);
   }, [location.pathname, location.hash, filteredMenuData, findMenuItemByPath, activeItem, headerTitle]);
 
-  const toggleMobileSidebar = useCallback(() => {
-    setMobileOpen((prev) => !prev);
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen((prev) => !prev);
   }, []);
-
-  const closeMobileSidebar = useCallback(() => {
-    setMobileOpen(false);
-  }, []);
-
-  const handleOverlayClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeMobileSidebar();
-    },
-    [closeMobileSidebar]
-  );
-
-  useEffect(() => {
-    const handleResize = (): void => {
-      if (window.innerWidth > 768 && mobileOpen) {
-        setMobileOpen(false);
-      }
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [mobileOpen]);
 
   const toggleMenu = useCallback((menuKey: string) => {
     setExpandedMenus((prev) => ({
@@ -542,7 +500,6 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
       navigationUpdateRef.current = true;
       setActiveItem(itemId);
       setHeaderTitle(title);
-      setMobileOpen(false);
       setExpandedMenus((prev) => {
         const newExpanded = { ...prev };
         Object.keys(newExpanded).forEach((key) => {
@@ -556,11 +513,6 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     },
     []
   );
-
-  const handleThemeChange = useCallback((newTheme: string) => {
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-  }, []);
 
   // Group menu by section
   const groupMenuBySection = useCallback((menuItems: MenuItem[]) => {
@@ -605,7 +557,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
                 <IconComponent className="nav-icon" />
               </div>
               <span className="nav-text">{menuLabel}</span>
-              {!collapsed && <FaIcons.FaChevronDown className={`nav-arrow ${isExpanded ? "rotated" : ""}`} />}
+              <FaIcons.FaChevronDown className={`nav-arrow ${isExpanded ? "rotated" : ""}`} />
             </NavButton>
           ) : (
             <NavLink
@@ -631,24 +583,24 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         </NavItem>
       );
     },
-    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel, filteredMenuData, findParentKey]
+    [expandedMenus, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel, filteredMenuData, findParentKey]
   );
 
   const renderSection = useCallback((sectionName: string, items: MenuItem[]) => {
     return (
       <>
-        <SidebarDivider $collapsed={collapsed}>
-          <span>{!collapsed && sectionName}</span>
+        <SidebarDivider>
+          <span>{sectionName}</span>
         </SidebarDivider>
         {isMenuLoading ? (
-          <MenuLoadingDots $collapsed={collapsed}>Chargement...</MenuLoadingDots>
+          <MenuLoadingDots>Chargement...</MenuLoadingDots>
         ) : (
           items.length > 0 &&
           items.map((item) => renderMenuItem(item, 0))
         )}
       </>
     );
-  }, [isMenuLoading, collapsed, renderMenuItem]);
+  }, [isMenuLoading, renderMenuItem]);
 
   const renderMenu = useCallback(() => {
     const groupedMenu = groupMenuBySection(filteredMenuData);
@@ -699,20 +651,19 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
 
   return (
     <App className={`theme-${theme}`}>
-      {mobileOpen && <SidebarOverlay onClick={handleOverlayClick} />}
-      <Sidebar $collapsed={collapsed} $mobileOpen={mobileOpen}>
+      <Sidebar $isOpen={isSidebarOpen}>
         <SidebarHeader>
           <LogoContainer>
             <LogoImage src="/Logo.JPG" alt="Logo" />
           </LogoContainer>
         </SidebarHeader>
         {renderMenu()}
-        <Footer collapsed={collapsed} themes={themes} theme={theme} handleThemeChange={handleThemeChange} />
+        <Footer collapsed={!isSidebarOpen} />
       </Sidebar>
-      <MainContent $collapsed={collapsed}>
+      <MainContent $isOpen={isSidebarOpen}>
         <Header
-          toggleMobileSidebar={toggleMobileSidebar}
-          mobileOpen={mobileOpen}
+          toggleSidebar={toggleSidebar}
+          isSidebarOpen={isSidebarOpen}
           generateBreadcrumbs={generateBreadcrumbs}
           user={user}
           getInitials={getInitials}
@@ -720,7 +671,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         />
         <Content>{children}</Content>
 
-        <TemplateFooter collapsed={collapsed} />
+        <TemplateFooter />
       </MainContent>
     </App>
   );

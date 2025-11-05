@@ -132,6 +132,13 @@
   --success-icon: #16a34a;
   --success-icon-bg: rgba(16, 163, 74, 0.1);
 
+
+  --danger-bg: #fef2f2;
+  --danger-border: #dc2626;
+  --danger-text: #b91c1c;
+  --danger-icon: #dc2626;
+  --danger-icon-bg: rgba(220, 38, 38, 0.1);
+
   /* Error */
   --error-bg: #fef2f2;
   --error-border: #e4002b;

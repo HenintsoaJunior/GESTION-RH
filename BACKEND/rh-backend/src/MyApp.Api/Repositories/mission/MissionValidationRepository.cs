@@ -24,6 +24,7 @@ namespace MyApp.Api.Repositories.mission
         Task<IEnumerable<MissionValidation>> GetByMissionIdAsync(string missionId);
         Task<bool> RejectedAsync(string missionValidationId, string missionAssignationId);
         Task<MissionStatsValidation> GetStatisticsAsync(string? matricule = null);
+        Task<bool> HasValidationLineAsync(string userId);
     }
 
     public class MissionValidationRepository : IMissionValidationRepository
@@ -40,6 +41,16 @@ namespace MyApp.Api.Repositories.mission
             return await _context.Database.BeginTransactionAsync();
         }
 
+        public async Task<bool> HasValidationLineAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return false;
+            }
+
+            return await _context.MissionValidations
+                .AnyAsync(mv => mv.ToWhom == userId && mv.Status != "cancel" && mv.Status != null);
+        }
 
         public async Task<IEnumerable<MissionValidation>> GetByMissionIdAsync(string missionId)
         {

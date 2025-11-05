@@ -36,7 +36,7 @@ namespace MyApp.Api.Repositories.employee
         {
             return await _context.CategoriesOfEmployees
                 .Where(c => c.EmployeeId == employeeId && c.CreatedAt <= date)
-                .Include(c => c.EmployeeCategory) // include avant projection
+                .Include(c => c.EmployeeCategory) 
                 .GroupBy(c => c.EmployeeCategoryId)
                 .Select(g => g.OrderByDescending(c => c.CreatedAt).First())
                 .ToListAsync();

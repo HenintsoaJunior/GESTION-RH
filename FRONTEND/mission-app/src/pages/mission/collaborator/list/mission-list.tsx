@@ -10,9 +10,6 @@ import {
   FiltersControls,
   FilterControlButton,
   FiltersSection,
-  FormTableSearch,
-  FormRow,
-  FormFieldCell,
   FormLabelSearch,
   StyledAutoCompleteInput,
   StyledSelect,
@@ -92,6 +89,47 @@ const StyledTabButton = styled.button<TabButtonProps>`
   ${TabButton}
 `;
 
+const FilterGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+`;
+
+const FilterField = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const DateGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+`;
+
+const Fieldset = styled.fieldset`
+  background: var(--bg-primary, #ffffff);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: var(--border-radius, 4px);
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+`;
+
+const Legend = styled.legend`
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color);
+  padding: 0 var(--spacing-sm);
+  font-size: 0.75rem;
+  grid-column: 1 / -1;
+`;
+
+const DateField = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
 const MissionList: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>('mes');
@@ -144,6 +182,7 @@ const MissionList: React.FC = () => {
     { label: "En cours d'exécution", value: "in progress" },
     { label: "Terminé", value: "completed" },
     { label: "Annulé", value: "canceled" },
+    { label: "Mission Rejeté", value: "mission rejected" },
   ];
 
   const finalStatuses = useMemo(() => new Set([
@@ -153,7 +192,8 @@ const MissionList: React.FC = () => {
     "payment in progress",
     "indemnity paid",
     "expense note paid",
-    "canceled"
+    "canceled",
+    "mission rejected"
   ]), []);
 
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
@@ -336,7 +376,7 @@ const MissionList: React.FC = () => {
       const trimmedLowerStatus = rawStatus.trim().toLowerCase();
       const isValidated = validatedMissions[assignation.mission.missionId] || false;
       const needsNonFinalAction = !finalStatuses.has(trimmedLowerStatus) && !isValidated && (canModifyMission || canCancelMission);
-      const needsDeleteAction = trimmedLowerStatus === 'canceled' && !isValidated && canModifyMission;
+      const needsDeleteAction = (trimmedLowerStatus === 'canceled' || trimmedLowerStatus === 'mission rejected') && !isValidated && canModifyMission;
       return needsNonFinalAction || needsDeleteAction;
     });
   }, [assignations, finalStatuses, validatedMissions, canModifyMission, canCancelMission]);
@@ -351,6 +391,7 @@ const MissionList: React.FC = () => {
       'in progress': { id: 'in-progress', label: "En cours d'exécution", color: '#3b82f6', category: 'progress' },
       'completed': { id: 'completed', label: "Terminé", color: '#10b981', category: 'success' },
       'canceled': { id: 'cancelled', label: "Annulé", color: '#6b7280', category: 'error' },
+      'mission rejected': { id: 'mission rejected', label: "Rejeté", color: '#ef4444', category: 'error' },
     };
     return map[statusKey] || { id: 'unknown', label: englishToFrench[statusKey] || statusKey, color: '#6b7280', category: 'error' as const };
   }, []);
@@ -585,27 +626,35 @@ const MissionList: React.FC = () => {
   }, []);
 
   const showEmployeeFilter = activeTab !== 'mes';
-  const numCols = showEmployeeFilter ? 4 : 3;
-  const fieldWidth = showEmployeeFilter ? "25%" : "33.333%";
+
   const isCurrentEmployeesLoading = useMemo(() => activeTab === 'collaborateurs' ? isCollaboratorsEmployeesLoading : isEmployeesLoading, [activeTab, isCollaboratorsEmployeesLoading, isEmployeesLoading]);
 
-  const fieldsetStyle = { 
-    display: "grid", 
-    gridTemplateColumns: "1fr 1fr", 
-    gap: "var(--spacing-md)",
-    background: "var(--bg-primary, #ffffff)",
-    padding: "var(--spacing-md)",
-    border: "1px solid var(--border-color, #ddd)",
-    borderRadius: "var(--border-radius, 4px)",
-    margin: "0"
+  const truncateCellStyle = {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   };
 
-  const legendStyle = { 
-    fontWeight: "var(--font-weight-semibold)",
-    color: "var(--text-color)",
-    padding: "0 var(--spacing-sm)",
-    fontSize: "0.75rem"
+  const statusCellStyle = {
+    whiteSpace: 'normal' as const,
+    overflowWrap: 'break-word' as const,
   };
+
+  const headers = useMemo(() => {
+    const baseHeaders = [
+      'Collaborateur',
+      'Mission',
+      'TYPE',
+      'Lieu',
+      'Statut',
+      'Date Départ',
+      'Date Retour',
+    ];
+    if (hasActions) {
+      baseHeaders.push('Actions');
+    }
+    return baseHeaders;
+  }, [hasActions]);
 
   return (
     <>
@@ -676,122 +725,110 @@ const MissionList: React.FC = () => {
             <FiltersSection>
               <Separator />
               <form onSubmit={handleFilterSubmit}>
-                <FormTableSearch>
-                  <tbody>
-                    <FormRow>
-                      {showEmployeeFilter && (
-                        <FormFieldCell style={{ width: "25%" }}>
-                          <FormLabelSearch>Collaborateur</FormLabelSearch>
-                          <StyledAutoCompleteInput
-                            value={filters.employeeSearch || ""}
-                            onChange={handleEmployeeChange}
-                            suggestions={filteredEmployeeSuggestions}
-                            maxVisibleItems={5}
-                            placeholder="Sélectionner un employé..."
-                            disabled={isCurrentEmployeesLoading || isSearchLoading}
-                            fieldType="employee"
-                            fieldLabel="employé"
-                            showAddOption={false}
-                          />
-                        </FormFieldCell>
-                      )}
-                      <FormFieldCell style={{ width: fieldWidth }}>
-                        <FormLabelSearch>Type de mission</FormLabelSearch>
-                        <StyledSelect
-                          value={filters.missionType}
-                          onChange={handleMissionTypeChange}
-                          disabled={isSearchLoading}
-                        >
-                          <option value="">Tous</option>
-                          {missionTypes.map((type) => (
-                            <option key={type} value={type}>{type}</option>
-                          ))}
-                        </StyledSelect>
-                      </FormFieldCell>
+                <FilterGrid>
+                  {showEmployeeFilter && (
+                    <FilterField>
+                      <FormLabelSearch>Collaborateur</FormLabelSearch>
+                      <StyledAutoCompleteInput
+                        value={filters.employeeSearch || ""}
+                        onChange={handleEmployeeChange}
+                        suggestions={filteredEmployeeSuggestions}
+                        maxVisibleItems={5}
+                        placeholder="Sélectionner un employé..."
+                        disabled={isCurrentEmployeesLoading || isSearchLoading}
+                        fieldType="employee"
+                        fieldLabel="employé"
+                        showAddOption={false}
+                      />
+                    </FilterField>
+                  )}
+                  <FilterField>
+                    <FormLabelSearch>Type de mission</FormLabelSearch>
+                    <StyledSelect
+                      value={filters.missionType}
+                      onChange={handleMissionTypeChange}
+                      disabled={isSearchLoading}
+                    >
+                      <option value="">Tous</option>
+                      {missionTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </StyledSelect>
+                  </FilterField>
 
-                       <FormFieldCell style={{ width: fieldWidth }}>
-                        <FormLabelSearch>Statut</FormLabelSearch>
-                        <StatusFilter
-                          options={statusOptions}
-                          selectedStatuses={filters.status}
-                          onStatusChange={(statuses: string[]) => setFilters((prev) => ({ ...prev, status: statuses }))}
-                        />
-                      </FormFieldCell>
-                      
-                      <FormFieldCell style={{ width: fieldWidth }}>
-                        <FormLabelSearch>Lieu</FormLabelSearch>
-                        <StyledAutoCompleteInput
-                          value={filters.lieuSearch || ""}
-                          onChange={handleLieuChange}
-                          suggestions={filteredLieuSuggestions}
-                          maxVisibleItems={5}
-                          placeholder="Sélectionner un lieu..."
-                          disabled={isLieuxLoading || isSearchLoading}
-                          fieldType="lieu"
-                          fieldLabel="lieu"
-                          showAddOption={false}
-                        />
-                      </FormFieldCell>
-                     
-                    </FormRow>
-                    <FormRow>
-                      <FormFieldCell colSpan={numCols} style={{ width: "100%" }}>
-                        <div style={{ 
-                          display: "grid", 
-                          gridTemplateColumns: "1fr 1fr", 
-                          gap: "var(--spacing-md)"
-                        }}>
-                          <fieldset style={fieldsetStyle}>
-                            <legend style={legendStyle}>
-                              Date Départ
-                            </legend>
-                            <div>
-                              <FormLabelSearch>Du</FormLabelSearch>
-                              <FormInputSearch
-                                type="date"
-                                value={filters.minDepartureDate || ""}
-                                onChange={handleMinDepartureDateChange}
-                                disabled={isSearchLoading}
-                              />
-                            </div>
-                            <div>
-                              <FormLabelSearch>Au</FormLabelSearch>
-                              <FormInputSearch
-                                type="date"
-                                value={filters.maxDepartureDate || ""}
-                                onChange={handleMaxDepartureDateChange}
-                                disabled={isSearchLoading}
-                              />
-                            </div>
-                          </fieldset>
-                          <fieldset style={fieldsetStyle}>
-                            <legend style={legendStyle}>
-                              Date Retour
-                            </legend>
-                            <div>
-                              <FormLabelSearch>Du</FormLabelSearch>
-                              <FormInputSearch
-                                type="date"
-                                value={filters.minArrivalDate || ""}
-                                onChange={handleMinArrivalDateChange}
-                                disabled={isSearchLoading}
-                              />
-                            </div>
-                            <div>
-                              <FormLabelSearch>Au</FormLabelSearch>
-                              <FormInputSearch
-                                type="date"
-                                value={filters.maxArrivalDate || ""}
-                                onChange={handleMaxArrivalDateChange}
-                                disabled={isSearchLoading}
-                              />
-                            </div>
-                          </fieldset>
-                        </div>
-                      </FormFieldCell>
-                    </FormRow>
-                  </tbody>
-                </FormTableSearch>
+                  <FilterField>
+                    <FormLabelSearch>Statut</FormLabelSearch>
+                    <StatusFilter
+                      options={statusOptions}
+                      selectedStatuses={filters.status}
+                      onStatusChange={(statuses: string[]) => setFilters((prev) => ({ ...prev, status: statuses }))}
+                    />
+                  </FilterField>
+                  
+                  <FilterField>
+                    <FormLabelSearch>Lieu</FormLabelSearch>
+                    <StyledAutoCompleteInput
+                      value={filters.lieuSearch || ""}
+                      onChange={handleLieuChange}
+                      suggestions={filteredLieuSuggestions}
+                      maxVisibleItems={5}
+                      placeholder="Sélectionner un lieu..."
+                      disabled={isLieuxLoading || isSearchLoading}
+                      fieldType="lieu"
+                      fieldLabel="lieu"
+                      showAddOption={false}
+                    />
+                  </FilterField>
+                </FilterGrid>
+
+                <DateGrid style={{ marginTop: 'var(--spacing-md)' }}>
+                  <Fieldset>
+                    <Legend>
+                      Date Départ
+                    </Legend>
+                    <DateField>
+                      <FormLabelSearch>Du</FormLabelSearch>
+                      <FormInputSearch
+                        type="date"
+                        value={filters.minDepartureDate || ""}
+                        onChange={handleMinDepartureDateChange}
+                        disabled={isSearchLoading}
+                      />
+                    </DateField>
+                    <DateField>
+                      <FormLabelSearch>Au</FormLabelSearch>
+                      <FormInputSearch
+                        type="date"
+                        value={filters.maxDepartureDate || ""}
+                        onChange={handleMaxDepartureDateChange}
+                        disabled={isSearchLoading}
+                      />
+                    </DateField>
+                  </Fieldset>
+                  <Fieldset>
+                    <Legend>
+                      Date Retour
+                    </Legend>
+                    <DateField>
+                      <FormLabelSearch>Du</FormLabelSearch>
+                      <FormInputSearch
+                        type="date"
+                        value={filters.minArrivalDate || ""}
+                        onChange={handleMinArrivalDateChange}
+                        disabled={isSearchLoading}
+                      />
+                    </DateField>
+                    <DateField>
+                      <FormLabelSearch>Au</FormLabelSearch>
+                      <FormInputSearch
+                        type="date"
+                        value={filters.maxArrivalDate || ""}
+                        onChange={handleMaxArrivalDateChange}
+                        disabled={isSearchLoading}
+                      />
+                    </DateField>
+                  </Fieldset>
+                </DateGrid>
 
                 <Separator />
 
@@ -853,23 +890,20 @@ const MissionList: React.FC = () => {
         </TableHeader>
 
         <div className="table-wrapper" style={{ overflowX: "auto" }}>
-          <DataTable>
+          <DataTable style={{ tableLayout: 'auto', width: '100%' }}>
             <thead>
               <tr>
-                <TableHeadCell>Collaborateur</TableHeadCell>
-                <TableHeadCell>Mission</TableHeadCell>
-                <TableHeadCell>TYPE</TableHeadCell>
-                <TableHeadCell>Lieu</TableHeadCell>
-                <TableHeadCell style={{ width: "90px" }}>Statut</TableHeadCell>
-                <TableHeadCell>Date Départ</TableHeadCell>
-                <TableHeadCell>Date Retour</TableHeadCell>
-                {hasActions && <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>}
+                {headers.map((header: string, index: number) => (
+                  <TableHeadCell key={index}>
+                    {header}
+                  </TableHeadCell>
+                ))}
               </tr>
             </thead>
             <tbody>
               {isSearchLoading ? (
                 <TableRow>
-                  <TableCell colSpan={hasActions ? 8 : 7}>
+                  <TableCell colSpan={headers.length}>
                     <Loading>Chargement des données...</Loading>
                   </TableCell>
                 </TableRow>
@@ -893,10 +927,16 @@ const MissionList: React.FC = () => {
                       <TableCell>
                         {assignation.employee.firstName} {assignation.employee.lastName}
                       </TableCell>
-                      <TableCell>{assignation.mission.name}</TableCell>
+                      <TableCell style={truncateCellStyle} title={assignation.mission.name}>
+                        {assignation.mission.name}
+                      </TableCell>
                       <TableCell>{assignation.mission.missionType.toUpperCase()}</TableCell>
-                      <TableCell>{assignation.mission.lieu.nom}</TableCell>
-                      <TableCell><StatusBadge status={status} /></TableCell>
+                      <TableCell style={truncateCellStyle} title={assignation.mission.lieu.nom}>
+                        {assignation.mission.lieu.nom}
+                      </TableCell>
+                      <TableCell style={statusCellStyle}>
+                        <StatusBadge status={status} />
+                      </TableCell>
                       <TableCell>{new Date(assignation.departureDate).toLocaleDateString()}</TableCell>
                       <TableCell>{new Date(assignation.returnDate).toLocaleDateString()}</TableCell>
                       {hasActions && (
@@ -923,7 +963,7 @@ const MissionList: React.FC = () => {
                               <X size={16} />
                             </CancelButton>
                           )}
-                          {(isFinal && trimmedLowerStatus === 'canceled' && !isValidated && canModifyMission) && (
+                          {(isFinal && (trimmedLowerStatus === 'canceled' || trimmedLowerStatus === 'mission rejected') && !isValidated && canModifyMission) && (
                             <CancelButton
                               className="delete-button"
                               onClick={(e) => {
@@ -943,7 +983,7 @@ const MissionList: React.FC = () => {
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={hasActions ? 8 : 7}>
+                  <TableCell colSpan={headers.length}>
                     <NoDataMessage>
                       {Object.values(appliedFilters).some((val) => {
                         if (Array.isArray(val)) {

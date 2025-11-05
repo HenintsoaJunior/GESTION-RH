@@ -28,6 +28,9 @@ namespace MyApp.Api.Models.dto.employee
         [MaxLength(100, ErrorMessage = "Le lieu de délivrance du CIN ne peut pas dépasser 100 caractères.")]
         public string? IdIssuePlace { get; set; }
 
+        [MaxLength(50, ErrorMessage = "Le categorie ne peut pas dépasser 20 caractères.")]
+        public string? Category { get; set; }
+
         [MaxLength(20, ErrorMessage = "Le numéro de téléphone ne peut pas dépasser 20 caractères.")]
         public string? PhoneNumber { get; set; }
 

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import styled from "styled-components";
-import { CheckCircle, Send, Edit2, Trash2, X, ArrowLeft, Loader2, FileText } from "lucide-react";
+import { CheckCircle, Send, Edit2, Trash2, X, ArrowLeft, ChevronDown, Eye, Download, Folder, FileText } from "lucide-react";
 import { useParams, useNavigate, Routes, Route, useLocation } from "react-router-dom";
 import {
   TabContainer,
@@ -26,7 +26,6 @@ import {
   InfoLabel,
   InfoValue,
   CommentText,
-  ButtonOMPDF,
   PageHeader,
   HeaderLeft,
   BtnBack,
@@ -36,12 +35,37 @@ import {
   HeaderTitleSection,
   PageTitle,
   PageSubtitle,
+  DetailSection,
 } from "@/styles/detailsmission-styles";
+import { 
+  FolderContainer, 
+  FolderHeader, 
+  AttachmentsList, 
+  AttachmentItem, 
+  IconButton 
+} from "@/styles/detailsmission-styles";
+import { 
+  ModalOverlay, 
+  ModalContentStyled, 
+  ModalHeader, 
+  ModalTitle, 
+  ModalCloseButton, 
+  ModalBody, 
+  FilePreview, 
+  ImagePreview, 
+  ErrorMessage 
+} from "@/styles/detailsmission-styles";
+import { handleFileView } from "@/utils/file-utils";
 import {
   useSearchMissionAssignations,
   useGenerateMissionOrder,
   useGenerateATD,
+  usePreviewMissionOrder,
+  usePreviewATD,
   type MissionAssignation,
+  type GenerateMissionOrderData,
+  type GenerateATDData,
+  type PreviewPdfResult,
 } from "@/api/mission/services";
 import { useGetMissionValidationsByAssignationId } from "@/api/mission/validation/services";
 import {
@@ -70,6 +94,7 @@ import {
   CommentActions,
   CommentActionButton,
 } from "@/styles/comment-styles";
+import { getInitials } from "@/utils/initials";
 
 interface Comment {
   commentId: string;
@@ -177,6 +202,247 @@ interface MissionValidation {
   };
 }
 
+// Types for attachments
+interface DocumentAttachment {
+  id: string;
+  name: string;
+  fileContent?: string; // Optional base64
+  fileName: string;
+  fileSize?: number;
+  fileType: string;
+  extension?: string;
+}
+
+interface ModalContent {
+  fileName?: string;
+  fileUrl?: string;
+  isBlobUrl?: boolean;
+  extension?: string;
+  error?: string;
+}
+
+const PREDEFINED_DOCUMENTS: Omit<DocumentAttachment, 'fileContent'>[] = [
+  {
+    id: "ordre-mission",
+    name: "Ordre de Mission",
+    fileName: "Ordre_de_Mission.pdf",
+    fileType: "application/pdf",
+    extension: "pdf",
+    fileSize: 1024,
+  },
+  {
+    id: "attestation-employe",
+    name: "Attestation Employé",
+    fileName: "Attestation_Employe.pdf",
+    fileType: "application/pdf",
+    extension: "pdf",
+    fileSize: 512,
+  },
+  {
+    id: "attestation-hebergement",
+    name: "Attestation Hébergement",
+    fileName: "Attestation_Hebergement.pdf",
+    fileType: "application/pdf",
+    extension: "pdf",
+    fileSize: 768,
+  },
+];
+
+// FilePreviewModal Component
+interface FilePreviewModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  content: ModalContent;
+}
+
+const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ isOpen, onClose, content }) => {
+  useEffect(() => {
+    return () => {
+      if (content.isBlobUrl && content.fileUrl) {
+        window.URL.revokeObjectURL(content.fileUrl);
+      }
+    };
+  }, [content.fileUrl, content.isBlobUrl]);
+
+  if (!isOpen) return null;
+
+  return (
+    <ModalOverlay onClick={onClose}>
+      <ModalContentStyled onClick={(e) => e.stopPropagation()}>
+        <ModalHeader>
+          <ModalTitle>{content.fileName || "Prévisualisation"}</ModalTitle>
+          <ModalCloseButton onClick={onClose} $variant="primary" style={{ color: 'black' }}>
+            <X size={20} />
+          </ModalCloseButton>
+        </ModalHeader>
+        <ModalBody>
+          {content.error ? (
+            <ErrorMessage>{content.error}</ErrorMessage>
+          ) : content.extension === "pdf" ? (
+            <FilePreview src={content.fileUrl} title={content.fileName} style={{ borderRadius: 0 }} />
+          ) : (
+            <ImagePreview src={content.fileUrl} alt={content.fileName || ""} />
+          )}
+        </ModalBody>
+      </ModalContentStyled>
+    </ModalOverlay>
+  );
+};
+
+// MissionAttachments Component (per employee)
+interface MissionAttachmentsProps {
+  documents: DocumentAttachment[];
+  onGenerateOrder: () => Promise<void>;
+  onGenerateEmploye: () => Promise<void>;
+  onGenerateHebergement?: () => Promise<void>; // Optional for international
+  onPreviewOrder: (data: GenerateMissionOrderData) => Promise<PreviewPdfResult>;
+  onPreviewEmploye: (data: GenerateATDData) => Promise<PreviewPdfResult>;
+  onPreviewHebergement?: (data: GenerateATDData) => Promise<PreviewPdfResult>; // Optional for international
+  employeeId: string;
+  missionId: string;
+}
+
+const MissionAttachments: React.FC<MissionAttachmentsProps> = ({ 
+  documents, 
+  onGenerateOrder, 
+  onGenerateEmploye, 
+  onGenerateHebergement,
+  onPreviewOrder,
+  onPreviewEmploye,
+  onPreviewHebergement,
+  employeeId,
+  missionId 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState<ModalContent>({});
+  const showHebergement = onGenerateHebergement !== undefined && onPreviewHebergement !== undefined;
+
+  const toggleOpen = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  const handlePreview = useCallback(async (doc: DocumentAttachment) => {
+    const content = doc.fileContent;
+    if (content) {
+      handleFileView(
+        content,
+        doc.fileName,
+        (modalContent: ModalContent | null) => setModalContent(modalContent || {}),
+        setModalOpen,
+        doc.fileType
+      );
+    } else {
+      let previewResult: PreviewPdfResult | undefined;
+      try {
+        switch (doc.id) {
+          case "ordre-mission":
+            previewResult = await onPreviewOrder({ missionId, employeeId });
+            break;
+          case "attestation-employe":
+            previewResult = await onPreviewEmploye({ employeeId });
+            break;
+          case "attestation-hebergement":
+            if (onPreviewHebergement) previewResult = await onPreviewHebergement({ employeeId });
+            break;
+        }
+        if (previewResult) {
+          setModalContent({ 
+            fileUrl: previewResult.blobUrl, 
+            fileName: previewResult.fileName, 
+            isBlobUrl: true, 
+            extension: doc.extension || "pdf" 
+          });
+          setModalOpen(true);
+        }
+      } catch (error) {
+        setModalContent({ 
+          error: error instanceof Error ? error.message : "Erreur lors de la génération du fichier.", 
+          fileName: doc.fileName 
+        });
+        setModalOpen(true);
+      }
+    }
+  }, [onPreviewOrder, onPreviewEmploye, onPreviewHebergement, employeeId, missionId]);
+
+  const handleDownload = useCallback(async (doc: DocumentAttachment) => {
+    try {
+      switch (doc.id) {
+        case "ordre-mission":
+          await onGenerateOrder();
+          break;
+        case "attestation-employe":
+          await onGenerateEmploye();
+          break;
+        case "attestation-hebergement":
+          if (onGenerateHebergement) await onGenerateHebergement();
+          break;
+      }
+    } catch {
+      // Error handled by alert in generate functions
+    }
+  }, [onGenerateOrder, onGenerateEmploye, onGenerateHebergement]);
+
+  const filteredDocuments = useMemo(() => 
+    documents.filter(doc => doc.id !== "attestation-hebergement" || showHebergement), 
+    [documents, showHebergement]
+  );
+
+  return (
+    <>
+      <FolderContainer style={{ marginTop: "var(--spacing-md)", width: "300px" }}>
+        <FolderHeader onClick={toggleOpen} $isOpen={isOpen}>
+          <Folder className="folder-icon" size={20} />
+          <span style={{ fontSize: "12px" }}>
+            Pièces Jointes · {filteredDocuments.length} document{filteredDocuments.length !== 1 ? "s" : ""}
+          </span>
+          <ChevronDown className="chevron" size={20} />
+        </FolderHeader>
+        {isOpen && (
+          <AttachmentsList style={{ width: "100%" }}>
+            {filteredDocuments.length > 0 ? (
+              filteredDocuments.map((doc) => (
+                <AttachmentItem key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "var(--spacing-sm)" }}>
+                  <FileText size={24} style={{ color: "var(--primary-color)", minWidth: "24px" }} />
+                  <div className="file-info" style={{ flex: 1, minWidth: 0, wordBreak: "break-word" }}>
+                    <div className="file-name" style={{ fontWeight: "bold", fontSize: "12px" }}>{doc.name}</div>
+                    <div className="file-size" style={{ fontSize: "12px" }}>{(doc.fileSize || 0).toLocaleString()} Ko</div>
+                  </div>
+                  <div className="actions" style={{ display: "flex", gap: "var(--spacing-xs)" }}>
+                    <IconButton
+                      onClick={() => handlePreview(doc)}
+                      title={`Prévisualiser ${doc.name}`}
+                      $variant="primary"
+                    >
+                      <Eye size={16} />
+                    </IconButton>
+                    <IconButton
+                      $download
+                      onClick={() => handleDownload(doc)}
+                      title={`Télécharger ${doc.name}`}
+                    >
+                      <Download size={16} />
+                    </IconButton>
+                  </div>
+                </AttachmentItem>
+              ))
+            ) : (
+              <p style={{ padding: "var(--spacing-xl)", textAlign: "center", color: "var(--text-muted)", fontSize: "12px" }}>
+                Aucune pièce jointe disponible
+              </p>
+            )}
+          </AttachmentsList>
+        )}
+      </FolderContainer>
+      <FilePreviewModal 
+        isOpen={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        content={modalContent} 
+      />
+    </>
+  );
+};
+
 const StyledTabContainer = styled.div`${TabContainer}`;
 
 type TabButtonProps = {
@@ -280,10 +546,9 @@ const useComments = (missionId: string, userId: string | null, showAlert: (type:
         };
         await createCommentMutation.mutateAsync(commentData);
         setComment("");
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      } catch (errorMessage: unknown) {
         showAlert("error", `Erreur lors de l'ajout du commentaire: ${errorMessage}`);
-        throw error;
+        throw errorMessage;
       }
     },
     [missionId, userId, createCommentMutation, showAlert]
@@ -302,10 +567,9 @@ const useComments = (missionId: string, userId: string | null, showAlert: (type:
         await updateCommentMutation.mutateAsync({ commentId, comment: commentData });
         setEditingCommentId(null);
         setEditCommentText("");
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      } catch (errorMessage: unknown) {
         showAlert("error", `Erreur lors de la mise à jour du commentaire: ${errorMessage}`);
-        throw error;
+        throw errorMessage;
       }
     },
     [missionId, userId, updateCommentMutation, showAlert]
@@ -316,10 +580,9 @@ const useComments = (missionId: string, userId: string | null, showAlert: (type:
       if (!missionId || !userId) return;
       try {
         await deleteCommentMutation.mutateAsync({ commentId, missionId, userId });
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      } catch (errorMessage: unknown) {
         showAlert("error", `Erreur lors de la suppression du commentaire: ${errorMessage}`);
-        throw error;
+        throw errorMessage;
       }
     },
     [missionId, userId, deleteCommentMutation, showAlert]
@@ -495,15 +758,6 @@ const DetailsMission: React.FC = () => {
     refetch: refetchMissionData,
   } = useMissionData(missionId || "");
 
-  // État pour le chargement et la génération PDF par employeeId
-  const [pdfLoading, setPdfLoading] = useState<Record<string, boolean>>({});
-  const [pdfGenerated, setPdfGenerated] = useState<Record<string, boolean>>({});
-  // État pour les attestations
-  const [attestationEmployeLoading, setAttestationEmployeLoading] = useState<Record<string, boolean>>({});
-  const [attestationEmployeGenerated, setAttestationEmployeGenerated] = useState<Record<string, boolean>>({});
-  const [attestationHebergementLoading, setAttestationHebergementLoading] = useState<Record<string, boolean>>({});
-  const [attestationHebergementGenerated, setAttestationHebergementGenerated] = useState<Record<string, boolean>>({});
-
   const [selectedAssignationId, setSelectedAssignationId] = useState<string | null>(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [missionPayment, setMissionPayment] = useState<MissionPaymentState>({
@@ -524,6 +778,8 @@ const DetailsMission: React.FC = () => {
 
   const generateOrderMutation = useGenerateMissionOrder();
   const generateATDMutation = useGenerateATD();
+  const previewOrderMutation = usePreviewMissionOrder();
+  const previewATDMutation = usePreviewATD();
   const exportExcelMutation = useExportMissionAssignationExcel();
   const { data: compensationsResponse, isLoading: compensationsLoading } = useCompensationsByEmployeeAndMission(
     selectedEmployeeId ?? undefined,
@@ -581,75 +837,104 @@ const DetailsMission: React.FC = () => {
   }, [compensationsResponse]);
 
   const handleExportPDF = useCallback(
-    async (employeeId: string) => {
+    async (employeeId: string): Promise<void> => {
       if (!missionId || !employeeId) {
         showAlert("error", "Mission ID et Employee ID sont requis pour générer l'ordre de mission.");
         return;
       }
 
-      setPdfLoading((prev) => ({ ...prev, [employeeId]: true }));
       try {
         const data = { missionId, employeeId };
         await generateOrderMutation.mutateAsync(data);
-        // Marquer comme généré avec succès
-        setPdfGenerated((prev) => ({ ...prev, [employeeId]: true }));
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-        showAlert("error", errorMessage || "Erreur lors de la génération de l'ordre de mission.");
-        // Ne pas marquer comme généré en cas d'erreur
-      } finally {
-        setPdfLoading((prev) => ({ ...prev, [employeeId]: false }));
+      } catch (errorMessage: unknown) {
+        showAlert("error", `Erreur lors de la génération de l'ordre de mission: ${errorMessage}`);
       }
     },
     [missionId, showAlert, generateOrderMutation]
   );
 
-  // Handlers pour les nouvelles attestations (à adapter avec les vraies mutations API)
+  const handlePreviewOrder = useCallback(
+    async (data: GenerateMissionOrderData): Promise<PreviewPdfResult> => {
+      if (!data.missionId || !data.employeeId) {
+        showAlert("error", "Mission ID et Employee ID sont requis pour prévisualiser l'ordre de mission.");
+        throw new Error("Mission ID et Employee ID sont requis pour prévisualiser l'ordre de mission.");
+      }
+
+      const result = await previewOrderMutation.mutateAsync(data);
+      return result;
+    },
+    [showAlert, previewOrderMutation]
+  );
+
+  const handlePreviewATD = useCallback(
+    async (data: GenerateATDData): Promise<PreviewPdfResult> => {
+      if (!data.employeeId) {
+        showAlert("error", "Employee ID est requis pour prévisualiser l'attestation employé.");
+        throw new Error("Employee ID est requis pour prévisualiser l'attestation employé.");
+      }
+
+      const result = await previewATDMutation.mutateAsync(data);
+      return result;
+    },
+    [showAlert, previewATDMutation]
+  );
+
   const handleExportAttestationEmploye = useCallback(
-    async (employeeId: string) => {
+    async (employeeId: string): Promise<void> => {
       if (!missionId || !employeeId) {
         showAlert("error", "Mission ID et Employee ID sont requis pour générer l'attestation employé.");
         return;
       }
 
-      setAttestationEmployeLoading((prev) => ({ ...prev, [employeeId]: true }));
       try {
-        const data = { missionId, employeeId };
+        const data = { employeeId };
         await generateATDMutation.mutateAsync(data);
-        setAttestationEmployeGenerated((prev) => ({ ...prev, [employeeId]: true }));
-        // showAlert("success", "Attestation employé générée avec succès."); // Supprimé pour éviter l'alert info indésirable
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-        showAlert("error", errorMessage || "Erreur lors de la génération de l'attestation employé.");
-      } finally {
-        setAttestationEmployeLoading((prev) => ({ ...prev, [employeeId]: false }));
+      } catch (errorMessage: unknown) {
+        showAlert("error", `Erreur lors de la génération de l'attestation employé: ${errorMessage}`);
       }
     },
     [missionId, showAlert, generateATDMutation]
   );
 
   const handleExportAttestationHebergement = useCallback(
-    async (employeeId: string) => {
+    async (employeeId: string): Promise<void> => {
       if (!missionId || !employeeId) {
         showAlert("error", "Mission ID et Employee ID sont requis pour générer l'attestation hébergement.");
         return;
       }
 
-      setAttestationHebergementLoading((prev) => ({ ...prev, [employeeId]: true }));
       try {
         // TODO: Remplacer par la vraie mutation API pour générer l'attestation hébergement
         // Ex: await generateAttestationHebergementMutation.mutateAsync({ missionId, employeeId });
         await new Promise(resolve => setTimeout(resolve, 2000)); // Simulation de chargement
-        setAttestationHebergementGenerated((prev) => ({ ...prev, [employeeId]: true }));
-        // showAlert("success", "Attestation hébergement générée avec succès."); // Supprimé pour éviter l'alert info indésirable
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-        showAlert("error", errorMessage || "Erreur lors de la génération de l'attestation hébergement.");
-      } finally {
-        setAttestationHebergementLoading((prev) => ({ ...prev, [employeeId]: false }));
+      } catch (errorMessage: unknown) {
+        showAlert("error", `Erreur lors de la génération de l'attestation hébergement: ${errorMessage}`);
       }
     },
     [missionId, showAlert]
+  );
+
+  const handlePreviewAttestationHebergement = useCallback(
+    async (data: GenerateATDData): Promise<PreviewPdfResult> => {
+      if (!data.employeeId) {
+        showAlert("error", "Employee ID est requis pour prévisualiser l'attestation hébergement.");
+        throw new Error("Employee ID est requis pour prévisualiser l'attestation hébergement.");
+      }
+
+      try {
+        // TODO: Similar for preview hebergement
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Simulation
+        // Mock result for now
+        return {
+          blobUrl: URL.createObjectURL(new Blob(['Mock PDF content'], { type: 'application/pdf' })),
+          fileName: `Attestation_Hebergement-${data.employeeId}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`,
+          status: "success"
+        };
+      } catch (errorMessage: unknown) {
+        throw new Error(`Erreur lors de la prévisualisation de l'attestation hébergement: ${errorMessage}`);
+      }
+    },
+    [showAlert]
   );
 
   const handleExportExcel = useCallback(() => {
@@ -779,121 +1064,6 @@ const DetailsMission: React.FC = () => {
     </StyledTabContainer>
   );
 
-  // Fonction pour rendre les boutons de génération (Ordre de Mission + nouvelles attestations) en horizontal
-  const renderGenerationButtons = () => {
-    const showHebergement = mission?.missionType === "international";
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "var(--spacing-sm)",
-          justifyContent: "flex-start",
-          marginTop: "10px",
-          marginBottom: "var(--spacing-md)",
-        }}
-      >
-        {assignations.flatMap((assignation) => {
-          const employeeId = assignation.employee.employeeId;
-          const isLoadingPdf = pdfLoading[employeeId] || false;
-          const isGeneratedPdf = pdfGenerated[employeeId] || false;
-          const isLoadingEmploye = attestationEmployeLoading[employeeId] || false;
-          const isGeneratedEmploye = attestationEmployeGenerated[employeeId] || false;
-          const isLoadingHebergement = attestationHebergementLoading[employeeId] || false;
-          const isGeneratedHebergement = attestationHebergementGenerated[employeeId] || false;
-
-          const buttons = [
-            <ButtonOMPDF
-              key={`pdf-${employeeId}`}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleExportPDF(employeeId);
-              }}
-              disabled={isLoadingPdf}
-            >
-              {isLoadingPdf ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Génération...
-                </>
-              ) : isGeneratedPdf ? (
-                <>
-                  <FileText size={16} className="mr-2" />
-                  Régénérer Ordre de Mission
-                </>
-              ) : (
-                <>
-                  <FileText size={16} className="mr-2" />
-                  Ordre de Mission
-                </>
-              )}
-            </ButtonOMPDF>,
-            <ButtonOMPDF
-              key={`employe-${employeeId}`}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleExportAttestationEmploye(employeeId);
-              }}
-              disabled={isLoadingEmploye}
-            >
-              {isLoadingEmploye ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Génération...
-                </>
-              ) : isGeneratedEmploye ? (
-                <>
-                  <FileText size={16} className="mr-2" />
-                  Régénérer Attestation Employé
-                </>
-              ) : (
-                <>
-                  <FileText size={16} className="mr-2" />
-                  Attestation Employé
-                </>
-              )}
-            </ButtonOMPDF>,
-          ];
-
-          if (showHebergement) {
-            buttons.push(
-              <ButtonOMPDF
-                key={`hebergement-${employeeId}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleExportAttestationHebergement(employeeId);
-                }}
-                disabled={isLoadingHebergement}
-              >
-                {isLoadingHebergement ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Génération...
-                  </>
-                ) : isGeneratedHebergement ? (
-                  <>
-                    <FileText size={16} className="mr-2" />
-                    Régénérer Attestation Hébergement
-                  </>
-                ) : (
-                  <>
-                    <FileText size={16} className="mr-2" />
-                    Attestation Hébergement
-                  </>
-                )}
-              </ButtonOMPDF>
-            );
-          }
-
-          return buttons;
-        })}
-      </div>
-    );
-  };
-
   if (!missionId) {
     return (
       <LoadingContainer>
@@ -918,6 +1088,8 @@ const DetailsMission: React.FC = () => {
       Accès restreint : La mission n'est pas encore validée.
     </div>
   );
+
+  const documents = PREDEFINED_DOCUMENTS.map(doc => ({ ...doc, fileContent: undefined } as DocumentAttachment));
 
   return (
     <>
@@ -973,9 +1145,10 @@ const DetailsMission: React.FC = () => {
                     assignations.map((assignation, index) => {
                       const employee = assignation.employee;
                       const initials = `${employee.firstName?.[0] || ''}${employee.lastName?.[0] || ''}`.toUpperCase();
+                      const showHebergement = mission?.missionType === "international";
 
                       return (
-                        <div
+                        <DetailSection
                           key={`${assignation.assignationId}-${index}`}
                           style={{
                             marginBottom: "var(--spacing-md)",
@@ -1030,7 +1203,20 @@ const DetailsMission: React.FC = () => {
                               <InfoValue>{employee.service?.serviceName || "Non spécifié"}</InfoValue>
                             </InfoItem>
                           </div>
-                        </div>
+                          {isMissionFullyValidated && (
+                            <MissionAttachments
+                              documents={documents}
+                              onGenerateOrder={() => handleExportPDF(assignation.employee.employeeId)}
+                              onGenerateEmploye={() => handleExportAttestationEmploye(assignation.employee.employeeId)}
+                              onGenerateHebergement={showHebergement ? () => handleExportAttestationHebergement(assignation.employee.employeeId) : undefined}
+                              onPreviewOrder={handlePreviewOrder}
+                              onPreviewEmploye={handlePreviewATD}
+                              onPreviewHebergement={showHebergement ? handlePreviewAttestationHebergement : undefined}
+                              employeeId={assignation.employee.employeeId}
+                              missionId={missionId || ""}
+                            />
+                          )}
+                        </DetailSection>
                       );
                     })
                   ) : (
@@ -1044,7 +1230,6 @@ const DetailsMission: React.FC = () => {
                       Aucune personne assignée à la mission {missionId || "inconnue"}.
                     </div>
                   )}
-                  {isMissionFullyValidated && renderGenerationButtons()}
                   <Separator />
                   {mission && (
                     <>
@@ -1132,12 +1317,10 @@ const DetailsMission: React.FC = () => {
                       <CommentText>Aucun commentaire pour cette mission.</CommentText>
                     ) : (
                       comments.map((commentItem) => {
-                        const initials = commentItem.creator.name
-                          ? commentItem.creator.name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase()
-                          : "NA";
+                        
                         return (
                           <CommentItem key={commentItem.commentId}>
-                            <Avatar size="32px">{initials}</Avatar>
+                            <Avatar size="32px">{getInitials(commentItem.creator.name)}</Avatar>
                             <CommentContent>
                               {editingCommentId === commentItem.commentId ? (
                                 <>
@@ -1204,10 +1387,10 @@ const DetailsMission: React.FC = () => {
                       missionPayment={missionPayment as MissionPayment}
                       selectedAssignmentId={selectedAssignationId || ""}
                       onBack={handleBackToMissionDetails}
-                      onExportPDF={handleExportPDF}
                       onExportExcel={handleExportExcel}
-                      isLoading={{ exportExcel: exportExcelMutation.isPending }}
                       formatDate={formatDate}
+                      missionId={missionId || ""}
+                      employeeId={selectedEmployeeId || ""}
                     />
                   ) : (
                     <LoadingContainer>
