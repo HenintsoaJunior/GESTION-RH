@@ -793,6 +793,7 @@ namespace MyApp.Api.Services.import
                             EmployeeCode = tmpEmployee.Mle,
                             LastName = tmpEmployee.Nom,
                             FirstName = tmpEmployee.Prenom,
+                            Category = tmpEmployee.Categorie,
                             BirthDate = tmpEmployee.DateNaissance,
                             BirthPlace = tmpEmployee.LieuNaissance,
                             IdNumber = tmpEmployee.NumeroCin,

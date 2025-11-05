@@ -119,7 +119,39 @@ const MissionCards: React.FC<MissionCardsProps> = ({
     /**
      * Rendu du bloc indicateur d'urgence basé sur le nombre de jours avant l'échéance.
      */
-    const renderDueIndicator = (daysUntilDue: number) => {
+    const renderDueIndicator = (daysUntilDue: number, status: string) => {
+        const neutralDays = 999; // Valeur neutre pour éviter les styles d'urgence
+
+        if (status === 'approved') {
+            return (
+                <IndicatorBlock $daysUntilDue={neutralDays} style={{ 
+                    backgroundColor: 'var(--success-bg)', 
+                    color: 'var(--success-color)' 
+                }}>
+                    <CheckCircle size={24} style={{ color: 'var(--success-color)' }} />
+                    <IndicatorValue style={{ color: 'var(--success-color)' }}>
+                        --
+                    </IndicatorValue>
+                    {/* Pas de texte pour les missions validées */}
+                </IndicatorBlock>
+            );
+        }
+
+        if (status === 'rejected') {
+            return (
+                <IndicatorBlock $daysUntilDue={neutralDays} style={{ 
+                    backgroundColor: 'var(--danger-bg)', 
+                    color: 'var(--danger-color)' 
+                }}>
+                    <XCircle size={24} style={{ color: 'var(--danger-color)' }} />
+                    <IndicatorValue style={{ color: 'var(--danger-color)' }}>
+                        --
+                    </IndicatorValue>
+                    {/* Pas de texte pour les missions rejetées */}
+                </IndicatorBlock>
+            );
+        }
+
         const isUrgent = daysUntilDue <= 3 && daysUntilDue >= 0;
         const isDueSoon = daysUntilDue <= 7 && daysUntilDue > 3;
 
@@ -179,7 +211,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                             <Card key={mission.id} onClick={() => handleRowClick(mission.id)}>
                                 
                                 {/* 1. Bloc Indicateur (Statut/Urgence) */}
-                                {renderDueIndicator(daysUntilDue)}
+                                {renderDueIndicator(daysUntilDue, mission.status)}
 
                                 {/* 2. En-tête (Titre & Badge Statut) */}
                                 <CardHeader>

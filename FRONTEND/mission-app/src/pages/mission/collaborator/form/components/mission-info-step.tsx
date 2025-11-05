@@ -60,6 +60,8 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
     console.log("MissionCollaboratorStep - fieldErrors:", fieldErrors);
   }, [fieldErrors]);
 
+  const isInternational = formData.missionType === "international";
+
   return (
     <>
       {/* Section Informations de la Mission */}
@@ -284,23 +286,26 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 disabled={isSubmitting}
               />
 
-              <FormLabel>Moyen de transport</FormLabel>
-              <StyledAutoCompleteInput
-                value={formData.beneficiary.transport}
-                onChange={(value: string) => handleInputChange({ target: { name: "transport", value } }, "beneficiary")}
-                suggestions={suggestions.transport.map((t) => t.type)}
-                placeholder={suggestions.transport.length === 0 ? "Aucun moyen de transport disponible" : "Saisir ou sélectionner un moyen de transport..."}
-                disabled={isSubmitting}
-                onAddNew={() => handleAddNewSuggestion("transport", formData.beneficiary.transport)}
-                fieldType="transport"
-                fieldLabel="moyen de transport"
-                addNewRoute="/transport/create"
-                className={fieldErrors["beneficiary.transport"] ? "error" : ""}
-              />
-              {fieldErrors["beneficiary.transport"] && fieldErrors["beneficiary.transport"].length > 0 && (
-                <ErrorMessage>{fieldErrors["beneficiary.transport"].join(", ")}</ErrorMessage>
+              {!isInternational && (
+                <>
+                  <FormLabel>Moyen de transport</FormLabel>
+                  <StyledAutoCompleteInput
+                    value={formData.beneficiary.transport}
+                    onChange={(value: string) => handleInputChange({ target: { name: "transport", value } }, "beneficiary")}
+                    suggestions={suggestions.transport.map((t) => t.type)}
+                    placeholder={suggestions.transport.length === 0 ? "Aucun moyen de transport disponible" : "Saisir ou sélectionner un moyen de transport..."}
+                    disabled={isSubmitting}
+                    onAddNew={() => handleAddNewSuggestion("transport", formData.beneficiary.transport)}
+                    fieldType="transport"
+                    fieldLabel="moyen de transport"
+                    addNewRoute="/transport/create"
+                    className={fieldErrors["beneficiary.transport"] ? "error" : ""}
+                  />
+                  {fieldErrors["beneficiary.transport"] && fieldErrors["beneficiary.transport"].length > 0 && (
+                    <ErrorMessage>{fieldErrors["beneficiary.transport"].join(", ")}</ErrorMessage>
+                  )}
+                </>
               )}
-
             </FormFieldCell>
           </FormRow>
          

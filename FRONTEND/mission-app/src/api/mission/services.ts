@@ -192,7 +192,18 @@ export interface GenerateATDData {
   employeeId?: string;
 }
 
+export interface GenerateIMData {
+  missionId?: string;
+  employeeId?: string;
+}
+
 export interface GenerateMissionOrderResult {
+  fileName: string;
+  status: string;
+}
+
+export interface PreviewPdfResult {
+  blobUrl: string;
   fileName: string;
   status: string;
 }
@@ -387,6 +398,62 @@ export const useGenerateMissionOrder = () => {
   });
 };
 
+export const usePreviewMissionOrder = () => {
+  return useMutation<PreviewPdfResult, Error, GenerateMissionOrderData>({
+    mutationFn: async (data: GenerateMissionOrderData) => {
+      const url = "/api/MissionAssignation/OM";
+
+      const config = {
+        responseType: 'blob' as const,
+        headers: {
+          Accept: "application/pdf",
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await api.post(url, {
+        missionId: data.missionId || null,
+        employeeId: data.employeeId || null,
+      }, config);
+
+      const blob = response.data;
+
+      // Check if the blob is valid
+      if (!blob || blob.size === 0) {
+        throw new Error("Le fichier PDF généré est vide");
+      }
+
+      // Extract filename from content-disposition header or generate a default
+      const contentDisposition = response.headers['content-disposition'];
+      const extractFilename = (header?: string): string => {
+        if (!header) {
+          return `OrdreMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+        }
+
+        const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const standardMatch = header.match(/filename="([^"]+)"/i);
+        if (standardMatch && standardMatch[1]) {
+          return standardMatch[1];
+        }
+
+        return `OrdreMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      };
+
+      const fileName = contentDisposition
+        ? extractFilename(contentDisposition)
+        : `OrdreMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+
+      // Create blob URL but do not trigger download (for preview use)
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      return { blobUrl, fileName, status: "success" };
+    },
+  });
+};
 
 export const useGenerateATD = () => {
   return useMutation<GenerateMissionOrderResult, Error, GenerateATDData>({
@@ -450,6 +517,186 @@ export const useGenerateATD = () => {
       window.URL.revokeObjectURL(urlBlob);
 
       return { fileName, status: "success" };
+    },
+  });
+};
+
+export const usePreviewATD = () => {
+  return useMutation<PreviewPdfResult, Error, GenerateATDData>({
+    mutationFn: async (data: GenerateATDData) => {
+      const url = "/api/MissionAssignation/ATD";
+
+      const config = {
+        responseType: 'blob' as const,
+        headers: {
+          Accept: "application/pdf",
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await api.post(url, {
+        employeeId: data.employeeId || null,
+      }, config);
+
+      const blob = response.data;
+
+      // Check if the blob is valid
+      if (!blob || blob.size === 0) {
+        throw new Error("Le fichier PDF généré est vide");
+      }
+
+      // Extract filename from content-disposition header or generate a default
+      const contentDisposition = response.headers['content-disposition'];
+      const extractFilename = (header?: string): string => {
+        if (!header) {
+          return `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+        }
+
+        const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const standardMatch = header.match(/filename="([^"]+)"/i);
+        if (standardMatch && standardMatch[1]) {
+          return standardMatch[1];
+        }
+
+        return `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      };
+
+      const fileName = contentDisposition
+        ? extractFilename(contentDisposition)
+        : `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+
+      // Create blob URL but do not trigger download (for preview use)
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      return { blobUrl, fileName, status: "success" };
+    },
+  });
+};
+
+export const useGenerateIM = () => {
+  return useMutation<GenerateMissionOrderResult, Error, GenerateIMData>({
+    mutationFn: async (data: GenerateIMData) => {
+      const url = "/api/MissionAssignation/IM";
+
+      const config = {
+        responseType: 'blob' as const,
+        headers: {
+          Accept: "application/pdf",
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await api.post(url, {
+        missionId: data.missionId || null,
+        employeeId: data.employeeId || null,
+      }, config);
+
+      const blob = response.data;
+
+      // Check if the blob is valid
+      if (!blob || blob.size === 0) {
+        throw new Error("Le fichier PDF généré est vide");
+      }
+
+      // Extract filename from content-disposition header or generate a default
+      const contentDisposition = response.headers['content-disposition'];
+      const extractFilename = (header?: string): string => {
+        if (!header) {
+          return `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+        }
+
+        const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const standardMatch = header.match(/filename="([^"]+)"/i);
+        if (standardMatch && standardMatch[1]) {
+          return standardMatch[1];
+        }
+
+        return `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      };
+
+      const fileName = contentDisposition
+        ? extractFilename(contentDisposition)
+        : `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+
+      // Create and trigger download
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = urlBlob;
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(urlBlob);
+
+      return { fileName, status: "success" };
+    },
+  });
+};
+
+export const usePreviewIM = () => {
+  return useMutation<PreviewPdfResult, Error, GenerateIMData>({
+    mutationFn: async (data: GenerateIMData) => {
+      const url = "/api/MissionAssignation/IM";
+
+      const config = {
+        responseType: 'blob' as const,
+        headers: {
+          Accept: "application/pdf",
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await api.post(url, {
+        missionId: data.missionId || null,
+        employeeId: data.employeeId || null,
+      }, config);
+
+      const blob = response.data;
+
+      // Check if the blob is valid
+      if (!blob || blob.size === 0) {
+        throw new Error("Le fichier PDF généré est vide");
+      }
+
+      // Extract filename from content-disposition header or generate a default
+      const contentDisposition = response.headers['content-disposition'];
+      const extractFilename = (header?: string): string => {
+        if (!header) {
+          return `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+        }
+
+        const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const standardMatch = header.match(/filename="([^"]+)"/i);
+        if (standardMatch && standardMatch[1]) {
+          return standardMatch[1];
+        }
+
+        return `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      };
+
+      const fileName = contentDisposition
+        ? extractFilename(contentDisposition)
+        : `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+
+      // Create blob URL but do not trigger download (for preview use)
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      return { blobUrl, fileName, status: "success" };
     },
   });
 };

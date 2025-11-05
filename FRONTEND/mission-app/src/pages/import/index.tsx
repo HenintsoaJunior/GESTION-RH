@@ -238,9 +238,9 @@ const ImportPage: React.FC = () => {
                     <tbody>
                       <FormRow>
                         <FormFieldCell style={{ width: "100%" }}>
-                          <FormLabelSearch>Fichier Employés (CSV)</FormLabelSearch>
+                          <FormLabelSearch>Fichier Collaborateurs (CSV)</FormLabelSearch>
                           <FileUploadField
-                            label="Employés"
+                            label="Collaborateurs"
                             accept=".csv, .xlsx, .xls"
                             onChange={handleEmployeeFileChange}
                             selectedFile={selectedEmployeeFile}

@@ -6,6 +6,7 @@ import api from '@/utils/axios-config';
 const MISSION_VALIDATIONS_BY_ASSIGNATION_ID_KEY = ['missionValidationsByAssignationId'] as const;
 const MISSION_VALIDATION_REQUESTS_KEY = ['missionValidationRequests'] as const;
 const HAS_ANY_VALIDATOR_VALIDATED_KEY = ['hasAnyValidatorValidated'] as const;
+const HAS_VALIDATION_LINE_KEY = ['hasValidationLine'] as const;
 
 export interface User {
   userId: string;
@@ -472,5 +473,31 @@ export const useHasAnyValidatorValidated = (missionId: string | undefined) => {
       }
     },
     enabled: !!missionId,
+  });
+};
+
+export const useHasValidationLine = (userId: string | undefined) => {
+  const queryKey = [...HAS_VALIDATION_LINE_KEY, userId] as const;
+
+  return useQuery<boolean, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error('userId is required for checking if user has validation line');
+      }
+      try {
+        const response = await api.get(`/api/MissionValidation/has-validation-line/${userId}`);
+        if (response.data.status !== 200) {
+          throw new Error(response.data.message || 'Failed to check if user has validation line');
+        }
+        return response.data.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          throw new Error(error.response.data.message || 'An error occurred while checking if user has validation line');
+        }
+        throw error;
+      }
+    },
+    enabled: !!userId,
   });
 };
