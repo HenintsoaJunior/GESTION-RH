@@ -17,9 +17,6 @@ namespace MyApp.Api.Models.dto.mission
         [Required(ErrorMessage = "Amount is required")]
         [Range(0, double.MaxValue, ErrorMessage = "Amount must be greater than or equal to 0")]
         public decimal Amount { get; set; }
-
-        public int IsTransport { get; set; }
-
         public string? Devise { get; set; }
 
         public string? ExpenseTypeId { get; set; }

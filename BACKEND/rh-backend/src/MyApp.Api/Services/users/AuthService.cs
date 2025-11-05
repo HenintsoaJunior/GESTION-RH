@@ -58,6 +58,7 @@ public class AuthService : IAuthService
         //         return new ValidationResult { Message = ldapResult.Message, Type = ldapResult.Type };
         //     }
         // }
+        
         try
         {
             return await FallbackValidateAsync(username, password);
@@ -107,36 +108,36 @@ public class AuthService : IAuthService
         {
             string? domainPath = _configuration.GetSection("LdapSettings:DomainPath1").Value;
             if (string.IsNullOrEmpty(domainPath))
-                return new LdapValidationResult { Type = "config_error", Message = "LDAP configuration is missing" };
+                return new LdapValidationResult { Type = "config_error", Message = "Matricule ou mot de passe incorrect" };
 
             using var context = new PrincipalContext(ContextType.Domain, domainPath);
             var user = UserPrincipal.FindByIdentity(context, username);
 
             if (user == null)
-                return new LdapValidationResult { Type = "unknown_user", Message = "Invalid or nonexistent user" };
+                return new LdapValidationResult { Type = "unknown_user", Message = "Matricule ou mot de passe incorrect" };
 
             if (user.IsAccountLockedOut())
-                return new LdapValidationResult { Type = "account_locked", Message = "Account locked due to too many failed attempts" };
+                return new LdapValidationResult { Type = "account_locked", Message = "Matricule ou mot de passe incorrect" };
 
             if (string.IsNullOrEmpty(user.EmailAddress))
-                return new LdapValidationResult { Type = "invalid_email", Message = "User email address is not configured in LDAP" };
+                return new LdapValidationResult { Type = "invalid_email", Message = "Matricule ou mot de passe incorrect" };
 
             bool isValid = context.ValidateCredentials(username, password, ContextOptions.Negotiate);
             if (!isValid)
             {
                 await Task.Delay(2000);
-                return new LdapValidationResult { Type = "incorrect_password", Message = "Incorrect password" };
+                return new LdapValidationResult { Type = "incorrect_password", Message = "Matricule ou mot de passe incorrect" };
             }
 
             return new LdapValidationResult { Type = "success", EmailAddress = user.EmailAddress };
         }
         catch (PrincipalServerDownException)
         {
-            return new LdapValidationResult { Type = "ldap_unavailable", Message = "Unable to connect to LDAP server" };
+            return new LdapValidationResult { Type = "ldap_unavailable", Message = "Matricule ou mot de passe incorrect" };
         }
         catch (Exception ex)
         {
-            return new LdapValidationResult { Type = "ldap_error", Message = $"LDAP validation failed: {ex.Message}" };
+            return new LdapValidationResult { Type = "ldap_error", Message = $"Matricule ou mot de passe incorrect: {ex.Message}" };
         }
     }
 

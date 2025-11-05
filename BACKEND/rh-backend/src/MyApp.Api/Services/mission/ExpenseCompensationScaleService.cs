@@ -204,12 +204,11 @@ namespace MyApp.Api.Services.mission
                     {
                         ExpenseCompensationScaleId = _sequenceGenerator.GenerateSequence("seq_expense_compensation_scale_id", "ECS", 6, "-"),
                         Amount = dto.Amount,
-                        IsTransport = dto.IsTransport,
                         Devise = dto.Devise ?? "EUR",
-                        ExpenseTypeId = dto.IsTransport == 1 ? null : dto.ExpenseTypeId,
+                        ExpenseTypeId = dto.ExpenseTypeId,
                         ZoneId = dto.ZoneId,
                         CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = null // Will be set on first update if needed
+                        UpdatedAt = null 
                     };
                     allNewScales.Add(scale);
                     createdIds.Add(scale.ExpenseCompensationScaleId);
@@ -221,10 +220,6 @@ namespace MyApp.Api.Services.mission
                     await _repository.BulkAddAsync(allNewScales);
                     await _repository.SaveChangesAsync();
 
-                    // Log for bulk operation (simplified, log as one entry or loop if needed)
-                    // For now, log a summary
-                    _logger.LogInformation("Bulk sync completed, created {ScaleCount} scales", allNewScales.Count);
-                    // Optionally: await _logService.LogAsync("BULK_SYNC", null, allNewScales, userId, "All fields");
                 }
 
                 await transaction.CommitAsync();
