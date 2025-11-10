@@ -199,9 +199,9 @@ VALUES
 
 INSERT INTO role (role_id, name, description, created_at, updated_at)
 VALUES
-    ('ROLE_001', 'admin', 'Administrator with full access', CURRENT_TIMESTAMP, NULL),
-    ('ROLE_002', 'rh', 'Human Resources role', CURRENT_TIMESTAMP, NULL),
-    ('ROLE_003', 'collaborateur', 'Standard employee role', CURRENT_TIMESTAMP, NULL);
+    ('ROLE_001', 'admin', 'Administrateur avec un accès complet', CURRENT_TIMESTAMP, NULL),
+    ('ROLE_002', 'rh', 'Rôle des ressources humaines', CURRENT_TIMESTAMP, NULL),
+    ('ROLE_003', 'collaborateur', 'Rôle d’employé standard', CURRENT_TIMESTAMP, NULL);
 
 
 INSERT INTO Users( user_id, Matricule, Name, Email, position, Department, superior_id, superior_name, Status, Signature, user_type ) VALUES ( '000465d0-0530-41d9-872f-d6012418ba7e', '00298', 'Safidy RAKOTONDRAJOA (DSI)', 'safidy.rakotondrajoa@ravinala-airports.aero', 'Responsable des applications IT', 'DSI', '83dc05fd-0e42-43f5-b0e0-1567df7647b1', 'Vonjimampianina RAKOTOARISOA (DSI)', null, null, 0);

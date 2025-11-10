@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom"; // Ajout pour la navigation
+import { useNavigate } from "react-router-dom";
 import { ChevronDown, ChevronUp, X, List, Search, Plus } from "lucide-react";
 import {
   FiltersContainer,

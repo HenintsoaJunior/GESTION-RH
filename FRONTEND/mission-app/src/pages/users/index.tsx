@@ -71,6 +71,7 @@ interface FiltersState {
   name: string;
   department: string;
   role: string;
+  matricule: string;
 }
 
 interface AlertState {
@@ -93,11 +94,13 @@ const UserList: React.FC = () => {
     name: "",
     department: "",
     role: "",
+    matricule: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<FiltersState>({
     name: "",
     department: "",
     role: "",
+    matricule: "",
   });
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -209,7 +212,7 @@ const UserList: React.FC = () => {
   };
 
   const handleResetFilters = (): void => {
-    const resetFilters: FiltersState = { name: "", department: "", role: "" };
+    const resetFilters: FiltersState = { name: "", department: "", role: "", matricule: "" };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
     setCurrentPage(1);
@@ -248,6 +251,10 @@ const UserList: React.FC = () => {
     setFilters((prev) => ({ ...prev, role: value }));
   };
 
+  const handleMatriculeChange = (value: string): void => {
+    setFilters((prev) => ({ ...prev, matricule: value }));
+  };
+
   const nameSuggestions = (suggestions.users || [])
     .filter((user: UserSuggestion) =>
       user.displayName
@@ -255,6 +262,14 @@ const UserList: React.FC = () => {
         .includes((filters.name || "").toLowerCase())
     )
     .map((user: UserSuggestion) => user.displayName);
+
+  const matriculeSuggestions = (suggestions.users || [])
+    .filter((user: UserSuggestion) =>
+      user.matricule
+        .toLowerCase()
+        .includes((filters.matricule || "").toLowerCase())
+    )
+    .map((user: UserSuggestion) => user.matricule);
 
   const selectedCountText = `${selectedUsers.length} élément${selectedUsers.length !== 1 ? "s" : ""} sélectionné${selectedUsers.length !== 1 ? "s" : ""}`;
 
@@ -384,7 +399,7 @@ const UserList: React.FC = () => {
                   <tbody>
                     <FormRow>
                       {/* Champ Nom */}
-                      <FormFieldCell style={{ width: "33.33%" }}>
+                      <FormFieldCell style={{ width: "25%" }}>
                         <FormLabelSearch>Nom</FormLabelSearch>
                         <StyledAutoCompleteInput
                           value={filters.name || ""}
@@ -398,8 +413,23 @@ const UserList: React.FC = () => {
                           showAddOption={false}
                         />
                       </FormFieldCell>
+                      {/* Champ Matricule */}
+                      <FormFieldCell style={{ width: "25%" }}>
+                        <FormLabelSearch>Matricule</FormLabelSearch>
+                        <StyledAutoCompleteInput
+                          value={filters.matricule || ""}
+                          onChange={handleMatriculeChange}
+                          suggestions={matriculeSuggestions}
+                          maxVisibleItems={5}
+                          placeholder="Rechercher par matricule..."
+                          disabled={isUsersLoading || isSyncLoading}
+                          fieldType="matricule"
+                          fieldLabel="matricule"
+                          showAddOption={false}
+                        />
+                      </FormFieldCell>
                       {/* Champ Département */}
-                      <FormFieldCell style={{ width: "33.33%" }}>
+                      <FormFieldCell style={{ width: "25%" }}>
                         <FormLabelSearch>Département</FormLabelSearch>
                         <StyledAutoCompleteInput
                           value={filters.department || ""}
@@ -414,8 +444,8 @@ const UserList: React.FC = () => {
                         />
                       </FormFieldCell>
                       {/* Champ Rôle */}
-                      <FormFieldCell style={{ width: "33.33%" }}>
-                        <FormLabelSearch>Access</FormLabelSearch>
+                      <FormFieldCell style={{ width: "25%" }}>
+                        <FormLabelSearch>Accès</FormLabelSearch>
                         <StyledAutoCompleteInput
                           value={filters.role || ""}
                           onChange={handleRoleChange}
@@ -505,17 +535,18 @@ const UserList: React.FC = () => {
                     />
                   </CheckboxHeadCell>
                 )}
+                <TableHeadCell>Matricule</TableHeadCell>
                 <TableHeadCell>Nom</TableHeadCell>
                 <TableHeadCell>Email</TableHeadCell>
                 <TableHeadCell>Département</TableHeadCell>
                 <TableHeadCell>Supérieur direct</TableHeadCell>
-                <TableHeadCell>Access</TableHeadCell>
+                <TableHeadCell>Accès</TableHeadCell>
               </tr>
             </thead>
             <tbody>
               {isUsersLoading ? (
                 <TableRow>
-                  <TableCell colSpan={hasAnyHabilitation ? 6 : 5}>
+                  <TableCell colSpan={hasAnyHabilitation ? 7 : 6}>
                     <Loading>Chargement des données...</Loading>
                   </TableCell>
                 </TableRow>
@@ -533,6 +564,7 @@ const UserList: React.FC = () => {
                           />
                         </CheckboxCell>
                       )}
+                      <TableCell>{user.matricule || "Non spécifié"}</TableCell>
                       <TableCell>{user.name || "Non spécifié"}</TableCell>
                       <TableCell>{user.email || "Non spécifié"}</TableCell>
                       <TableCell>{user.department || "Non spécifié"}</TableCell>
@@ -553,7 +585,7 @@ const UserList: React.FC = () => {
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={hasAnyHabilitation ? 6 : 5}>
+                  <TableCell colSpan={hasAnyHabilitation ? 7 : 6}>
                     <NoDataMessage>
                       {Object.values(appliedFilters).some(Boolean)
                         ? "Aucun utilisateur ne correspond aux critères."

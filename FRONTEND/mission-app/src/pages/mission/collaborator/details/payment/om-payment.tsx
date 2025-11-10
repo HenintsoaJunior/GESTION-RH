@@ -194,24 +194,70 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ isOpen, onClose, co
     };
   }, [content.fileUrl, content.isBlobUrl]);
 
+  const parseTimestamp = useCallback((ts: string): string => {
+    const datePart = ts.split('T')[0]; // e.g., "2025-11-09"
+    const timePart = ts.split('T')[1]; // e.g., "08-56-25-976Z"
+    if (!datePart || !timePart) return ts;
+
+    const cleanTime = timePart.replace(/-/g, ':').replace(/\d{3}Z$/, ''); // e.g., "08:56:25"
+    return `${datePart} ${cleanTime}`;
+  }, []);
+
+  const formatFileNameWithDate = useCallback((fileName?: string): string => {
+    if (!fileName) return "Prévisualisation";
+
+    const match = fileName.match(/(.*)-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)\.pdf$/);
+    if (match) {
+      const [, base, ts] = match;
+      const formattedTs = parseTimestamp(ts);
+      return `${base} (${formattedTs})`;
+    }
+    return fileName;
+  }, [parseTimestamp]);
+
   if (!isOpen) return null;
 
   return (
     <ModalOverlay onClick={onClose}>
-      <ModalContentStyled onClick={(e) => e.stopPropagation()}>
+      <ModalContentStyled 
+        onClick={(e) => e.stopPropagation()} 
+        style={{ 
+          width: '70vw', 
+          height: '80vh', 
+          maxWidth: '70vw', 
+          maxHeight: '80vh',
+        }}
+      >
         <ModalHeader>
-          <ModalTitle>{content.fileName || "Prévisualisation"}</ModalTitle>
+          <ModalTitle>{formatFileNameWithDate(content.fileName)}</ModalTitle>
           <ModalCloseButton onClick={onClose} $variant="primary" style={{ color: 'black' }}>
             <X size={20} />
           </ModalCloseButton>
         </ModalHeader>
-        <ModalBody>
+        <ModalBody style={{ width: '100%', height: 'calc(100% - 60px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {content.error ? (
             <ErrorMessage>{content.error}</ErrorMessage>
           ) : content.extension === "pdf" ? (
-            <FilePreview src={content.fileUrl} title={content.fileName} style={{ borderRadius: 0 }} />
+            <FilePreview 
+              src={content.fileUrl} 
+              title={content.fileName} 
+              style={{ 
+                borderRadius: 0, 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'contain' 
+              }} 
+            />
           ) : (
-            <ImagePreview src={content.fileUrl} alt={content.fileName || ""} />
+            <ImagePreview 
+              src={content.fileUrl} 
+              alt={content.fileName || ""} 
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '100%', 
+                objectFit: 'contain' 
+              }} 
+            />
           )}
         </ModalBody>
       </ModalContentStyled>

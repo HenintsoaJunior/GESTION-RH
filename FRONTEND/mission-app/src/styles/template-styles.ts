@@ -1,3 +1,4 @@
+// template-styles.ts
 import styled, { css } from 'styled-components';
 import { Link } from 'react-router-dom';
 import * as FaIcons from 'react-icons/fa';
@@ -331,11 +332,19 @@ export const Submenu = styled.ul<{ $level: number; $expanded: boolean }>`
 
 export const MainContent = styled.main<{ $isOpen: boolean }>`
   flex: 1;
-  margin-left: ${({ $isOpen }) => $isOpen ? 'var(--sidebar-width)' : '0'};
+  margin-left: 0;
+  transition: margin-left var(--transition-speed) ease;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-secondary);
   font-family: var(--font-family);
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+
+  @media (min-width: 769px) {
+    margin-left: ${({ $isOpen }) => $isOpen ? 'var(--sidebar-width)' : '0'};
+  }
 `;
 
 export const Header = styled.header<{ $isOpen: boolean }>`
@@ -345,7 +354,7 @@ export const Header = styled.header<{ $isOpen: boolean }>`
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--spacing-2xl);
-  padding-left: calc(var(--spacing-2xl) + ${({ $isOpen }) => $isOpen ? 'var(--sidebar-width)' : '0px'});
+  transition: padding-left var(--transition-speed) ease;
   box-shadow: var(--shadow-sm);
   flex-wrap: nowrap;
   position: fixed;
@@ -354,6 +363,10 @@ export const Header = styled.header<{ $isOpen: boolean }>`
   right: 0;
   z-index: 999;
   font-family: var(--font-family);
+
+  @media (min-width: 769px) {
+    padding-left: calc(var(--spacing-2xl) + ${({ $isOpen }) => $isOpen ? 'var(--sidebar-width)' : '0px'});
+  }
 `;
 
 export const HeaderLeft = styled.div`
@@ -713,6 +726,9 @@ export const Content = styled.div`
   display: flex;
   flex-direction: column;
   font-family: var(--font-family);
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
 `;
 
 export const FooterCopyright = styled.div`

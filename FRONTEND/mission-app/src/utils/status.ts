@@ -29,6 +29,9 @@ export const getStatusBadgeClass = (status: string) => {
     case "rejeté":
     case "rejected":
       return "status-rejected";
+    case "non payé":
+    case "unpaid":
+      return "status-unpaid";
     default:
       return "status-pending";
   }
@@ -45,6 +48,7 @@ export const englishToFrench: Record<string, string> = {
   "canceled": "Annulé",
   "rejected": "Rejeté",
   "mission rejected": "Mission Rejeté",
+  "unpaid": "Non payé",
 };
 
 export const frenchToEnglish: Record<string, string> = {
@@ -58,4 +62,5 @@ export const frenchToEnglish: Record<string, string> = {
   "Annulé": "Canceled",
   "Rejeté": "rejected",
   "Mission Rejeté": "rejected",
+  "Non payé": "unpaid",
 };

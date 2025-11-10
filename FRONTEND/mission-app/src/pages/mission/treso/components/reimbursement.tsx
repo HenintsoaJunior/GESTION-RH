@@ -65,16 +65,16 @@ import Pagination from "@/components/pagination";
 
 interface Filter {
   status: string;
-  paymentDateMin: string;
-  paymentDateMax: string;
+  reimbursementDateMin: string;
+  reimbursementDateMax: string;
 }
 
 interface LoadingState {
-  compensations: boolean;
+  reimbursements: boolean;
   stats: boolean;
 }
 
-interface CompensationFiltersProps {
+interface ReimbursementFiltersProps {
   isHidden: boolean;
   setIsHidden: React.Dispatch<React.SetStateAction<boolean>>;
   filters: Filter;
@@ -84,7 +84,7 @@ interface CompensationFiltersProps {
   handleResetFilters: () => void;
 }
 
-const CompensationFilters: React.FC<CompensationFiltersProps> = ({
+const ReimbursementFilters: React.FC<ReimbursementFiltersProps> = ({
   isHidden,
   setIsHidden,
   filters,
@@ -105,8 +105,8 @@ const CompensationFilters: React.FC<CompensationFiltersProps> = ({
   const isFilterEmpty = (): boolean => {
     return (
       !filters.status &&
-      !filters.paymentDateMin &&
-      !filters.paymentDateMax
+      !filters.reimbursementDateMin &&
+      !filters.reimbursementDateMax
     );
   };
 
@@ -147,11 +147,11 @@ const CompensationFilters: React.FC<CompensationFiltersProps> = ({
                           name="status"
                           value={filters.status}
                           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleFilterChange("status", e.target.value)}
-                          disabled={isLoading.compensations}
+                          disabled={isLoading.reimbursements}
                         >
                           <option value="">Tous les statuts</option>
-                          <option value="unpaid">Non payé</option>
-                          <option value="paid">Payé</option>
+                          <option value="unreimbursed">Non remboursé</option>
+                          <option value="reimbursed">Remboursé</option>
                         </FormInputSearch>
                       </FormFieldCell>
                       <FormFieldCell />
@@ -174,24 +174,24 @@ const CompensationFilters: React.FC<CompensationFiltersProps> = ({
                             padding: "0 var(--spacing-sm)",
                             fontSize: "0.75rem"
                           }}>
-                            Date de Paiement
+                            Date de Remboursement
                           </legend>
                           <div>
                             <FormLabelSearch>Du</FormLabelSearch>
                             <FormInputSearch
                               type="date"
-                              value={filters.paymentDateMin}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("paymentDateMin", e.target.value)}
-                              disabled={isLoading.compensations}
+                              value={filters.reimbursementDateMin}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("reimbursementDateMin", e.target.value)}
+                              disabled={isLoading.reimbursements}
                             />
                           </div>
                           <div>
                             <FormLabelSearch>Au</FormLabelSearch>
                             <FormInputSearch
                               type="date"
-                              value={filters.paymentDateMax}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("paymentDateMax", e.target.value)}
-                              disabled={isLoading.compensations}
+                              value={filters.reimbursementDateMax}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("reimbursementDateMax", e.target.value)}
+                              disabled={isLoading.reimbursements}
                             />
                           </div>
                         </fieldset>
@@ -204,12 +204,12 @@ const CompensationFilters: React.FC<CompensationFiltersProps> = ({
                   <ButtonReset
                     type="button"
                     onClick={handleResetFilters}
-                    disabled={isLoading.compensations || isFilterEmpty()}
+                    disabled={isLoading.reimbursements || isFilterEmpty()}
                   >
                     Effacer filtres
                   </ButtonReset>
-                  <ButtonSearch type="submit" disabled={isLoading.compensations}>
-                    {isLoading.compensations ? "Recherche..." : "Rechercher"}
+                  <ButtonSearch type="submit" disabled={isLoading.reimbursements}>
+                    {isLoading.reimbursements ? "Recherche..." : "Rechercher"}
                   </ButtonSearch>
                 </FiltersActions>
               </form>
@@ -230,7 +230,7 @@ const CompensationFilters: React.FC<CompensationFiltersProps> = ({
 };
 
 
-interface FormattedCompensation {
+interface FormattedReimbursement {
   assignationId: string;
   employeeId: string;
   employeeName: string;
@@ -245,49 +245,49 @@ interface FormattedCompensation {
   duration: number;
   totalAmount: number;
   status: string;
-  paymentDate: string | null;
+  reimbursementDate: string | null;
   createdAt: string;
   updatedAt: string | null;
   isValidated: boolean | null;
   allocatedFund: number;
 }
 
-const Compensation: React.FC = () => {
+const Reimbursement: React.FC = () => {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Filter>({
     status: "",
-    paymentDateMin: "",
-    paymentDateMax: "",
+    reimbursementDateMin: "",
+    reimbursementDateMax: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<Filter>({
-    status: 'unpaid',
-    paymentDateMin: "",
-    paymentDateMax: "",
+    status: 'unreimbursed',
+    reimbursementDateMin: "",
+    reimbursementDateMax: "",
   });
   const [isHidden, setIsHidden] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
 
-  const isLoading: LoadingState = { compensations: false, stats: false };
+  const isLoading: LoadingState = { reimbursements: false, stats: false };
 
   // Données hardcodées
-  const compensations: FormattedCompensation[] = [
+  const reimbursements: FormattedReimbursement[] = [
     {
-      assignationId: "MA-000002",
+      assignationId: "MA-000051",
       employeeId: "EMP-001",
-      employeeName: "RANTOANINA TOAVINA RATSIMBA",
-      employeeCode: "00119",
+      employeeName: "Christelle RAKOTOMAVO",
+      employeeCode: "00446",
       missionId: "MISS-002",
-      missionName: "Mise en place d’un système intégré de gestion des opérations aéroportuaires",
-      missionType: "Indemnité",
+      missionName: "Mission de renforcement des capacités du personnel aéroportuaire",
+      missionType: "Note de frais",
       transportType: "",
-      lieuName: "Nosy Be",
+      lieuName: "France",
       departureDate: "2025-11-09",
       returnDate: "2025-11-13",
       duration: 4,
-      totalAmount: 125000,
-      status: "unpaid",
-      paymentDate: null,
+      totalAmount: 87000,
+      status: "unreimbursed",
+      reimbursementDate: null,
       createdAt: "2025-11-01T10:00:00Z",
       updatedAt: null,
       isValidated: true,
@@ -307,8 +307,8 @@ const Compensation: React.FC = () => {
       returnDate: "2025-11-12",
       duration: 3,
       totalAmount: 645000,
-      status: "paid",
-      paymentDate: "2025-11-09T14:30:00Z",
+      status: "reimbursed",
+      reimbursementDate: "2025-11-09T14:30:00Z",
       createdAt: "2025-11-09T11:00:00Z",
       updatedAt: "2025-11-09T14:30:00Z",
       isValidated: true,
@@ -322,8 +322,8 @@ const Compensation: React.FC = () => {
   };
 
   const handleResetFilters = () => {
-    setFilters({ status: "", paymentDateMin: "", paymentDateMax: "" });
-    setAppliedFilters({ status: 'unpaid', paymentDateMin: "", paymentDateMax: "" });
+    setFilters({ status: "", reimbursementDateMin: "", reimbursementDateMax: "" });
+    setAppliedFilters({ status: 'unreimbursed', reimbursementDateMin: "", reimbursementDateMax: "" });
     setCurrentPage(1);
   };
 
@@ -332,8 +332,8 @@ const Compensation: React.FC = () => {
   };
 
   const handleCardClick = (id: string) => {
-    console.log(`Voir détails de la compensation ${id}`);
-    // navigate(`/treasury/compensation/${id}`); // À décommenter si route détails existe
+    console.log(`Voir détails du remboursement ${id}`);
+    // navigate(`/treasury/remboursement/${id}`); // À décommenter si route détails existe
   };
 
   const handlePageChange = (newPage: number) => {
@@ -354,64 +354,66 @@ const Compensation: React.FC = () => {
     });
   };
 
-  const getDaysUntilDue = (dueDate?: string | null): number => {
-    if (!dueDate) {
-      // Pour les non payés, utiliser la date de retour + 7 jours comme échéance
-      // Mais pour simplifier, calculer à partir de la date actuelle
-      return 7; // Délai normal par défaut
+  const getDaysUntilDue = (dueDate?: string | null, returnDate?: string): number => {
+    let targetDate: Date;
+    if (dueDate) {
+      targetDate = new Date(dueDate);
+    } else {
+      // Pour les non remboursés, utiliser la date de retour + 7 jours comme échéance
+      targetDate = new Date(returnDate || '');
+      targetDate.setDate(targetDate.getDate() + 7);
     }
-    const due = new Date(dueDate);
     const now = new Date('2025-11-09'); // Date actuelle fournie
-    const diffTime = due.getTime() - now.getTime();
+    const diffTime = targetDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
 
-  const filteredCompensations = useMemo(() => {
-    return compensations.filter((c) => {
-      const passStatus = !appliedFilters.status || c.status === appliedFilters.status;
+  const filteredReimbursements = useMemo(() => {
+    return reimbursements.filter((r) => {
+      const passStatus = !appliedFilters.status || r.status === appliedFilters.status;
       if (!passStatus) return false;
 
-      if (appliedFilters.paymentDateMin || appliedFilters.paymentDateMax) {
-        if (c.status === "unpaid") return true; // Show all unpaid regardless of date filters
+      if (appliedFilters.reimbursementDateMin || appliedFilters.reimbursementDateMax) {
+        if (r.status === "unreimbursed") return true; // Show all unreimbursed regardless of date filters
 
-        if (!c.paymentDate) return false;
+        if (!r.reimbursementDate) return false;
 
-        const paymentDate = new Date(c.paymentDate);
-        if (appliedFilters.paymentDateMin) {
-          const minDate = new Date(appliedFilters.paymentDateMin);
-          if (paymentDate < minDate) return false;
+        const reimbursementDate = new Date(r.reimbursementDate);
+        if (appliedFilters.reimbursementDateMin) {
+          const minDate = new Date(appliedFilters.reimbursementDateMin);
+          if (reimbursementDate < minDate) return false;
         }
-        if (appliedFilters.paymentDateMax) {
-          const maxDate = new Date(appliedFilters.paymentDateMax);
-          if (paymentDate > maxDate) return false;
+        if (appliedFilters.reimbursementDateMax) {
+          const maxDate = new Date(appliedFilters.reimbursementDateMax);
+          if (reimbursementDate > maxDate) return false;
         }
       }
 
       return true;
     });
-  }, [compensations, appliedFilters]);
+  }, [reimbursements, appliedFilters]);
 
-  const totalEntries = filteredCompensations.length;
+  const totalEntries = filteredReimbursements.length;
 
-  const paginatedCompensations = useMemo(
+  const paginatedReimbursements = useMemo(
     () =>
-      filteredCompensations.slice(
+      filteredReimbursements.slice(
         (currentPage - 1) * pageSize,
         currentPage * pageSize
       ),
-    [filteredCompensations, currentPage, pageSize]
+    [filteredReimbursements, currentPage, pageSize]
   );
 
-  const hasFilters = !!appliedFilters.status || !!appliedFilters.paymentDateMin || !!appliedFilters.paymentDateMax;
+  const hasFilters = !!appliedFilters.status || !!appliedFilters.reimbursementDateMin || !!appliedFilters.reimbursementDateMax;
 
   /**
    * Retourne le badge de statut stylisé.
    */
   const getStatusBadge = (status: string) => {
       const statusInfo = {
-          "unpaid": { icon: XCircle, text: "Non payé", class: "status-waiting" },
-          "paid": { icon: CheckIcon, text: "Payé", class: "status-approved" },
+          "unreimbursed": { icon: XCircle, text: "Non remboursé", class: "status-waiting" },
+          "reimbursed": { icon: CheckIcon, text: "Remboursé", class: "status-approved" },
       }[status] || { icon: ClockIcon, text: "Inconnu", class: "status-pending" };
 
       const Icon = statusInfo.icon;
@@ -428,7 +430,7 @@ const Compensation: React.FC = () => {
   const renderDueIndicator = (daysUntilDue: number, status: string) => {
       const neutralDays = 999; // Valeur neutre pour éviter les styles d'urgence
 
-      if (status === 'paid') {
+      if (status === 'reimbursed') {
           return (
               <IndicatorBlock $daysUntilDue={neutralDays} style={{ 
                   backgroundColor: 'var(--success-bg)', 
@@ -449,7 +451,7 @@ const Compensation: React.FC = () => {
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
                   }}>
-                      PAYÉ
+                      REMBOURSÉ
                   </IndicatorText>
               </IndicatorBlock>
           );
@@ -527,15 +529,15 @@ const Compensation: React.FC = () => {
               </DetailsHeaderLeft>
               <div className="header-center">
                   <div className="header-title-section">
-                      <h1 className="page-title">Compensations</h1>
-                      <p className="page-subtitle">Gestion des compensations</p>
+                      <h1 className="page-title">Remboursements</h1>
+                      <p className="page-subtitle">Gestion des remboursements</p>
                   </div>
               </div>
               <DetailsHeaderActions />
           </DetailsPageHeader>
           <DetailsSeparator />
           <CardsPaginationContainer>
-              <CompensationFilters
+              <ReimbursementFilters
                   isHidden={isHidden}
                   setIsHidden={setIsHidden}
                   filters={filters}
@@ -553,17 +555,17 @@ const Compensation: React.FC = () => {
                 }}
               >
                   {/* Affichage conditionnel du chargement, des données ou de l'absence de données */}
-                  {isLoading.compensations ? (
-                      <Loading>Chargement des compensations...</Loading>
-                  ) : paginatedCompensations.length > 0 ? (
-                      paginatedCompensations.map((compensation: FormattedCompensation) => {
-                          // Calcul des jours restants avant la date de paiement
-                          const daysUntilDue = getDaysUntilDue(compensation.paymentDate);
+                  {isLoading.reimbursements ? (
+                      <Loading>Chargement des remboursements...</Loading>
+                  ) : paginatedReimbursements.length > 0 ? (
+                      paginatedReimbursements.map((reimbursement: FormattedReimbursement) => {
+                          // Calcul des jours restants avant la date de remboursement
+                          const daysUntilDue = getDaysUntilDue(reimbursement.reimbursementDate, reimbursement.returnDate);
 
                           return (
                               <Card 
-                                key={compensation.assignationId} 
-                                onClick={() => handleCardClick(compensation.assignationId)}
+                                key={reimbursement.assignationId} 
+                                onClick={() => handleCardClick(reimbursement.assignationId)}
                                 style={{
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -572,18 +574,18 @@ const Compensation: React.FC = () => {
                               >
                                   
                                   {/* 1. Bloc Indicateur (Urgence/Statut) */}
-                                  {renderDueIndicator(daysUntilDue, compensation.status)}
+                                  {renderDueIndicator(daysUntilDue, reimbursement.status)}
 
                                   {/* 2. En-tête (Titre & Badge Statut) */}
                                   <CardHeader style={{ marginBottom: '0.5rem' }}>
-                                      <CardTitle title={compensation.missionName} style={{ fontSize: '0.875rem' }}>
-                                          {compensation.missionName}
+                                      <CardTitle title={reimbursement.missionName} style={{ fontSize: '0.875rem' }}>
+                                          {reimbursement.missionName}
                                       </CardTitle>
                                       
-                                      {getStatusBadge(compensation.status)}
+                                      {getStatusBadge(reimbursement.status)}
                                   </CardHeader>
                                   
-                                  {/* 3. Informations de la compensation - DESIGN AMÉLIORÉ ET RÉDUIT */}
+                                  {/* 3. Informations du remboursement - DESIGN AMÉLIORÉ ET RÉDUIT */}
                                   <CardInfo style={{ gap: '0.25rem', flex: 1 }}>
                                       {/* Bloc principal - Employé en vedette */}
                                       <div style={{
@@ -615,7 +617,7 @@ const Compensation: React.FC = () => {
                                                       textOverflow: 'ellipsis',
                                                       whiteSpace: 'nowrap',
                                                   }}>
-                                                      {compensation.employeeName || "Non spécifié"}
+                                                      {reimbursement.employeeName || "Non spécifié"}
                                                   </div>
                                               </div>
                                               <div style={{ 
@@ -639,7 +641,7 @@ const Compensation: React.FC = () => {
                                                       color: 'var(--primary-color)',
                                                       textAlign: 'center'
                                                   }}>
-                                                      {compensation.employeeCode || "N/A"}
+                                                      {reimbursement.employeeCode || "N/A"}
                                                   </div>
                                               </div>
                                           </div>
@@ -664,7 +666,7 @@ const Compensation: React.FC = () => {
                                                   textOverflow: 'ellipsis',
                                                   whiteSpace: 'nowrap',
                                               }}>
-                                                  {compensation.lieuName || "Non spécifié"}
+                                                  {reimbursement.lieuName || "Non spécifié"}
                                               </div>
                                           </div>
                                       </div>
@@ -688,11 +690,11 @@ const Compensation: React.FC = () => {
                                               minWidth: 0,
                                           }}>
                                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                                  {formatDate(compensation.departureDate)}
+                                                  {formatDate(reimbursement.departureDate)}
                                               </span>
                                               <ArrowRight size={12} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
                                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                                  {formatDate(compensation.returnDate)}
+                                                  {formatDate(reimbursement.returnDate)}
                                               </span>
                                           </div>
                                       </div>
@@ -715,13 +717,13 @@ const Compensation: React.FC = () => {
                                                   textOverflow: 'ellipsis',
                                                   whiteSpace: 'nowrap',
                                               }}>
-                                                  {compensation.totalAmount.toLocaleString()} MGA
+                                                  {reimbursement.totalAmount.toLocaleString()} MGA
                                               </div>
                                           </div>
                                       </div>
 
-                                      {/* Date de paiement (si payée) */}
-                                      {compensation.status === 'paid' && compensation.paymentDate && (
+                                      {/* Date de remboursement (si remboursé) */}
+                                      {reimbursement.status === 'reimbursed' && reimbursement.reimbursementDate && (
                                           <div style={{
                                               background: 'var(--success-bg)',
                                               padding: '6px 8px',
@@ -742,7 +744,7 @@ const Compensation: React.FC = () => {
                                                       textOverflow: 'ellipsis',
                                                       whiteSpace: 'nowrap',
                                                   }}>
-                                                      Payé le {formatDate(compensation.paymentDate)}
+                                                      Remboursé le {formatDate(reimbursement.reimbursementDate)}
                                                   </span>
                                               </div>
                                           </div>
@@ -751,22 +753,22 @@ const Compensation: React.FC = () => {
 
                                   {/* 4. Barre d'actions améliorée - Toujours présente, avec boutons conditionnels */}
                                   <ActionsContainer 
-                                    $singleButton={compensation.status !== 'unpaid'}
+                                    $singleButton={reimbursement.status !== 'unreimbursed'}
                                     style={{ marginTop: 'auto' }}
                                   >
-                                      {/* Boutons conditionnels pour les compensations non payées */}
-                                      {compensation.status === 'unpaid' && (
+                                      {/* Boutons conditionnels pour les remboursements non remboursés */}
+                                      {reimbursement.status === 'unreimbursed' && (
                                           <>
                                               <ActionButton
                                                   onClick={(e) => {
                                                       e.stopPropagation();
-                                                      // Logique de paiement (à implémenter)
-                                                      console.log(`Payer compensation ${compensation.assignationId}`);
+                                                      // Logique de remboursement (à implémenter)
+                                                      console.log(`Rembourser remboursement ${reimbursement.assignationId}`);
                                                   }}
                                                   className="validate"
                                               >
                                                   <DollarSign size={14} />
-                                                  Paiement
+                                                  Remboursement
                                               </ActionButton>
                                           </>
                                       )}
@@ -774,7 +776,7 @@ const Compensation: React.FC = () => {
                                       <ActionButton
                                           onClick={(e) => {
                                               e.stopPropagation();
-                                              handleCardClick(compensation.assignationId);
+                                              handleCardClick(reimbursement.assignationId);
                                           }}
                                           className="details"
                                       >
@@ -787,11 +789,11 @@ const Compensation: React.FC = () => {
                       })
                   ) : (
                       <NoDataMessage>
-                          {filteredCompensations.length === 0 
+                          {filteredReimbursements.length === 0 
                             ? hasFilters
-                              ? "Aucune compensation ne correspond aux critères de recherche."
-                              : "Aucune compensation trouvée."
-                            : "Aucune compensation sur cette page."
+                              ? "Aucun remboursement ne correspond aux critères de recherche."
+                              : "Aucun remboursement trouvé."
+                            : "Aucun remboursement sur cette page."
                           }
                       </NoDataMessage>
                   )}
@@ -812,4 +814,4 @@ const Compensation: React.FC = () => {
   );
 };
 
-export default Compensation;
+export default Reimbursement;

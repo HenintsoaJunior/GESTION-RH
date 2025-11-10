@@ -28,6 +28,10 @@ import MissionListArchive from './pages/mission/collaborator/list/mission-list-a
 import TransportList from '@/pages/referentiel/transport/list';
 import GeoZoneList from '@/pages/referentiel/zone/list';
 import CompensationScalesPage from '@/pages/referentiel/compensation-scale';
+import NotificationsPage from '@/pages/notification/index'; 
+import TableauBord from '@/pages/tableau-bord';
+import MissionsEnCoursMapPage from '@/pages/maps';
+import Reimbursement from '@/pages/mission/treso/components/reimbursement';
 // import { useAuthSync } from '@/utils/use-auth-sync';
 function App() {
 
@@ -42,6 +46,9 @@ function App() {
 
       
       <Route element={<Template><Outlet /></Template>}>
+        <Route path="/tableau-de-bord" element={<TableauBord />} />
+        <Route path="/mission/maps" element={<MissionsEnCoursMapPage />} />
+        
         {/* IMPORT */}
         <Route path="/import" element={<ImportPage />} />
         
@@ -76,7 +83,11 @@ function App() {
         {/* TRESO */}
         <Route path="/treasury" element={<TresoPage />} />
         <Route path="/treasury/compensation" element={<Compensation />} />
+        <Route path="/treasury/remboursement" element={<Reimbursement />} />
 
+
+        {/* NOTIFICATIONS */}
+        <Route path="/notifications" element={<NotificationsPage />} />
         
         {/* ERROR */}
         <Route path="/403" element={<Error403Page />} />

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo, type JSX } from "react";
-import { X, ChevronDown, ChevronUp, List, Search, Eye } from "lucide-react";
+import { X, ChevronDown, ChevronUp, List, Search, Eye, Download } from "lucide-react";
 import {
   FiltersContainer,
   FiltersHeader,
@@ -390,6 +390,11 @@ const LogList: React.FC = () => {
     setSelectedLog(null);
   };
 
+  const handleExport = (): void => {
+    // TODO: Implémentez la logique d'exportation ici (ex. : génération de CSV, PDF, etc.)
+    console.log("Exportation déclenchée");
+  };
+
   useEffect(() => {
     if (searchResponse && searchResponse.status !== 200) {
       setAlert({
@@ -587,8 +592,27 @@ const LogList: React.FC = () => {
       {/* === TABLEAU === */}
       <TableContainer>
         <TableHeader>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-lg)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
             <TableTitle>Liste</TableTitle>
+            <button
+              onClick={handleExport}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--spacing-sm)",
+                padding: "var(--spacing-sm) var(--spacing-md)",
+                background: "var(--primary-color)",
+                border: "none",
+                borderRadius: "var(--border-radius)",
+                color: "var(--text-color-inverted, #ffffff)",
+                cursor: "pointer",
+                fontSize: "var(--font-size-sm)",
+              }}
+              title="Exporter"
+            >
+              <Download size={16} />
+              Exporter
+            </button>
           </div>
         </TableHeader>
         <div className="table-wrapper">
