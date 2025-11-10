@@ -2,9 +2,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CheckCircle, XCircle, FileText, X, Send, Edit2, Trash2 } from "lucide-react";
+import { CheckCircle, X, Send, Edit2, Trash2 } from "lucide-react";
 import Alert from "@/components/alert";
-import Modal from "@/components/modal";
 import {
     PopupOverlay,
     PagePopup,
@@ -24,18 +23,7 @@ import {
     StatusBadge,
     InfoAlert,
     ActionSection,
-    ActionButtons,
-    ActionButton,
-    SignatureUploadSection,
-    FileInputWrapper,
-    FileInput,
-    FileInputLabel,
-    SignaturePreview,
-    // SeparatorStyle,
-    Separator,
-    SuccessMessage,
     Avatar,
-    RejectButton
 } from "@/styles/detailsmission-styles";
 import {
     CommentSection,
@@ -52,7 +40,6 @@ import {
     CommentActionButton,
 } from "@/styles/comment-styles";
 
-// import {getStatusBadgeClass,englishToFrench} from "@/utils/status"
 import { type FormattedMission } from "@/api/mission/validation/services";
 import { getInitials } from "@/utils/initials";
 // Types from previous context
@@ -80,18 +67,11 @@ interface MissionModalsProps {
   selectedMissionId: string | null;
   missions: FormattedMission[];
   formatDate: (dateString?: string | null) => string;
-  handleValidate: (missionId: string, action: string, comment: string, signature: string) => Promise<void>;
   handleUpdateComments: (missionId: string, comments: string) => void;
-  handleUpdateSignature: (missionId: string, signature: string) => void;
   comments: Comment[];
   handleCreateComment: (missionId: string, commentText: string) => Promise<void>;
   handleUpdateComment: (commentId: string, missionId: string, commentText: string) => Promise<void>;
   handleDeleteComment: (commentId: string, missionId: string) => Promise<void>;
-}
-
-interface SignatureFile {
-  file: File | null;
-  preview: string | null;
 }
 
 const MissionModals: React.FC<MissionModalsProps> = ({
@@ -102,9 +82,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
   selectedMissionId,
   missions,
   formatDate,
-  handleValidate,
   handleUpdateComments,
-  handleUpdateSignature,
   comments,
   handleCreateComment,
   handleUpdateComment,
@@ -112,12 +90,7 @@ const MissionModals: React.FC<MissionModalsProps> = ({
 }) => {
   const [comment, setComment] = useState<string>("");
   const [originalComment, setOriginalComment] = useState<string>("");
-  const [signature, setSignature] = useState<SignatureFile | null>(null);
-  const [showValidateModal, setShowValidateModal] = useState<boolean>(false);
-  const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
   const [commentSaved, setCommentSaved] = useState<boolean>(false);
-  const [actionCompleted, setActionCompleted] = useState<boolean>(false);
-  const [actionType, setActionType] = useState<string>("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState<string>("");
 
@@ -143,41 +116,10 @@ const MissionModals: React.FC<MissionModalsProps> = ({
       setComment(selectedMission.comments || "");
       setOriginalComment(selectedMission.comments || "");
       setCommentSaved(false);
-      setActionCompleted(false);
-      setActionType("");
       setEditingCommentId(null);
       setEditCommentText("");
-
-      if (selectedMission.signature) {
-        setSignature({ file: null, preview: selectedMission.signature });
-      } else {
-        setSignature(null);
-      }
     }
   }, [selectedMission]);
-
-  const handleFileUpload = (file: File | null) => {
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: ProgressEvent<FileReader>) => {
-        const signatureBase64 = e.target?.result as string;
-        setSignature({ file, preview: signatureBase64 });
-        handleUpdateSignature(selectedMissionId!, signatureBase64);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAction = async (action: string) => {
-    if (comment.trim() && comment !== originalComment && !commentSaved) {
-      await handleSaveComment();
-    }
-    if (action === "validate") {
-      setShowValidateModal(true);
-    } else if (action === "reject") {
-      setShowRejectModal(true);
-    }
-  };
 
   const handleSaveComment = async () => {
     if (!comment.trim()) {
@@ -194,7 +136,6 @@ const MissionModals: React.FC<MissionModalsProps> = ({
       setOriginalComment(comment);
       setCommentSaved(true);
       setTimeout(() => setCommentSaved(false), 3000);
-      setComment("");
     } catch (error) {
       // Error handling is already done in handleCreateComment
     }
@@ -231,32 +172,6 @@ const MissionModals: React.FC<MissionModalsProps> = ({
     }
   };
 
-  const confirmValidate = async () => {
-    try {
-      await handleValidate(selectedMissionId!, "validate", comment, signature ? signature.preview || "" : "");
-      setShowValidateModal(false);
-      setActionType("validate");
-      setActionCompleted(true);
-    } catch (error) {
-      setShowValidateModal(false);
-      // Error handling is already done in handleValidate
-    }
-  };
-
-  const confirmReject = async () => {
-    try {
-      await handleValidate(selectedMissionId!, "reject", comment, "");
-      setShowRejectModal(false);
-      setSignature(null);
-      handleUpdateSignature(selectedMissionId!, "");
-      setActionType("reject");
-      setActionCompleted(true);
-    } catch (error) {
-      setShowRejectModal(false);
-      // Error handling is already done in handleValidate
-    }
-  };
-
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newComment = e.target.value;
     setComment(newComment);
@@ -274,25 +189,6 @@ const MissionModals: React.FC<MissionModalsProps> = ({
   const statusClass = selectedMission?.status.toLowerCase() || "pending";
   const isPending = selectedMission?.status === "pending";
   const isCommentChanged = comment !== originalComment;
-  const isAnyConfirmOpen = showValidateModal || showRejectModal;
-
-  const getSuccessMessage = () => {
-    if (actionType === "validate") {
-      return {
-        title: "Mission validée avec succès !",
-        message: "La mission a été validée et le demandeur sera notifié. Veuillez fermer cette fenêtre.",
-      };
-    } else if (actionType === "reject") {
-      return {
-        title: "Mission rejetée",
-        message: "La mission a été rejetée et le demandeur sera notifié. Veuillez fermer cette fenêtre.",
-      };
-    }
-    return {
-      title: "Action effectuée avec succès !",
-      message: "L'opération a été réalisée avec succès. Veuillez fermer cette fenêtre.",
-    };
-  };
 
   if (!showDetailsMission || !selectedMission) return null;
 
@@ -301,17 +197,14 @@ const MissionModals: React.FC<MissionModalsProps> = ({
       <PagePopup onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ maxWidth: "800px", padding: "0" }}>
         <PopupHeader style={{ padding: "20px 30px", borderBottom: "1px solid var(--border-light)" }}>
           <PopupTitle id="mission-details-title" style={{ fontSize: "1.4rem" }}>
-            <FileText size={24} style={{ marginRight: "10px", verticalAlign: "middle" }} />
-            {actionCompleted
-              ? `Résultat : ${getSuccessMessage().title}`
-              : `Validation d'Ordre de Mission N° ${selectedMission.missionAssignationId || "N/A"}`}
+            Détails de l'Ordre de Mission N° {selectedMission.missionAssignationId || "N/A"}
           </PopupTitle>
           <PopupClose onClick={handleCloseModal} aria-label="Fermer la fenêtre" title="Fermer la fenêtre">
             <X size={24} />
           </PopupClose>
         </PopupHeader>
 
-        <PopupContent style={{ padding: "30px", background: "var(--bg-primary)", borderBottom: isPending && !actionCompleted ? "none" : "1px solid var(--border-light)" }}>
+        <PopupContent style={{ padding: "30px", background: "var(--bg-primary)" }}>
           <Alert
             type={alert.type}
             message={alert.message}
@@ -319,145 +212,123 @@ const MissionModals: React.FC<MissionModalsProps> = ({
             onClose={() => setAlert({ ...alert, isOpen: false })}
           />
 
-          {actionCompleted ? (
-            <SuccessMessage>
-              <CheckCircle size={48} color="var(--success-color, #28a745)" style={{ marginBottom: "var(--spacing-md)" }} />
-              <h3>{getSuccessMessage().title}</h3>
-              <p>{getSuccessMessage().message}</p>
-            </SuccessMessage>
-          ) : (
-            <>
-            <Separator />
-                <SectionTitle>Référence de la Mission</SectionTitle>
-                
-                <InfoGrid>
-                  <InfoItem><InfoLabel>N°</InfoLabel><InfoValue>{selectedMission.missionAssignationId || "N/A"}</InfoValue></InfoItem>
-                  <InfoItem>
-                    <InfoLabel>Statut Validation</InfoLabel>
-                    <StatusBadge className={statusClass}>
-                      {translateStatus(selectedMission.status).toUpperCase()}
-                    </StatusBadge>
-                  </InfoItem>
-                  <InfoItem><InfoLabel>Demandé le</InfoLabel><InfoValue>{formatDate(selectedMission.requestDate)}</InfoValue></InfoItem>
-                </InfoGrid>
-                
+          <SectionTitle>Référence de la Mission</SectionTitle>
+          
+          <InfoGrid>
+            <InfoItem><InfoLabel>N°</InfoLabel><InfoValue>{selectedMission.missionAssignationId || "N/A"}</InfoValue></InfoItem>
+            <InfoItem>
+              <InfoLabel>Statut Validation</InfoLabel>
+              <StatusBadge className={statusClass}>
+                {translateStatus(selectedMission.status).toUpperCase()}
+              </StatusBadge>
+            </InfoItem>
+            <InfoItem><InfoLabel>Demandé le</InfoLabel><InfoValue>{formatDate(selectedMission.requestDate)}</InfoValue></InfoItem>
+          </InfoGrid>
 
-                <SectionTitle>Détails du Missionnaire</SectionTitle>
-                <InfoGrid>
-                  <InfoItem><InfoLabel>Missionnaire</InfoLabel><InfoValue>{selectedMission.employeeName}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Fonction</InfoLabel><InfoValue>{selectedMission.employeeFunction || "Non spécifiée"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Matricule</InfoLabel><InfoValue>{selectedMission.matricule || "N/A"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Direction</InfoLabel><InfoValue>{selectedMission.direction || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Département</InfoLabel><InfoValue>{selectedMission.department || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Service</InfoLabel><InfoValue>{selectedMission.service || "Non spécifié"}</InfoValue></InfoItem>
-                </InfoGrid>
+          <SectionTitle>Détails du Missionnaire</SectionTitle>
+          <InfoGrid>
+            <InfoItem><InfoLabel>Missionnaire</InfoLabel><InfoValue>{selectedMission.employeeName}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Fonction</InfoLabel><InfoValue>{selectedMission.employeeFunction || "Non spécifiée"}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Matricule</InfoLabel><InfoValue>{selectedMission.matricule || "N/A"}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Direction</InfoLabel><InfoValue>{selectedMission.direction || "Non spécifié"}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Département</InfoLabel><InfoValue>{selectedMission.department || "Non spécifié"}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Service</InfoLabel><InfoValue>{selectedMission.service || "Non spécifié"}</InfoValue></InfoItem>
+          </InfoGrid>
 
-                <Separator />
+          <SectionTitle>Détails de la Mission</SectionTitle>
+         
+          <InfoGrid>
+            <InfoItem><InfoLabel>Mission</InfoLabel><InfoValue>{selectedMission.missionName || "Non spécifié"}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Zone</InfoLabel><InfoValue>{selectedMission.missionType || "Non spécifié"}</InfoValue></InfoItem>
 
-                <SectionTitle>Détails de la Mission</SectionTitle>
-               
-                <InfoGrid>
-                  <InfoItem><InfoLabel>Mission</InfoLabel><InfoValue>{selectedMission.missionName || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Zone</InfoLabel><InfoValue>{selectedMission.missionType || "Non spécifié"}</InfoValue></InfoItem>
-                  {/* <InfoItem>
-                  <InfoLabel>Statut de la mission</InfoLabel>
-                  <InfoValue>
-                  <StatusBadge className={getStatusBadgeClass(selectedMission.missionStatus)}>
-                  {englishToFrench[selectedMission.missionStatus.trim().toLowerCase()] || selectedMission.missionStatus.trim()}
-                  </StatusBadge>
-                  </InfoValue>
-                  </InfoItem> */}
+            <InfoItem><InfoLabel>Lieu</InfoLabel><InfoValue>{selectedMission.location}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Transport</InfoLabel><InfoValue>{selectedMission.transport || "Non spécifié"}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Date de début</InfoLabel><InfoValue>{formatDate(selectedMission.requestDate)}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Date et Heure de départ</InfoLabel><InfoValue>{formatDate(selectedMission.departureDate)} {selectedMission.departureTime ? `à ${selectedMission.departureTime}` : ''}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Date de fin</InfoLabel><InfoValue>{formatDate(selectedMission.dueDate)}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Date et Heure de retour</InfoLabel><InfoValue>{formatDate(selectedMission.returnDate)} {selectedMission.returnTime ? `à ${selectedMission.returnTime}` : ''}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Durée</InfoLabel><InfoValue>{selectedMission.estimatedDuration || "Non spécifiée"} J</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Type d'assignation</InfoLabel><InfoValue>{selectedMission.assignationType || "Non spécifié"}</InfoValue></InfoItem>
+            <InfoItem style={{ gridColumn: "span 3" }}><InfoLabel>Description</InfoLabel><InfoValue>{selectedMission.description || "Aucune description"}</InfoValue></InfoItem>
+            
+          </InfoGrid>
 
-                  <InfoItem><InfoLabel>Lieu</InfoLabel><InfoValue>{selectedMission.location}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Transport</InfoLabel><InfoValue>{selectedMission.transport || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Date de début</InfoLabel><InfoValue>{formatDate(selectedMission.requestDate)}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Date et Heure de départ</InfoLabel><InfoValue>{formatDate(selectedMission.departureDate)} {selectedMission.departureTime ? `à ${selectedMission.departureTime}` : ''}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Date de fin</InfoLabel><InfoValue>{formatDate(selectedMission.dueDate)}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Date et Heure de retour</InfoLabel><InfoValue>{formatDate(selectedMission.returnDate)} {selectedMission.returnTime ? `à ${selectedMission.returnTime}` : ''}</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Durée</InfoLabel><InfoValue>{selectedMission.estimatedDuration || "Non spécifiée"} J</InfoValue></InfoItem>
-                  <InfoItem><InfoLabel>Type d'assignation</InfoLabel><InfoValue>{selectedMission.assignationType || "Non spécifié"}</InfoValue></InfoItem>
-                  <InfoItem style={{ gridColumn: "span 3" }}><InfoLabel>Description</InfoLabel><InfoValue>{selectedMission.description || "Aucune description"}</InfoValue></InfoItem>
-                  
-                </InfoGrid>
+          <SectionTitle>Commentaires</SectionTitle>
+          <CommentsList>
+            {comments.length === 0 ? (
+              <CommentText>Aucun commentaire pour cette mission.</CommentText>
+            ) : (
+              comments.map((commentItem) => {
+                const creatorName = commentItem.creator?.name || 'Inconnu';
+                const initials = getInitials(creatorName);
+                const formattedDate = formatDate(commentItem.createdAt) || 'Inconnu';
+                return (
+                  <CommentItem key={commentItem.commentId}>
+                    <Avatar size="32px">{initials}</Avatar>
+                    <CommentContent>
+                      {editingCommentId === commentItem.commentId ? (
+                        <>
+                          <CommentTextarea
+                            value={editCommentText}
+                            onChange={handleEditCommentChange}
+                            placeholder="Modifiez votre commentaire..."
+                          />
+                          <CommentActions>
+                            <CommentButton
+                              onClick={() => handleSaveEditComment(commentItem.commentId)}
+                              disabled={!editCommentText.trim()}
+                            >
+                              <CheckCircle size={14} /> Enregistrer
+                            </CommentButton>
+                            <CommentButton
+                              onClick={() => setEditingCommentId(null)}
+                            >
+                              <X size={14} /> Annuler
+                            </CommentButton>
+                          </CommentActions>
+                        </>
+                      ) : (
+                        <>
+                          <CommentText>{commentItem.content || ''}</CommentText>
+                          <CommentMeta>
+                            Par {creatorName} le {formattedDate}:
+                          </CommentMeta>
+                        </>
+                      )}
+                    </CommentContent>
+                    {editingCommentId !== commentItem.commentId && commentItem.creator?.userId === userId && (
+                      <CommentActions>
+                        <CommentActionButton
+                          onClick={() => handleEditComment(commentItem.commentId, commentItem.content || '')}
+                          title="Modifier le commentaire"
+                        >
+                          <Edit2 size={16} />
+                        </CommentActionButton>
+                        <CommentActionButton
+                          className="delete"
+                          onClick={() => handleDeleteCommentAction(commentItem.commentId)}
+                          title="Supprimer le commentaire"
+                        >
+                          <Trash2 size={16} />
+                        </CommentActionButton>
+                      </CommentActions>
+                    )}
+                  </CommentItem>
+                );
+              })
+            )}
+          </CommentsList>
 
-                <SectionTitle>Commentaires</SectionTitle>
-                <CommentsList>
-                  {comments.length === 0 ? (
-                    <CommentText>Aucun commentaire pour cette mission.</CommentText>
-                  ) : (
-                    comments.map((commentItem) => {
-                      const creatorName = commentItem.creator?.name || 'Inconnu';
-                      const initials = getInitials(creatorName);
-                      const formattedDate = formatDate(commentItem.createdAt) || 'Inconnu';
-                      return (
-                        <CommentItem key={commentItem.commentId}>
-                          <Avatar size="32px">{initials}</Avatar>
-                          <CommentContent>
-                            {editingCommentId === commentItem.commentId ? (
-                              <>
-                                <CommentTextarea
-                                  value={editCommentText}
-                                  onChange={handleEditCommentChange}
-                                  placeholder="Modifiez votre commentaire..."
-                                />
-                                <CommentActions>
-                                  <CommentButton
-                                    onClick={() => handleSaveEditComment(commentItem.commentId)}
-                                    disabled={!editCommentText.trim()}
-                                  >
-                                    <CheckCircle size={14} /> Enregistrer
-                                  </CommentButton>
-                                  <CommentButton
-                                    onClick={() => setEditingCommentId(null)}
-                                  >
-                                    <X size={14} /> Annuler
-                                  </CommentButton>
-                                </CommentActions>
-                              </>
-                            ) : (
-                              <>
-                                <CommentText>{commentItem.content || ''}</CommentText>
-                                <CommentMeta>
-                                  Par {creatorName} le {formattedDate}:
-                                </CommentMeta>
-                              </>
-                            )}
-                          </CommentContent>
-                          {editingCommentId !== commentItem.commentId && commentItem.creator?.userId === userId && (
-                            <CommentActions>
-                              <CommentActionButton
-                                onClick={() => handleEditComment(commentItem.commentId, commentItem.content || '')}
-                                title="Modifier le commentaire"
-                              >
-                                <Edit2 size={16} />
-                              </CommentActionButton>
-                              <CommentActionButton
-                                className="delete"
-                                onClick={() => handleDeleteCommentAction(commentItem.commentId)}
-                                title="Supprimer le commentaire"
-                              >
-                                <Trash2 size={16} />
-                              </CommentActionButton>
-                            </CommentActions>
-                          )}
-                        </CommentItem>
-                      );
-                    })
-                  )}
-                </CommentsList>
-
-              {!isPending && (
-                <InfoAlert>
-                  <CheckCircle size={20} />
-                  Cette mission a déjà été <strong>{translateStatus(selectedMission.status).toLowerCase()}</strong> le{" "}
-                  {formatDate(selectedMission.validationDate) || "date non spécifiée"}. Aucune action supplémentaire n'est requise.
-                </InfoAlert>
-              )}
-            </>
+          {!isPending && (
+            <InfoAlert>
+              <CheckCircle size={20} />
+              Cette mission a déjà été <strong>{translateStatus(selectedMission.status).toLowerCase()}</strong> le{" "}
+              {formatDate(selectedMission.validationDate) || "date non spécifiée"}. Aucune action supplémentaire n'est requise.
+            </InfoAlert>
           )}
         </PopupContent>
 
-        {isPending && !actionCompleted && (
+        {isPending && (
           <ActionSection>
             <CommentSection>
               <CommentLabel htmlFor="validation-comment">Nouveau Commentaire</CommentLabel>
@@ -487,82 +358,12 @@ const MissionModals: React.FC<MissionModalsProps> = ({
                 </CommentButton>
               </CommentActions>
             </CommentSection>
-
-            <SignatureUploadSection>
-              <CommentLabel>Signature Électronique de {selectedMission.toWhom} (Si Requis)</CommentLabel>
-              <FileInputWrapper>
-                <FileInput
-                  type="file"
-                  accept="image/*"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileUpload(e.target.files?.[0] || null)}
-                  aria-label="Télécharger le fichier de signature"
-                />
-                <FileInputLabel className={signature ? "has-file" : ""}>
-                  {signature
-                    ? `Signature de ${selectedMission.toWhom} chargée : ${signature.file?.name || "Aperçu disponible"}`
-                    : `Cliquer pour télécharger votre signature (format image) ou laisser vide`}
-                </FileInputLabel>
-              </FileInputWrapper>
-              {signature && signature.preview && (
-                <SignaturePreview>
-                  <InfoLabel>Aperçu de la signature :</InfoLabel>
-                  <img src={signature.preview} alt={`Signature ${selectedMission.toWhom}`} />
-                </SignaturePreview>
-              )}
-            </SignatureUploadSection>
-
-            <Separator />
-
-            <ActionButtons>
-              <ActionButton
-                className="validate"
-                onClick={() => handleAction("validate")}
-                disabled={!isPending || isAnyConfirmOpen}
-              >
-                <CheckCircle size={16} />
-                Valider la Mission
-              </ActionButton>
-              <RejectButton
-                className="reject"
-                onClick={() => handleAction("reject")}
-                disabled={!isPending || isAnyConfirmOpen}
-              >
-                <XCircle size={16} />
-                Rejeter la Mission
-              </RejectButton>
-            </ActionButtons>
           </ActionSection>
         )}
 
-        {(!isPending || actionCompleted) && (
-          <PopupActions style={{ padding: "20px 30px" }}>
-            <ButtonPrimary onClick={handleCloseModal}>Fermer</ButtonPrimary>
-          </PopupActions>
-        )}
-
-        <Modal
-          type="success"
-          message="Êtes-vous sûr de vouloir valider cette mission ? Cette action est irréversible et passera la mission au statut 'Validée'."
-          isOpen={showValidateModal}
-          onClose={() => setShowValidateModal(false)}
-          title="Confirmer la validation"
-          confirmAction={confirmValidate}
-          confirmLabel="Confirmer la Validation"
-          cancelLabel="Annuler"
-          showActions={true}
-        />
-
-        <Modal
-          type="error"
-          message="Êtes-vous sûr de vouloir rejeter cette mission ? Cette action est irréversible et passera la mission au statut 'Rejetée'."
-          isOpen={showRejectModal}
-          onClose={() => setShowRejectModal(false)}
-          title="Confirmer le rejet"
-          confirmAction={confirmReject}
-          confirmLabel="Confirmer le Rejet"
-          cancelLabel="Annuler"
-          showActions={true}
-        />
+        <PopupActions style={{ padding: "20px 30px" }}>
+          <ButtonPrimary onClick={handleCloseModal}>Fermer</ButtonPrimary>
+        </PopupActions>
       </PagePopup>
     </PopupOverlay>
   );
