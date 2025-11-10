@@ -25,7 +25,9 @@ import {
     ModalBody, 
     FilePreview, 
     ImagePreview, 
-    ErrorMessage 
+    ErrorMessage,
+    LoadingContainer,
+    LoadingSpinner
 } from "@/styles/detailsmission-styles";
 import { NoDataMessage } from "@/styles/table-styles";
 import { formatNumber } from "@/utils/format";
@@ -44,6 +46,7 @@ import {
   usePreviewIM,
   type GenerateIMData,
   type PreviewPdfResult,
+  useGetMissionAssignationByAssignationId,
 } from "@/api/mission/services";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
@@ -127,6 +130,10 @@ interface IndemnityDetail {
     dinner: number;
     accommodation: number;
     transport: number;
+    communication?: number;
+    visa?: number;
+    medical?: number;
+    taxes?: number;
     total: number;
 }
 
@@ -356,25 +363,44 @@ const MissionAttachments: React.FC<MissionAttachmentsProps> = ({
 };
 
 const IndemnityDoughnutChart: React.FC<{ indemnityDetails: IndemnityDetail[] }> = ({ indemnityDetails }) => {
-    const totalTransport = indemnityDetails.reduce((sum, item) => sum + (item.transport || 0), 0);
-    const totalRepas = indemnityDetails.reduce(
-        (sum, item) => sum + (item.breakfast || 0) + (item.lunch || 0) + (item.dinner || 0),
-        0
-    );
-    const totalHebergement = indemnityDetails.reduce((sum, item) => sum + (item.accommodation || 0), 0);
+    const totals = {
+        transport: indemnityDetails.reduce((sum, item) => sum + (item.transport || 0), 0),
+        repas: indemnityDetails.reduce(
+            (sum, item) => sum + (item.breakfast || 0) + (item.lunch || 0) + (item.dinner || 0),
+            0
+        ),
+        hebergement: indemnityDetails.reduce((sum, item) => sum + (item.accommodation || 0), 0),
+        communication: indemnityDetails.reduce((sum, item) => sum + (item.communication || 0), 0),
+        visa: indemnityDetails.reduce((sum, item) => sum + (item.visa || 0), 0),
+        medical: indemnityDetails.reduce((sum, item) => sum + (item.medical || 0), 0),
+        taxes: indemnityDetails.reduce((sum, item) => sum + (item.taxes || 0), 0),
+    };
 
-    const data: number[] = [totalTransport, totalRepas, totalHebergement];
-    const hasData = data.some(val => val > 0);
+    const labelMap: Record<string, string> = {
+        transport: "Transport",
+        repas: "Repas",
+        hebergement: "Hébergement",
+        communication: "Communication",
+        visa: "Visa sur place",
+        medical: "Frais médicaux",
+        taxes: "Taxes",
+    };
+
+    const entries = Object.entries(totals).filter(([, v]) => v > 0);
+    const labels = entries.map(([k]) => labelMap[k]);
+    const data = entries.map(([, v]) => v);
+
+    const hasData = data.length > 0;
 
     if (!hasData) return <p>Données insuffisantes.</p>;
 
     const chartData: ChartData<'doughnut'> = {
-        labels: ["Transport", "Repas", "Hébergement"],
+        labels,
         datasets: [
             {
-                data: data,
-                backgroundColor: ["#007bff", "#28a745", "#ffc107"],
-                hoverBackgroundColor: ["#0056b3", "#1e7e34", "#d39e00"],
+                data,
+                backgroundColor: ["#007bff", "#28a745", "#ffc107", "#dc3545", "#6f42c1", "#fd7e14", "#20c997"],
+                hoverBackgroundColor: ["#0056b3", "#1e7e34", "#d39e00", "#c82333", "#5a2d91", "#e86209", "#1aa179"],
                 borderColor: ["#ffffff"],
                 borderWidth: 2,
             },
@@ -416,6 +442,12 @@ const IndemnityDoughnutChart: React.FC<{ indemnityDetails: IndemnityDetail[] }> 
 
 const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmentId, onExportExcel, formatDate, missionId, employeeId }) => {
     console.log(selectedAssignmentId);
+    const assignationQuery = useGetMissionAssignationByAssignationId(selectedAssignmentId);
+
+    const isInternationalMemo = useMemo(() => {
+        return assignationQuery.data?.data?.mission?.missionType === 'international';
+    }, [assignationQuery.data]);
+
     const indemnityDetails: IndemnityDetail[] = missionPayment.dailyPaiements.map((item: DailyPaiement) => {
         const amounts = {
             breakfast: 0,
@@ -423,18 +455,27 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
             dinner: 0,
             accommodation: 0,
             transport: 0,
+            communication: 0,
+            visa: 0,
+            medical: 0,
+            taxes: 0,
         };
 
         item.compensationScales.forEach((scale: CompensationScale) => {
             const amount = scale.amount || 0;
             if (scale.expenseType?.type === "Petit Déjeuner") amounts.breakfast += amount;
             else if (scale.expenseType?.type === "Déjeuner") amounts.lunch += amount;
-            else if (scale.expenseType?.type === "Dîner") amounts.dinner += amount;
+            else if (scale.expenseType?.type === "Dinner") amounts.dinner += amount;
             else if (scale.expenseType?.type === "Hébergement") amounts.accommodation += amount;
             else if (scale.transportId) amounts.transport += amount;
+            else if (scale.expenseType?.type === "Communication") amounts.communication += amount;
+            else if (scale.expenseType?.type === "Visa sur place") amounts.visa += amount;
+            else if (scale.expenseType?.type === "Frais médicaux") amounts.medical += amount;
+            else if (scale.expenseType?.type === "Taxes") amounts.taxes += amount;
         });
 
-        const total = amounts.breakfast + amounts.lunch + amounts.dinner + amounts.accommodation + amounts.transport;
+        const total = amounts.breakfast + amounts.lunch + amounts.dinner + amounts.accommodation + amounts.transport +
+                      (amounts.communication || 0) + (amounts.visa || 0) + (amounts.medical || 0) + (amounts.taxes || 0);
 
         return {
             date: item.date,
@@ -443,9 +484,16 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
             dinner: amounts.dinner,
             accommodation: amounts.accommodation,
             transport: amounts.transport,
+            communication: amounts.communication,
+            visa: amounts.visa,
+            medical: amounts.medical,
+            taxes: amounts.taxes,
             total,
         };
-    });
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Tri croissant par date
+
+    // Debug temporaire (retirez après test) :
+    console.log('Indemnity Details:', indemnityDetails);
 
     const grandTotal = indemnityDetails.reduce((sum, item) => sum + item.total, 0);
 
@@ -469,6 +517,15 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
 
     // Attachments setup
     const documents = PREDEFINED_DOCUMENTS_PAYMENT.map(doc => ({ ...doc, fileContent: undefined } as DocumentAttachment));
+
+    if (assignationQuery.isLoading) {
+        return (
+            <LoadingContainer>
+                <LoadingSpinner />
+                Chargement des détails de la mission...
+            </LoadingContainer>
+        );
+    }
 
     return (
         <>
@@ -513,6 +570,14 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
                                 <TableHeader>Déjeuner</TableHeader>
                                 <TableHeader>Dîner</TableHeader>
                                 <TableHeader>Hébergement</TableHeader>
+                                {isInternationalMemo && (
+                                    <>
+                                        <TableHeader>Communication</TableHeader>
+                                        <TableHeader>Visa sur place</TableHeader>
+                                        <TableHeader>Frais médicaux</TableHeader>
+                                        <TableHeader>Taxes</TableHeader>
+                                    </>
+                                )}
                                 <TableHeader>Montant Total</TableHeader>
                             </tr>
                         </thead>
@@ -520,16 +585,24 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
                             {indemnityDetails.map((item, index) => (
                                 <tr key={index}>
                                     <TableCell>{formatDate(item.date)}</TableCell>
-                                    <TableCell>{item.transport ? `${formatNumber(item.transport)},00` : ""}</TableCell>
-                                    <TableCell>{item.breakfast ? `${formatNumber(item.breakfast)},00` : ""}</TableCell>
-                                    <TableCell>{item.lunch ? `${formatNumber(item.lunch)},00` : ""}</TableCell>
-                                    <TableCell>{item.dinner ? `${formatNumber(item.dinner)},00` : ""}</TableCell>
-                                    <TableCell>{item.accommodation ? `${formatNumber(item.accommodation)},00` : ""}</TableCell>
-                                    <TableCell>{item.total ? `${formatNumber(item.total)},00` : ""}</TableCell>
+                                    <TableCell>{`${formatNumber(item.transport || 0)},00`}</TableCell>
+                                    <TableCell>{`${formatNumber(item.breakfast || 0)},00`}</TableCell>
+                                    <TableCell>{`${formatNumber(item.lunch || 0)},00`}</TableCell>
+                                    <TableCell>{`${formatNumber(item.dinner || 0)},00`}</TableCell>
+                                    <TableCell>{`${formatNumber(item.accommodation || 0)},00`}</TableCell>
+                                    {isInternationalMemo && (
+                                        <>
+                                            <TableCell>{`${formatNumber(item.communication || 0)},00`}</TableCell>
+                                            <TableCell>{`${formatNumber(item.visa || 0)},00`}</TableCell>
+                                            <TableCell>{`${formatNumber(item.medical || 0)},00`}</TableCell>
+                                            <TableCell>{`${formatNumber(item.taxes || 0)},00`}</TableCell>
+                                        </>
+                                    )}
+                                    <TableCell>{`${formatNumber(item.total || 0)},00`}</TableCell>
                                 </tr>
                             ))}
                             <TotalRow>
-                                <TableCell colSpan={6}>Total</TableCell>
+                                <TableCell colSpan={isInternationalMemo ? 10 : 6}>Total</TableCell>
                                 <TableCell><strong>{formatNumber(grandTotal)},00</strong></TableCell>
                             </TotalRow>
                         </tbody>

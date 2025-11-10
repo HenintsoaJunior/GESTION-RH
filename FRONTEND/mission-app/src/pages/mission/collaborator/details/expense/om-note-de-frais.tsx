@@ -73,16 +73,11 @@ interface MissionPayment {
   totalAmount: number;
 }
 
-interface IsLoading {
-  exportExcel: boolean;
-}
-
 interface OMNoteDeFraisProps {
     selectedAssignmentId?: string;
     onBack?: () => void;
     missionPayment?: MissionPayment;
     onExportExcel?: () => void;
-    isLoading?: IsLoading;
     formatDate?: (date: string) => string;
 }
 
@@ -148,7 +143,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                     ...(comp.transportAmount > 0 ? [{ amount: comp.transportAmount, transportId: assignation.transportId ?? undefined }] : []),
                     ...(comp.breakfastAmount > 0 ? [{ amount: comp.breakfastAmount, expenseType: { type: "Petit Déjeuner" } }] : []),
                     ...(comp.lunchAmount > 0 ? [{ amount: comp.lunchAmount, expenseType: { type: "Déjeuner" } }] : []),
-                    ...(comp.dinnerAmount > 0 ? [{ amount: comp.dinnerAmount, expenseType: { type: "Dîner" } }] : []),
+                    ...(comp.dinnerAmount > 0 ? [{ amount: comp.dinnerAmount, expenseType: { type: "Dinner" } }] : []),
                     ...(comp.accommodationAmount > 0 ? [{ amount: comp.accommodationAmount, expenseType: { type: "Hébergement" } }] : []),
                 ],
             }));
@@ -294,7 +289,6 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
         month: 'short',
         year: 'numeric'
     });
-    const defaultIsLoading: IsLoading = { exportExcel: false };
 
     if (isLoadingTypes) {
         return (
@@ -372,7 +366,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                         {getToggleButtonContent().label}
                     </ToggleButton>
                     {assignationQuery.data && isInternational && <ActionButton onClick={openAvanceView} title="Voir les indemnités avancées">
-                        <Wallet size={16} /> Indemnités
+                        <Wallet size={16} /> Indemnités Avancées
                     </ActionButton>}
                 </HeaderActions>
             </PageHeader>
@@ -388,9 +382,10 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                             missionPayment={localMissionPayment}
                             selectedAssignmentId={selectedAssignmentId || ""}
                             onExportExcel={defaultOnExportExcel}
-                            isLoading={defaultIsLoading}
                             formatDate={defaultFormatDate}
                             onBack={onBack || defaultOnBack}
+                            missionId={missionId || ""}
+                            employeeId={employeeId || ""}
                         />
                     ) : (
                         <NoDataMessage>Aucune indemnité trouvée pour cette assignation.</NoDataMessage>

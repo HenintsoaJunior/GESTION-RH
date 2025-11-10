@@ -51,7 +51,7 @@ namespace MyApp.Api.Entities.mission
                 headers.Add("Transport");
                 headers.Add("Petit Déjeuner");
                 headers.Add("Déjeuner");
-                headers.Add("Dîner");
+                headers.Add("Dinner");
                 headers.Add("Hébergement");
                 headers.Add("Total");
                 tables.Add(headers);
@@ -75,7 +75,7 @@ namespace MyApp.Api.Entities.mission
                         transportDaily = MissionAssignationService.CalculateTransportAmount(scales, MissionAssignation!.TransportId);
                         petitDejDaily = MissionAssignationService.CalculateExpenseAmount(scales, "Petit Déjeuner");
                         dejeunerDaily = MissionAssignationService.CalculateExpenseAmount(scales, "Déjeuner");
-                        dinerDaily = MissionAssignationService.CalculateExpenseAmount(scales, "Dîner");
+                        dinerDaily = MissionAssignationService.CalculateExpenseAmount(scales, "Dinner");
                         hebergementDaily = MissionAssignationService.CalculateExpenseAmount(scales, "Hébergement");
                     }
                     row.Add(transportDaily.ToString("N2"));

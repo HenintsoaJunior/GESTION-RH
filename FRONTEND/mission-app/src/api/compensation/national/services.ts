@@ -110,12 +110,11 @@ interface Employee {
 interface Lieu {
   lieuId: string;
   nom: string;
-  adresse: string;
-  ville: string;
-  codePostal: string;
+  ville?: string;
+  codePostal?: string;
   pays: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt: string | null;
 }
 
 interface Mission {
@@ -143,16 +142,16 @@ export interface MissionAssignation {
   assignationId: string;
   employeeId: string;
   missionId: string;
-  transportId: string;
+  transportId: string | null;
   departureDate: string;
   departureTime: string;
   returnDate: string;
   returnTime: string;
   duration: number;
-  isValidated: boolean | null;
+  isValidated: number;
   employee: Employee;
   mission: Mission;
-  transport: Transport;
+  transport: Transport | null;
   type: string;
   allocatedFund: number;
   createdAt: string;
@@ -166,8 +165,13 @@ export interface Compensation {
   lunchAmount: number;
   dinnerAmount: number;
   accommodationAmount: number;
+  communicationAmount?: number;
+  visaAmount?: number;
+  medicalExpensesAmount?: number;
+  taxesAmount?: number;
   totalAmount?: number;
   paymentDate: string;
+  devise?: string;
   status: string;
   assignationId: string;
   employee: {

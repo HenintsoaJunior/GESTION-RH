@@ -433,14 +433,6 @@ const useMissionValidationData = () => {
     );
   };
 
-  const handleUpdateSignature = (missionId: string, signature: string) => {
-    setMissions((prevMissions) =>
-      prevMissions.map((mission) =>
-        mission.id === missionId ? { ...mission, signature } : mission
-      )
-    );
-  };
-
   const formatDate = (dateString?: string | null): string => {
     if (!dateString) return "Date non spécifiée";
     return new Date(dateString).toLocaleDateString("fr-FR", {
@@ -479,8 +471,8 @@ const useMissionValidationData = () => {
     handleFilterSubmit,
     handleResetFilters,
     handleValidate,
+    handleAction: handleValidate,
     handleUpdateComments,
-    handleUpdateSignature,
     formatDate,
     getDaysUntilDue,
     currentPage,

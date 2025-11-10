@@ -59,7 +59,6 @@ import {
     InfoLine,
     InfoLabel,
     InfoValue,
-    ReferenceText,
 } from "@/styles/card-styles";
 import Pagination from "@/components/pagination";
 import useTresoData from "../hooks/use-treso-data";
@@ -461,7 +460,7 @@ const Compensation: React.FC = () => {
                                   </CardInfo>
 
                                   {/* 4. Référence */}
-                                  <ReferenceText>RÉFÉRENCE: {compensation.assignationId}</ReferenceText>
+                                  {/* <ReferenceText>RÉFÉRENCE: {compensation.assignationId}</ReferenceText> */}
                               </Card>
                           );
                       })

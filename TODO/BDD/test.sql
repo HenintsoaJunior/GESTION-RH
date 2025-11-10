@@ -465,8 +465,6 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h_hab_3', 'menu_hab', 'menu_hab_3', GETDATE(), GETDATE());
 
 
-
-
 INSERT INTO expense_type (expense_type_id, type, time_start, time_end, created_at, updated_at)
 VALUES 
 ('exp001', 'Petit Déjeuner', '06:30:00', '08:00:00', GETDATE(), GETDATE()),
