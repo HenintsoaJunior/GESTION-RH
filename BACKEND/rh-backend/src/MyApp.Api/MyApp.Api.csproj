@@ -29,6 +29,10 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.2" />
     <PackageReference Include="System.DirectoryServices" Version="9.0.8" />
     <PackageReference Include="System.DirectoryServices.AccountManagement" Version="9.0.8" />
+      <None Update="File\*.docx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>   
+    </None>
+
   </ItemGroup>
 
 </Project>

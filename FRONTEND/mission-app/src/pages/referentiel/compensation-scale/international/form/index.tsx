@@ -22,10 +22,10 @@ import {
   Button,
   RemoveItem,
 } from "@/styles/form-container";
-import { useExpenseTypes } from "@/api/mission/expense/expense";
+import { useExpenseTypes } from "@/api/mission/expense_type/services";
 import { useGetAllGeoZones } from "@/api/zones/services";
-import { useBulkSyncExpenseCompensationScales, type BulkExpenseCompensationScaleDTO } from "@/api/compensation/international/services";
-import type { ExpenseCompensationScale } from "@/api/compensation/international/services";
+import { useBulkSyncExpenseCompensationScales, type BulkExpenseCompensationScaleDTO } from "@/api/mission/expense_compensarion_scale/services";
+import type { ExpenseCompensationScale } from "@/api/mission/expense_compensarion_scale/services";
 
 interface TransportScaleLine {
   scaleId?: string;

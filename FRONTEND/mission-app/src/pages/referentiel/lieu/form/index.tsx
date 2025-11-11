@@ -69,7 +69,7 @@ const LieuForm: React.FC<LieuFormProps> = ({ isOpen, onClose, onFormSuccess, lie
   }, [lieu]);
 
   // Mémorisation des états calculés
-  const isUpdateMode = useMemo(() => !!lieu, [lieu]);
+  const isUpdateMode = useMemo(() => !!lieu?.lieuId, [lieu]);
   const isProcessing = useMemo(() => 
     createLieuMutation.isPending || updateLieuMutation.isPending,
     [createLieuMutation.isPending, updateLieuMutation.isPending]
@@ -130,7 +130,7 @@ const LieuForm: React.FC<LieuFormProps> = ({ isOpen, onClose, onFormSuccess, lie
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    if (lieu) {
+    if (lieu?.lieuId) {
       updateLieuMutation.mutate(formData, {
         onSuccess: () => {
           onFormSuccess('Lieu modifié avec succès.');
@@ -143,7 +143,7 @@ const LieuForm: React.FC<LieuFormProps> = ({ isOpen, onClose, onFormSuccess, lie
         },
       });
     }
-  }, [lieu, formData, updateLieuMutation, createLieuMutation, onFormSuccess, validateForm]);
+  }, [lieu?.lieuId, formData, updateLieuMutation, createLieuMutation, onFormSuccess, validateForm]);
 
   const handleCancel = useCallback(() => {
     setFieldErrors({});

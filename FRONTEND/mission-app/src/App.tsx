@@ -11,7 +11,6 @@ import MissionList from '@/pages/mission/collaborator/list/mission-list';
 import DetailsMission from '@/pages/mission/collaborator/details/mission-details';
 import MissionValidationPage from '@/pages/mission/validation';
 import TresoPage from '@/pages/mission/treso';
-import Compensation from '@/pages/mission/treso/components/compensation';
 import ProtectedHabilitationList from '@/pages/access/habilitation';
 import ImportPage from '@/pages/import';
 import Referentiel from '@/pages/referentiel';
@@ -28,6 +27,8 @@ import MissionListArchive from './pages/mission/collaborator/list/mission-list-a
 import TransportList from '@/pages/referentiel/transport/list';
 import GeoZoneList from '@/pages/referentiel/zone/list';
 import CompensationScalesPage from '@/pages/referentiel/compensation-scale';
+import CompensationMission from '@/pages/mission/treso/components/compensation_mission';
+import Reimbursement from '@/pages/mission/treso/components/reimbursement';
 // import { useAuthSync } from '@/utils/use-auth-sync';
 function App() {
 
@@ -75,7 +76,8 @@ function App() {
         <Route path="/mission/to-validate" element={<MissionValidationPage />} />
         {/* TRESO */}
         <Route path="/treasury" element={<TresoPage />} />
-        <Route path="/treasury/compensation" element={<Compensation />} />
+        <Route path="/treasury/compensation" element={<CompensationMission />} />
+        <Route path="/treasury/remboursement" element={<Reimbursement />} />
 
         
         {/* ERROR */}

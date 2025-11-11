@@ -30,6 +30,8 @@ import {
 } from "@/styles/table-styles";
 import { useGetLieux, useDeleteLieu } from "@/api/lieu/services";
 import { useGetAllGeoZones } from "@/api/zones/services";
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAutoOpenModal } from "@/utils/use-auto-open-modal";
 import Alert from "@/components/alert";
 import Modal from "@/components/modal";
 import Pagination from "@/components/pagination";
@@ -51,9 +53,13 @@ interface AlertState {
   message: string;
 }
 
+type SelectedLieu = Lieu | Partial<Lieu> | null;
+
 const LieuList: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
-  const [selectedLieu, setSelectedLieu] = useState<Lieu | null>(null);
+  const [selectedLieu, setSelectedLieu] = useState<SelectedLieu>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [lieuToDelete, setLieuToDelete] = useState<string | null>(null);
   const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
@@ -88,6 +94,28 @@ const LieuList: React.FC = () => {
   const lieux = useMemo(() => searchResponse?.data || [], [searchResponse]);
 
   const hasFilters = appliedFilters.nom.trim() !== "" || appliedFilters.ville.trim() !== "" || appliedFilters.pays.trim() !== "" || !!appliedFilters.selectedGeoZone;
+
+  const defaultLieuPartial: Partial<Lieu> = {
+    ville: '',
+    codePostal: '',
+    pays: '',
+  };
+
+  const handleNavigateBack = useCallback((returnUrl: string) => {
+    if (returnUrl) {
+      navigate(decodeURIComponent(returnUrl));
+    } else {
+      // Fallback: navigate to default mission page, adjust as needed
+      navigate('/mission');
+    }
+  }, [navigate]);
+
+  useAutoOpenModal<Lieu>({
+    entityName: 'Lieu',
+    defaultPartial: defaultLieuPartial,
+    setSelectedEntity: setSelectedLieu,
+    setIsOpen: setIsFormOpen,
+  });
 
   useEffect(() => {
     if (searchResponse) {
@@ -131,7 +159,13 @@ const LieuList: React.FC = () => {
     setIsFormOpen(false);
     setAlert({ isOpen: true, type: "success", message });
     refetch();
-  }, [refetch]);
+
+    // Navigue vers la page d'origine après succès (création/modification)
+    const returnUrl = searchParams.get('returnUrl');
+    if (returnUrl) {
+      handleNavigateBack(returnUrl);
+    }
+  }, [refetch, searchParams, handleNavigateBack]);
 
   const handleFilterSubmit = useCallback((event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -194,7 +228,7 @@ const LieuList: React.FC = () => {
           isOpen={isFormOpen}
           onClose={() => setIsFormOpen(false)}
           onFormSuccess={handleFormSuccess}
-          lieu={selectedLieu}
+          lieu={selectedLieu as Lieu | null}
         />
       )}
       {isDeleteModalOpen && (

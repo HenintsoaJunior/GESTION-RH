@@ -10,7 +10,7 @@ import {
   EditActionButtonStyled,
 } from "@/styles/table-styles";
 import { Edit } from "lucide-react";
-import { useGetAllExpenseCompensationScales } from "@/api/compensation/international/services";
+import { useGetAllExpenseCompensationScales } from "@/api/mission/expense_compensarion_scale/services";
 import Alert from "@/components/alert";
 import ExpenseCompensationScaleForm from "../form/index";
 

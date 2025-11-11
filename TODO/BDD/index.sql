@@ -471,7 +471,7 @@ CREATE TABLE expense_report(
    amount DECIMAL(15,2),
    amount_mga DECIMAL(15,2),
    rate DECIMAL(15,2),
-   status VARCHAR(50) DEFAULT 'pending',
+   status VARCHAR(50) DEFAULT 'notreimbursed',
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    assignation_id VARCHAR(50) NOT NULL,

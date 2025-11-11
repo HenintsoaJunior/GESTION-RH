@@ -21,7 +21,7 @@ import {
   FormInput,
   ErrorMessage
 } from "@/styles/form-container";
-import { useCreateExpenseType, useUpdateExpenseType } from "@/api/mission/expense/expense";
+import { useCreateExpenseType, useUpdateExpenseType } from "@/api/mission/expense_type/services";
 
 interface FormData {
   type: string;

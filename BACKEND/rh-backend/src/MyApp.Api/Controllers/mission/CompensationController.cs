@@ -19,13 +19,13 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpGet("by-employee/{employeeId}/mission/{missionId}")]
-        // [AllowAnonymous]
+        [AllowAnonymous]
         public async Task<ActionResult> GetByEmployeeId(string employeeId, string missionId)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
 
             if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
             {
@@ -107,36 +107,53 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpGet("by-status")]
-        // [AllowAnonymous]
-        public async Task<IActionResult> GetByStatus([FromQuery] string? status)
+        [AllowAnonymous]
+        public async Task<ActionResult> GetByStatus([FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (page < 1 || pageSize < 1)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "La page et la taille de la page doivent être supérieures à 0." });
+            }
+
             try
             {
-                var results = await _compensationService.GetCompensationsByStatusAsync(status);
-                return Ok(new { Data = results,status = 200 ,message = "success" });
+                var (results, totalCount) = await _compensationService.GetCompensationsByStatusAsync(status, page, pageSize);
+                var responseData = new
+                {
+                    Data = results,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize
+                };
+                return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                return StatusCode(500, new { Message = "An error occurred while retrieving compensations by status", Error = ex.Message });
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "An error occurred while retrieving compensations by status" });
             }
         }
 
-        //
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             try
             {
                 var compensations = await _compensationService.GetAllAsync();
-                return Ok(compensations);
+                return Ok(new { data = compensations, status = 200, message = "success" });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { Message = "An error occurred while retrieving compensations", Error = ex.Message });
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "An error occurred while retrieving compensations" });
             }
         }
 
@@ -145,7 +162,7 @@ namespace MyApp.Api.Controllers.mission
         {
             if (generatePaiementDto == null || string.IsNullOrWhiteSpace(generatePaiementDto.MissionId))
             {
-                return BadRequest("Les données de paiement ou l'identifiant de la mission sont requis.");
+                return BadRequest(new { data = (object?)null, status = 400, message = "Les données de paiement ou l'identifiant de la mission sont requis." });
             }
 
             try
@@ -159,27 +176,31 @@ namespace MyApp.Api.Controllers.mission
             }
             catch (InvalidOperationException ex)
             {
-                return NotFound(ex.Message);
+                return NotFound(new { data = (object?)null, status = 404, message = ex.Message });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erreur lors de la génération du fichier Excel : {ex.Message}");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = $"Erreur lors de la génération du fichier Excel : {ex.Message}" });
             }
         }
 
-        
-
         [HttpPut("{employeId}/{assignation_id}/status")]
-        public async Task<IActionResult> UpdateStatus(string employeId, string assignation_id, [FromBody] string status)
+        [AllowAnonymous]
+        public async Task<ActionResult> UpdateStatus(string employeId, string assignation_id, [FromBody] string status)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
             if (string.IsNullOrEmpty(employeId) || string.IsNullOrEmpty(assignation_id))
             {
-                return BadRequest(new { message = "Employee ID and Assignation ID must be provided." });
+                return BadRequest(new { data = (object?)null, status = 400, message = "Employee ID and Assignation ID must be provided." });
             }
 
             if (string.IsNullOrEmpty(status))
             {
-                return BadRequest(new { message = "Status cannot be null or empty" });
+                return BadRequest(new { data = (object?)null, status = 400, message = "Status cannot be null or empty" });
             }
 
             try
@@ -188,24 +209,20 @@ namespace MyApp.Api.Controllers.mission
 
                 if (!updated)
                 {
-                    return NotFound(new { message = $"Compensation for Employee ID {employeId} and Assignation ID {assignation_id} not found." });
+                    return NotFound(new { data = (object?)null, status = 404, message = $"Compensation for Employee ID {employeId} and Assignation ID {assignation_id} not found." });
                 }
 
-                return Ok(new
-                {
-                    message = $"Compensation status for Employee ID {employeId} and Assignation ID {assignation_id} successfully updated to {status}"
-                });
+                return Ok(new { data = (object?)null, status = 200, message = $"Compensation status for Employee ID {employeId} and Assignation ID {assignation_id} successfully updated to {status}" });
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return StatusCode(500, new { message = "An error occurred while updating the compensation status", error = ex.Message });
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
-
-        
     }
 }

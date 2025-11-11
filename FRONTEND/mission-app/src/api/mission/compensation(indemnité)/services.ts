@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import api from '@/utils/axios-config';
 
@@ -203,6 +203,9 @@ export type CompensationsByStatusResponse = ApiResponse<{
     assignation: MissionAssignation;
     compensations: Compensation[];
   }>;
+  totalCount: number;
+  page: number;
+  pageSize: number;
 }>;
 
 interface TotalNotPaid {
@@ -225,6 +228,8 @@ export interface ExportMissionAssignationResult {
   fileName: string;
   status: string;
 }
+
+type UpdateStatusResponse = ApiResponse<null>;
 
 export const useCompensationsByEmployeeAndMission = (employeeId: string | undefined, missionId: string | undefined) => {
   const queryKey = [...COMPENSATIONS_BY_EMPLOYEE_AND_MISSION_KEY, employeeId, missionId] as const;
@@ -336,14 +341,38 @@ export const useExportMissionAssignationExcel = () => {
   });
 };
 
-export const useCompensationsByStatus = (status: string = 'unpaid') => {
-  const queryKey = [...COMPENSATIONS_BY_STATUS_KEY, status] as const;
+export const useCompensationsByStatus = (status?: string, page: number = 1, pageSize: number = 10) => {
+  const queryKey = [...COMPENSATIONS_BY_STATUS_KEY, status, page, pageSize] as const;
 
   return useQuery<CompensationsByStatusResponse, Error>({
     queryKey,
     queryFn: async () => {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+      });
+
+      if (status !== undefined) {
+        params.append('status', status);
+      }
+
+      const response = await api.get(`/api/Compensation/by-status?${params.toString()}`);
+      return response.data;
+    },
+  });
+};
+
+
+export const useUpdateStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<UpdateStatusResponse, Error, { employeeId: string; assignationId: string; status: string }>({
+    mutationFn: async ({ employeeId, assignationId, status }) => {
+      if (!employeeId || !assignationId || !status) {
+        throw new Error('Employee ID, Assignation ID, and Status are required');
+      }
       try {
-        const response = await api.get(`/api/Compensation/by-status?status=${status}`);
+        const response = await api.put(`/api/Compensation/${employeeId}/${assignationId}/status`, status);
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -351,6 +380,12 @@ export const useCompensationsByStatus = (status: string = 'unpaid') => {
         }
         throw error;
       }
+    },
+    onSuccess: () => {
+      // Invalidate relevant queries to refetch updated data
+      queryClient.invalidateQueries({ queryKey: COMPENSATIONS_BY_STATUS_KEY });
+      queryClient.invalidateQueries({ queryKey: TOTAL_NOT_PAID_KEY });
+      // Note: Specific employee/mission queries would need to be invalidated separately if params are passed
     },
   });
 };

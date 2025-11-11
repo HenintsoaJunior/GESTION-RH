@@ -11,6 +11,9 @@ import {
   Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { useTotalNotPaid } from '@/api/mission/compensation(indemnité)/services';
+import { useTotalNotReimbursed } from '@/api/mission/expense_report/services';
+import { usePrevisionForMonth } from '@/api/prevision/services';
 
 ChartJS.register(
   CategoryScale,
@@ -25,21 +28,24 @@ ChartJS.register(
 const TresoPage = () => {
   const navigate = useNavigate();
 
-  // Données de démonstration - mises à jour pour novembre 2025
-  const dates = [
+  // Intégration du hook useTotalNotPaid pour récupérer le total non payé réel
+  const { data: totalNotPaidData, isLoading: isTotalNotPaidLoading, error: totalNotPaidError } = useTotalNotPaid();
+  const totalNotPaid = totalNotPaidData?.data?.totalNotPaidAmount || 0;
+
+  // Intégration du hook useTotalNotReimbursed pour récupérer le total non remboursé réel
+  const { data: totalNotReimbursedData, isLoading: isTotalNotReimbursedLoading, error: totalNotReimbursedError } = useTotalNotReimbursed();
+  const totalNotReimbursed = totalNotReimbursedData?.data?.totalNotReimbursedAmount || 0;
+
+  // Intégration du hook usePrevisionForMonth pour récupérer les prévisions du mois
+  const { data: previsionMonthData, isLoading: isPrevisionLoading, error: previsionError } = usePrevisionForMonth();
+  const totalPrevision = previsionMonthData?.data?.reduce((sum, item) => sum + item.amount, 0) || 0;
+
+  // Données de démonstration - fallback pour novembre 2025 si pas de données réelles
+  const fallbackDates = [
     '2025-11-01', '2025-11-05', '2025-11-08', '2025-11-15',
     '2025-11-20', '2025-11-25', '2025-11-30'
   ];
-
-  const previsionData = [15000, 22000, 18000, 28000, 25000, 32000, 29000];
-
-  // Données cumulatives pour évolution des montants en attente
-  const nonPayeData = [10000, 25000, 40000, 60000, 80000, 105000, 125000];
-  const nonRembourseData = [5000, 12000, 20000, 35000, 50000, 65000, 87000];
-
-  const totalNotPaid = 125000;
-  const totalNotReimbursed = 87000;
-  const totalPrevision = previsionData.reduce((sum, item) => sum + item, 0);
+  const fallbackPrevisionData = [15000, 22000, 18000, 28000, 25000, 32000, 29000];
 
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('fr-MG', {
@@ -57,13 +63,35 @@ const TresoPage = () => {
     });
   };
 
+  // Traitement des données de prévision pour le chart (groupement par date, somme si multiples)
+  let chartLabels: string[] = [];
+  let previsionChartDataPoints: number[] = [];
+  if (previsionMonthData?.data && previsionMonthData.data.length > 0) {
+    const groupedByDate = previsionMonthData.data.reduce((acc: Record<string, number>, item) => {
+      const dateKey = item.departureDate.split('T')[0]; // Assume format YYYY-MM-DD ou ISO
+      acc[dateKey] = (acc[dateKey] || 0) + item.amount;
+      return acc;
+    }, {});
+    const sortedDates = Object.keys(groupedByDate).sort();
+    chartLabels = sortedDates.map(date => formatDate(date));
+    previsionChartDataPoints = sortedDates.map(date => groupedByDate[date]);
+  } else {
+    chartLabels = fallbackDates.map(date => formatDate(date));
+    previsionChartDataPoints = fallbackPrevisionData;
+  }
+
+  // Données cumulatives pour évolution des montants en attente
+  const dates = fallbackDates; // Garder les mêmes dates pour cohérence
+  const nonPayeData = [10000, 25000, 40000, 60000, 80000, 105000, 125000];
+  const nonRembourseData = [5000, 12000, 20000, 35000, 50000, 65000, 87000];
+
   // Chart data pour prévisions (line simple, style unifié)
   const previsionChartData = {
-    labels: dates.map(date => formatDate(date)),
+    labels: chartLabels,
     datasets: [
       {
         label: 'Prévisions',
-        data: previsionData,
+        data: previsionChartDataPoints,
         borderColor: '#7c3aed',
         backgroundColor: 'rgba(124, 58, 237, 0.1)',
         tension: 0.1,
@@ -213,6 +241,39 @@ const TresoPage = () => {
     },
   };
 
+  // Gestion de l'état de chargement pour les hooks (affichage conditionnel si l'un ou l'autre charge)
+  if (isTotalNotPaidLoading || isTotalNotReimbursedLoading || isPrevisionLoading) {
+    return (
+      <div style={{ 
+        fontFamily: 'century-gothic, sans-serif',
+        backgroundColor: '#f8f9fa',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div>Chargement des données de trésorerie...</div>
+      </div>
+    );
+  }
+
+  // Gestion d'erreur pour les hooks (affichage d'erreur si l'un ou l'autre échoue)
+  const anyError = totalNotPaidError || totalNotReimbursedError || previsionError;
+  if (anyError) {
+    return (
+      <div style={{ 
+        fontFamily: 'century-gothic, sans-serif',
+        backgroundColor: '#f8f9fa',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div>Erreur lors du chargement des données : {anyError.message}</div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ 
       fontFamily: 'century-gothic, sans-serif',
@@ -266,7 +327,7 @@ const TresoPage = () => {
           gap: '20px',
           marginBottom: '32px',
         }}>
-          {/* Card 1 */}
+          {/* Card 1 - Total Non Payé (mise à jour avec données réelles via useTotalNotPaid) */}
           <div style={{
             backgroundColor: '#f8f9fa',
             padding: '20px',
@@ -338,7 +399,7 @@ const TresoPage = () => {
             </button>
           </div>
 
-          {/* Card 2 */}
+          {/* Card 2 - Total Non Remboursé (mise à jour avec données réelles via useTotalNotReimbursed) */}
           <div style={{
             backgroundColor: '#f8f9fa',
             padding: '20px',
@@ -410,7 +471,7 @@ const TresoPage = () => {
             </button>
           </div>
 
-          {/* Card 3 */}
+          {/* Card 3 - Total Prévisions (mise à jour avec données réelles via usePrevisionForMonth) */}
           <div style={{
             backgroundColor: '#f8f9fa',
             padding: '20px',

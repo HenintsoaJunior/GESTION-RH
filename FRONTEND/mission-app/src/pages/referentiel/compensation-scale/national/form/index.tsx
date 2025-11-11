@@ -22,7 +22,7 @@ import {
   Button,
   RemoveItem,
 } from "@/styles/form-container";
-import { useExpenseTypes } from "@/api/mission/expense/expense";
+import { useExpenseTypes } from "@/api/mission/expense_type/services";
 import { useTransports } from "@/api/transport/services";
 import { useBulkCreateCompensationScales, type BulkCompensationScaleDTO } from "@/api/mission/compensation-scale/services";
 import type { CompensationScale } from "@/api/mission/compensation-scale/services";
