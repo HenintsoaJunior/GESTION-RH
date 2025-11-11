@@ -304,7 +304,6 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                         return (
                             <Card 
                                 key={mission.id} 
-                                onClick={() => handleRowClick(mission.missionId)}
                                 style={{
                                     display: 'flex',
                                     flexDirection: 'column',

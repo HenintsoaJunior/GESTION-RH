@@ -1,5 +1,6 @@
 ﻿using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
+using MyApp.Api.Models.record;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Services.currency;
 using MyApp.Api.Services.logs;
@@ -23,6 +24,7 @@ namespace MyApp.Api.Services.mission
         Task<(IEnumerable<MissionAssignation> Items, int TotalCount)> GetDistinctMissionAssignationsAsync(string? status, int page, int pageSize);
         Task<bool> ReimburseByAssignationIdAsync(string assignationId, string userId);
         Task<IEnumerable<string>> GetStatusByAssignationIdAsync(string assignationId);
+        Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByStatusAsync(string? status, int page, int pageSize);
     }
 
     public class ExpenseReportService : IExpenseReportService
@@ -183,8 +185,8 @@ namespace MyApp.Api.Services.mission
                 var reports = await _repository.GetAllAsync();
 
                 var totalNotReimbursed = reports.AsQueryable()
-                    .Where(er => er.Status == "pending")
-                    .Sum(er => er.Amount);
+                    .Where(er => er.Status == "notreimbursed")
+                    .Sum(er => er.AmountMGA);
 
                 return totalNotReimbursed;
             }
@@ -222,7 +224,7 @@ namespace MyApp.Api.Services.mission
                 var reports = await _repository.GetAllAsync();
 
                 var totalNotReimbursedCount = reports.AsQueryable()
-                    .Where(er => er.Status == "pending")
+                    .Where(er => er.Status == "notreimbursed")
                     .GroupBy(er => er.AssignationId)
                     .Count();
 
@@ -377,7 +379,7 @@ namespace MyApp.Api.Services.mission
                             var existing = await _repository.GetByIdAsync(entity.ExpenseReportId);
                             if (existing != null)
                             {
-                                entity.Status = existing.Status ?? "pending";
+                                entity.Status = "notreimbursed";
                                 entitiesToUpdate.Add((existing, entity));
                                 affectedIds.Add(entity.ExpenseReportId);
                                 _logger.LogInformation("Mise à jour du rapport de frais avec l'ID: {ExpenseReportId}", entity.ExpenseReportId);
@@ -508,7 +510,7 @@ namespace MyApp.Api.Services.mission
 
         }
 
-        public async Task<bool> UpdateAsync(string id, ExpenseLineDTO dto)  // Corrigé : Utilise ExpenseLineDTO pour une ligne unique
+        public async Task<bool> UpdateAsync(string id, ExpenseLineDTO dto)
         {
             try
             {
@@ -531,9 +533,9 @@ namespace MyApp.Api.Services.mission
                     return false;
                 }
 
-                var updated = new ExpenseReport(dto)  // Utilise le constructeur pour mapper depuis ExpenseLineDTO
+                var updated = new ExpenseReport(dto)  
                 {
-                    ExpenseReportId = existing.ExpenseReportId,  // Conserve l'ID existant
+                    ExpenseReportId = existing.ExpenseReportId,  
                 };
 
                 await _repository.UpdateAsync(updated);
@@ -598,6 +600,20 @@ namespace MyApp.Api.Services.mission
                 throw;
             }
         }
+
+        public async Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByStatusAsync(string? status, int page, int pageSize)
+        {
+            try
+            {
+                _logger.LogInformation("Récupération des rapports de frais par statut: {Status}, page: {Page}, pageSize: {PageSize}", status ?? "all", page, pageSize);
+                var (summaries, totalCount) = await _repository.GetByStatusAsync(status, page, pageSize);
+                return (summaries ?? Enumerable.Empty<ExpenseSummary>(), totalCount);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des rapports de frais par statut: {Status}", status ?? "all");
+                throw;
+            }
+        }
     }
-    
 }

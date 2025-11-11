@@ -78,7 +78,7 @@ import {
   useCompensationsByEmployeeAndMission,
   useExportMissionAssignationExcel,
   type Compensation,
-} from "@/api/compensation/national/services";
+} from "@/api/mission/compensation(indemnité)/services";
 import { formatDate } from "@/utils/date-converter";
 import { StatusBadge } from "@/styles/table-styles";
 import { getStatusBadgeClass, englishToFrench } from "@/utils/status";
@@ -1069,7 +1069,7 @@ const DetailsMission: React.FC = () => {
   const effectiveLoading = isGlobalLoading || isDelayedLoading;
 
   const handleBackToMissionDetails = useCallback(() => {
-    navigate("/mission/list");
+    navigate(-1);
   }, [navigate]);
 
   const handleNavigateToPayment = useCallback((employeeId: string, assignationId: string) => {

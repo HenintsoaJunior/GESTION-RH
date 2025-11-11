@@ -339,10 +339,9 @@ namespace MyApp.Api.Services.mission
 
                     await _missionAssignationService.UpdateAsync(validation.MissionAssignationId, missionAssignation);
 
-                    // Directly update mission via repo (no DTO mapping needed)
-                    mission.UpdatedAt = DateTime.UtcNow;  // Good practice for updates
+                    mission.UpdatedAt = DateTime.UtcNow;
                     await _missionRepository.UpdateAsync(mission);
-                    await _missionRepository.SaveChangesAsync();  // Persist the change
+                    await _missionRepository.SaveChangesAsync();
 
                     result = "Validation effectuée avec succès et mission validée";
 

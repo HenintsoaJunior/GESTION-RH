@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import type { ExpenseReportType, ExpenseLine, Attachment } from "@/api/mission/expense/services";
-import { useAllExpenseReportTypes, useCreateExpenseReport } from "@/api/mission/expense/services";
+import type { ExpenseReportType, ExpenseLine, Attachment } from "@/api/mission/expense_report/services";
+import { useAllExpenseReportTypes, useCreateExpenseReport } from "@/api/mission/expense_report/services";
 import { useGetMissionAssignationByAssignationId } from "@/api/mission/services";
-import type { MissionAssignation } from "@/api/mission/services";
-import { useCompensationsByEmployeeAndMission, type Compensation } from "@/api/compensation/national/services";
+import { useCompensationsByEmployeeAndMission, type Compensation } from "@/api/mission/compensation(indemnité)/services";
 import ExpenseReportStep from "./step/expense-report-step";
 import ExpenseReportList from "./step/expense-report-list";
 import OMPayment from "../payment/om-payment";
@@ -33,12 +32,6 @@ interface ApiResponse<T = unknown> {
     status: number;
     data?: T;
     message?: string;
-}
-
-interface CompensationResponse {
-  assignation: MissionAssignation;
-  compensations: Compensation[];
-  totalAmount: number;
 }
 
 interface AssignmentDetails {
@@ -133,48 +126,136 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
     }, [loadingTypes, typesError, expenseReportTypesData]);
 
     useEffect(() => {
-        if (compensationsResponse?.data && assignationQuery.data) {
-            const responseData = compensationsResponse.data as unknown as CompensationResponse;
-            const { assignation, compensations, totalAmount } = responseData;
-            const dailyPaiements = compensations.map((comp: Compensation) => ({
+        if (compensationsResponse?.data) {
+          const responseData = compensationsResponse.data;
+          const { assignation, compensations } = responseData;
+          const totalAmount = compensations.reduce((sum, comp) => {
+            const communicationAmount = comp.communicationAmount ?? 0;
+            const visaAmount = comp.visaAmount ?? 0;
+            const medicalExpensesAmount = comp.medicalExpensesAmount ?? 0;
+            const taxesAmount = comp.taxesAmount ?? 0;
+            return sum + (comp.totalAmount || (
+              (comp.transportAmount ?? 0) +
+              (comp.breakfastAmount ?? 0) +
+              (comp.lunchAmount ?? 0) +
+              (comp.dinnerAmount ?? 0) +
+              (comp.accommodationAmount ?? 0) +
+              communicationAmount +
+              visaAmount +
+              medicalExpensesAmount +
+              taxesAmount
+            ));
+          }, 0);
+          const dailyPaiements = compensations
+            .map((comp: Compensation) => {
+              const communicationAmount = comp.communicationAmount ?? 0;
+              const visaAmount = comp.visaAmount ?? 0;
+              const medicalExpensesAmount = comp.medicalExpensesAmount ?? 0;
+              const taxesAmount = comp.taxesAmount ?? 0;
+              const totalForDay = comp.totalAmount || (
+                (comp.transportAmount ?? 0) +
+                (comp.breakfastAmount ?? 0) +
+                (comp.lunchAmount ?? 0) +
+                (comp.dinnerAmount ?? 0) +
+                (comp.accommodationAmount ?? 0) +
+                communicationAmount +
+                visaAmount +
+                medicalExpensesAmount +
+                taxesAmount
+              );
+              const compensationScales: Array<{
+                amount: number;
+                expenseType?: { type: string };
+                transportId?: string;
+              }> = [];
+              if ((comp.transportAmount ?? 0) > 0) {
+                compensationScales.push({ 
+                  amount: comp.transportAmount!, 
+                  expenseType: { type: "Transport" },
+                  transportId: assignation.transportId ?? undefined 
+                });
+              }
+              if ((comp.breakfastAmount ?? 0) > 0) {
+                compensationScales.push({ 
+                  amount: comp.breakfastAmount!, 
+                  expenseType: { type: "Petit Déjeuner" } 
+                });
+              }
+              if ((comp.lunchAmount ?? 0) > 0) {
+                compensationScales.push({ 
+                  amount: comp.lunchAmount!, 
+                  expenseType: { type: "Déjeuner" } 
+                });
+              }
+              if ((comp.dinnerAmount ?? 0) > 0) {
+                compensationScales.push({ 
+                  amount: comp.dinnerAmount!, 
+                  expenseType: { type: "Dinner" } 
+                });
+              }
+              if ((comp.accommodationAmount ?? 0) > 0) {
+                compensationScales.push({ 
+                  amount: comp.accommodationAmount!, 
+                  expenseType: { type: "Hébergement" } 
+                });
+              }
+              if (communicationAmount > 0) {
+                compensationScales.push({ 
+                  amount: communicationAmount, 
+                  expenseType: { type: "Communication" } 
+                });
+              }
+              if (visaAmount > 0) {
+                compensationScales.push({ 
+                  amount: visaAmount, 
+                  expenseType: { type: "Visa sur place" } 
+                });
+              }
+              if (medicalExpensesAmount > 0) {
+                compensationScales.push({ 
+                  amount: medicalExpensesAmount, 
+                  expenseType: { type: "Frais médicaux" } 
+                });
+              }
+              if (taxesAmount > 0) {
+                compensationScales.push({ 
+                  amount: taxesAmount, 
+                  expenseType: { type: "Taxes" } 
+                });
+              }
+              return {
                 date: comp.paymentDate,
-                totalAmount: comp.totalAmount ?? 0,
-                compensationScales: [
-                    ...(comp.transportAmount > 0 ? [{ amount: comp.transportAmount, transportId: assignation.transportId ?? undefined }] : []),
-                    ...(comp.breakfastAmount > 0 ? [{ amount: comp.breakfastAmount, expenseType: { type: "Petit Déjeuner" } }] : []),
-                    ...(comp.lunchAmount > 0 ? [{ amount: comp.lunchAmount, expenseType: { type: "Déjeuner" } }] : []),
-                    ...(comp.dinnerAmount > 0 ? [{ amount: comp.dinnerAmount, expenseType: { type: "Dinner" } }] : []),
-                    ...(comp.accommodationAmount > 0 ? [{ amount: comp.accommodationAmount, expenseType: { type: "Hébergement" } }] : []),
-                ],
-            }));
+                totalAmount: totalForDay,
+                compensationScales,
+              };
+            })
+            .filter((payment) => payment.compensationScales.length > 0); // Optional: filter out days with no compensations
 
-            const assignmentDetails: AssignmentDetails = {
-                beneficiary: `${assignation.employee.firstName} ${assignation.employee.lastName}`,
-                matricule: assignation.employee.employeeCode ?? '',
-                missionTitle: assignation.mission.name ?? '',
-                function: assignation.employee.jobTitle ?? '',
-                base: assignation.employee.site.siteName ?? '',
-                meansOfTransport: assignation.transport?.type ?? "Non spécifié",
-                direction: assignation.employee.direction.directionName ?? '',
-                departmentService: `${assignation.employee.department.departmentName ?? ''} / ${assignation.employee.service.serviceName ?? ''}`,
-                costCenter: assignation.allocatedFund,
-                departureDate: assignation.departureDate ?? '',
-                departureTime: assignation.departureTime ?? '',
-                missionDuration: assignation.duration,
-                returnDate: assignation.returnDate ?? '',
-                returnTime: assignation.returnTime ?? '',
-                startDate: assignation.mission.startDate ?? '',
-            };
+          const assignmentDetails: AssignmentDetails = {
+            beneficiary: `${assignation.employee.firstName} ${assignation.employee.lastName}`,
+            matricule: assignation.employee.employeeCode ?? '',
+            missionTitle: assignation.mission.name ?? '',
+            function: assignation.employee.jobTitle ?? '',
+            base: assignation.employee.site.siteName ?? '',
+            meansOfTransport: assignation.transport?.type ?? "Non spécifié",
+            direction: assignation.employee.direction.directionName ?? '',
+            departmentService: `${assignation.employee.department.departmentName ?? ''} / ${assignation.employee.service.serviceName ?? ''}`,
+            costCenter: assignation.allocatedFund,
+            departureDate: assignation.departureDate ?? '',
+            departureTime: assignation.departureTime ?? '',
+            missionDuration: assignation.duration,
+            returnDate: assignation.returnDate ?? '',
+            returnTime: assignation.returnTime ?? '',
+            startDate: assignation.mission.startDate ?? '',
+          };
 
-            setLocalMissionPayment({
-                dailyPaiements,
-                assignmentDetails,
-                totalAmount,
-            });
-        } else {
-            setLocalMissionPayment(null);
+          setLocalMissionPayment({
+            dailyPaiements,
+            assignmentDetails,
+            totalAmount,
+          });
         }
-    }, [compensationsResponse, assignationQuery.data]);
+    }, [compensationsResponse]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;

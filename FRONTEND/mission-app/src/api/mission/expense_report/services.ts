@@ -14,6 +14,7 @@ const TOTAL_NOT_REIMBURSED_COUNT_BASE_KEY = ['totalNotReimbursedCount'] as const
 const TOTAL_AMOUNT_BY_ASSIGNATION_BASE_KEY = ['totalAmountByAssignation'] as const;
 const STATUS_BY_ASSIGNATION_BASE_KEY = ['statusByAssignation'] as const;
 const DISTINCT_MISSION_ASSIGNATIONS_BASE_KEY = ['distinctMissionAssignations'] as const;
+const EXPENSE_REPORTS_BY_STATUS_BASE_KEY = ['expenseReportsByStatus'] as const;
 
 
 // Interfaces for nested objects
@@ -38,7 +39,7 @@ interface Employee {
   updatedAt: string | null;
 }
 
-interface MissionAssignation {
+export interface MissionAssignation {
   assignationId: string;
   employeeId: string | null;
   missionId: string | null;
@@ -111,6 +112,17 @@ export interface Attachment {
   fileType: string;
 }
 
+export interface ExpenseSummary {
+  missionId: string;
+  assignationId: string;
+  missionTitled: string;
+  status: string;
+  employeeName: string;
+  employeeCode: string;
+  lieuName: string;
+  createdAt: string;
+  totalAmount: number;
+}
 
 // Generic API response interface
 interface ApiResponse<T> {
@@ -163,6 +175,13 @@ type CreateExpenseReportResponseData = {
 type ReimburseResponseData = {
   affectedIds?: string[];
   message?: string;
+};
+
+type ByStatusResponseData = {
+  reports: ExpenseSummary[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
 };
 
 type TotalNotReimbursedResponse = ApiResponse<TotalNotReimbursed>;
@@ -419,6 +438,7 @@ export const useReimburseByAssignationId = () => {
       queryClient.invalidateQueries({ queryKey: TOTAL_NOT_REIMBURSED_COUNT_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: [...TOTAL_AMOUNT_BY_ASSIGNATION_BASE_KEY, assignationId] });
       queryClient.invalidateQueries({ queryKey: [...STATUS_BY_ASSIGNATION_BASE_KEY, assignationId] });
+      queryClient.invalidateQueries({ queryKey: [...EXPENSE_REPORTS_BY_STATUS_BASE_KEY, assignationId] });
     },
   });
 };
@@ -442,6 +462,36 @@ export const useDistinctMissionAssignations = (options: { status?: string; pageN
         queryParams.append("pageSize", pageSize.toString());
 
         const response = await api.get(`/api/ExpenseReport/distinct-mission-assignations?${queryParams}`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+// Hook for getting expense reports by status with pagination
+export const useExpenseReportsByStatus = (options: { status?: string; page?: number; pageSize?: number } = {}) => {
+  const { status, page = 1, pageSize = 10 } = options;
+  const queryKey = [
+    ...EXPENSE_REPORTS_BY_STATUS_BASE_KEY,
+    { status, page, pageSize }
+  ];
+
+  return useQuery<ApiResponse<ByStatusResponseData>, Error>({
+    queryKey,
+    queryFn: async () => {
+      try {
+        // Build query parameters
+        const queryParams = new URLSearchParams();
+        if (status) queryParams.append("status", status);
+        queryParams.append("page", page.toString());
+        queryParams.append("pageSize", pageSize.toString());
+
+        const response = await api.get(`/api/ExpenseReport/by-status?${queryParams}`);
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {

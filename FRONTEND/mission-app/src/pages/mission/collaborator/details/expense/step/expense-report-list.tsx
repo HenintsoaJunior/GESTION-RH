@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Download, Eye, ChevronDown, X } from "lucide-react";
+import { FileText, Download, Eye, ChevronDown, X, Folder } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
     SectionTitle,
@@ -9,8 +9,6 @@ import {
     TableCell,
     TotalRow,
     Separator,
-    ModernCard,
-    TwoColumnLayout,
     ResponsiveTableWrapper,
     FolderContainer,
     FolderHeader,
@@ -32,15 +30,23 @@ import {
 } from "@/styles/detailsmission-styles";
 import { NoDataMessage } from "@/styles/table-styles";
 import { formatNumber } from "@/utils/format";
-import { useExpenseReportsByAssignationId, useStatusByAssignationId } from "@/api/mission/expense/services";
+import { useExpenseReportsByAssignationId, useStatusByAssignationId } from "@/api/mission/expense_report/services";
 import { useGetMissionAssignationByAssignationId } from "@/api/mission/services";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import type { TooltipItem, ChartOptions } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import { handleFileView, handleFileDownload } from "@/utils/file-utils";
 import type { MissionAssignation } from "@/api/mission/services"; 
+import styled from "styled-components";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
+
+const ChartGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+`;
 
 interface ApiResponse<T> {
     status: number;
@@ -111,7 +117,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ isOpen, onClose, co
             <ModalContentStyled onClick={(e) => e.stopPropagation()}>
                 <ModalHeader>
                     <ModalTitle>{content.fileName || "Prévisualisation"}</ModalTitle>
-                    <ModalCloseButton onClick={onClose} $variant="primary">
+                    <ModalCloseButton onClick={onClose} $variant="primary" style={{ color: 'black' }}>
                         <X size={20} />
                     </ModalCloseButton>
                 </ModalHeader>
@@ -119,7 +125,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ isOpen, onClose, co
                     {content.error ? (
                         <ErrorMessage>{content.error}</ErrorMessage>
                     ) : content.extension === "pdf" ? (
-                        <FilePreview src={content.fileUrl} title={content.fileName} />
+                        <FilePreview src={content.fileUrl} title={content.fileName} style={{ borderRadius: 0 }} />
                     ) : (
                         <ImagePreview src={content.fileUrl} alt={content.fileName || ""} />
                     )}
@@ -164,25 +170,25 @@ const EmployeeAttachments: React.FC<EmployeeAttachmentsProps> = ({ userName, att
 
     return (
         <>
-            <FolderContainer>
+            <FolderContainer style={{ marginTop: "var(--spacing-md)", width: "100%" }}>
                 <FolderHeader onClick={onToggle} $isOpen={isOpen}>
-                    <span className="folder-icon">📁</span>
-                    <span>
-                        {userName} · {uniqueAttachments.length} fichier{uniqueAttachments.length !== 1 ? "s" : ""}
+                    <Folder className="folder-icon" size={20} />
+                    <span style={{ fontSize: "12px" }}>
+                        {userName} · {uniqueAttachments.length} document{uniqueAttachments.length !== 1 ? "s" : ""}
                     </span>
                     <ChevronDown className="chevron" size={20} />
                 </FolderHeader>
                 {isOpen && (
-                    <AttachmentsList>
+                    <AttachmentsList style={{ width: "100%" }}>
                         {uniqueAttachments.length > 0 ? (
                             uniqueAttachments.map((att, index) => (
-                                <AttachmentItem key={att.fileName || index}>
-                                    <FileText size={24} color="var(--primary-color)" />
-                                    <div className="file-info">
-                                        <div className="file-name">{att.fileName || "Fichier sans nom"}</div>
-                                        <div className="file-size">{(att.fileSize || 0).toLocaleString()} Ko</div>
+                                <AttachmentItem key={att.fileName || index} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "var(--spacing-sm)" }}>
+                                    <FileText size={24} style={{ color: "var(--primary-color)", minWidth: "24px" }} />
+                                    <div className="file-info" style={{ flex: 1, minWidth: 0, wordBreak: "break-word" }}>
+                                        <div className="file-name" style={{ fontWeight: "bold", fontSize: "12px" }}>{att.fileName || "Fichier sans nom"}</div>
+                                        <div className="file-size" style={{ fontSize: "12px" }}>{(att.fileSize || 0).toLocaleString()} Ko</div>
                                     </div>
-                                    <div className="actions">
+                                    <div className="actions" style={{ display: "flex", gap: "var(--spacing-xs)" }}>
                                         <IconButton
                                             onClick={() => handlePreview(att)}
                                             title="Prévisualiser"
@@ -201,7 +207,7 @@ const EmployeeAttachments: React.FC<EmployeeAttachmentsProps> = ({ userName, att
                                 </AttachmentItem>
                             ))
                         ) : (
-                            <p style={{ padding: "var(--spacing-xl)", textAlign: "center", color: "var(--text-muted)" }}>
+                            <p style={{ padding: "var(--spacing-xl)", textAlign: "center", color: "var(--text-muted)", fontSize: "12px" }}>
                                 Aucune pièce jointe
                             </p>
                         )}
@@ -397,11 +403,13 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
                 <NoDataMessage style={{ color: "var(--error-color)" }}>⚠️ {overallError}</NoDataMessage>
             ) : hasData ? (
                 <>
-                    <TwoColumnLayout $hasLeft={hasAttachments}>
+                    <SectionTitle>Analyse Visuelle</SectionTitle>
+                    <ChartGrid>
+                        <ExpenseTypeDoughnutChart expenseReports={expenseReports} />
                         {hasAttachments && (
-                            <div style={{ overflow: 'hidden' }}>
-                                <SectionTitle>Pièces Jointes</SectionTitle>
-                                <ModernCard>
+                            <ChartCard>
+                                <h4>Pièces Jointes</h4>
+                                <div className="chart-content">
                                     {Object.keys(groupedData).map((userId) => {
                                         const employeeData = groupedData[userId];
                                         return (
@@ -414,14 +422,10 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
                                             />
                                         );
                                     })}
-                                </ModernCard>
-                            </div>
+                                </div>
+                            </ChartCard>
                         )}
-                        <div>
-                            {/* <SectionTitle>Analyse Visuelle</SectionTitle> */}
-                            <ExpenseTypeDoughnutChart expenseReports={expenseReports} />
-                        </div>
-                    </TwoColumnLayout>
+                    </ChartGrid>
 
                     {expenseReports.length > 0 && (
                         <>

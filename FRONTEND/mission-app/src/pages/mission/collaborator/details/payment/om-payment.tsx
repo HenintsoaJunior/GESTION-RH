@@ -8,9 +8,6 @@ import {
     TableHeader,
     TableCell,
     TotalRow,
-    PageHeader,
-    HeaderLeft,
-    HeaderActions,
     Separator,
     FolderContainer, 
     FolderHeader, 
@@ -441,14 +438,13 @@ const IndemnityDoughnutChart: React.FC<{ indemnityDetails: IndemnityDetail[] }> 
 };
 
 const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmentId, onExportExcel, formatDate, missionId, employeeId }) => {
-    console.log(selectedAssignmentId);
     const assignationQuery = useGetMissionAssignationByAssignationId(selectedAssignmentId);
 
     const isInternationalMemo = useMemo(() => {
         return assignationQuery.data?.data?.mission?.missionType === 'international';
     }, [assignationQuery.data]);
 
-    const indemnityDetails: IndemnityDetail[] = missionPayment.dailyPaiements.map((item: DailyPaiement) => {
+    const originalIndemnityDetails: IndemnityDetail[] = missionPayment.dailyPaiements.map((item: DailyPaiement) => {
         const amounts = {
             breakfast: 0,
             lunch: 0,
@@ -467,7 +463,7 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
             else if (scale.expenseType?.type === "Déjeuner") amounts.lunch += amount;
             else if (scale.expenseType?.type === "Dinner") amounts.dinner += amount;
             else if (scale.expenseType?.type === "Hébergement") amounts.accommodation += amount;
-            else if (scale.transportId) amounts.transport += amount;
+            else if (scale.expenseType?.type === "Transport") amounts.transport += amount;
             else if (scale.expenseType?.type === "Communication") amounts.communication += amount;
             else if (scale.expenseType?.type === "Visa sur place") amounts.visa += amount;
             else if (scale.expenseType?.type === "Frais médicaux") amounts.medical += amount;
@@ -492,10 +488,43 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
         };
     }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Tri croissant par date
 
-    // Debug temporaire (retirez après test) :
-    console.log('Indemnity Details:', indemnityDetails);
+    const displayIndemnityDetails = useMemo(() => {
+        if (!isInternationalMemo) {
+            return originalIndemnityDetails;
+        }
 
-    const grandTotal = indemnityDetails.reduce((sum, item) => sum + item.total, 0);
+        const totalCommunication = originalIndemnityDetails.reduce((sum, item) => sum + (item.communication || 0), 0);
+        const totalVisa = originalIndemnityDetails.reduce((sum, item) => sum + (item.visa || 0), 0);
+        const totalMedical = originalIndemnityDetails.reduce((sum, item) => sum + (item.medical || 0), 0);
+        const oneTimeTotal = totalCommunication + totalVisa + totalMedical;
+
+        const adjustedDetails = originalIndemnityDetails.map((detail) => ({
+            ...detail,
+            communication: 0,
+            visa: 0,
+            medical: 0,
+            total: detail.total - (detail.communication || 0) - (detail.visa || 0) - (detail.medical || 0),
+        }));
+
+        return [
+            ...adjustedDetails,
+            {
+                date: "",
+                breakfast: 0,
+                lunch: 0,
+                dinner: 0,
+                accommodation: 0,
+                transport: 0,
+                communication: totalCommunication,
+                visa: totalVisa,
+                medical: totalMedical,
+                taxes: 0,
+                total: oneTimeTotal,
+            } as IndemnityDetail,
+        ];
+    }, [originalIndemnityDetails, isInternationalMemo]);
+
+    const grandTotal = originalIndemnityDetails.reduce((sum, item) => sum + item.total, 0);
 
     const generateIMMutation = useGenerateIM();
     const previewIMMutation = usePreviewIM();
@@ -529,21 +558,12 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
 
     return (
         <>
-            <PageHeader>
-                <HeaderLeft>
-                    
-                </HeaderLeft>
-                <HeaderActions>
-                    {/* No standalone button, handled in attachments */}
-                </HeaderActions>
-            </PageHeader>
-            <Separator />
             {missionPayment.assignmentDetails ? (
                 <>
                     <SectionTitle>Analyse Visuelle des Montants</SectionTitle>
                     <DetailSection>
                         <ChartGrid>
-                            <IndemnityDoughnutChart indemnityDetails={indemnityDetails} />
+                            <IndemnityDoughnutChart indemnityDetails={originalIndemnityDetails} />
                             <ChartCard>
                                 <h4>Pièces Jointes</h4>
                                 <div className="chart-content">
@@ -582,25 +602,28 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
                             </tr>
                         </thead>
                         <tbody>
-                            {indemnityDetails.map((item, index) => (
-                                <tr key={index}>
-                                    <TableCell>{formatDate(item.date)}</TableCell>
-                                    <TableCell>{`${formatNumber(item.transport || 0)},00`}</TableCell>
-                                    <TableCell>{`${formatNumber(item.breakfast || 0)},00`}</TableCell>
-                                    <TableCell>{`${formatNumber(item.lunch || 0)},00`}</TableCell>
-                                    <TableCell>{`${formatNumber(item.dinner || 0)},00`}</TableCell>
-                                    <TableCell>{`${formatNumber(item.accommodation || 0)},00`}</TableCell>
-                                    {isInternationalMemo && (
-                                        <>
-                                            <TableCell>{`${formatNumber(item.communication || 0)},00`}</TableCell>
-                                            <TableCell>{`${formatNumber(item.visa || 0)},00`}</TableCell>
-                                            <TableCell>{`${formatNumber(item.medical || 0)},00`}</TableCell>
-                                            <TableCell>{`${formatNumber(item.taxes || 0)},00`}</TableCell>
-                                        </>
-                                    )}
-                                    <TableCell>{`${formatNumber(item.total || 0)},00`}</TableCell>
-                                </tr>
-                            ))}
+                            {displayIndemnityDetails.map((item, index) => {
+                                const isOneTimeRow = !item.date;
+                                return (
+                                    <tr key={index} style={isOneTimeRow ? { fontWeight: 'bold' } : {}}>
+                                        <TableCell>{isOneTimeRow ? '' : formatDate(item.date)}</TableCell>
+                                        <TableCell>{`${formatNumber(item.transport || 0)},00`}</TableCell>
+                                        <TableCell>{`${formatNumber(item.breakfast || 0)},00`}</TableCell>
+                                        <TableCell>{`${formatNumber(item.lunch || 0)},00`}</TableCell>
+                                        <TableCell>{`${formatNumber(item.dinner || 0)},00`}</TableCell>
+                                        <TableCell>{`${formatNumber(item.accommodation || 0)},00`}</TableCell>
+                                        {isInternationalMemo && (
+                                            <>
+                                                <TableCell>{`${formatNumber(item.communication || 0)},00`}</TableCell>
+                                                <TableCell>{`${formatNumber(item.visa || 0)},00`}</TableCell>
+                                                <TableCell>{`${formatNumber(item.medical || 0)},00`}</TableCell>
+                                                <TableCell>{`${formatNumber(item.taxes || 0)},00`}</TableCell>
+                                            </>
+                                        )}
+                                        <TableCell>{`${formatNumber(item.total || 0)},00`}</TableCell>
+                                    </tr>
+                                );
+                            })}
                             <TotalRow>
                                 <TableCell colSpan={isInternationalMemo ? 10 : 6}>Total</TableCell>
                                 <TableCell><strong>{formatNumber(grandTotal)},00</strong></TableCell>

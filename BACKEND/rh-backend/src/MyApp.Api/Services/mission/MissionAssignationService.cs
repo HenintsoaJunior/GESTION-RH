@@ -83,7 +83,7 @@ namespace MyApp.Api.Services.mission
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
-     
+  
         private static void ApplyCenturyGothicFont(Run run)
         {
             if (run.RunProperties == null)
@@ -98,6 +98,9 @@ namespace MyApp.Api.Services.mission
                 EastAsia = "Century Gothic"
             };
             run.RunProperties.AppendChild(rFonts);
+            // Set font size to 8pt (16 half-points) for better fit on A4
+            var fontSize = new FontSize() { Val = "16" };
+            run.RunProperties.Append(fontSize);
         }
         public async Task<byte[]> GenerateIMPDFAsync(string employeeId, string missionId)
         {
@@ -116,8 +119,6 @@ namespace MyApp.Api.Services.mission
             {
                 throw new FileNotFoundException("Le fichier modèle n'existe pas.", templatePath);
             }
-         
-         
             string datePart = missionAssignation.DepartureDate.ToString("dd/MM/yyyy");
             TimeSpan? depTime = missionAssignation.DepartureTime;
             string timePart = depTime.HasValue ? $"{depTime.Value.Hours:D2}:{depTime.Value.Minutes:D2}" : "";
@@ -132,12 +133,10 @@ namespace MyApp.Api.Services.mission
             }
             TimeSpan? depTimeReturn = missionAssignation.ReturnTime;
             string timePartReturn = depTimeReturn.HasValue ? $"{depTimeReturn.Value.Hours:D2}:{depTimeReturn.Value.Minutes:D2}" : "";
-         
-            // Déterminer le libellé transport pour missions internationales
             string transportStr = missionAssignation.Transport != null ? missionAssignation.Transport.Type ?? "" : "";
             if (string.IsNullOrEmpty(transportStr) && missionAssignation.Mission?.MissionType != "national")
             {
-                transportStr = "N'importe quel moyen de transport";
+                transportStr = "Avion";
             }
             var replacements = new Dictionary<string, string>
             {
@@ -153,7 +152,7 @@ namespace MyApp.Api.Services.mission
                 { "${fonction}", missionAssignation.Employee?.JobTitle ?? "" },
                 { "${matricule}", missionAssignation.Employee?.EmployeeCode ?? "" },
                 { "${direction}", missionAssignation.Employee?.Direction?.DirectionName ?? "" },
-                { "${departement}", missionAssignation.Employee?.Department?.DepartmentName ?? "" },
+                // { "${departement}", missionAssignation.Employee?.Department?.DepartmentName ?? "" },
                 { "${service}", missionAssignation.Employee?.Service?.ServiceName?? "" },
                 { "${lieu}", missionAssignation.Mission?.Lieu?.Nom ?? "" },
                 { "${motif}", missionAssignation.Mission?.Description ?? "" },
@@ -235,19 +234,27 @@ namespace MyApp.Api.Services.mission
                         var table = new Table();
                         var tableProperties = new TableProperties();
                         tableProperties.Append(new TableStyle() { Val = "TableGrid" });
+                        // Set table to fixed width to fill available space on A4 (approx 9026 dxa after margins)
+                        var tableWidth = new TableWidth() { Type = TableWidthUnitValues.Dxa, Width = "9026" };
+                        tableProperties.Append(tableWidth);
+                        // Use fixed layout for better control
+                        var tableLayout = new TableLayout() { Type = TableLayoutValues.Fixed };
+                        tableProperties.Append(tableLayout);
                         table.AppendChild(tableProperties);
-                        // Configuration conditionnelle des colonnes
+                        // Configuration conditionnelle des colonnes avec largeurs ajustées pour remplir la largeur A4 (9026 dxa total)
                         string[] headers;
                         string[] widths;
                         if (isInternational)
                         {
-                            headers = new[] { "Date", "Transport", "Petit Déjeuner", "Déjeuner", "Dinner", "Hébergement", "Communication", "Visa sur place", "Frais médicaux", "Taxes", "Montant Total" };
-                            widths = new[] { "1200", "1200", "1200", "1200", "1200", "1200", "1200", "1200", "1200", "1200", "1500" };
+                            headers = new[] { "Date", "Transport", "Petit Déjeuner", "Déjeuner", "Dîner", "Hébergement", "Communication", "Visa sur place", "Frais médicaux", "Taxes", "Montant Total" };
+                            // Widths summing to 9026 dxa
+                            widths = new[] { "1266", "766", "766", "766", "766", "766", "766", "766", "766", "766", "866" };
                         }
                         else
                         {
-                            headers = new[] { "Date", "Transport", "Petit Déjeuner", "Déjeuner", "Dinner", "Hébergement", "Montant Total" };
-                            widths = new[] { "1500", "1500", "1500", "1500", "1500", "1500", "2000" };
+                            headers = new[] { "Date", "Transport", "Petit Déjeuner", "Déjeuner", "Dîner", "Hébergement", "Montant Total" };
+                            // Adjusted widths for national to sum to 9029 dxa (close to 9026)
+                            widths = new[] { "1547", "1147", "1147", "1147", "1147", "1147", "1747" };
                         }
                         // Ligne d'en-tête
                         var headerRow = new TableRow();
@@ -255,6 +262,10 @@ namespace MyApp.Api.Services.mission
                         {
                             var headerCell = new TableCell(new Paragraph(new Run(new Text(headers[i]))));
                             ApplyCenturyGothicFont(headerCell.Descendants<Run>().First());
+                            // Bold for headers
+                            var headerRun = headerCell.Descendants<Run>().First();
+                            headerRun.RunProperties ??= new RunProperties();
+                            headerRun.RunProperties.Append(new Bold());
                             var cellProperties = new TableCellProperties(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = widths[i] });
                             // Ajouter des bordures solides à chaque cellule
                             var borders = new TableCellBorders(
@@ -266,6 +277,10 @@ namespace MyApp.Api.Services.mission
                                 new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
                             );
                             cellProperties.Append(borders);
+                            // Center align for headers
+                            var headerParagraph = headerCell.Descendants<Paragraph>().First();
+                            headerParagraph.ParagraphProperties ??= new ParagraphProperties();
+                            headerParagraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Center });
                             headerCell.Append(cellProperties);
                             headerRow.Append(headerCell);
                         }
@@ -276,14 +291,10 @@ namespace MyApp.Api.Services.mission
                         // Lignes de données
                         foreach (var comp in dto.Compensations.OrderBy(c => c.PaymentDate))
                         {
-                            var totalRowAmount = comp.TransportAmount + comp.BreakfastAmount + comp.LunchAmount + comp.DinnerAmount + comp.AccommodationAmount;
-                            if (isInternational)
-                            {
-                                totalRowAmount += comp.CommunicationAmount + comp.VisaAmount + comp.MedicalExpensesAmount + comp.TaxesAmount;
-                            }
                             string[] values;
                             if (isInternational)
                             {
+                                var dailyTotal = comp.TransportAmount + comp.BreakfastAmount + comp.LunchAmount + comp.DinnerAmount + comp.AccommodationAmount + comp.TaxesAmount;
                                 values = new[] {
                                     comp.PaymentDate?.ToString("dd/MM/yyyy") ?? "",
                                     $"{comp.TransportAmount:F2}",
@@ -291,15 +302,16 @@ namespace MyApp.Api.Services.mission
                                     $"{comp.LunchAmount:F2}",
                                     $"{comp.DinnerAmount:F2}",
                                     $"{comp.AccommodationAmount:F2}",
-                                    $"{comp.CommunicationAmount:F2}",
-                                    $"{comp.VisaAmount:F2}",
-                                    $"{comp.MedicalExpensesAmount:F2}",
+                                    "0.00",
+                                    "0.00",
+                                    "0.00",
                                     $"{comp.TaxesAmount:F2}",
-                                    $"{totalRowAmount:F2}"
+                                    $"{dailyTotal:F2}"
                                 };
                             }
                             else
                             {
+                                var totalRowAmount = comp.TransportAmount + comp.BreakfastAmount + comp.LunchAmount + comp.DinnerAmount + comp.AccommodationAmount;
                                 values = new[] {
                                     comp.PaymentDate?.ToString("dd/MM/yyyy") ?? "",
                                     $"{comp.TransportAmount:F2}",
@@ -326,10 +338,69 @@ namespace MyApp.Api.Services.mission
                                     new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
                                 );
                                 cellProperties.Append(borders);
+                                // Alignement à droite pour les colonnes de montants (à partir de l'index 1, sauf Date)
+                                if (i > 0)
+                                {
+                                    var paragraph = dataCell.Descendants<Paragraph>().First();
+                                    paragraph.ParagraphProperties ??= new ParagraphProperties();
+                                    paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Right });
+                                }
                                 dataCell.Append(cellProperties);
                                 dataRow.Append(dataCell);
                             }
                             table.Append(dataRow);
+                        }
+                        // Ligne des frais uniques pour missions internationales
+                        if (isInternational)
+                        {
+                            var totalCommunication = dto.Compensations.Sum(c => c.CommunicationAmount);
+                            var totalVisa = dto.Compensations.Sum(c => c.VisaAmount);
+                            var totalMedicaux = dto.Compensations.Sum(c => c.MedicalExpensesAmount);
+                            var oneTimeTotal = totalCommunication + totalVisa + totalMedicaux;
+                            var oneTimeValues = new[] {
+                                "", // Date vide
+                                "", // Transport vide
+                                "", // Petit Déjeuner vide
+                                "", // Déjeuner vide
+                                "", // Dinner vide
+                                "", // Hébergement vide
+                                $"{totalCommunication:F2}",
+                                $"{totalVisa:F2}",
+                                $"{totalMedicaux:F2}",
+                                "", // Taxes vide
+                                $"{oneTimeTotal:F2}"
+                            };
+                            var oneTimeRow = new TableRow();
+                            for (int i = 0; i < oneTimeValues.Length; i++)
+                            {
+                                var oneTimeCell = new TableCell(new Paragraph(new Run(new Text(oneTimeValues[i]))));
+                                ApplyCenturyGothicFont(oneTimeCell.Descendants<Run>().First());
+                                var cellProperties = new TableCellProperties(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = widths[i] });
+                                // Ajouter des bordures solides à chaque cellule
+                                var borders = new TableCellBorders(
+                                    new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                    new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                    new BottomBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                    new RightBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                    new InsideHorizontalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
+                                    new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
+                                );
+                                cellProperties.Append(borders);
+                                // Alignement à droite pour les colonnes de montants (à partir de l'index 1)
+                                if (i > 0)
+                                {
+                                    var paragraph = oneTimeCell.Descendants<Paragraph>().First();
+                                    paragraph.ParagraphProperties ??= new ParagraphProperties();
+                                    paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Right });
+                                }
+                                oneTimeCell.Append(cellProperties);
+                                // Gras pour toute la ligne des frais uniques
+                                var run = oneTimeCell.Descendants<Run>().First();
+                                run.RunProperties ??= new RunProperties();
+                                run.RunProperties.Append(new Bold());
+                                oneTimeRow.Append(oneTimeCell);
+                            }
+                            table.Append(oneTimeRow);
                         }
                         // Ligne de total
                         var totalTransport = dto.Compensations.Sum(c => c.TransportAmount);
@@ -347,16 +418,7 @@ namespace MyApp.Api.Services.mission
                             grandTotal += totalCommunication + totalVisa + totalMedicaux + totalTaxes;
                             var totalValues = new[] {
                                 "Total",
-                                $"{totalTransport:F2}",
-                                $"{totalPetitDej:F2}",
-                                $"{totalDejeuner:F2}",
-                                $"{totalDiner:F2}",
-                                $"{totalHebergement:F2}",
-                                $"{totalCommunication:F2}",
-                                $"{totalVisa:F2}",
-                                $"{totalMedicaux:F2}",
-                                $"{totalTaxes:F2}",
-                                $"{grandTotal:F2}"
+                                "", "", "", "", "", "", "", "", "", $"{grandTotal:F2}"
                             };
                             var totalRow = new TableRow();
                             for (int i = 0; i < totalValues.Length; i++)
@@ -374,6 +436,13 @@ namespace MyApp.Api.Services.mission
                                     new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
                                 );
                                 cellProperties.Append(borders);
+                                // Alignement à droite pour les colonnes de montants (à partir de l'index 1)
+                                if (i > 0)
+                                {
+                                    var paragraph = totalCell.Descendants<Paragraph>().First();
+                                    paragraph.ParagraphProperties ??= new ParagraphProperties();
+                                    paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Right });
+                                }
                                 totalCell.Append(cellProperties);
                                 if (i == 0 || i == totalValues.Length - 1)
                                 {
@@ -413,6 +482,13 @@ namespace MyApp.Api.Services.mission
                                     new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
                                 );
                                 cellProperties.Append(borders);
+                                // Alignement à droite pour les colonnes de montants (à partir de l'index 1)
+                                if (i > 0)
+                                {
+                                    var paragraph = totalCell.Descendants<Paragraph>().First();
+                                    paragraph.ParagraphProperties ??= new ParagraphProperties();
+                                    paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Right });
+                                }
                                 totalCell.Append(cellProperties);
                                 if (i == 0 || i == totalValues.Length - 1)
                                 {
@@ -473,6 +549,7 @@ namespace MyApp.Api.Services.mission
             doc.SaveToStream(PDFStream, SpireDoc.FileFormat.PDF);
             return PDFStream.ToArray();
         }
+     
         public async Task<IEnumerable<MissionAssignation>> GetAllByMissionIdAsync(string missionId)
         {
             try
@@ -600,7 +677,7 @@ namespace MyApp.Api.Services.mission
             doc.SaveToStream(PDFStream, SpireDoc.FileFormat.PDF);
             return PDFStream.ToArray();
         }
-     
+  
         public async Task<byte[]> GenerateATDPDFAsync(string employeeId)
         {
             var employee = await _employeeService.GetByIdAsync(employeeId);
@@ -608,7 +685,7 @@ namespace MyApp.Api.Services.mission
             {
                 throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}");
             }
-     
+  
             string templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\File\ATD.docx"));
             if (!File.Exists(templatePath))
             {
@@ -654,12 +731,12 @@ namespace MyApp.Api.Services.mission
                 },
             };
             using var memoryStream = new MemoryStream();
-         
+      
             using (var fileStream = new FileStream(templatePath, FileMode.Open, FileAccess.Read))
             {
                 await fileStream.CopyToAsync(memoryStream);
             }
-         
+      
             memoryStream.Position = 0;
             using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(memoryStream, true))
             {
@@ -685,7 +762,7 @@ namespace MyApp.Api.Services.mission
                     foreach (var run in bodyRuns)
                     {
                         string runText = string.Join("", run.Descendants<Text>().Select(t => t.Text));
-                     
+                  
                         foreach (var replacement in replacements)
                         {
                             if (runText.Contains(replacement.Key))
@@ -729,13 +806,13 @@ namespace MyApp.Api.Services.mission
             }
             memoryStream.Position = 0;
             using var PDFStream = new MemoryStream();
-         
+      
             SpireDoc.Document doc = new SpireDoc.Document();
             doc.LoadFromStream(memoryStream, SpireDoc.FileFormat.Docx);
             doc.SaveToStream(PDFStream, SpireDoc.FileFormat.PDF);
             return PDFStream.ToArray();
         }
-     
+  
         public async Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator, MissionService missionService)
         {
             var errors = new List<string>();
@@ -846,7 +923,7 @@ namespace MyApp.Api.Services.mission
             TimeSpan duration = end.Date - start.Date;
             return Task.FromResult(duration.Days);
         }
-     
+  
         public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDto)
         {
             try
@@ -920,7 +997,7 @@ namespace MyApp.Api.Services.mission
                 return results[0];
             var combinedDailyPaiements = results.SelectMany(r => r.DailyPaiements).ToList();
             var totalTransport = results.Sum(r => r.TransportAmount);
-         
+      
             return new ExpensePaiementResult
             {
                 DailyPaiements = combinedDailyPaiements,
@@ -941,7 +1018,7 @@ namespace MyApp.Api.Services.mission
             decimal totalCommunication = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Communication"));
             decimal totalVisa = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Visa sur place"));
             decimal totalMedical = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Frais médicaux"));
-          
+       
             foreach (var dailyPaiement in dailyPaiements)
             {
                 var compensationDto = new CompensationDTO
@@ -1068,7 +1145,7 @@ namespace MyApp.Api.Services.mission
                     LunchAmount = 0m,
                     DinnerAmount = 0m,
                     AccommodationAmount = 0m,
-                    CommunicationAmount = 0m, // Ajout pour compatibilité internationale si nécessaire
+                    CommunicationAmount = 0m,
                     VisaAmount = 0m,
                     MedicalExpensesAmount = 0m,
                     TaxesAmount = 0m
@@ -1093,7 +1170,6 @@ namespace MyApp.Api.Services.mission
                             case "Hébergement":
                                 compensationDto.AccommodationAmount += amount;
                                 break;
-                            // Les nouveaux types ne s'appliquent pas aux paiements nationaux, mais ajoutés pour cohérence
                             case "Communication":
                                 compensationDto.CommunicationAmount += amount;
                                 break;
@@ -1139,7 +1215,7 @@ namespace MyApp.Api.Services.mission
             if (results.Count == 1)
                 return results[0];
             var combinedDailyPaiements = results.SelectMany(r => r.DailyPaiements).ToList();
-         
+      
             return new MissionPaiementResult
             {
                 DailyPaiements = combinedDailyPaiements
@@ -1174,7 +1250,7 @@ namespace MyApp.Api.Services.mission
                 var worksheet = workbook.Worksheets.Add("Mission Payment Report");
                 CreateExcelHeaders(worksheet);
                 var currentRow = 2;
-             
+          
                 foreach (var compensation in compensations)
                 {
                     WriteCompensationRowToWorksheet(worksheet, compensation, currentRow);
@@ -1223,14 +1299,14 @@ namespace MyApp.Api.Services.mission
         {
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Mission Payment Report");
-         
+      
             CreateExcelHeaders(worksheet);
-         
+      
             worksheet.Cell(2, 1).Value = "Aucune affectation trouvée pour les critères spécifiés";
             worksheet.Range("A2:O2").Merge(); // Ajusté
             worksheet.Cell(2, 1).Style.Font.Italic = true;
             worksheet.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-         
+      
             worksheet.Columns().AdjustToContents();
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
@@ -1244,7 +1320,7 @@ namespace MyApp.Api.Services.mission
                 "Date", "Transport", "Petit Déjeuner", "Déjeuner", "Dinner", "Hébergement",
                 "Communication", "Visa sur place", "Frais médicaux", "Taxes"
             };
-         
+      
             for (int i = 0; i < headers.Length; i++)
             {
                 worksheet.Cell(tableStartRow, i + 1).Value = headers[i];
@@ -1284,7 +1360,7 @@ namespace MyApp.Api.Services.mission
             ArgumentNullException.ThrowIfNull(missionAssignation);
             if (string.IsNullOrWhiteSpace(missionAssignation.EmployeeId))
                 throw new ArgumentException("L'ID de l'employé ne peut pas être vide.", nameof(missionAssignation.EmployeeId));
-         
+      
             if (string.IsNullOrWhiteSpace(missionAssignation.MissionId))
                 throw new ArgumentException("L'ID de la mission ne peut pas être vide.", nameof(missionAssignation.MissionId));
             try
@@ -1302,13 +1378,13 @@ namespace MyApp.Api.Services.mission
                 // Générer l'ID d'assignation
                 var assignationId = _sequenceGenerator.GenerateSequence("seq_assignation_id", "MA", 6, "-");
                 missionAssignation.AssignationId = assignationId;
-             
+          
                 // Définir les timestamps de création
                 SetCreationTimestamps(missionAssignation);
-             
+          
                 // Sauvegarder l'assignation
                 await SaveMissionAssignationAsync(missionAssignation);
-             
+          
                 // Mettre à jour le statut de la mission
                 await UpdateMissionStatusAsync(missionAssignation.MissionId);
                 _logger.LogInformation("Assignation créée avec succès pour EmployeeId={EmployeeId}, MissionId={MissionId}, AssignationId={AssignationId}",
@@ -1319,7 +1395,7 @@ namespace MyApp.Api.Services.mission
             {
                 _logger.LogError(ex, "Erreur de contrainte d'unicité lors de la création de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}, TransportId={TransportId}",
                     missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.TransportId ?? "null");
-             
+          
                 throw new CustomException(
                     $"Une assignation avec l'employé {missionAssignation.EmployeeId} et la mission {missionAssignation.MissionId} existe déjà. Veuillez vérifier les données saisies.",
                     ex);
@@ -1333,7 +1409,7 @@ namespace MyApp.Api.Services.mission
             {
                 _logger.LogError(ex, "Erreur inattendue lors de la création de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}",
                     missionAssignation.EmployeeId, missionAssignation.MissionId);
-             
+          
                 throw new CustomException(
                     "Une erreur s'est produite lors de la création de l'assignation de mission. Veuillez réessayer ou contacter le support.",
                     ex);
@@ -1493,7 +1569,7 @@ namespace MyApp.Api.Services.mission
                 throw new Exception($"Error retrieving mission assignation: {ex.Message}", ex);
             }
         }
-     
+  
         public async Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId)
         {
             try

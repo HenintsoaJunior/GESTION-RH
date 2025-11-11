@@ -17,7 +17,7 @@ namespace MyApp.Api.Repositories.mission
         Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId);
         Task<IEnumerable<MissionAssignation>> GetAllByMissionIdAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetFilteredAssignationsAsync(string? employeeId, string? missionId);
-        Task<IEnumerable<MissionAssignation>> GetWithCompensationByStatusAsync(string? status);
+        Task<(IEnumerable<MissionAssignation>, int)> GetWithCompensationByStatusAsync(string? status, int page = 1, int pageSize = 10);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
         Task AddAsync(MissionAssignation missionAssignation);
         Task UpdateAsync(MissionAssignation missionAssignation);
@@ -102,7 +102,7 @@ namespace MyApp.Api.Repositories.mission
                     ma.TransportId == transportId);
         }
         
-        public async Task<IEnumerable<MissionAssignation>> GetWithCompensationByStatusAsync(string? status)
+        public async Task<(IEnumerable<MissionAssignation>, int)> GetWithCompensationByStatusAsync(string? status, int page = 1, int pageSize = 10)
         {
             var query = _context.MissionAssignations
                 .AsNoTracking()
@@ -118,17 +118,18 @@ namespace MyApp.Api.Repositories.mission
                     .ThenInclude(m => m.Lieu)
                 .Include(ma => ma.Transport)
                 .Where(ma => _context.Compensations
-                    .Any(c => c.AssignationId == ma.AssignationId));
+                    .Any(c => c.AssignationId == ma.AssignationId
+                        && (string.IsNullOrWhiteSpace(status) || c.Status == status)));
 
-            if (!string.IsNullOrEmpty(status))
-            {
-                query = query.Where(ma => _context.Compensations
-                    .Any(c => c.AssignationId == ma.AssignationId && c.Status == status));
-            }
+            var totalCount = await query.CountAsync();
+            var results = await query
+                .OrderByDescending(ma => ma.DepartureDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-            return await query.ToListAsync();
+            return (results, totalCount);
         }
-        
         public async Task<MissionAssignation?> GetByIdMissionAsync(string missionId)
         {
             return await _context.MissionAssignations

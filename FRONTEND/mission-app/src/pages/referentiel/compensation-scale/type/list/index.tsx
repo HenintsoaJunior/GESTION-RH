@@ -13,7 +13,7 @@ import {
   EditActionButtonStyled,
 } from "@/styles/table-styles";
 import { Edit, X } from "lucide-react";
-import { useExpenseTypes } from "@/api/mission/expense/expense";
+import { useExpenseTypes } from "@/api/mission/expense_type/services";
 import Alert from "@/components/alert";
 import ExpenseTypeForm from "../form/index";
 
