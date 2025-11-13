@@ -1,7 +1,23 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import styled from "styled-components";
-import { ChevronDown, ChevronUp, X, List, Search, Plus, Edit, Trash } from "lucide-react";
+import { 
+  ChevronDown, 
+  ChevronUp, 
+  X, 
+  List, 
+  Search, 
+  Plus, 
+  Edit, 
+  Trash, 
+  Calendar as CalendarIcon,
+  User,
+  Briefcase,
+  Globe,
+  MapPin,
+  CalendarDays,
+  Plane,
+ } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   FiltersContainer,
@@ -36,6 +52,7 @@ import {
   TabContainer,
   TabButton,
 } from "@/styles/onglet-style";
+import { CalendarContainer } from "@/styles/calendar-styles";
 import StatusFilter from "@/components/status";
 import { StatusBadge } from "@/components/status";
 import type { Status } from "@/components/status";
@@ -56,6 +73,21 @@ import Pagination from "@/components/pagination";
 import MissionForm from "../form/index";
 import { englishToFrench } from "@/utils/status";
 import ProtectedRoute from "@/components/protected-route";
+import { Calendar, dateFnsLocalizer,type View } from 'react-big-calendar';
+import { format, parse, getDay, startOfWeek as dateFnsStartOfWeek } from 'date-fns';
+import { fr } from 'date-fns/locale/fr';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+const customStartOfWeek = (date: Date) => dateFnsStartOfWeek(date, { weekStartsOn: 1 });
+
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: customStartOfWeek,
+  getDay,
+  locales: { 'fr': fr },
+  locale: 'fr',
+});
 
 type TabKey = 'mes' | 'toutes' | 'collaborateurs';
 
@@ -130,9 +162,38 @@ const DateField = styled.div`
   flex-direction: column;
 `;
 
+const ViewToggleButton = styled(ButtonSearch)<{ $isActive?: boolean }>`
+  background-color: ${props => props.$isActive ? 'var(--primary-color)' : 'transparent'};
+  color: ${props => props.$isActive ? '#ffffff' : 'var(--text-color)'};
+  border: ${props => props.$isActive ? '1px solid var(--primary-color)' : '1px solid var(--border-color, #ddd)'};
+  &:hover {
+    background-color: ${props => props.$isActive ? 'var(--primary-hover)' : 'var(--bg-secondary, #f8f9fa)'};
+  }
+`;
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  missionType?: string;
+  status?: string;
+}
+
+const CustomEvent: React.FC<{ event: CalendarEvent }> = ({ event }) => {
+  const Icon = event.missionType === 'International' ? Plane : Briefcase;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <Icon size={12} />
+      <span>{event.title}</span>
+    </div>
+  );
+};
+
 const MissionList: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>('mes');
+  const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
   const [filters, setFilters] = useState<FiltersState>({
     employeeId: "",
     missionType: "",
@@ -172,6 +233,8 @@ const MissionList: React.FC = () => {
   const [pageSize, setPageSize] = useState<number>(10);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
+  const [date, setDate] = useState<Date>(new Date());
+  const [view, setView] = useState<View>('month');
 
   const statusOptions = [
     { label: "Mission en cours de validation", value: "pending approval" },
@@ -338,6 +401,16 @@ const MissionList: React.FC = () => {
   );
 
   const assignations = useMemo(() => searchResponse?.data?.data || [], [searchResponse?.data?.data]);
+
+  const events = useMemo(() => 
+    assignations.map((assignation: MissionAssignation) => ({
+      id: assignation.assignationId,
+      title: `${assignation.employee.firstName} ${assignation.employee.lastName} - ${assignation.mission.name}`,
+      start: new Date(assignation.departureDate),
+      end: new Date(assignation.returnDate),
+      missionType: assignation.mission.missionType,
+    })), 
+  [assignations]) as CalendarEvent[];
 
   const missionIds = useMemo(
     () => [...new Set(assignations.map((a: MissionAssignation) => a.mission.missionId))],
@@ -571,6 +644,17 @@ const MissionList: React.FC = () => {
     setIsFormOpen(false);
   }, []);
 
+  const handleSelectEvent = useCallback((event: CalendarEvent) => {
+    const assignation = assignations.find(a => a.assignationId === event.id);
+    if (assignation && canViewDetails) {
+      navigate(`/mission/collaborateur/${assignation.mission.missionId}`);
+    }
+  }, [assignations, canViewDetails, navigate]);
+
+  const handleViewChange = useCallback((newView: View) => {
+    setView(newView);
+  }, []);
+
   useEffect(() => {
     if (searchResponse) {
       if (searchResponse.status === 200 && searchResponse.data) {
@@ -642,16 +726,42 @@ const MissionList: React.FC = () => {
 
   const headers = useMemo(() => {
     const baseHeaders = [
-      'Collaborateur',
-      'Mission',
-      'TYPE',
-      'Lieu',
-      'Statut',
-      'Date Départ',
-      'Date Retour',
+      <div key="collaborateur" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+        <User size={16} />
+        Collaborateur
+      </div>,
+      <div key="mission" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+        <Briefcase size={16} />
+        Mission
+      </div>,
+      <div key="type" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+        <Globe size={16} />
+        TYPE
+      </div>,
+      <div key="lieu" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+        <MapPin size={16} />
+        Lieu
+      </div>,
+      <div key="statut" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+        <CalendarDays size={16} />
+        Statut
+      </div>,
+      <div key="depart" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+        <CalendarDays size={16} />
+        Date Départ
+      </div>,
+      <div key="retour" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+        <CalendarDays size={16} />
+        Date Retour
+      </div>,
     ];
     if (hasActions) {
-      baseHeaders.push('Actions');
+      baseHeaders.push(
+        <div key="actions" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+          <Edit size={16} />
+          Actions
+        </div>
+      );
     }
     return baseHeaders;
   }, [hasActions]);
@@ -877,9 +987,25 @@ const MissionList: React.FC = () => {
       <TableContainer>
         <TableHeader>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-lg)" }}>
-            <TableTitle>Liste</TableTitle>
+            <TableTitle>{viewMode === 'table' ? 'Liste' : 'Calendrier'}</TableTitle>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-md)" }}>
+            <ViewToggleButton
+              onClick={() => setViewMode('table')}
+              $isActive={viewMode === 'table'}
+              title="Afficher le tableau"
+            >
+              <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+              Tableau
+            </ViewToggleButton>
+            <ViewToggleButton
+              onClick={() => setViewMode('calendar')}
+              $isActive={viewMode === 'calendar'}
+              title="Afficher le calendrier"
+            >
+              <CalendarIcon size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+              Calendrier
+            </ViewToggleButton>
             {canAddMission && (
               <ButtonSearch title="Ajouter" onClick={handleOpenForm}>
                 <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
@@ -889,122 +1015,175 @@ const MissionList: React.FC = () => {
           </div>
         </TableHeader>
 
-        <div className="table-wrapper" style={{ overflowX: "auto" }}>
-          <DataTable style={{ tableLayout: 'auto', width: '100%' }}>
-            <thead>
-              <tr>
-                {headers.map((header: string, index: number) => (
-                  <TableHeadCell key={index}>
-                    {header}
-                  </TableHeadCell>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {isSearchLoading ? (
-                <TableRow>
-                  <TableCell colSpan={headers.length}>
-                    <Loading>Chargement des données...</Loading>
-                  </TableCell>
-                </TableRow>
-              ) : assignations.length > 0 ? (
-                assignations.map((assignation: MissionAssignation) => {
-                  const rawStatus = assignation.mission.status;
-                  const trimmedLowerStatus = rawStatus.trim().toLowerCase();
-                  const status = getStatus(trimmedLowerStatus);
-                  const isFinal = finalStatuses.has(trimmedLowerStatus);
-                  const isValidated = validatedMissions[assignation.mission.missionId] || false;
-
-                  return (
-                    <TableRow
-                      key={assignation.assignationId}
-                      style={{
-                        cursor: canViewDetails ? "pointer" : "default",
-                      }}
-                      onClick={() => handleRowClick(assignation.mission.missionId)}
-                      title={canViewDetails ? "Clic pour voir les détails" : ""}
-                    >
-                      <TableCell>
-                        {assignation.employee.firstName} {assignation.employee.lastName}
+        {viewMode === 'table' ? (
+          <>
+            <div className="table-wrapper" style={{ overflowX: "auto" }}>
+              <DataTable style={{ tableLayout: 'auto', width: '100%' }}>
+                <thead>
+                  <tr>
+                    {headers.map((header, index: number) => (
+                      <TableHeadCell key={index}>
+                        {header}
+                      </TableHeadCell>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {isSearchLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={headers.length}>
+                        <Loading>Chargement des données...</Loading>
                       </TableCell>
-                      <TableCell style={truncateCellStyle} title={assignation.mission.name}>
-                        {assignation.mission.name}
-                      </TableCell>
-                      <TableCell>{assignation.mission.missionType.toUpperCase()}</TableCell>
-                      <TableCell style={truncateCellStyle} title={assignation.mission.lieu.nom}>
-                        {assignation.mission.lieu.nom}
-                      </TableCell>
-                      <TableCell style={statusCellStyle}>
-                        <StatusBadge status={status} />
-                      </TableCell>
-                      <TableCell>{new Date(assignation.departureDate).toLocaleDateString()}</TableCell>
-                      <TableCell>{new Date(assignation.returnDate).toLocaleDateString()}</TableCell>
-                      {hasActions && (
-                        <TableCell style={{ textAlign: "center" }}>
-                          {(!isFinal && !isValidated && canModifyMission) && (
-                            <EditorButton
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditClick(assignation.mission.missionId);
-                              }}
-                              title="Modifier"
-                            >
-                              <Edit size={16} />
-                            </EditorButton>
-                          )}
-                          {(!isFinal && !isValidated && canCancelMission) && (
-                            <CancelButton
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCancelClick(assignation);
-                              }}
-                              title="Annuler"
-                            >
-                              <X size={16} />
-                            </CancelButton>
-                          )}
-                          {(isFinal && (trimmedLowerStatus === 'canceled' || trimmedLowerStatus === 'mission rejected') && !isValidated && canModifyMission) && (
-                            <CancelButton
-                              className="delete-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(assignation);
-                              }}
-                              title="Supprimer"
-                              style={{ color: "var(--danger-color, #dc3545)" }}
-                            >
-                              <Trash size={16} />
-                            </CancelButton>
-                          )}
-                        </TableCell>
-                      )}
                     </TableRow>
-                  );
-                })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={headers.length}>
-                    <NoDataMessage>
-                      {Object.values(appliedFilters).some((val) => {
-                        if (Array.isArray(val)) {
-                          return val.length > 0;
-                        }
-                        return (val || "").trim() !== "";
-                      }) ? "Aucune assignation ne correspond aux critères." : "Aucune assignation trouvée."}
-                    </NoDataMessage>
-                  </TableCell>
-                </TableRow>
-              )}
-            </tbody>
-          </DataTable>
-        </div>
-        <Pagination
-          currentPage={page}
-          pageSize={pageSize}
-          totalEntries={totalCount}
-          onPageChange={setPage}
-          onPageSizeChange={handlePageSizeChange}
-        />
+                  ) : assignations.length > 0 ? (
+                    assignations.map((assignation: MissionAssignation) => {
+                      const rawStatus = assignation.mission.status;
+                      const trimmedLowerStatus = rawStatus.trim().toLowerCase();
+                      const status = getStatus(trimmedLowerStatus);
+                      const isFinal = finalStatuses.has(trimmedLowerStatus);
+                      const isValidated = validatedMissions[assignation.mission.missionId] || false;
+
+                      return (
+                        <TableRow
+                          key={assignation.assignationId}
+                          style={{
+                            cursor: canViewDetails ? "pointer" : "default",
+                          }}
+                          onClick={() => handleRowClick(assignation.mission.missionId)}
+                          title={canViewDetails ? "Clic pour voir les détails" : ""}
+                        >
+                          <TableCell>
+                            {assignation.employee.firstName} {assignation.employee.lastName}
+                          </TableCell>
+                          <TableCell style={truncateCellStyle} title={assignation.mission.name}>
+                            {assignation.mission.name}
+                          </TableCell>
+                          <TableCell>
+                            {assignation.mission.missionType.toUpperCase()}
+                          </TableCell>
+                          <TableCell style={truncateCellStyle} title={assignation.mission.lieu.nom}>
+                            {assignation.mission.lieu.nom}
+                          </TableCell>
+                          <TableCell style={statusCellStyle}>
+                            <StatusBadge status={status} />
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(assignation.departureDate), 'dd/MM/yyyy', { locale: fr })}
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(assignation.returnDate), 'dd/MM/yyyy', { locale: fr })}
+                          </TableCell>
+                          {hasActions && (
+                            <TableCell style={{ textAlign: "center" }}>
+                              {(!isFinal && !isValidated && canModifyMission) && (
+                                <EditorButton
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditClick(assignation.mission.missionId);
+                                  }}
+                                  title="Modifier"
+                                >
+                                  <Edit size={16} />
+                                </EditorButton>
+                              )}
+                              {(!isFinal && !isValidated && canCancelMission) && (
+                                <CancelButton
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCancelClick(assignation);
+                                  }}
+                                  title="Annuler"
+                                >
+                                  <X size={16} />
+                                </CancelButton>
+                              )}
+                              {(isFinal && (trimmedLowerStatus === 'canceled' || trimmedLowerStatus === 'mission rejected') && !isValidated && canModifyMission) && (
+                                <CancelButton
+                                  className="delete-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteClick(assignation);
+                                  }}
+                                  title="Supprimer"
+                                  style={{ color: "var(--danger-color, #dc3545)" }}
+                                >
+                                  <Trash size={16} />
+                                </CancelButton>
+                              )}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={headers.length}>
+                        <NoDataMessage>
+                          {Object.values(appliedFilters).some((val) => {
+                            if (Array.isArray(val)) {
+                              return val.length > 0;
+                            }
+                            return (val || "").trim() !== "";
+                          }) ? "Aucune assignation ne correspond aux critères." : "Aucune assignation trouvée."}
+                        </NoDataMessage>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </tbody>
+              </DataTable>
+            </div>
+            <Pagination
+              currentPage={page}
+              pageSize={pageSize}
+              totalEntries={totalCount}
+              onPageChange={setPage}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </>
+        ) : (
+          <>
+            {isSearchLoading ? (
+              <Loading>Chargement des données...</Loading>
+            ) : events.length > 0 ? (
+              <CalendarContainer>
+                <Calendar
+                  localizer={localizer}
+                  events={events}
+                  startAccessor="start"
+                  endAccessor="end"
+                  style={{ height: '100%' }}
+                  date={date}
+                  onNavigate={setDate}
+                  view={view}
+                  onView={handleViewChange}
+                  onSelectEvent={handleSelectEvent}
+                  views={['month', 'week', 'day']}
+                  messages={{
+                    next: "Suivant",
+                    previous: "Précédent",
+                    today: "Aujourd'hui",
+                    month: "Mois",
+                    week: "Semaine",
+                    day: "Jour",
+                    agenda: "Agenda",
+                  }}
+                  components={{
+                    event: CustomEvent,
+                  }}
+                />
+              </CalendarContainer>
+            ) : (
+              <NoDataMessage>
+                {Object.values(appliedFilters).some((val) => {
+                  if (Array.isArray(val)) {
+                    return val.length > 0;
+                  }
+                  return (val || "").trim() !== "";
+                }) ? "Aucune assignation ne correspond aux critères." : "Aucune assignation trouvée."}
+              </NoDataMessage>
+            )}
+          </>
+        )}
       </TableContainer>
     </>
   );

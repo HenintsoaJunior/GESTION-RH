@@ -5,6 +5,7 @@ using MyApp.Api.Models.dto.mission;
 
 namespace MyApp.Api.Entities.mission
 {
+    //Gestion de commentaire
     [Table("comments")]
     public class Comments : BaseEntity
     {
