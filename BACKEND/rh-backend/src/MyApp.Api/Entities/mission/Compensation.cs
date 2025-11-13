@@ -5,6 +5,7 @@ using MyApp.Api.Models.dto.mission;
 
 namespace MyApp.Api.Entities.mission
 {
+    //Indemnité
     [Table("compensation")]
     public class Compensation : BaseEntity
     {

@@ -203,6 +203,21 @@ namespace MyApp.Api.Entities.mission
             }
             return dailyPaiements;
         }
+
+        private DailyPaiement CreateDailyPaymentForDate(
+            MissionAssignation missionAssignation,
+            IEnumerable<CompensationScale> compensationScales,
+            DateTime date)
+        {
+            var filteredCompensationScales = FilterCompensationScalesByTime(
+                compensationScales, missionAssignation, date).ToList();
+            return new DailyPaiement
+            {
+                Date = date,
+                CompensationScales = filteredCompensationScales,
+                TotalAmount = filteredCompensationScales.Sum(cs => cs?.Amount ?? 0)
+            };
+        }
         private decimal GenerateTotalPaymentsForDates(
             MissionAssignation missionAssignation,
             IEnumerable<CompensationScale> compensationScales)
@@ -234,20 +249,7 @@ namespace MyApp.Api.Entities.mission
         {
             return missionAssignation.Duration.HasValue && missionAssignation.Duration > 0;
         }
-        private DailyPaiement CreateDailyPaymentForDate(
-            MissionAssignation missionAssignation,
-            IEnumerable<CompensationScale> compensationScales,
-            DateTime date)
-        {
-            var filteredCompensationScales = FilterCompensationScalesByTime(
-                compensationScales, missionAssignation, date).ToList();
-            return new DailyPaiement
-            {
-                Date = date,
-                CompensationScales = filteredCompensationScales,
-                TotalAmount = filteredCompensationScales.Sum(cs => cs?.Amount ?? 0)
-            };
-        }
+        
         private IEnumerable<CompensationScale> FilterCompensationScalesByTime(
             IEnumerable<CompensationScale> compensationScales,
             MissionAssignation missionAssignation,
