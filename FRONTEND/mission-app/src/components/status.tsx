@@ -35,12 +35,12 @@ const STATUSES: Status[] = [
 const statusConfig: Record<string, { color: string; category: Status['category'] }> = {
   'pending approval': { color: '#60a5fa', category: 'progress' },
   'payment in progress': { color: '#3b82f6', category: 'progress' },
-  'indemnity paid': { color: '#34d399', category: 'success' },
-  'expense note paid': { color: '#10b981', category: 'success' },
   'planned': { color: '#8b5cf6', category: 'progress' },
   'in progress': { color: '#3b82f6', category: 'progress' },
   'completed': { color: '#10b981', category: 'success' },
-  'canceled': { color: '#6b7280', category: 'error' },
+  'closed': { color: '#10b981', category: 'success' },
+  'canceled': { color: '#ef4444', category: 'error' },
+  'mission rejected': { color: '#ef4444', category: 'error' },
 };
 
 interface StatusFilterProps {

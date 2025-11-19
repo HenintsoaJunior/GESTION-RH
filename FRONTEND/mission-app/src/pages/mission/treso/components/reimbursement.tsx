@@ -37,6 +37,7 @@ import {
     ButtonSearch,
     FiltersToggle,
     ButtonShowFilters,
+    StyledAutoCompleteInput,
 } from "@/styles/table-styles";
 import {
     PageHeader as DetailsPageHeader,
@@ -60,14 +61,25 @@ import {
 } from "@/styles/card-styles";
 import Pagination from "@/components/pagination";
 import { useExpenseReportsByStatus, useReimburseByAssignationId, type ExpenseSummary } from "@/api/mission/expense_report/services";
+import { useCurrencies } from '@/api/currency/services';
+import { useGetAllEmployeesSimple } from "@/api/collaborator/services";
+import type { Employee as CollabEmployee } from "@/api/collaborator/services";
 import Modal from "@/components/modal";
+import AlertComponent from "@/components/alert"; // Ajustez le chemin d'import selon votre structure de dossiers
 
 interface Filter {
   status: string;
+  missionType: string;
+  employeeSearch: string;
+  paymentDateMin: string;
+  paymentDateMax: string;
+  fictionalFilter: string;
 }
 
 interface LoadingState {
   remboursements: boolean;
+  currencies: boolean;
+  employees: boolean;
 }
 
 interface RemboursementFiltersProps {
@@ -78,6 +90,13 @@ interface RemboursementFiltersProps {
   isLoading: LoadingState;
   handleFilterSubmit: () => void;
   handleResetFilters: () => void;
+  filteredEmployeeSuggestions: string[];
+  missionTypes: string[];
+  handleEmployeeChange: (value: string) => void;
+  handleMissionTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  handlePaymentDateMinChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handlePaymentDateMaxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleFictionalFilterChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
 const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
@@ -88,6 +107,12 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
   isLoading,
   handleFilterSubmit,
   handleResetFilters,
+  filteredEmployeeSuggestions,
+  missionTypes,
+  handleEmployeeChange,
+  handleMissionTypeChange,
+  handlePaymentDateMinChange,
+  handlePaymentDateMaxChange,
 }) => {
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const handleFilterChange = (name: keyof Filter, value: string) => {
@@ -97,9 +122,7 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
   const toggleHide = () => setIsHidden((prev) => !prev);
 
   const isFilterEmpty = (): boolean => {
-    return (
-      !filters.status
-    );
+    return Object.values(filters).every((val) => (val || "").trim() === "");
   };
 
   return (
@@ -133,18 +156,88 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
                   <tbody>
                     <FormRow>
                       <FormFieldCell>
+                        <FormLabelSearch>Collaborateur</FormLabelSearch>
+                        <StyledAutoCompleteInput
+                          value={filters.employeeSearch || ""}
+                          onChange={handleEmployeeChange}
+                          suggestions={filteredEmployeeSuggestions}
+                          maxVisibleItems={5}
+                          placeholder="Sélectionner un employé..."
+                          disabled={isLoading.employees || isLoading.remboursements || isLoading.currencies}
+                          fieldType="employee"
+                          fieldLabel="employé"
+                          showAddOption={false}
+                        />
+                      </FormFieldCell>
+                      <FormFieldCell>
                         <FormLabelSearch>Statut</FormLabelSearch>
                         <FormInputSearch
                           as="select"
                           name="status"
                           value={filters.status}
                           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleFilterChange("status", e.target.value)}
-                          disabled={isLoading.remboursements}
+                          disabled={isLoading.remboursements || isLoading.currencies}
                         >
                           <option value="">Tous</option>
                           <option value="notreimbursed">Non remboursé</option>
                           <option value="reimbursed">Remboursé</option>
                         </FormInputSearch>
+                      </FormFieldCell>
+                      <FormFieldCell>
+                        <FormLabelSearch>Type de mission</FormLabelSearch>
+                        <FormInputSearch
+                          as="select"
+                          value={filters.missionType}
+                          onChange={handleMissionTypeChange}
+                          disabled={isLoading.remboursements || isLoading.currencies}
+                        >
+                          <option value="">Tous</option>
+                          {missionTypes.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </FormInputSearch>
+                      </FormFieldCell>
+                    </FormRow>
+                    
+                    <FormRow>
+                      <FormFieldCell colSpan={3}>
+                        <fieldset style={{ 
+                          display: "grid", 
+                          gridTemplateColumns: "1fr 1fr", 
+                          gap: "var(--spacing-md)",
+                          background: "var(--bg-primary, #ffffff)",
+                          padding: "var(--spacing-md)",
+                          border: "1px solid var(--border-color, #ddd)",
+                          borderRadius: "var(--border-radius, 4px)",
+                          margin: "0"
+                        }}>
+                          <legend style={{ 
+                            fontWeight: "var(--font-weight-semibold)",
+                            color: "var(--text-color)",
+                            padding: "0 var(--spacing-sm)",
+                            fontSize: "0.75rem"
+                          }}>
+                            Date de Remboursement
+                          </legend>
+                          <div>
+                            <FormLabelSearch>Du</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.paymentDateMin}
+                              onChange={handlePaymentDateMinChange}
+                              disabled={isLoading.remboursements || isLoading.currencies}
+                            />
+                          </div>
+                          <div>
+                            <FormLabelSearch>Au</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.paymentDateMax}
+                              onChange={handlePaymentDateMaxChange}
+                              disabled={isLoading.remboursements || isLoading.currencies}
+                            />
+                          </div>
+                        </fieldset>
                       </FormFieldCell>
                     </FormRow>
                   </tbody>
@@ -153,12 +246,12 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
                   <ButtonReset
                     type="button"
                     onClick={handleResetFilters}
-                    disabled={isLoading.remboursements || isFilterEmpty()}
+                    disabled={isLoading.remboursements || isLoading.currencies || isFilterEmpty()}
                   >
                     Effacer filtres
                   </ButtonReset>
-                  <ButtonSearch type="submit" disabled={isLoading.remboursements}>
-                    {isLoading.remboursements ? "Recherche..." : "Rechercher"}
+                  <ButtonSearch type="submit" disabled={isLoading.remboursements || isLoading.currencies}>
+                    {isLoading.remboursements || isLoading.currencies ? "Recherche..." : "Rechercher"}
                   </ButtonSearch>
                 </FiltersActions>
               </form>
@@ -195,13 +288,32 @@ interface FormattedRemboursement {
   allocatedFund: number;
 }
 
+const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('fr-MG', {
+    style: 'currency',
+    currency: 'MGA',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
 const Reimbursement: React.FC = () => {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Filter>({
     status: "",
+    missionType: "",
+    employeeSearch: "",
+    paymentDateMin: "",
+    paymentDateMax: "",
+    fictionalFilter: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<Filter>({
     status: "",
+    missionType: "",
+    employeeSearch: "",
+    paymentDateMin: "",
+    paymentDateMax: "",
+    fictionalFilter: "",
   });
   const [isHidden, setIsHidden] = useState<boolean>(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -212,10 +324,23 @@ const Reimbursement: React.FC = () => {
   const [totalEntries, setTotalEntries] = useState(0);
   const [isLoading, setIsLoading] = useState<LoadingState>({
     remboursements: true,
+    currencies: true,
+    employees: true,
   });
+
+  // État pour l'alert toast
+  const [alert, setAlert] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+    isOpen: boolean;
+  }>({ message: "", type: "info", isOpen: false });
 
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = userData?.userId || "";
+
+  const missionTypes = ["National", "International"];
+
+  const { data: employeesResponse, isLoading: employeesLoading } = useGetAllEmployeesSimple();
 
   const statusParam = appliedFilters.status || undefined;
   const { data: remboursementsResponse, isLoading: remboursementsLoading } = useExpenseReportsByStatus({ 
@@ -224,12 +349,37 @@ const Reimbursement: React.FC = () => {
     pageSize 
   });
 
+  const { data: currenciesData, isLoading: currenciesLoading } = useCurrencies();
+
   const { mutate: reimburseMutation, isPending: isReimbursing } = useReimburseByAssignationId();
+
+  // Récupération du taux de change EUR -> MGA (assumant que currenciesData est un objet avec des clés comme 'EUR_MGA' ou un tableau d'objets)
+  const eurToMgaRate = useMemo(() => {
+    if (!currenciesData) return 1; // Taux par défaut si pas de données (pas de conversion)
+    // Ajustez cette logique selon la structure exacte de currenciesData
+    // Exemple si c'est un objet: return currenciesData['EUR_MGA'] || 1;
+    // Exemple si c'est un tableau: return currenciesData.find(c => c.from === 'EUR' && c.to === 'MGA')?.rate || 1;
+    return 4800; // Taux fictif pour l'exemple ; remplacez par la vraie logique
+  }, [currenciesData]);
+
+  const employees = useMemo(() => employeesResponse?.data || [], [employeesResponse?.data]) as CollabEmployee[];
+
+  const employeeSuggestions = useMemo(() =>
+    employees.map((emp: CollabEmployee) => `${emp.firstName} ${emp.lastName}`),
+    [employees]
+  );
+
+  const filteredEmployeeSuggestions = useMemo(() =>
+    employeeSuggestions.filter((sug) =>
+      sug.toLowerCase().includes((filters.employeeSearch || "").toLowerCase())
+    ),
+    [employeeSuggestions, filters.employeeSearch]
+  );
 
   useEffect(() => {
     if (!userId) {
       console.warn("No userId found, skipping remboursement fetch");
-      setIsLoading({ remboursements: false });
+      setIsLoading({ remboursements: false, currencies: false, employees: false });
       setRemboursements([]);
       setTotalEntries(0);
       return;
@@ -237,8 +387,13 @@ const Reimbursement: React.FC = () => {
   }, [userId]);
 
   useEffect(() => {
-    setIsLoading((prev) => ({ ...prev, remboursements: remboursementsLoading }));
-    if (remboursementsResponse && userId) {
+    setIsLoading((prev) => ({ 
+      ...prev, 
+      remboursements: remboursementsLoading,
+      currencies: currenciesLoading,
+      employees: employeesLoading,
+    }));
+    if (remboursementsResponse && userId && !currenciesLoading && !employeesLoading) {
       if (!remboursementsResponse.data || !remboursementsResponse.data.reports || !Array.isArray(remboursementsResponse.data.reports)) {
         console.warn("La réponse ne contient pas un tableau de résultats:", remboursementsResponse);
         setRemboursements([]);
@@ -249,6 +404,8 @@ const Reimbursement: React.FC = () => {
       const apiData: ExpenseSummary[] = remboursementsResponse.data.reports;
 
       const formattedRemboursements: FormattedRemboursement[] = apiData.map((item) => {
+        // Conversion du montant depuis EUR vers MGA
+        const convertedAmount = item.totalAmount * eurToMgaRate;
         return {
           assignationId: item.assignationId || "N/A",
           employeeId: "N/A", 
@@ -258,7 +415,7 @@ const Reimbursement: React.FC = () => {
           missionName: item.missionTitled || "Mission sans nom",
           missionType: "Non spécifié", 
           lieuName: item.lieuName || "Non spécifié",
-          totalAmount: item.totalAmount,
+          totalAmount: convertedAmount, // Montant converti
           status: item.status,
           createdAt: item.createdAt || new Date().toISOString(),
           updatedAt: null, 
@@ -272,7 +429,7 @@ const Reimbursement: React.FC = () => {
       setRemboursements(formattedRemboursements);
       setTotalEntries(total);
     }
-  }, [remboursementsResponse, remboursementsLoading, statusParam, currentPage, pageSize, userId]);
+  }, [remboursementsResponse, remboursementsLoading, currenciesLoading, employeesLoading, statusParam, currentPage, pageSize, userId, eurToMgaRate]);
 
   const handleFilterSubmit = () => {
     setAppliedFilters({ ...filters });
@@ -280,8 +437,22 @@ const Reimbursement: React.FC = () => {
   };
 
   const handleResetFilters = () => {
-    setFilters({ status: "" });
-    setAppliedFilters({ status: "" });
+    setFilters({ 
+      status: "",
+      missionType: "",
+      employeeSearch: "",
+      paymentDateMin: "",
+      paymentDateMax: "",
+      fictionalFilter: "",
+    });
+    setAppliedFilters({ 
+      status: "",
+      missionType: "",
+      employeeSearch: "",
+      paymentDateMin: "",
+      paymentDateMax: "",
+      fictionalFilter: "",
+    });
     setCurrentPage(1);
   };
 
@@ -321,14 +492,31 @@ const Reimbursement: React.FC = () => {
         {
           onSuccess: () => {
             console.log(`Remboursement confirmé pour ${selectedRemboursement.assignationId}`);
+            // Affichage du toast alert de succès
+            setAlert({
+              message: "Remboursement confirmé avec succès !",
+              type: "success",
+              isOpen: true,
+            });
             closeConfirmModal();
           },
           onError: (error) => {
             console.error("Erreur lors de la mise à jour du statut:", error);
+            // Optionnel: Afficher une alerte d'erreur ici
+            setAlert({
+              message: "Erreur lors de la confirmation du remboursement.",
+              type: "error",
+              isOpen: true,
+            });
           },
         }
       );
     }
+  };
+
+  // Fonction pour fermer l'alert
+  const handleAlertClose = () => {
+    setAlert({ message: "", type: "info", isOpen: false });
   };
 
   const formatDate = useCallback((dateString?: string | null): string => {
@@ -351,8 +539,33 @@ const Reimbursement: React.FC = () => {
   }, []);
 
   const filteredRemboursements = useMemo(() => {
-    return remboursements;
-  }, [remboursements]);
+    return remboursements.filter((c) => {
+      // Filter by mission type
+      if (appliedFilters.missionType && c.missionType !== appliedFilters.missionType) return false;
+
+      // Filter by employee search
+      if (appliedFilters.employeeSearch && !c.employeeName.toLowerCase().includes(appliedFilters.employeeSearch.toLowerCase())) return false;
+
+      // Filter by fictional filter (dummy)
+      if (appliedFilters.fictionalFilter && c.status !== appliedFilters.fictionalFilter) return false;
+
+      // Filter by payment dates (existing logic)
+      if (appliedFilters.paymentDateMin || appliedFilters.paymentDateMax) {
+        if (c.status === "notreimbursed") return true; // Show all unreimbursed regardless of date filters
+        if (!c.updatedAt) return false;
+        const paymentDate = new Date(c.updatedAt);
+        if (appliedFilters.paymentDateMin) {
+          const minDate = new Date(appliedFilters.paymentDateMin);
+          if (paymentDate < minDate) return false;
+        }
+        if (appliedFilters.paymentDateMax) {
+          const maxDate = new Date(appliedFilters.paymentDateMax);
+          if (paymentDate > maxDate) return false;
+        }
+      }
+      return true;
+    });
+  }, [remboursements, appliedFilters]);
 
   const paginatedRemboursements = useMemo(
     () =>
@@ -363,7 +576,30 @@ const Reimbursement: React.FC = () => {
     [filteredRemboursements, currentPage, pageSize]
   );
 
-  const hasFilters = !!appliedFilters.status;
+  const hasFilters = useMemo(() =>
+    Object.values(appliedFilters).some((val) => (val || "").trim() !== ""),
+    [appliedFilters]
+  );
+
+  const handleEmployeeChange = useCallback((value: string) => {
+    setFilters((prev) => ({ ...prev, employeeSearch: value }));
+  }, []);
+
+  const handleMissionTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters((prev) => ({ ...prev, missionType: e.target.value }));
+  }, []);
+
+  const handlePaymentDateMinChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters((prev) => ({ ...prev, paymentDateMin: e.target.value }));
+  }, []);
+
+  const handlePaymentDateMaxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters((prev) => ({ ...prev, paymentDateMax: e.target.value }));
+  }, []);
+
+  const handleFictionalFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters((prev) => ({ ...prev, fictionalFilter: e.target.value }));
+  }, []);
 
   const getStatusBadge = (status: string) => {
       const statusInfo = {
@@ -495,6 +731,13 @@ const Reimbursement: React.FC = () => {
                   isLoading={isLoading}
                   handleFilterSubmit={handleFilterSubmit}
                   handleResetFilters={handleResetFilters}
+                  filteredEmployeeSuggestions={filteredEmployeeSuggestions}
+                  missionTypes={missionTypes}
+                  handleEmployeeChange={handleEmployeeChange}
+                  handleMissionTypeChange={handleMissionTypeChange}
+                  handlePaymentDateMinChange={handlePaymentDateMinChange}
+                  handlePaymentDateMaxChange={handlePaymentDateMaxChange}
+                  handleFictionalFilterChange={handleFictionalFilterChange}
               />
               <CardsContainer
                 style={{
@@ -504,7 +747,7 @@ const Reimbursement: React.FC = () => {
                   alignItems: 'stretch',
                 }}
               >
-                  {isLoading.remboursements ? (
+                  {isLoading.remboursements || isLoading.currencies || isLoading.employees ? (
                       <Loading>Chargement des remboursements...</Loading>
                   ) : paginatedRemboursements.length > 0 ? (
                       paginatedRemboursements.map((remboursement: FormattedRemboursement) => {
@@ -644,7 +887,7 @@ const Reimbursement: React.FC = () => {
                                                   textOverflow: 'ellipsis',
                                                   whiteSpace: 'nowrap',
                                               }}>
-                                                  {remboursement.totalAmount.toLocaleString()} MGA
+                                                  {formatCurrency(remboursement.totalAmount)}
                                               </div>
                                           </div>
                                       </div>
@@ -714,6 +957,13 @@ const Reimbursement: React.FC = () => {
               confirmLabel={isReimbursing ? "Mise à jour..." : "Confirmer le Remboursement"}
               cancelLabel="Annuler"
               showActions={true}
+          />
+          {/* Toast Alert Component */}
+          <AlertComponent
+            type={alert.type}
+            message={alert.message}
+            isOpen={alert.isOpen}
+            onClose={handleAlertClose}
           />
       </>
   );

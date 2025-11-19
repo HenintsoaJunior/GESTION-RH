@@ -343,6 +343,8 @@ CREATE TABLE lieu (
    code_postal VARCHAR(20),
    pays VARCHAR(255) NOT NULL,
    zone_id VARCHAR(50),
+   longitude DECIMAL(15,2),
+   latitude DECIMAL(15,2),
    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME,
    FOREIGN KEY(zone_id) REFERENCES geo_zones(zone_id)

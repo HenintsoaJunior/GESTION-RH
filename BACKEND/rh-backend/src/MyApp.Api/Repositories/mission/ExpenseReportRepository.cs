@@ -11,6 +11,7 @@ namespace MyApp.Api.Repositories.mission
     {
         Task<IEnumerable<ExpenseReport>> GetByAssignationIdAsync(string assignationId);
         Task<IEnumerable<ExpenseReport>> GetAllAsync();
+        Task<IEnumerable<ExpenseReport>> GetNotReimbursedAsync();
         Task<ExpenseReport?> GetByIdAsync(string id);
         Task AddAsync(ExpenseReport entity);
         Task UpdateAsync(ExpenseReport entity);
@@ -51,6 +52,16 @@ namespace MyApp.Api.Repositories.mission
         {
             return await _context.ExpenseReports
                 .AsNoTracking()
+                .Include(er => er.MissionAssignation)
+                .Include(er => er.ExpenseReportType)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<ExpenseReport>> GetNotReimbursedAsync()
+        {
+            return await _context.ExpenseReports
+                .AsNoTracking()
+                .Where(er => er.Status == "notreimbursed")
                 .Include(er => er.MissionAssignation)
                 .Include(er => er.ExpenseReportType)
                 .ToListAsync();
@@ -140,7 +151,7 @@ namespace MyApp.Api.Repositories.mission
                 .Select(g => new
                 {
                     AssignationId = g.Key,
-                    TotalAmount = g.Sum(x => x.AmountMGA),
+                    TotalAmount = g.Sum(x => x.Amount),
                     CreatedAt = g.Min(x => x.CreatedAt)
                 });
 
@@ -195,6 +206,7 @@ namespace MyApp.Api.Repositories.mission
                                   MissionName = mission.Name ?? "",
                                   Status = eg.Status,
                                   EmployeeName = (employee.LastName ?? "") + " " + (employee.FirstName ?? ""),
+                                  EmployeeId = employee.EmployeeId,
                                   EmployeeCode = employee.EmployeeCode ?? "",
                                   LieuName = l != null ? (l.Nom ?? "") : "",
                                   CreatedAt = eg.CreatedAt,
@@ -216,6 +228,7 @@ namespace MyApp.Api.Repositories.mission
                 a.MissionName,
                 a.Status,
                 a.EmployeeName,
+                a.EmployeeId,
                 a.EmployeeCode,
                 a.LieuName,
                 a.CreatedAt,

@@ -14,6 +14,7 @@ import { Line } from 'react-chartjs-2';
 import { useTotalNotPaid } from '@/api/mission/compensation(indemnité)/services';
 import { useTotalNotReimbursed } from '@/api/mission/expense_report/services';
 import { usePrevisionForMonth } from '@/api/prevision/services';
+import { useCurrencies } from '@/api/currency/services';
 
 ChartJS.register(
   CategoryScale,
@@ -35,6 +36,11 @@ const TresoPage = () => {
   // Intégration du hook useTotalNotReimbursed pour récupérer le total non remboursé réel
   const { data: totalNotReimbursedData, isLoading: isTotalNotReimbursedLoading, error: totalNotReimbursedError } = useTotalNotReimbursed();
   const totalNotReimbursed = totalNotReimbursedData?.data?.totalNotReimbursedAmount || 0;
+
+  // Intégration du hook useCurrencies pour la conversion EUR vers MGA
+  const { data: currenciesData, isLoading: isCurrenciesLoading, error: currenciesError } = useCurrencies();
+  const eurToMgaRate = currenciesData?.rates?.MGA || 1; // Assume base EUR, rate MGA pour conversion
+  const totalNotReimbursedMGA = totalNotReimbursed * eurToMgaRate;
 
   // Intégration du hook usePrevisionForMonth pour récupérer les prévisions du mois
   const { data: previsionMonthData, isLoading: isPrevisionLoading, error: previsionError } = usePrevisionForMonth();
@@ -242,7 +248,7 @@ const TresoPage = () => {
   };
 
   // Gestion de l'état de chargement pour les hooks (affichage conditionnel si l'un ou l'autre charge)
-  if (isTotalNotPaidLoading || isTotalNotReimbursedLoading || isPrevisionLoading) {
+  if (isTotalNotPaidLoading || isTotalNotReimbursedLoading || isPrevisionLoading || isCurrenciesLoading) {
     return (
       <div style={{ 
         fontFamily: 'century-gothic, sans-serif',
@@ -258,7 +264,7 @@ const TresoPage = () => {
   }
 
   // Gestion d'erreur pour les hooks (affichage d'erreur si l'un ou l'autre échoue)
-  const anyError = totalNotPaidError || totalNotReimbursedError || previsionError;
+  const anyError = totalNotPaidError || totalNotReimbursedError || previsionError || currenciesError;
   if (anyError) {
     return (
       <div style={{ 
@@ -399,7 +405,7 @@ const TresoPage = () => {
             </button>
           </div>
 
-          {/* Card 2 - Total Non Remboursé (mise à jour avec données réelles via useTotalNotReimbursed) */}
+          {/* Card 2 - Total Non Remboursé (mise à jour avec données réelles via useTotalNotReimbursed, converti en MGA) */}
           <div style={{
             backgroundColor: '#f8f9fa',
             padding: '20px',
@@ -424,7 +430,7 @@ const TresoPage = () => {
                   margin: 0,
                   fontFamily: 'century-gothic, sans-serif',
                 }}>
-                  {formatCurrency(totalNotReimbursed)}
+                  {formatCurrency(totalNotReimbursedMGA)}
                 </h2>
               </div>
               <div style={{

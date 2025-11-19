@@ -18,6 +18,7 @@ namespace MyApp.Api.Services.users
         Task<IEnumerable<UserDto>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
         Task<User?> GetByEmailAsync(string email);
+        Task<User?> GetByMatriculeAsync(string matricule);
         Task AddAsync(User user);
         Task UpdateAsync(User user);
         Task DeleteAsync(User user);
@@ -128,6 +129,14 @@ namespace MyApp.Api.Services.users
             }
 
             return null;
+        }
+
+        public async Task<User?> GetByMatriculeAsync(string matricule)
+        {
+            if (string.IsNullOrWhiteSpace(matricule))
+                throw new ArgumentException("Matricule cannot be null or empty.", nameof(matricule));
+
+            return await _repository.GetByMatriculeAsync(matricule);
         }
 
         public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)

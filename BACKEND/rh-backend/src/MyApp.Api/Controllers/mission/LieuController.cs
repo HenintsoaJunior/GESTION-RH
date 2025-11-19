@@ -79,7 +79,7 @@ namespace MyApp.Api.Controllers.mission
 
         // Crée un nouveau lieu à partir d'un formulaire
         [HttpPost]
-        [AllowAnonymous]
+        // [AllowAnonymous]
         public async Task<ActionResult> Create([FromBody] LieuDTOForm dto)
         {
             if (dto == null)

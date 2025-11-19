@@ -151,6 +151,32 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
+        [HttpGet("total/{employeeId}/{missionId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetTotalCompensations(string employeeId, string missionId)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Les identifiants de l'employé et de la mission sont requis." });
+            }
+
+            try
+            {
+                var total = await _service.GetTotalCompensationsAsync(employeeId, missionId);
+                return Ok(new { data = total, status = 200, message = "success" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors du calcul du total des compensations pour EmployeeId: {EmployeeId}, MissionId: {MissionId}", employeeId, missionId);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = $"Erreur lors du calcul du total : {ex.Message}" });
+            }
+        }
+
         [HttpGet("{assignationId}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetByAssignationId(string assignationId)

@@ -163,6 +163,7 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
                           <option value="pending">En attente</option>
                           <option value="approved">Validé</option>
                           <option value="rejected">Rejeté</option>
+                          <option value="Annulé">Annulé</option>
                         </FormInputSearch>
                       </FormFieldCell>
                     </FormRow>

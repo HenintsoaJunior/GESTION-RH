@@ -1,7 +1,6 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
 import LoginPage from '@/features/auth/login';
 import Template from '@/layouts/template';
-import HomePage from '@/pages/Home';
 import UserList from '@/pages/users';
 import LogList from '@/pages/logs';
 import RoleList from '@/pages/access';
@@ -29,6 +28,9 @@ import GeoZoneList from '@/pages/referentiel/zone/list';
 import CompensationScalesPage from '@/pages/referentiel/compensation-scale';
 import CompensationMission from '@/pages/mission/treso/components/compensation_mission';
 import Reimbursement from '@/pages/mission/treso/components/reimbursement';
+import TableauBord from '@/pages/tableau-bord';
+import MissionsEnCoursMapPage from './pages/maps';
+import Home from '@/pages/Home';
 // import { useAuthSync } from '@/utils/use-auth-sync';
 function App() {
 
@@ -48,8 +50,8 @@ function App() {
         
         <Route path="/profil-page" element={<ProfilePage />} />
         {/* ADMIN */}
-        
-        <Route path="/dashboard" element={<HomePage />} />
+        <Route path="/dashboard" element={<Home />} />
+        <Route path="/tableau-bord" element={<TableauBord />} />
         <Route path="/utilisateur" element={<UserList />} />
         <Route path="/logs" element={<LogList />} />
         <Route path="/access/list" element={<RoleList />} />
@@ -71,6 +73,8 @@ function App() {
 
          {/* MISSION */}
         <Route path="/mission/list" element={<MissionList />} />
+        <Route path="/mission/maps" element={<MissionsEnCoursMapPage />} />
+
         <Route path="/mission/archived" element={<MissionListArchive />} /> 
         <Route path="/mission/collaborateur/:missionId/*" element={<DetailsMission />} />
         <Route path="/mission/to-validate" element={<MissionValidationPage />} />

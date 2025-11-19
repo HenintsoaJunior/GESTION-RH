@@ -31,12 +31,13 @@ import {
 import { NoDataMessage } from "@/styles/table-styles";
 import { formatNumber } from "@/utils/format";
 import { useExpenseReportsByAssignationId, useStatusByAssignationId } from "@/api/mission/expense_report/services";
-import { useGetMissionAssignationByAssignationId } from "@/api/mission/services";
+import { useGetMissionAssignationByAssignationId, useGetTotalCompensations } from "@/api/mission/services";
+import { useCurrencies } from "@/api/currency/services";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import type { TooltipItem, ChartOptions } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import { handleFileView, handleFileDownload } from "@/utils/file-utils";
-import type { MissionAssignation } from "@/api/mission/services"; 
+import type { MissionAssignation } from "@/api/mission/services";
 import styled from "styled-components";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -146,10 +147,10 @@ const EmployeeAttachments: React.FC<EmployeeAttachmentsProps> = ({ userName, att
     const [modalOpen, setModalOpen] = useState<boolean>(false);
     const [modalContent, setModalContent] = useState<ModalContent>({});
 
-    const uniqueAttachments = useMemo((): Attachment[] => {
+    const uniqueAttachments = useMemo(() => {
         const fileNames = new Set<string>();
         const unique: Attachment[] = [];
-        (attachments || []).forEach((att) => {
+        (attachments || []).forEach((att: Attachment) => {
             if (att && att.fileName && !fileNames.has(att.fileName)) {
                 fileNames.add(att.fileName);
                 unique.push(att);
@@ -219,24 +220,25 @@ const EmployeeAttachments: React.FC<EmployeeAttachmentsProps> = ({ userName, att
     );
 };
 
-interface ExpenseTypeDoughnutChartProps {
-    expenseReports: ExpenseLine[];
+interface FinancialDoughnutChartProps {
+    totalAmountMGA: number;
+    totalCompensationMGA: number;
+    refundAmount: number;
 }
 
-const ExpenseTypeDoughnutChart: React.FC<ExpenseTypeDoughnutChartProps> = ({ expenseReports }) => {
-    const typeTotals = useMemo((): Record<string, number> => {
-        const totals: Record<string, number> = {};
-        (expenseReports || []).forEach((report) => {
-            const type = report.type || "Autres";
-            totals[type] = (totals[type] || 0) + (report.amountMGA || 0);
-        });
-        return totals;
-    }, [expenseReports]);
+const FinancialDoughnutChart: React.FC<FinancialDoughnutChartProps> = ({ totalAmountMGA, totalCompensationMGA, refundAmount }) => {
+    const isRefundPositive = refundAmount >= 0;
+    const variance = Math.abs(refundAmount);
+    const varianceLabel = isRefundPositive ? "Montant à Restituer" : "Excédent";
+    const varianceColor = isRefundPositive ? "#10b981" : "#ef4444";
+    const varianceHoverColor = isRefundPositive ? "#059669" : "#dc2626";
 
-    const totalAmount = useMemo(
-        () => (expenseReports || []).reduce((sum: number, report) => sum + (report.amountMGA || 0), 0),
-        [expenseReports]
-    );
+    const labels = ["Devise Allouée (en MGA)", "Total des Frais (en MGA)", varianceLabel];
+    const data = [totalCompensationMGA, totalAmountMGA, variance];
+    const backgroundColors = ["#16a34a", "#2563eb", varianceColor];
+    const hoverBackgroundColors = ["#15803d", "#1d4ed8", varianceHoverColor];
+
+    const chartTotal = totalCompensationMGA + totalAmountMGA + variance;
 
     // Enregistrer et désenregistrer le plugin avec le cycle de vie du composant
     useEffect(() => {
@@ -249,18 +251,17 @@ const ExpenseTypeDoughnutChart: React.FC<ExpenseTypeDoughnutChartProps> = ({ exp
         };
     }, []);
 
-    const data = Object.values(typeTotals);
     const hasData = data.some((val) => val > 0);
 
     if (!hasData) return <p style={{ textAlign: "center", color: "var(--text-muted)" }}>Données insuffisantes</p>;
 
     const chartData = {
-        labels: Object.keys(typeTotals),
+        labels,
         datasets: [
             {
-                data: data,
-                backgroundColor: ["#2563eb", "#16a34a", "#f59e0b", "#e4002b", "#7c3aed"],
-                hoverBackgroundColor: ["#1d4ed8", "#15803d", "#d97706", "#b60022", "#6d28d9"],
+                data,
+                backgroundColor: backgroundColors,
+                hoverBackgroundColor: hoverBackgroundColors,
                 borderColor: "#ffffff",
                 borderWidth: 3,
             },
@@ -288,9 +289,9 @@ const ExpenseTypeDoughnutChart: React.FC<ExpenseTypeDoughnutChartProps> = ({ exp
                 borderWidth: 1,
                 callbacks: {
                     label: function (tooltipItem: TooltipItem<'doughnut'>) {
-                        const label = tooltipItem.label || "";
+                        const label = (tooltipItem.label || "") as string;
                         const value = tooltipItem.raw as number;
-                        const total = (tooltipItem.dataset.data as number[]).reduce((a: number, b: number) => a + b, 0);
+                        const total = chartTotal;
                         const percentage = total ? ((value / total) * 100).toFixed(1) : "0";
                         return `${label}: ${formatNumber(value)},00 MGA (${percentage}%)`;
                     },
@@ -298,7 +299,7 @@ const ExpenseTypeDoughnutChart: React.FC<ExpenseTypeDoughnutChartProps> = ({ exp
             },
             centerText: {
                 display: true,
-                text: `${formatNumber(totalAmount)},00`,
+                text: `Vue d'ensemble`,
             },
         },
         cutout: "65%",
@@ -311,7 +312,7 @@ const ExpenseTypeDoughnutChart: React.FC<ExpenseTypeDoughnutChartProps> = ({ exp
 
     return (
         <ChartCard>
-            <h4>Répartition par Type (en MGA)</h4>
+            <h4>Répartition Financière (en MGA)</h4>
             <div className="chart-content">
                 <Doughnut data={chartData} options={options} />
             </div>
@@ -329,6 +330,7 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
     const expenseQuery = useExpenseReportsByAssignationId(selectedAssignmentId);
     const statusQuery = useStatusByAssignationId(selectedAssignmentId);
     const assignationQuery = useGetMissionAssignationByAssignationId(selectedAssignmentId || "");
+    const currenciesQuery = useCurrencies();
 
     useEffect(() => {
         setMissionAssignation(assignationQuery.data?.data || null);
@@ -357,7 +359,12 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
             setError(err.message || "Erreur lors de la récupération des statuts.");
             onError(err);
         }
-    }, [expenseQuery.error, statusQuery.error, onError]);
+        if (currenciesQuery.error) {
+            const err = currenciesQuery.error as Error;
+            setError(err.message || "Erreur lors de la récupération des taux de change.");
+            onError(err);
+        }
+    }, [expenseQuery.error, statusQuery.error, currenciesQuery.error, onError]);
 
     const employeeInfo = useMemo(() => {
         if (!missionAssignation || !missionAssignation.employee) {
@@ -370,6 +377,22 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
             employeeCode: employeeCode || "N/A",
         };
     }, [missionAssignation]);
+
+    const totalCompQuery = useGetTotalCompensations(employeeInfo.id || "", missionAssignation?.missionId || "");
+
+    useEffect(() => {
+        if (totalCompQuery.error) {
+            const err = totalCompQuery.error as Error;
+            setError(err.message || "Erreur lors de la récupération du total des compensations.");
+            onError(err);
+        }
+    }, [totalCompQuery.error, onError]);
+
+    const totalCompensationEUR = totalCompQuery.data?.data || 0;
+
+    // Taux de change EUR vers MGA dynamique (assume base EUR, rate MGA)
+    const eurToMgaRate = currenciesQuery.data?.rates?.MGA || 1;
+    const totalCompensationMGA = totalCompensationEUR * eurToMgaRate;
 
     const groupedData = useMemo(() => {
         const groups: Record<string, { userName: string; attachments: Attachment[] }> = {};
@@ -386,11 +409,16 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
         [expenseReports]
     );
 
+    const refundAmount = useMemo(
+        () => totalCompensationMGA - totalAmountMGA,
+        [totalCompensationMGA, totalAmountMGA]
+    );
+
     const handleToggleFolder = useCallback((userId: string) => {
         setOpenFolderId((prevId) => (prevId === userId ? null : userId));
     }, []);
 
-    const isTotalLoading = isLoading || expenseQuery.isLoading || statusQuery.isLoading || assignationQuery.isLoading;
+    const isTotalLoading = isLoading || expenseQuery.isLoading || statusQuery.isLoading || assignationQuery.isLoading || totalCompQuery.isLoading || currenciesQuery.isLoading;
     const hasData = expenseReports.length > 0 || attachments.length > 0;
     const overallError = error;
     const hasAttachments = attachments.length > 0;
@@ -405,7 +433,11 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
                 <>
                     <SectionTitle>Analyse Visuelle</SectionTitle>
                     <ChartGrid>
-                        <ExpenseTypeDoughnutChart expenseReports={expenseReports} />
+                        <FinancialDoughnutChart 
+                            totalAmountMGA={totalAmountMGA}
+                            totalCompensationMGA={totalCompensationMGA}
+                            refundAmount={refundAmount}
+                        />
                         {hasAttachments && (
                             <ChartCard>
                                 <h4>Pièces Jointes</h4>
@@ -460,10 +492,30 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
                                         ))}
                                         <TotalRow>
                                             <TableCell colSpan={5}>
-                                                <strong>Total (en MGA)</strong>
+                                                <strong>Total des Frais (en MGA)</strong>
                                             </TableCell>
                                             <TableCell>
                                                 <strong>{totalAmountMGA ? `${formatNumber(totalAmountMGA)},00` : "0,00"}</strong>
+                                            </TableCell>
+                                            <TableCell></TableCell>
+                                        </TotalRow>
+                                        <TotalRow>
+                                            <TableCell colSpan={5}>
+                                                <strong>Devise Allouée (en MGA)</strong>
+                                            </TableCell>
+                                            <TableCell>
+                                                <strong>{totalCompensationMGA ? `${formatNumber(totalCompensationMGA)},00` : "0,00"}</strong>
+                                            </TableCell>
+                                            <TableCell></TableCell>
+                                        </TotalRow>
+                                        <TotalRow>
+                                            <TableCell colSpan={5}>
+                                                <strong>Montant à Restituer (en MGA)</strong>
+                                            </TableCell>
+                                            <TableCell>
+                                                <strong style={{ color: refundAmount >= 0 ? "var(--success-color)" : "var(--error-color)" }}>
+                                                    {refundAmount ? `${formatNumber(refundAmount)},00` : "0,00"}
+                                                </strong>
                                             </TableCell>
                                             <TableCell></TableCell>
                                         </TotalRow>

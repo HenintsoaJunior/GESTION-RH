@@ -16,6 +16,8 @@ export interface Lieu {
   ville: string | null;
   codePostal: string | null;
   pays: string;
+  latitude: number;
+  longitude: number;
   zoneId: string | null;
   geoZone?: GeoZone;
   createdAt: string;
@@ -27,6 +29,8 @@ export interface LieuDTOForm {
   ville?: string | null;
   codePostal?: string | null;
   pays: string;
+  latitude: number;
+  longitude: number;
   zoneId?: string | null;
 }
 
@@ -51,11 +55,8 @@ export interface ApiResponse<T> {
 }
 
 type GetLieuxResponse = SearchData;
-
 type GetAllLieuxResponse = ApiResponse<Lieu[]>;
-
 type GetLieuByIdResponse = ApiResponse<Lieu>;
-
 type CreateLieuResponse = ApiResponse<{ id: string; lieu: Lieu }>;
 
 export const useGetLieux = (filters: LieuSearchFilters = {}, page: number = 1, pageSize: number = 10) => {
@@ -110,9 +111,11 @@ export const useCreateLieu = () => {
     mutationFn: async (data: LieuDTOForm) => {
       const payload = {
         Nom: data.nom,
-        Ville: data.ville,
-        CodePostal: data.codePostal,
+        Ville: data.ville ?? null,
+        CodePostal: data.codePostal ?? null,
         Pays: data.pays,
+        Latitude: data.latitude,
+        Longitude: data.longitude,
         ...(data.zoneId && { ZoneId: data.zoneId }),
       };
       const response = await api.post('/api/Lieu', payload);
@@ -127,9 +130,11 @@ export const useUpdateLieu = (lieuId: string) => {
       const payload = {
         LieuId: lieuId,
         Nom: data.nom,
-        Ville: data.ville,
-        CodePostal: data.codePostal,
+        Ville: data.ville ?? null,
+        CodePostal: data.codePostal ?? null,
         Pays: data.pays,
+        Latitude: data.latitude,
+        Longitude: data.longitude,
         ...(data.zoneId && { ZoneId: data.zoneId }),
       };
       const response = await api.put(`/api/Lieu/${lieuId}`, payload);

@@ -198,11 +198,6 @@ const useMissionValidationData = () => {
         }));
       } else {
         console.warn("Employee data is not an array:", employeesData);
-        setAlert({
-          isOpen: true,
-          type: "error",
-          message: "Les données des collaborateurs ne sont pas valides.",
-        });
       }
     } else {
       console.warn("No userId found, skipping employee fetch");
