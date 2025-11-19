@@ -1,15 +1,16 @@
 "use client";
 
+import { useNavigate } from 'react-router-dom';
 import useMissionValidationData from "./hooks/use-mission-validation-data";
 import MissionCards from "./components/mission-cards";
 import MissionFilters from "./components/mission-filters";
-import MissionModals from "./components/mission-modals";
+import AlertComponent from "@/components/alert"; // Ajustez le chemin d'import selon votre structure de dossiers
 
 const MissionValidationPage = () => {
+  const navigate = useNavigate();
   const {
     missions,
     isLoading,
-    handleRowClick,
     formatDate,
     getDaysUntilDue,
     currentPage,
@@ -25,64 +26,15 @@ const MissionValidationPage = () => {
     suggestions,
     handleFilterSubmit,
     handleResetFilters,
+    handleAction,
     alert,
-    setAlert,
-    selectedMissionId,
-    showDetailsMission,
-    setShowDetailsMission,
-    handleValidate,
-    handleUpdateComments,
-    handleUpdateSignature,
-    comments,
-    handleCreateComment,
-    handleUpdateComment,
-    handleDeleteComment,
+    setAlert, // Ajout pour gérer l'alert
   } = useMissionValidationData();
 
-  const handleCreateCommentVoid = async (missionId: string, commentText: string): Promise<void> => {
-    await handleCreateComment(missionId, commentText);
+  // Fonction pour fermer l'alert
+  const handleAlertClose = () => {
+    setAlert({ isOpen: false, type: "info", message: "" });
   };
-
-  const handleUpdateCommentVoid = async (commentId: string, missionId: string, commentText: string): Promise<void> => {
-    await handleUpdateComment(commentId, missionId, commentText);
-  };
-
-  const handleDeleteCommentVoid = async (commentId: string, missionId: string): Promise<void> => {
-    await handleDeleteComment(commentId, missionId);
-  };
-
-  const castedAlert = {
-    ...alert,
-    type: (alert.type as "success" | "error" | "warning" | "info" | undefined),
-  };
-
-  const castedSetAlert = (newAlert: { isOpen: boolean; type: "success" | "error" | "warning" | "info" | undefined; message: string; }): void => {
-    setAlert({
-      ...newAlert,
-      type: newAlert.type || "info",
-    });
-  };
-
-  if (showDetailsMission) {
-    return (
-      <MissionModals
-        alert={castedAlert}
-        setAlert={castedSetAlert}
-        showDetailsMission={showDetailsMission}
-        setShowDetailsMission={setShowDetailsMission}
-        selectedMissionId={selectedMissionId}
-        missions={missions}
-        formatDate={formatDate}
-        handleValidate={handleValidate}
-        handleUpdateComments={handleUpdateComments}
-        handleUpdateSignature={handleUpdateSignature}
-        comments={comments}
-        handleCreateComment={handleCreateCommentVoid}
-        handleUpdateComment={handleUpdateCommentVoid}
-        handleDeleteComment={handleDeleteCommentVoid}
-      />
-    );
-  }
 
   return (
     <>
@@ -99,7 +51,15 @@ const MissionValidationPage = () => {
       <MissionCards
         missions={missions}
         isLoading={isLoading}
-        handleRowClick={handleRowClick}
+        handleRowClick={(missionId) => {
+          const mission = missions.find((m) => m.id === missionId);
+          if (mission?.missionId) {
+            navigate(`/mission/collaborateur/${mission.missionId}`);
+          } else {
+            console.warn("Mission or missionId not found for details navigation:", missionId);
+          }
+        }}
+        handleAction={handleAction}
         formatDate={formatDate}
         getDaysUntilDue={getDaysUntilDue}
         currentPage={currentPage}
@@ -108,6 +68,13 @@ const MissionValidationPage = () => {
         handlePageChange={handlePageChange}
         handlePageSizeChange={handlePageSizeChange}
         appliedFilters={appliedFilters}
+      />
+      {/* Toast Alert Component */}
+      <AlertComponent
+        type={alert.type as "success" | "error" | "warning" | "info"}
+        message={alert.message}
+        isOpen={alert.isOpen}
+        onClose={handleAlertClose}
       />
     </>
   );

@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
+using MyApp.Api.Data;
 using MyApp.Api.Entities.contract;
+using MyApp.Api.Models.dto.contract;
 using MyApp.Api.Repositories.contract;
 using MyApp.Api.Utils.generator;
 
@@ -9,7 +11,7 @@ namespace MyApp.Api.Services.contract
     {
         Task<IEnumerable<ContractType>> GetAllAsync();
         Task<ContractType?> GetByIdAsync(string id);
-        Task AddAsync(ContractType contractType);
+        Task<ContractType> AddAsync(CreateContractTypeDTO dto);
         Task UpdateAsync(ContractType contractType);
         Task DeleteAsync(string id);
     }
@@ -17,17 +19,20 @@ namespace MyApp.Api.Services.contract
     public class ContractTypeService : IContractTypeService
     {
         private readonly IContractTypeRepository _repository;
+        private readonly AppDbContext _context;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<ContractTypeService> _logger;
 
         public ContractTypeService(
             IContractTypeRepository repository,
+            AppDbContext context,
             ISequenceGenerator sequenceGenerator,
             ILogger<ContractTypeService> logger)
         {
-            _repository = repository;
-            _sequenceGenerator = sequenceGenerator;
-            _logger = logger;
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IEnumerable<ContractType>> GetAllAsync()
@@ -64,29 +69,31 @@ namespace MyApp.Api.Services.contract
             }
         }
 
-        public async Task AddAsync(ContractType contractType)
+        public async Task<ContractType> AddAsync(CreateContractTypeDTO dto)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                if (contractType == null)
+                if (dto == null)
                 {
-                    throw new ArgumentNullException(nameof(contractType), "Le type de contrat ne peut pas être null");
+                    throw new ArgumentNullException(nameof(dto), "Le DTO de type de contrat ne peut pas être null");
                 }
 
-                if (string.IsNullOrWhiteSpace(contractType.ContractTypeId))
-                {
-                    contractType.ContractTypeId = _sequenceGenerator.GenerateSequence("seq_contract_type_id", "CT", 6, "-");
-                    _logger.LogInformation("ID généré pour le type de contrat: {ContractTypeId}", contractType.ContractTypeId);
-                }
+                var contractTypeId = _sequenceGenerator.GenerateSequence("seq_contract_type_id", "CT", 6, "-");
+
+                var contractType = new ContractType(dto) { ContractTypeId = contractTypeId };
 
                 await _repository.AddAsync(contractType);
                 await _repository.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 _logger.LogInformation("Type de contrat ajouté avec succès avec l'ID: {ContractTypeId}", contractType.ContractTypeId);
+                return contractType;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de l'ajout du type de contrat avec l'ID: {ContractTypeId}", contractType?.ContractTypeId);
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Erreur lors de l'ajout du type de contrat");
                 throw;
             }
         }

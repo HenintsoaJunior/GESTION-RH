@@ -12,6 +12,9 @@ interface Step {
   status: string;
   hasIndicator: boolean;
   validationDate?: string;
+  validator: {
+    name: string;
+  };
 }
 
 interface ValidationStepperProps {
@@ -35,6 +38,15 @@ const ValidationStepper: React.FC<ValidationStepperProps> = ({ steps, currentSte
     }
   };
 
+  const getValidationText = (status: string) => {
+    switch (status) {
+      case "rejected":
+        return "Rejeté le:";
+      default:
+        return "Validé le:";
+    }
+  };
+
   return (
     <StepperContainer>
       {steps.map((step: Step, index: number) => (
@@ -47,11 +59,14 @@ const ValidationStepper: React.FC<ValidationStepperProps> = ({ steps, currentSte
           <StepCircle $status={step.status}>
             {step.hasIndicator ? getStepIcon(step.status) : index + 1}
           </StepCircle>
+          <div style={{ textAlign: 'center', marginTop: '4px', fontSize: '12px', fontWeight: '500' }}>
+            {step.validator.name}
+          </div>
           <StepLabel>{step.title}</StepLabel>
           <StepSubtitle>{step.subtitle}</StepSubtitle>
           {step.validationDate && (
             <ValidationDateText>
-              Validé le: {formatDateTime(step.validationDate)}
+              {getValidationText(step.status)} {formatDateTime(step.validationDate)}
             </ValidationDateText>
           )}
         </StepItem>

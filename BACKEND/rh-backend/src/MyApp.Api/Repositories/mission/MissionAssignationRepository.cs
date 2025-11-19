@@ -15,8 +15,9 @@ namespace MyApp.Api.Repositories.mission
         Task<MissionAssignation?> GetByIdAsync(string employeeId, string missionId);
         Task<MissionAssignation?> GetByIdMissionAsync(string missionId);
         Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId);
+        Task<IEnumerable<MissionAssignation>> GetAllByMissionIdAsync(string missionId);
         Task<IEnumerable<MissionAssignation>> GetFilteredAssignationsAsync(string? employeeId, string? missionId);
-        Task<IEnumerable<MissionAssignation>> GetWithCompensationByStatusAsync(string? status);
+        Task<(IEnumerable<MissionAssignation>, int)> GetWithCompensationByStatusAsync(string? status, int page = 1, int pageSize = 10);
         Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(MissionAssignationSearchFiltersDTO filters, int page, int pageSize);
         Task AddAsync(MissionAssignation missionAssignation);
         Task UpdateAsync(MissionAssignation missionAssignation);
@@ -35,6 +36,30 @@ namespace MyApp.Api.Repositories.mission
         public async Task<IDbContextTransaction> BeginTransactionAsync()
         {
             return await _context.Database.BeginTransactionAsync();
+        }
+
+        public async Task<IEnumerable<MissionAssignation>> GetAllByMissionIdAsync(string missionId)
+        {
+            if (string.IsNullOrWhiteSpace(missionId))
+            {
+                throw new ArgumentException("L'ID de la mission ne peut pas être vide.", nameof(missionId));
+            }
+
+            return await _context.MissionAssignations
+                .Include(ma => ma.Employee)
+                    .ThenInclude(e => e.Direction)
+                .Include(ma => ma.Employee)
+                    .ThenInclude(e => e.Department)
+                .Include(ma => ma.Employee)
+                    .ThenInclude(e => e.Service)
+                .Include(ma => ma.Employee)
+                    .ThenInclude(e => e.Site)
+                .Include(ma => ma.Mission!)
+                    .ThenInclude(m => m.Lieu)
+                .Include(ma => ma.Transport)
+                .Where(ma => ma.MissionId == missionId)
+                .OrderBy(ma => ma.DepartureDate)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<string>> GetAssignedEmployeeIdsAsync(string missionId)
@@ -77,7 +102,7 @@ namespace MyApp.Api.Repositories.mission
                     ma.TransportId == transportId);
         }
         
-        public async Task<IEnumerable<MissionAssignation>> GetWithCompensationByStatusAsync(string? status)
+        public async Task<(IEnumerable<MissionAssignation>, int)> GetWithCompensationByStatusAsync(string? status, int page = 1, int pageSize = 10)
         {
             var query = _context.MissionAssignations
                 .AsNoTracking()
@@ -93,17 +118,18 @@ namespace MyApp.Api.Repositories.mission
                     .ThenInclude(m => m.Lieu)
                 .Include(ma => ma.Transport)
                 .Where(ma => _context.Compensations
-                    .Any(c => c.AssignationId == ma.AssignationId));
+                    .Any(c => c.AssignationId == ma.AssignationId
+                        && (string.IsNullOrWhiteSpace(status) || c.Status == status)));
 
-            if (!string.IsNullOrEmpty(status))
-            {
-                query = query.Where(ma => _context.Compensations
-                    .Any(c => c.AssignationId == ma.AssignationId && c.Status == status));
-            }
+            var totalCount = await query.CountAsync();
+            var results = await query
+                .OrderByDescending(ma => ma.DepartureDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-            return await query.ToListAsync();
+            return (results, totalCount);
         }
-        
         public async Task<MissionAssignation?> GetByIdMissionAsync(string missionId)
         {
             return await _context.MissionAssignations
@@ -196,16 +222,15 @@ namespace MyApp.Api.Repositories.mission
         {
             var query = _context.MissionAssignations
                 .Include(ma => ma.Employee)
+                    .ThenInclude(e => e.Direction)
                 .Include(ma => ma.Employee)
-                .ThenInclude(e => e.Direction)
+                    .ThenInclude(e => e.Department)
                 .Include(ma => ma.Employee)
-                .ThenInclude(e => e.Department)
+                    .ThenInclude(e => e.Service)
                 .Include(ma => ma.Employee)
-                .ThenInclude(e => e.Service)
-                .Include(ma => ma.Employee)
-                .ThenInclude(e => e.Site)
+                    .ThenInclude(e => e.Site)
                 .Include(ma => ma.Mission)
-                .ThenInclude(m => m!.Lieu)
+                    .ThenInclude(m => m!.Lieu)
                 .Include(ma => ma.Transport)
                 .AsQueryable();
 
@@ -234,34 +259,44 @@ namespace MyApp.Api.Repositories.mission
                 query = query.Where(ma => ma.Mission != null && ma.Mission.MissionType == filters.MissionType);
             }
 
-            if (filters.Matricule.Any(m => !string.IsNullOrWhiteSpace(m)))
+            if (filters.Matricule?.Any(m => !string.IsNullOrWhiteSpace(m)) == true)
             {
-                query = query.Where(ma => filters.Matricule.Contains(ma.Employee.EmployeeCode));
+                query = query.Where(ma => ma.Employee != null && filters.Matricule.Contains(ma.Employee.EmployeeCode));
             }
 
             if (filters.MinDepartureDate.HasValue)
             {
                 query = query.Where(ma => ma.DepartureDate >= filters.MinDepartureDate.Value);
             }
-            
+
             if (filters.MaxDepartureDate.HasValue)
             {
                 query = query.Where(ma => ma.DepartureDate <= filters.MaxDepartureDate.Value);
             }
-            
+
             if (filters.MinArrivalDate.HasValue)
             {
-                query = query.Where(ma => ma.DepartureDate >= filters.MinArrivalDate.Value);
+                query = query.Where(ma => ma.ReturnDate != null && ma.ReturnDate >= filters.MinArrivalDate.Value);
             }
 
             if (filters.MaxArrivalDate.HasValue)
             {
-                query = query.Where(ma => ma.DepartureDate <= filters.MaxArrivalDate.Value);
+                query = query.Where(ma => ma.ReturnDate != null && ma.ReturnDate <= filters.MaxArrivalDate.Value);
             }
 
-            if (!string.IsNullOrWhiteSpace(filters.Status))
+            if (filters.Status?.Any(s => !string.IsNullOrWhiteSpace(s)) == true)
             {
-                query = query.Where(ma => ma.Mission != null && ma.Mission.Status.Contains(filters.Status));
+                
+                var allStatuses = await query
+                    .Where(ma => ma.Mission != null)
+                    .Select(ma => new { ma.Mission!.Status, ma.MissionId })
+                    .ToListAsync();
+
+                var distinctStatuses = allStatuses.Select(x => x.Status).Distinct().ToList();
+
+                query = query.Where(ma => ma.Mission != null && filters.Status.Contains(ma.Mission.Status));
+
+                var countAfter = await query.CountAsync();
             }
 
             var totalCount = await query.CountAsync();

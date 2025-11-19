@@ -28,10 +28,10 @@ namespace MyApp.Api.Repositories.mission
             _context = context;
         }
 
-        // Recherche paginée de lieux avec filtres (nom, ville, pays)
+        // Recherche paginée de lieux avec filtres (nom, ville, pays, zone_id)
         public async Task<(IEnumerable<Lieu>, int)> SearchAsync(LieuSearchFiltersDTO filters, int page, int pageSize)
         {
-            var query = _context.Lieux.AsQueryable();
+            var query = _context.Lieux.Include(l => l.GeoZone).AsQueryable();
 
             // Filtre par nom
             if (!string.IsNullOrWhiteSpace(filters.Nom))
@@ -48,7 +48,13 @@ namespace MyApp.Api.Repositories.mission
             // Filtre par pays
             if (!string.IsNullOrWhiteSpace(filters.Pays))
             {
-                query = query.Where(l => l.Pays != null && l.Pays.Contains(filters.Pays));
+                query = query.Where(l => l.Pays.Contains(filters.Pays));
+            }
+
+            // Filtre par zone_id
+            if (!string.IsNullOrWhiteSpace(filters.ZoneId))
+            {
+                query = query.Where(l => l.ZoneId == filters.ZoneId);
             }
 
             var totalCount = await query.CountAsync(); // Nombre total de résultats
@@ -63,18 +69,20 @@ namespace MyApp.Api.Repositories.mission
             return (results, totalCount);
         }
 
-        // Récupère tous les lieux triés par nom
+        // Récupère tous les lieux triés par nom, incluant la zone géo
         public async Task<IEnumerable<Lieu>> GetAllAsync()
         {
             return await _context.Lieux
+                .Include(l => l.GeoZone)
                 .OrderBy(l => l.Nom)
                 .ToListAsync();
         }
 
-        // Récupère un lieu par son identifiant, incluant ses missions associées
+        // Récupère un lieu par son identifiant, incluant sa zone géo
         public async Task<Lieu?> GetByIdAsync(string id)
         {
             return await _context.Lieux
+                .Include(l => l.GeoZone)
                 .FirstOrDefaultAsync(l => l.LieuId == id);
         }
 

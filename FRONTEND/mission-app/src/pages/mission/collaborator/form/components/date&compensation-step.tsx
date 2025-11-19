@@ -3,6 +3,7 @@ import React from "react";
 
 interface CompensationStepProps {
   formData: { 
+    missionType?: string;
     type: string;
     startDate?: string;
     endDate?: string;
@@ -39,6 +40,8 @@ const CompensationStep: React.FC<CompensationStepProps> = ({
     }
   ];
 
+  const isInternational = formData.missionType === "international";
+
   return (
     <>
       {/* Type de Compensation */}
@@ -48,21 +51,30 @@ const CompensationStep: React.FC<CompensationStepProps> = ({
           <FormRow>
             <FormFieldCell colSpan={2}>
               <FormLabelRequired>Type de compensation</FormLabelRequired>
-              <div className="radio-group" style={{ display: "flex", gap: "20px" }}>
-                {compensationTypes.map((type) => (
-                  <label key={type.value} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                    <FormInput
-                      type="radio"
-                      name="type"
-                      value={type.value}
-                      checked={formData.type === type.value}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "compensation")}
-                      disabled={isSubmitting}
-                    />
-                    {type.label}
-                  </label>
-                ))}
-              </div>
+              {isInternational ? (
+                <FormInput
+                  type="text"
+                  value="Note de frais"
+                  readOnly
+                  disabled={isSubmitting}
+                />
+              ) : (
+                <div className="radio-group" style={{ display: "flex", gap: "20px" }}>
+                  {compensationTypes.map((type) => (
+                    <label key={type.value} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                      <FormInput
+                        type="radio"
+                        name="type"
+                        value={type.value}
+                        checked={formData.type === type.value}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "compensation")}
+                        disabled={isSubmitting}
+                      />
+                      {type.label}
+                    </label>
+                  ))}
+                </div>
+              )}
               {fieldErrors.type && fieldErrors.type.length > 0 && (
                 <ErrorMessage>{fieldErrors.type.join(", ")}</ErrorMessage>
               )}
@@ -121,22 +133,6 @@ const CompensationStep: React.FC<CompensationStepProps> = ({
               )}
             </FormFieldCell>
             <FormFieldCell>
-              <FormLabelRequired>Heure de départ</FormLabelRequired>
-              <FormInput
-                type="time"
-                name="departureTime"
-                value={formData.beneficiary.departureTime || ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
-                className={fieldErrors["beneficiary.departureTime"] ? "input-error" : ""}
-                disabled={isSubmitting}
-              />
-              {fieldErrors["beneficiary.departureTime"] && fieldErrors["beneficiary.departureTime"].length > 0 && (
-                <ErrorMessage>{fieldErrors["beneficiary.departureTime"].join(", ")}</ErrorMessage>
-              )}
-            </FormFieldCell>
-          </FormRow>
-          <FormRow className="dual-field-row">
-            <FormFieldCell>
               <FormLabelRequired>Date de retour</FormLabelRequired>
               <FormInput
                 type="date"
@@ -148,6 +144,23 @@ const CompensationStep: React.FC<CompensationStepProps> = ({
               />
               {fieldErrors["beneficiary.returnDate"] && fieldErrors["beneficiary.returnDate"].length > 0 && (
                 <ErrorMessage>{fieldErrors["beneficiary.returnDate"].join(", ")}</ErrorMessage>
+              )}
+            </FormFieldCell>
+          </FormRow>
+          <FormRow className="dual-field-row">
+            
+            <FormFieldCell>
+              <FormLabelRequired>Heure de départ</FormLabelRequired>
+              <FormInput
+                type="time"
+                name="departureTime"
+                value={formData.beneficiary.departureTime || ""}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
+                className={fieldErrors["beneficiary.departureTime"] ? "input-error" : ""}
+                disabled={isSubmitting}
+              />
+              {fieldErrors["beneficiary.departureTime"] && fieldErrors["beneficiary.departureTime"].length > 0 && (
+                <ErrorMessage>{fieldErrors["beneficiary.departureTime"].join(", ")}</ErrorMessage>
               )}
             </FormFieldCell>
             <FormFieldCell>

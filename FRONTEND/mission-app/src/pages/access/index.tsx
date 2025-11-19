@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom"; // Ajout pour la navigation
 import { ChevronDown, ChevronUp, X, List, Search, Plus } from "lucide-react";
 import {
   FiltersContainer,
@@ -32,7 +33,7 @@ import {
   SelectionInfo,
 } from "@/styles/table-styles";
 import { useRolesInfo, useUpdateRole, useDeleteRole } from "@/api/access/services";
-import { useHasHabilitation } from "@/api/users/services";
+import { useHasHabilitation, useRoleUserCount } from "@/api/users/services";
 import type { RoleWithGroupedHabilitations } from "@/api/access/services";
 import Alert from "@/components/alert";
 import Modal from "@/components/modal";
@@ -43,7 +44,6 @@ import axios from 'axios';
 
 interface FiltersState {
   name: string;
-  description: string;
 }
 
 interface AlertState {
@@ -52,14 +52,44 @@ interface AlertState {
   message: string;
 }
 
+const RoleCountCell: React.FC<{ roleName: string }> = ({ roleName }) => {
+  const navigate = useNavigate(); // Hook pour navigation
+  const { data } = useRoleUserCount(roleName);
+  const count = data?.data || 0;
+
+  const handleClick = useCallback(() => {
+    // Navigation vers la liste des utilisateurs avec filtre "Access" pré-rempli par le nom du rôle
+    navigate(`/utilisateur?role=${encodeURIComponent(roleName)}`);
+  }, [navigate, roleName]);
+
+  const userText = count === 1 ? "utilisateur" : "utilisateurs";
+
+  return (
+    <button
+      onClick={handleClick}
+      style={{
+        background: "none",
+        border: "none",
+        color: "var(--primary-color)",
+        cursor: "pointer",
+        textDecoration: "underline",
+        fontWeight: "bold",
+        padding: 0,
+        textAlign: "center",
+      }}
+      title={`Voir les ${count} ${userText}(s) avec ce rôle`}
+    >
+      Assigné à {count} {userText}
+    </button>
+  );
+};
+
 const RoleList: React.FC = () => {
   const [filters, setFilters] = useState<FiltersState>({
     name: "",
-    description: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<FiltersState>({
     name: "",
-    description: "",
   });
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [editingRole, setEditingRole] = useState<RoleWithGroupedHabilitations | null>(null);
@@ -67,6 +97,8 @@ const RoleList: React.FC = () => {
   const [originalValues, setOriginalValues] = useState<{ name: string; description: string } | null>(null);
   const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [showConfirmUpdateModal, setShowConfirmUpdateModal] = useState<boolean>(false);
+  const [pendingEditValues, setPendingEditValues] = useState<{ name: string; description: string } | null>(null);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const [isHidden, setIsHidden] = useState<boolean>(false);
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
@@ -78,10 +110,10 @@ const RoleList: React.FC = () => {
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = userData?.userId;
 
-  const canCreateRole = useHasHabilitation(userId, "creer role et habilitation(s)");
-  const canModifyRole = useHasHabilitation(userId, "modifier role");
-  const canModifyHabilities = useHasHabilitation(userId, "modifier habilitation(s) du role");
-  const canDeleteRole = useHasHabilitation(userId, "suprimer role");
+  const canCreateRole = useHasHabilitation(userId, "Créer un rôle et ses habilitations");
+  const canModifyRole = useHasHabilitation(userId, "Modifier un rôle");
+  const canModifyHabilities = useHasHabilitation(userId, "Modifier les habilitations d’un rôle");
+  const canDeleteRole = useHasHabilitation(userId, "Supprimer un rôle");
   const hasAnyHabilitation = canCreateRole || canModifyRole || canModifyHabilities || canDeleteRole;
 
   const { data: rolesResponse, isLoading: isRolesLoading, refetch: refetchRoles } = useRolesInfo();
@@ -105,7 +137,7 @@ const RoleList: React.FC = () => {
     return Array.from(groupsMap.values());
   }, [roles]);
 
-  const hasFilters: boolean = Object.values(filters).some((val: string) => (val || "").trim() !== "");
+  const hasFilters: boolean = (filters.name || "").trim() !== "";
 
   const filteredRoles = useMemo(() => {
     let filtered = roles;
@@ -113,12 +145,6 @@ const RoleList: React.FC = () => {
     if (appliedFilters.name) {
       filtered = filtered.filter((role) =>
         role.name.toLowerCase().includes(appliedFilters.name.toLowerCase())
-      );
-    }
-
-    if (appliedFilters.description) {
-      filtered = filtered.filter((role) =>
-        role.description.toLowerCase().includes(appliedFilters.description.toLowerCase())
       );
     }
 
@@ -167,36 +193,9 @@ const RoleList: React.FC = () => {
       editValues.name !== originalValues.name || editValues.description !== originalValues.description;
 
     if (hasChanged) {
-      const request = {
-        name: editValues.name,
-        description: editValues.description,
-      };
-
-      updateRoleMutation.mutate(
-        { id: editingRole.roleId, request },
-        {
-          onSuccess: () => {
-            setAlert({ isOpen: true, type: "success", message: "Rôle mis à jour avec succès" });
-            // Sortir du mode édition immédiatement après succès
-            setEditingRole(null);
-            setEditValues(null);
-            setOriginalValues(null);
-          },
-          onError: (error: unknown) => {
-            let errorMessage = "Échec de la mise à jour du rôle";
-            if (axios.isAxiosError(error)) {
-              errorMessage = error.response?.data?.message || error.message || errorMessage;
-            } else if (error instanceof Error) {
-              errorMessage = error.message;
-            }
-            setAlert({
-              isOpen: true,
-              type: "error",
-              message: errorMessage,
-            });
-          },
-        }
-      );
+      setPendingEditValues(editValues);
+      setShowConfirmUpdateModal(true);
+      return;
     } else {
       if (blurTimeoutRef.current) {
         clearTimeout(blurTimeoutRef.current);
@@ -207,7 +206,7 @@ const RoleList: React.FC = () => {
         setOriginalValues(null);
       }, 150);
     }
-  }, [editingRole, editValues, originalValues, userId, updateRoleMutation]);
+  }, [editingRole, editValues, originalValues, userId]);
 
   const handleFocus = useCallback(() => {
     if (blurTimeoutRef.current) {
@@ -226,13 +225,70 @@ const RoleList: React.FC = () => {
     [handleBlur]
   );
 
+  const handleCancelUpdateConfirm = useCallback(() => {
+    setShowConfirmUpdateModal(false);
+    if (originalValues && editingRole) {
+      setEditValues(originalValues);
+    }
+    setEditingRole(null);
+    setOriginalValues(null);
+    setPendingEditValues(null);
+  }, [originalValues, editingRole]);
+
+  const handleConfirmUpdate = useCallback(() => {
+    if (!pendingEditValues || !editingRole || !userId) {
+      handleCancelUpdateConfirm();
+      return;
+    }
+
+    const request = {
+      name: pendingEditValues.name,
+      description: pendingEditValues.description,
+    };
+
+    updateRoleMutation.mutate(
+      { id: editingRole.roleId, request },
+      {
+        onSuccess: () => {
+          setAlert({ isOpen: true, type: "success", message: "Rôle mis à jour avec succès" });
+          refetchRoles();
+          setShowConfirmUpdateModal(false);
+          setPendingEditValues(null);
+          setEditingRole(null);
+          setEditValues(null);
+          setOriginalValues(null);
+        },
+        onError: (error: unknown) => {
+          let errorMessage = "Échec de la mise à jour du rôle";
+          if (axios.isAxiosError(error)) {
+            errorMessage = error.response?.data?.message || error.message || errorMessage;
+          } else if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+          setAlert({
+            isOpen: true,
+            type: "error",
+            message: errorMessage,
+          });
+          if (originalValues && editingRole) {
+            setEditValues(originalValues);
+          }
+          setEditingRole(null);
+          setOriginalValues(null);
+          setPendingEditValues(null);
+          setShowConfirmUpdateModal(false);
+        },
+      }
+    );
+  }, [pendingEditValues, editingRole, userId, originalValues, updateRoleMutation, refetchRoles, handleCancelUpdateConfirm]);
+
   const handleFilterSubmit = useCallback((event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     setAppliedFilters(filters);
   }, [filters]);
 
   const handleResetFilters = useCallback((): void => {
-    const resetFilters: FiltersState = { name: "", description: "" };
+    const resetFilters: FiltersState = { name: "" };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
     setAlert({ isOpen: true, type: "info", message: "Filtres réinitialisés." });
@@ -298,19 +354,14 @@ const RoleList: React.FC = () => {
     setFilters((prev) => ({ ...prev, name: value }));
   }, []);
 
-  const handleDescriptionChange = useCallback((value: string): void => {
-    setFilters((prev) => ({ ...prev, description: value }));
-  }, []);
-
   const nameSuggestions = useMemo(() => roles.map((role) => role.name), [roles]);
-  const descriptionSuggestions = useMemo(() => [...new Set(roles.map((role) => role.description))], [roles]);
 
   const selectedCountText = useMemo(
     () => `${selectedRoles.length} élément${selectedRoles.length !== 1 ? "s" : ""} sélectionné${selectedRoles.length !== 1 ? "s" : ""}`,
     [selectedRoles.length]
   );
 
-  const filtersString = useMemo(() => JSON.stringify(appliedFilters), [appliedFilters]);
+  const filtersString = useMemo(() => appliedFilters.name, [appliedFilters.name]);
 
   useEffect(() => {
     setSelectedRoles([]);
@@ -390,6 +441,18 @@ const RoleList: React.FC = () => {
         showActions={true}
       />
 
+      <Modal
+        type="warning"
+        message="Êtes-vous sûr de vouloir enregistrer les modifications du rôle ?"
+        isOpen={showConfirmUpdateModal}
+        onClose={handleCancelUpdateConfirm}
+        title="Confirmer les modifications"
+        confirmAction={handleConfirmUpdate}
+        confirmLabel="Enregistrer"
+        cancelLabel="Annuler"
+        showActions={true}
+      />
+
       {/* === SECTION FILTRES === */}
       {!isHidden && (
         <FiltersContainer $isMinimized={isMinimized}>
@@ -416,7 +479,7 @@ const RoleList: React.FC = () => {
                 <FormTableSearch>
                   <tbody>
                     <FormRow>
-                      <FormFieldCell style={{ width: "50%" }}>
+                      <FormFieldCell style={{ width: "100%" }}>
                         <FormLabelSearch>Nom du rôle</FormLabelSearch>
                         <StyledAutoCompleteInput
                           value={filters.name || ""}
@@ -427,21 +490,6 @@ const RoleList: React.FC = () => {
                           disabled={isRolesLoading}
                           fieldType="role"
                           fieldLabel="rôle"
-                          showAddOption={false}
-                        />
-                      </FormFieldCell>
-
-                      <FormFieldCell style={{ width: "50%" }}>
-                        <FormLabelSearch>Description</FormLabelSearch>
-                        <StyledAutoCompleteInput
-                          value={filters.description || ""}
-                          onChange={handleDescriptionChange}
-                          suggestions={descriptionSuggestions}
-                          maxVisibleItems={5}
-                          placeholder="Rechercher par description..."
-                          disabled={isRolesLoading}
-                          fieldType="description"
-                          fieldLabel="description"
                           showAddOption={false}
                         />
                       </FormFieldCell>
@@ -458,7 +506,7 @@ const RoleList: React.FC = () => {
                     disabled={!hasFilters || isRolesLoading}
                     title="Effacer"
                   >
-                    Effacer
+                    Effacer filtres
                   </ButtonReset>
                   <ButtonSearch type="submit" disabled={isRolesLoading} title="Rechercher">
                     <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
@@ -481,7 +529,6 @@ const RoleList: React.FC = () => {
         </FiltersToggle>
       )}
 
-      {/* === TABLEAU === */}
       <TableContainer>
         <TableHeader>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-lg)" }}>
@@ -550,29 +597,41 @@ const RoleList: React.FC = () => {
                           padding: "var(--spacing-xs)",
                         }}
                       >
-                        {editingRole?.roleId === role.roleId ? (
-                          <input
-                            type="text"
-                            value={editValues?.name || role.name}
-                            onChange={(e) =>
-                              setEditValues((prev) => ({ ...prev!, name: e.target.value }))
-                            }
-                            onBlur={handleBlur}
-                            onFocus={handleFocus}
-                            onKeyDown={handleKeyDown}
-                            autoFocus
-                            style={{
-                              width: "100%",
-                              boxSizing: "border-box",
-                              border: "1px solid var(--color-border)",
-                              padding: "var(--spacing-xs)",
-                              background: "white",
-                              margin: 0,
-                            }}
-                          />
-                        ) : (
-                          role.name
-                        )}
+                        <div>
+                          {editingRole?.roleId === role.roleId ? (
+                            <input
+                              type="text"
+                              value={editValues?.name || role.name}
+                              onChange={(e) =>
+                                setEditValues((prev) => ({ ...prev!, name: e.target.value }))
+                              }
+                              onBlur={handleBlur}
+                              onFocus={handleFocus}
+                              onKeyDown={handleKeyDown}
+                              autoFocus
+                              style={{
+                                width: "100%",
+                                boxSizing: "border-box",
+                                border: "1px solid var(--color-border)",
+                                padding: "var(--spacing-xs)",
+                                background: "white",
+                                margin: 0,
+                              }}
+                            />
+                          ) : (
+                            role.name
+                          )}
+                          {!editingRole && (
+                            <div style={{ 
+                              fontSize: "0.875rem", 
+                              color: "var(--text-secondary)", 
+                              marginTop: "4px",
+                              fontStyle: "italic"
+                            }}>
+                              <RoleCountCell roleName={role.name} />
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell 
                         style={{ 
@@ -679,7 +738,7 @@ const RoleList: React.FC = () => {
                 <TableRow>
                   <TableCell colSpan={2 + allGroups.length}>
                     <NoDataMessage>
-                      {Object.values(appliedFilters).some(Boolean)
+                      {appliedFilters.name
                         ? "Aucun rôle ne correspond aux critères."
                         : "Aucun rôle trouvé."}
                     </NoDataMessage>
@@ -695,7 +754,7 @@ const RoleList: React.FC = () => {
 };
 
 const ProtectedRoleList: React.FC = () => (
-  <ProtectedRoute requiredHabilitation="voir page access">
+  <ProtectedRoute requiredHabilitation="Voir la page des accès">
     <RoleList />
   </ProtectedRoute>
 );

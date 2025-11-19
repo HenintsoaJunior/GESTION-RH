@@ -152,13 +152,13 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpGet("distinct-mission-assignations")]
-        // [AllowAnonymous]
+        [AllowAnonymous]
         public async Task<ActionResult> GetDistinctMissionAssignations([FromQuery] MissionAssignationQueryDTO query, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
 
             try
             {
@@ -346,6 +346,29 @@ namespace MyApp.Api.Controllers.mission
             catch (Exception e)
             {
                 _logger.LogError(e, "Erreur lors de GetById pour ExpenseReportId: {ExpenseReportId}", id);
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("by-status")]
+        // [AllowAnonymous]
+        public async Task<ActionResult> GetByStatus([FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            // {
+            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            // }
+
+            try
+            {
+                var (reports, totalCount) = await _service.GetByStatusAsync(status, page, pageSize);
+                var responseData = new { reports, totalCount, pageNumber = page, pageSize = pageSize };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erreur lors de la récupération des rapports de frais par statut");
                 Console.WriteLine(e);
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }

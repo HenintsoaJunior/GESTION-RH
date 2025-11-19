@@ -155,8 +155,6 @@ namespace MyApp.Api.Utils.csv
             return errors.Count > 0 ? errors : null;
         }
 
-
-
         public static List<string>? CheckDate(List<List<string>>? data)
         {
             if (data == null || data.Count < 2)

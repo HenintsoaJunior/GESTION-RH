@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using MyApp.Api.Models.dto.site;
 
 namespace MyApp.Api.Entities.site
 {
@@ -25,5 +26,15 @@ namespace MyApp.Api.Entities.site
 
         [Column("latitude", TypeName = "decimal(9,6)")]
         public decimal? Latitude { get; set; }
+
+        public Site() { }
+
+        public Site(CreateSiteDTO dto)
+        {
+            SiteName = dto.SiteName;
+            Code = dto.Code;
+            Longitude = dto.Longitude;
+            Latitude = dto.Latitude;
+        }
     }
 }

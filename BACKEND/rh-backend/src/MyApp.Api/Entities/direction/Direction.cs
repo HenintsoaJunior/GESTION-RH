@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using MyApp.Api.Models.dto.direction;
 
 namespace MyApp.Api.Entities.direction
 {
@@ -19,5 +20,15 @@ namespace MyApp.Api.Entities.direction
         [Column("acronym")]
         [MaxLength(20)]
         public string? Acronym { get; set; }
+
+        public Direction()
+        {
+        }
+
+        public Direction(DirectionDTOForm dto)
+        {
+            DirectionName = dto.DirectionName ?? throw new ArgumentNullException(nameof(dto.DirectionName));
+            Acronym = dto.Acronym;
+        }
     }
 }

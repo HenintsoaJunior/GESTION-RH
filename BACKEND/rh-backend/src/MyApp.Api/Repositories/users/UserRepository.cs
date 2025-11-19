@@ -16,6 +16,7 @@ namespace MyApp.Api.Repositories.users
         Task<IEnumerable<UserDto>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
         Task<User?> GetByEmailAsync(string email);
+        Task<User?> GetByMatriculeAsync(string matricule);
         Task AddAsync(User user);
         Task UpdateAsync(User user);
         Task DeleteAsync(User user);
@@ -24,6 +25,7 @@ namespace MyApp.Api.Repositories.users
         Task DeleteUsersAsync(List<User> users);
         Task SaveChangesAsync();
         Task<IEnumerable<User>> GetCollaboratorsAsync(string userId);
+        Task<IEnumerable<string>> GetCollaboratorsMatriculesAsync(string userId);
         Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId);
         Task<IEnumerable<User>> GetUsersInfo(string[] userIds);
         Task<User?> GetSuperiorAsync(string matricule);
@@ -32,6 +34,7 @@ namespace MyApp.Api.Repositories.users
         Task<IEnumerable<string>> GetUserHabilitationAsync(string userId);
         Task<User?> GetDirectorByDepartmentAsync(string department);
         Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
+        Task<int> GetUserCountByRoleAsync(string role);
     }
 
     public class UserRepository : IUserRepository
@@ -213,10 +216,87 @@ namespace MyApp.Api.Repositories.users
             if (string.IsNullOrWhiteSpace(userId))
                 throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
 
-            return await _context.Users
+            var allUsers = await _context.Users.AsNoTracking().ToListAsync();
+
+            var hierarchy = allUsers.ToLookup(u => u.SuperiorId ?? string.Empty);
+
+            var queue = new Queue<string>();
+            queue.Enqueue(userId);
+
+            var visited = new HashSet<string> { userId };
+
+            var subordinates = new HashSet<User>();
+
+            while (queue.Count > 0)
+            {
+                var currentId = queue.Dequeue();
+
+                var directs = hierarchy[currentId];
+
+                foreach (var direct in directs)
+                {
+                    if (!visited.Contains(direct.UserId))
+                    {
+                        visited.Add(direct.UserId);
+                        subordinates.Add(direct);
+                        queue.Enqueue(direct.UserId);
+                    }
+                }
+            }
+
+            return subordinates;
+        }
+
+
+        public async Task<IEnumerable<string>> GetCollaboratorsMatriculesAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            var userMatricule = await _context.Users
                 .AsNoTracking()
-                .Where(u => u.SuperiorId == userId)
+                .Where(u => u.UserId == userId)
+                .Select(u => u.Matricule)
+                .FirstOrDefaultAsync();
+
+            if (string.IsNullOrWhiteSpace(userMatricule))
+                return Enumerable.Empty<string>();
+
+            var allUsers = await _context.Users
+                .AsNoTracking()
+                .Select(u => new { u.UserId, u.SuperiorId, u.Matricule })
                 .ToListAsync();
+
+            var hierarchy = allUsers.ToLookup(u => u.SuperiorId ?? string.Empty);
+
+            var queue = new Queue<string>();
+            queue.Enqueue(userId);
+
+            var visited = new HashSet<string> { userId };
+
+            var subordinatesMatricules = new HashSet<string>();
+
+            while (queue.Count > 0)
+            {
+                var currentId = queue.Dequeue();
+
+                var directs = hierarchy[currentId];
+
+                foreach (var direct in directs)
+                {
+                    if (!visited.Contains(direct.UserId))
+                    {
+                        visited.Add(direct.UserId);
+                        if (!string.IsNullOrWhiteSpace(direct.Matricule))
+                        {
+                            subordinatesMatricules.Add(direct.Matricule);
+                        }
+                        queue.Enqueue(direct.UserId);
+                    }
+                }
+            }
+
+            return new[] { userMatricule }.Concat(subordinatesMatricules);
         }
 
         public async Task<(IEnumerable<UserDto>, int)> GetAllPaginatedAsync(int page, int pageSize)
@@ -342,6 +422,16 @@ namespace MyApp.Api.Repositories.users
                 .FirstOrDefaultAsync(u => u.UserId == id);
         }
 
+        public async Task<User?> GetByMatriculeAsync(string matricule)
+        {
+            if (string.IsNullOrWhiteSpace(matricule))
+                throw new ArgumentException("Matricule cannot be null or empty.", nameof(matricule));
+
+            return await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Matricule == matricule);
+        }
+
         public async Task AddAsync(User user)
         {
             ArgumentNullException.ThrowIfNull(user);
@@ -401,6 +491,20 @@ namespace MyApp.Api.Repositories.users
             {
                 throw new InvalidOperationException($"Failed to save changes to the database: {ex.Message}", ex);
             }
+        }
+
+        // Nouvelle implémentation ajoutée
+        public async Task<int> GetUserCountByRoleAsync(string role)
+        {
+            if (string.IsNullOrWhiteSpace(role))
+                throw new ArgumentException("Role cannot be null or empty.", nameof(role));
+
+            return await _context.UserRoles
+                .AsNoTracking()
+                .Where(ur => ur.Role!.Name == role)
+                .Select(ur => ur.UserId)
+                .Distinct()
+                .CountAsync();
         }
     }
 }

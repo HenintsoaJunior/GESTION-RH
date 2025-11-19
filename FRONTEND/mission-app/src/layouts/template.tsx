@@ -1,3 +1,4 @@
+// template.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -5,11 +6,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
 import type { IconType } from "react-icons";
 import { useMenuHierarchy } from "@/api/menu/services";
+import { useHasHabilitation } from "@/api/users/services";
+import { useHasValidationLine } from "@/api/mission/validation/services";
 import Header from "./header";
 import Footer from "./footer";
 import {
   App,
-  SidebarOverlay,
   Sidebar,
   SidebarHeader,
   LogoContainer,
@@ -27,6 +29,8 @@ import {
 } from "@/styles/template-styles";
 
 import TemplateFooter from "./template-footer";
+import { getInitials } from "@/utils/initials";
+import { ToastContainer } from "@/components/notification-toast";
 
 interface Menu {
   menuKey: string;
@@ -47,6 +51,7 @@ interface BreadcrumbItem {
   title: string;
   path: string;
   isActive: boolean;
+  clickable?: boolean;
 }
 
 interface User {
@@ -54,12 +59,6 @@ interface User {
   name: string;
   email: string;
   roles: { roleName: string }[];
-}
-
-interface Theme {
-  id: string;
-  name: string;
-  color: string;
 }
 
 interface TemplateProps {
@@ -76,12 +75,11 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const [collapsed] = useState<boolean>(false);
-  const [mobileOpen, setMobileOpen] = useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
-  const [activeItem, setActiveItem] = useState<string>("dashboard");
-  const [headerTitle, setHeaderTitle] = useState<string>("Dashboard");
-  const [theme, setTheme] = useState<string>(localStorage.getItem("theme") || "default");
+  const [activeItem, setActiveItem] = useState<string>("tableau_de_bord");
+  const [headerTitle, setHeaderTitle] = useState<string>("Tableau de bord");
+  const [theme,] = useState<string>(localStorage.getItem("theme") || "default");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
 
@@ -143,30 +141,83 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     }
   })();
 
+  // Habilitations pour les menus (seulement si userId existe)
+  const hasVoirUtilisateurs = useHasHabilitation(user.userId, "Voir les utilisateurs");
+  const hasVoirDroitAcces = useHasHabilitation(user.userId, "Voir les droits et accès");
+  const hasVoirAcces = useHasHabilitation(user.userId, "Voir les accès");
+  const hasVoirReferentiel = useHasHabilitation(user.userId, "Voir le référentiel");
+  const hasVoirImport = useHasHabilitation(user.userId, "Voir l’import");
+  const hasVoirLogs = useHasHabilitation(user.userId, "Voir les logs");
+  const hasVoirMission = useHasHabilitation(user.userId, "Voir les missions");
+  const hasVoirValidation = useHasHabilitation(user.userId, "Voir la validation des missions");
+  const hasVoirMissions = useHasHabilitation(user.userId, "Voir la liste des missions");
+  const hasVoirMissionsArchivees = useHasHabilitation(user.userId, "Voir les missions archivées");
+  const hasVoirTresorier = useHasHabilitation(user.userId, "Voir la trésorerie");
+  const hasVoirHabilitation = useHasHabilitation(user.userId, "Voir les habilitations");
+  const hasVoirTableauBord = useHasHabilitation(user.userId, "Voir le tableau de bord");
+
+  const { data: hasValidationLine = true } = useHasValidationLine(user.userId);
+
+  const habilitationsMap = useMemo(() => ({
+    utilisateurs: hasVoirUtilisateurs,
+    "Droit & Accès": hasVoirDroitAcces,
+    accès: hasVoirAcces,
+    référentiel: hasVoirReferentiel,
+    import: hasVoirImport,
+    logs: hasVoirLogs,
+    mission: hasVoirMission,
+    validation: hasVoirValidation && hasValidationLine,
+    Missions: hasVoirMissions,
+    "Missions archivées": hasVoirMissionsArchivees,
+    trésorerie: hasVoirTresorier,
+    Habilitation: hasVoirHabilitation,
+    tableau_de_bord: hasVoirTableauBord,
+  }), [
+    hasVoirUtilisateurs,
+    hasVoirDroitAcces,
+    hasVoirAcces,
+    hasVoirReferentiel,
+    hasVoirImport,
+    hasVoirLogs,
+    hasVoirMission,
+    hasVoirValidation,
+    hasVoirMissions,
+    hasVoirMissionsArchivees,
+    hasVoirTresorier,
+    hasVoirHabilitation,
+    hasVoirTableauBord,
+    hasValidationLine,
+  ]);
+
+  const getHasAccess = useCallback((menuKey: string): boolean => {
+    return habilitationsMap[menuKey as keyof typeof habilitationsMap] ?? true;
+  }, [habilitationsMap]);
+
+  // Fonction récursive pour filtrer les menus basés sur les habilitations
+  const filterMenuItems = useCallback((items: MenuItem[]): MenuItem[] => {
+    return items.reduce<MenuItem[]>((acc, item) => {
+      const hasAccess = getHasAccess(item.menu.menuKey);
+      let filteredChildren: MenuItem[] = [];
+      if (item.children && item.children.length > 0) {
+        filteredChildren = filterMenuItems(item.children);
+      }
+      const hasVisibleChildren = filteredChildren.length > 0;
+      if (hasAccess || hasVisibleChildren) {
+        acc.push({
+          ...item,
+          children: filteredChildren,
+        });
+      }
+      return acc;
+    }, []);
+  }, [getHasAccess]);
+
   // Seulement récupérer les menus si authentifié
   const { data: menuData = [], isLoading: isMenuLoading } = useMenuHierarchy(
     isAuthenticated && user.userId ? user.userId : ""
   );
 
-  // Generate initials
-  const getInitials = useCallback((name: string): string => {
-    const cleanName = name.replace(/\s*\([^)]+\)\s*/g, "").trim();
-    const nameParts = cleanName.split(/\s+/);
-    const firstInitial = nameParts[0] ? nameParts[0][0] : "J";
-    const lastInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1][0] : "D";
-    return `${firstInitial}${lastInitial}`.toUpperCase();
-  }, []);
-
-  // Theme configuration
-  const themes = useMemo<Theme[]>(
-    () => [
-      { id: "default", name: "Défaut (Vert)", color: "#69B42E" },
-      { id: "gray", name: "Gris", color: "#9d9d9c" },
-      { id: "warm", name: "Chaud", color: "#e30613" },
-      { id: "light", name: "Clair", color: "#c6dc96" },
-    ],
-    []
-  );
+  const filteredMenuData = useMemo(() => filterMenuItems(menuData), [menuData, filterMenuItems]);
 
   // Get icon component
   const getIconComponent = useCallback((iconName: string): IconType => {
@@ -278,8 +329,9 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
 
     breadcrumbs.push({
       title: "Accueil",
-      path: "/",
-      isActive: currentPath === "/",
+      path: "/tableau-bord",
+      isActive: currentPath === "/tableau-bord",
+      clickable: true,
     });
 
     if (currentPath === "/system") {
@@ -301,7 +353,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         isActive: true,
       });
     } else {
-      const matchedResult = findMenuItemByPath(menuData, currentPath);
+      const matchedResult = findMenuItemByPath(filteredMenuData, currentPath);
       if (matchedResult) {
         const { item, parentKey, title } = matchedResult;
 
@@ -319,12 +371,13 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
             return null;
           };
 
-          const parentMenu = findParent(menuData, parentKey);
+          const parentMenu = findParent(filteredMenuData, parentKey);
           if (parentMenu) {
             breadcrumbs.push({
               title: getMenuLabel(parentMenu),
               path: parentMenu.link,
               isActive: false,
+              clickable: false,
             });
           }
         }
@@ -338,7 +391,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     }
 
     return breadcrumbs;
-  }, [location.pathname, location.hash, menuData, findMenuItemByPath, getMenuLabel]);
+  }, [location.pathname, location.hash, filteredMenuData, findMenuItemByPath, getMenuLabel]);
 
   // Initialize expanded menus
   const initializeExpandedMenus = useCallback((menuItems: MenuItem[]): Record<string, boolean> => {
@@ -357,16 +410,16 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
 
   // Initialize expanded on menu load
   useEffect(() => {
-    if (menuData.length > 0 && !isInitializedRef.current) {
-      const initialExpanded = initializeExpandedMenus(menuData);
+    if (filteredMenuData.length > 0 && !isInitializedRef.current) {
+      const initialExpanded = initializeExpandedMenus(filteredMenuData);
       setExpandedMenus(initialExpanded);
       isInitializedRef.current = true;
     }
-  }, [menuData, initializeExpandedMenus]);
+  }, [filteredMenuData, initializeExpandedMenus]);
 
   // Update active item etc. (modifié pour gérer le parentKey avec préfixe)
   useEffect(() => {
-    if (menuData.length === 0) return;
+    if (filteredMenuData.length === 0) return;
     const currentPath = location.pathname === "/" ? "/" : location.pathname + location.hash;
     if (lastLocationRef.current === currentPath) return;
     if (navigationUpdateRef.current) return;
@@ -374,7 +427,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     lastLocationRef.current = currentPath;
     navigationUpdateRef.current = true;
 
-    const matchedResult = findMenuItemByPath(menuData, currentPath);
+    const matchedResult = findMenuItemByPath(filteredMenuData, currentPath);
 
     if (matchedResult) {
       const { item, parentKey, title } = matchedResult;
@@ -398,11 +451,11 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         return newExpanded;
       });
     } else {
-      if (activeItem !== "dashboard") {
-        setActiveItem("dashboard");
+      if (activeItem !== "tableau_de_bord") {
+        setActiveItem("tableau_de_bord");
       }
-      if (headerTitle !== "Dashboard") {
-        setHeaderTitle("Dashboard");
+      if (headerTitle !== "Tableau de bord") {
+        setHeaderTitle("Tableau de bord");
       }
       setExpandedMenus((prev) => {
         const newExpanded = { ...prev };
@@ -416,34 +469,11 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     setTimeout(() => {
       navigationUpdateRef.current = false;
     }, 50);
-  }, [location.pathname, location.hash, menuData, findMenuItemByPath, activeItem, headerTitle]);
+  }, [location.pathname, location.hash, filteredMenuData, findMenuItemByPath, activeItem, headerTitle]);
 
-  const toggleMobileSidebar = useCallback(() => {
-    setMobileOpen((prev) => !prev);
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen((prev) => !prev);
   }, []);
-
-  const closeMobileSidebar = useCallback(() => {
-    setMobileOpen(false);
-  }, []);
-
-  const handleOverlayClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeMobileSidebar();
-    },
-    [closeMobileSidebar]
-  );
-
-  useEffect(() => {
-    const handleResize = (): void => {
-      if (window.innerWidth > 768 && mobileOpen) {
-        setMobileOpen(false);
-      }
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [mobileOpen]);
 
   const toggleMenu = useCallback((menuKey: string) => {
     setExpandedMenus((prev) => ({
@@ -474,7 +504,6 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
       navigationUpdateRef.current = true;
       setActiveItem(itemId);
       setHeaderTitle(title);
-      setMobileOpen(false);
       setExpandedMenus((prev) => {
         const newExpanded = { ...prev };
         Object.keys(newExpanded).forEach((key) => {
@@ -488,11 +517,6 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     },
     []
   );
-
-  const handleThemeChange = useCallback((newTheme: string) => {
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-  }, []);
 
   // Group menu by section
   const groupMenuBySection = useCallback((menuItems: MenuItem[]) => {
@@ -537,7 +561,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
                 <IconComponent className="nav-icon" />
               </div>
               <span className="nav-text">{menuLabel}</span>
-              {!collapsed && <FaIcons.FaChevronDown className={`nav-arrow ${isExpanded ? "rotated" : ""}`} />}
+              <FaIcons.FaChevronDown className={`nav-arrow ${isExpanded ? "rotated" : ""}`} />
             </NavButton>
           ) : (
             <NavLink
@@ -546,7 +570,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
               onClick={setActive(
                 item.menu.menuKey,
                 menuLabel,
-                level === 0 ? null : findParentKey(menuData, item.menu.menuKey)
+                level === 0 ? null : findParentKey(filteredMenuData, item.menu.menuKey)
               )}
             >
               <div className="nav-icon-wrapper">
@@ -563,37 +587,37 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         </NavItem>
       );
     },
-    [expandedMenus, collapsed, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel, menuData, findParentKey]
+    [expandedMenus, activeItem, getIconComponent, toggleMenu, setActive, getMenuLabel, filteredMenuData, findParentKey]
   );
 
   const renderSection = useCallback((sectionName: string, items: MenuItem[]) => {
     return (
       <>
-        <SidebarDivider $collapsed={collapsed}>
-          <span>{!collapsed && sectionName}</span>
+        <SidebarDivider>
+          <span>{sectionName}</span>
         </SidebarDivider>
         {isMenuLoading ? (
-          <MenuLoadingDots $collapsed={collapsed}>Chargement...</MenuLoadingDots>
+          <MenuLoadingDots>Chargement...</MenuLoadingDots>
         ) : (
           items.length > 0 &&
           items.map((item) => renderMenuItem(item, 0))
         )}
       </>
     );
-  }, [isMenuLoading, collapsed, renderMenuItem]);
+  }, [isMenuLoading, renderMenuItem]);
 
   const renderMenu = useCallback(() => {
-    const groupedMenu = groupMenuBySection(menuData);
+    const groupedMenu = groupMenuBySection(filteredMenuData);
 
     return (
       <SidebarNav>
         <NavUl>
-          {renderSection("NAVIGATION", groupedMenu.navigation)}
-          {renderSection("ADMINISTRATION", groupedMenu.administration)}
+          {groupedMenu.navigation.length > 0 && renderSection("NAVIGATION", groupedMenu.navigation)}
+          {groupedMenu.administration.length > 0 && renderSection("ADMINISTRATION", groupedMenu.administration)}
         </NavUl>
       </SidebarNav>
     );
-  }, [groupMenuBySection, menuData, renderSection]);
+  }, [groupMenuBySection, filteredMenuData, renderSection]);
 
   // Si en train de vérifier l'authentification, afficher un écran vide
   if (isCheckingAuth) {
@@ -631,20 +655,19 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
 
   return (
     <App className={`theme-${theme}`}>
-      {mobileOpen && <SidebarOverlay onClick={handleOverlayClick} />}
-      <Sidebar $collapsed={collapsed} $mobileOpen={mobileOpen}>
+      <Sidebar $isOpen={isSidebarOpen}>
         <SidebarHeader>
           <LogoContainer>
             <LogoImage src="/Logo.JPG" alt="Logo" />
           </LogoContainer>
         </SidebarHeader>
         {renderMenu()}
-        <Footer collapsed={collapsed} themes={themes} theme={theme} handleThemeChange={handleThemeChange} />
+        <Footer collapsed={!isSidebarOpen} />
       </Sidebar>
-      <MainContent $collapsed={collapsed}>
+      <MainContent $isOpen={isSidebarOpen}>
         <Header
-          toggleMobileSidebar={toggleMobileSidebar}
-          mobileOpen={mobileOpen}
+          toggleSidebar={toggleSidebar}
+          isSidebarOpen={isSidebarOpen}
           generateBreadcrumbs={generateBreadcrumbs}
           user={user}
           getInitials={getInitials}
@@ -652,7 +675,8 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         />
         <Content>{children}</Content>
 
-        <TemplateFooter collapsed={collapsed} />
+        <TemplateFooter />
+        <ToastContainer userId={user.userId} />
       </MainContent>
     </App>
   );

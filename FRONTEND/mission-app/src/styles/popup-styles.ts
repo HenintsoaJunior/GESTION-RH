@@ -10,7 +10,6 @@ export const PopupActions = styled.div`
   background: var(--bg-secondary);
 `;
 
-
 export const PopupOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -46,6 +45,7 @@ export const PopupTitle = styled.h2`
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--text-primary);
+  font-family: var(--font-family);
 `;
 
 export const PopupClose = styled.button<{ disabled?: boolean }>`
@@ -83,6 +83,7 @@ export const SelectedUsersTitle = styled.div`
   font-size: var(--font-size-sm);
   font-weight: 500;
   margin-bottom: var(--spacing-sm);
+  font-family: var(--font-family);
 `;
 
 export const SelectedUsersList = styled.div`
@@ -96,6 +97,7 @@ export const SelectedUserTag = styled.div`
   color: #ffffff;
   padding: var(--spacing-xs) var(--spacing-md);
   font-size: var(--font-size-sm);
+  font-family: var(--font-family);
 `;
 
 export const SectionContainer = styled.div`
@@ -113,6 +115,7 @@ export const SectionTitle = styled.div`
   font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--text-primary);
+  font-family: var(--font-family);
 `;
 
 export const ItemsList = styled.div`
@@ -150,12 +153,14 @@ export const RoleLabel = styled.label`
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: var(--spacing-xs);
+  font-family: var(--font-family);
 `;
 
 export const RoleDescription = styled.div`
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   line-height: 1.5;
+  font-family: var(--font-family);
 `;
 
 export const CenterContainer = styled.div`
@@ -179,6 +184,7 @@ export const GroupTitle = styled.div`
   font-size: var(--font-size-sm);
   margin-bottom: var(--spacing-md);
   padding-left: var(--spacing-sm);
+  font-family: var(--font-family);
 `;
 
 export const HabilitationItem = styled.div<{ selected?: boolean }>`
@@ -200,6 +206,7 @@ export const HabLabel = styled.label`
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--text-primary);
+  font-family: var(--font-family);
 `;
 
 export const PopupActionButtons = styled.div`
@@ -223,6 +230,7 @@ export const RoleBadge = styled.span`
   font-size: var(--font-size-xs);
   font-weight: 500;
   border: 1px solid var(--border-light);
+  font-family: var(--font-family);
 `;
 
 export const ButtonPrimary = styled.button`

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.lieu;
 using MyApp.Api.Services.mission;
@@ -38,107 +39,195 @@ namespace MyApp.Api.Controllers.mission
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
-//
+
         // Récupère un lieu par son identifiant
         [HttpGet("{id}")]
-        public async Task<ActionResult<Lieu>> GetById(string id)
+        [AllowAnonymous]
+        public async Task<ActionResult> GetById(string id)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Lieu ID cannot be null or empty" });
+            }
+
             try
             {
                 var lieu = await lieuService.GetByIdAsync(id);
-                if (lieu == null) return NotFound("Lieu non trouvé");
-                return Ok(lieu);
+                if (lieu == null)
+                {
+                    logger.LogWarning("Lieu not found for ID: {LieuId}", id);
+                    return NotFound(new { data = (object?)null, status = 404, message = "Lieu non trouvé" });
+                }
+                return Ok(new { data = lieu, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération du lieu {LieuId}", id);
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Erreur lors de la récupération du lieu {LieuId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la récupération du lieu");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         // Crée un nouveau lieu à partir d'un formulaire
         [HttpPost]
-        public async Task<ActionResult<object>> Create([FromBody] LieuDTOForm lieu)
+        // [AllowAnonymous]
+        public async Task<ActionResult> Create([FromBody] LieuDTOForm dto)
         {
+            if (dto == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Lieu data cannot be null" });
+            }
+
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new { data = (object?)null, status = 400, message = ModelState });
+            }
+
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
             }
 
             try
             {
-                var id = await lieuService.CreateAsync(lieu);
-                return Ok(new { id, lieu });
+                logger.LogInformation("Creating new lieu");
+                var createdId = await lieuService.CreateAsync(dto);
+                var responseData = new { LieuId = createdId };
+                return CreatedAtAction(nameof(GetById), new { id = createdId }, new { data = responseData, status = 201, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogError(ex, "Erreur lors de la création du lieu");
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Erreur lors de la création du lieu");
-                return StatusCode(500, "Une erreur est survenue lors de la création du lieu");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         // Met à jour un lieu existant
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] Lieu lieu)
+        [AllowAnonymous]
+        public async Task<ActionResult> Update(string id, [FromBody] Lieu lieu)
         {
-            if (id != lieu.LieuId) return BadRequest("L'ID dans l'URL ne correspond pas à l'ID du lieu");
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Lieu ID cannot be null or empty" });
+            }
+
+            if (lieu == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Lieu data cannot be null" });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ModelState });
+            }
+
+            if (id != lieu.LieuId)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "The ID in the URL does not match the entity." });
+            }
+
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
 
             try
             {
+                logger.LogInformation("Updating lieu with ID: {LieuId}", id);
                 var updated = await lieuService.UpdateAsync(lieu);
-                if (!updated) return NotFound("Lieu non trouvé");
-                return NoContent();
+                if (!updated)
+                {
+                    return NotFound(new { data = (object?)null, status = 404, message = "Lieu non trouvé" });
+                }
+                var responseData = new { message = $"Lieu with ID {id} successfully updated", data = lieu };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogError(ex, "Erreur lors de la mise à jour du lieu {LieuId}", id);
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Erreur lors de la mise à jour du lieu {LieuId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la mise à jour du lieu");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         // Supprime un lieu par son identifiant
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        [AllowAnonymous]
+        public async Task<ActionResult> Delete(string id)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Lieu ID cannot be null or empty" });
+            }
+
             try
             {
+                logger.LogInformation("Deleting lieu with ID: {LieuId}", id);
+                var lieu = await lieuService.GetByIdAsync(id);
+                if (lieu == null)
+                {
+                    logger.LogWarning("Lieu not found for ID: {LieuId}", id);
+                    return NotFound(new { data = (object?)null, status = 404, message = "Lieu non trouvé" });
+                }
+
                 var deleted = await lieuService.DeleteAsync(id);
-                if (!deleted) return NotFound("Lieu non trouvé");
-                return NoContent();
+                if (!deleted)
+                {
+                    return NotFound(new { data = (object?)null, status = 404, message = "Lieu non trouvé" });
+                }
+                var responseData = new { message = $"Lieu with ID {id} successfully deleted", data = new { id } };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogError(ex, "Erreur lors de la suppression du lieu {LieuId}", id);
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Erreur lors de la suppression du lieu {LieuId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la suppression du lieu");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         // Recherche paginée de lieux avec filtres
-        [HttpPost("search")]
-        public async Task<ActionResult<object>> Search([FromBody] LieuSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        [HttpGet("search")]
+        [AllowAnonymous]
+        public async Task<ActionResult<object>> Search([FromQuery] string? nom, [FromQuery] string? ville, [FromQuery] string? pays, [FromQuery] string? zoneId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            if (!ModelState.IsValid)
+            var filters = new LieuSearchFiltersDTO { Nom = nom, Ville = ville, Pays = pays, ZoneId = zoneId };
+            var (results, totalCount) = await lieuService.SearchAsync(filters, page, pageSize);
+            return Ok(new
             {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                var (results, totalCount) = await lieuService.SearchAsync(filters, page, pageSize);
-                return Ok(new
-                {
-                    data = results,
-                    totalCount,
-                    page,
-                    pageSize
-                });
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors de la recherche des lieux");
-                return StatusCode(500, "Une erreur est survenue lors de la recherche des lieux");
-            }
+                data = results,
+                totalCount,
+                page,
+                pageSize
+            });
         }
     }
 }

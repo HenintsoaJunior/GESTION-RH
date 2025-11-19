@@ -10,7 +10,7 @@ namespace MyApp.Api.Repositories.mission
     public interface IMissionValidationRepository
     {
         Task<IDbContextTransaction> BeginTransactionAsync();
-        Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize, string? employeeId = null, string? status = null);
+        Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize,RequestFilterDto requestFilterDto);
         Task<bool> ValidateAsync(string missionValidationId, string missionAssignationId);
         Task<(IEnumerable<MissionValidation>, int)> SearchAsync(MissionValidationSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<MissionValidation>> GetAllAsync();
@@ -24,6 +24,9 @@ namespace MyApp.Api.Repositories.mission
         Task<IEnumerable<MissionValidation>> GetByMissionIdAsync(string missionId);
         Task<bool> RejectedAsync(string missionValidationId, string missionAssignationId);
         Task<MissionStatsValidation> GetStatisticsAsync(string? matricule = null);
+        Task<bool> HasValidationLineAsync(string userId);
+        Task<int> GetPendingMissionsCountAsync();
+        Task<(double Rate, DateTime Date)> GetValidationRateAsync();
     }
 
     public class MissionValidationRepository : IMissionValidationRepository
@@ -40,6 +43,16 @@ namespace MyApp.Api.Repositories.mission
             return await _context.Database.BeginTransactionAsync();
         }
 
+        public async Task<bool> HasValidationLineAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return false;
+            }
+
+            return await _context.MissionValidations
+                .AnyAsync(mv => mv.ToWhom == userId && mv.Status != "cancel" && mv.Status != null);
+        }
 
         public async Task<IEnumerable<MissionValidation>> GetByMissionIdAsync(string missionId)
         {
@@ -56,39 +69,61 @@ namespace MyApp.Api.Repositories.mission
                 .ToListAsync();
         }
 
-        public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize, string? employeeId = null, string? status = null)
+        public async Task<(IEnumerable<MissionValidation>, int)> GetRequestAsync(string userId, int page, int pageSize, RequestFilterDto requestFilterDto)
         {
+            string? employeeId = requestFilterDto.EmployeeId;
+            string? status = requestFilterDto.Status;
+            string? validationDateFrom = requestFilterDto.ValidationDateFrom;
+            string? validationDateTo = requestFilterDto.ValidationDateTo;
+            string? requestDateFrom = requestFilterDto.RequestDateFrom;
+            string? requestDateTo = requestFilterDto.RequestDateTo;
+
+            // Construire la requête de base
             var query = _context.MissionValidations
                 .Include(mv => mv.Mission)
-#pragma warning disable CS8602
-                .ThenInclude(m => m.Lieu)
-#pragma warning restore CS8602
+                .ThenInclude(m => m!.Lieu)
                 .Include(mv => mv.MissionAssignation)
-                .Include(mv => mv.Creator)
-                .Include(mv => mv.Validator)
-                .Where(mv => mv.ToWhom == userId)
-                .Where(mv => mv.Status != "cancel")
-                .Where(mv => mv.Status != null)
-                .AsQueryable();
+                    .ThenInclude(ma => ma!.Employee)
+                .Where(mv => mv.ToWhom == userId && mv.Status != "cancel" && mv.Status != null);
 
             // Filtre sur EmployeeId (via MissionAssignation)
             if (!string.IsNullOrWhiteSpace(employeeId))
             {
-                query = query
-                    .Join(
-                        _context.MissionAssignations,
-                        mv => mv.MissionAssignationId,
-                        ma => ma.AssignationId,
-                        (mv, ma) => new { MissionValidation = mv, MissionAssignation = ma }
-                    )
-                    .Where(x => x.MissionAssignation.EmployeeId == employeeId)
-                    .Select(x => x.MissionValidation);
+                query = query.Where(mv => mv.MissionAssignation!.EmployeeId == employeeId);
             }
 
             // Filtre sur Status
             if (!string.IsNullOrWhiteSpace(status))
             {
                 query = query.Where(mv => mv.Status == status);
+            }
+
+            // Filtre sur ValidationDateFrom
+            if (!string.IsNullOrWhiteSpace(validationDateFrom))
+            {
+                var fromDate = DateTime.Parse(validationDateFrom);
+                query = query.Where(mv => mv.ValidationDate >= fromDate);
+            }
+
+            // Filtre sur ValidationDateTo
+            if (!string.IsNullOrWhiteSpace(validationDateTo))
+            {
+                var toDate = DateTime.Parse(validationDateTo);
+                query = query.Where(mv => mv.ValidationDate <= toDate);
+            }
+
+            // Filtre sur RequestDateFrom
+            if (!string.IsNullOrWhiteSpace(requestDateFrom))
+            {
+                var fromDate = DateTime.Parse(requestDateFrom);
+                query = query.Where(mv => mv.Mission!.CreatedAt >= fromDate);
+            }
+
+            // Filtre sur RequestDateTo
+            if (!string.IsNullOrWhiteSpace(requestDateTo))
+            {
+                var toDate = DateTime.Parse(requestDateTo);
+                query = query.Where(mv => mv.Mission!.CreatedAt <= toDate);
             }
 
             // Compter le nombre total d'éléments après application des filtres
@@ -103,7 +138,6 @@ namespace MyApp.Api.Repositories.mission
 
             return (results, totalCount);
         }
-
 
         public async Task<bool> RejectedAsync(string missionValidationId, string missionAssignationId)
         {
@@ -303,6 +337,32 @@ namespace MyApp.Api.Repositories.mission
                 Approuvee = stats.GetValueOrDefault("approved", 0),
                 Rejetee = stats.GetValueOrDefault("rejected", 0)
             };
+        }
+
+        public async Task<int> GetPendingMissionsCountAsync()
+        {
+            return await _context.MissionValidations
+                .Where(mv => mv.Status == "pending")
+                .Select(mv => mv.MissionId)
+                .Distinct()
+                .CountAsync();
+        }
+
+        public async Task<(double Rate, DateTime Date)> GetValidationRateAsync()
+        {
+            var maxDate = await _context.MissionValidations
+                .Where(mv => mv.Status != null && mv.Status != "cancel" && mv.Status != "pending")
+                .MaxAsync(mv => (DateTime?)mv.ValidationDate) ?? DateTime.UtcNow;
+
+            var query = _context.MissionValidations
+                .Where(mv => mv.ValidationDate <= maxDate && mv.Status != null && mv.Status != "cancel" && mv.Status != "pending");
+
+            var approvedCount = await query.CountAsync(mv => mv.Status == "approved");
+            var rejectedCount = await query.CountAsync(mv => mv.Status == "rejected");
+            var totalValidated = approvedCount + rejectedCount;
+            var rate = totalValidated > 0 ? (double)approvedCount / totalValidated * 100 : 0;
+
+            return (rate, maxDate);
         }
     }
 }

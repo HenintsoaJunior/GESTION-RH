@@ -16,18 +16,15 @@ namespace MyApp.Api.Services.menu
     {
         private readonly IMenuRepository _menuRepository;
         private readonly IMenuHierarchyRepository _hierarchyRepository;
-        private readonly IUserRoleService  _userRoleService;
         private readonly IModuleRepository _moduleRepository;
 
         public MenuService(
             IMenuRepository menuRepository,
             IMenuHierarchyRepository hierarchyRepository,
-            IUserRoleService userRoleService,
             IModuleRepository moduleRepository)
         {
             _menuRepository = menuRepository;
             _hierarchyRepository = hierarchyRepository;
-            _userRoleService = userRoleService;
             _moduleRepository = moduleRepository;
         }
 
@@ -35,14 +32,9 @@ namespace MyApp.Api.Services.menu
         {
             var rootHierarchies = await _hierarchyRepository.GetRootMenusAsync();
             var result = new List<MenuHierarchyDto>();
-            var roleNames = await _userRoleService.GetRoleNamesByUserIdAsync(UserId) ?? [];
-
-            Console.WriteLine($"Roles for UserId {UserId}: {string.Join(", ", roleNames)}");
-            var menusWithRoles = await _menuRepository.GetAllWithRolesAsync(roleNames);
-
-            Console.WriteLine($"Menus accessible to UserId {UserId}: {string.Join(", ", menusWithRoles.Select(m => m.MenuKey))}");
-            
-            var menuDict = menusWithRoles.ToDictionary(m => m.MenuId, m => m);
+            var menus = await _menuRepository.GetAllAsync();
+            var enabledMenus = menus.Where(m => m.IsEnabled).ToList();
+            var menuDict = enabledMenus.ToDictionary(m => m.MenuId, m => m);
 
             foreach (var hierarchy in rootHierarchies)
             {
@@ -64,7 +56,7 @@ namespace MyApp.Api.Services.menu
 
         private async Task<MenuHierarchyDto?> BuildMenuHierarchyDto(MenuHierarchy hierarchy, Dictionary<string, Menu> menuDict)
         {
-            if (!menuDict.TryGetValue(hierarchy.MenuId, out var menu) || !menu.IsEnabled)
+            if (!menuDict.TryGetValue(hierarchy.MenuId, out var menu))
                 return null;
 
             var menuDto = new MenuDto

@@ -10,6 +10,8 @@ namespace MyApp.Api.Repositories.employee
         void Detach(Employee employee);
         Task<(IEnumerable<Employee>, int)> SearchAsync(EmployeeSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Employee>> GetAllAsync();
+        Task<IEnumerable<Employee>> GetAllEmployeeSimpleAsync();
+        Task<IEnumerable<Employee>?> GetByMatriculeSimpleAsync(string[] matricules);
         Task<Employee?> GetByIdAsync(string id);
         Task<IEnumerable<Employee>> GetByGenderAsync(string genderId);
         Task AddAsync(Employee employee);
@@ -60,7 +62,7 @@ namespace MyApp.Api.Repositories.employee
             // Filtre par prénom (FirstName)
             if (!string.IsNullOrWhiteSpace(filters.FirstName))
             {
-                query = query.Where(e => e.FirstName.Contains(filters.FirstName));
+                query = query.Where(e => e.FirstName!.Contains(filters.FirstName));
             }
 
             // Filtre par direction (DirectionId)
@@ -107,6 +109,8 @@ namespace MyApp.Api.Repositories.employee
 
         public async Task<IEnumerable<Employee>> GetAllAsync()
         {
+            // Optimisation pour GetAll : Charger sans Includes si non nécessaires, ou les garder si requis pour fluidité
+            // Ici, on garde les Includes car ils sont probablement utilisés, mais en cache on stocke tout
             return await _context.Employees
                 .Include(e => e.Unit)
                 .Include(e => e.Service)
@@ -117,6 +121,31 @@ namespace MyApp.Api.Repositories.employee
                 .Include(e => e.Site)
                 .ToListAsync();
         }
+
+
+        public async Task<IEnumerable<Employee>> GetAllEmployeeSimpleAsync()
+        {
+            return await _context.Employees
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Employee>?> GetByMatriculeSimpleAsync(string[] matricules)
+        {
+            if (matricules == null || matricules.Length == 0)
+                return Enumerable.Empty<Employee>();
+
+            return await _context.Employees
+            .Include(e => e.Unit)
+                .Include(e => e.Service)
+                .Include(e => e.Department)
+                .Include(e => e.Direction)
+                .Include(e => e.ContractType)
+                .Include(e => e.Gender)
+                .Include(e => e.Site)
+                .Where(e => matricules.Contains(e.EmployeeCode))
+                .ToListAsync();
+        }
+        
 
         public async Task<Employee?> GetByIdAsync(string id)
         {
@@ -135,7 +164,14 @@ namespace MyApp.Api.Repositories.employee
         {
             return await _context.Employees
                 .Where(e => e.GenderId == genderId)
-                .ToListAsync();
+                .Include(e => e.Unit)
+                .Include(e => e.Service)
+                .Include(e => e.Department)
+                .Include(e => e.Direction)
+                .Include(e => e.ContractType)
+                .Include(e => e.Gender)
+                .Include(e => e.Site)
+                .ToListAsync(); // Ajout des Includes pour cohérence et éviter N+1 si utilisé avec relations
         }
 
         public async Task AddAsync(Employee employee)

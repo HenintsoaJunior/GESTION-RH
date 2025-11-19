@@ -2,15 +2,28 @@
 "use client";
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { ArrowLeft, Save, List, FileText, Edit2, Trash2, X, Upload, Eye, Download, Paperclip, ChevronDown } from "lucide-react";
-import { PageHeader, HeaderLeft, BtnBack, HeaderActions, SaveButton, ToggleButton, EditButton, DeleteButton, CancelButton, ReportTextContainer, ReportHeader, ReportActions } from "@/styles/detailsmission-styles";
+import { Save, List, FileText, Edit2, Trash2, X, Upload, Eye, Download, ChevronDown, Folder } from "lucide-react";
+import { 
+  PageHeader, 
+  HeaderLeft, 
+  HeaderActions, 
+  SaveButton, 
+  ToggleButton, 
+  EditButton, 
+  DeleteButton, 
+  CancelButton, 
+  ReportTextContainer, 
+  ReportHeader, 
+  ReportActions,
+  BtnBack,
+} from "@/styles/detailsmission-styles";
 import { FolderContainer, FolderHeader, AttachmentsList, AttachmentItem, IconButton } from "@/styles/detailsmission-styles";
 import { ModalOverlay, ModalContentStyled, ModalHeader, ModalTitle, ModalCloseButton, ModalBody, FilePreview, ImagePreview, ErrorMessage } from "@/styles/detailsmission-styles";
+import { Separator } from "@/styles/detailsmission-styles";
 import Alert from "@/components/alert";
 import {
     DetailSection,
     SectionTitle,
-    Separator,
 } from "@/styles/detailsmission-styles";
 import {
     FormTable,
@@ -134,8 +147,8 @@ const ReportAttachments: React.FC<ReportAttachmentsProps> = ({ attachments, isOp
     <>
       <FolderContainer>
         <FolderHeader onClick={onToggle} $isOpen={isOpen}>
-          <span className="folder-icon">📁</span>
-          <span>
+          <Folder className="folder-icon" size={20} />
+          <span style={{ fontSize: "12px" }}>
             Pièces Jointes · {uniqueAttachments.length} fichier{uniqueAttachments.length !== 1 ? "s" : ""}
           </span>
           <ChevronDown className="chevron" size={20} />
@@ -147,8 +160,8 @@ const ReportAttachments: React.FC<ReportAttachmentsProps> = ({ attachments, isOp
                 <AttachmentItem key={att.fileName || index}>
                   <FileText size={24} color="var(--primary-color)" />
                   <div className="file-info">
-                    <div className="file-name">{att.fileName || "Fichier sans nom"}</div>
-                    <div className="file-size">{(att.fileSize || 0).toLocaleString()} Ko</div>
+                    <div className="file-name" style={{ fontSize: "12px" }}>{att.fileName || "Fichier sans nom"}</div>
+                    <div className="file-size" style={{ fontSize: "12px" }}>{(att.fileSize || 0).toLocaleString()} Ko</div>
                   </div>
                   <div className="actions">
                     <IconButton
@@ -169,7 +182,7 @@ const ReportAttachments: React.FC<ReportAttachmentsProps> = ({ attachments, isOp
                 </AttachmentItem>
               ))
             ) : (
-              <p style={{ padding: "var(--spacing-xl)", textAlign: "center", color: "var(--text-muted)" }}>
+              <p style={{ padding: "var(--spacing-xl)", textAlign: "center", color: "var(--text-muted)", fontSize: "12px" }}>
                 Aucune pièce jointe
               </p>
             )}
@@ -470,15 +483,7 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
         setModalOpen,
         att.fileType
       );
-    }, [setModalContent, setModalOpen]);
-
-    const handleBack = useCallback(() => {
-        if (onBack) {
-            onBack();
-        } else {
-            window.location.href = "/missions";
-        }
-    }, [onBack]);
+    }, []);
 
     const toggleView = useCallback(() => {
         if (viewMode === "list" && hasExistingReport) {
@@ -541,16 +546,11 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
         <>
             <PageHeader>
                 <HeaderLeft>
-                    <BtnBack onClick={handleBack} title="Retour aux missions">
-                        <ArrowLeft className="w-5 h-5" />
-                    </BtnBack>
+                  <BtnBack onClick={onBack} title="Retour">
+                      
+                  </BtnBack>
                 </HeaderLeft>
-                <div className="header-center">
-                    <div className="header-title-section">
-                        <h1 className="page-title">Rapport de Mission</h1>
-                        <p className="page-subtitle">Assignation #{assignationId}</p>
-                    </div>
-                </div>
+                
                 <HeaderActions>
                     {shouldShowToggleButton && (
                         <ToggleButton
@@ -629,95 +629,82 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                                         <FormRow>
                                             <FormFieldCell colSpan={2}>
                                                 <div style={{ marginTop: '16px' }}>
-                                                    <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>Fichiers joints ({totalAttachments}) :</p>
-                                                    {existingAttachments.length > 0 && (
-                                                        <div style={{ marginBottom: '16px' }}>
-                                                            <h4 style={{ marginBottom: '8px', fontSize: '14px' }}>Fichiers existants :</h4>
-                                                            {existingAttachments.map((file, index) => (
-                                                                <div key={`existing-${index}`} style={{ 
-                                                                    display: 'flex', 
-                                                                    justifyContent: 'space-between', 
-                                                                    alignItems: 'center', 
-                                                                    padding: '8px', 
-                                                                    border: '1px solid #ddd', 
-                                                                    borderRadius: '4px', 
-                                                                    marginBottom: '4px' 
-                                                                }}>
-                                                                    <div>
-                                                                        <Paperclip size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                                                                        <span>{file.fileName} ({file.fileSize} Ko)</span>
-                                                                    </div>
-                                                                    <div>
-                                                                        <button 
-                                                                            onClick={() => handleFileView(file.fileContent, file.fileName, (content: ModalContent | null) => setModalContent(content || {}), setModalOpen, file.fileType)}
-                                                                            style={{ marginRight: '8px', background: 'none', border: 'none', cursor: 'pointer' }}
-                                                                            title="Prévisualiser"
-                                                                        >
-                                                                            <Eye size={16} />
-                                                                        </button>
-                                                                        <button 
-                                                                            onClick={() => handleFileDownload(file.fileContent, file.fileName)} 
-                                                                            style={{ marginRight: '8px', background: 'none', border: 'none', cursor: 'pointer' }}
-                                                                            title="Télécharger"
-                                                                        >
-                                                                            <Download size={16} />
-                                                                        </button>
-                                                                        <button 
-                                                                            onClick={() => handleRemoveAttachment(index, true)} 
-                                                                            style={{ background: 'red', color: 'white', border: 'none', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer' }}
-                                                                            title="Supprimer"
-                                                                        >
-                                                                            <Trash2 size={16} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {attachments.length > 0 && (
-                                                        <div>
-                                                            <h4 style={{ marginBottom: '8px', fontSize: '14px' }}>Nouveaux fichiers :</h4>
-                                                            {attachments.map((file, index) => (
-                                                                <div key={`new-${index}`} style={{ 
-                                                                    display: 'flex', 
-                                                                    justifyContent: 'space-between', 
-                                                                    alignItems: 'center', 
-                                                                    padding: '8px', 
-                                                                    border: '1px solid #ddd', 
-                                                                    borderRadius: '4px', 
-                                                                    marginBottom: '4px' 
-                                                                }}>
-                                                                    <div>
-                                                                        <Paperclip size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                                                                        <span>{file.fileName} ({file.fileSize} Ko)</span>
-                                                                    </div>
-                                                                    <div>
-                                                                        <button 
-                                                                            onClick={() => handleFileView(file.fileContent, file.fileName, (content: ModalContent | null) => setModalContent(content || {}), setModalOpen, file.fileType)}
-                                                                            style={{ marginRight: '8px', background: 'none', border: 'none', cursor: 'pointer' }}
-                                                                            title="Prévisualiser"
-                                                                        >
-                                                                            <Eye size={16} />
-                                                                        </button>
-                                                                        <button 
-                                                                            onClick={() => handleFileDownload(file.fileContent, file.fileName)} 
-                                                                            style={{ marginRight: '8px', background: 'none', border: 'none', cursor: 'pointer' }}
-                                                                            title="Télécharger"
-                                                                        >
-                                                                            <Download size={16} />
-                                                                        </button>
-                                                                        <button 
-                                                                            onClick={() => handleRemoveAttachment(index, false)} 
-                                                                            style={{ background: 'red', color: 'white', border: 'none', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer' }}
-                                                                            title="Supprimer"
-                                                                        >
-                                                                            <Trash2 size={16} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                    <p style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '12px' }}>Fichiers joints ({totalAttachments}) :</p>
+                                                    <AttachmentsList style={{ padding: 0 }}>
+                                                        {existingAttachments.length > 0 && (
+                                                            <>
+                                                                {existingAttachments.map((file, index) => (
+                                                                    <AttachmentItem key={`existing-${index}`}>
+                                                                        <FileText size={24} style={{ color: "var(--primary-color)", minWidth: "24px" }} />
+                                                                        <div className="file-info" style={{ flex: 1, minWidth: 0 }}>
+                                                                            <div className="file-name" style={{ fontWeight: "bold", fontSize: "12px" }}>{file.fileName}</div>
+                                                                            <div className="file-size" style={{ fontSize: "12px", color: "var(--text-muted)" }}>{file.fileSize} Ko</div>
+                                                                        </div>
+                                                                        <div className="actions" style={{ display: "flex", gap: "var(--spacing-xs)" }}>
+                                                                            <IconButton
+                                                                                onClick={() => handlePreview(file)}
+                                                                                title="Prévisualiser"
+                                                                                $variant="primary"
+                                                                            >
+                                                                                <Eye size={16} />
+                                                                            </IconButton>
+                                                                            <IconButton
+                                                                                $download
+                                                                                onClick={() => handleFileDownload(file.fileContent || "", file.fileName || "")}
+                                                                                title="Télécharger"
+                                                                            >
+                                                                                <Download size={16} />
+                                                                            </IconButton>
+                                                                            <IconButton
+                                                                                onClick={() => handleRemoveAttachment(index, true)}
+                                                                                title="Supprimer"
+                                                                                style={{ color: "var(--danger-color)" }}
+                                                                            >
+                                                                                <Trash2 size={16} />
+                                                                            </IconButton>
+                                                                        </div>
+                                                                    </AttachmentItem>
+                                                                ))}
+                                                            </>
+                                                        )}
+                                                        {attachments.length > 0 && (
+                                                            <>
+                                                                <p style={{ margin: '16px 0 8px 0', fontSize: '12px', fontWeight: 'bold' }}>Nouveaux fichiers :</p>
+                                                                {attachments.map((file, index) => (
+                                                                    <AttachmentItem key={`new-${index}`}>
+                                                                        <FileText size={24} style={{ color: "var(--primary-color)", minWidth: "24px" }} />
+                                                                        <div className="file-info" style={{ flex: 1, minWidth: 0 }}>
+                                                                            <div className="file-name" style={{ fontWeight: "bold", fontSize: "12px" }}>{file.fileName}</div>
+                                                                            <div className="file-size" style={{ fontSize: "12px", color: "var(--text-muted)" }}>{file.fileSize} Ko</div>
+                                                                        </div>
+                                                                        <div className="actions" style={{ display: "flex", gap: "var(--spacing-xs)" }}>
+                                                                            <IconButton
+                                                                                onClick={() => handlePreview(file)}
+                                                                                title="Prévisualiser"
+                                                                                $variant="primary"
+                                                                            >
+                                                                                <Eye size={16} />
+                                                                            </IconButton>
+                                                                            <IconButton
+                                                                                $download
+                                                                                onClick={() => handleFileDownload(file.fileContent || "", file.fileName || "")}
+                                                                                title="Télécharger"
+                                                                            >
+                                                                                <Download size={16} />
+                                                                            </IconButton>
+                                                                            <IconButton
+                                                                                onClick={() => handleRemoveAttachment(index, false)}
+                                                                                title="Supprimer"
+                                                                                style={{ color: "var(--danger-color)" }}
+                                                                            >
+                                                                                <Trash2 size={16} />
+                                                                            </IconButton>
+                                                                        </div>
+                                                                    </AttachmentItem>
+                                                                ))}
+                                                            </>
+                                                        )}
+                                                    </AttachmentsList>
                                                 </div>
                                             </FormFieldCell>
                                         </FormRow>
@@ -749,18 +736,18 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                 </DetailSection>
             ) : (
                 <DetailSection>
-                    <SectionTitle>Liste</SectionTitle>
+                    <SectionTitle style={{ fontSize: "12px" }}>Liste</SectionTitle>
                     {isLoading ? (
-                        <NoDataMessage>Chargement des rapports...</NoDataMessage>
+                        <NoDataMessage style={{ fontSize: "12px" }}>Chargement des rapports...</NoDataMessage>
                     ) : filteredReports.length === 0 ? (
-                        <NoDataMessage>Aucun rapport disponible.</NoDataMessage>
+                        <NoDataMessage style={{ fontSize: "12px" }}>Aucun rapport disponible.</NoDataMessage>
                     ) : (
                         <div>
                             {filteredReports.map((report: MissionReportType & { attachments?: Attachment[] }) => (
-                                <ReportTextContainer key={report.missionReportId}>
+                                <ReportTextContainer key={report.missionReportId} style={{ fontSize: "12px" }}>
                                     <ReportHeader>
                                         <div>
-                                            <strong>Rapport #{report.missionReportId}</strong>
+                                            <strong style={{ fontSize: "12px" }}>Rapport #{report.missionReportId}</strong>
                                         </div>
                                         
                                         <ReportActions>
@@ -781,7 +768,7 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                                         </ReportActions>
                                     </ReportHeader>
                                     
-                                    <div dangerouslySetInnerHTML={{ __html: report.text }} />
+                                    <div style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: report.text }} />
                                     {report.attachments && report.attachments.length > 0 && (
                                       <ReportAttachments
                                         attachments={report.attachments}

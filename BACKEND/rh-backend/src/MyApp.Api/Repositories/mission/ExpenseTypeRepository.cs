@@ -27,7 +27,7 @@ namespace MyApp.Api.Repositories.mission
         public async Task<IEnumerable<ExpenseType>> GetAllAsync()
         {
             return await _context.ExpenseTypes
-                .OrderBy(e => e.Type)
+                .OrderBy(e => e.TimeStart)
                 .ToListAsync();
         }
 

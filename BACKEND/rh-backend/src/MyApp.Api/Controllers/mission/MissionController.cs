@@ -9,7 +9,7 @@ namespace MyApp.Api.Controllers.mission
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class MissionController(IMissionService missionService,IMissionAssignationService missionAssignationService, ILogger<MissionController> logger)
+    public class MissionController(IMissionService missionService, IMissionAssignationService missionAssignationService, ILogger<MissionController> logger)
         : ControllerBase
     {
 
@@ -82,7 +82,6 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
-        // Met à jour une mission existante
         [HttpPut("{id}")]
         [AllowAnonymous]
         public async Task<ActionResult> Update(string id, [FromBody] MissionDTOForm mission)
@@ -108,7 +107,7 @@ namespace MyApp.Api.Controllers.mission
 
                 if (updated)
                 {
-                    var responseData = new { success = updated, mission };
+                    var responseData = mission;
                     return Ok(new { data = responseData, status = 200, message = "success" });
                 }
 
@@ -126,78 +125,308 @@ namespace MyApp.Api.Controllers.mission
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Mission>>> GetAll()
+        [AllowAnonymous]
+        public async Task<ActionResult> GetAll()
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
             try
             {
                 var missions = await missionService.GetAllAsync();
-                return Ok(missions);
+                var responseData = missions;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Erreur lors de la récupération de toutes les missions");
-                return StatusCode(500, "Une erreur est survenue lors de la récupération des missions");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
         
         // Supprime une mission par son identifiant
         [HttpDelete("{id}/{userId}")]
-        public async Task<IActionResult> Delete(string id, string userId)
+        [AllowAnonymous]
+        public async Task<ActionResult> Delete(string id, string userId)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'id ne peut pas être null ou vide." });
+            }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'userId ne peut pas être null ou vide." });
+            }
+
             try
             {
                 var deleted = await missionService.DeleteAsync(id, userId);
-                if (!deleted) return NotFound();
-                return Ok(new { message = $"Mission with ID {id} successfully deleted" });
+                if (deleted)
+                {
+                    return Ok(new { data = (object?)null, status = 200, message = $"Mission pour id {id} supprimée avec succès." });
+                }
+
+                return NotFound(new { data = (object?)null, status = 404, message = $"Mission pour id {id} non trouvée." });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Erreur lors de la suppression de la mission {MissionId}", id);
-                return StatusCode(500, "Une erreur est survenue lors de la suppression de la mission");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         // Recherche paginée de missions avec filtres
         [HttpPost("search")]
-        public async Task<ActionResult<object>> Search([FromBody] MissionSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        [AllowAnonymous]
+        public async Task<ActionResult> Search([FromBody] MissionSearchFiltersDTO filters, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var (results, totalCount) = await missionService.SearchAsync(filters, page, pageSize);
-            return Ok(new
+            if (!User.Identity?.IsAuthenticated ?? true)
             {
-                data = results,
-                totalCount,
-                page,
-                pageSize
-            });
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (filters == null)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Les filtres ne peuvent pas être null." });
+            }
+
+            try
+            {
+                var (results, totalCount) = await missionService.SearchAsync(filters, page, pageSize);
+                var responseData = new { results, totalCount, page, pageSize };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la recherche des missions");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
         }
 
         // Récupère des statistiques sur les missions
         [HttpGet("stats")]
-        // [Authorize(Roles = "admin")]
-        public async Task<ActionResult<MissionStats>> GetStatistics([FromQuery] string[]? matricule = null)
+        [AllowAnonymous]
+        public async Task<ActionResult> GetStatistics([FromQuery] string[]? matricule = null)
         {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
             try
             {
                 var stats = await missionService.GetStatisticsAsync(matricule);
-                return Ok(stats);
+                var responseData = stats;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error retrieving mission statistics with matricule filter: {Matricule}", matricule != null ? string.Join(", ", matricule) : "none");
-                return StatusCode(500, "An error occurred while retrieving mission statistics.");
+                logger.LogError(ex, "Erreur lors de la récupération des statistiques des missions avec filtre matricule: {Matricule}", matricule != null ? string.Join(", ", matricule) : "aucun");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
         // Annule une mission (change son statut à "Annulé")
         [HttpPut("{id}/cancel/{userId}")]
-        public async Task<IActionResult> CancelMission(string id, string userId)
+        [AllowAnonymous]
+        public async Task<ActionResult> CancelMission(string id, string userId)
         {
-            var cancelled = await missionService.CancelAsync(id, userId);
-            if (!cancelled) 
+            if (!User.Identity?.IsAuthenticated ?? true)
             {
-                return NotFound(new { error = $"Mission with ID {id} not found" });
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
             }
-            logger.LogInformation("Mission {MissionId} cancelled via controller", id);
-            return Ok(new { message = $"Mission with ID {id} successfully cancelled" });
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'id ne peut pas être null ou vide." });
+            }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'userId ne peut pas être null ou vide." });
+            }
+
+            try
+            {
+                var cancelled = await missionService.CancelAsync(id, userId);
+                if (cancelled)
+                {
+                    logger.LogInformation("Mission {MissionId} annulée via le contrôleur", id);
+                    return Ok(new { data = (object?)null, status = 200, message = "success" });
+                }
+
+                return NotFound(new { data = (object?)null, status = 404, message = "errors" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de l'annulation de la mission {MissionId}", id);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("ongoing-count")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetOngoingMissionsCount()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var count = await missionService.GetOngoingMissionsCountAsync();
+                var responseData = count;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération du nombre de missions en cours");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+
+        [HttpGet("planned-count")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetPlannedMissionsThisMonthCountAsync()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var count = await missionService.GetPlannedMissionsThisMonthCountAsync();
+                var responseData = count;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération du nombre de missions en cours");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+
+        [HttpGet("planned-chart")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetPlannedMissionsThisMonthCountWithDateAsync()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var result = await missionService.GetPlannedMissionsThisDateCountWithDateAsync();
+                
+                var responseData = new { count = result.Item1, date = result.Item2 };
+                
+                return Ok(new { data = responseData, status = 200, message = "Success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération du nombre de missions en cours");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("progress-rate")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetProgressRateAsync()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var result = await missionService.GetProgressRateAsync();
+                var progressRate = result.progressRate;
+                var calculationDate = result.calculationDate;
+                var responseData = new { progressRate, calculationDate };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération du taux d'avancement des missions");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("types-rate")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetMissionTypesRateAsync()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var result = await missionService.GetMissionTypesRateAsync();
+                var nationalRate = result.nationalRate;
+                var internationalRate = result.internationalRate;
+                var responseData = new { nationalRate, internationalRate };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération du taux des types de missions");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
         }
     }
 }

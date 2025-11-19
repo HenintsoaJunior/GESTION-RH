@@ -25,18 +25,38 @@ namespace MyApp.Api.Entities.employee
         [MaxLength(50)]
         public string LastName { get; set; } = default!;
 
-        [Required]
         [Column("first_name")]
         [MaxLength(100)]
-        public string FirstName { get; set; } = default!;
+        public string? FirstName { get; set; }
+
+        [Column("birth_date")]
+        public DateTime? BirthDate { get; set; }
+
+        [Column("birth_place")]
+        [MaxLength(100)]
+        public string? BirthPlace { get; set; }
+
+        [Column("category")]
+        [MaxLength(50)]
+        public string? Category { get; set; }
+        
+        [Column("id_number")]
+        [MaxLength(50)]
+        public string? IdNumber { get; set; }
+
+        [Column("id_issue_date")]
+        public DateTime? IdIssueDate { get; set; }
+
+        [Column("id_issue_place")]
+        [MaxLength(100)]
+        public string? IdIssuePlace { get; set; }
 
         [Column("phone_number")]
         [MaxLength(20)]
         public string? PhoneNumber { get; set; }
 
-        [Required]
         [Column("hire_date")]
-        public DateTime HireDate { get; set; }
+        public DateTime? HireDate { get; set; }
 
         [Column("job_title")]
         [MaxLength(100)]
@@ -44,10 +64,10 @@ namespace MyApp.Api.Entities.employee
 
         [Column("contract_end_date")]
         public DateTime? ContractEndDate { get; set; }
-        
+
         [Column("status")]
         [MaxLength(50)]
-        public string? Status { get; set; }
+        public string? Status { get; set; } = "Active";
 
         [Required]
         [Column("site_id")]
@@ -65,10 +85,9 @@ namespace MyApp.Api.Entities.employee
         [ForeignKey("GenderId")]
         public Gender? Gender { get; set; }
 
-        [Required]
         [Column("contract_type_id")]
         [MaxLength(50)]
-        public string ContractTypeId { get; set; } = default!;
+        public string? ContractTypeId { get; set; }
 
         [ForeignKey("ContractTypeId")]
         public ContractType? ContractType { get; set; }
@@ -111,6 +130,12 @@ namespace MyApp.Api.Entities.employee
             EmployeeCode = form.EmployeeCode;
             LastName = form.LastName;
             FirstName = form.FirstName;
+            Category = form.Category;
+            BirthDate = form.BirthDate;
+            BirthPlace = form.BirthPlace;
+            IdNumber = form.IdNumber;
+            IdIssueDate = form.IdIssueDate;
+            IdIssuePlace = form.IdIssuePlace;
             PhoneNumber = form.PhoneNumber;
             HireDate = form.HireDate;
             JobTitle = form.JobTitle;

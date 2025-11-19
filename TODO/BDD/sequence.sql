@@ -215,6 +215,20 @@ CREATE SEQUENCE seq_lieu_id
     CACHE 50;
 GO
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_geo_zone_id')
+    DROP SEQUENCE seq_geo_zone_id;
+GO
+CREATE SEQUENCE seq_geo_zone_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+
 IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_mission_id')
     DROP SEQUENCE seq_mission_id;
 GO
@@ -459,6 +473,36 @@ CREATE SEQUENCE seq_mission_report_attachments
     NO CYCLE
     CACHE 50;
 GO
+
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_tmp_employee_id')
+    DROP SEQUENCE seq_tmp_employee_id;
+GO
+CREATE SEQUENCE seq_tmp_employee_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_expense_compensation_scale_id')
+    DROP SEQUENCE seq_expense_compensation_scale_id;
+GO
+CREATE SEQUENCE seq_expense_compensation_scale_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+
 
 
 

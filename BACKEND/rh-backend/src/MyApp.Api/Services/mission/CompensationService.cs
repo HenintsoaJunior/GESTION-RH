@@ -10,9 +10,9 @@ namespace MyApp.Api.Services.mission
     {
         Task<IEnumerable<Compensation>> GetAllAsync();
         Task<AssignationWithCompensationsDto> GetByEmployeeIdAsync(string employeeId, string missionId);
-        Task<string> CreateAsync(ComposationDTO compensation);
+        Task<string> CreateAsync(CompensationDTO compensation);
         Task<bool> UpdateStatusAsync(string employeeId, string assignationId, string status);
-        Task<IEnumerable<AssignationWithCompensationsDto>> GetCompensationsByStatusAsync(string? status);
+        Task<(IEnumerable<AssignationWithCompensationsDto>, int)> GetCompensationsByStatusAsync(string? status, int page = 1, int pageSize = 10);
         Task<decimal> GetTotalPaidAmountAsync();
         Task<decimal> GetTotalNotPaidAmountAsync();
     }
@@ -67,11 +67,12 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<IEnumerable<AssignationWithCompensationsDto>> GetCompensationsByStatusAsync(string? status)
+        public async Task<(IEnumerable<AssignationWithCompensationsDto>, int)> GetCompensationsByStatusAsync(string? status, int page = 1, int pageSize = 10)
         {
             try
             {
-                var missionAssignations = await _missionAssignationRepository.GetWithCompensationByStatusAsync(status);
+                var effectiveStatus = string.IsNullOrWhiteSpace(status) ? null : status;
+                var (missionAssignations, totalCount) = await _missionAssignationRepository.GetWithCompensationByStatusAsync(effectiveStatus, page, pageSize);
 
                 var dtos = new List<AssignationWithCompensationsDto>();
                 foreach (var ma in missionAssignations)
@@ -80,7 +81,7 @@ namespace MyApp.Api.Services.mission
                     dtos.Add(new AssignationWithCompensationsDto { Assignation = ma, Compensations = compensations });
                 }
 
-                return dtos;
+                return (dtos, totalCount);
             }
             catch (Exception ex)
             {
@@ -89,7 +90,7 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<string> CreateAsync(ComposationDTO compensation)
+        public async Task<string> CreateAsync(CompensationDTO compensation)
         {
             try
             {
@@ -123,8 +124,16 @@ namespace MyApp.Api.Services.mission
             try
             {
                 var entities = await _repository.GetByEmployeeAndAssignationIdAsync(employeeId, assignationId);
+
                 if (entities == null || !entities.Any())
                 {
+                    return false;
+                }
+
+                var missionAssignation = await _missionAssignationRepository.GetByAssignationIdAsync(assignationId);
+                if (missionAssignation == null)
+                {
+                    _logger.LogWarning("Mission assignation not found for assignationId: {assignationId}", assignationId);
                     return false;
                 }
 
@@ -133,6 +142,15 @@ namespace MyApp.Api.Services.mission
                     entity.Status = status;
                     entity.UpdatedAt = DateTime.UtcNow;
                     await _repository.UpdateAsync(entity);
+                }
+
+                if (status == "paid")
+                {
+                    if (missionAssignation.Mission != null)
+                    {
+                        missionAssignation.Mission.Status = "planned";
+                        await _missionAssignationRepository.UpdateAsync(missionAssignation);
+                    }
                 }
 
                 await _repository.SaveChangesAsync();

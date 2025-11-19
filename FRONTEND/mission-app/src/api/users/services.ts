@@ -15,6 +15,9 @@ export const USER_COLLABORATORS_BASE_KEY = ['userCollaborators'] as const;
 const USER_HABILITATION_BULK_BASE_KEY = ['userHabilitationBulk'] as const;
 export const BULK_REMOVE_USER_ROLES_KEY = ['bulkRemoveUserRoles'] as const;
 export const USER_HABILITATIONSROLE_KEY = ['userHabilitationsRole'] as const;
+export const ROLE_USER_COUNT_BASE_KEY = ['roleUserCount'] as const;
+export const USER_AVAILABILITY_KEY = ['userAvailability'] as const;
+export const USER_COLLABORATORS_MATRICULES_BASE_KEY = ['userCollaboratorsMatricules'] as const;
 
 export interface UserSearchFilters {
   name?: string;
@@ -104,6 +107,16 @@ export interface UseUserHabilitationBulkParams {
   userId: string;
 }
 
+export interface UserAvailabilityUpdateDto {
+  userId: string;
+  status: string;
+}
+
+interface UserAvailabilityData {
+  userId: string;
+  status: string;
+}
+
 interface ApiResponse<T> {
   data: T | null;
   status: number;
@@ -116,11 +129,14 @@ type SearchUsersData = {
   users: User[];
   totalCount: number;
 };
+type RoleUserCountResponse = ApiResponse<number>;
 type SearchUsersResponse = ApiResponse<SearchUsersData>;
 type RolesResponse = ApiResponse<string[]>;
 type HabilitationResponse = ApiResponse<Habilitation[]>;
 export type UserInfosResponse = ApiResponse<UserInfo[]>;
 type BulkHabilitationResponse = ApiResponse<BulkHabilitationData>;
+type UserAvailabilityResponse = ApiResponse<UserAvailabilityData>;
+type UpdateUserAvailabilityResponse = ApiResponse<UserAvailabilityData>;
 
 export interface UserRoleBulkDto {
   userIds: string[];
@@ -130,6 +146,7 @@ export interface UserRoleBulkDto {
 
 type BulkCreateUserRolesResponse = ApiResponse<UserRoleBulkDto>;
 type BulkRemoveUserRolesResponse = ApiResponse<UserRoleBulkDto>;
+type MatriculesResponse = ApiResponse<string[]>;
 
 export const useDepartments = () => {
   return useQuery<DepartmentsResponse, Error>({
@@ -432,5 +449,102 @@ export const useUserHabilitationBulk = () => {
     onError: (error) => {
       console.error('Error in bulk user habilitation:', error);
     },
+  });
+};
+
+
+export const useRoleUserCount = (roleName: string | undefined) => {
+  const queryKey = [...ROLE_USER_COUNT_BASE_KEY, roleName] as const;
+
+  return useQuery<RoleUserCountResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (!roleName) {
+        throw new Error('roleName is required for fetching role user count');
+      }
+      try {
+        const response = await api.get(`/api/User/role/${roleName}/count`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!roleName,
+  });
+};
+
+export const useUserAvailability = (userId: string | undefined) => {
+  const queryKey = [...USER_AVAILABILITY_KEY, userId] as const;
+
+  return useQuery<UserAvailabilityResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error('userId is required for fetching user availability');
+      }
+      try {
+        const response = await api.get(`/api/UserAvailability/${userId}`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!userId,
+  });
+};
+
+export const useUpdateUserAvailability = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<UpdateUserAvailabilityResponse, Error, UserAvailabilityUpdateDto>({
+    mutationKey: ['updateUserAvailability'],
+    mutationFn: async (dto: UserAvailabilityUpdateDto) => {
+      try {
+        const response = await api.put(`/api/UserAvailability/${dto.userId}`, dto);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: USER_AVAILABILITY_KEY });
+      queryClient.invalidateQueries({ queryKey: [...USER_AVAILABILITY_KEY, variables.userId] });
+    },
+    onError: (error) => {
+      console.error('Error updating user availability:', error);
+    },
+  });
+};
+
+
+export const useUserCollaboratorsMatricules = (userId: string | undefined) => {
+  const queryKey = [...USER_COLLABORATORS_MATRICULES_BASE_KEY, userId] as const;
+
+  return useQuery<MatriculesResponse, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error('userId is required for fetching collaborators matricules');
+      }
+      try {
+        const response = await api.get(`/api/User/${userId}/collaboratorsMatricules`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!userId,
   });
 };

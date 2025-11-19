@@ -99,6 +99,7 @@ export const AlertStyled = styled.div<AlertStyledProps>`
   animation: ${slideInRight} 0.3s ease-out forwards;
   backdrop-filter: blur(10px);
   transition: transform 0.3s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  font-family: var(--font-family);
 
   ${({ $type }) => {
     switch ($type) {
@@ -204,6 +205,7 @@ export const AlertMessage = styled.div`
   line-height: 1.5;
   margin-top: var(--spacing-sm);
   letter-spacing: -0.01em;
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: var(--font-size-xs);

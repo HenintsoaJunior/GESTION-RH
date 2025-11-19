@@ -33,7 +33,9 @@ namespace MyApp.Api.Services.mission
             return types.Select(t => new ExpenseType
             {
                 ExpenseTypeId = t.ExpenseTypeId,
-                Type = t.Type
+                Type = t.Type,
+                TimeStart = t.TimeStart,
+                TimeEnd = t.TimeEnd
             });
         }
 
@@ -67,6 +69,8 @@ namespace MyApp.Api.Services.mission
             if (entity == null) return false;
 
             entity.Type = expenseType.Type;
+            entity.TimeStart = expenseType.TimeStart;
+            entity.TimeEnd = expenseType.TimeEnd;
             await _repository.UpdateAsync(entity);
             await _repository.SaveChangesAsync();
             return true;

@@ -10,7 +10,7 @@ namespace MyApp.Api.Repositories.menu
         Task<Menu?> GetByIdAsync(string id);
         Task<IEnumerable<Menu>> GetByModuleIdAsync(string moduleId);
         Task<IEnumerable<Menu>> GetEnabledMenusAsync();
-        Task<IEnumerable<Menu>> GetAllWithRolesAsync(string[]? roleNames = null); // Updated to accept string array
+        Task<IEnumerable<Menu>> GetAllWithRolesAsync(string[]? roleNames = null);
     }
 
     public interface IMenuHierarchyRepository
@@ -65,8 +65,8 @@ namespace MyApp.Api.Repositories.menu
         public async Task<IEnumerable<Menu>> GetAllWithRolesAsync(string[]? roleNames = null)
         {
             var query = _context.Menus
-                .Include(m => m.MenuRoles)
-                .ThenInclude(mr => mr.Role)
+                // .Include(m => m.MenuRoles)
+                // .ThenInclude(mr => mr.Role)
                 .AsQueryable();
 
             if (roleNames != null && roleNames.Length > 0)

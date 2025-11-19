@@ -17,7 +17,7 @@ export interface MissionAssignationSearchFilters {
   maxDepartureDate?: string | null;
   minArrivalDate?: string | null;
   maxArrivalDate?: string | null;
-  status?: string;
+  status?: string[];
 }
 
 interface Site {
@@ -108,15 +108,23 @@ export interface Employee {
   updatedAt: string | null;
 }
 
+export interface GeoZone {
+  zoneId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
 export interface Lieu {
   lieuId: string;
   nom: string;
-  adresse: string;
-  ville: string;
-  codePostal: string;
+  ville: string | null;
+  codePostal: string | null;
   pays: string;
+  zoneId: string | null;
+  geoZone?: GeoZone;
   createdAt: string;
-  updatedAt: string;
+  updatedAt: string | null;
 }
 
 interface Mission {
@@ -180,7 +188,22 @@ export interface GenerateMissionOrderData {
   employeeId?: string;
 }
 
+export interface GenerateATDData {
+  employeeId?: string;
+}
+
+export interface GenerateIMData {
+  missionId?: string;
+  employeeId?: string;
+}
+
 export interface GenerateMissionOrderResult {
+  fileName: string;
+  status: string;
+}
+
+export interface PreviewPdfResult {
+  blobUrl: string;
   fileName: string;
   status: string;
 }
@@ -280,6 +303,24 @@ export const useGetMissionAssignationByAssignationId = (assignationId: string) =
   });
 };
 
+export const useGetTotalCompensations = (employeeId: string, missionId: string) => {
+  return useQuery<ApiResponse<number>, Error>({
+    queryKey: ['getTotalCompensations', employeeId, missionId] as const,
+    queryFn: async () => {
+      try {
+        const response = await api.get(`/api/MissionAssignation/total/${employeeId}/${missionId}`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!employeeId && !!missionId,
+  });
+};
+
 export const useCreateMission = () => {
   return useMutation<ApiResponse<CreateMissionResponseData>, Error, MissionDTOForm>({
     mutationFn: async (data: MissionDTOForm) => {
@@ -299,18 +340,11 @@ export const useCreateMission = () => {
 export const useUpdateMission = (missionId: string) => {
   return useMutation<ApiResponse<UpdateMissionResponseData>, Error, MissionDTOForm>({
     mutationFn: async (data: MissionDTOForm) => {
-      if (!missionId) {
-        throw new Error('Mission ID is required for update');
+      if (!missionId || !data.userId) {
+        throw new Error('Mission ID and userId are required for update');
       }
-      try {
-        const response = await api.put(`/api/Mission/${missionId}`, data);
-        return response.data;
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-          return error.response.data;
-        }
-        throw error;
-      }
+      const response = await api.put(`/api/Mission/${missionId}`, data);
+      return response.data;
     },
   });
 };
@@ -378,6 +412,417 @@ export const useGenerateMissionOrder = () => {
       window.URL.revokeObjectURL(urlBlob);
 
       return { fileName, status: "success" };
+    },
+  });
+};
+
+export const usePreviewMissionOrder = () => {
+  return useMutation<PreviewPdfResult, Error, GenerateMissionOrderData>({
+    mutationFn: async (data: GenerateMissionOrderData) => {
+      const url = "/api/MissionAssignation/OM";
+
+      const config = {
+        responseType: 'blob' as const,
+        headers: {
+          Accept: "application/pdf",
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await api.post(url, {
+        missionId: data.missionId || null,
+        employeeId: data.employeeId || null,
+      }, config);
+
+      const blob = response.data;
+
+      // Check if the blob is valid
+      if (!blob || blob.size === 0) {
+        throw new Error("Le fichier PDF généré est vide");
+      }
+
+      // Extract filename from content-disposition header or generate a default
+      const contentDisposition = response.headers['content-disposition'];
+      const extractFilename = (header?: string): string => {
+        if (!header) {
+          return `OrdreMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+        }
+
+        const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const standardMatch = header.match(/filename="([^"]+)"/i);
+        if (standardMatch && standardMatch[1]) {
+          return standardMatch[1];
+        }
+
+        return `OrdreMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      };
+
+      const fileName = contentDisposition
+        ? extractFilename(contentDisposition)
+        : `OrdreMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+
+      // Create blob URL but do not trigger download (for preview use)
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      return { blobUrl, fileName, status: "success" };
+    },
+  });
+};
+
+export const useGenerateATD = () => {
+  return useMutation<GenerateMissionOrderResult, Error, GenerateATDData>({
+    mutationFn: async (data: GenerateATDData) => {
+      const url = "/api/MissionAssignation/ATD";
+
+      const config = {
+        responseType: 'blob' as const,
+        headers: {
+          Accept: "application/pdf",
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await api.post(url, {
+        employeeId: data.employeeId || null,
+      }, config);
+
+      const blob = response.data;
+
+      // Check if the blob is valid
+      if (!blob || blob.size === 0) {
+        throw new Error("Le fichier PDF généré est vide");
+      }
+
+      // Extract filename from content-disposition header or generate a default
+      const contentDisposition = response.headers['content-disposition'];
+      const extractFilename = (header?: string): string => {
+        if (!header) {
+          return `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+        }
+
+        const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const standardMatch = header.match(/filename="([^"]+)"/i);
+        if (standardMatch && standardMatch[1]) {
+          return standardMatch[1];
+        }
+
+        return `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      };
+
+      const fileName = contentDisposition
+        ? extractFilename(contentDisposition)
+        : `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+
+      // Create and trigger download
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = urlBlob;
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(urlBlob);
+
+      return { fileName, status: "success" };
+    },
+  });
+};
+
+export const usePreviewATD = () => {
+  return useMutation<PreviewPdfResult, Error, GenerateATDData>({
+    mutationFn: async (data: GenerateATDData) => {
+      const url = "/api/MissionAssignation/ATD";
+
+      const config = {
+        responseType: 'blob' as const,
+        headers: {
+          Accept: "application/pdf",
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await api.post(url, {
+        employeeId: data.employeeId || null,
+      }, config);
+
+      const blob = response.data;
+
+      // Check if the blob is valid
+      if (!blob || blob.size === 0) {
+        throw new Error("Le fichier PDF généré est vide");
+      }
+
+      // Extract filename from content-disposition header or generate a default
+      const contentDisposition = response.headers['content-disposition'];
+      const extractFilename = (header?: string): string => {
+        if (!header) {
+          return `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+        }
+
+        const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const standardMatch = header.match(/filename="([^"]+)"/i);
+        if (standardMatch && standardMatch[1]) {
+          return standardMatch[1];
+        }
+
+        return `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      };
+
+      const fileName = contentDisposition
+        ? extractFilename(contentDisposition)
+        : `ATTESTATION EMPLOI-${data.employeeId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+
+      // Create blob URL but do not trigger download (for preview use)
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      return { blobUrl, fileName, status: "success" };
+    },
+  });
+};
+
+export const useGenerateIM = () => {
+  return useMutation<GenerateMissionOrderResult, Error, GenerateIMData>({
+    mutationFn: async (data: GenerateIMData) => {
+      const url = "/api/MissionAssignation/IM";
+
+      const config = {
+        responseType: 'blob' as const,
+        headers: {
+          Accept: "application/pdf",
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await api.post(url, {
+        missionId: data.missionId || null,
+        employeeId: data.employeeId || null,
+      }, config);
+
+      const blob = response.data;
+
+      // Check if the blob is valid
+      if (!blob || blob.size === 0) {
+        throw new Error("Le fichier PDF généré est vide");
+      }
+
+      // Extract filename from content-disposition header or generate a default
+      const contentDisposition = response.headers['content-disposition'];
+      const extractFilename = (header?: string): string => {
+        if (!header) {
+          return `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+        }
+
+        const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const standardMatch = header.match(/filename="([^"]+)"/i);
+        if (standardMatch && standardMatch[1]) {
+          return standardMatch[1];
+        }
+
+        return `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      };
+
+      const fileName = contentDisposition
+        ? extractFilename(contentDisposition)
+        : `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+
+      // Create and trigger download
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = urlBlob;
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(urlBlob);
+
+      return { fileName, status: "success" };
+    },
+  });
+};
+
+export const usePreviewIM = () => {
+  return useMutation<PreviewPdfResult, Error, GenerateIMData>({
+    mutationFn: async (data: GenerateIMData) => {
+      const url = "/api/MissionAssignation/IM";
+
+      const config = {
+        responseType: 'blob' as const,
+        headers: {
+          Accept: "application/pdf",
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await api.post(url, {
+        missionId: data.missionId || null,
+        employeeId: data.employeeId || null,
+      }, config);
+
+      const blob = response.data;
+
+      // Check if the blob is valid
+      if (!blob || blob.size === 0) {
+        throw new Error("Le fichier PDF généré est vide");
+      }
+
+      // Extract filename from content-disposition header or generate a default
+      const contentDisposition = response.headers['content-disposition'];
+      const extractFilename = (header?: string): string => {
+        if (!header) {
+          return `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+        }
+
+        const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const standardMatch = header.match(/filename="([^"]+)"/i);
+        if (standardMatch && standardMatch[1]) {
+          return standardMatch[1];
+        }
+
+        return `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+      };
+
+      const fileName = contentDisposition
+        ? extractFilename(contentDisposition)
+        : `IndemniteMission-${data.missionId || "document"}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+
+      // Create blob URL but do not trigger download (for preview use)
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      return { blobUrl, fileName, status: "success" };
+    },
+  });
+};
+
+export interface CancelMissionData {
+  missionId: string;
+  userId: string;
+}
+
+export const useCancelMission = () => {
+  return useMutation<ApiResponse<null>, Error, CancelMissionData>({
+    mutationFn: async (data: CancelMissionData) => {
+      if (!data.missionId || !data.userId) {
+        throw new Error('Mission ID and userId are required for cancellation');
+      }
+      const response = await api.put(`/api/Mission/${data.missionId}/cancel/${data.userId}`);
+      return response.data;
+    },
+  });
+};
+
+export interface DeleteMissionData {
+  missionId: string;
+  userId: string;
+}
+
+export const useDeleteMission = () => {
+  return useMutation<ApiResponse<null>, Error, DeleteMissionData>({
+    mutationFn: async (data: DeleteMissionData) => {
+      if (!data.missionId || !data.userId) {
+        throw new Error('Mission ID and userId are required for deletion');
+      }
+      const response = await api.delete(`/api/Mission/${data.missionId}/${data.userId}`);
+      return response.data;
+    },
+  });
+};
+
+export const useGetOngoingMissionsCount = () => {
+  return useQuery<ApiResponse<number>, Error>({
+    queryKey: ['getOngoingMissionsCount'] as const,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Mission/ongoing-count');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+
+export const useGetPlannedMissionsThisMonthCountWithDate = () => {
+  return useQuery<ApiResponse<{ count: number; date: string }>, Error>({
+    queryKey: ['getPlannedMissionsThisMonthCountWithDate'] as const,
+    queryFn: async () => {
+      const response = await api.get('/api/Mission/planned-chart');
+      return response.data;
+    },
+  });
+};
+
+
+export const useGetPlannedMissionsThisMonthCount = () => {
+  return useQuery<ApiResponse<number>, Error>({
+    queryKey: ['getPlannedMissionsThisMonthCount'] as const,
+    queryFn: async () => {
+      const response = await api.get('/api/Mission/planned-count');
+      return response.data;
+    },
+  });
+};
+
+
+export const useGetProgressRate = () => {
+  return useQuery<ApiResponse<{ progressRate: number; calculationDate: string }>, Error>({
+    queryKey: ['getProgressRate'] as const,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Mission/progress-rate');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useGetMissionTypesRate = () => {
+  return useQuery<ApiResponse<{ nationalRate: number; internationalRate: number }>, Error>({
+    queryKey: ['getMissionTypesRate'] as const,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Mission/types-rate');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
     },
   });
 };

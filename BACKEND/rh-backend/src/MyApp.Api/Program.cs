@@ -10,9 +10,19 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Net;
+using MyApp.Api.Models.classes.notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// builder.Services.AddCors(options =>
+// {
+//     options.AddPolicy("AllowFrontend", policy =>
+//     {
+//         policy.WithOrigins("http://10.0.180.37:8090")
+//               .AllowAnyMethod()
+//               .AllowAnyHeader();
+//     });
+// });
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -37,7 +47,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.RegisterServicesAndRepositories();
 builder.Services.AddHttpClient<MyApp.Api.Services.currency.ICurrencyService, MyApp.Api.Services.currency.CurrencyService>();
-
+builder.Services.AddScoped<EmailSender>();
 // Configure JWT authentication
 builder.Services.AddAuthentication(options =>
 {
@@ -90,7 +100,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
-
+builder.Services.AddMemoryCache();
 // Configuration des en-têtes forwarded
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {

@@ -5,27 +5,25 @@ using MyApp.Api.Utils.generator;
 
 namespace MyApp.Api.Services.mission
 {
-    // Interface du service lieu, définit les opérations disponibles
     public interface ILieuService
     {
         Task<Lieu?> VerifyLieuExistsAsync(string nom, string? pays);
-        Task<(IEnumerable<Lieu>, int)> SearchAsync(LieuSearchFiltersDTO filters, int page, int pageSize); // Recherche paginée avec filtres
-        Task<IEnumerable<Lieu>> GetAllAsync(); // Récupère tous les lieux
-        Task<Lieu?> GetByIdAsync(string id); // Récupère un lieu par son ID
-        Task<string> CreateAsync(LieuDTOForm lieuDTO); // Crée un nouveau lieu
-        Task<bool> UpdateAsync(Lieu lieu); // Met à jour un lieu existant
-        Task<bool> DeleteAsync(string id); // Supprime un lieu par son ID
+        Task<(IEnumerable<Lieu>, int)> SearchAsync(LieuSearchFiltersDTO filters, int page, int pageSize);
+        Task<IEnumerable<Lieu>> GetAllAsync(); 
+        Task<Lieu?> GetByIdAsync(string id); 
+        Task<string> CreateAsync(LieuDTOForm lieuDTO); 
+        Task<bool> UpdateAsync(Lieu lieu); 
+        Task<bool> DeleteAsync(string id); 
     }
 
-    // Implémentation du service lieu
     public class LieuService : ILieuService
     {
         private readonly ILieuRepository _repository;
         private readonly ISequenceGenerator _sequenceGenerator;
-        private readonly ILogger<Lieu> _logger;
+        private readonly ILogger<LieuService> _logger;
 
         // Constructeur avec injection des dépendances
-        public LieuService(ILieuRepository repository, ISequenceGenerator sequenceGenerator, ILogger<Lieu> logger)
+        public LieuService(ILieuRepository repository, ISequenceGenerator sequenceGenerator, ILogger<LieuService> logger)
         {
             _repository = repository;
             _sequenceGenerator = sequenceGenerator;
@@ -94,10 +92,10 @@ namespace MyApp.Api.Services.mission
 
                 // Mise à jour des champs principaux
                 entity.Nom = lieu.Nom;
-                entity.Adresse = lieu.Adresse;
                 entity.Ville = lieu.Ville;
                 entity.CodePostal = lieu.CodePostal;
                 entity.Pays = lieu.Pays;
+                entity.ZoneId = lieu.ZoneId;
                 entity.UpdatedAt = DateTime.UtcNow;
 
                 await _repository.UpdateAsync(entity);

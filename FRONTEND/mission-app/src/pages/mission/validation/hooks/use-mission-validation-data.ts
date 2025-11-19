@@ -15,13 +15,17 @@ import {
   type UpdateCommentParams,
   type DeleteCommentParams,
 } from "@/api/comment/services";
-import { useEmployees, type Employee } from "@/api/collaborator/services";
+import { useGetAllEmployeesSimple, type Employee } from "@/api/collaborator/services";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface Filter {
   employeeId: string;
   employeeName: string;
   status: string;
+  validationDateFrom?: string;
+  validationDateTo?: string;
+  requestDateFrom?: string;
+  requestDateTo?: string;
 }
 
 interface BeneficiarySuggestion {
@@ -71,11 +75,19 @@ const useMissionValidationData = () => {
     employeeId: "",
     employeeName: "",
     status: "",
+    validationDateFrom: "",
+    validationDateTo: "",
+    requestDateFrom: "",
+    requestDateTo: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<Filter>({
     employeeId: "",
     employeeName: "",
     status: "",
+    validationDateFrom: "",
+    validationDateTo: "",
+    requestDateFrom: "",
+    requestDateTo: "",
   });
   const [suggestions, setSuggestions] = useState<Suggestions>({
     beneficiary: [],
@@ -102,10 +114,17 @@ const useMissionValidationData = () => {
   const queryClient = useQueryClient();
 
   // Initialize services
-  const missionFilter: RequestFilter = {
-    employeeId: appliedFilters.employeeId,
-    status: appliedFilters.status,
-  };
+  const missionFilter: RequestFilter = useMemo(
+    () => ({
+      employeeId: appliedFilters.employeeId,
+      status: appliedFilters.status,
+      validationDateFrom: appliedFilters.validationDateFrom,
+      validationDateTo: appliedFilters.validationDateTo,
+      requestDateFrom: appliedFilters.requestDateFrom,
+      requestDateTo: appliedFilters.requestDateTo,
+    }),
+    [appliedFilters.employeeId, appliedFilters.status, appliedFilters.validationDateFrom, appliedFilters.validationDateTo, appliedFilters.requestDateFrom, appliedFilters.requestDateTo]
+  );
   const { data: missionsResponse, isLoading: missionsLoading } = useGetMissionValidationRequests(
     userId,
     currentPage,
@@ -122,7 +141,7 @@ const useMissionValidationData = () => {
   const createCommentMutation = useCreateComment();
   const updateCommentMutation = useUpdateComment();
   const deleteCommentMutation = useDeleteComment();
-  const { data: employeesData, isLoading: employeesLoading } = useEmployees();
+  const { data: employeesData, isLoading: employeesLoading } = useGetAllEmployeesSimple();
 
   // Handle missions data
   useEffect(() => {
@@ -140,57 +159,8 @@ const useMissionValidationData = () => {
         return;
       }
 
-      const formattedMissions: FormattedMission[] = missionsResponse.results.map((validation) => {
-        const mission = validation.mission || {};
-        const creator = validation.creator || {};
-        const validator = validation.validator || {};
-        const missionAssignation = validation.missionAssignation || {};
-
-        return {
-          id: validation.missionValidationId || "N/A",
-          title: mission.name || "Mission sans titre",
-          description: mission.description || "Aucune description",
-          requestedBy: creator.name || "Demandeur inconnu",
-          department: creator.department || "Département non spécifié",
-          status: validation.status || "pending",
-          requestDate: mission.startDate || new Date().toISOString(),
-          dueDate: mission.endDate || new Date().toISOString(),
-          estimatedDuration: missionAssignation.duration
-            ? `${missionAssignation.duration} jour${missionAssignation.duration > 1 ? "s" : ""}`
-            : "Non spécifié",
-          location: mission.lieu
-            ? `${mission.lieu.nom || "Inconnu"}, ${mission.lieu.pays || "Inconnu"}`
-            : "Lieu non spécifié",
-          comments: "",
-          signature: validator.signature || "",
-          matricule: creator.matricule || "N/A",
-          function: creator.position || "Fonction non spécifiée",
-          transport: missionAssignation.transportId || "Non spécifié",
-          departureTime: missionAssignation.departureTime || "Non spécifié",
-          departureDate: missionAssignation.departureDate || (mission.startDate as string) || "Non spécifié",
-          returnDate: missionAssignation.returnDate || (mission.endDate as string) || "Non spécifié",
-          returnTime: missionAssignation.returnTime || "Non spécifié",
-          reference: validation.missionValidationId || "N/A",
-          toWhom: validator.name || "Non spécifié",
-          validationDate: validation.validationDate || null,
-          missionCreator: validation.missionCreator || "N/A",
-          superiorName: creator.superiorName || "Non spécifié",
-          email: creator.email || "",
-          createdAt: validation.createdAt || new Date().toISOString(),
-          updatedAt: validation.updatedAt || null,
-          missionAssignationId: validation.missionAssignationId || "N/A",
-          missionType: mission.missionType || "Non spécifié",
-          missionStatus: mission.status || "Non spécifié",
-          allocatedFund: missionAssignation.allocatedFund || 20000,
-          type: missionAssignation.type || "Non spécifié",
-          assignationType: missionAssignation.type || "Non spécifié",
-          employeeId: missionAssignation.employeeId || "Non spécifié",
-          missionId: mission.missionId || "N/A",
-        };
-      });
-
-      setTotalEntries(missionsResponse.totalCount || formattedMissions.length);
-      setMissions(formattedMissions);
+      setTotalEntries(missionsResponse.totalCount || missionsResponse.results.length);
+      setMissions(missionsResponse.results);
     }
   }, [missionsResponse, missionsLoading]);
 
@@ -222,17 +192,12 @@ const useMissionValidationData = () => {
           beneficiary: (employeesData.data as Employee[]).map((emp) => ({
             id: emp.employeeId || "N/A",
             name: `${emp.lastName || "Inconnu"} ${emp.firstName || ""}`.trim(),
-            displayName: `${emp.lastName || "Inconnu"} ${emp.firstName || ""} (${emp.direction?.acronym || "N/A"})`.trim(),
+            displayName: `${emp.lastName || "Inconnu"} ${emp.firstName || ""}`.trim(),
             acronym: emp.direction?.acronym || "N/A",
           })),
         }));
       } else {
         console.warn("Employee data is not an array:", employeesData);
-        setAlert({
-          isOpen: true,
-          type: "error",
-          message: "Les données des collaborateurs ne sont pas valides.",
-        });
       }
     } else {
       console.warn("No userId found, skipping employee fetch");
@@ -396,6 +361,10 @@ const useMissionValidationData = () => {
       employeeId: "",
       employeeName: "",
       status: "",
+      validationDateFrom: "",
+      validationDateTo: "",
+      requestDateFrom: "",
+      requestDateTo: "",
     };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
@@ -421,7 +390,10 @@ const useMissionValidationData = () => {
     };
 
     try {
-      const missionType = mission.type || mission.assignationType || "Non spécifié";
+      const missionType =  mission.assignationType || "Non spécifié";
+
+      console.log("MissionType for validation:", missionType); 
+
       await validateMission(missionId, mission.missionAssignationId, action, missionType, comment, missionBudget);
 
       if (comment.trim()) {
@@ -452,14 +424,6 @@ const useMissionValidationData = () => {
     setMissions((prevMissions) =>
       prevMissions.map((mission) =>
         mission.id === missionId ? { ...mission, comments } : mission
-      )
-    );
-  };
-
-  const handleUpdateSignature = (missionId: string, signature: string) => {
-    setMissions((prevMissions) =>
-      prevMissions.map((mission) =>
-        mission.id === missionId ? { ...mission, signature } : mission
       )
     );
   };
@@ -502,8 +466,8 @@ const useMissionValidationData = () => {
     handleFilterSubmit,
     handleResetFilters,
     handleValidate,
+    handleAction: handleValidate,
     handleUpdateComments,
-    handleUpdateSignature,
     formatDate,
     getDaysUntilDue,
     currentPage,

@@ -1,0 +1,176 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=10.0.180.37;Database=GESTIONDEMISSION_DB;User ID=sa_gdm;Password=S@gmmXdb;TrustServerCertificate=True;"
+  },
+  "LdapSettings": {
+    "DomainPath": "LDAP://corp.ravinala",
+    "DomainPath1": "corp.ravinala"
+  },
+  "Jwt": {
+    "Key": "1OCnPqhST29HuMeQAg3KcxsmwymYUiymYOU8fCy+TRk=",
+    "Issuer": "http://10.0.180.37:8089",
+    "Audience": "http://10.0.180.37:8090"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}
+
+
+
+
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using MyApp.Api.Data;
+using MyApp.Api.Extensions;
+using MyApp.Api.Utils.generator;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
+using MyApp.Api.Models.classes.notifications;
+using Hangfire;
+using Hangfire.SqlServer;
+using Microsoft.Extensions.DependencyInjection;
+using MyApp.Api.Services.notifications;
+using MyApp.Api.Entities.users; // Assumant que User est défini ici
+using MyApp.Api.Entities.notifications; // Assumant que Notifications est défini ici
+
+var builder = WebApplication.CreateBuilder(args);
+
+// CORS Policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = 
+            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
+
+// Register services and database context
+builder.Services.AddScoped<ISequenceGenerator, SequenceGenerator>();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.RegisterServicesAndRepositories();
+
+
+builder.Services.AddHttpClient<MyApp.Api.Services.currency.ICurrencyService, MyApp.Api.Services.currency.CurrencyService>();
+
+// Configuration Hangfire pour les jobs récurrents (ex: rappels quotidiens)
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddHangfireServer();
+
+// Configure JWT authentication
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured"))),
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = 401;
+            context.Response.ContentType = "application/json";
+            var json = new { data = (object?)null, status = 401, message = "unauthorized" };
+            return context.Response.WriteAsync(JsonSerializer.Serialize(json));
+        },
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = 403;
+            context.Response.ContentType = "application/json";
+            var json = new { data = (object?)null, status = 403, message = "forbidden" };
+            return context.Response.WriteAsync(JsonSerializer.Serialize(json));
+        }
+    };
+});
+
+// Configure authorization policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOrRH", policy =>
+        policy.RequireRole("admin", "rh"));
+});
+
+// Add controllers and Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
+
+// Configuration des en-têtes forwarded
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
+
+var app = builder.Build();
+
+// UseForwardedHeaders doit être le premier middleware
+app.UseForwardedHeaders();
+
+// Configure the HTTP request pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Dashboard Hangfire (optionnel, accessible via /hangfire en dev)
+if (app.Environment.IsDevelopment())
+{
+    app.UseHangfireDashboard("/hangfire");
+}
+
+// Planification du job récurrent pour les rappels quotidiens
+RecurringJob.AddOrUpdate<INotificationReminderService>(
+    "daily-reminders",
+    service => service.SendDailyRemindersAsync(1),
+    Cron.Daily(9, 0)); // Tous les jours à 9h00
+
+app.MapControllers();
+
+app.Run();

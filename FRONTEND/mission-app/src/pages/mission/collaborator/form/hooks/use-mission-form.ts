@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLieux, type Lieu } from "@/api/lieu/services";
-import { useEmployees, type Employee } from "@/api/collaborator/services";
 import { useTransports, type Transport } from "@/api/transport/services";
 import {
   useCreateMission,
@@ -12,6 +11,9 @@ import {
   type UpdateMissionResponseData,
   type ApiResponse,
 } from "@/api/mission/services";
+import { useUserCollaboratorsMatricules } from "@/api/users/services";
+import { useGetEmployeesByMatriculesSimple } from "@/api/collaborator/services";
+import { type Employee } from "@/api/collaborator/services";
 
 interface MissionFormProps {
   isOpen: boolean;
@@ -124,7 +126,7 @@ const useMissionForm = ({
       costCenter: "",
       transport: "",
       transportId: null,
-      departureDate: "",
+      departureDate: initialStartDate || "",
       departureTime: "",
       missionDuration: "",
       returnDate: "",
@@ -148,19 +150,30 @@ const useMissionForm = ({
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const { data: lieuxData, isLoading: isRegionsLoading } = useLieux();
-  const { data: employeesData, isLoading: isEmployeesLoading } = useEmployees();
   const { data: transportsData, isLoading: isTransportsLoading } = useTransports();
   const { data: missionResponse, isLoading: isMissionDetailLoading } = useGetMissionAssignationByMissionId(
     missionId || ""
   );
+
+  const userData = useMemo(() => {
+    return JSON.parse(localStorage.getItem("user") || "{}");
+  }, []);
+  const userId = userData?.userId;
+
+  const { data: collaboratorsMatriculesResponse } = useUserCollaboratorsMatricules(userId);
+  const matricules = useMemo(() => {
+    return collaboratorsMatriculesResponse?.data || [];
+  }, [collaboratorsMatriculesResponse]);
+
+  const { data: employeesData, isLoading: isEmployeesLoading } = useGetEmployeesByMatriculesSimple(matricules);
 
   const employeeSuggestions: EmployeeSuggestion[] = useMemo(() => {
     return (employeesData?.data || []).map((emp: Employee) => ({
       id: emp.employeeId,
       name: `${emp.lastName} ${emp.firstName}`,
       displayName: `${emp.lastName} ${emp.firstName} (${emp.direction?.acronym || "N/A"})`,
-      employeeCode: emp.employeeCode,
-      jobTitle: emp.jobTitle,
+      employeeCode: emp.employeeCode || "",
+      jobTitle: emp.jobTitle || "",
       site: emp.site?.siteName || "",
       direction: emp.direction?.directionName || "",
       department: emp.department?.departmentName || "",
@@ -207,6 +220,37 @@ const useMissionForm = ({
     }));
   }, [employeeSuggestions, transportSuggestions]);
 
+  // Handle mission type changes for international missions
+  useEffect(() => {
+    if (formData.missionType === "international") {
+      setFormData((prev) => ({
+        ...prev,
+        type: "Note de frais",
+        beneficiary: {
+          ...prev.beneficiary,
+          transport: "",
+          transportId: null,
+        },
+      }));
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors["beneficiary.transport"];
+        delete newErrors.type;
+        return newErrors;
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        type: "Indemnité",
+      }));
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.type;
+        return newErrors;
+      });
+    }
+  }, [formData.missionType]);
+
   useEffect(() => {}, [fieldErrors]);
 
   const showAlert = useCallback((type: Alert["type"], message: string, errors: FieldErrors = {}) => {
@@ -224,7 +268,8 @@ const useMissionForm = ({
   const calculateMissionDuration = useCallback((
     departureDate: string,
     returnDate: string,
-    missionStartDate?: string | null
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _missionStartDate?: string | null
   ): MissionDurationResult => {
     if (!departureDate || !returnDate) {
       return { missionDuration: "", error: undefined };
@@ -232,7 +277,6 @@ const useMissionForm = ({
 
     const departure = new Date(departureDate);
     const returnD = new Date(returnDate);
-    const missionStart = missionStartDate ? new Date(missionStartDate) : null;
 
     if (isNaN(departure.getTime()) || isNaN(returnD.getTime())) {
       return { missionDuration: "", error: "Les dates de départ ou de retour sont invalides." };
@@ -240,13 +284,6 @@ const useMissionForm = ({
 
     if (returnD < departure) {
       return { missionDuration: "", error: "La date de retour doit être postérieure ou égale à la date de départ." };
-    }
-
-    if (missionStart && departure < missionStart) {
-      return {
-        missionDuration: "",
-        error: "La date de départ doit être supérieure ou égale à la date de début de la mission.",
-      };
     }
 
     const durationMs = returnD.getTime() - departure.getTime();
@@ -270,7 +307,7 @@ const useMissionForm = ({
     if (!formData.missionType) errors.missionType = ["Le type de mission est requis."];
 
     const beneficiary = formData.beneficiary;
-    if (!beneficiary.beneficiary) errors["beneficiary.beneficiary"] = ["Le bénéficiaire est requis."];
+    if (!beneficiary.beneficiary) errors["beneficiary.beneficiary"] = ["Le missionaire est requis."];
     if (!beneficiary.matricule) errors["beneficiary.matricule"] = ["Le matricule est requis."];
     if (!beneficiary.function) errors["beneficiary.function"] = ["La fonction est requise."];
     if (!beneficiary.base) errors["beneficiary.base"] = ["Le site est requis."];
@@ -320,15 +357,6 @@ const useMissionForm = ({
       }
     }
 
-    if (beneficiary.returnDate && formData.endDate) {
-      const returnDate = new Date(beneficiary.returnDate);
-      const endDate = new Date(formData.endDate);
-      if (returnDate > endDate) {
-        const endDateError = "La date de retour doit être antérieure ou égale à la date de fin de la mission.";
-        errors["beneficiary.returnDate"] = [...(errors["beneficiary.returnDate"] || []).filter(e => e !== endDateError), endDateError];
-      }
-    }
-
     const fieldsToClean = ["beneficiary.departureDate", "beneficiary.returnDate", "beneficiary.departureTime", "beneficiary.returnTime", "beneficiary.missionDuration"];
     fieldsToClean.forEach(field => {
       const formKey = field.split(".").pop() as keyof BeneficiaryFormData;
@@ -375,11 +403,11 @@ const useMissionForm = ({
     if (field === "location") {
       const newRegion: Lieu = { 
         lieuId: `temp-${Date.now()}`, 
-        nom: value, 
-        adresse: "", 
+        nom: value,
         ville: "", 
         codePostal: "", 
         pays: "Madagascar",
+        zoneId: "",
         createdAt: new Date().toISOString(),
         updatedAt: ""
       };
@@ -492,7 +520,11 @@ const useMissionForm = ({
         if (value) {
           delete updatedErrors[fieldKey];
         } else {
-          updatedErrors[fieldKey] = [`${name} est requis.`];
+          let errorMessage = `${name} est requis.`;
+          if (name === "beneficiary") {
+            errorMessage = "Le missionaire est requis.";
+          }
+          updatedErrors[fieldKey] = [errorMessage];
         }
 
         // Clear related beneficiary errors when beneficiary is selected
@@ -527,9 +559,15 @@ const useMissionForm = ({
         }
 
         if (name === "startDate") {
+          // Set default departureDate to startDate if departureDate is empty
+          let updatedBeneficiary = prev.beneficiary;
+          if (!prev.beneficiary.departureDate) {
+            updatedBeneficiary = { ...prev.beneficiary, departureDate: value || "" };
+          }
+
           const { missionDuration, error } = calculateMissionDuration(
-            prev.beneficiary.departureDate,
-            prev.beneficiary.returnDate,
+            updatedBeneficiary.departureDate,
+            updatedBeneficiary.returnDate,
             value
           );
           setFieldErrors((prevErrors) => {
@@ -547,7 +585,7 @@ const useMissionForm = ({
           });
           return {
             ...updatedFormData,
-            beneficiary: { ...prev.beneficiary, missionDuration },
+            beneficiary: { ...updatedBeneficiary, missionDuration },
           };
         }
 
@@ -639,7 +677,7 @@ const useMissionForm = ({
         costCenter: "",
         transport: "",
         transportId: null,
-        departureDate: "",
+        departureDate: initialStartDate || "",
         departureTime: "",
         missionDuration: "",
         returnDate: "",
@@ -683,7 +721,6 @@ const useMissionForm = ({
       setFieldErrors({});
 
       try {
-        const userData = JSON.parse(localStorage.getItem("user") || "{}");
         const userId = userData?.userId || "";
 
         const locationName = formData.location.split("/")[0];
@@ -765,6 +802,7 @@ const useMissionForm = ({
       suggestions.beneficiary,
       suggestions.transport,
       missionId,
+      userData,
       validateStep1,
       validateStep2,
       validateStep3,

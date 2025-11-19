@@ -87,8 +87,7 @@ namespace MyApp.Api.Controllers.mission
                     userId,
                     page,
                     pageSize,
-                    filter?.EmployeeId,
-                    filter?.Status);
+                    filter ?? new RequestFilterDto());
 
                 var responseData = new { Results = results, TotalCount = totalCount };
                 return Ok(new { data = responseData, status = 200, message = "success" });
@@ -428,6 +427,120 @@ namespace MyApp.Api.Controllers.mission
             {
                 _logger.LogError(ex, "Error retrieving mission statistics with matricule: {Matricule}", matricule);
                 return StatusCode(500, "An error occurred while retrieving mission statistics.");
+            }
+        }
+
+        [HttpGet("has-any-validator-validated/{missionId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> HasAnyValidatorValidated(string missionId)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(missionId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'ID de la mission ne peut pas être null ou vide." });
+            }
+
+            try
+            {
+                var hasValidated = await _missionValidationService.HasAnyValidatorValidatedAsync(missionId);
+
+                var responseData = hasValidated;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erreur lors de la vérification si un validateur a validé la mission {MissionId}", missionId);
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("has-validation-line/{userId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> HasValidationLine(string userId)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'ID de l'utilisateur ne peut pas être null ou vide." });
+            }
+
+            try
+            {
+                var hasValidationLine = await _missionValidationService.HasValidationLineAsync(userId);
+
+                var responseData = hasValidationLine;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erreur lors de la vérification de ligne de validation pour userId {UserId}", userId);
+                Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("pending-validation-count")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetPendingMissionsCountAsync()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var count = await _missionValidationService.GetPendingMissionsCountAsync();
+                var responseData = count;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération du nombre de missions en attente de validation");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("validation-rate")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetValidationRateAsync()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var (rate, date) = await _missionValidationService.GetValidationRateAsync();
+                var responseData = new { Rate = rate, Date = date };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du taux de validation");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
     }

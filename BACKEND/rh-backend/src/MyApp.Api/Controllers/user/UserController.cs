@@ -273,6 +273,173 @@ public class UserController : ControllerBase
         }
     }
 
+
+    [HttpGet("{userId}/collaboratorsMatricules")]
+    [AllowAnonymous]
+    public async Task<ActionResult> GetCollaboratorsMatriculesAsync(string userId)
+    {
+        if (!User.Identity?.IsAuthenticated ?? true)
+        {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
+
+        try
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "User ID cannot be empty." });
+            }
+
+            var collaborators = await _userService.GetCollaboratorsMatriculesAsync(userId);
+            var data = collaborators?.Any() == true ? collaborators : new List<string>();
+            return Ok(new { data = data, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+        }
+    }
+
+    [HttpGet("role/{role}/count")]
+    [AllowAnonymous]
+    public async Task<ActionResult> GetUserCountByRole(string role)
+    {
+        if (!User.Identity?.IsAuthenticated ?? true)
+        {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
+
+        try
+        {
+            if (string.IsNullOrEmpty(role))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Role cannot be empty." });
+            }
+
+            var count = await _userService.GetUserCountByRoleAsync(role);
+            return Ok(new { data = count, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+        }
+    }
+
+    [HttpGet("{matricule}/directeur-tutelle")]
+    // [AllowAnonymous]
+    public async Task<ActionResult> GetDirecteurTutelle(string matricule)
+    {
+        // if (!User.Identity?.IsAuthenticated ?? true)
+        // {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try
+        {
+            if (string.IsNullOrEmpty(matricule))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Matricule cannot be empty." });
+            }
+
+            var directeur = await _userService.GetDirecteurTutelleAsync(matricule);
+            if (directeur == null)
+            {
+                return NotFound(new { data = (object?)null, status = 404, message = "Directeur tutelle not found." });
+            }
+
+            return Ok(new { data = directeur, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+        }
+    }
+
+    [HttpGet("{matricule}/responsable-sous-directeur-tutelle")]
+    // [AllowAnonymous]
+    public async Task<ActionResult> GetResponsableSousDirecteurTutelle(string matricule)
+    {
+        // if (!User.Identity?.IsAuthenticated ?? true)
+        // {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try
+        {
+            if (string.IsNullOrEmpty(matricule))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Matricule cannot be empty." });
+            }
+
+            var responsable = await _userService.GetResponsableSousDirecteurTutelleAsync(matricule);
+            if (responsable == null)
+            {
+                return NotFound(new { data = (object?)null, status = 404, message = "Responsable sous directeur tutelle not found." });
+            }
+
+            return Ok(new { data = responsable, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+        }
+    }
+
+    [HttpGet("director/{department}")]
+    // [AllowAnonymous]
+    public async Task<ActionResult> GetDirectorByDepartment(string department)
+    {
+        // if (!User.Identity?.IsAuthenticated ?? true)
+        // {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try
+        {
+            if (string.IsNullOrEmpty(department))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Department cannot be empty." });
+            }
+
+            var director = await _userService.GetDirectorByDepartmentAsync(department);
+            if (director == null)
+            {
+                return NotFound(new { data = (object?)null, status = 404, message = $"Director not found for department: {department}." });
+            }
+
+            return Ok(new { data = director, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+        }
+    }
+
 ///
 /// 
 /// 

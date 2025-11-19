@@ -1,8 +1,11 @@
+using Microsoft.Extensions.Caching.Memory;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Models.dto.employee;
 using MyApp.Api.Repositories.employee;
 using MyApp.Api.Utils.csv;
 using MyApp.Api.Utils.generator;
+using MyApp.Api.Data;
+using System.Collections.Concurrent;
 
 namespace MyApp.Api.Services.employee
 {
@@ -14,26 +17,39 @@ namespace MyApp.Api.Services.employee
         Task<IEnumerable<Employee>> GetAllAsync();
         Task<Employee?> GetByIdAsync(string id);
         Task<IEnumerable<Employee>> GetByGenderAsync(string genderId);
-        Task AddAsync(EmployeeFormDTO employeeForm);
+        Task<Employee> AddAsync(EmployeeFormDTO dto);
         Task UpdateAsync(string id, EmployeeFormDTO employeeForm);
         Task DeleteAsync(string id);
         Task<EmployeeStats> GetStatisticsAsync();
+        Task<IEnumerable<Employee>> GetAllEmployeeSimpleAsync();
+        Task<IEnumerable<Employee>> GetByMatriculeSimpleAsync(string[] matricules);
     }
 
     public class EmployeeService : IEmployeeService
     {
         private readonly IEmployeeRepository _repository;
+        private readonly AppDbContext _context;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<EmployeeService> _logger;
+        private readonly IMemoryCache _cache;
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _cacheLocks = new();
+        private const string AllEmployeesCacheKey = "AllEmployees";
+        private const string AllEmployeesCacheKey_Lock = "AllEmployees_Lock";
+        private static readonly TimeSpan CacheExpiration = TimeSpan.FromHours(1); // Ajustable ; long car données rarement modifiées
+        private static readonly TimeSpan CacheSlidingExpiration = TimeSpan.FromMinutes(30); // Refresh si accédé souvent
 
         public EmployeeService(
             IEmployeeRepository repository,
+            AppDbContext context,
             ISequenceGenerator sequenceGenerator,
-            ILogger<EmployeeService> logger)
+            ILogger<EmployeeService> logger,
+            IMemoryCache cache)
         {
-            _repository = repository;
-            _sequenceGenerator = sequenceGenerator;
-            _logger = logger;
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
   
         // check si le matricule se trouve dans la base
@@ -112,12 +128,57 @@ namespace MyApp.Api.Services.employee
         {
             try
             {
-                _logger.LogInformation("Récupération de tous les employés");
-                return await _repository.GetAllAsync();
+                if (_cache.TryGetValue(AllEmployeesCacheKey, out IEnumerable<Employee>? cachedEmployees))
+                {
+                    _logger.LogInformation("Récupération des employés depuis le cache");
+                    return cachedEmployees!;
+                }
+
+                // Lock pour éviter les chargements concurrents multiples
+                var semaphore = _cacheLocks.GetOrAdd(AllEmployeesCacheKey_Lock, _ => new SemaphoreSlim(1, 1));
+                await semaphore.WaitAsync();
+
+                try
+                {
+                    // Double-check après lock
+                    if (!_cache.TryGetValue(AllEmployeesCacheKey, out cachedEmployees))
+                    {
+                        _logger.LogInformation("Récupération de tous les employés depuis la base de données (cache miss)");
+                        cachedEmployees = await _repository.GetAllAsync();
+
+                        // Cache avec expiration absolue et sliding
+                        var cacheOptions = new MemoryCacheEntryOptions
+                        {
+                            AbsoluteExpirationRelativeToNow = CacheExpiration,
+                            SlidingExpiration = CacheSlidingExpiration
+                        };
+                        _cache.Set(AllEmployeesCacheKey, cachedEmployees, cacheOptions);
+                    }
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+
+                return cachedEmployees!;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la récupération des employés");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<Employee>> GetAllEmployeeSimpleAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération simple de tous les employés (sans cache)");
+                return await _repository.GetAllEmployeeSimpleAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération simple des employés");
                 throw;
             }
         }
@@ -162,26 +223,52 @@ namespace MyApp.Api.Services.employee
             }
         }
 
-        public async Task AddAsync(EmployeeFormDTO employeeForm)
+        public async Task<IEnumerable<Employee>> GetByMatriculeSimpleAsync(string[] matricules)
         {
             try
             {
-                if (employeeForm == null)
+                if (matricules == null || matricules.Length == 0)
                 {
-                    throw new ArgumentNullException(nameof(employeeForm), "Le formulaire employé ne peut pas être null");
+                    _logger.LogWarning("Tentative de récupération des employés avec matricules null ou vide");
+                    return Enumerable.Empty<Employee>();
                 }
 
-                var employee = new Employee(employeeForm);
-                employee.EmployeeId = _sequenceGenerator.GenerateSequence("seq_employee_id", "EMP", 6, "-");
-                _logger.LogInformation("ID généré pour l'employé: {EmployeeId}", employee.EmployeeId);
-
-                await _repository.AddAsync(employee);
-                await _repository.SaveChangesAsync();
-
-                _logger.LogInformation("Employé ajouté avec succès avec l'ID: {EmployeeId}", employee.EmployeeId);
+                _logger.LogInformation("Récupération des employés par matricules: {MatriculeCount}", matricules.Length);
+                return await _repository.GetByMatriculeSimpleAsync(matricules) ?? Enumerable.Empty<Employee>();
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Erreur lors de la récupération des employés par matricules");
+                throw;
+            }
+        }
+
+        public async Task<Employee> AddAsync(EmployeeFormDTO dto)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (dto == null)
+                {
+                    throw new ArgumentNullException(nameof(dto), "Le DTO employé ne peut pas être null");
+                }
+
+                var employeeId = _sequenceGenerator.GenerateSequence("seq_employee_id", "EMP", 6, "-");
+
+                var employee = new Employee(dto) { EmployeeId = employeeId };
+
+                await _repository.AddAsync(employee);
+                await _repository.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Invalider le cache après ajout
+                _cache.Remove(AllEmployeesCacheKey);
+                _logger.LogInformation("Employé ajouté avec succès avec l'ID: {EmployeeId} (cache invalidé)", employee.EmployeeId);
+                return employee;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Erreur lors de l'ajout de l'employé");
                 throw;
             }
@@ -214,7 +301,9 @@ namespace MyApp.Api.Services.employee
                 await _repository.UpdateAsync(employee);
                 await _repository.SaveChangesAsync();
 
-                _logger.LogInformation("Employé mis à jour avec succès pour l'ID: {EmployeeId}", id);
+                // Invalider le cache après mise à jour
+                _cache.Remove(AllEmployeesCacheKey);
+                _logger.LogInformation("Employé mis à jour avec succès pour l'ID: {EmployeeId} (cache invalidé)", id);
             }
             catch (Exception ex)
             {
@@ -235,7 +324,9 @@ namespace MyApp.Api.Services.employee
                 await _repository.DeleteAsync(id);
                 await _repository.SaveChangesAsync();
 
-                _logger.LogInformation("Employé supprimé avec succès pour l'ID: {EmployeeId}", id);
+                // Invalider le cache après suppression
+                _cache.Remove(AllEmployeesCacheKey);
+                _logger.LogInformation("Employé supprimé avec succès pour l'ID: {EmployeeId} (cache invalidé)", id);
             }
             catch (Exception ex)
             {

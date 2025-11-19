@@ -47,7 +47,6 @@ namespace MyApp.Api.Entities.mission
         [Column("rate", TypeName = "decimal(15,2)")]
         public decimal Rate { get; set; } = 0m;
 
-        // 🔑 Foreign Keys
         [Required]
         [Column("assignation_id")]
         [MaxLength(50)]
@@ -75,7 +74,6 @@ namespace MyApp.Api.Entities.mission
             Amount = dto.Amount;
             AmountMGA = dto.AmountMGA;
             Rate = dto.Rate;
-            Status = "pending";
             AssignationId = dto.AssignationId ?? string.Empty;
             ExpenseReportTypeId = dto.ExpenseReportTypeId ?? string.Empty;
         }

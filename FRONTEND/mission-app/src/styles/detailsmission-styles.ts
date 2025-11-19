@@ -19,15 +19,48 @@ interface ChartWithCenterTextOptions {
     };
   };
 }
-
 export const LoadingContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
   padding: var(--spacing-2xl);
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  font-style: italic;
+  gap: 8px;
+`
+
+export const LoadingDot = styled.div<{ delay: number }>`
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  animation: bounce 1.4s infinite ease-in-out both;
+  animation-delay: ${props => props.delay}s;
+
+  @keyframes bounce {
+    0%, 80%, 100% {
+      transform: scale(0);
+      opacity: 0.5;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+`
+
+
+export const LoadingSpinner = styled.div`
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(var(--primary-color-rgb, 105, 180, 46), 0.1);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 `
 
 export const ContentArea = styled.div`
@@ -57,7 +90,7 @@ export const ContentArea = styled.div`
 `
 
 export const StepHeader = styled.div`
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg)
 `
 
 export const StepTitle = styled.h2`
@@ -65,6 +98,7 @@ export const StepTitle = styled.h2`
   font-weight: 600;
   color: var(--text-color);
   margin-bottom: var(--spacing-sm);
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: var(--font-size-md);
@@ -82,6 +116,7 @@ export const StatusBadge = styled.span`
     display: inline-flex;
     align-items: center;
     white-space: nowrap;
+    font-family: var(--font-family);
 
     &.pending {
         background-color: var(--warning-bg);
@@ -110,6 +145,7 @@ export const ValidatorTitle = styled.h3`
   font-weight: 600;
   color: var(--text-color);
   margin-bottom: var(--spacing-md);
+  font-family: var(--font-family);
 `
 
 export const ValidatorGrid = styled.div`
@@ -133,6 +169,7 @@ export const SectionTitle = styled.h4`
   color: var(--text-color);
   margin-bottom: var(--spacing-sm);
   margin-top: var(--spacing-md);
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: var(--font-size-xs);
@@ -158,6 +195,7 @@ export const Avatar = styled.div<AvatarProps>`
   font-size: ${(props) => (props.size === "50px" ? "1rem" : "0.9rem")};
   font-weight: 600;
   flex-shrink: 0;
+  font-family: var(--font-family);
 `
 
 export const ValidatorInfo = styled.div`
@@ -169,6 +207,7 @@ export const ValidatorName = styled.div<ValidatorNameProps>`
   color: var(--text-color);
   font-weight: ${(props) => (props.bold ? "600" : "500")};
   font-size: ${(props) => (props.large ? "var(--font-size-sm)" : "var(--font-size-xs)")};
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: ${(props) => (props.large ? "var(--font-size-xs)" : "11px")};
@@ -178,6 +217,7 @@ export const ValidatorName = styled.div<ValidatorNameProps>`
 export const ValidatorRole = styled.div`
   color: var(--text-secondary);
   font-size: var(--font-size-xs);
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: 11px;
@@ -209,6 +249,7 @@ export const InfoLabel = styled.label`
   font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--text-secondary);
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: 11px;
@@ -219,6 +260,7 @@ export const InfoValue = styled.div`
   color: var(--text-color);
   font-size: var(--font-size-xs);
   font-weight: 400;
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: 11px;
@@ -237,6 +279,7 @@ export const CommentTitle = styled.h3`
   font-weight: 600;
   color: var(--text-color);
   margin-bottom: var(--spacing-md);
+  font-family: var(--font-family);
 `
 
 export const CommentText = styled.div`
@@ -244,6 +287,7 @@ export const CommentText = styled.div`
   font-size: var(--font-size-xs);
   line-height: 1.6;
   margin-bottom: var(--spacing-md);
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: 11px;
@@ -255,6 +299,7 @@ export const CommentDate = styled.div`
   color: var(--text-secondary);
   border-top: 1px solid var(--border-light);
   padding-top: var(--spacing-md);
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: 11px;
@@ -272,6 +317,7 @@ export const InfoAlert = styled.div`
   gap: var(--spacing-sm);
   color: var(--text-secondary);
   font-size: var(--font-size-xs);
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: 11px;
@@ -281,6 +327,7 @@ export const InfoAlert = styled.div`
 export const AlertText = styled.span`
   color: var(--text-secondary);
   font-weight: 500;
+  font-family: var(--font-family);
 `
 
 export const FooterActions = styled.div`
@@ -388,6 +435,7 @@ export const StepCounter = styled.div`
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   font-weight: 500;
+  font-family: var(--font-family);
 
   @media (max-width: 768px) {
     font-size: 11px;
@@ -449,6 +497,7 @@ export const FileInputLabel = styled.label`
   color: var(--text-secondary);
   font-weight: 500;
   font-size: var(--font-size-sm);
+  font-family: var(--font-family);
 
   &:hover {
     border-color: var(--primary-color);
@@ -495,15 +544,32 @@ export const Separator = styled.hr`
   }
 `
 
+export const SeparatorStyle = styled.div`
+  height: 2px;
+  background: linear-gradient(to right, var(--primary-color), transparent);
+  margin: var(--spacing-md) 0;
+  width: calc(100% + 2 * var(--spacing-3xl));
+  margin-left: calc(-1 * var(--spacing-3xl));
+  border-radius: 1px;
+  opacity: 0.6;
+
+  @media (max-width: 768px) {
+    width: calc(100% + 2 * var(--spacing-md));
+    margin-left: calc(-1 * var(--spacing-md));
+  }
+`;
+
 export const SuccessMessage = styled.div`
   text-align: center;
   padding: var(--spacing-xl);
+  font-family: var(--font-family);
 
   h3 {
     color: var(--success-color);
     margin-bottom: var(--spacing-sm);
     font-size: var(--font-size-lg);
     font-weight: 600;
+    font-family: var(--font-family);
   }
 
   p {
@@ -511,6 +577,7 @@ export const SuccessMessage = styled.div`
     margin-bottom: var(--spacing-md);
     font-size: var(--font-size-sm);
     line-height: 1.5;
+    font-family: var(--font-family);
   }
 `
 
@@ -528,6 +595,7 @@ export const TableHeader = styled.th`
   font-weight: 600;
   text-align: left;
   font-size: var(--font-size-sm);
+  font-family: var(--font-family);
 `
 
 export const TableCell = styled.td`
@@ -535,6 +603,7 @@ export const TableCell = styled.td`
   border: 1px solid var(--border-light);
   font-size: var(--font-size-sm);
   background-color: var(--bg-primary);
+  font-family: var(--font-family);
 `
 
 export const TotalRow = styled.tr`
@@ -634,13 +703,14 @@ export const HeaderActions = styled.div`
 `;
 
 export const SaveButton = styled(ActionButton)`
-    background-color: var(--success-color);
-    border: 1px solid var(--success-color);
+    color: var(--white);
+    background-color: var(--primary-color);
+    border: 1px solid var(--primary-color);
 
     &:hover {
-        background-color: var(--bg-primary);
-        color: var(--success-color);
-        border-color: var(--success-color);
+        background-color: var(--primary-hover);
+        color: var(--white);
+        border-color: var(--primary-color);
     }
 `;
 
@@ -705,6 +775,7 @@ export const ReportTextContainer = styled.div`
 
     & p {
         margin: 0 0 10px 0;
+        font-family: var(--font-family);
     }
 
     & + & {
@@ -781,6 +852,7 @@ export const FolderHeader = styled.button.withConfig({
     font-weight: var(--font-weight-semibold);
     color: var(--text-color);
     box-sizing: border-box;
+    font-family: var(--font-family);
 
     &:hover {
         background: var(--warning-icon-bg);
@@ -831,11 +903,13 @@ export const AttachmentItem = styled.div`
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            font-family: var(--font-family);
         }
 
         .file-size {
             font-size: var(--font-size-xs);
             color: var(--text-muted);
+            font-family: var(--font-family);
         }
     }
 
@@ -860,6 +934,7 @@ export const IconButton = styled.button.withConfig({
     cursor: pointer;
     transition: all 0.2s ease;
     border-radius: var(--border-radius-sm);
+    font-family: var(--font-family);
 
     &:hover {
         background: ${(props) => (props.$variant === "primary" ? "var(--primary-hover)" : "var(--border-color)")};
@@ -881,6 +956,7 @@ export const ChartCard = styled(ModernCard)`
         font-size: var(--font-size-lg);
         font-weight: var(--font-weight-semibold);
         color: var(--text-color);
+        font-family: var(--font-family);
     }
 
     .chart-content {
@@ -930,6 +1006,7 @@ export const ModalTitle = styled.h3`
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-semibold);
     color: var(--text-color);
+    font-family: var(--font-family);
 `;
 
 export const ModalCloseButton = styled(IconButton)`
@@ -963,6 +1040,7 @@ export const ErrorMessage = styled.p`
     color: var(--error-color);
     text-align: center;
     font-size: var(--font-size-md);
+    font-family: var(--font-family);
 `;
 
 // === PLUGIN CENTER TEXT (avec protection) ===
@@ -983,7 +1061,7 @@ export const centerTextPlugin = {
         }
         
         ctx.save();
-        ctx.font = "bold 16px Arial";
+        ctx.font = "bold 16px Century Gothic, sans-serif";
         ctx.fillStyle = "#333";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -1010,6 +1088,7 @@ export const Badge = styled.span<{ $type: string }>`
     }};
     color: var(--text-color);
     border-radius: var(--border-radius-sm);
+    font-family: var(--font-family);
 `;
 
 export const ExpenseTypeContainer = styled.div`
@@ -1039,6 +1118,7 @@ export const AccordionHeaderStyled = styled.button.withConfig({
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-color);
+  font-family: var(--font-family);
 
   &:hover {
     background: var(--warning-icon-bg);
@@ -1077,6 +1157,7 @@ export const CategoryTitle = styled.p`
   color: var(--text-color);
   margin-bottom: 0.5rem;
   font-style: italic;
+  font-family: var(--font-family);
 `;
 
 export const DraftBadge = styled.span`
@@ -1086,6 +1167,7 @@ export const DraftBadge = styled.span`
   background: var(--warning-bg);
   padding: 2px 6px;
   border-radius: 4px;
+  font-family: var(--font-family);
 `;
 
 export const UploadButton = styled.label`
@@ -1099,6 +1181,7 @@ export const UploadButton = styled.label`
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s ease;
+  font-family: var(--font-family);
 
   &:hover {
     background: var(--success-hover);
@@ -1123,4 +1206,52 @@ export const ModalContent = styled.div`
   flex-direction: column;
   position: relative;
   overflow: hidden;
+`;
+
+// === NOUVEAUX STYLED COMPONENTS POUR LE HEADER CENTER ===
+export const HeaderCenter = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+
+  @media (max-width: 768px) {
+    order: -1;
+    width: 100%;
+    margin-bottom: var(--spacing-sm);
+  }
+`;
+
+export const HeaderTitleSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+`;
+
+export const PageTitle = styled.h1`
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--text-color);
+  font-family: var(--font-family);
+  line-height: 1.2;
+
+  @media (max-width: 768px) {
+    font-size: var(--font-size-xl);
+  }
+`;
+
+export const PageSubtitle = styled.p`
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-family: var(--font-family);
+  font-style: italic;
+
+  @media (max-width: 768px) {
+    font-size: var(--font-size-xs);
+  }
 `;

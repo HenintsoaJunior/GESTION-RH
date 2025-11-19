@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.employee;
+using System;
 
 namespace MyApp.Api.Repositories.employee
 {
@@ -40,10 +41,17 @@ namespace MyApp.Api.Repositories.employee
             await _context.Genders.AddAsync(gender);
         }
 
-        public Task UpdateAsync(Gender gender)
+        public async Task UpdateAsync(Gender updatedGender)
         {
-            _context.Genders.Update(gender);
-            return Task.CompletedTask;
+            var existingGender = await _context.Genders.FirstOrDefaultAsync(g => g.GenderId == updatedGender.GenderId);
+            if (existingGender == null)
+            {
+                throw new InvalidOperationException($"Gender with ID {updatedGender.GenderId} not found.");
+            }
+
+            existingGender.Code = updatedGender.Code;
+            existingGender.Label = updatedGender.Label;
+            existingGender.UpdatedAt = DateTime.Now;
         }
 
         public async Task DeleteAsync(string id)

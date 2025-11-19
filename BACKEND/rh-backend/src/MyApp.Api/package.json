@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "react-big-calendar": "^1.19.4"
+    "react-big-calendar": "^1.19.4",
+    "swr": "^2.3.6"
   }
 }

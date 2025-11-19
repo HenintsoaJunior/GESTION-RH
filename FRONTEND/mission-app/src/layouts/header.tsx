@@ -46,11 +46,12 @@ interface BreadcrumbItem {
   title: string;
   path: string;
   isActive: boolean;
+  clickable?: boolean;
 }
 
 interface HeaderProps {
-  toggleMobileSidebar: () => void;
-  mobileOpen: boolean;
+  toggleSidebar: () => void;
+  isSidebarOpen: boolean;
   generateBreadcrumbs: () => BreadcrumbItem[];
   user: User;
   getInitials: (name: string) => string;
@@ -58,8 +59,8 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({
-  toggleMobileSidebar,
-  mobileOpen,
+  toggleSidebar,
+  isSidebarOpen,
   generateBreadcrumbs,
   user,
   getInitials,
@@ -93,20 +94,25 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <HeaderStyled>
+    <HeaderStyled $isOpen={isSidebarOpen}>
       <HeaderLeft>
-        <MenuToggle onClick={toggleMobileSidebar} aria-label={mobileOpen ? "Fermer le menu" : "Ouvrir le menu"}>
-          <FaIcons.FaBars />
+        <MenuToggle 
+          onClick={toggleSidebar} 
+          aria-label={isSidebarOpen ? "Fermer le menu latéral" : "Ouvrir le menu latéral"}
+        >
+          {isSidebarOpen ? <FaIcons.FaBars /> : <FaIcons.FaBars />}
         </MenuToggle>
         <Breadcrumb>
           {generateBreadcrumbs().map((crumb, index) => (
             <span key={index} className="breadcrumb-item-wrapper">
               {crumb.isActive ? (
                 <span className="breadcrumb-item active">{crumb.title}</span>
-              ) : (
+              ) : crumb.clickable !== false ? (
                 <Link to={crumb.path} className="breadcrumb-item">
                   {crumb.title}
                 </Link>
+              ) : (
+                <span className="breadcrumb-item">{crumb.title}</span>
               )}
               {index < generateBreadcrumbs().length - 1 && (
                 <span className="breadcrumb-separator">

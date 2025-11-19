@@ -8,6 +8,7 @@ namespace MyApp.Api.Repositories.employee
     {
         Task<IEnumerable<CategoriesOfEmployee>> GetAllAsync();
         Task<IEnumerable<CategoriesOfEmployee>> GetByEmployeeIdBeforeDateAsync(string employeeId, DateTime date);
+        Task<IEnumerable<CategoriesOfEmployee>> GetByEmployeeIdBeforeDateAsync(string employeeId);
         Task AddAsync(CategoriesOfEmployee entity);
         void Update(CategoriesOfEmployee entity);
         void Delete(CategoriesOfEmployee entity);
@@ -35,7 +36,17 @@ namespace MyApp.Api.Repositories.employee
         {
             return await _context.CategoriesOfEmployees
                 .Where(c => c.EmployeeId == employeeId && c.CreatedAt <= date)
-                .Include(c => c.EmployeeCategory) // include avant projection
+                .Include(c => c.EmployeeCategory) 
+                .GroupBy(c => c.EmployeeCategoryId)
+                .Select(g => g.OrderByDescending(c => c.CreatedAt).First())
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<CategoriesOfEmployee>> GetByEmployeeIdBeforeDateAsync(string employeeId)
+        {
+            return await _context.CategoriesOfEmployees
+                .Where(c => c.EmployeeId == employeeId)
+                .Include(c => c.EmployeeCategory)
                 .GroupBy(c => c.EmployeeCategoryId)
                 .Select(g => g.OrderByDescending(c => c.CreatedAt).First())
                 .ToListAsync();

@@ -6,25 +6,14 @@ export const App = styled.div`
   display: flex;
   min-height: 100vh;
   background-color: var(--bg-secondary);
+  font-family: var(--font-family);
 `;
 
-export const SidebarOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--overlay-bg);
-  z-index: 999;
-  opacity: 1;
-  visibility: visible;
-`;
-
-export const Sidebar = styled.aside<{ $collapsed: boolean; $mobileOpen: boolean }>`
+export const Sidebar = styled.aside<{ $isOpen: boolean }>`
   width: var(--sidebar-width);
   background-color: var(--bg-primary);
   color: var(--text-sidebar);
-  transition: width var(--transition-speed) ease;
+  transition: transform var(--transition-speed) ease;
   position: fixed;
   top: 0;
   left: 0;
@@ -34,24 +23,9 @@ export const Sidebar = styled.aside<{ $collapsed: boolean; $mobileOpen: boolean 
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  font-family: var(--font-family);
 
-  ${({ $collapsed }) =>
-    $collapsed &&
-    css`
-      width: var(--sidebar-collapsed-width);
-    `}
-
-  @media (max-width: 768px) {
-    transform: translateX(-100%);
-    width: var(--sidebar-width);
-    transition: transform var(--transition-speed) ease;
-
-    ${({ $mobileOpen }) =>
-      $mobileOpen &&
-      css`
-        transform: translateX(0);
-      `}
-  }
+  transform: ${({ $isOpen }) => $isOpen ? 'translateX(0)' : 'translateX(-100%)'};
 `;
 
 export const SidebarHeader = styled.div`
@@ -75,7 +49,7 @@ export const LogoImage = styled.img`
   object-fit: contain;
 `;
 
-export const SidebarDivider = styled.div<{ $collapsed?: boolean }>`
+export const SidebarDivider = styled.div`
   padding: 15px 20px 5px;
   display: flex;
   align-items: center;
@@ -84,6 +58,7 @@ export const SidebarDivider = styled.div<{ $collapsed?: boolean }>`
   font-weight: var(--font-weight-semibold);
   letter-spacing: 1px;
   text-transform: uppercase;
+  font-family: var(--font-family);
 
   span {
     padding-right: 10px;
@@ -95,12 +70,6 @@ export const SidebarDivider = styled.div<{ $collapsed?: boolean }>`
     height: 1px;
     background-color: var(--border-color);
   }
-
-  ${({ $collapsed }) =>
-    $collapsed &&
-    css`
-      display: none;
-    `}
 `;
 
 export const SidebarNav = styled.nav`
@@ -152,6 +121,7 @@ const NavButtonBase = css`
   border-radius: 0;
   font-weight: var(--font-weight-medium);
   text-decoration: none !important;
+  font-family: var(--font-family);
 
   &:hover {
     background-color: var(--bg-sidebar-hover);
@@ -304,6 +274,7 @@ export const Submenu = styled.ul<{ $level: number; $expanded: boolean }>`
       border-radius: var(--border-radius-sm);
       transition: all var(--transition-speed) ease;
       position: relative;
+      font-family: var(--font-family);
 
       &:hover {
         background-color: var(--primary-light);
@@ -356,127 +327,33 @@ export const Submenu = styled.ul<{ $level: number; $expanded: boolean }>`
       padding-top: var(--spacing-xs);
       padding-bottom: var(--spacing-xs);
     `}
-
-  @media (max-width: 768px) {
-    display: none;
-  }
 `;
 
-export const PremiumFeature = styled.div`
-  .nav-button {
-    margin-top: var(--spacing-sm);
-    border-top: 1px solid var(--border-color);
-    padding-top: var(--spacing-md);
-  }
-`;
-
-export const SidebarFooter = styled.div`
-  padding: var(--spacing-md) 20px;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-`;
-
-export const SidebarFooterInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-
-  .sidebar-footer-title {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text-sidebar);
-  }
-
-  .sidebar-footer-subtitle {
-    font-size: var(--font-size-xs);
-    color: var(--text-sidebar);
-    opacity: 0.6;
-  }
-
-  .sidebar-footer-copyright {
-    font-size: var(--font-size-xs);
-    color: var(--text-sidebar);
-    opacity: 0.5;
-    text-align: center;
-    padding-top: var(--spacing-xs);
-    border-top: 1px solid var(--border-color);
-  }
-`;
-
-export const ThemeSelector = styled.div`
-  &.theme-selector-small {
-    .theme-dots {
-      display: flex;
-      gap: var(--spacing-xs);
-
-      button {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        border: none;
-        cursor: pointer;
-        transition: all var(--transition-speed) ease;
-
-        &.active {
-          transform: scale(1.2);
-          box-shadow: 0 0 0 2px var(--primary-color);
-        }
-      }
-    }
-  }
-`;
-
-export const MainContent = styled.main<{ $collapsed: boolean }>`
+export const MainContent = styled.main<{ $isOpen: boolean }>`
   flex: 1;
-  margin-left: var(--sidebar-width);
-  transition: margin-left var(--transition-speed) ease;
+  margin-left: ${({ $isOpen }) => $isOpen ? 'var(--sidebar-width)' : '0'};
   display: flex;
   flex-direction: column;
   background-color: var(--bg-secondary);
-  @media (max-width: 768px) {
-    margin-left: 0;
-
-    ${({ $collapsed }) =>
-      !$collapsed &&
-      css`
-        margin-left: 0;
-      `}
-  }
+  font-family: var(--font-family);
 `;
 
-export const Header = styled.header<{ $collapsed?: boolean }>`
+export const Header = styled.header<{ $isOpen: boolean }>`
   height: var(--header-height);
   background-color: var(--white);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--spacing-2xl);
+  padding-left: calc(var(--spacing-2xl) + ${({ $isOpen }) => $isOpen ? 'var(--sidebar-width)' : '0px'});
   box-shadow: var(--shadow-sm);
   flex-wrap: nowrap;
   position: fixed;
   top: 0;
-  left: var(--sidebar-width);
+  left: 0;
   right: 0;
   z-index: 999;
-  transition: left var(--transition-speed) ease;
-
-  ${({ $collapsed }) =>
-    $collapsed &&
-    css`
-      left: var(--sidebar-collapsed-width);
-    `}
-
-  @media (max-width: 768px) {
-    left: 0;
-
-    ${({ $collapsed }) =>
-      $collapsed &&
-      css`
-        left: 0;
-      `}
-  }
+  font-family: var(--font-family);
 `;
 
 export const HeaderLeft = styled.div`
@@ -484,16 +361,6 @@ export const HeaderLeft = styled.div`
   align-items: center;
   gap: var(--spacing-md);
   flex-wrap: wrap;
-
-  h1 {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-medium);
-    color: var(--text-color);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 300px;
-  }
 `;
 
 export const HeaderCenter = styled.div`
@@ -528,6 +395,7 @@ export const SearchInput = styled.input`
   transition: all var(--transition-speed) ease;
   background-color: var(--white);
   color: var(--text-color);
+  font-family: var(--font-family);
 
   &:focus {
     border-color: var(--primary-color);
@@ -569,8 +437,6 @@ export const HeaderIconButton = styled.button`
     color: var(--primary-color);
   }
 `;
-
-// Extrait des styles à mettre à jour dans template-styles.ts
 
 export const NotificationIconWrapper = styled.div`
   position: relative;
@@ -653,6 +519,7 @@ export const NotificationDropdown = styled.div`
   visibility: hidden;
   transform: translateY(10px);
   transition: all var(--transition-speed) ease;
+  font-family: var(--font-family);
 
   ${NotificationContainer}:hover & {
     opacity: 1;
@@ -680,11 +547,13 @@ export const NotificationItem = styled.div`
     color: var(--text-color);
     margin-bottom: 4px;
     font-weight: var(--font-weight-medium);
+    font-family: var(--font-family);
   }
 
   small {
     font-size: var(--font-size-xs);
     color: var(--text-placeholder);
+    font-family: var(--font-family);
   }
 `;
 
@@ -700,6 +569,7 @@ export const UserInfo = styled.div`
   align-items: flex-start;
   margin-right: 1rem;
   text-align: left;
+  font-family: var(--font-family);
 
   &.large {
     .user-name {
@@ -785,6 +655,7 @@ export const UserDropdownMenu = styled.div`
   visibility: hidden;
   transform: translateY(10px);
   transition: all var(--transition-speed) ease;
+  font-family: var(--font-family);
 
   ${UserProfileDropdown}:hover & {
     opacity: 1;
@@ -801,6 +672,7 @@ export const DropdownItem = styled(Link)`
   text-decoration: none;
   font-size: var(--font-size-xs);
   transition: all var(--transition-speed) ease;
+  font-family: var(--font-family);
 
   &:hover {
     background-color: var(--bg-light);
@@ -814,7 +686,6 @@ export const DropdownItem = styled(Link)`
 `;
 
 export const MenuToggle = styled.button`
-  display: none;
   background: none;
   border: none;
   color: var(--text-light);
@@ -823,6 +694,7 @@ export const MenuToggle = styled.button`
   width: 32px;
   height: 32px;
   border-radius: var(--border-radius-sm);
+  display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-speed) ease;
@@ -830,10 +702,6 @@ export const MenuToggle = styled.button`
   &:hover {
     background-color: var(--bg-light);
     color: var(--primary-color);
-  }
-
-  @media (max-width: 768px) {
-    display: flex;
   }
 `;
 
@@ -844,6 +712,7 @@ export const Content = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
+  font-family: var(--font-family);
 `;
 
 export const FooterCopyright = styled.div`
@@ -853,9 +722,10 @@ export const FooterCopyright = styled.div`
   font-size: var(--font-size-sm);
   color: black;
   font-weight: var(--font-weight-medium);
+  font-family: var(--font-family);
 `;
 
-export const TemplateFooter = styled.footer<{ $collapsed?: boolean }>`
+export const TemplateFooter = styled.footer`
   height: var(--header-height);
   background-color: var(--white);
   padding: 0 var(--spacing-2xl);
@@ -866,26 +736,9 @@ export const TemplateFooter = styled.footer<{ $collapsed?: boolean }>`
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
   position: fixed;
   bottom: 0;
-  left: var(--sidebar-width);
+  left: 0;
   right: 0;
   z-index: 998;
-  transition: left var(--transition-speed) ease;
-
-  ${({ $collapsed }) =>
-    $collapsed &&
-    css`
-      left: var(--sidebar-collapsed-width);
-    `}
-
-  @media (max-width: 768px) {
-    left: 0;
-
-    ${({ $collapsed }) =>
-      $collapsed &&
-      css`
-        left: 0;
-      `}
-  }
 `;
 
 export const DashboardContent = styled.div`
@@ -893,10 +746,12 @@ export const DashboardContent = styled.div`
   border-radius: var(--border-radius-md);
   padding: var(--spacing-xl);
   box-shadow: var(--shadow-sm);
+  font-family: var(--font-family);
 
   h2 {
     margin-bottom: var(--spacing-xl);
     color: var(--primary-color);
+    font-family: var(--font-family);
   }
 `;
 
@@ -930,23 +785,7 @@ export const LanguageDropdown = styled.select`
   option {
     color: var(--text-color);
     background-color: var(--white);
-  }
-
-  @media (max-width: 1024px) {
-    min-width: 90px;
-    max-width: 120px;
-  }
-
-  @media (max-width: 768px) {
-    min-width: 80px;
-    max-width: 100px;
-    padding: 5px 24px 5px 8px;
-    font-size: var(--font-size-xs);
-
-    + .language-icon {
-      font-size: var(--font-size-md);
-      margin-right: var(--spacing-xs);
-    }
+    font-family: var(--font-family);
   }
 `;
 
@@ -975,6 +814,7 @@ export const Breadcrumb = styled.nav`
     font-size: var(--font-size-sm);
     padding: 0 6px;
     line-height: 1.5;
+    font-family: var(--font-family);
 
     &:hover {
       color: var(--primary-color);
@@ -992,26 +832,9 @@ export const Breadcrumb = styled.nav`
     margin: 0 var(--spacing-xs);
     line-height: 1.5;
   }
-
-  @media (max-width: 768px) {
-    font-size: var(--font-size-xs);
-    gap: 3px;
-
-    .breadcrumb-item-wrapper {
-      gap: 1px;
-    }
-
-    .breadcrumb-item {
-      padding: 0 3px;
-    }
-
-    .breadcrumb-separator {
-      margin: 0 2px;
-    }
-  }
 `;
 
-export const MenuLoadingDots = styled.div<{ $collapsed?: boolean }>`
+export const MenuLoadingDots = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1020,6 +843,7 @@ export const MenuLoadingDots = styled.div<{ $collapsed?: boolean }>`
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   position: relative;
+  font-family: var(--font-family);
 
   &::after {
     content: '.';
@@ -1037,67 +861,42 @@ export const MenuLoadingDots = styled.div<{ $collapsed?: boolean }>`
     80% { content: '....'; opacity: 0.7; }
     100% { content: '.'; opacity: 1; }
   }
-
-  ${({ $collapsed }) =>
-    $collapsed &&
-    css`
-      padding: var(--spacing-md) var(--spacing-sm);
-      font-size: var(--font-size-xs);
-
-      &::after {
-        margin-left: 2px;
-        font-size: var(--font-size-sm);
-      }
-    `}
-`;
-
-export const MenuLoadingSpinner = styled.div<{ $collapsed?: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-xl);
-  color: var(--text-sidebar);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-
-  &::after {
-    content: '';
-    width: 16px;
-    height: 16px;
-    margin-left: var(--spacing-sm);
-    border: 2px solid var(--border-spinner);
-    border-top: 2px solid var(--primary-color);
-    border-radius: 50%;
-    animation: menu-loading-spin 1s linear infinite;
-  }
-
-  @keyframes menu-loading-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  ${({ $collapsed }) =>
-    $collapsed &&
-    css`
-      padding: var(--spacing-md) var(--spacing-sm);
-      font-size: var(--font-size-xs);
-
-      &::after {
-        width: 12px;
-        height: 12px;
-        margin-left: var(--spacing-xs);
-      }
-    `}
 `;
 
 export const FontTooltip = styled.div`
   position: absolute;
   z-index: 1070;
   display: block;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: var(--font-family);
   font-size: 12px;
   font-weight: normal;
   line-height: 1.4;
   filter: alpha(opacity=0);
   opacity: 0;
+`;
+
+export const SidebarFooter = styled.div`
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+`;
+
+export const SidebarFooterInfo = styled.div`
+  text-align: center;
+  color: var(--text-sidebar);
+  font-family: var(--font-family);
+
+  .sidebar-footer-title {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .sidebar-footer-subtitle {
+    font-size: var(--font-size-sm);
+    opacity: 0.8;
+  }
 `;

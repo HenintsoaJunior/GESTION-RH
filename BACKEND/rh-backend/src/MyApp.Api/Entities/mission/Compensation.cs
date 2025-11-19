@@ -5,6 +5,7 @@ using MyApp.Api.Models.dto.mission;
 
 namespace MyApp.Api.Entities.mission
 {
+    //Indemnité
     [Table("compensation")]
     public class Compensation : BaseEntity
     {
@@ -28,12 +29,28 @@ namespace MyApp.Api.Entities.mission
         [Column("accommodation_amount", TypeName = "decimal(15,2)")]  
         public decimal AccommodationAmount { get; set; }
 
+        [Column("communication_amount", TypeName = "decimal(15,2)")]  
+        public decimal CommunicationAmount { get; set; }
+
+        [Column("visa_amount", TypeName = "decimal(15,2)")]  
+        public decimal VisaAmount { get; set; }
+
+        [Column("medical_expenses_amount", TypeName = "decimal(15,2)")]  
+        public decimal MedicalExpensesAmount { get; set; }
+
+        [Column("taxes_amount", TypeName = "decimal(15,2)")]  
+        public decimal TaxesAmount { get; set; }
+
         [Column("payment_date")]
         public DateTime? PaymentDate { get; set; }
+
+        [Column("devise")]
+        [MaxLength(50)]
+        public string Devise { get; set;  } = null!;
         
         [Column("status")]
         [MaxLength(50)]
-        public string Status { get; set; } = "not paid";
+        public string Status { get; set; } = "unpaid";
         
         [Column("assignation_id")]
         [MaxLength(50)]
@@ -50,15 +67,20 @@ namespace MyApp.Api.Entities.mission
         public Employee? Employee { get; set; }
         
         public Compensation() { }
-        public Compensation(ComposationDTO compensationDTO)
+        public Compensation(CompensationDTO compensationDTO)
         {
             TransportAmount = compensationDTO.TransportAmount;
             BreakfastAmount = compensationDTO.BreakfastAmount;
             LunchAmount = compensationDTO.LunchAmount;
             DinnerAmount = compensationDTO.DinnerAmount;
             AccommodationAmount = compensationDTO.AccommodationAmount;
+            CommunicationAmount = compensationDTO.CommunicationAmount;
+            VisaAmount = compensationDTO.VisaAmount;
+            MedicalExpensesAmount = compensationDTO.MedicalExpensesAmount;
+            TaxesAmount = compensationDTO.TaxesAmount;
             Status = compensationDTO.Status;
             PaymentDate = compensationDTO.PaymentDate;
+            Devise = compensationDTO.Devise;
             AssignationId = compensationDTO.AssignationId;
             EmployeeId = compensationDTO.EmployeeId;
             CreatedAt = compensationDTO.CreatedAt;

@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
+using MyApp.Api.Data;
 using MyApp.Api.Entities.employee;
+using MyApp.Api.Models.dto.employee;
 using MyApp.Api.Repositories.employee;
 using MyApp.Api.Utils.generator;
 
@@ -9,7 +11,7 @@ namespace MyApp.Api.Services.employee
     {
         Task<IEnumerable<Gender>> GetAllAsync();
         Task<Gender?> GetByIdAsync(string id);
-        Task AddAsync(Gender gender);
+        Task<Gender> AddAsync(CreateGenderDTO dto);
         Task UpdateAsync(string id, Gender gender);
         Task DeleteAsync(string id);
     }
@@ -17,17 +19,20 @@ namespace MyApp.Api.Services.employee
     public class GenderService : IGenderService
     {
         private readonly IGenderRepository _repository;
+        private readonly AppDbContext _context;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<GenderService> _logger;
 
         public GenderService(
             IGenderRepository repository,
+            AppDbContext context,
             ISequenceGenerator sequenceGenerator,
             ILogger<GenderService> logger)
         {
-            _repository = repository;
-            _sequenceGenerator = sequenceGenerator;
-            _logger = logger;
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IEnumerable<Gender>> GetAllAsync()
@@ -64,25 +69,31 @@ namespace MyApp.Api.Services.employee
             }
         }
 
-        public async Task AddAsync(Gender gender)
+        public async Task<Gender> AddAsync(CreateGenderDTO dto)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                if (gender == null)
+                if (dto == null)
                 {
-                    throw new ArgumentNullException(nameof(gender), "Le genre ne peut pas être null");
+                    throw new ArgumentNullException(nameof(dto), "Le DTO de genre ne peut pas être null");
                 }
+                var genderId = _sequenceGenerator.GenerateSequence("seq_gender_id", "GEN", 6, "-");
 
-                gender.GenderId = _sequenceGenerator.GenerateSequence("seq_gender_id", "GEN", 6, "-");
-                _logger.LogInformation("ID généré pour le genre: {GenderId}", gender.GenderId);
 
+                var gender = new Gender(dto) { GenderId = genderId };
+
+                
                 await _repository.AddAsync(gender);
                 await _repository.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 _logger.LogInformation("Genre ajouté avec succès avec l'ID: {GenderId}", gender.GenderId);
+                return gender;
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Erreur lors de l'ajout du genre");
                 throw;
             }

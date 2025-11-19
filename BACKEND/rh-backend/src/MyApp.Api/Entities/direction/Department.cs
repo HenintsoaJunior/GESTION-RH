@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using MyApp.Api.Models.dto.direction;
 
 namespace MyApp.Api.Entities.direction
 {
@@ -23,5 +24,17 @@ namespace MyApp.Api.Entities.direction
 
         [ForeignKey("DirectionId")]
         public Direction? Direction { get; set; }
+
+        public Department()
+        {
+        }
+
+        public Department(DepartmentDTOForm dto)
+        {
+            DepartmentName = dto.DepartmentName ?? throw new ArgumentNullException(nameof(dto.DepartmentName));
+            DirectionId = dto.DirectionId ?? throw new ArgumentNullException(nameof(dto.DirectionId));
+        }
+
+        
     }
 }

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useNavigateToReferentiel } from "@/utils/use-navigate-to-referentiel";
 import {
   FormSectionTitle,
   FormTable,
@@ -53,12 +54,15 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
   regionDisplayNames,
   suggestions,
   handleInputChange,
-  handleAddNewSuggestion,
 }) => {
   // Debug fieldErrors changes to confirm propagation
   useEffect(() => {
     console.log("MissionCollaboratorStep - fieldErrors:", fieldErrors);
   }, [fieldErrors]);
+
+  const { navigateAndPrefill } = useNavigateToReferentiel();
+
+  const isInternational = formData.missionType === "international";
 
   return (
     <>
@@ -141,10 +145,16 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 suggestions={regionDisplayNames}
                 placeholder={isLoading.regions ? "Chargement des lieux..." : "Saisir ou sélectionner un lieu..."}
                 disabled={isSubmitting || isLoading.regions}
-                onAddNew={() => handleAddNewSuggestion("location", formData.location || "")}
+                onAddNew={() =>
+                  navigateAndPrefill({
+                    route: "/referentiel/lieu",
+                    fieldLabel: "nom",
+                    value: formData.location || "",
+                  })
+                }
                 fieldType="location"
                 fieldLabel="lieu"
-                addNewRoute="/lieu/create"
+                addNewRoute="/referentiel/lieu"
                 className={fieldErrors.lieuId ? "input-error" : ""}
               />
               {fieldErrors.lieuId && fieldErrors.lieuId.length > 0 && (
@@ -171,8 +181,8 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 showAddOption={false}
                 fieldType="beneficiary"
                 fieldLabel="bénéficiaire"
-                addNewRoute="/employee/employee-form"
-                className={fieldErrors["beneficiary.beneficiary"] ? "error" : ""}
+                addNewRoute="/referentiel/collaborator"
+                className={fieldErrors["beneficiary.beneficiary"] ? "input-error" : ""}
               />
               {fieldErrors["beneficiary.beneficiary"] && fieldErrors["beneficiary.beneficiary"].length > 0 && (
                 <ErrorMessage>{fieldErrors["beneficiary.beneficiary"].join(", ")}</ErrorMessage>
@@ -275,38 +285,40 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
               )}
             </FormFieldCell>
             <FormFieldCell>
-              <FormLabel>Centre de coût</FormLabel>
               <FormInput
-                type="text"
+                type="hidden"
                 name="costCenter"
                 value={formData.beneficiary.costCenter}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
-                placeholder="Saisir le centre de coût..."
                 disabled={isSubmitting}
               />
-            </FormFieldCell>
-          </FormRow>
-          <FormRow className="dual-field-row">
-            <FormFieldCell>
-              <FormLabel>Moyen de transport</FormLabel>
-              <StyledAutoCompleteInput
-                value={formData.beneficiary.transport}
-                onChange={(value: string) => handleInputChange({ target: { name: "transport", value } }, "beneficiary")}
-                suggestions={suggestions.transport.map((t) => t.type)}
-                placeholder={suggestions.transport.length === 0 ? "Aucun moyen de transport disponible" : "Saisir ou sélectionner un moyen de transport..."}
-                disabled={isSubmitting}
-                onAddNew={() => handleAddNewSuggestion("transport", formData.beneficiary.transport)}
-                fieldType="transport"
-                fieldLabel="moyen de transport"
-                addNewRoute="/transport/create"
-                className={fieldErrors["beneficiary.transport"] ? "error" : ""}
-              />
-              {fieldErrors["beneficiary.transport"] && fieldErrors["beneficiary.transport"].length > 0 && (
-                <ErrorMessage>{fieldErrors["beneficiary.transport"].join(", ")}</ErrorMessage>
+
+              {!isInternational && (
+                <>
+                  <FormLabel>Moyen de transport</FormLabel>
+                  <StyledAutoCompleteInput
+                    value={formData.beneficiary.transport || ""}
+                    onChange={(value: string) => handleInputChange({ target: { name: "transport", value } }, "beneficiary")}
+                    suggestions={suggestions.transport.map((t) => t.type)}
+                    placeholder={suggestions.transport.length === 0 ? "Aucun moyen de transport disponible" : "Saisir ou sélectionner un moyen de transport..."}
+                    disabled={isSubmitting}
+                    onAddNew={() =>
+                      navigateAndPrefill({
+                        route: "/referentiel/transport",
+                        fieldLabel: "type",
+                        value: formData.beneficiary.transport || "",
+                      })
+                    }
+                    fieldType="transport"
+                    fieldLabel="moyen de transport"
+                    addNewRoute="/referentiel/transport"
+                    className={fieldErrors["beneficiary.transport"] ? "input-error" : ""}
+                  />
+                  {fieldErrors["beneficiary.transport"] && fieldErrors["beneficiary.transport"].length > 0 && (
+                    <ErrorMessage>{fieldErrors["beneficiary.transport"].join(", ")}</ErrorMessage>
+                  )}
+                </>
               )}
-            </FormFieldCell>
-            <FormFieldCell>
-              {/* Espace vide pour aligner */}
             </FormFieldCell>
           </FormRow>
         </tbody>

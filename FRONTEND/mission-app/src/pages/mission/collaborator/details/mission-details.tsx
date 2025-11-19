@@ -1,7 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Download, CheckCircle, Send, Edit2, Trash2, X, ArrowLeft, Loader2 } from "lucide-react";
-import { useParams, useNavigate, Routes, Route } from "react-router-dom";
+import styled from "styled-components";
+import { CheckCircle, Send, Edit2, Trash2, X, ArrowLeft, ChevronDown, Eye, Download, Folder, FileText } from "lucide-react";
+import { useParams, useNavigate, Routes, Route, useLocation } from "react-router-dom";
+import {
+  TabContainer,
+  TabButton,
+} from "@/styles/onglet-style";
 import ValidationStepper from "@/pages/stepper/index";
 import Alert from "@/components/alert";
 import MissionReport from "./report/mission-report";
@@ -9,34 +15,58 @@ import OMPayment from "./payment/om-payment";
 import OMNoteDeFrais from "../details/expense/om-note-de-frais";
 import {
   LoadingContainer,
+  LoadingSpinner,
   ContentArea,
-  ValidatorCard,
-  ValidatorGrid,
-  ValidatorSection,
   SectionTitle,
   ValidatorItem,
   Avatar,
   ValidatorInfo,
   ValidatorName,
-  ValidatorRole,
   InfoGrid,
   InfoItem,
   InfoLabel,
   InfoValue,
   CommentText,
-  OMPaymentButton,
-  MissionReportButton,
-  ButtonOMPDF,
   PageHeader,
   HeaderLeft,
   BtnBack,
   HeaderActions,
   Separator,
+  HeaderCenter,
+  HeaderTitleSection,
+  PageTitle,
+  PageSubtitle,
+  DetailSection,
 } from "@/styles/detailsmission-styles";
+import { 
+  FolderContainer, 
+  FolderHeader, 
+  AttachmentsList, 
+  AttachmentItem, 
+  IconButton 
+} from "@/styles/detailsmission-styles";
+import { 
+  ModalOverlay, 
+  ModalContentStyled, 
+  ModalHeader, 
+  ModalTitle, 
+  ModalCloseButton, 
+  ModalBody, 
+  FilePreview, 
+  ImagePreview, 
+  ErrorMessage 
+} from "@/styles/detailsmission-styles";
+import { handleFileView } from "@/utils/file-utils";
 import {
   useSearchMissionAssignations,
   useGenerateMissionOrder,
+  useGenerateATD,
+  usePreviewMissionOrder,
+  usePreviewATD,
   type MissionAssignation,
+  type GenerateMissionOrderData,
+  type GenerateATDData,
+  type PreviewPdfResult,
 } from "@/api/mission/services";
 import { useGetMissionValidationsByAssignationId } from "@/api/mission/validation/services";
 import {
@@ -49,7 +79,7 @@ import {
   useCompensationsByEmployeeAndMission,
   useExportMissionAssignationExcel,
   type Compensation,
-} from "@/api/compensation/services";
+} from "@/api/mission/compensation(indemnité)/services";
 import { formatDate } from "@/utils/date-converter";
 import { StatusBadge } from "@/styles/table-styles";
 import { getStatusBadgeClass, englishToFrench } from "@/utils/status";
@@ -65,6 +95,7 @@ import {
   CommentActions,
   CommentActionButton,
 } from "@/styles/comment-styles";
+import { getInitials } from "@/utils/initials";
 
 interface Comment {
   commentId: string;
@@ -101,12 +132,6 @@ interface AlertState {
   isOpen: boolean;
   type: AlertType;
   message: string;
-}
-
-interface CompensationResponse {
-  assignation: MissionAssignation;
-  compensations: Compensation[];
-  totalAmount: number;
 }
 
 interface AssignmentDetails {
@@ -155,22 +180,258 @@ interface MissionPaymentState {
   totalAmount: number;
 }
 
-interface MissionValidation {
-  missionValidationId: string;
-  type: string;
-  status: string;
-  createdAt: string;
-  validationDate?: string | null;
-  comment?: string;
-  validator: {
-    name: string;
-    title?: string;
-    subtitle?: string;
-    email: string;
-    department: string;
-    position: string;
-  };
+
+// Types for attachments
+interface DocumentAttachment {
+  id: string;
+  name: string;
+  fileContent?: string; // Optional base64
+  fileName: string;
+  fileSize?: number;
+  fileType: string;
+  extension?: string;
 }
+
+interface ModalContent {
+  fileName?: string;
+  fileUrl?: string;
+  isBlobUrl?: boolean;
+  extension?: string;
+  error?: string;
+}
+
+const PREDEFINED_DOCUMENTS: Omit<DocumentAttachment, 'fileContent'>[] = [
+  {
+    id: "ordre-mission",
+    name: "Ordre de Mission",
+    fileName: "Ordre_de_Mission.pdf",
+    fileType: "application/pdf",
+    extension: "pdf",
+    fileSize: 1024,
+  },
+  {
+    id: "attestation-employe",
+    name: "Attestation Employé",
+    fileName: "Attestation_Employe.pdf",
+    fileType: "application/pdf",
+    extension: "pdf",
+    fileSize: 512,
+  },
+  {
+    id: "attestation-hebergement",
+    name: "Attestation Hébergement",
+    fileName: "Attestation_Hebergement.pdf",
+    fileType: "application/pdf",
+    extension: "pdf",
+    fileSize: 768,
+  },
+];
+
+// FilePreviewModal Component
+interface FilePreviewModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  content: ModalContent;
+}
+
+const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ isOpen, onClose, content }) => {
+  useEffect(() => {
+    return () => {
+      if (content.isBlobUrl && content.fileUrl) {
+        window.URL.revokeObjectURL(content.fileUrl);
+      }
+    };
+  }, [content.fileUrl, content.isBlobUrl]);
+
+  if (!isOpen) return null;
+
+  return (
+    <ModalOverlay onClick={onClose}>
+      <ModalContentStyled onClick={(e) => e.stopPropagation()}>
+        <ModalHeader>
+          <ModalTitle>{content.fileName || "Prévisualisation"}</ModalTitle>
+          <ModalCloseButton onClick={onClose} $variant="primary" style={{ color: 'black' }}>
+            <X size={20} />
+          </ModalCloseButton>
+        </ModalHeader>
+        <ModalBody>
+          {content.error ? (
+            <ErrorMessage>{content.error}</ErrorMessage>
+          ) : content.extension === "pdf" ? (
+            <FilePreview src={content.fileUrl} title={content.fileName} style={{ borderRadius: 0 }} />
+          ) : (
+            <ImagePreview src={content.fileUrl} alt={content.fileName || ""} />
+          )}
+        </ModalBody>
+      </ModalContentStyled>
+    </ModalOverlay>
+  );
+};
+
+// MissionAttachments Component (per employee)
+interface MissionAttachmentsProps {
+  documents: DocumentAttachment[];
+  onGenerateOrder: () => Promise<void>;
+  onGenerateEmploye: () => Promise<void>;
+  onGenerateHebergement?: () => Promise<void>; // Optional for international
+  onPreviewOrder: (data: GenerateMissionOrderData) => Promise<PreviewPdfResult>;
+  onPreviewEmploye: (data: GenerateATDData) => Promise<PreviewPdfResult>;
+  onPreviewHebergement?: (data: GenerateATDData) => Promise<PreviewPdfResult>; // Optional for international
+  employeeId: string;
+  missionId: string;
+}
+
+const MissionAttachments: React.FC<MissionAttachmentsProps> = ({ 
+  documents, 
+  onGenerateOrder, 
+  onGenerateEmploye, 
+  onGenerateHebergement,
+  onPreviewOrder,
+  onPreviewEmploye,
+  onPreviewHebergement,
+  employeeId,
+  missionId 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState<ModalContent>({});
+  const showHebergement = onGenerateHebergement !== undefined && onPreviewHebergement !== undefined;
+
+  const toggleOpen = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  const handlePreview = useCallback(async (doc: DocumentAttachment) => {
+    const content = doc.fileContent;
+    if (content) {
+      handleFileView(
+        content,
+        doc.fileName,
+        (modalContent: ModalContent | null) => setModalContent(modalContent || {}),
+        setModalOpen,
+        doc.fileType
+      );
+    } else {
+      let previewResult: PreviewPdfResult | undefined;
+      try {
+        switch (doc.id) {
+          case "ordre-mission":
+            previewResult = await onPreviewOrder({ missionId, employeeId });
+            break;
+          case "attestation-employe":
+            previewResult = await onPreviewEmploye({ employeeId });
+            break;
+          case "attestation-hebergement":
+            if (onPreviewHebergement) previewResult = await onPreviewHebergement({ employeeId });
+            break;
+        }
+        if (previewResult) {
+          setModalContent({ 
+            fileUrl: previewResult.blobUrl, 
+            fileName: previewResult.fileName, 
+            isBlobUrl: true, 
+            extension: doc.extension || "pdf" 
+          });
+          setModalOpen(true);
+        }
+      } catch (error) {
+        setModalContent({ 
+          error: error instanceof Error ? error.message : "Erreur lors de la génération du fichier.", 
+          fileName: doc.fileName 
+        });
+        setModalOpen(true);
+      }
+    }
+  }, [onPreviewOrder, onPreviewEmploye, onPreviewHebergement, employeeId, missionId]);
+
+  const handleDownload = useCallback(async (doc: DocumentAttachment) => {
+    try {
+      switch (doc.id) {
+        case "ordre-mission":
+          await onGenerateOrder();
+          break;
+        case "attestation-employe":
+          await onGenerateEmploye();
+          break;
+        case "attestation-hebergement":
+          if (onGenerateHebergement) await onGenerateHebergement();
+          break;
+      }
+    } catch {
+      // Error handled by alert in generate functions
+    }
+  }, [onGenerateOrder, onGenerateEmploye, onGenerateHebergement]);
+
+  const filteredDocuments = useMemo(() => 
+    documents.filter(doc => doc.id !== "attestation-hebergement" || showHebergement), 
+    [documents, showHebergement]
+  );
+
+  return (
+    <>
+      <FolderContainer style={{ marginTop: "var(--spacing-md)", width: "300px" }}>
+        <FolderHeader onClick={toggleOpen} $isOpen={isOpen}>
+          <Folder className="folder-icon" size={20} />
+          <span style={{ fontSize: "12px" }}>
+            Pièces Jointes · {filteredDocuments.length} document{filteredDocuments.length !== 1 ? "s" : ""}
+          </span>
+          <ChevronDown className="chevron" size={20} />
+        </FolderHeader>
+        {isOpen && (
+          <AttachmentsList style={{ width: "100%" }}>
+            {filteredDocuments.length > 0 ? (
+              filteredDocuments.map((doc) => (
+                <AttachmentItem key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "var(--spacing-sm)" }}>
+                  <FileText size={24} style={{ color: "var(--primary-color)", minWidth: "24px" }} />
+                  <div className="file-info" style={{ flex: 1, minWidth: 0, wordBreak: "break-word" }}>
+                    <div className="file-name" style={{ fontWeight: "bold", fontSize: "12px" }}>{doc.name}</div>
+                    <div className="file-size" style={{ fontSize: "12px" }}>{(doc.fileSize || 0).toLocaleString()} Ko</div>
+                  </div>
+                  <div className="actions" style={{ display: "flex", gap: "var(--spacing-xs)" }}>
+                    <IconButton
+                      onClick={() => handlePreview(doc)}
+                      title={`Prévisualiser ${doc.name}`}
+                      $variant="primary"
+                    >
+                      <Eye size={16} />
+                    </IconButton>
+                    <IconButton
+                      $download
+                      onClick={() => handleDownload(doc)}
+                      title={`Télécharger ${doc.name}`}
+                    >
+                      <Download size={16} />
+                    </IconButton>
+                  </div>
+                </AttachmentItem>
+              ))
+            ) : (
+              <p style={{ padding: "var(--spacing-xl)", textAlign: "center", color: "var(--text-muted)", fontSize: "12px" }}>
+                Aucune pièce jointe disponible
+              </p>
+            )}
+          </AttachmentsList>
+        )}
+      </FolderContainer>
+      <FilePreviewModal 
+        isOpen={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        content={modalContent} 
+      />
+    </>
+  );
+};
+
+const StyledTabContainer = styled.div`${TabContainer}`;
+
+type TabButtonProps = {
+  $isActive: boolean;
+  $hasBorderRight: boolean;
+};
+
+const StyledTabButton = styled.button<TabButtonProps>`
+  ${TabButton}
+`;
 
 const useAlert = () => {
   const [alert, setAlert] = useState<AlertState>({
@@ -264,10 +525,9 @@ const useComments = (missionId: string, userId: string | null, showAlert: (type:
         };
         await createCommentMutation.mutateAsync(commentData);
         setComment("");
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      } catch (errorMessage: unknown) {
         showAlert("error", `Erreur lors de l'ajout du commentaire: ${errorMessage}`);
-        throw error;
+        throw errorMessage;
       }
     },
     [missionId, userId, createCommentMutation, showAlert]
@@ -286,10 +546,9 @@ const useComments = (missionId: string, userId: string | null, showAlert: (type:
         await updateCommentMutation.mutateAsync({ commentId, comment: commentData });
         setEditingCommentId(null);
         setEditCommentText("");
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      } catch (errorMessage: unknown) {
         showAlert("error", `Erreur lors de la mise à jour du commentaire: ${errorMessage}`);
-        throw error;
+        throw errorMessage;
       }
     },
     [missionId, userId, updateCommentMutation, showAlert]
@@ -300,10 +559,9 @@ const useComments = (missionId: string, userId: string | null, showAlert: (type:
       if (!missionId || !userId) return;
       try {
         await deleteCommentMutation.mutateAsync({ commentId, missionId, userId });
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      } catch (errorMessage: unknown) {
         showAlert("error", `Erreur lors de la suppression du commentaire: ${errorMessage}`);
-        throw error;
+        throw errorMessage;
       }
     },
     [missionId, userId, deleteCommentMutation, showAlert]
@@ -365,7 +623,7 @@ const useMissionData = (
     }
   }, [searchResponse]);
 
-  const mapValidationsToSteps = useCallback((validations: MissionValidation[]) => {
+  const mapValidationsToSteps = useCallback((validations: any[]) => {
     const stepMapping: Record<string, { title: string; subtitle: string; order: number }> = {
       "Directeur de tutelle": {
         title: "Validation Supérieur",
@@ -387,23 +645,24 @@ const useMissionData = (
         order: validationType === "DRH" ? 2 : 1,
       };
 
-      const validatorName = validation.validator.name;
+      const validatorObj = validation.validator;
+      const validatorName = validatorObj?.name || "Non spécifié";
       const initials = validatorName
         ? validatorName.split(" ").slice(0, 2).map((n: string) => n[0]).join("").toUpperCase()
         : "NA";
 
       const mappedStep: ValidationStep = {
         id: validation.missionValidationId,
-        title: validation.validator.title || stepInfo.title,
-        subtitle: validation.validator.subtitle || stepInfo.subtitle,
+        title: validatorObj?.title || stepInfo.title,
+        subtitle: validatorObj?.subtitle || stepInfo.subtitle,
         status: validation.status,
         hasIndicator: true,
         validator: {
-          name: validation.validator.name || "Non spécifié",
+          name: validatorName,
           initials,
-          email: validation.validator.email || "Non spécifié",
-          department: validation.validator.department || "Non spécifié",
-          position: validation.validator.position || stepInfo.title,
+          email: validatorObj?.email || "Non spécifié",
+          department: validatorObj?.department || "Non spécifié",
+          position: validatorObj?.position || stepInfo.title,
         },
         validatedAt: validation.createdAt,
         validationDate: validation.validationDate || undefined,
@@ -443,9 +702,16 @@ const useMissionData = (
   };
 };
 
+interface Tab {
+  label: string;
+  onClick: () => void;
+  path: string;
+}
+
 const DetailsMission: React.FC = () => {
   const { missionId } = useParams<{ missionId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = userData?.userId || null;
   const { alert, showAlert, handleClose: handleAlertClose } = useAlert();
@@ -472,10 +738,6 @@ const DetailsMission: React.FC = () => {
     refetch: refetchMissionData,
   } = useMissionData(missionId || "");
 
-  // État pour le chargement et la génération PDF par employeeId
-  const [pdfLoading, setPdfLoading] = useState<Record<string, boolean>>({});
-  const [pdfGenerated, setPdfGenerated] = useState<Record<string, boolean>>({});
-
   const [selectedAssignationId, setSelectedAssignationId] = useState<string | null>(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [missionPayment, setMissionPayment] = useState<MissionPaymentState>({
@@ -484,12 +746,27 @@ const DetailsMission: React.FC = () => {
     totalAmount: 0,
   });
 
+  const [isDelayedLoading, setIsDelayedLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsDelayedLoading(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const generateOrderMutation = useGenerateMissionOrder();
+  const generateATDMutation = useGenerateATD();
+  const previewOrderMutation = usePreviewMissionOrder();
+  const previewATDMutation = usePreviewATD();
   const exportExcelMutation = useExportMissionAssignationExcel();
   const { data: compensationsResponse, isLoading: compensationsLoading } = useCompensationsByEmployeeAndMission(
     selectedEmployeeId ?? undefined,
     missionId
   );
+
+  const fullBasePath = `/mission/collaborateur/${missionId}`;
 
   useEffect(() => {
     if (missionId) {
@@ -499,19 +776,108 @@ const DetailsMission: React.FC = () => {
 
   useEffect(() => {
     if (compensationsResponse?.data) {
-      const responseData = compensationsResponse.data as unknown as CompensationResponse;
-      const { assignation, compensations, totalAmount } = responseData;
-      const dailyPaiements = compensations.map((comp: Compensation) => ({
-        date: comp.paymentDate,
-        totalAmount: comp.totalAmount,
-        compensationScales: [
-          ...(comp.transportAmount > 0 ? [{ amount: comp.transportAmount, transportId: assignation.transportId ?? undefined }] : []),
-          ...(comp.breakfastAmount > 0 ? [{ amount: comp.breakfastAmount, expenseType: { type: "Petit Déjeuner" } }] : []),
-          ...(comp.lunchAmount > 0 ? [{ amount: comp.lunchAmount, expenseType: { type: "Déjeuner" } }] : []),
-          ...(comp.dinnerAmount > 0 ? [{ amount: comp.dinnerAmount, expenseType: { type: "Dîner" } }] : []),
-          ...(comp.accommodationAmount > 0 ? [{ amount: comp.accommodationAmount, expenseType: { type: "Hébergement" } }] : []),
-        ],
-      }));
+      const responseData = compensationsResponse.data;
+      const { assignation, compensations } = responseData;
+      const totalAmount = compensations.reduce((sum, comp) => {
+        const communicationAmount = comp.communicationAmount ?? 0;
+        const visaAmount = comp.visaAmount ?? 0;
+        const medicalExpensesAmount = comp.medicalExpensesAmount ?? 0;
+        const taxesAmount = comp.taxesAmount ?? 0;
+        return sum + (comp.totalAmount || (
+          (comp.transportAmount ?? 0) +
+          (comp.breakfastAmount ?? 0) +
+          (comp.lunchAmount ?? 0) +
+          (comp.dinnerAmount ?? 0) +
+          (comp.accommodationAmount ?? 0) +
+          communicationAmount +
+          visaAmount +
+          medicalExpensesAmount +
+          taxesAmount
+        ));
+      }, 0);
+      const dailyPaiements = compensations
+        .map((comp: Compensation) => {
+          const communicationAmount = comp.communicationAmount ?? 0;
+          const visaAmount = comp.visaAmount ?? 0;
+          const medicalExpensesAmount = comp.medicalExpensesAmount ?? 0;
+          const taxesAmount = comp.taxesAmount ?? 0;
+          const totalForDay = comp.totalAmount || (
+            (comp.transportAmount ?? 0) +
+            (comp.breakfastAmount ?? 0) +
+            (comp.lunchAmount ?? 0) +
+            (comp.dinnerAmount ?? 0) +
+            (comp.accommodationAmount ?? 0) +
+            communicationAmount +
+            visaAmount +
+            medicalExpensesAmount +
+            taxesAmount
+          );
+          const compensationScales: Array<{
+            amount: number;
+            expenseType?: { type: string };
+            transportId?: string;
+          }> = [];
+          if ((comp.transportAmount ?? 0) > 0) {
+            compensationScales.push({ 
+              amount: comp.transportAmount!, 
+              transportId: assignation.transportId ?? undefined 
+            });
+          }
+          if ((comp.breakfastAmount ?? 0) > 0) {
+            compensationScales.push({ 
+              amount: comp.breakfastAmount!, 
+              expenseType: { type: "Petit Déjeuner" } 
+            });
+          }
+          if ((comp.lunchAmount ?? 0) > 0) {
+            compensationScales.push({ 
+              amount: comp.lunchAmount!, 
+              expenseType: { type: "Déjeuner" } 
+            });
+          }
+          if ((comp.dinnerAmount ?? 0) > 0) {
+            compensationScales.push({ 
+              amount: comp.dinnerAmount!, 
+              expenseType: { type: "Dinner" } 
+            });
+          }
+          if ((comp.accommodationAmount ?? 0) > 0) {
+            compensationScales.push({ 
+              amount: comp.accommodationAmount!, 
+              expenseType: { type: "Hébergement" } 
+            });
+          }
+          if (communicationAmount > 0) {
+            compensationScales.push({ 
+              amount: communicationAmount, 
+              expenseType: { type: "Communication" } 
+            });
+          }
+          if (visaAmount > 0) {
+            compensationScales.push({ 
+              amount: visaAmount, 
+              expenseType: { type: "Visa sur place" } 
+            });
+          }
+          if (medicalExpensesAmount > 0) {
+            compensationScales.push({ 
+              amount: medicalExpensesAmount, 
+              expenseType: { type: "Frais médicaux" } 
+            });
+          }
+          if (taxesAmount > 0) {
+            compensationScales.push({ 
+              amount: taxesAmount, 
+              expenseType: { type: "Taxes" } 
+            });
+          }
+          return {
+            date: comp.paymentDate,
+            totalAmount: totalForDay,
+            compensationScales,
+          };
+        })
+        .filter((payment) => payment.compensationScales.length > 0); // Optional: filter out days with no compensations
 
       const assignmentDetails: AssignmentDetails = {
         beneficiary: `${assignation.employee.firstName} ${assignation.employee.lastName}`,
@@ -540,27 +906,104 @@ const DetailsMission: React.FC = () => {
   }, [compensationsResponse]);
 
   const handleExportPDF = useCallback(
-    async (employeeId: string) => {
+    async (employeeId: string): Promise<void> => {
       if (!missionId || !employeeId) {
         showAlert("error", "Mission ID et Employee ID sont requis pour générer l'ordre de mission.");
         return;
       }
 
-      setPdfLoading((prev) => ({ ...prev, [employeeId]: true }));
       try {
         const data = { missionId, employeeId };
         await generateOrderMutation.mutateAsync(data);
-        // Marquer comme généré avec succès
-        setPdfGenerated((prev) => ({ ...prev, [employeeId]: true }));
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-        showAlert("error", errorMessage || "Erreur lors de la génération de l'ordre de mission.");
-        // Ne pas marquer comme généré en cas d'erreur
-      } finally {
-        setPdfLoading((prev) => ({ ...prev, [employeeId]: false }));
+      } catch (errorMessage: unknown) {
+        showAlert("error", `Erreur lors de la génération de l'ordre de mission: ${errorMessage}`);
       }
     },
     [missionId, showAlert, generateOrderMutation]
+  );
+
+  const handlePreviewOrder = useCallback(
+    async (data: GenerateMissionOrderData): Promise<PreviewPdfResult> => {
+      if (!data.missionId || !data.employeeId) {
+        showAlert("error", "Mission ID et Employee ID sont requis pour prévisualiser l'ordre de mission.");
+        throw new Error("Mission ID et Employee ID sont requis pour prévisualiser l'ordre de mission.");
+      }
+
+      const result = await previewOrderMutation.mutateAsync(data);
+      return result;
+    },
+    [showAlert, previewOrderMutation]
+  );
+
+  const handlePreviewATD = useCallback(
+    async (data: GenerateATDData): Promise<PreviewPdfResult> => {
+      if (!data.employeeId) {
+        showAlert("error", "Employee ID est requis pour prévisualiser l'attestation employé.");
+        throw new Error("Employee ID est requis pour prévisualiser l'attestation employé.");
+      }
+
+      const result = await previewATDMutation.mutateAsync(data);
+      return result;
+    },
+    [showAlert, previewATDMutation]
+  );
+
+  const handleExportAttestationEmploye = useCallback(
+    async (employeeId: string): Promise<void> => {
+      if (!missionId || !employeeId) {
+        showAlert("error", "Mission ID et Employee ID sont requis pour générer l'attestation employé.");
+        return;
+      }
+
+      try {
+        const data = { employeeId };
+        await generateATDMutation.mutateAsync(data);
+      } catch (errorMessage: unknown) {
+        showAlert("error", `Erreur lors de la génération de l'attestation employé: ${errorMessage}`);
+      }
+    },
+    [missionId, showAlert, generateATDMutation]
+  );
+
+  const handleExportAttestationHebergement = useCallback(
+    async (employeeId: string): Promise<void> => {
+      if (!missionId || !employeeId) {
+        showAlert("error", "Mission ID et Employee ID sont requis pour générer l'attestation hébergement.");
+        return;
+      }
+
+      try {
+        // TODO: Remplacer par la vraie mutation API pour générer l'attestation hébergement
+        // Ex: await generateAttestationHebergementMutation.mutateAsync({ missionId, employeeId });
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Simulation de chargement
+      } catch (errorMessage: unknown) {
+        showAlert("error", `Erreur lors de la génération de l'attestation hébergement: ${errorMessage}`);
+      }
+    },
+    [missionId, showAlert]
+  );
+
+  const handlePreviewAttestationHebergement = useCallback(
+    async (data: GenerateATDData): Promise<PreviewPdfResult> => {
+      if (!data.employeeId) {
+        showAlert("error", "Employee ID est requis pour prévisualiser l'attestation hébergement.");
+        throw new Error("Employee ID est requis pour prévisualiser l'attestation hébergement.");
+      }
+
+      try {
+        // TODO: Similar for preview hebergement
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Simulation
+        // Mock result for now
+        return {
+          blobUrl: URL.createObjectURL(new Blob(['Mock PDF content'], { type: 'application/pdf' })),
+          fileName: `Attestation_Hebergement-${data.employeeId}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`,
+          status: "success"
+        };
+      } catch (errorMessage: unknown) {
+        throw new Error(`Erreur lors de la prévisualisation de l'attestation hébergement: ${errorMessage}`);
+      }
+    },
+    [showAlert]
   );
 
   const handleExportExcel = useCallback(() => {
@@ -609,6 +1052,8 @@ const DetailsMission: React.FC = () => {
     return missionLoading || commentsLoading || exportExcelMutation.isPending || compensationsLoading;
   }, [missionLoading, commentsLoading, exportExcelMutation.isPending, compensationsLoading]);
 
+  const effectiveLoading = isGlobalLoading || isDelayedLoading;
+
   const handleBackToMissionDetails = useCallback(() => {
     navigate(-1);
   }, [navigate]);
@@ -616,23 +1061,104 @@ const DetailsMission: React.FC = () => {
   const handleNavigateToPayment = useCallback((employeeId: string, assignationId: string) => {
     setSelectedEmployeeId(employeeId);
     setSelectedAssignationId(assignationId);
-    navigate(`payment/${assignationId}`);
-  }, [navigate]);
+    navigate(`${fullBasePath}/payment/${assignationId}`);
+  }, [navigate, fullBasePath]);
 
   const handleNavigateToNote = useCallback((assignationId: string) => {
     setSelectedAssignationId(assignationId);
-    navigate(`note/${assignationId}`);
-  }, [navigate]);
+    navigate(`${fullBasePath}/note/${assignationId}`);
+  }, [navigate, fullBasePath]);
 
   const handleNavigateToReport = useCallback((assignationId: string, employeeId: string) => {
     setSelectedAssignationId(assignationId);
     setSelectedEmployeeId(employeeId);
-    navigate(`report/${assignationId}`);
-  }, [navigate]);
+    navigate(`${fullBasePath}/report/${assignationId}`);
+  }, [navigate, fullBasePath]);
+
+  const firstAssignation = assignations[0];
+
+  const tabs = useMemo((): Tab[] => {
+    if (!firstAssignation) return [];
+    const assignmentType = firstAssignation.type;
+    const employeeId = firstAssignation.employee.employeeId;
+    const shouldShowRendu = assignmentType === "Indemnité" || assignmentType === "Note de frais";
+    const tabList: Tab[] = [{
+      label: "Détails",
+      onClick: () => navigate(fullBasePath),
+      path: "",
+    }];
+    if (isMissionFullyValidated) {
+      if (assignmentType === "Indemnité") {
+        tabList.push({
+          label: "Indemnités",
+          onClick: () => handleNavigateToPayment(employeeId, firstAssignation.assignationId),
+          path: `payment/${firstAssignation.assignationId}`,
+        });
+      }
+      if (assignmentType === "Note de frais") {
+        tabList.push({
+          label: "Note de Frais",
+          onClick: () => handleNavigateToNote(firstAssignation.assignationId),
+          path: `note/${firstAssignation.assignationId}`,
+        });
+      }
+      if (shouldShowRendu) {
+        tabList.push({
+          label: "Rendu",
+          onClick: () => handleNavigateToReport(firstAssignation.assignationId, employeeId),
+          path: `report/${firstAssignation.assignationId}`,
+        });
+      }
+    }
+    return tabList;
+  }, [firstAssignation, handleNavigateToPayment, handleNavigateToNote, handleNavigateToReport, navigate, fullBasePath, isMissionFullyValidated]);
+
+  // Fonction pour rendre les onglets sans les boutons PDF
+  const renderTabsOnly = () => (
+    <StyledTabContainer>
+      {tabs.map((tab, tabIndex) => {
+        const fullPath = tab.path === "" ? fullBasePath : `${fullBasePath}/${tab.path}`;
+        return (
+          <StyledTabButton
+            key={tab.label}
+            $isActive={location.pathname === fullPath}
+            $hasBorderRight={tabIndex < tabs.length - 1}
+            onClick={tab.onClick}
+            disabled={isGlobalLoading}
+          >
+            {tab.label}
+          </StyledTabButton>
+        );
+      })}
+    </StyledTabContainer>
+  );
 
   if (!missionId) {
-    return <LoadingContainer>Mission ID manquante</LoadingContainer>;
+    return (
+      <LoadingContainer>
+        <LoadingSpinner />
+        Mission ID manquante
+      </LoadingContainer>
+    );
   }
+
+  const assignedPersonsNames = assignations.length > 0 
+    ? assignations.map(a => `${a.employee.firstName} ${a.employee.lastName}`).join(', ') 
+    : 'Aucune personne assignée';
+
+  const renderRestrictedAccess = () => (
+    <div
+      style={{
+        textAlign: "center",
+        padding: "var(--spacing-lg)",
+        color: "var(--text-secondary)",
+      }}
+    >
+      Accès restreint : La mission n'est pas encore validée.
+    </div>
+  );
+
+  const documents = PREDEFINED_DOCUMENTS.map(doc => ({ ...doc, fileContent: undefined } as DocumentAttachment));
 
   return (
     <>
@@ -642,243 +1168,194 @@ const DetailsMission: React.FC = () => {
         isOpen={alert.isOpen}
         onClose={handleAlertClose}
       />
-      {isGlobalLoading ? (
-        <LoadingContainer>Chargement des informations de la mission...</LoadingContainer>
+      {effectiveLoading ? (
+        <LoadingContainer>
+          <LoadingSpinner />
+        </LoadingContainer>
       ) : (
         <ContentArea>
+          <PageHeader>
+            <HeaderLeft>
+              <BtnBack onClick={handleBackToMissionDetails} title="Retour aux missions">
+                <ArrowLeft className="w-5 h-5" />
+              </BtnBack>
+            </HeaderLeft>
+            <HeaderCenter>
+              <HeaderTitleSection>
+                <PageTitle>{assignedPersonsNames}</PageTitle>
+                <PageSubtitle>
+                  {firstAssignation && ` N° Assignation: ${firstAssignation.assignationId}`}
+                </PageSubtitle>
+              </HeaderTitleSection>
+            </HeaderCenter>
+            <HeaderActions>
+              {mission && (
+                <StatusBadge className={getStatusBadgeClass(mission.status)}>
+                  {englishToFrench[mission.status?.trim().toLowerCase()] || mission.status}
+                </StatusBadge>
+              )}
+            </HeaderActions>
+          </PageHeader>
+          <Separator />
+          {validationSteps.length > 0 && (
+            <ValidationStepper steps={validationSteps} currentStep={0} />
+          )}
           <Routes>
             <Route
               index
               element={
                 <>
-                  <PageHeader>
-                    <HeaderLeft>
-                      <BtnBack onClick={handleBackToMissionDetails} title="Retour aux missions">
-                        <ArrowLeft className="w-5 h-5" />
-                      </BtnBack>
-                    </HeaderLeft>
-                    <div className="header-center">
-                      <div className="header-title-section">
-                        <h1 className="page-title">Détails de la Mission</h1>
-                        <p className="page-subtitle">Mission #{missionId}</p>
-                      </div>
-                    </div>
-                    <HeaderActions>
-                      {mission && (
-                        <StatusBadge className={getStatusBadgeClass(mission.status)}>
-                          {englishToFrench[mission.status?.trim().toLowerCase()] || mission.status}
-                        </StatusBadge>
-                      )}
-                    </HeaderActions>
-                  </PageHeader>
-                  <Separator />
-                  {validationSteps.length > 0 && (
-                    <ValidationStepper steps={validationSteps} currentStep={0} />
-                  )}
+                  {renderTabsOnly()}
+                  <div style={{ marginTop: '50px' }} />
+                  {/* <Separator /> */}
+                  
+                  <SectionTitle>Personnes Assignées à la Mission</SectionTitle>
+                  {assignations.length > 0 ? (
+                    assignations.map((assignation, index) => {
+                      const employee = assignation.employee;
+                      const initials = `${employee.firstName?.[0] || ''}${employee.lastName?.[0] || ''}`.toUpperCase();
+                      const showHebergement = mission?.missionType === "international";
 
+                      return (
+                        <DetailSection
+                          key={`${assignation.assignationId}-${index}`}
+                          style={{
+                            marginBottom: "var(--spacing-md)",
+                            padding: "var(--spacing-md)",
+                            border: "1px solid var(--border-light)",
+                            borderRadius: "var(--radius-sm)",
+                            backgroundColor: "var(--bg-primary)",
+                          }}
+                        >
+                          <ValidatorItem style={{ marginBottom: "var(--spacing-md)" }}>
+                            <Avatar size="40px">{initials}</Avatar>
+                            <ValidatorInfo>
+                              <ValidatorName>
+                                {employee.firstName} {employee.lastName} ({employee.direction?.acronym})
+                              </ValidatorName>
+                            </ValidatorInfo>
+                          </ValidatorItem>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(3, 1fr)",
+                              gap: "var(--spacing-sm)",
+                            }}
+                          >
+                            <InfoItem>
+                              <InfoLabel>Matricule</InfoLabel>
+                              <InfoValue>{employee.employeeCode || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            <InfoItem>
+                              <InfoLabel>Fonction</InfoLabel>
+                              <InfoValue>{employee.jobTitle || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            <InfoItem>
+                              <InfoLabel>Site</InfoLabel>
+                              <InfoValue>{employee.site?.siteName || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            
+                            <InfoItem>
+                              <InfoLabel>Moyen de Transport</InfoLabel>
+                              <InfoValue>{assignation.transport?.type || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            <InfoItem>
+                              <InfoLabel>Direction</InfoLabel>
+                              <InfoValue>{employee.direction?.directionName || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            <InfoItem>
+                              <InfoLabel>Département</InfoLabel>
+                              <InfoValue>{employee.department?.departmentName || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                            <InfoItem>
+                              <InfoLabel>Service</InfoLabel>
+                              <InfoValue>{employee.service?.serviceName || "Non spécifié"}</InfoValue>
+                            </InfoItem>
+                          </div>
+                          {isMissionFullyValidated && (
+                            <MissionAttachments
+                              documents={documents}
+                              onGenerateOrder={() => handleExportPDF(assignation.employee.employeeId)}
+                              onGenerateEmploye={() => handleExportAttestationEmploye(assignation.employee.employeeId)}
+                              onGenerateHebergement={showHebergement ? () => handleExportAttestationHebergement(assignation.employee.employeeId) : undefined}
+                              onPreviewOrder={handlePreviewOrder}
+                              onPreviewEmploye={handlePreviewATD}
+                              onPreviewHebergement={showHebergement ? handlePreviewAttestationHebergement : undefined}
+                              employeeId={assignation.employee.employeeId}
+                              missionId={missionId || ""}
+                            />
+                          )}
+                        </DetailSection>
+                      );
+                    })
+                  ) : (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "var(--spacing-md)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Aucune personne assignée à la mission {missionId || "inconnue"}.
+                    </div>
+                  )}
                   <Separator />
                   {mission && (
                     <>
                       <SectionTitle>Informations Générales de la Mission</SectionTitle>
                       <InfoGrid style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
                         <InfoItem>
-                          <InfoLabel>Nom de la Mission</InfoLabel>
-                          <InfoValue>{mission.name}</InfoValue>
+                          <InfoLabel>N° Assignation</InfoLabel>
+                          <InfoValue>{firstAssignation?.assignationId || "Non spécifié"}</InfoValue>
+                        </InfoItem>
+
+                        <InfoItem>
+                          <InfoLabel>Mission</InfoLabel>
+                          <InfoValue>
+                            {mission.name}
+                          </InfoValue>
                         </InfoItem>
                         <InfoItem>
-                          <InfoLabel>Description</InfoLabel>
-                          <InfoValue>{mission.description || "Aucune description"}</InfoValue>
+                          <InfoLabel>Type d'Assignation</InfoLabel>
+                          <InfoValue>{firstAssignation.type || "Non spécifié"}</InfoValue>
                         </InfoItem>
                         <InfoItem>
-                          <InfoLabel>Type de Mission</InfoLabel>
+                          <InfoLabel>Zone</InfoLabel>
                           <InfoValue>{mission.missionType}</InfoValue>
-                        </InfoItem>
-                        <InfoItem>
-                          <InfoLabel>Date de Début</InfoLabel>
-                          <InfoValue>{formatDate(mission.startDate)}</InfoValue>
-                        </InfoItem>
-                        <InfoItem>
-                          <InfoLabel>Date de Fin</InfoLabel>
-                          <InfoValue>{formatDate(mission.endDate)}</InfoValue>
                         </InfoItem>
                         <InfoItem>
                           <InfoLabel>Lieu/Pays</InfoLabel>
                           <InfoValue>{`${mission.lieu.nom} / ${mission.lieu.pays}`}</InfoValue>
                         </InfoItem>
+
+                        <InfoItem>
+                          <InfoLabel>Date de Début</InfoLabel>
+                          <InfoValue>{formatDate(mission.startDate)}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Date et Heure de Départ</InfoLabel>
+                          <InfoValue>{firstAssignation ? `${formatDate(firstAssignation.departureDate)} ${firstAssignation.departureTime || ''}` : "Non spécifié"}</InfoValue>
+                        </InfoItem>
                         
+                        <InfoItem>
+                          <InfoLabel>Date de Fin</InfoLabel>
+                          <InfoValue>{formatDate(mission.endDate)}</InfoValue>
+                        </InfoItem>
+                        
+                        <InfoItem>
+                          <InfoLabel>Date et Heure de Retour</InfoLabel>
+                          <InfoValue>{firstAssignation ? `${formatDate(firstAssignation.returnDate)} ${firstAssignation.returnTime || ''}` : "Non spécifié"}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Durée</InfoLabel>
+                          <InfoValue>{firstAssignation?.duration || 0} jours</InfoValue>
+                        </InfoItem>
+                        <InfoItem style={{ gridColumn: "span 3" }}>
+                          <InfoLabel>Description</InfoLabel>
+                          <InfoValue>{mission.description || "Aucune description"}</InfoValue>
+                        </InfoItem>
                       </InfoGrid>
                     </>
-                  )}
-                  {validationSteps.length > 0 && (
-                    <ValidatorCard>
-                      <ValidatorGrid style={{ gridTemplateColumns: "1fr 2fr" }}>
-                        <ValidatorSection>
-                          <SectionTitle>Valideurs</SectionTitle>
-                          {validationSteps.map((step) => (
-                            <ValidatorItem key={step.id}>
-                              <Avatar size="40px">{step.validator?.initials || "NA"}</Avatar>
-                              <ValidatorInfo>
-                                <ValidatorName>{step.validator?.name || "Non spécifié"}</ValidatorName>
-                                <ValidatorRole>
-                                  {step.title} - {step.subtitle}
-                                </ValidatorRole>
-                              </ValidatorInfo>
-                            </ValidatorItem>
-                          ))}
-                        </ValidatorSection>
-                        <ValidatorSection>
-                          <SectionTitle>Personnes Assignées à la Mission</SectionTitle>
-                          {assignations.length > 0 ? (
-                            assignations.map((assignation, index) => {
-                              const employee = assignation.employee;
-                              const initials = `${employee.firstName?.[0] || ''}${employee.lastName?.[0] || ''}`.toUpperCase();
-                              const assignmentType = assignation.type;
-                              const shouldShowRendu = assignmentType === "Indemnité" || assignmentType === "Note de frais";
-                              const employeeId = employee.employeeId;
-                              const isLoadingPdf = pdfLoading[employeeId] || false;
-                              const isGeneratedPdf = pdfGenerated[employeeId] || false;
-                              return (
-                                <div
-                                  key={`${assignation.assignationId}-${index}`}
-                                  style={{
-                                    marginBottom: "var(--spacing-md)",
-                                    padding: "var(--spacing-md)",
-                                    border: "1px solid var(--border-light)",
-                                    borderRadius: "var(--radius-sm)",
-                                    backgroundColor: "var(--bg-secondary)",
-                                  }}
-                                >
-                                  <ValidatorItem style={{ marginBottom: "var(--spacing-md)" }}>
-                                    <Avatar size="40px">{initials}</Avatar>
-                                    <ValidatorInfo>
-                                      <ValidatorName>
-                                        {employee.firstName} {employee.lastName} ({employee.direction?.acronym})
-                                      </ValidatorName>
-                                    </ValidatorInfo>
-                                  </ValidatorItem>
-                                  <div
-                                    style={{
-                                      display: "grid",
-                                      gridTemplateColumns: "repeat(3, 1fr)",
-                                      gap: "var(--spacing-sm)",
-                                    }}
-                                  >
-                                    <InfoItem>
-                                      <InfoLabel>N° Assignation</InfoLabel>
-                                      <InfoValue>{assignation.assignationId}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Matricule</InfoLabel>
-                                      <InfoValue>{employee.employeeCode || "Non spécifié"}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Fonction</InfoLabel>
-                                      <InfoValue>{employee.jobTitle || "Non spécifié"}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Site</InfoLabel>
-                                      <InfoValue>{employee.site?.siteName || "Non spécifié"}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Type d'Assignation</InfoLabel>
-                                      <InfoValue>{assignation.type || "Non spécifié"}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Moyen de Transport</InfoLabel>
-                                      <InfoValue>{assignation.transport?.type || "Non spécifié"}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Date et Heure de Départ</InfoLabel>
-                                      <InfoValue>{`${formatDate(assignation.departureDate)} ${assignation.departureTime || ''}`}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Date et Heure de Retour</InfoLabel>
-                                      <InfoValue>{`${formatDate(assignation.returnDate)} ${assignation.returnTime || ''}`}</InfoValue>
-                                    </InfoItem>
-                                    <InfoItem>
-                                      <InfoLabel>Durée</InfoLabel>
-                                      <InfoValue>{assignation.duration} jours</InfoValue>
-                                    </InfoItem>
-                                  </div>
-                                  {isMissionFullyValidated && (
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        gap: "var(--spacing-sm)",
-                                        justifyContent: "flex-start",
-                                        marginTop: "calc(var(--spacing-md) + 20px)",
-                                        flexWrap: "wrap",
-                                      }}
-                                    >
-                                      {assignmentType === "Indemnité" ? (
-                                        <OMPaymentButton
-                                          onClick={() => handleNavigateToPayment(assignation.employee.employeeId, assignation.assignationId)}
-                                          disabled={isGlobalLoading}
-                                        >
-                                          Indemnité
-                                        </OMPaymentButton>
-                                      ) : assignmentType === "Note de frais" ? (
-                                        <OMPaymentButton
-                                          onClick={() => handleNavigateToNote(assignation.assignationId)}
-                                          disabled={isGlobalLoading}
-                                        >
-                                          Note de Frais
-                                        </OMPaymentButton>
-                                      ) : null}
-                                      <ButtonOMPDF
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation(); // Empêche toute propagation qui pourrait causer un rechargement
-                                          handleExportPDF(employeeId);
-                                        }}
-                                        disabled={isLoadingPdf}
-                                      >
-                                        {isLoadingPdf ? (
-                                          <>
-                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                            Génération...
-                                          </>
-                                        ) : isGeneratedPdf ? (
-                                          <>
-                                            <CheckCircle size={16} className="mr-2" />
-                                            Régénérer OM PDF
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Download size={16} className="mr-2" />
-                                            OM PDF
-                                          </>
-                                        )}
-                                      </ButtonOMPDF>
-                                      {shouldShowRendu && (
-                                        <MissionReportButton
-                                          onClick={() => handleNavigateToReport(assignation.assignationId, assignation.employee.employeeId)}
-                                          disabled={isGlobalLoading}
-                                        >
-                                          Rendu
-                                        </MissionReportButton>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <ValidatorItem>
-                              <div
-                                style={{
-                                  textAlign: "center",
-                                  padding: "var(--spacing-md)",
-                                  color: "var(--text-secondary)",
-                                }}
-                              >
-                                Aucune personne assignée à la mission {missionId || "inconnue"}.
-                              </div>
-                            </ValidatorItem>
-                          )}
-                        </ValidatorSection>
-                      </ValidatorGrid>
-                    </ValidatorCard>
                   )}
                   
                   <Separator />
@@ -909,12 +1386,10 @@ const DetailsMission: React.FC = () => {
                       <CommentText>Aucun commentaire pour cette mission.</CommentText>
                     ) : (
                       comments.map((commentItem) => {
-                        const initials = commentItem.creator.name
-                          ? commentItem.creator.name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase()
-                          : "NA";
+                        
                         return (
                           <CommentItem key={commentItem.commentId}>
-                            <Avatar size="32px">{initials}</Avatar>
+                            <Avatar size="32px">{getInitials(commentItem.creator.name)}</Avatar>
                             <CommentContent>
                               {editingCommentId === commentItem.commentId ? (
                                 <>
@@ -974,46 +1449,82 @@ const DetailsMission: React.FC = () => {
             <Route
               path="payment/:assignationId"
               element={
-                missionPayment.assignmentDetails ? (
-                  <OMPayment
-                    missionPayment={missionPayment as MissionPayment}
-                    selectedAssignmentId={selectedAssignationId || ""}
-                    onBack={handleBackToMissionDetails}
-                    onExportPDF={handleExportPDF}
-                    onExportExcel={handleExportExcel}
-                    isLoading={{ exportExcel: exportExcelMutation.isPending }}
-                    formatDate={formatDate}
-                  />
-                ) : (
-                  <LoadingContainer>Chargement du paiement...</LoadingContainer>
-                )
+                <>
+                  {renderTabsOnly()}
+                  {isMissionFullyValidated && missionPayment.assignmentDetails ? (
+                    <OMPayment
+                      missionPayment={missionPayment as MissionPayment}
+                      selectedAssignmentId={selectedAssignationId || ""}
+                      onBack={handleBackToMissionDetails}
+                      onExportExcel={handleExportExcel}
+                      formatDate={formatDate}
+                      missionId={missionId || ""}
+                      employeeId={selectedEmployeeId || ""}
+                    />
+                  ) : (
+                    <LoadingContainer>
+                      {isMissionFullyValidated ? (
+                        <>
+                          <LoadingSpinner />
+                          Chargement du paiement...
+                        </>
+                      ) : (
+                        renderRestrictedAccess()
+                      )}
+                    </LoadingContainer>
+                  )}
+                </>
               }
             />
             <Route
               path="note/:assignationId"
               element={
-                selectedAssignationId ? (
-                  <OMNoteDeFrais
-                    selectedAssignmentId={selectedAssignationId}
-                    onBack={handleBackToMissionDetails}
-                  />
-                ) : (
-                  <LoadingContainer>Chargement de la note de frais...</LoadingContainer>
-                )
+                <>
+                  {renderTabsOnly()}
+                  {isMissionFullyValidated && selectedAssignationId ? (
+                    <OMNoteDeFrais
+                      selectedAssignmentId={selectedAssignationId}
+                      onBack={handleBackToMissionDetails}
+                    />
+                  ) : (
+                    <LoadingContainer>
+                      {isMissionFullyValidated ? (
+                        <>
+                          <LoadingSpinner />
+                          Chargement de la note de frais...
+                        </>
+                      ) : (
+                        renderRestrictedAccess()
+                      )}
+                    </LoadingContainer>
+                  )}
+                </>
               }
             />
             <Route
               path="report/:assignationId"
               element={
-                selectedAssignationId ? (
-                  <MissionReport
-                    userId={userId}
-                    assignationId={selectedAssignationId}
-                    onBack={handleBackToMissionDetails}
-                  />
-                ) : (
-                  <LoadingContainer>Chargement du rapport...</LoadingContainer>
-                )
+                <>
+                  {renderTabsOnly()}
+                  {isMissionFullyValidated && selectedAssignationId ? (
+                    <MissionReport
+                      userId={userId}
+                      assignationId={selectedAssignationId}
+                      onBack={handleBackToMissionDetails}
+                    />
+                  ) : (
+                    <LoadingContainer>
+                      {isMissionFullyValidated ? (
+                        <>
+                          <LoadingSpinner />
+                          Chargement du rapport...
+                        </>
+                      ) : (
+                        renderRestrictedAccess()
+                      )}
+                    </LoadingContainer>
+                  )}
+                </>
               }
             />
           </Routes>

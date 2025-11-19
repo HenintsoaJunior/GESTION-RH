@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using MyApp.Api.Entities.zones;
 using MyApp.Api.Models.dto.lieu;
 
 namespace MyApp.Api.Entities.mission
@@ -17,10 +18,6 @@ namespace MyApp.Api.Entities.mission
         [MaxLength(255)]
         public string Nom { get; set; } = string.Empty;
 
-        [Column("adresse")]
-        [MaxLength(500)]
-        public string? Adresse { get; set; }
-
         [Column("ville")]
         [MaxLength(255)]
         public string? Ville { get; set; }
@@ -29,21 +26,37 @@ namespace MyApp.Api.Entities.mission
         [MaxLength(20)]
         public string? CodePostal { get; set; }
 
+        [Required]
         [Column("pays")]
         [MaxLength(255)]
-        public string? Pays { get; set; }
+        public string Pays { get; set; } = string.Empty;
+
+        [Column("zone_id")]
+        [MaxLength(50)]
+        public string? ZoneId { get; set; }
+
+        [Column("longitude")]
+        public decimal Longitude { get; set; }  
+
+        [Column("latitude")]
+        public decimal Latitude { get; set; }
+
+        [ForeignKey("ZoneId")]
+        public GeoZone? GeoZone { get; set; }
 
         public Lieu()
         {
         }
 
-        public Lieu(LieuDTOForm lieuDTO)
+        public Lieu(LieuDTOForm dto)
         {
-            Nom = lieuDTO.Nom;
-            Adresse = lieuDTO.Adresse;
-            Ville = lieuDTO.Ville;
-            CodePostal = lieuDTO.CodePostal;
-            Pays = lieuDTO.Pays;
+            Nom = dto.Nom ?? throw new ArgumentNullException(nameof(dto.Nom));
+            Ville = dto.Ville;
+            CodePostal = dto.CodePostal;
+            Pays = dto.Pays ?? throw new ArgumentNullException(nameof(dto.Pays));
+            Latitude = dto.Latitude;
+            Longitude = dto.Longitude;
+            ZoneId = dto.ZoneId;
         }
     }
 }

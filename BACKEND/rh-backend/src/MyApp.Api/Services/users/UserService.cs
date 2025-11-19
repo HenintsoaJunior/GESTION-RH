@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using MyApp.Api.Models.classes.user;
 using MyApp.Api.Models.dto.users;
 using Microsoft.Extensions.Caching.Memory;
+using System.Linq;
 
 namespace MyApp.Api.Services.users
 {
@@ -17,6 +18,7 @@ namespace MyApp.Api.Services.users
         Task<IEnumerable<UserDto>> GetAllAsync();
         Task<User?> GetByIdAsync(string id);
         Task<User?> GetByEmailAsync(string email);
+        Task<User?> GetByMatriculeAsync(string matricule);
         Task AddAsync(User user);
         Task UpdateAsync(User user);
         Task DeleteAsync(User user);
@@ -24,6 +26,7 @@ namespace MyApp.Api.Services.users
         Task UpdateUsersAsync(List<User> users);
         Task DeleteUsersAsync(List<User> users);
         Task<IEnumerable<UserDto>> GetCollaboratorsAsync(string userId);
+        Task<IEnumerable<string>> GetCollaboratorsMatriculesAsync(string userId);
         Task<UserDto?> GetSuperiorAsync(string? matricule);
         Task<UserDto?> GetDrhAsync();
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
@@ -33,6 +36,9 @@ namespace MyApp.Api.Services.users
         Task<IEnumerable<UserInfoDto>> GetUsersInfo(string[] userIds);
 
         Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
+        Task<int> GetUserCountByRoleAsync(string role);
+        Task<UserDto?> GetDirecteurTutelleAsync(string userMatricule);
+        Task<UserDto?> GetResponsableSousDirecteurTutelleAsync(string userMatricule);
     }
 
     public class UserService : IUserService
@@ -68,6 +74,69 @@ namespace MyApp.Api.Services.users
 
             var director = await _repository.GetDirectorByDepartmentAsync(department);
             return director != null ? MapToDto(director) : null;
+        }
+
+        public async Task<UserDto?> GetDirecteurTutelleAsync(string userMatricule)
+        {
+            if (string.IsNullOrWhiteSpace(userMatricule))
+                throw new ArgumentException("User matricule cannot be null or empty.", nameof(userMatricule));
+
+            User? currentUser = await _repository.GetByMatriculeAsync(userMatricule);
+            if (currentUser == null)
+                return null;
+
+            if (string.IsNullOrWhiteSpace(currentUser.Department))
+                return null;
+
+            return await GetDirectorByDepartmentAsync(currentUser.Department);
+        }
+
+        public async Task<UserDto?> GetResponsableSousDirecteurTutelleAsync(string userMatricule)
+        {
+            if (string.IsNullOrWhiteSpace(userMatricule))
+                throw new ArgumentException("User matricule cannot be null or empty.", nameof(userMatricule));
+
+            // Obtient d'abord le Directeur Tutelle (niveau 0)
+            var directeurTutelleDto = await GetDirecteurTutelleAsync(userMatricule);
+            if (directeurTutelleDto == null)
+                return null;
+
+            string directeurTutelleId = directeurTutelleDto.UserId;
+
+            User? current = await _repository.GetByMatriculeAsync(userMatricule);
+            if (current == null)
+                return null;
+
+            HashSet<string> visited = new HashSet<string>();
+
+            while (current != null && current.SuperiorId != directeurTutelleId && !visited.Contains(current.SuperiorId ?? string.Empty))
+            {
+                visited.Add(current.UserId);
+                if (current.SuperiorId != null)
+                {
+                    current = await _repository.GetByIdAsync(current.SuperiorId);
+                }
+                else
+                {
+                    current = null;
+                }
+            }
+
+            // Si on a trouvé le N-1 (celui dont SuperiorId == directeurTutelleId)
+            if (current != null && current.SuperiorId == directeurTutelleId)
+            {
+                return MapToDto(current);
+            }
+
+            return null;
+        }
+
+        public async Task<User?> GetByMatriculeAsync(string matricule)
+        {
+            if (string.IsNullOrWhiteSpace(matricule))
+                throw new ArgumentException("Matricule cannot be null or empty.", nameof(matricule));
+
+            return await _repository.GetByMatriculeAsync(matricule);
         }
 
         public async Task<(IEnumerable<User>, int)> SearchAsync(UserSearchFiltersDTO filters, int page, int pageSize)
@@ -166,6 +235,15 @@ namespace MyApp.Api.Services.users
             return collaborators.Select(MapToDto);
         }
 
+        public async Task<IEnumerable<string>> GetCollaboratorsMatriculesAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            var collaborators = await _repository.GetCollaboratorsMatriculesAsync(userId);
+            return collaborators;
+        }
+
         public async Task<IEnumerable<UserInfoDto>> GetUsersInfo(string[] userIds)
         {
             if (userIds == null || userIds.Length == 0)
@@ -174,7 +252,6 @@ namespace MyApp.Api.Services.users
             var collaborators = await _repository.GetUsersInfo(userIds);
             return collaborators.Select(Map2ToDto);
         }
-
 
         public async Task<IEnumerable<UserInfoDto>> GetUserInfo(string userId)
         {
@@ -200,6 +277,14 @@ namespace MyApp.Api.Services.users
         public async Task<IEnumerable<string>> GetDistinctDepartmentsAsync()
         {
             return await _repository.GetDistinctDepartmentsAsync();
+        }
+
+        public async Task<int> GetUserCountByRoleAsync(string role)
+        {
+            if (string.IsNullOrWhiteSpace(role))
+                throw new ArgumentException("Role cannot be null or empty.", nameof(role));
+
+            return await _repository.GetUserCountByRoleAsync(role);
         }
         
         private static UserDto MapToDto(User user)

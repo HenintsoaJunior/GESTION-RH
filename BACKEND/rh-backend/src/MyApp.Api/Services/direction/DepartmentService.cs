@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
+using MyApp.Api.Data;
 using MyApp.Api.Entities.direction;
+using MyApp.Api.Models.dto.direction;
 using MyApp.Api.Repositories.direction;
 using MyApp.Api.Utils.generator;
 
@@ -7,9 +9,10 @@ namespace MyApp.Api.Services.direction
 {
     public interface IDepartmentService
     {
+        Task<(IEnumerable<Department>, int)> SearchAsync(DepartmentSearchFiltersDTO filters, int page, int pageSize);
         Task<IEnumerable<Department>> GetAllAsync();
         Task<Department?> GetByIdAsync(string id);
-        Task AddAsync(Department department);
+        Task<Department> AddAsync(DepartmentDTOForm dto);
         Task UpdateAsync(Department department);
         Task DeleteAsync(string id);
     }
@@ -17,17 +20,34 @@ namespace MyApp.Api.Services.direction
     public class DepartmentService : IDepartmentService
     {
         private readonly IDepartmentRepository _repository;
+        private readonly AppDbContext _context;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<DepartmentService> _logger;
 
         public DepartmentService(
             IDepartmentRepository repository,
+            AppDbContext context,
             ISequenceGenerator sequenceGenerator,
             ILogger<DepartmentService> logger)
         {
-            _repository = repository;
-            _sequenceGenerator = sequenceGenerator;
-            _logger = logger;
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public async Task<(IEnumerable<Department>, int)> SearchAsync(DepartmentSearchFiltersDTO filters, int page, int pageSize)
+        {
+            try
+            {
+                _logger.LogInformation("Recherche des départements avec filtres, page={Page}, pageSize={PageSize}", page, pageSize);
+                return await _repository.SearchAsync(filters, page, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la recherche des départements");
+                throw;
+            }
         }
 
         public async Task<IEnumerable<Department>> GetAllAsync()
@@ -64,29 +84,31 @@ namespace MyApp.Api.Services.direction
             }
         }
 
-        public async Task AddAsync(Department department)
+        public async Task<Department> AddAsync(DepartmentDTOForm dto)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                if (department == null)
+                if (dto == null)
                 {
-                    throw new ArgumentNullException(nameof(department), "Le département ne peut pas être null");
+                    throw new ArgumentNullException(nameof(dto), "Le DTO de département ne peut pas être null");
                 }
 
-                if (string.IsNullOrWhiteSpace(department.DepartmentId))
-                {
-                    department.DepartmentId = _sequenceGenerator.GenerateSequence("seq_department_id", "DEPT", 6, "-");
-                    _logger.LogInformation("ID généré pour le département: {DepartmentId}", department.DepartmentId);
-                }
+                var departmentId = _sequenceGenerator.GenerateSequence("seq_department_id", "DEPT", 6, "-");
+
+                var department = new Department(dto) { DepartmentId = departmentId };
 
                 await _repository.AddAsync(department);
                 await _repository.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 _logger.LogInformation("Département ajouté avec succès avec l'ID: {DepartmentId}", department.DepartmentId);
+                return department;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de l'ajout du département avec l'ID: {DepartmentId}", department?.DepartmentId);
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Erreur lors de l'ajout du département");
                 throw;
             }
         }

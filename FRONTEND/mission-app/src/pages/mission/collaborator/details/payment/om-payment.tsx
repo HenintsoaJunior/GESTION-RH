@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import {
     DetailSection,
     SectionTitle,
@@ -8,12 +8,23 @@ import {
     TableHeader,
     TableCell,
     TotalRow,
-    ActionButton,
-    PageHeader,
-    HeaderLeft,
-    BtnBack,
-    HeaderActions,
     Separator,
+    FolderContainer, 
+    FolderHeader, 
+    AttachmentsList, 
+    AttachmentItem, 
+    IconButton,
+    ModalOverlay, 
+    ModalContentStyled, 
+    ModalHeader, 
+    ModalTitle,
+    ModalCloseButton, 
+    ModalBody, 
+    FilePreview, 
+    ImagePreview, 
+    ErrorMessage,
+    LoadingContainer,
+    LoadingSpinner
 } from "@/styles/detailsmission-styles";
 import { NoDataMessage } from "@/styles/table-styles";
 import { formatNumber } from "@/utils/format";
@@ -23,8 +34,17 @@ import type {
     ChartOptions,
     TooltipItem,
 } from "chart.js";
-import { Doughnut, Bar } from "react-chartjs-2";
+import { Doughnut } from "react-chartjs-2";
 import styled from "styled-components";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Eye, ChevronDown, Folder, FileText, X } from "lucide-react";
+import {
+  useGenerateIM,
+  usePreviewIM,
+  type GenerateIMData,
+  type PreviewPdfResult,
+  useGetMissionAssignationByAssignationId,
+} from "@/api/mission/services";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
@@ -107,58 +127,277 @@ interface IndemnityDetail {
     dinner: number;
     accommodation: number;
     transport: number;
+    communication?: number;
+    visa?: number;
+    medical?: number;
+    taxes?: number;
     total: number;
-}
-
-interface IsLoading {
-    exportExcel: boolean;
-    // Add other loading states if needed
 }
 
 interface OMPaymentProps {
     missionPayment: MissionPayment;
     selectedAssignmentId: string;
     onBack: () => void;
-    onExportPDF?: (employeeId: string) => void;
     onExportExcel: () => void;
-    isLoading: IsLoading;
     formatDate: (date: string) => string;
+    missionId: string;
+    employeeId: string;
 }
 
-const createTooltipCallback = (
-    unit: string = ",00 "
-) => {
-    return {
-        callbacks: {
-            label: function (tooltipItem: TooltipItem<'bar'>) {
-                const label = tooltipItem.label || "";
-                const value = tooltipItem.raw as number;
-                return `${label}: ${formatNumber(value)}${unit} MGA`;
-            },
-        },
+// Types for attachments
+interface DocumentAttachment {
+  id: string;
+  name: string;
+  fileContent?: string; // Optional base64
+  fileName: string;
+  fileSize?: number;
+  fileType: string;
+  extension?: string;
+}
+
+interface ModalContent {
+  fileName?: string;
+  fileUrl?: string;
+  isBlobUrl?: boolean;
+  extension?: string;
+  error?: string;
+}
+
+const PREDEFINED_DOCUMENTS_PAYMENT: Omit<DocumentAttachment, 'fileContent'>[] = [
+  {
+    id: "im-excel",
+    name: "IM Excel",
+    fileName: "Indemnites_Mission.xlsx",
+    fileType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    extension: "xlsx",
+    fileSize: 2048,
+  },
+  {
+    id: "im-pdf",
+    name: "IM PDF",
+    fileName: "Indemnite_Mission.pdf",
+    fileType: "application/pdf",
+    extension: "pdf",
+    fileSize: 1024,
+  },
+];
+
+// FilePreviewModal Component
+interface FilePreviewModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  content: ModalContent;
+}
+
+const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ isOpen, onClose, content }) => {
+  useEffect(() => {
+    return () => {
+      if (content.isBlobUrl && content.fileUrl) {
+        window.URL.revokeObjectURL(content.fileUrl);
+      }
     };
+  }, [content.fileUrl, content.isBlobUrl]);
+
+  if (!isOpen) return null;
+
+  return (
+    <ModalOverlay onClick={onClose}>
+      <ModalContentStyled onClick={(e) => e.stopPropagation()}>
+        <ModalHeader>
+          <ModalTitle>{content.fileName || "Prévisualisation"}</ModalTitle>
+          <ModalCloseButton onClick={onClose} $variant="primary" style={{ color: 'black' }}>
+            <X size={20} />
+          </ModalCloseButton>
+        </ModalHeader>
+        <ModalBody>
+          {content.error ? (
+            <ErrorMessage>{content.error}</ErrorMessage>
+          ) : content.extension === "pdf" ? (
+            <FilePreview src={content.fileUrl} title={content.fileName} style={{ borderRadius: 0 }} />
+          ) : (
+            <ImagePreview src={content.fileUrl} alt={content.fileName || ""} />
+          )}
+        </ModalBody>
+      </ModalContentStyled>
+    </ModalOverlay>
+  );
+};
+
+// MissionAttachments Component (adapted for IM Excel and PDF)
+interface MissionAttachmentsProps {
+  documents: DocumentAttachment[];
+  onExportExcel: () => void;
+  onGenerateIM: () => Promise<void>;
+  onPreviewIM: (data: GenerateIMData) => Promise<PreviewPdfResult>;
+  employeeId: string;
+  missionId: string;
+}
+
+const MissionAttachments: React.FC<MissionAttachmentsProps> = ({ 
+  documents, 
+  onExportExcel,
+  onGenerateIM,
+  onPreviewIM,
+  employeeId,
+  missionId 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState<ModalContent>({});
+
+  const toggleOpen = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  const handlePreview = useCallback(async (doc: DocumentAttachment) => {
+    const content = doc.fileContent;
+    if (content) {
+      // handleFileView not needed here
+    } else {
+      let previewResult: PreviewPdfResult | undefined;
+      try {
+        switch (doc.id) {
+          case "im-excel":
+            setModalContent({ 
+              error: "Prévisualisation non disponible pour les fichiers Excel. Utilisez le bouton de téléchargement.",
+              fileName: doc.fileName 
+            });
+            setModalOpen(true);
+            return;
+          case "im-pdf":
+            previewResult = await onPreviewIM({ missionId, employeeId });
+            break;
+        }
+        if (previewResult) {
+          setModalContent({ 
+            fileUrl: previewResult.blobUrl, 
+            fileName: previewResult.fileName, 
+            isBlobUrl: true, 
+            extension: doc.extension || "pdf" 
+          });
+          setModalOpen(true);
+        }
+      } catch (error) {
+        setModalContent({ 
+          error: error instanceof Error ? error.message : "Erreur lors de la génération du fichier.", 
+          fileName: doc.fileName 
+        });
+        setModalOpen(true);
+      }
+    }
+  }, [onPreviewIM, employeeId, missionId]);
+
+  const handleDownload = useCallback(async (doc: DocumentAttachment) => {
+    try {
+      switch (doc.id) {
+        case "im-excel":
+          onExportExcel();
+          break;
+        case "im-pdf":
+          await onGenerateIM();
+          break;
+      }
+    } catch {
+      // Error handled elsewhere
+    }
+  }, [onExportExcel, onGenerateIM]);
+
+  const filteredDocuments = useMemo(() => documents, [documents]);
+
+  return (
+    <>
+      <FolderContainer style={{ marginTop: "var(--spacing-md)", width: "100%" }}>
+        <FolderHeader onClick={toggleOpen} $isOpen={isOpen}>
+          <Folder className="folder-icon" size={20} />
+          <span style={{ fontSize: "12px" }}>
+            Pièces Jointes · {filteredDocuments.length} document{filteredDocuments.length !== 1 ? "s" : ""}
+          </span>
+          <ChevronDown className="chevron" size={20} />
+        </FolderHeader>
+        {isOpen && (
+          <AttachmentsList style={{ width: "100%" }}>
+            {filteredDocuments.length > 0 ? (
+              filteredDocuments.map((doc) => (
+                <AttachmentItem key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "var(--spacing-sm)" }}>
+                  <FileText size={24} style={{ color: "var(--primary-color)", minWidth: "24px" }} />
+                  <div className="file-info" style={{ flex: 1, minWidth: 0, wordBreak: "break-word" }}>
+                    <div className="file-name" style={{ fontWeight: "bold", fontSize: "12px" }}>{doc.name}</div>
+                    <div className="file-size" style={{ fontSize: "12px" }}>{(doc.fileSize || 0).toLocaleString()} Ko</div>
+                  </div>
+                  <div className="actions" style={{ display: "flex", gap: "var(--spacing-xs)" }}>
+                    <IconButton
+                      onClick={() => handlePreview(doc)}
+                      title={`Prévisualiser ${doc.name}`}
+                      $variant="primary"
+                    >
+                      <Eye size={16} />
+                    </IconButton>
+                    <IconButton
+                      $download
+                      onClick={() => handleDownload(doc)}
+                      title={`Télécharger ${doc.name}`}
+                    >
+                      <Download size={16} />
+                    </IconButton>
+                  </div>
+                </AttachmentItem>
+              ))
+            ) : (
+              <p style={{ padding: "var(--spacing-xl)", textAlign: "center", color: "var(--text-muted)", fontSize: "12px" }}>
+                Aucune pièce jointe disponible
+              </p>
+            )}
+          </AttachmentsList>
+        )}
+      </FolderContainer>
+      <FilePreviewModal 
+        isOpen={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        content={modalContent} 
+      />
+    </>
+  );
 };
 
 const IndemnityDoughnutChart: React.FC<{ indemnityDetails: IndemnityDetail[] }> = ({ indemnityDetails }) => {
-    const totalTransport = indemnityDetails.reduce((sum, item) => sum + (item.transport || 0), 0);
-    const totalRepas = indemnityDetails.reduce(
-        (sum, item) => sum + (item.breakfast || 0) + (item.lunch || 0) + (item.dinner || 0),
-        0
-    );
-    const totalHebergement = indemnityDetails.reduce((sum, item) => sum + (item.accommodation || 0), 0);
+    const totals = {
+        transport: indemnityDetails.reduce((sum, item) => sum + (item.transport || 0), 0),
+        repas: indemnityDetails.reduce(
+            (sum, item) => sum + (item.breakfast || 0) + (item.lunch || 0) + (item.dinner || 0),
+            0
+        ),
+        hebergement: indemnityDetails.reduce((sum, item) => sum + (item.accommodation || 0), 0),
+        communication: indemnityDetails.reduce((sum, item) => sum + (item.communication || 0), 0),
+        visa: indemnityDetails.reduce((sum, item) => sum + (item.visa || 0), 0),
+        medical: indemnityDetails.reduce((sum, item) => sum + (item.medical || 0), 0),
+        taxes: indemnityDetails.reduce((sum, item) => sum + (item.taxes || 0), 0),
+    };
 
-    const data: number[] = [totalTransport, totalRepas, totalHebergement];
-    const hasData = data.some(val => val > 0);
+    const labelMap: Record<string, string> = {
+        transport: "Transport",
+        repas: "Repas",
+        hebergement: "Hébergement",
+        communication: "Communication",
+        visa: "Visa sur place",
+        medical: "Frais médicaux",
+        taxes: "Taxes",
+    };
+
+    const entries = Object.entries(totals).filter(([, v]) => v > 0);
+    const labels = entries.map(([k]) => labelMap[k]);
+    const data = entries.map(([, v]) => v);
+
+    const hasData = data.length > 0;
 
     if (!hasData) return <p>Données insuffisantes.</p>;
 
     const chartData: ChartData<'doughnut'> = {
-        labels: ["Transport", "Repas", "Hébergement"],
+        labels,
         datasets: [
             {
-                data: data,
-                backgroundColor: ["#007bff", "#28a745", "#ffc107"],
-                hoverBackgroundColor: ["#0056b3", "#1e7e34", "#d39e00"],
+                data,
+                backgroundColor: ["#007bff", "#28a745", "#ffc107", "#dc3545", "#6f42c1", "#fd7e14", "#20c997"],
+                hoverBackgroundColor: ["#0056b3", "#1e7e34", "#d39e00", "#c82333", "#5a2d91", "#e86209", "#1aa179"],
                 borderColor: ["#ffffff"],
                 borderWidth: 2,
             },
@@ -198,83 +437,53 @@ const IndemnityDoughnutChart: React.FC<{ indemnityDetails: IndemnityDetail[] }> 
     );
 };
 
-const DailyIndemnityBarChart: React.FC<{ indemnityDetails: IndemnityDetail[]; formatDate: (date: string) => string }> = ({ indemnityDetails, formatDate }) => {
-    const dailyTotals = indemnityDetails.map(item => ({
-        date: formatDate(item.date),
-        amount: item.total || 0,
-    }));
+const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmentId, onExportExcel, formatDate, missionId, employeeId }) => {
+    const assignationQuery = useGetMissionAssignationByAssignationId(selectedAssignmentId);
 
-    const hasData = dailyTotals.some(item => item.amount > 0);
-    if (!hasData) return <p>Données journalières insuffisantes.</p>;
+    const isInternationalMemo = useMemo(() => {
+        return assignationQuery.data?.data?.mission?.missionType === 'international';
+    }, [assignationQuery.data]);
 
-    const chartData: ChartData<'bar'> = {
-        labels: dailyTotals.map(item => item.date),
-        datasets: [
-            {
-                label: "Montant par jour",
-                data: dailyTotals.map(item => item.amount),
-                backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1,
-            },
-        ],
-    };
-
-    const options: ChartOptions<'bar'> = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            title: { display: false },
-            tooltip: createTooltipCallback(" MGA"),
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                title: { display: true, text: 'Montant Total (MGA)' },
-                ticks: {
-                    callback: function (value: number | string) {
-                        return formatNumber(Number(value));
-                    },
-                },
-            },
-            x: {
-                title: { display: true, text: 'Date' },
-            },
-        },
-    };
-
-    return (
-        <ChartCard>
-            <h4>Indemnité Totale par Jour</h4>
-            <div className="chart-content">
-                <Bar data={chartData} options={options} />
-            </div>
-        </ChartCard>
-    );
-};
-
-const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmentId, onBack, onExportExcel, isLoading, formatDate }) => {
-    console.log(selectedAssignmentId);
-    const indemnityDetails: IndemnityDetail[] = missionPayment.dailyPaiements.map((item: DailyPaiement) => {
+    const originalIndemnityDetails: IndemnityDetail[] = missionPayment.dailyPaiements.map((item: DailyPaiement) => {
         const amounts = {
             breakfast: 0,
             lunch: 0,
             dinner: 0,
             accommodation: 0,
             transport: 0,
+            communication: 0,
+            visa: 0,
+            medical: 0,
+            taxes: 0,
         };
 
         item.compensationScales.forEach((scale: CompensationScale) => {
             const amount = scale.amount || 0;
-            if (scale.expenseType?.type === "Petit Déjeuner") amounts.breakfast += amount;
-            else if (scale.expenseType?.type === "Déjeuner") amounts.lunch += amount;
-            else if (scale.expenseType?.type === "Dîner") amounts.dinner += amount;
-            else if (scale.expenseType?.type === "Hébergement") amounts.accommodation += amount;
-            else if (scale.transportId) amounts.transport += amount;
+            if (scale.transportId) {
+                amounts.transport += amount;
+            } else if (scale.expenseType?.type === "Transport") {
+                amounts.transport += amount;
+            } else if (scale.expenseType?.type === "Petit Déjeuner") {
+                amounts.breakfast += amount;
+            } else if (scale.expenseType?.type === "Déjeuner") {
+                amounts.lunch += amount;
+            } else if (scale.expenseType?.type === "Dinner") {
+                amounts.dinner += amount;
+            } else if (scale.expenseType?.type === "Hébergement") {
+                amounts.accommodation += amount;
+            } else if (scale.expenseType?.type === "Communication") {
+                amounts.communication += amount;
+            } else if (scale.expenseType?.type === "Visa sur place") {
+                amounts.visa += amount;
+            } else if (scale.expenseType?.type === "Frais médicaux") {
+                amounts.medical += amount;
+            } else if (scale.expenseType?.type === "Taxes") {
+                amounts.taxes += amount;
+            }
         });
 
-        const total = amounts.breakfast + amounts.lunch + amounts.dinner + amounts.accommodation + amounts.transport;
+        const total = amounts.breakfast + amounts.lunch + amounts.dinner + amounts.accommodation + amounts.transport +
+                      (amounts.communication || 0) + (amounts.visa || 0) + (amounts.medical || 0) + (amounts.taxes || 0);
 
         return {
             date: item.date,
@@ -283,43 +492,103 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
             dinner: amounts.dinner,
             accommodation: amounts.accommodation,
             transport: amounts.transport,
+            communication: amounts.communication,
+            visa: amounts.visa,
+            medical: amounts.medical,
+            taxes: amounts.taxes,
             total,
         };
-    });
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Tri croissant par date
 
-    const grandTotal = indemnityDetails.reduce((sum, item) => sum + item.total, 0);
+    const displayIndemnityDetails = useMemo(() => {
+        if (!isInternationalMemo) {
+            return originalIndemnityDetails;
+        }
+
+        const totalCommunication = originalIndemnityDetails.reduce((sum, item) => sum + (item.communication || 0), 0);
+        const totalVisa = originalIndemnityDetails.reduce((sum, item) => sum + (item.visa || 0), 0);
+        const totalMedical = originalIndemnityDetails.reduce((sum, item) => sum + (item.medical || 0), 0);
+        const oneTimeTotal = totalCommunication + totalVisa + totalMedical;
+
+        const adjustedDetails = originalIndemnityDetails.map((detail) => ({
+            ...detail,
+            communication: 0,
+            visa: 0,
+            medical: 0,
+            total: detail.total - (detail.communication || 0) - (detail.visa || 0) - (detail.medical || 0),
+        }));
+
+        return [
+            ...adjustedDetails,
+            {
+                date: "",
+                breakfast: 0,
+                lunch: 0,
+                dinner: 0,
+                accommodation: 0,
+                transport: 0,
+                communication: totalCommunication,
+                visa: totalVisa,
+                medical: totalMedical,
+                taxes: 0,
+                total: oneTimeTotal,
+            } as IndemnityDetail,
+        ];
+    }, [originalIndemnityDetails, isInternationalMemo]);
+
+    const grandTotal = originalIndemnityDetails.reduce((sum, item) => sum + item.total, 0);
+
+    const generateIMMutation = useGenerateIM();
+    const previewIMMutation = usePreviewIM();
+
+    const handleExportIM = useCallback(async (): Promise<void> => {
+      if (!missionId || !employeeId) {
+        throw new Error("Mission ID et Employee ID sont requis pour générer l'indemnité de mission.");
+      }
+      await generateIMMutation.mutateAsync({ missionId, employeeId });
+    }, [missionId, employeeId, generateIMMutation]);
+
+    const handlePreviewIM = useCallback(async (data: GenerateIMData): Promise<PreviewPdfResult> => {
+      if (!data.missionId || !data.employeeId) {
+        throw new Error("Mission ID et Employee ID sont requis pour prévisualiser l'indemnité de mission.");
+      }
+      const result = await previewIMMutation.mutateAsync(data);
+      return result;
+    }, [previewIMMutation]);
+
+    // Attachments setup
+    const documents = PREDEFINED_DOCUMENTS_PAYMENT.map(doc => ({ ...doc, fileContent: undefined } as DocumentAttachment));
+
+    if (assignationQuery.isLoading) {
+        return (
+            <LoadingContainer>
+                <LoadingSpinner />
+                Chargement des détails de la mission...
+            </LoadingContainer>
+        );
+    }
 
     return (
         <>
-            <PageHeader>
-                <HeaderLeft>
-                    <BtnBack onClick={onBack} title="Retour aux assignations">
-                        <ArrowLeft className="w-5 h-5" />
-                    </BtnBack>
-                </HeaderLeft>
-                {/* <div className="header-center">
-                    <div className="header-title-section">
-                        <h1 className="page-title">Détails du Paiement</h1>
-                        <p className="page-subtitle">Mission #{selectedAssignmentId}</p>
-                    </div>
-                </div> */}
-                <HeaderActions>
-                    <ActionButton
-                        onClick={onExportExcel}
-                        disabled={isLoading.exportExcel}
-                    >
-                        <Download size={16} /> Excel
-                    </ActionButton>
-                </HeaderActions>
-            </PageHeader>
-            <Separator />
             {missionPayment.assignmentDetails ? (
                 <>
                     <SectionTitle>Analyse Visuelle des Montants</SectionTitle>
                     <DetailSection>
                         <ChartGrid>
-                            <IndemnityDoughnutChart indemnityDetails={indemnityDetails} />
-                            <DailyIndemnityBarChart indemnityDetails={indemnityDetails} formatDate={formatDate} />
+                            <IndemnityDoughnutChart indemnityDetails={originalIndemnityDetails} />
+                            <ChartCard>
+                                <h4>Pièces Jointes</h4>
+                                <div className="chart-content">
+                                    <MissionAttachments
+                                        documents={documents}
+                                        onExportExcel={onExportExcel}
+                                        onGenerateIM={handleExportIM}
+                                        onPreviewIM={handlePreviewIM}
+                                        employeeId={employeeId}
+                                        missionId={missionId}
+                                    />
+                                </div>
+                            </ChartCard>
                         </ChartGrid>
                     </DetailSection>
                     <Separator />
@@ -333,31 +602,42 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
                                 <TableHeader>Déjeuner</TableHeader>
                                 <TableHeader>Dîner</TableHeader>
                                 <TableHeader>Hébergement</TableHeader>
+                                {isInternationalMemo && (
+                                    <>
+                                        <TableHeader>Communication</TableHeader>
+                                        <TableHeader>Visa sur place</TableHeader>
+                                        <TableHeader>Frais médicaux</TableHeader>
+                                        <TableHeader>Taxes</TableHeader>
+                                    </>
+                                )}
                                 <TableHeader>Montant Total</TableHeader>
                             </tr>
                         </thead>
                         <tbody>
-                            {indemnityDetails.map((item, index) => (
-                                <tr key={index}>
-                                    <TableCell>
-                                        {item.date
-                                            ? new Date(item.date).toLocaleDateString("fr-FR", {
-                                                  day: "numeric",
-                                                  month: "short",
-                                                  year: "2-digit",
-                                              })
-                                            : ""}
-                                    </TableCell>
-                                    <TableCell>{item.transport ? `${formatNumber(item.transport)},00` : ""}</TableCell>
-                                    <TableCell>{item.breakfast ? `${formatNumber(item.breakfast)},00` : ""}</TableCell>
-                                    <TableCell>{item.lunch ? `${formatNumber(item.lunch)},00` : ""}</TableCell>
-                                    <TableCell>{item.dinner ? `${formatNumber(item.dinner)},00` : ""}</TableCell>
-                                    <TableCell>{item.accommodation ? `${formatNumber(item.accommodation)},00` : ""}</TableCell>
-                                    <TableCell>{item.total ? `${formatNumber(item.total)},00` : ""}</TableCell>
-                                </tr>
-                            ))}
+                            {displayIndemnityDetails.map((item, index) => {
+                                const isOneTimeRow = !item.date;
+                                return (
+                                    <tr key={index} style={isOneTimeRow ? { fontWeight: 'bold' } : {}}>
+                                        <TableCell>{isOneTimeRow ? '' : formatDate(item.date)}</TableCell>
+                                        <TableCell>{`${formatNumber(item.transport || 0)},00`}</TableCell>
+                                        <TableCell>{`${formatNumber(item.breakfast || 0)},00`}</TableCell>
+                                        <TableCell>{`${formatNumber(item.lunch || 0)},00`}</TableCell>
+                                        <TableCell>{`${formatNumber(item.dinner || 0)},00`}</TableCell>
+                                        <TableCell>{`${formatNumber(item.accommodation || 0)},00`}</TableCell>
+                                        {isInternationalMemo && (
+                                            <>
+                                                <TableCell>{`${formatNumber(item.communication || 0)},00`}</TableCell>
+                                                <TableCell>{`${formatNumber(item.visa || 0)},00`}</TableCell>
+                                                <TableCell>{`${formatNumber(item.medical || 0)},00`}</TableCell>
+                                                <TableCell>{`${formatNumber(item.taxes || 0)},00`}</TableCell>
+                                            </>
+                                        )}
+                                        <TableCell>{`${formatNumber(item.total || 0)},00`}</TableCell>
+                                    </tr>
+                                );
+                            })}
                             <TotalRow>
-                                <TableCell colSpan={6}>Total</TableCell>
+                                <TableCell colSpan={isInternationalMemo ? 10 : 6}>Total</TableCell>
                                 <TableCell><strong>{formatNumber(grandTotal)},00</strong></TableCell>
                             </TotalRow>
                         </tbody>

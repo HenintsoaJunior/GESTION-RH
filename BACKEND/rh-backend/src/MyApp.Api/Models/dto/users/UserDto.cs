@@ -104,3 +104,13 @@ public class UserRoleDtoFormBulk
     public required IEnumerable<string> RoleIds { get; set; }
     public required string UserIdLog { get; set; }
 }
+
+public class UserAvailabilityFormDTO
+{
+    [Required]
+    public string? UserId { get; set; }
+
+    [Required]
+    [MaxLength(20)]
+    public string? Status { get; set; }
+}
