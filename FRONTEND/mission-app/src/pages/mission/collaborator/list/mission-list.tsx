@@ -183,8 +183,18 @@ interface CalendarEvent {
 const CustomEvent: React.FC<{ event: CalendarEvent }> = ({ event }) => {
   const Icon = event.missionType === 'International' ? Plane : Briefcase;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-      <Icon size={12} />
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: '4px',
+      color: 'white',
+      fontSize: '0.75rem',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      padding: '2px 4px',
+    }}>
+      <Icon size={12} color="white" />
       <span>{event.title}</span>
     </div>
   );
@@ -239,11 +249,10 @@ const MissionList: React.FC = () => {
   const statusOptions = [
     { label: "Mission en cours de validation", value: "pending approval" },
     { label: "Paiement en cours", value: "payment in progress" },
-    { label: "Indemnité payée", value: "indemnity paid" },
-    { label: "Note de frais payée", value: "expense note paid" },
     { label: "Planifié", value: "planned" },
     { label: "En cours d'exécution", value: "in progress" },
     { label: "Terminé", value: "completed" },
+    { label: "Clôturé", value: "closed" },
     { label: "Annulé", value: "canceled" },
     { label: "Mission Rejeté", value: "mission rejected" },
   ];
@@ -253,8 +262,7 @@ const MissionList: React.FC = () => {
     "completed",
     "planned",
     "payment in progress",
-    "indemnity paid",
-    "expense note paid",
+    "closed",
     "canceled",
     "mission rejected"
   ]), []);
@@ -265,6 +273,7 @@ const MissionList: React.FC = () => {
 
   const canViewDetails = useHasHabilitation(userId, "Voir les détails d’une mission");
   const canModifyMission = useHasHabilitation(userId, "Modifier une mission");
+  const canDeleteMission = useHasHabilitation(userId, "Supprimer une mission");
   const canCancelMission = useHasHabilitation(userId, "Annuler une mission");
   const canAddMission = useHasHabilitation(userId, "Ajouter une mission");
   const canViewAllMissions = useHasHabilitation(userId, "Voir les missions de tous les collaborateurs");
@@ -409,6 +418,7 @@ const MissionList: React.FC = () => {
       start: new Date(assignation.departureDate),
       end: new Date(assignation.returnDate),
       missionType: assignation.mission.missionType,
+      status: assignation.mission.status.trim().toLowerCase(),
     })), 
   [assignations]) as CalendarEvent[];
 
@@ -449,20 +459,29 @@ const MissionList: React.FC = () => {
       const trimmedLowerStatus = rawStatus.trim().toLowerCase();
       const isValidated = validatedMissions[assignation.mission.missionId] || false;
       const needsNonFinalAction = !finalStatuses.has(trimmedLowerStatus) && !isValidated && (canModifyMission || canCancelMission);
-      const needsDeleteAction = (trimmedLowerStatus === 'canceled' || trimmedLowerStatus === 'mission rejected') && !isValidated && canModifyMission;
+      const needsDeleteAction = (trimmedLowerStatus === 'canceled' || trimmedLowerStatus === 'mission rejected') && !isValidated && canDeleteMission;
       return needsNonFinalAction || needsDeleteAction;
     });
-  }, [assignations, finalStatuses, validatedMissions, canModifyMission, canCancelMission]);
+  }, [assignations, finalStatuses, validatedMissions, canModifyMission, canCancelMission, canDeleteMission]);
+
+  const darkenColor = useCallback((color: string, amount: number = 20): string => {
+    let r = parseInt(color.slice(1, 3), 16);
+    let g = parseInt(color.slice(3, 5), 16);
+    let b = parseInt(color.slice(5, 7), 16);
+    r = Math.max(0, Math.round(r * (100 - amount) / 100));
+    g = Math.max(0, Math.round(g * (100 - amount) / 100));
+    b = Math.max(0, Math.round(b * (100 - amount) / 100));
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  }, []);
 
   const getStatus = useCallback((statusKey: string): Status => {
     const map: Record<string, Status> = {
       'pending approval': { id: 'in-review', label: "Mission en cours de validation", color: '#60a5fa', category: 'progress' },
       'payment in progress': { id: 'in-progress', label: "Paiement en cours", color: '#3b82f6', category: 'progress' },
-      'indemnity paid': { id: 'approved', label: "Indemnité payée", color: '#34d399', category: 'success' },
-      'expense note paid': { id: 'completed', label: "Note de frais payée", color: '#10b981', category: 'success' },
       'planned': { id: 'scheduled', label: "Planifié", color: '#8b5cf6', category: 'progress' },
       'in progress': { id: 'in-progress', label: "En cours d'exécution", color: '#3b82f6', category: 'progress' },
       'completed': { id: 'completed', label: "Terminé", color: '#10b981', category: 'success' },
+      'closed': { id: 'closed', label: "Clôturé", color: '#10b981', category: 'success' },
       'canceled': { id: 'cancelled', label: "Annulé", color: '#6b7280', category: 'error' },
       'mission rejected': { id: 'mission rejected', label: "Rejeté", color: '#ef4444', category: 'error' },
     };
@@ -490,11 +509,11 @@ const MissionList: React.FC = () => {
   }, [canCancelMission]);
 
   const handleDeleteClick = useCallback((assignation: MissionAssignation) => {
-    if (canModifyMission) {
+    if (canDeleteMission) {
       setSelectedAssignation(assignation);
       setShowDeleteModal(true);
     }
-  }, [canModifyMission]);
+  }, [canDeleteMission]);
 
   const handleCancelConfirm = useCallback(() => {
     if (!selectedAssignation) return;
@@ -655,6 +674,22 @@ const MissionList: React.FC = () => {
     setView(newView);
   }, []);
 
+  const eventPropGetter = useCallback((event: CalendarEvent) => {
+    const statusKey = event.status || '';
+    const statusObj = getStatus(statusKey);
+    const bgColor = statusObj.color;
+    const darkerBg = darkenColor(bgColor, 20);
+    return {
+      style: {
+        background: `linear-gradient(135deg, ${bgColor} 0%, ${darkerBg} 100%)`,
+        border: 'none',
+        color: 'white',
+        borderRadius: 'var(--border-radius, 4px)',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+      },
+    };
+  }, [getStatus, darkenColor]);
+
   useEffect(() => {
     if (searchResponse) {
       if (searchResponse.status === 200 && searchResponse.data) {
@@ -723,6 +758,14 @@ const MissionList: React.FC = () => {
     whiteSpace: 'normal' as const,
     overflowWrap: 'break-word' as const,
   };
+
+  const columnWidths = useMemo(() => {
+    const widths = ['15%', '25%', '8%', '15%', '12%', '10%', '10%'];
+    if (hasActions) {
+      widths.push('5%');
+    }
+    return widths;
+  }, [hasActions]);
 
   const headers = useMemo(() => {
     const baseHeaders = [
@@ -1017,12 +1060,12 @@ const MissionList: React.FC = () => {
 
         {viewMode === 'table' ? (
           <>
-            <div className="table-wrapper" style={{ overflowX: "auto" }}>
-              <DataTable style={{ tableLayout: 'auto', width: '100%' }}>
+            <div className="table-wrapper" style={{ overflowX: "auto", maxWidth: "100%" }}>
+              <DataTable style={{ tableLayout: 'fixed', width: '100%' }}>
                 <thead>
                   <tr>
                     {headers.map((header, index: number) => (
-                      <TableHeadCell key={index}>
+                      <TableHeadCell key={index} style={{ width: columnWidths[index] }}>
                         {header}
                       </TableHeadCell>
                     ))}
@@ -1052,13 +1095,13 @@ const MissionList: React.FC = () => {
                           onClick={() => handleRowClick(assignation.mission.missionId)}
                           title={canViewDetails ? "Clic pour voir les détails" : ""}
                         >
-                          <TableCell>
+                          <TableCell style={truncateCellStyle} title={`${assignation.employee.firstName} ${assignation.employee.lastName}`}>
                             {assignation.employee.firstName} {assignation.employee.lastName}
                           </TableCell>
                           <TableCell style={truncateCellStyle} title={assignation.mission.name}>
                             {assignation.mission.name}
                           </TableCell>
-                          <TableCell>
+                          <TableCell style={truncateCellStyle}>
                             {assignation.mission.missionType.toUpperCase()}
                           </TableCell>
                           <TableCell style={truncateCellStyle} title={assignation.mission.lieu.nom}>
@@ -1097,7 +1140,7 @@ const MissionList: React.FC = () => {
                                   <X size={16} />
                                 </CancelButton>
                               )}
-                              {(isFinal && (trimmedLowerStatus === 'canceled' || trimmedLowerStatus === 'mission rejected') && !isValidated && canModifyMission) && (
+                              {(isFinal && (trimmedLowerStatus === 'canceled' || trimmedLowerStatus === 'mission rejected') && !isValidated && canDeleteMission) && (
                                 <CancelButton
                                   className="delete-button"
                                   onClick={(e) => {
@@ -1157,6 +1200,7 @@ const MissionList: React.FC = () => {
                   view={view}
                   onView={handleViewChange}
                   onSelectEvent={handleSelectEvent}
+                  eventPropGetter={eventPropGetter}
                   views={['month', 'week', 'day']}
                   messages={{
                     next: "Suivant",

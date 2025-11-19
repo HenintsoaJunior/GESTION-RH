@@ -10,6 +10,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Net;
+using MyApp.Api.Models.classes.notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +47,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.RegisterServicesAndRepositories();
 builder.Services.AddHttpClient<MyApp.Api.Services.currency.ICurrencyService, MyApp.Api.Services.currency.CurrencyService>();
-
+builder.Services.AddScoped<EmailSender>();
 // Configure JWT authentication
 builder.Services.AddAuthentication(options =>
 {

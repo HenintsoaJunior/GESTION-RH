@@ -35,6 +35,12 @@ namespace MyApp.Api.Entities.mission
         [MaxLength(50)]
         public string? ZoneId { get; set; }
 
+        [Column("longitude")]
+        public decimal Longitude { get; set; }  
+
+        [Column("latitude")]
+        public decimal Latitude { get; set; }
+
         [ForeignKey("ZoneId")]
         public GeoZone? GeoZone { get; set; }
 
@@ -48,6 +54,8 @@ namespace MyApp.Api.Entities.mission
             Ville = dto.Ville;
             CodePostal = dto.CodePostal;
             Pays = dto.Pays ?? throw new ArgumentNullException(nameof(dto.Pays));
+            Latitude = dto.Latitude;
+            Longitude = dto.Longitude;
             ZoneId = dto.ZoneId;
         }
     }

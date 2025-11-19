@@ -14,6 +14,7 @@ public interface IRoleService
     Task AddAsync(RoleDTOForm dto);
     Task UpdateAsync(string id, RoleUpdateDto? dto, string? userId);
     Task DeleteAsync(string id, string userId);
+    Task<IEnumerable<User>> GetUsersWithTreasuryRoleAsync();
 }
 
 public class RoleService : IRoleService
@@ -187,6 +188,19 @@ public class RoleService : IRoleService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erreur lors de la suppression du rôle avec l'ID: {RoleId}", id);
+            throw;
+        }
+    }
+    public async Task<IEnumerable<User>> GetUsersWithTreasuryRoleAsync()
+    {
+        try
+        {
+            var users = await _repository.GetUsersByRoleNameAsync("trésorerie");
+            return users;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors de la récupération des utilisateurs avec le rôle trésorerie");
             throw;
         }
     }

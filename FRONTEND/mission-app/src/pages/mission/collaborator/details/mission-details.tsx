@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import styled from "styled-components";
@@ -179,22 +180,6 @@ interface MissionPaymentState {
   totalAmount: number;
 }
 
-interface MissionValidation {
-  missionValidationId: string;
-  type: string;
-  status: string;
-  createdAt: string;
-  validationDate?: string | null;
-  comment?: string;
-  validator: {
-    name: string;
-    title?: string;
-    subtitle?: string;
-    email: string;
-    department: string;
-    position: string;
-  };
-}
 
 // Types for attachments
 interface DocumentAttachment {
@@ -638,7 +623,7 @@ const useMissionData = (
     }
   }, [searchResponse]);
 
-  const mapValidationsToSteps = useCallback((validations: MissionValidation[]) => {
+  const mapValidationsToSteps = useCallback((validations: any[]) => {
     const stepMapping: Record<string, { title: string; subtitle: string; order: number }> = {
       "Directeur de tutelle": {
         title: "Validation Supérieur",
@@ -660,23 +645,24 @@ const useMissionData = (
         order: validationType === "DRH" ? 2 : 1,
       };
 
-      const validatorName = validation.validator.name;
+      const validatorObj = validation.validator;
+      const validatorName = validatorObj?.name || "Non spécifié";
       const initials = validatorName
         ? validatorName.split(" ").slice(0, 2).map((n: string) => n[0]).join("").toUpperCase()
         : "NA";
 
       const mappedStep: ValidationStep = {
         id: validation.missionValidationId,
-        title: validation.validator.title || stepInfo.title,
-        subtitle: validation.validator.subtitle || stepInfo.subtitle,
+        title: validatorObj?.title || stepInfo.title,
+        subtitle: validatorObj?.subtitle || stepInfo.subtitle,
         status: validation.status,
         hasIndicator: true,
         validator: {
-          name: validation.validator.name || "Non spécifié",
+          name: validatorName,
           initials,
-          email: validation.validator.email || "Non spécifié",
-          department: validation.validator.department || "Non spécifié",
-          position: validation.validator.position || stepInfo.title,
+          email: validatorObj?.email || "Non spécifié",
+          department: validatorObj?.department || "Non spécifié",
+          position: validatorObj?.position || stepInfo.title,
         },
         validatedAt: validation.createdAt,
         validationDate: validation.validationDate || undefined,

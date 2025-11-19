@@ -56,6 +56,22 @@ const RowEditButton: React.FC<RowEditButtonProps> = ({ onClick }) => (
   </EditActionButtonStyled>
 );
 
+const formatTimePeriod = (timeStart?: string, timeEnd?: string): string => {
+  if (!timeStart && !timeEnd) {
+    return "Aucune restriction horaire";
+  }
+  if (timeStart && timeEnd) {
+    return `${timeStart} - ${timeEnd}`;
+  }
+  if (timeStart) {
+    return `À partir de ${timeStart}`;
+  }
+  if (timeEnd) {
+    return `Jusqu'à ${timeEnd}`;
+  }
+  return "Non défini";
+};
+
 const ExpenseTypesList: React.FC = () => {
   const { data: searchResponse, isLoading: expenseLoading, error: expenseError, refetch: refetchExpenseTypes } = useExpenseTypes();
 
@@ -102,15 +118,14 @@ const ExpenseTypesList: React.FC = () => {
           <thead>
             <tr>
               <TableHeadCell>Type</TableHeadCell>
-              <TableHeadCell>Heure de Début</TableHeadCell>
-              <TableHeadCell>Heure de Fin</TableHeadCell>
+              <TableHeadCell>Période horaire</TableHeadCell>
               {isEditingTypes && <TableHeadCell>Actions</TableHeadCell>}
             </tr>
           </thead>
           <tbody>
             {expenseLoading ? (
               <TableRow>
-                <TableCell colSpan={isEditingTypes ? 4 : 3}>
+                <TableCell colSpan={isEditingTypes ? 3 : 2}>
                   <Loading>Chargement des types de dépenses...</Loading>
                 </TableCell>
               </TableRow>
@@ -118,8 +133,7 @@ const ExpenseTypesList: React.FC = () => {
               allExpenseTypes.map((expenseType) => (
                 <TableRow key={expenseType.expenseTypeId}>
                   <TableCell>{expenseType.type}</TableCell>
-                  <TableCell>{expenseType.timeStart || "-"}</TableCell>
-                  <TableCell>{expenseType.timeEnd || "-"}</TableCell>
+                  <TableCell>{formatTimePeriod(expenseType.timeStart, expenseType.timeEnd)}</TableCell>
                   {isEditingTypes && (
                     <TableCell>
                       <RowEditButton onClick={() => handleUpdateExpenseType(expenseType)} />
@@ -129,7 +143,7 @@ const ExpenseTypesList: React.FC = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={isEditingTypes ? 4 : 3}>
+                <TableCell colSpan={isEditingTypes ? 3 : 2}>
                   <NoDataMessage>Aucun type de dépense trouvé.</NoDataMessage>
                 </TableCell>
               </TableRow>

@@ -41,6 +41,7 @@ namespace MyApp.Api.Services.mission
         Task<byte[]> GenerateATDPDFAsync(string employeeId);
         Task<IEnumerable<MissionAssignation>> GetAllByMissionIdAsync(string missionId);
         Task<byte[]> GenerateIMPDFAsync(string employeeId, string missionId);
+        Task<decimal> GetTotalCompensationsAsync(string employeeId, string missionId);
     }
     public class MissionAssignationService : IMissionAssignationService
     {
@@ -83,7 +84,7 @@ namespace MyApp.Api.Services.mission
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
-  
+ 
         private static void ApplyCenturyGothicFont(Run run)
         {
             if (run.RunProperties == null)
@@ -549,7 +550,7 @@ namespace MyApp.Api.Services.mission
             doc.SaveToStream(PDFStream, SpireDoc.FileFormat.PDF);
             return PDFStream.ToArray();
         }
-     
+    
         public async Task<IEnumerable<MissionAssignation>> GetAllByMissionIdAsync(string missionId)
         {
             try
@@ -677,7 +678,7 @@ namespace MyApp.Api.Services.mission
             doc.SaveToStream(PDFStream, SpireDoc.FileFormat.PDF);
             return PDFStream.ToArray();
         }
-  
+ 
         public async Task<byte[]> GenerateATDPDFAsync(string employeeId)
         {
             var employee = await _employeeService.GetByIdAsync(employeeId);
@@ -685,7 +686,7 @@ namespace MyApp.Api.Services.mission
             {
                 throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}");
             }
-  
+ 
             string templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\File\ATD.docx"));
             if (!File.Exists(templatePath))
             {
@@ -731,12 +732,12 @@ namespace MyApp.Api.Services.mission
                 },
             };
             using var memoryStream = new MemoryStream();
-      
+     
             using (var fileStream = new FileStream(templatePath, FileMode.Open, FileAccess.Read))
             {
                 await fileStream.CopyToAsync(memoryStream);
             }
-      
+     
             memoryStream.Position = 0;
             using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(memoryStream, true))
             {
@@ -762,7 +763,7 @@ namespace MyApp.Api.Services.mission
                     foreach (var run in bodyRuns)
                     {
                         string runText = string.Join("", run.Descendants<Text>().Select(t => t.Text));
-                  
+                 
                         foreach (var replacement in replacements)
                         {
                             if (runText.Contains(replacement.Key))
@@ -806,13 +807,13 @@ namespace MyApp.Api.Services.mission
             }
             memoryStream.Position = 0;
             using var PDFStream = new MemoryStream();
-      
+     
             SpireDoc.Document doc = new SpireDoc.Document();
             doc.LoadFromStream(memoryStream, SpireDoc.FileFormat.Docx);
             doc.SaveToStream(PDFStream, SpireDoc.FileFormat.PDF);
             return PDFStream.ToArray();
         }
-  
+ 
         public async Task<List<string>?> ImportMissionFromCsv(Stream fileStream, char separator, MissionService missionService)
         {
             var errors = new List<string>();
@@ -923,7 +924,7 @@ namespace MyApp.Api.Services.mission
             TimeSpan duration = end.Date - start.Date;
             return Task.FromResult(duration.Days);
         }
-  
+ 
         public async Task<byte[]> GeneratePdfReportAsync(GeneratePaiementDTO generatePaiementDto)
         {
             try
@@ -997,7 +998,7 @@ namespace MyApp.Api.Services.mission
                 return results[0];
             var combinedDailyPaiements = results.SelectMany(r => r.DailyPaiements).ToList();
             var totalTransport = results.Sum(r => r.TransportAmount);
-      
+     
             return new ExpensePaiementResult
             {
                 DailyPaiements = combinedDailyPaiements,
@@ -1018,7 +1019,7 @@ namespace MyApp.Api.Services.mission
             decimal totalCommunication = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Communication"));
             decimal totalVisa = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Visa sur place"));
             decimal totalMedical = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Frais médicaux"));
-       
+      
             foreach (var dailyPaiement in dailyPaiements)
             {
                 var compensationDto = new CompensationDTO
@@ -1215,7 +1216,7 @@ namespace MyApp.Api.Services.mission
             if (results.Count == 1)
                 return results[0];
             var combinedDailyPaiements = results.SelectMany(r => r.DailyPaiements).ToList();
-      
+     
             return new MissionPaiementResult
             {
                 DailyPaiements = combinedDailyPaiements
@@ -1250,7 +1251,7 @@ namespace MyApp.Api.Services.mission
                 var worksheet = workbook.Worksheets.Add("Mission Payment Report");
                 CreateExcelHeaders(worksheet);
                 var currentRow = 2;
-          
+         
                 foreach (var compensation in compensations)
                 {
                     WriteCompensationRowToWorksheet(worksheet, compensation, currentRow);
@@ -1299,14 +1300,14 @@ namespace MyApp.Api.Services.mission
         {
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Mission Payment Report");
-      
+     
             CreateExcelHeaders(worksheet);
-      
+     
             worksheet.Cell(2, 1).Value = "Aucune affectation trouvée pour les critères spécifiés";
             worksheet.Range("A2:O2").Merge(); // Ajusté
             worksheet.Cell(2, 1).Style.Font.Italic = true;
             worksheet.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-      
+     
             worksheet.Columns().AdjustToContents();
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
@@ -1320,7 +1321,7 @@ namespace MyApp.Api.Services.mission
                 "Date", "Transport", "Petit Déjeuner", "Déjeuner", "Dinner", "Hébergement",
                 "Communication", "Visa sur place", "Frais médicaux", "Taxes"
             };
-      
+     
             for (int i = 0; i < headers.Length; i++)
             {
                 worksheet.Cell(tableStartRow, i + 1).Value = headers[i];
@@ -1339,6 +1340,38 @@ namespace MyApp.Api.Services.mission
             catch
             {
                 return "Date invalide";
+            }
+        }
+        public async Task<decimal> GetTotalCompensationsAsync(string employeeId, string missionId)
+        {
+            try
+            {
+                var dto = await _compensationService.GetByEmployeeIdAsync(employeeId, missionId);
+                if (dto.Compensations == null || !dto.Compensations.Any())
+                {
+                    _logger.LogDebug("Aucune compensation trouvée pour EmployeeId={EmployeeId}, MissionId={MissionId}", employeeId, missionId);
+                    return 0m;
+                }
+
+                var total = dto.Compensations.Sum(c =>
+                    c.TransportAmount +
+                    c.BreakfastAmount +
+                    c.LunchAmount +
+                    c.DinnerAmount +
+                    c.AccommodationAmount +
+                    c.CommunicationAmount +
+                    c.VisaAmount +
+                    c.MedicalExpensesAmount +
+                    c.TaxesAmount
+                );
+
+                _logger.LogDebug("Total des compensations calculé: {Total} pour EmployeeId={EmployeeId}, MissionId={MissionId}", total, employeeId, missionId);
+                return total;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors du calcul du total des compensations pour EmployeeId={EmployeeId}, MissionId={MissionId}", employeeId, missionId);
+                throw new Exception($"Erreur lors du calcul du total des compensations pour l'employé {employeeId} et la mission {missionId} : {ex.Message}", ex);
             }
         }
         public async Task<(IEnumerable<MissionAssignation>, int)> SearchAsync(
@@ -1360,7 +1393,7 @@ namespace MyApp.Api.Services.mission
             ArgumentNullException.ThrowIfNull(missionAssignation);
             if (string.IsNullOrWhiteSpace(missionAssignation.EmployeeId))
                 throw new ArgumentException("L'ID de l'employé ne peut pas être vide.", nameof(missionAssignation.EmployeeId));
-      
+     
             if (string.IsNullOrWhiteSpace(missionAssignation.MissionId))
                 throw new ArgumentException("L'ID de la mission ne peut pas être vide.", nameof(missionAssignation.MissionId));
             try
@@ -1378,13 +1411,13 @@ namespace MyApp.Api.Services.mission
                 // Générer l'ID d'assignation
                 var assignationId = _sequenceGenerator.GenerateSequence("seq_assignation_id", "MA", 6, "-");
                 missionAssignation.AssignationId = assignationId;
-          
+         
                 // Définir les timestamps de création
                 SetCreationTimestamps(missionAssignation);
-          
+         
                 // Sauvegarder l'assignation
                 await SaveMissionAssignationAsync(missionAssignation);
-          
+         
                 // Mettre à jour le statut de la mission
                 await UpdateMissionStatusAsync(missionAssignation.MissionId);
                 _logger.LogInformation("Assignation créée avec succès pour EmployeeId={EmployeeId}, MissionId={MissionId}, AssignationId={AssignationId}",
@@ -1395,7 +1428,7 @@ namespace MyApp.Api.Services.mission
             {
                 _logger.LogError(ex, "Erreur de contrainte d'unicité lors de la création de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}, TransportId={TransportId}",
                     missionAssignation.EmployeeId, missionAssignation.MissionId, missionAssignation.TransportId ?? "null");
-          
+         
                 throw new CustomException(
                     $"Une assignation avec l'employé {missionAssignation.EmployeeId} et la mission {missionAssignation.MissionId} existe déjà. Veuillez vérifier les données saisies.",
                     ex);
@@ -1409,7 +1442,7 @@ namespace MyApp.Api.Services.mission
             {
                 _logger.LogError(ex, "Erreur inattendue lors de la création de l'assignation pour EmployeeId={EmployeeId}, MissionId={MissionId}",
                     missionAssignation.EmployeeId, missionAssignation.MissionId);
-          
+         
                 throw new CustomException(
                     "Une erreur s'est produite lors de la création de l'assignation de mission. Veuillez réessayer ou contacter le support.",
                     ex);
@@ -1569,7 +1602,7 @@ namespace MyApp.Api.Services.mission
                 throw new Exception($"Error retrieving mission assignation: {ex.Message}", ex);
             }
         }
-  
+ 
         public async Task<MissionAssignation?> GetByAssignationIdAsync(string assignationId)
         {
             try

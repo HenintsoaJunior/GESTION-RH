@@ -148,7 +148,7 @@ namespace MyApp.Api.Services.mission
                 {
                     if (missionAssignation.Mission != null)
                     {
-                        missionAssignation.Mission.Status = "indemnity paid";
+                        missionAssignation.Mission.Status = "planned";
                         await _missionAssignationRepository.UpdateAsync(missionAssignation);
                     }
                 }

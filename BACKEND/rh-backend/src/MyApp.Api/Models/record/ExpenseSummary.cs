@@ -6,6 +6,7 @@ namespace MyApp.Api.Models.record
         string MissionTitled,
         string Status,
         string EmployeeName,
+        string EmployeeId,
         string EmployeeCode,
         string LieuName,
         DateTime CreatedAt,

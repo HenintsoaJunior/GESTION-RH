@@ -70,14 +70,15 @@ export const CalendarContainer = styled.div`
   }
 
   .rbc-event {
-    background: linear-gradient(135deg, var(--primary-color, #007bff) 0%, var(--primary-dark, #0056b3) 100%);
+    /* Les styles de fond sont maintenant gérés dynamiquement via eventPropGetter */
+    /* background: linear-gradient(135deg, var(--primary-color, #007bff) 0%, var(--primary-dark, #0056b3) 100%); */
     border: none;
     border-radius: var(--border-radius, 4px);
     padding: 4px 8px;
     font-size: 0.75rem;
-    color: white;
+    /* color: white; */
     cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.25);
+    /* box-shadow: 0 2px 4px rgba(0, 123, 255, 0.25); */
     transition: all 0.2s ease;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -85,13 +86,13 @@ export const CalendarContainer = styled.div`
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       z-index: 10;
     }
   }
 
   .rbc-selected {
-    background: linear-gradient(135deg, var(--primary-dark, #0056b3) 0%, var(--primary-color, #007bff) 100%) !important;
+    /* background: linear-gradient(135deg, var(--primary-dark, #0056b3) 0%, var(--primary-color, #007bff) 100%) !important; */
     box-shadow: 0 0 0 2px rgba(105, 180, 46, 0.3) !important;
   }
 

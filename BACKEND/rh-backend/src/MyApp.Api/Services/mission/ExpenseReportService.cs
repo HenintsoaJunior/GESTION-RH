@@ -4,7 +4,9 @@ using MyApp.Api.Models.record;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Services.currency;
 using MyApp.Api.Services.logs;
+using MyApp.Api.Services.mission;
 using MyApp.Api.Utils.generator;
+using System.Linq;
 
 namespace MyApp.Api.Services.mission
 {
@@ -35,6 +37,7 @@ namespace MyApp.Api.Services.mission
         private readonly ICurrencyService _currencyService;
         private readonly ILogService _logService;
         private readonly ILogger<ExpenseReportService> _logger;
+        private readonly IMissionAssignationService _missionAssignationService;
 
         public ExpenseReportService(
             IExpenseReportRepository repository,
@@ -42,6 +45,7 @@ namespace MyApp.Api.Services.mission
             ISequenceGenerator sequenceGenerator,
             ILogService logService,
             ICurrencyService currencyService,
+            IMissionAssignationService missionAssignationService,
             ILogger<ExpenseReportService> logger)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
@@ -49,6 +53,7 @@ namespace MyApp.Api.Services.mission
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
             _currencyService = currencyService ?? throw new ArgumentNullException(nameof(currencyService));
+            _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -101,6 +106,7 @@ namespace MyApp.Api.Services.mission
                     return false;
                 }
 
+                var changedReports = new List<ExpenseReport>();
                 foreach (var report in expenseReports)
                 {
                     if (report.Status != "reimbursed")
@@ -118,10 +124,20 @@ namespace MyApp.Api.Services.mission
                             AssignationId = report.AssignationId,
                             ExpenseReportTypeId = report.ExpenseReportTypeId
                         };
+                        report.ExpenseReportType = null;
                         report.Status = "reimbursed";
-                        await _repository.UpdateAsync(report);
-                        // await _logService.LogAsync("REIMBURSEMENT", originalReport, report, userId);
+                        changedReports.Add(report);
                     }
+                }
+
+                if (!changedReports.Any())
+                {
+                    return false;
+                }
+
+                foreach (var report in changedReports)
+                {
+                    await _repository.UpdateAsync(report);
                 }
 
                 await _repository.SaveChangesAsync();
@@ -135,6 +151,7 @@ namespace MyApp.Api.Services.mission
                 throw;
             }
         }
+
         public async Task<decimal> GetTotalReimbursedAmountAsync()
         {
             try
@@ -182,17 +199,48 @@ namespace MyApp.Api.Services.mission
         {
             try
             {
-                var reports = await _repository.GetAllAsync();
+                var reports = await _repository.GetNotReimbursedAsync();
 
-                var totalNotReimbursed = reports.AsQueryable()
-                    .Where(er => er.Status == "notreimbursed")
-                    .Sum(er => er.AmountMGA);
+                var notReimbursedReports = reports
+                    .Where(er => er.MissionAssignation != null)
+                    .ToList();
+
+                if (!notReimbursedReports.Any())
+                {
+                    return 0m;
+                }
+
+                var groups = notReimbursedReports.GroupBy(er => er.AssignationId);
+
+                decimal totalNotReimbursed = 0m;
+
+                foreach (var group in groups)
+                {
+                    var assignationId = group.Key;
+                    var sumAmount = group.Sum(er => er.Amount);
+
+                    var sampleReport = group.First();
+                    var employeeId = sampleReport.MissionAssignation?.EmployeeId;
+                    var missionId = sampleReport.MissionAssignation?.MissionId;
+
+                    if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
+                    {
+                        _logger.LogWarning("Assignation incomplète pour AssignationId: {AssignationId} - IDs manquants", assignationId);
+                        continue;
+                    }
+
+                    var deviseAlloue = await _missionAssignationService.GetTotalCompensationsAsync(employeeId, missionId);
+
+
+                    var montantARembourser = Math.Max(0m, deviseAlloue - sumAmount);
+                    totalNotReimbursed += montantARembourser;
+                }
 
                 return totalNotReimbursed;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération du total des montants remboursés");
+                _logger.LogError(ex, "Erreur lors de la récupération du total des montants non remboursés");
                 throw;
             }
         }
@@ -601,13 +649,37 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByStatusAsync(string? status, int page, int pageSize)
+        public async Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByStatusAsync(string? status, int pageNumber, int pageSize)
         {
             try
             {
-                _logger.LogInformation("Récupération des rapports de frais par statut: {Status}, page: {Page}, pageSize: {PageSize}", status ?? "all", page, pageSize);
-                var (summaries, totalCount) = await _repository.GetByStatusAsync(status, page, pageSize);
-                return (summaries ?? Enumerable.Empty<ExpenseSummary>(), totalCount);
+                _logger.LogInformation("Récupération des rapports de frais par statut: {Status}, page: {Page}, pageSize: {PageSize}", status ?? "all", pageNumber, pageSize);
+                
+                var (summaries, totalCount) = await _repository.GetByStatusAsync(status, pageNumber, pageSize);
+                
+                var computationTasks = summaries.Select(async summary =>
+                {
+                    var spentAmount = summary.TotalAmount;
+                    var allocatedAmount = await _missionAssignationService.GetTotalCompensationsAsync(summary.EmployeeId, summary.MissionId);
+                    var remainingAmount = Math.Max(0m, allocatedAmount - spentAmount);
+                    
+                    return new ExpenseSummary(
+                        summary.MissionId,
+                        summary.AssignationId,
+                        summary.MissionTitled,
+                        summary.Status,
+                        summary.EmployeeName,
+                        summary.EmployeeId,
+                        summary.EmployeeCode,
+                        summary.LieuName,
+                        summary.CreatedAt,
+                        remainingAmount
+                    );
+                });
+                
+                var updatedSummaries = await Task.WhenAll(computationTasks);
+                
+                return (updatedSummaries, totalCount);
             }
             catch (Exception ex)
             {

@@ -20,6 +20,10 @@ namespace MyApp.Api.Repositories.mission
         Task SaveChangesAsync();
         Task<MissionStats> GetStatisticsAsync(string[]? matricule = null);
         Task<bool> CancelAsync(string id);
+        Task<int> GetOngoingMissionsCountAsync();
+        Task<int> GetPlannedMissionsThisMonthCountAsync();
+        Task<(int count, DateTime date)> GetPlannedMissionsThisDateCountWithDateAsync();
+        Task<(decimal nationalRate, decimal internationalRate)> GetMissionTypesRateAsync();
     }
 
     // Implémentation du repository des missions
@@ -213,5 +217,71 @@ namespace MyApp.Api.Repositories.mission
                 Annulee = annulee
             };
         }
+        public async Task<int> GetOngoingMissionsCountAsync()
+        {
+            return await _context.Missions
+                .CountAsync(m => m.Status == "in progress");
+        }
+
+        public async Task<int> GetPlannedMissionsThisMonthCountAsync()
+        {
+            var now = DateTime.Now;
+            return await _context.Missions
+                .Where(m => m.Status == "planned" 
+                        && m.StartDate.Year == now.Year 
+                        && m.StartDate.Month == now.Month)
+                .CountAsync();
+        }
+
+
+        public async Task<(int count, DateTime date)> GetPlannedMissionsThisDateCountWithDateAsync()
+        {
+            var date = DateTime.Now;
+            var query = _context.Missions
+                .Where(m => m.Status == "planned" 
+                        && m.StartDate.Year == date.Year 
+                        && m.StartDate.Month == date.Month);
+            
+            var count = await query.CountAsync();
+            
+            DateTime? minStartNullable = await query
+                .Select(m => (DateTime?)m.StartDate)
+                .MinAsync();
+            
+            
+            if (minStartNullable.HasValue)
+            {
+                var minStart = minStartNullable.Value;
+                return (count, minStart);
+            }
+            else
+            {
+                return (count, DateTime.MinValue);
+            }
+        }
+
+        public async Task<(decimal nationalRate, decimal internationalRate)> GetMissionTypesRateAsync()
+        {
+            var grouped = await _context.Missions
+                .GroupBy(m => m.MissionType.ToLower())
+                .Select(g => new { Type = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var total = grouped.Sum(g => g.Count);
+            if (total == 0)
+            {
+                return (0m, 0m);
+            }
+
+            var nationalCount = grouped.FirstOrDefault(g => g.Type == "national")?.Count ?? 0;
+            var internationalCount = grouped.FirstOrDefault(g => g.Type == "international")?.Count ?? 0;
+
+            var nationalRate = (decimal)nationalCount / total * 100m;
+            var internationalRate = (decimal)internationalCount / total * 100m;
+
+            return (nationalRate, internationalRate);
+        }
+        
     }
+    
 }

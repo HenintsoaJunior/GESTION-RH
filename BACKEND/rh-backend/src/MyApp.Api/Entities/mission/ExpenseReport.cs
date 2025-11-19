@@ -74,7 +74,6 @@ namespace MyApp.Api.Entities.mission
             Amount = dto.Amount;
             AmountMGA = dto.AmountMGA;
             Rate = dto.Rate;
-            Status = "notreimbursed";
             AssignationId = dto.AssignationId ?? string.Empty;
             ExpenseReportTypeId = dto.ExpenseReportTypeId ?? string.Empty;
         }

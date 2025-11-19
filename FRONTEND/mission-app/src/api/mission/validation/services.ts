@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery,useQueryClient } from '@tanstack/react-query';
 import { useCallback as useReactCallback } from 'react';
 import axios from 'axios';
@@ -7,6 +8,7 @@ const MISSION_VALIDATIONS_BY_ASSIGNATION_ID_KEY = ['missionValidationsByAssignat
 const MISSION_VALIDATION_REQUESTS_KEY = ['missionValidationRequests'] as const;
 const HAS_ANY_VALIDATOR_VALIDATED_KEY = ['hasAnyValidatorValidated'] as const;
 const HAS_VALIDATION_LINE_KEY = ['hasValidationLine'] as const;
+const VALIDATION_RATE_KEY = ['validationRate'] as const;
 
 export interface User {
   userId: string;
@@ -31,10 +33,12 @@ export interface User {
 export interface Lieu {
   lieuId: string;
   nom: string;
-  adresse: string;
+  adresse?: string | null;
   ville: string;
   codePostal: string;
   pays: string;
+  zoneId?: string;
+  geoZone?: any | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -84,8 +88,14 @@ export interface Employee {
   employeeCode: string | null;
   lastName: string;
   firstName: string;
+  birthDate?: string | null;
+  birthPlace?: string;
+  category?: string | null;
+  idNumber?: string;
+  idIssueDate?: string | null;
+  idIssuePlace?: string;
   phoneNumber: string | null;
-  email: string | null;
+  email?: string | null;
   hireDate: string;
   jobTitle: string | null;
   contractEndDate: string | null;
@@ -133,13 +143,13 @@ export interface MissionValidation {
   status: string;
   validationDate: string | null;
   missionCreator: string;
-  creator: User;
+  creator: User | null;
   missionId: string;
   mission: Mission;
   missionAssignationId: string;
   missionAssignation: MissionAssignation;
   toWhom: string;
-  validator: User;
+  validator: User | null;
   type: string;
   createdAt: string;
   updatedAt: string | null;
@@ -214,6 +224,18 @@ export interface MissionBudget {
   userId: string;
 }
 
+export interface ValidationRate {
+  rate: number;
+  date: string;
+}
+
+export interface ApiResponse<T> {
+  data: T | null;
+  status: number;
+  message: string;
+}
+
+
 const formatMissionValidationToFormattedMission = (validation: MissionValidation): FormattedMission => {
   const {
     missionValidationId,
@@ -273,7 +295,7 @@ const formatMissionValidationToFormattedMission = (validation: MissionValidation
     id: missionValidationId,
     title: missionName,
     description,
-    requestedBy: creator.name,
+    requestedBy: creator?.name || 'Unknown',
     department: departmentName,
     status: validationStatus,
     requestDate: createdAt,
@@ -281,7 +303,7 @@ const formatMissionValidationToFormattedMission = (validation: MissionValidation
     estimatedDuration: duration.toString(),
     location: lieu?.nom || '',
     comments: '',
-    signature: creator.signature || '',
+    signature: creator?.signature || '',
     matricule: employeeCode || '',
     function: employeeFunctionValue,
     transport: '',
@@ -294,8 +316,8 @@ const formatMissionValidationToFormattedMission = (validation: MissionValidation
     toWhom,
     validationDate,
     missionCreator,
-    superiorName: creator.superiorName,
-    email: creator.email,
+    superiorName: creator?.superiorName || '',
+    email: creator?.email || '',
     createdAt,
     updatedAt,
     missionAssignationId,
@@ -499,5 +521,42 @@ export const useHasValidationLine = (userId: string | undefined) => {
       }
     },
     enabled: !!userId,
+  });
+};
+
+export const useGetOngoingMissionsCount = () => {
+  return useQuery<ApiResponse<number>, Error>({
+    queryKey: ['getPendingMissionsCount'] as const,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/MissionValidation/pending-validation-count');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useGetValidationRate = () => {
+  return useQuery<ApiResponse<ValidationRate>, Error>({
+    queryKey: VALIDATION_RATE_KEY,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/MissionValidation/validation-rate');
+        if (response.data.status !== 200) {
+          throw new Error(response.data.message || 'Failed to fetch validation rate');
+        }
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          throw new Error(error.response.data.message || 'An error occurred while fetching validation rate');
+        }
+        throw error;
+      }
+    },
   });
 };

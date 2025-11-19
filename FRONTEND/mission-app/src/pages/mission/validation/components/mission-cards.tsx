@@ -103,11 +103,21 @@ const MissionCards: React.FC<MissionCardsProps> = ({
      * Retourne le badge de statut stylisé.
      */
     const getStatusBadge = (status: string) => {
-        const statusInfo = {
-            pending: { icon: ClockIcon, text: "En attente", class: "status-pending" },
-            approved: { icon: CheckCircle, text: "Validé", class: "status-approved" },
-            rejected: { icon: XCircle, text: "Rejetée", class: "status-cancelled" },
-        }[status] || { icon: ClockIcon, text: "Inconnu", class: "status-pending" };
+        let statusInfo;
+        switch (status) {
+            case 'pending':
+                statusInfo = { icon: ClockIcon, text: "En attente", class: "status-pending" };
+                break;
+            case 'approved':
+                statusInfo = { icon: CheckCircle, text: "Validé", class: "status-approved" };
+                break;
+            case 'rejected':
+            case 'Annulé':
+                statusInfo = { icon: XCircle, text: status === 'rejected' ? "Rejetée" : "Annulé", class: "status-cancelled" };
+                break;
+            default:
+                statusInfo = { icon: ClockIcon, text: "Inconnu", class: "status-pending" };
+        }
 
         const Icon = statusInfo.icon;
         return (
@@ -194,7 +204,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
             );
         }
 
-        if (status === 'rejected') {
+        if (status === 'rejected' || status === 'Annulé') {
             return (
                 <IndicatorBlock $daysUntilDue={neutralDays} style={{ 
                     backgroundColor: 'var(--danger-bg)', 
@@ -215,7 +225,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px',
                     }}>
-                        REJETÉ
+                        {status === 'rejected' ? 'REJETÉ' : 'ANNULÉ'}
                     </IndicatorText>
                 </IndicatorBlock>
             );
@@ -465,12 +475,8 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                     )}
                                 </CardInfo>
 
-                                {/* 4. Barre d'actions améliorée - Toujours présente, avec boutons conditionnels */}
-                                <ActionsContainer 
-                                    $singleButton={mission.status !== 'pending'}
-                                    style={{ marginTop: 'auto' }}
-                                >
-                                    {/* Boutons conditionnels pour les missions en attente */}
+                                {/* 4. Barre d'actions améliorée - Conditionnelle selon le statut */}
+                                <ActionsContainer style={{ marginTop: 'auto' }}>
                                     {mission.status === 'pending' && (
                                         <>
                                             <ActionButton
@@ -495,11 +501,10 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                             </ActionButton>
                                         </>
                                     )}
-                                    {/* Bouton "Voir détails" toujours présent */}
                                     <ActionButton
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleRowClick(mission.missionId);
+                                            handleRowClick(mission.id);
                                         }}
                                         className="details"
                                     >

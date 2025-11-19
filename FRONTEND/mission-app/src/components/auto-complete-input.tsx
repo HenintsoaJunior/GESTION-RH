@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
 import styled, { css } from "styled-components";
-import type { RefObject } from "react";
 
 interface AutoCompleteInputProps {
   value: string;
@@ -170,6 +169,7 @@ const AddItem = styled.div.withConfig({
   }
 `;
 
+
 const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
   value,
   onChange,
@@ -177,7 +177,7 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
   placeholder,
   disabled = false,
   onAddNew,
-  className = "form-input",
+  className = "form-input",   // ← Une seule déclaration
   fieldType = "",
   fieldLabel = "",
   addNewRoute = "",
@@ -186,48 +186,39 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
-  const containerRef: RefObject<HTMLDivElement | null> = useRef<HTMLDivElement | null>(null);
-  const inputRef: RefObject<HTMLInputElement | null> = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Effet pour récupérer la nouvelle valeur depuis l'URL après création
+  // Récupération de la nouvelle valeur depuis l'URL après création
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const newValue = searchParams.get("newValue");
     const urlFieldType = searchParams.get("fieldType");
-    
-    // Si une nouvelle valeur est présente et correspond au type de champ
+
     if (newValue && urlFieldType === fieldType && newValue !== value) {
       onChange(newValue);
-      
-      // Naviguer vers la même page sans les paramètres
-      const cleanPath = location.pathname;
+
       const remainingParams = new URLSearchParams(location.search);
       remainingParams.delete("newValue");
       remainingParams.delete("fieldType");
-      
-      const cleanUrl = remainingParams.toString() 
-        ? `${cleanPath}?${remainingParams.toString()}`
-        : cleanPath;
-      
-      // Utiliser navigate avec replace pour nettoyer l'URL
-      setTimeout(() => {
-        navigate(cleanUrl, { replace: true });
-      }, 100);
-      
-      // Fermer la dropdown et donner le focus
+
+      const cleanUrl = remainingParams.toString()
+        ? `${location.pathname}?${remainingParams.toString()}`
+        : location.pathname;
+
+      setTimeout(() => navigate(cleanUrl, { replace: true }), 100);
+
       setIsOpen(false);
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 200);
+      setTimeout(() => inputRef.current?.focus(), 200);
     }
   }, [location.search, location.pathname, fieldType, onChange, value, navigate]);
 
-  // Filtrer les suggestions basées sur la valeur de l'input
+  // Filtrage des suggestions
   useEffect(() => {
     if (value) {
-      const filtered: string[] = suggestions.filter((s: string) =>
+      const filtered = suggestions.filter((s) =>
         s.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredSuggestions(filtered);
@@ -236,49 +227,48 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
     }
   }, [value, suggestions]);
 
-  // Gérer les clics en dehors du composant
+  // Click outside → fermer le dropdown
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent): void => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const newValue: string = e.target.value;
-    onChange(newValue);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
     setIsOpen(true);
   };
 
-  const handleSuggestionClick = (suggestion: string): void => {
+  const handleSuggestionClick = (suggestion: string) => {
     onChange(suggestion);
     setIsOpen(false);
     inputRef.current?.blur();
   };
 
-  const handleAddNew = (): void => {
-    if (value && !suggestions.includes(value)) {
-      // Créer les paramètres pour la navigation
+  const handleAddNew = () => {
+    if (value && canAddNew) {
       const params = new URLSearchParams();
       params.set("fieldType", fieldType);
       params.set("fieldLabel", fieldLabel);
       params.set("initialValue", value);
       params.set("returnUrl", location.pathname + location.search);
-      
-      const redirectUrl: string = addNewRoute || `/add-${fieldType}`;
+
+      const redirectUrl = addNewRoute || `/add-${fieldType}`;
       navigate(`${redirectUrl}?${params.toString()}`);
       setIsOpen(false);
     }
     onAddNew?.();
   };
 
-  const canAddNew: boolean = Boolean(value) && !suggestions.some((s: string) => s.toLowerCase() === value.toLowerCase());
+  const canAddNew =
+    Boolean(value) &&
+    !suggestions.some((s) => s.toLowerCase() === value.toLowerCase());
 
-  const shouldShowScrollable: boolean = filteredSuggestions.length > maxVisibleItems;
+  const shouldShowScrollable = filteredSuggestions.length > maxVisibleItems;
 
   return (
     <Container
@@ -299,28 +289,22 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
           disabled={disabled}
           aria-autocomplete="list"
           aria-controls="autocomplete-dropdown"
-          aria-activedescendant={isOpen && filteredSuggestions.length > 0 ? "suggestion-0" : undefined}
         />
         <IconButton
           onClick={() => !disabled && setIsOpen(!isOpen)}
           aria-label={isOpen ? "Masquer les suggestions" : "Afficher les suggestions"}
           role="button"
           tabIndex={disabled ? -1 : 0}
-          aria-disabled={disabled}
         >
           {isOpen ? <FaIcons.FaAngleUp /> : <FaIcons.FaAngleDown />}
         </IconButton>
       </InputWrapper>
 
       {isOpen && !disabled && (
-        <Dropdown 
-          id="autocomplete-dropdown" 
-          scrollable={shouldShowScrollable}
-          role="listbox"
-        >
+        <Dropdown id="autocomplete-dropdown" scrollable={shouldShowScrollable} role="listbox">
           {filteredSuggestions.length > 0 ? (
             <SuggestionsContainer>
-              {filteredSuggestions.map((suggestion: string, index: number) => (
+              {filteredSuggestions.map((suggestion, index) => (
                 <Suggestion
                   key={suggestion}
                   id={`suggestion-${index}`}
@@ -334,11 +318,10 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
               ))}
             </SuggestionsContainer>
           ) : (
-            <NoSuggestion role="status">
-              Aucune suggestion trouvée
-            </NoSuggestion>
+            <NoSuggestion role="status">Aucune suggestion trouvée</NoSuggestion>
           )}
 
+          {/* Option "Ajouter" sans répétition de la valeur */}
           {value && showAddOption && (
             <AddOption>
               <AddItem
@@ -349,7 +332,9 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
                 tabIndex={canAddNew ? 0 : -1}
               >
                 <FaIcons.FaPlus />
-                {canAddNew ? `Ajouter "${value}"` : `"${value}" existe déjà`}
+                {canAddNew
+                  ? `Ajouter comme nouvelle ${fieldLabel.toLowerCase()}`
+                  : "Existe déjà"}
               </AddItem>
             </AddOption>
           )}

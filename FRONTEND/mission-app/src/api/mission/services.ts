@@ -303,6 +303,24 @@ export const useGetMissionAssignationByAssignationId = (assignationId: string) =
   });
 };
 
+export const useGetTotalCompensations = (employeeId: string, missionId: string) => {
+  return useQuery<ApiResponse<number>, Error>({
+    queryKey: ['getTotalCompensations', employeeId, missionId] as const,
+    queryFn: async () => {
+      try {
+        const response = await api.get(`/api/MissionAssignation/total/${employeeId}/${missionId}`);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!employeeId && !!missionId,
+  });
+};
+
 export const useCreateMission = () => {
   return useMutation<ApiResponse<CreateMissionResponseData>, Error, MissionDTOForm>({
     mutationFn: async (data: MissionDTOForm) => {
@@ -731,6 +749,80 @@ export const useDeleteMission = () => {
       }
       const response = await api.delete(`/api/Mission/${data.missionId}/${data.userId}`);
       return response.data;
+    },
+  });
+};
+
+export const useGetOngoingMissionsCount = () => {
+  return useQuery<ApiResponse<number>, Error>({
+    queryKey: ['getOngoingMissionsCount'] as const,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Mission/ongoing-count');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+
+export const useGetPlannedMissionsThisMonthCountWithDate = () => {
+  return useQuery<ApiResponse<{ count: number; date: string }>, Error>({
+    queryKey: ['getPlannedMissionsThisMonthCountWithDate'] as const,
+    queryFn: async () => {
+      const response = await api.get('/api/Mission/planned-chart');
+      return response.data;
+    },
+  });
+};
+
+
+export const useGetPlannedMissionsThisMonthCount = () => {
+  return useQuery<ApiResponse<number>, Error>({
+    queryKey: ['getPlannedMissionsThisMonthCount'] as const,
+    queryFn: async () => {
+      const response = await api.get('/api/Mission/planned-count');
+      return response.data;
+    },
+  });
+};
+
+
+export const useGetProgressRate = () => {
+  return useQuery<ApiResponse<{ progressRate: number; calculationDate: string }>, Error>({
+    queryKey: ['getProgressRate'] as const,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Mission/progress-rate');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+  });
+};
+
+export const useGetMissionTypesRate = () => {
+  return useQuery<ApiResponse<{ nationalRate: number; internationalRate: number }>, Error>({
+    queryKey: ['getMissionTypesRate'] as const,
+    queryFn: async () => {
+      try {
+        const response = await api.get('/api/Mission/types-rate');
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
     },
   });
 };

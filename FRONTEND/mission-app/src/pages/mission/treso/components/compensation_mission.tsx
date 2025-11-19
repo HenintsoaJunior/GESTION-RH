@@ -17,7 +17,7 @@ import {
     ArrowRight,
     Eye, 
     User,
-} from "lucide-react";
+ } from "lucide-react";
 import {
     Loading,
     NoDataMessage,
@@ -38,6 +38,7 @@ import {
     ButtonSearch,
     FiltersToggle,
     ButtonShowFilters,
+    StyledAutoCompleteInput,
 } from "@/styles/table-styles";
 import {
     PageHeader as DetailsPageHeader,
@@ -61,17 +62,23 @@ import {
 } from "@/styles/card-styles";
 import Pagination from "@/components/pagination";
 import { useCompensationsByStatus, useUpdateStatus } from "@/api/mission/compensation(indemnité)/services";
+import { useGetAllEmployeesSimple } from "@/api/collaborator/services";
 import type { Compensation } from "@/api/mission/compensation(indemnité)/services";
+import type { Employee as CollabEmployee } from "@/api/collaborator/services";
 import Modal from "@/components/modal";
+import AlertComponent from "@/components/alert"; // Ajustez le chemin d'import selon votre structure de dossiers
 
 interface Filter {
   status: string;
+  missionType: string;
+  employeeSearch: string;
   paymentDateMin: string;
   paymentDateMax: string;
 }
 
 interface LoadingState {
   compensations: boolean;
+  employees: boolean;
   stats: boolean;
 }
 
@@ -83,6 +90,12 @@ interface CompensationFiltersProps {
   isLoading: LoadingState;
   handleFilterSubmit: () => void;
   handleResetFilters: () => void;
+  filteredEmployeeSuggestions: string[];
+  missionTypes: string[];
+  handleEmployeeChange: (value: string) => void;
+  handleMissionTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  handlePaymentDateMinChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handlePaymentDateMaxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const CompensationFilters: React.FC<CompensationFiltersProps> = ({
@@ -93,6 +106,12 @@ const CompensationFilters: React.FC<CompensationFiltersProps> = ({
   isLoading,
   handleFilterSubmit,
   handleResetFilters,
+  filteredEmployeeSuggestions,
+  missionTypes,
+  handleEmployeeChange,
+  handleMissionTypeChange,
+  handlePaymentDateMinChange,
+  handlePaymentDateMaxChange,
 }) => {
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const handleFilterChange = (name: keyof Filter, value: string) => {
@@ -102,11 +121,7 @@ const CompensationFilters: React.FC<CompensationFiltersProps> = ({
   const toggleHide = () => setIsHidden((prev) => !prev);
 
   const isFilterEmpty = (): boolean => {
-    return (
-      !filters.status &&
-      !filters.paymentDateMin &&
-      !filters.paymentDateMax
-    );
+    return Object.values(filters).every((val) => (val || "").trim() === "");
   };
 
   return (
@@ -140,6 +155,20 @@ const CompensationFilters: React.FC<CompensationFiltersProps> = ({
                   <tbody>
                     <FormRow>
                       <FormFieldCell>
+                        <FormLabelSearch>Collaborateur</FormLabelSearch>
+                        <StyledAutoCompleteInput
+                          value={filters.employeeSearch || ""}
+                          onChange={handleEmployeeChange}
+                          suggestions={filteredEmployeeSuggestions}
+                          maxVisibleItems={5}
+                          placeholder="Sélectionner un employé..."
+                          disabled={isLoading.employees || isLoading.compensations}
+                          fieldType="employee"
+                          fieldLabel="employé"
+                          showAddOption={false}
+                        />
+                      </FormFieldCell>
+                      <FormFieldCell>
                         <FormLabelSearch>Statut</FormLabelSearch>
                         <FormInputSearch
                           as="select"
@@ -153,7 +182,23 @@ const CompensationFilters: React.FC<CompensationFiltersProps> = ({
                           <option value="paid">Payé</option>
                         </FormInputSearch>
                       </FormFieldCell>
-                      {/* <FormFieldCell>
+                      <FormFieldCell>
+                        <FormLabelSearch>Type de mission</FormLabelSearch>
+                        <FormInputSearch
+                          as="select"
+                          value={filters.missionType}
+                          onChange={handleMissionTypeChange}
+                          disabled={isLoading.compensations}
+                        >
+                          <option value="">Tous</option>
+                          {missionTypes.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </FormInputSearch>
+                      </FormFieldCell>
+                    </FormRow>
+                    <FormRow>
+                      <FormFieldCell colSpan={3}>
                         <fieldset style={{ 
                           display: "grid", 
                           gridTemplateColumns: "1fr 1fr", 
@@ -177,7 +222,7 @@ const CompensationFilters: React.FC<CompensationFiltersProps> = ({
                             <FormInputSearch
                               type="date"
                               value={filters.paymentDateMin}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("paymentDateMin", e.target.value)}
+                              onChange={handlePaymentDateMinChange}
                               disabled={isLoading.compensations}
                             />
                           </div>
@@ -186,12 +231,12 @@ const CompensationFilters: React.FC<CompensationFiltersProps> = ({
                             <FormInputSearch
                               type="date"
                               value={filters.paymentDateMax}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("paymentDateMax", e.target.value)}
+                              onChange={handlePaymentDateMaxChange}
                               disabled={isLoading.compensations}
                             />
                           </div>
                         </fieldset>
-                      </FormFieldCell> */}
+                      </FormFieldCell>
                     </FormRow>
                   </tbody>
                 </FormTableSearch>
@@ -250,11 +295,15 @@ const CompensationMission: React.FC = () => {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Filter>({
     status: "",
+    missionType: "",
+    employeeSearch: "",
     paymentDateMin: "",
     paymentDateMax: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<Filter>({
     status: "",
+    missionType: "",
+    employeeSearch: "",
     paymentDateMin: "",
     paymentDateMax: "",
   });
@@ -267,29 +316,58 @@ const CompensationMission: React.FC = () => {
   const [totalEntries, setTotalEntries] = useState(0);
   const [isLoading, setIsLoading] = useState<LoadingState>({
     compensations: true,
+    employees: true,
     stats: true,
   });
+
+  // État pour l'alert toast
+  const [alert, setAlert] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+    isOpen: boolean;
+  }>({ message: "", type: "info", isOpen: false });
 
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = userData?.userId || "";
 
+  const missionTypes = ["National", "International"];
+
+  const { data: employeesResponse, isLoading: employeesLoading } = useGetAllEmployeesSimple();
   const statusParam = appliedFilters.status || "";
   const { data: compensationsResponse, isLoading: compensationsLoading } = useCompensationsByStatus(statusParam, currentPage, pageSize);
 
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateStatus();
 
+  const employees = useMemo(() => employeesResponse?.data || [], [employeesResponse?.data]) as CollabEmployee[];
+
+  const employeeSuggestions = useMemo(() =>
+    employees.map((emp: CollabEmployee) => `${emp.firstName} ${emp.lastName}`),
+    [employees]
+  );
+
+  const filteredEmployeeSuggestions = useMemo(() =>
+    employeeSuggestions.filter((sug) =>
+      sug.toLowerCase().includes((filters.employeeSearch || "").toLowerCase())
+    ),
+    [employeeSuggestions, filters.employeeSearch]
+  );
+
   useEffect(() => {
+    setIsLoading((prev) => ({ 
+      ...prev, 
+      compensations: compensationsLoading, 
+      employees: employeesLoading 
+    }));
     if (!userId) {
       console.warn("No userId found, skipping compensation fetch");
-      setIsLoading({ compensations: false, stats: false });
+      setIsLoading({ compensations: false, employees: false, stats: false });
       setCompensations([]);
       setTotalEntries(0);
       return;
     }
-  }, [userId]);
+  }, [userId, compensationsLoading, employeesLoading]);
 
   useEffect(() => {
-    setIsLoading((prev) => ({ ...prev, compensations: compensationsLoading }));
     if (compensationsResponse && userId) {
       if (!compensationsResponse.data || !compensationsResponse.data.data || !Array.isArray(compensationsResponse.data.data)) {
         console.warn("La réponse ne contient pas un tableau de résultats:", compensationsResponse);
@@ -374,7 +452,7 @@ const CompensationMission: React.FC = () => {
       setCompensations(formattedCompensations);
       setTotalEntries(total);
     }
-  }, [compensationsResponse, compensationsLoading, statusParam, currentPage, pageSize, userId]);
+  }, [compensationsResponse, statusParam, currentPage, pageSize, userId]);
 
   const handleFilterSubmit = () => {
     setAppliedFilters({ ...filters });
@@ -382,8 +460,20 @@ const CompensationMission: React.FC = () => {
   };
 
   const handleResetFilters = () => {
-    setFilters({ status: "", paymentDateMin: "", paymentDateMax: "" });
-    setAppliedFilters({ status: "", paymentDateMin: "", paymentDateMax: "" });
+    setFilters({ 
+      status: "",
+      missionType: "",
+      employeeSearch: "",
+      paymentDateMin: "",
+      paymentDateMax: "",
+    });
+    setAppliedFilters({ 
+      status: "",
+      missionType: "",
+      employeeSearch: "",
+      paymentDateMin: "",
+      paymentDateMax: "",
+    });
     setCurrentPage(1);
   };
 
@@ -424,15 +514,31 @@ const CompensationMission: React.FC = () => {
         {
           onSuccess: () => {
             console.log(`Paiement confirmé pour ${selectedCompensation.assignationId}`);
+            // Affichage du toast alert de succès
+            setAlert({
+              message: "Paiement confirmé avec succès !",
+              type: "success",
+              isOpen: true,
+            });
             closeConfirmModal();
           },
           onError: (error) => {
             console.error("Erreur lors de la mise à jour du statut:", error);
             // Optionnel: Afficher une alerte d'erreur ici
+            setAlert({
+              message: "Erreur lors de la confirmation du paiement.",
+              type: "error",
+              isOpen: true,
+            });
           },
         }
       );
     }
+  };
+
+  // Fonction pour fermer l'alert
+  const handleAlertClose = () => {
+    setAlert({ message: "", type: "info", isOpen: false });
   };
 
   const formatDate = useCallback((dateString?: string | null): string => {
@@ -456,6 +562,13 @@ const CompensationMission: React.FC = () => {
 
   const filteredCompensations = useMemo(() => {
     return compensations.filter((c) => {
+      // Filter by mission type
+      if (appliedFilters.missionType && c.missionType !== appliedFilters.missionType) return false;
+
+      // Filter by employee search
+      if (appliedFilters.employeeSearch && !c.employeeName.toLowerCase().includes(appliedFilters.employeeSearch.toLowerCase())) return false;
+
+      // Filter by payment dates (existing logic)
       if (appliedFilters.paymentDateMin || appliedFilters.paymentDateMax) {
         if (c.status === "unpaid") return true; // Show all unpaid regardless of date filters
         if (!c.paymentDate) return false;
@@ -482,7 +595,26 @@ const CompensationMission: React.FC = () => {
     [filteredCompensations, currentPage, pageSize]
   );
 
-  const hasFilters = !!appliedFilters.status || !!appliedFilters.paymentDateMin || !!appliedFilters.paymentDateMax;
+  const hasFilters = useMemo(() =>
+    Object.values(appliedFilters).some((val) => (val || "").trim() !== ""),
+    [appliedFilters]
+  );
+
+  const handleEmployeeChange = useCallback((value: string) => {
+    setFilters((prev) => ({ ...prev, employeeSearch: value }));
+  }, []);
+
+  const handleMissionTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters((prev) => ({ ...prev, missionType: e.target.value }));
+  }, []);
+
+  const handlePaymentDateMinChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters((prev) => ({ ...prev, paymentDateMin: e.target.value }));
+  }, []);
+
+  const handlePaymentDateMaxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters((prev) => ({ ...prev, paymentDateMax: e.target.value }));
+  }, []);
 
   /**
    * Retourne le badge de statut stylisé.
@@ -623,6 +755,12 @@ const CompensationMission: React.FC = () => {
                   isLoading={isLoading}
                   handleFilterSubmit={handleFilterSubmit}
                   handleResetFilters={handleResetFilters}
+                  filteredEmployeeSuggestions={filteredEmployeeSuggestions}
+                  missionTypes={missionTypes}
+                  handleEmployeeChange={handleEmployeeChange}
+                  handleMissionTypeChange={handleMissionTypeChange}
+                  handlePaymentDateMinChange={handlePaymentDateMinChange}
+                  handlePaymentDateMaxChange={handlePaymentDateMaxChange}
               />
               <CardsContainer
                 style={{
@@ -888,6 +1026,13 @@ const CompensationMission: React.FC = () => {
               confirmLabel={isUpdating ? "Mise à jour..." : "Confirmer le Paiement"}
               cancelLabel="Annuler"
               showActions={true}
+          />
+          {/* Toast Alert Component */}
+          <AlertComponent
+            type={alert.type}
+            message={alert.message}
+            isOpen={alert.isOpen}
+            onClose={handleAlertClose}
           />
       </>
   );

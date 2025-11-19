@@ -459,15 +459,27 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
 
         item.compensationScales.forEach((scale: CompensationScale) => {
             const amount = scale.amount || 0;
-            if (scale.expenseType?.type === "Petit Déjeuner") amounts.breakfast += amount;
-            else if (scale.expenseType?.type === "Déjeuner") amounts.lunch += amount;
-            else if (scale.expenseType?.type === "Dinner") amounts.dinner += amount;
-            else if (scale.expenseType?.type === "Hébergement") amounts.accommodation += amount;
-            else if (scale.expenseType?.type === "Transport") amounts.transport += amount;
-            else if (scale.expenseType?.type === "Communication") amounts.communication += amount;
-            else if (scale.expenseType?.type === "Visa sur place") amounts.visa += amount;
-            else if (scale.expenseType?.type === "Frais médicaux") amounts.medical += amount;
-            else if (scale.expenseType?.type === "Taxes") amounts.taxes += amount;
+            if (scale.transportId) {
+                amounts.transport += amount;
+            } else if (scale.expenseType?.type === "Transport") {
+                amounts.transport += amount;
+            } else if (scale.expenseType?.type === "Petit Déjeuner") {
+                amounts.breakfast += amount;
+            } else if (scale.expenseType?.type === "Déjeuner") {
+                amounts.lunch += amount;
+            } else if (scale.expenseType?.type === "Dinner") {
+                amounts.dinner += amount;
+            } else if (scale.expenseType?.type === "Hébergement") {
+                amounts.accommodation += amount;
+            } else if (scale.expenseType?.type === "Communication") {
+                amounts.communication += amount;
+            } else if (scale.expenseType?.type === "Visa sur place") {
+                amounts.visa += amount;
+            } else if (scale.expenseType?.type === "Frais médicaux") {
+                amounts.medical += amount;
+            } else if (scale.expenseType?.type === "Taxes") {
+                amounts.taxes += amount;
+            }
         });
 
         const total = amounts.breakfast + amounts.lunch + amounts.dinner + amounts.accommodation + amounts.transport +

@@ -25,6 +25,8 @@ namespace MyApp.Api.Repositories.mission
         Task<bool> RejectedAsync(string missionValidationId, string missionAssignationId);
         Task<MissionStatsValidation> GetStatisticsAsync(string? matricule = null);
         Task<bool> HasValidationLineAsync(string userId);
+        Task<int> GetPendingMissionsCountAsync();
+        Task<(double Rate, DateTime Date)> GetValidationRateAsync();
     }
 
     public class MissionValidationRepository : IMissionValidationRepository
@@ -82,15 +84,6 @@ namespace MyApp.Api.Repositories.mission
                 .ThenInclude(m => m!.Lieu)
                 .Include(mv => mv.MissionAssignation)
                     .ThenInclude(ma => ma!.Employee)
-                        .ThenInclude(e => e!.Department)
-                .Include(mv => mv.MissionAssignation)
-                    .ThenInclude(ma => ma!.Employee)
-                        .ThenInclude(e => e!.Direction)
-                .Include(mv => mv.MissionAssignation)
-                    .ThenInclude(ma => ma!.Employee)
-                        .ThenInclude(e => e!.Service)
-                .Include(mv => mv.Creator)
-                .Include(mv => mv.Validator)
                 .Where(mv => mv.ToWhom == userId && mv.Status != "cancel" && mv.Status != null);
 
             // Filtre sur EmployeeId (via MissionAssignation)
@@ -344,6 +337,32 @@ namespace MyApp.Api.Repositories.mission
                 Approuvee = stats.GetValueOrDefault("approved", 0),
                 Rejetee = stats.GetValueOrDefault("rejected", 0)
             };
+        }
+
+        public async Task<int> GetPendingMissionsCountAsync()
+        {
+            return await _context.MissionValidations
+                .Where(mv => mv.Status == "pending")
+                .Select(mv => mv.MissionId)
+                .Distinct()
+                .CountAsync();
+        }
+
+        public async Task<(double Rate, DateTime Date)> GetValidationRateAsync()
+        {
+            var maxDate = await _context.MissionValidations
+                .Where(mv => mv.Status != null && mv.Status != "cancel" && mv.Status != "pending")
+                .MaxAsync(mv => (DateTime?)mv.ValidationDate) ?? DateTime.UtcNow;
+
+            var query = _context.MissionValidations
+                .Where(mv => mv.ValidationDate <= maxDate && mv.Status != null && mv.Status != "cancel" && mv.Status != "pending");
+
+            var approvedCount = await query.CountAsync(mv => mv.Status == "approved");
+            var rejectedCount = await query.CountAsync(mv => mv.Status == "rejected");
+            var totalValidated = approvedCount + rejectedCount;
+            var rate = totalValidated > 0 ? (double)approvedCount / totalValidated * 100 : 0;
+
+            return (rate, maxDate);
         }
     }
 }

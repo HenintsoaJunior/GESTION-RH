@@ -15,6 +15,7 @@ public interface IRoleRepository
     Task UpdateAsync(Role role);
     Task DeleteAsync(string id);
     Task SaveChangesAsync();
+    Task<IEnumerable<User>> GetUsersByRoleNameAsync(string roleName);
 }
 
 public class RoleRepository : IRoleRepository
@@ -120,5 +121,16 @@ public class RoleRepository : IRoleRepository
     public async Task SaveChangesAsync()
     {
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<User>> GetUsersByRoleNameAsync(string roleName)
+    {
+        return await _context.Users
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+            .Where(u => u.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == roleName))
+            .OrderBy(u => u.Name)
+            .AsNoTracking()
+            .ToListAsync();
     }
 }

@@ -1,4 +1,5 @@
 using MyApp.Api.Entities.mission;
+using MyApp.Api.Models.classes.notifications;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Models.dto.notifications;
 using MyApp.Api.Models.dto.prevision;
@@ -25,6 +26,11 @@ namespace MyApp.Api.Services.mission
         Task<bool> DeleteAsync(string id, string userId);
         Task<MissionStats> GetStatisticsAsync(string[]? matricule = null);
         Task<bool> CancelAsync(string id, string userId);
+        Task<int> GetOngoingMissionsCountAsync();
+        Task<int> GetPlannedMissionsThisMonthCountAsync();
+        Task<(int count, DateTime date)> GetPlannedMissionsThisDateCountWithDateAsync();
+        Task<(decimal progressRate, DateTime calculationDate)> GetProgressRateAsync();
+        Task<(decimal nationalRate, decimal internationalRate)> GetMissionTypesRateAsync();
     }
 
     public class MissionService : IMissionService
@@ -41,6 +47,8 @@ namespace MyApp.Api.Services.mission
         private readonly ILogService _logService;
         private readonly ILieuService _lieuService;
         private readonly IPrevisionPriceService _previsionPriceService;
+        private readonly EmailSender _emailSender;
+        private readonly string _testEmail = "henintsoa.miantsafitia@hotmail.com";
 
         public MissionService(
             IMissionRepository repository,
@@ -54,7 +62,8 @@ namespace MyApp.Api.Services.mission
             INotificationsService notificationsService,
             ILogService logService,
             ILieuService lieuService,
-            IPrevisionPriceService previsionPriceService
+            IPrevisionPriceService previsionPriceService,
+            EmailSender emailSender
         )
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
@@ -69,6 +78,7 @@ namespace MyApp.Api.Services.mission
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
             _lieuService = lieuService ?? throw new ArgumentNullException(nameof(lieuService));
             _previsionPriceService = previsionPriceService ?? throw new ArgumentNullException(nameof(previsionPriceService));
+            _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
         }
 
         /// <summary>
@@ -189,9 +199,11 @@ namespace MyApp.Api.Services.mission
                     await _repository.AddAsync(mission);
                     await _repository.SaveChangesAsync();
 
+                    decimal grandTotal = 0;
+                    var recipientUserIds = new HashSet<string>();
+
                     if (missionDto.Assignations.Count > 0)
                     {
-                        var recipientUserIds = new HashSet<string> { missionDto.UserId }; 
                         var totalPayments = new List<decimal>(); 
 
                         foreach (var assignationDto in missionDto.Assignations)
@@ -214,15 +226,12 @@ namespace MyApp.Api.Services.mission
                             };
                             await _previsionPriceService.AddAsync(previsionPriceDtoForm);
 
-                            // Obtenir le validateur hiérarchique
                             var (hierarchicalValidator, validatorType) = await GetHierarchicalValidatorAsync(employee.EmployeeCode);
                             
-                            // Obtenir le DRH
                             var drh = await _userService.GetDrhAsync();
 
                             _logger.LogInformation("Mission creator est {UserId}", missionDto.UserId);
 
-                            // Créer la validation hiérarchique si un validateur existe
                             if (hierarchicalValidator != null && !string.IsNullOrWhiteSpace(hierarchicalValidator.UserId))
                             {
                                 var missionValidationDtoForm = new MissionValidationDTOForm
@@ -239,7 +248,6 @@ namespace MyApp.Api.Services.mission
                                 recipientUserIds.Add(hierarchicalValidator.UserId);
                             }
 
-                            // Créer la validation DRH uniquement si le DRH est différent du validateur hiérarchique
                             if (drh != null && !string.IsNullOrWhiteSpace(drh.UserId) && 
                                 (hierarchicalValidator == null || drh.UserId != hierarchicalValidator.UserId))
                             {
@@ -248,7 +256,7 @@ namespace MyApp.Api.Services.mission
                                     MissionId = missionId,
                                     MissionAssignationId = assignation.assignationId,
                                     MissionCreator = missionDto.UserId,
-                                    Status = null,
+                                    Status = "pending",
                                     ToWhom = drh.UserId,
                                     Type = "DRH"
                                 };
@@ -258,37 +266,58 @@ namespace MyApp.Api.Services.mission
                             }
                         }
                         
-                        var lieu = await _lieuService.GetByIdAsync(mission.LieuId);
-                        var lieuNom = lieu?.Nom ?? "lieu inconnu";
-                        var grandTotal = totalPayments.Sum();
-
-                        var notification = new NotificationFormDTO
-                        {
-                            Title = "Nouvelle mission créée",
-                            Message = $"La mission '{mission.Name}' a été créée pour le lieu {lieuNom} du {mission.StartDate:yyyy-MM-dd} au {mission.EndDate:yyyy-MM-dd}. Montant total estimé: {grandTotal:C}.",
-                            Type = "mission",
-                            RelatedTable = "mission",
-                            RelatedMenu = "collaborateur",
-                            RelatedId = missionId,
-                            Priority = 2,
-                            UserIds = recipientUserIds.ToList(),
-                            CreatedAt = DateTime.UtcNow
-                        };
-
-                        await _notificationsService.CreateAsync(notification, transaction);
-
-                        var logNewData = new
-                        {
-                            Nom = mission.Name,
-                            Description = mission.Description,
-                            DateDebut = mission.StartDate,
-                            DateFin = mission.EndDate,
-                            NomLieu = lieuNom,
-                            MontantTotal = grandTotal
-                        };
-
-                        await _logService.LogAsync("INSERTION", "MISSION", null, logNewData, missionDto.UserId, "Nom,Description,DateDebut,DateFin,NomLieu,MontantTotal");
+                        grandTotal = totalPayments.Sum();
                     }
+                    
+                    var user = await _userService.GetByIdAsync(missionDto.UserId);
+                    var creatorName = user?.Name ?? "Utilisateur inconnu";
+                    var lieu = await _lieuService.GetByIdAsync(mission.LieuId);
+                    var lieuNom = lieu?.Nom ?? "lieu inconnu";
+
+                    var notification = new NotificationFormDTO
+                    {
+                        Title = $"Nouvelle mission créée par '{creatorName}'",
+                        Message = $"La mission '{mission.Name}' a été créée pour le lieu {lieuNom} du {mission.StartDate:yyyy-MM-dd} au {mission.EndDate:yyyy-MM-dd}. Elle est actuellement en attente de validation.",
+                        Type = "mission",
+                        RelatedTable = "mission",
+                        RelatedMenu = "collaborateur",
+                        RelatedId = missionId,
+                        Priority = 2,
+                        UserIds = recipientUserIds.ToList(),
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    string createdBy = creatorName;
+                    string role = "ADMIN";
+                    string createdDate = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm");
+                    string status = "En attente de validation";
+
+                    string linkUrl = "http://localhost:5183/missions/to-validate";
+
+                    // Envoi d'email hardcodé pour tests (non-déploiement)
+                    await _emailSender.SendValidatorNotificationEmailAsync( 
+                        actionType: "validation",
+                        createdBy: createdBy,
+                        role: role,
+                        createdDate: createdDate,
+                        status: status,
+                        toEmail: _testEmail,
+                        linkUrl: linkUrl
+                    );
+
+                    await _notificationsService.CreateAsync(notification, transaction);
+
+                    var logNewData = new
+                    {
+                        Nom = mission.Name,
+                        Description = mission.Description,
+                        DateDebut = mission.StartDate,
+                        DateFin = mission.EndDate,
+                        NomLieu = lieuNom,
+                        MontantTotal = grandTotal
+                    };
+
+                    await _logService.LogAsync("INSERTION", "MISSION", null, logNewData, missionDto.UserId, "Nom,Description,DateDebut,DateFin,NomLieu,MontantTotal");
 
                     await transaction.CommitAsync();
                     return missionId;
@@ -396,10 +425,10 @@ namespace MyApp.Api.Services.mission
                         }
                         else
                         {
-                            // Créer nouvelle assignation
+                            // Créer nouvelle assignation (ne pas définir AssignationId, laisser le service générer)
                             updatedOrNewAssignation = new MissionAssignation
                             {
-                                AssignationId = Guid.NewGuid().ToString(),
+                                // AssignationId omis pour génération automatique
                                 EmployeeId = assignationDto.EmployeeId,
                                 MissionId = id,
                                 TransportId = assignationDto.TransportId,
@@ -464,7 +493,7 @@ namespace MyApp.Api.Services.mission
                                     MissionId = id,
                                     MissionAssignationId = newAssignationId,
                                     MissionCreator = mission.UserId,
-                                    Status = null,
+                                    Status = "pending", // Corrigé : était null, maintenant "pending" pour cohérence
                                     ToWhom = drh.UserId,
                                     Type = "DRH"
                                 };
@@ -553,8 +582,8 @@ namespace MyApp.Api.Services.mission
                 await _repository.DeleteAsync(entity);
                 await _repository.SaveChangesAsync();
 
-                // Log de suppression
-                await _logService.LogAsync("SUPPRESSION", entity, null, userId);
+                // Log de suppression corrigé
+                await _logService.LogAsync("SUPPRESSION", "MISSION", entity, null, userId, "MissionId,MissionType,Name,Description,StartDate,EndDate,LieuId,Status");
 
                 return true;
             }
@@ -576,11 +605,24 @@ namespace MyApp.Api.Services.mission
                     return false;
                 }
 
+                // Capturer l'état avant annulation pour log
+                var oldEntity = new
+                {
+                    Status = entity.Status
+                };
+
                 entity.Status = "canceled";
                 await _repository.UpdateAsync(entity);
                 await _repository.SaveChangesAsync(); 
 
                 var validationCancelSuccess = await _validationService.CancelValidationsByMissionIdAsync(id, userId);
+
+                // Log de l'annulation
+                var newEntity = new
+                {
+                    Status = entity.Status
+                };
+                await _logService.LogAsync("ANNULATION", "MISSION", oldEntity, newEntity, userId, "Status");
 
                 await transaction.CommitAsync();
                 return true;
@@ -603,6 +645,129 @@ namespace MyApp.Api.Services.mission
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la récupération des statistiques des missions avec matricule filter: {Matricule}", matricule != null ? string.Join(", ", matricule) : "none");
+                throw;
+            }
+        }
+
+        public async Task<int> GetOngoingMissionsCountAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération du nombre de missions en cours");
+                return await _repository.GetOngoingMissionsCountAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du nombre de missions en cours");
+                throw;
+            }
+        }
+
+        public async Task<int> GetPlannedMissionsThisMonthCountAsync()
+        {
+            try
+            {
+                return await _repository.GetPlannedMissionsThisMonthCountAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du nombre de missions planifiées ce mois"); // Corrigé : message d'erreur
+                throw;
+            }
+        }
+
+        public async Task<(int count, DateTime date)> GetPlannedMissionsThisDateCountWithDateAsync()
+        {
+            try
+            {
+                return await _repository.GetPlannedMissionsThisDateCountWithDateAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du nombre de missions planifiées à cette date"); // Corrigé : message d'erreur
+                throw;
+            }
+        }
+
+        public async Task<(decimal progressRate, DateTime calculationDate)> GetProgressRateAsync()
+        {
+            try
+            {
+                var calculationDate = DateTime.UtcNow; // Corrigé : utiliser UtcNow pour cohérence
+                
+                var missions = await GetAllAsync();
+                
+                var activeMissions = missions.Where(m => m.Status != "cancelled").ToList();
+                if (!activeMissions.Any())
+                {
+                    return (0m, calculationDate);
+                }
+                
+                var totalDuration = activeMissions.Sum(m => (decimal)(m.EndDate - m.StartDate).TotalDays);
+                if (totalDuration <= 0)
+                {
+                    return (0m, calculationDate);
+                }
+                
+                var earnedValue = 0m;
+                foreach (var mission in activeMissions)
+                {
+                    decimal progress;
+                    if (mission.Status == "completed")
+                    {
+                        progress = 1m;
+                    }
+                    else
+                    {
+                        var start = mission.StartDate.Date; 
+                        var end = mission.EndDate.Date;
+                        var missionDuration = (decimal)(end - start).TotalDays;
+                        
+                        if (missionDuration <= 0)
+                        {
+                            progress = 0m;
+                            continue;
+                        }
+                        
+                        var current = calculationDate.Date;
+                        if (current <= start)
+                        {
+                            progress = 0m;
+                        }
+                        else if (current >= end)
+                        {
+                            progress = 1m;
+                        }
+                        else
+                        {
+                            var daysElapsed = (decimal)(current - start).TotalDays;
+                            progress = daysElapsed / missionDuration;
+                        }
+                    }
+                    
+                    earnedValue += progress * (decimal)(mission.EndDate - mission.StartDate).TotalDays;
+                }
+                
+                var progressRate = (earnedValue / totalDuration) * 100m;
+                return (progressRate, calculationDate);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors du calcul du taux d'avancement des missions par date (global)");
+                throw;
+            }
+        }
+
+        public async Task<(decimal nationalRate, decimal internationalRate)> GetMissionTypesRateAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Récupération du taux des types de missions");
+                return await _repository.GetMissionTypesRateAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du taux des types de missions");
                 throw;
             }
         }

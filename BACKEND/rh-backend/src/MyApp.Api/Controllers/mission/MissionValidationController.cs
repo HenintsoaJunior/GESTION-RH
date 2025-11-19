@@ -495,5 +495,53 @@ namespace MyApp.Api.Controllers.mission
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
+
+        [HttpGet("pending-validation-count")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetPendingMissionsCountAsync()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var count = await _missionValidationService.GetPendingMissionsCountAsync();
+                var responseData = count;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération du nombre de missions en attente de validation");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("validation-rate")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetValidationRateAsync()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var (rate, date) = await _missionValidationService.GetValidationRateAsync();
+                var responseData = new { Rate = rate, Date = date };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du taux de validation");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
     }
 }
