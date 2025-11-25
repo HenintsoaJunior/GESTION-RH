@@ -47,7 +47,7 @@ namespace MyApp.Api.Services.mission
         private readonly INotificationsService _notificationsService; 
         private readonly EmailSender _emailSender; 
         private readonly IRoleService _roleService; 
-        private readonly string _testEmail = "henintsoa.miantsafitia@hotmail.com"; 
+        // private readonly string _testEmail = "henintsoa.miantsafitia@hotmail.com"; 
 
         public MissionValidationService(
             IMissionValidationRepository repository,
@@ -285,18 +285,18 @@ namespace MyApp.Api.Services.mission
                         await _notificationsService.CreateAsync(notification, transaction);
 
                         // Email au missionnaire (hardcodé pour tests) - non transactionnel
-                        string validatedDate = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm");
-                        string linkUrl = $"http://localhost:5183/missions/detail/{mission?.MissionId ?? missionAssignation.MissionId}";
-                        await _emailSender.SendValidatorNotificationEmailAsync(
-                            actionType: "rejection",
-                            createdBy: userId,
-                            role: "VALIDATOR",
-                            createdDate: validatedDate,
-                            status: "Rejetée",
-                            toEmail: _testEmail, // Hardcodé pour non-déploiement
-                            linkUrl: linkUrl,
-                            subject: $"Mission rejetée - {mission?.Name ?? "Mission inconnue"}"
-                        );
+                        // string validatedDate = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm");
+                        // string linkUrl = $"http://localhost:5183/missions/detail/{mission?.MissionId ?? missionAssignation.MissionId}";
+                        // await _emailSender.SendValidatorNotificationEmailAsync(
+                        //     actionType: "rejection",
+                        //     createdBy: userId,
+                        //     role: "VALIDATOR",
+                        //     createdDate: validatedDate,
+                        //     status: "Rejetée",
+                        //     toEmail: _testEmail, // Hardcodé pour non-déploiement
+                        //     linkUrl: linkUrl,
+                        //     subject: $"Mission rejetée - {mission?.Name ?? "Mission inconnue"}"
+                        // );
                     }
                 }
 
@@ -420,16 +420,16 @@ namespace MyApp.Api.Services.mission
                                 recipientEmails.Add(missionnaireUser.Email);
 
                                 // Email au missionnaire (hardcodé pour tests)
-                                string validatedDate = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm");
-                                string linkUrlMissionnaire = $"http://localhost:5183/missions/detail/{mission.MissionId}";
-                                await _emailSender.SendCollaboratorValidatedEmailAsync(
-                                    missionTitle: mission.Name,
-                                    validatorName: toWhomName,
-                                    validatedDate: validatedDate,
-                                    status: "Validée",
-                                    toEmail: _testEmail, // Hardcodé pour non-déploiement
-                                    linkUrl: linkUrlMissionnaire
-                                );
+                                // string validatedDate = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm");
+                                // string linkUrlMissionnaire = $"http://localhost:5183/missions/detail/{mission.MissionId}";
+                                // await _emailSender.SendCollaboratorValidatedEmailAsync(
+                                //     missionTitle: mission.Name,
+                                //     validatorName: toWhomName,
+                                //     validatedDate: validatedDate,
+                                //     status: "Validée",
+                                //     toEmail: _testEmail, // Hardcodé pour non-déploiement
+                                //     linkUrl: linkUrlMissionnaire
+                                // );
                             }
                         }
                     }
@@ -444,17 +444,17 @@ namespace MyApp.Api.Services.mission
                             recipientEmails.Add(treasurer.Email);
 
                             // Email au trésorier (hardcodé pour tests)
-                            string validatedDateTreasurer = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm");
-                            string linkUrlTreasurer = $"http://localhost:5183/missions/to-pay/{mission.MissionId}";
-                            await _emailSender.SendTreasurerNotificationEmailAsync(
-                                missionTitle: mission.Name,
-                                validatedBy: toWhomName,
-                                validatedDate: validatedDateTreasurer,
-                                toEmail: _testEmail, // Hardcodé pour non-déploiement
-                                linkUrl: linkUrlTreasurer,
-                                amount: null, // À adapter si montant total disponible
-                                status: "Validée - Prête pour paiement"
-                            );
+                            // string validatedDateTreasurer = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm");
+                            // string linkUrlTreasurer = $"http://localhost:5183/missions/to-pay/{mission.MissionId}";
+                            // await _emailSender.SendTreasurerNotificationEmailAsync(
+                            //     missionTitle: mission.Name,
+                            //     validatedBy: toWhomName,
+                            //     validatedDate: validatedDateTreasurer,
+                            //     toEmail: _testEmail, // Hardcodé pour non-déploiement
+                            //     linkUrl: linkUrlTreasurer,
+                            //     amount: null, // À adapter si montant total disponible
+                            //     status: "Validée - Prête pour paiement"
+                            // );
                         }
                     }
 
