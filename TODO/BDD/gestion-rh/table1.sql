@@ -97,6 +97,21 @@ CREATE TABLE users (
 );
 
 
+CREATE TABLE user_role (
+    user_id VARCHAR(250) NOT NULL,
+    role_id VARCHAR(50) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+    PRIMARY KEY (user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES role(role_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+
 CREATE TABLE habilitation_groups (
    group_id VARCHAR(50) PRIMARY KEY,
    label VARCHAR(100) NOT NULL,

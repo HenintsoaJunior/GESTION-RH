@@ -1,3 +1,6 @@
+/* Désactiver temporairement les contraintes FK */
+EXEC sp_msforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT ALL";
+
 DROP TABLE IF EXISTS tmp_employee;
 DROP TABLE IF EXISTS notification_recipients;
 DROP TABLE IF EXISTS notifications;
@@ -45,3 +48,28 @@ DROP TABLE IF EXISTS employee_categories;
 DROP TABLE IF EXISTS contract_types;
 DROP TABLE IF EXISTS genders;
 DROP TABLE IF EXISTS nationalities;
+
+DROP TABLE IF EXISTS comments_candidatures;
+DROP TABLE IF EXISTS tests;
+DROP TABLE IF EXISTS evaluations;
+DROP TABLE IF EXISTS candidatures;
+DROP TABLE IF EXISTS skills;
+DROP TABLE IF EXISTS jobs_suitabilities;
+DROP TABLE IF EXISTS experiences;
+DROP TABLE IF EXISTS formations;
+DROP TABLE IF EXISTS jobs_validations;
+DROP TABLE IF EXISTS Attributions;
+DROP TABLE IF EXISTS job_descriptions;
+DROP TABLE IF EXISTS requests_validations;
+DROP TABLE IF EXISTS sites_requests;
+DROP TABLE IF EXISTS recruitment_requests;
+DROP TABLE IF EXISTS evaluation_types;
+DROP TABLE IF EXISTS personnal_suitabilities;
+DROP TABLE IF EXISTS educations;
+DROP TABLE IF EXISTS level_educations;
+DROP TABLE IF EXISTS job_descriptions_status;
+DROP TABLE IF EXISTS requests_status;
+DROP TABLE IF EXISTS replacement_reasons;
+
+/* Réactiver les contraintes FK */
+EXEC sp_msforeachtable "ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL";
