@@ -48,7 +48,7 @@ namespace MyApp.Api.Services.mission
         private readonly ILieuService _lieuService;
         private readonly IPrevisionPriceService _previsionPriceService;
         private readonly EmailSender _emailSender;
-        private readonly string _testEmail = "henintsoa.miantsafitia@hotmail.com";
+        //private readonly string _testEmail = "henintsoa.miantsafitia@hotmail.com";
 
         public MissionService(
             IMissionRepository repository,
@@ -287,23 +287,23 @@ namespace MyApp.Api.Services.mission
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    string createdBy = creatorName;
-                    string role = "ADMIN";
-                    string createdDate = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm");
-                    string status = "En attente de validation";
+                    //string createdBy = creatorName;
+                    // string role = "ADMIN";
+                    // string createdDate = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm");
+                    // string status = "En attente de validation";
 
-                    string linkUrl = "http://localhost:5183/missions/to-validate";
+                    // string linkUrl = "http://localhost:5183/missions/to-validate";
 
                     // Envoi d'email hardcodé pour tests (non-déploiement)
-                    await _emailSender.SendValidatorNotificationEmailAsync( 
-                        actionType: "validation",
-                        createdBy: createdBy,
-                        role: role,
-                        createdDate: createdDate,
-                        status: status,
-                        toEmail: _testEmail,
-                        linkUrl: linkUrl
-                    );
+                    // await _emailSender.SendValidatorNotificationEmailAsync( 
+                    //     actionType: "validation",
+                    //     createdBy: createdBy,
+                    //     role: role,
+                    //     createdDate: createdDate,
+                    //     status: status,
+                    //     toEmail: _testEmail,
+                    //     linkUrl: linkUrl
+                    // );
 
                     await _notificationsService.CreateAsync(notification, transaction);
 
