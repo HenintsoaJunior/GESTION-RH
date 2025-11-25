@@ -502,9 +502,275 @@ CREATE SEQUENCE seq_expense_compensation_scale_id
 GO
 
 
+-- RECRUTEMENT
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_replacement_reason_id')
+    DROP SEQUENCE seq_replacement_reason_id;
+GO
+CREATE SEQUENCE seq_replacement_reason_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
 
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_req_status_id')
+    DROP SEQUENCE seq_req_status_id;
+GO
+CREATE SEQUENCE seq_req_status_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
 
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_job_status_id')
+    DROP SEQUENCE seq_job_status_id;
+GO
+CREATE SEQUENCE seq_job_status_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
 
 
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_level_education_id')
+    DROP SEQUENCE seq_level_education_id;
+GO
+CREATE SEQUENCE seq_level_education_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_education_id')
+    DROP SEQUENCE seq_education_id;
+GO
+CREATE SEQUENCE seq_education_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_personnal_suitability_id')
+    DROP SEQUENCE seq_personnal_suitability_id;
+GO
+CREATE SEQUENCE seq_personnal_suitability_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_evaluation_type_id')
+    DROP SEQUENCE seq_evaluation_type_id;
+GO
+CREATE SEQUENCE seq_evaluation_type_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_request_id')
+    DROP SEQUENCE seq_request_id;
+GO
+CREATE SEQUENCE seq_request_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_id_site_request')
+    DROP SEQUENCE seq_id_site_request;
+GO
+CREATE SEQUENCE seq_id_site_request
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_request_validation_id')
+    DROP SEQUENCE seq_request_validation_id;
+GO
+CREATE SEQUENCE seq_request_validation_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_job_description_id')
+    DROP SEQUENCE seq_job_description_id;
+GO
+CREATE SEQUENCE seq_job_description_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_attribution_id')
+    DROP SEQUENCE seq_attribution_id;
+GO
+CREATE SEQUENCE seq_attribution_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_job_validation_id')
+    DROP SEQUENCE seq_job_validation_id;
+GO
+CREATE SEQUENCE seq_job_validation_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_formation_id')
+    DROP SEQUENCE seq_formation_id;
+GO
+CREATE SEQUENCE seq_formation_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_experience_id')
+    DROP SEQUENCE seq_experience_id;
+GO
+CREATE SEQUENCE seq_experience_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_job_suitability_id')
+    DROP SEQUENCE seq_job_suitability_id;
+GO
+CREATE SEQUENCE seq_job_suitability_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_skill_id')
+    DROP SEQUENCE seq_skill_id;
+GO
+CREATE SEQUENCE seq_skill_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_candidature_id')
+    DROP SEQUENCE seq_candidature_id;
+GO
+CREATE SEQUENCE seq_candidature_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_evaluation_id')
+    DROP SEQUENCE seq_evaluation_id;
+GO
+CREATE SEQUENCE seq_evaluation_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_test_id')
+    DROP SEQUENCE seq_test_id;
+GO
+CREATE SEQUENCE seq_test_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_comment_id')
+    DROP SEQUENCE seq_comment_id;
+GO
+CREATE SEQUENCE seq_comment_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;
+GO
