@@ -103,5 +103,9 @@ namespace MyApp.Api.Data
                 entity.HasIndex(e => new { e.LastName, e.FirstName });
             });
         }
+
+
+    // RECRUTEMENT
+        
     }
 }
