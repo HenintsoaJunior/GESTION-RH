@@ -53,15 +53,15 @@ CREATE TABLE recruitment_requests(
    is_deleted BIT NOT NULL DEFAULT 0,
    created_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
    updated_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   user_id VARCHAR(250) NOT NULL,
+   applicant_user VARCHAR(250) NOT NULL,
    replacement_reason_id VARCHAR(50),
    contract_type_id VARCHAR(50) NOT NULL,
-   user_id_1 VARCHAR(250) NOT NULL,
+   last_titular_user VARCHAR(250),
    PRIMARY KEY(request_id),
-   FOREIGN KEY(user_id) REFERENCES users(user_id),
+   FOREIGN KEY(applicant_user) REFERENCES users(user_id),
    FOREIGN KEY(replacement_reason_id) REFERENCES replacement_reasons(replacement_reason_id),
    FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id),
-   FOREIGN KEY(user_id_1) REFERENCES users(user_id)
+   FOREIGN KEY(last_titular_user) REFERENCES users(user_id)
 );
 
  
