@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.users;
 
 namespace MyApp.Api.Entities.recruitment;

@@ -77,6 +77,7 @@ CREATE TABLE sites_requests(
 CREATE TABLE requests_validations(
    request_validation_id VARCHAR(50) NOT NULL,
    created_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
    signature_url VARCHAR(150)  NOT NULL,
    comments VARCHAR(max),
    user_id VARCHAR(250) NOT NULL,
@@ -110,6 +111,7 @@ CREATE TABLE Attributions(
 CREATE TABLE jobs_validations(
    job_validation_id VARCHAR(50) NOT NULL,
    created_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
    user_id VARCHAR(250) NOT NULL,
    status_id VARCHAR(50) NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
@@ -162,7 +164,8 @@ CREATE TABLE candidatures(
    email_contact VARCHAR(50)  NOT NULL,
    cv_url VARCHAR(150)  NOT NULL,
    lm_url VARCHAR(150)  NOT NULL,
-   created_at DATETIME2 NOT NULL,
+   created_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
    job_description_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(candidature_id),
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
@@ -181,7 +184,8 @@ CREATE TABLE evaluations(
 CREATE TABLE tests(
    test_id VARCHAR(50) NOT NULL,
    test_datetime DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   created_at DATETIME2 NOT NULL,
+   created_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
    is_passed BIT NOT NULL,
    user_id VARCHAR(250) NOT NULL,
    candidature_id VARCHAR(50) NOT NULL,

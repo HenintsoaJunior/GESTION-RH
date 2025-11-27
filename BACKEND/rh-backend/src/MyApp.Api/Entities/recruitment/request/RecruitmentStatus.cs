@@ -3,16 +3,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyApp.Api.Entities.recruitment;
 
-[Table("contract_types")]
-public class ContractType : BaseEntity
+public abstract class RecruitmentStatus
 {
     [Key]
-    [Column("contract_type_id")]
+    [Column("status_id")]
     public string Id {get; set;} = null!;
 
-    [Column("code")]
-    public string Code {get; set;} = null!;
-
-    [Column("label")]
+    [Column("status_name")]
     public string Name {get; set;} = null!;
 }
