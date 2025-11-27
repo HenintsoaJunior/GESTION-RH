@@ -9,7 +9,7 @@ CREATE TABLE requests_status(
    status_name VARCHAR(50)  NOT NULL,
    PRIMARY KEY(status_id)
 );
- 
+
 CREATE TABLE job_descriptions_status(
    status_id INT IDENTITY,
    status_name VARCHAR(50)  NOT NULL,
