@@ -164,14 +164,14 @@ interface ModalContent {
 }
 
 const PREDEFINED_DOCUMENTS_PAYMENT: Omit<DocumentAttachment, 'fileContent'>[] = [
-  {
-    id: "im-excel",
-    name: "IM Excel",
-    fileName: "Indemnites_Mission.xlsx",
-    fileType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    extension: "xlsx",
-    fileSize: 2048,
-  },
+  // {
+  //   id: "im-excel",
+  //   name: "IM Excel",
+  //   fileName: "Indemnites_Mission.xlsx",
+  //   fileType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  //   extension: "xlsx",
+  //   fileSize: 2048,
+  // },
   {
     id: "im-pdf",
     name: "IM PDF",
@@ -614,32 +614,69 @@ const OMPayment: React.FC<OMPaymentProps> = ({ missionPayment, selectedAssignmen
                             </tr>
                         </thead>
                         <tbody>
-                            {displayIndemnityDetails.map((item, index) => {
-                                const isOneTimeRow = !item.date;
-                                return (
-                                    <tr key={index} style={isOneTimeRow ? { fontWeight: 'bold' } : {}}>
-                                        <TableCell>{isOneTimeRow ? '' : formatDate(item.date)}</TableCell>
-                                        <TableCell>{`${formatNumber(item.transport || 0)},00`}</TableCell>
-                                        <TableCell>{`${formatNumber(item.breakfast || 0)},00`}</TableCell>
-                                        <TableCell>{`${formatNumber(item.lunch || 0)},00`}</TableCell>
-                                        <TableCell>{`${formatNumber(item.dinner || 0)},00`}</TableCell>
-                                        <TableCell>{`${formatNumber(item.accommodation || 0)},00`}</TableCell>
-                                        {isInternationalMemo && (
-                                            <>
-                                                <TableCell>{`${formatNumber(item.communication || 0)},00`}</TableCell>
-                                                <TableCell>{`${formatNumber(item.visa || 0)},00`}</TableCell>
-                                                <TableCell>{`${formatNumber(item.medical || 0)},00`}</TableCell>
-                                                <TableCell>{`${formatNumber(item.taxes || 0)},00`}</TableCell>
-                                            </>
-                                        )}
-                                        <TableCell>{`${formatNumber(item.total || 0)},00`}</TableCell>
-                                    </tr>
-                                );
-                            })}
-                            <TotalRow>
-                                <TableCell colSpan={isInternationalMemo ? 10 : 6}>Total</TableCell>
-                                <TableCell><strong>{formatNumber(grandTotal)},00</strong></TableCell>
-                            </TotalRow>
+                          {displayIndemnityDetails.map((item, index) => {
+                            const isOneTimeRow = !item.date;
+                            return (
+                              <tr key={index} style={isOneTimeRow ? { fontWeight: 'bold' } : {}}>
+                                {/* Date → alignée à gauche */}
+                                <TableCell style={{ textAlign: 'left' }}>
+                                  {isOneTimeRow ? '' : formatDate(item.date)}
+                                </TableCell>
+
+                                {/* Toutes les colonnes de montants → alignées à droite */}
+                                <TableCell style={{ textAlign: 'right' }}>
+                                  {formatNumber(item.transport || 0)},00
+                                </TableCell>
+                                <TableCell style={{ textAlign: 'right' }}>
+                                  {formatNumber(item.breakfast || 0)},00
+                                </TableCell>
+                                <TableCell style={{ textAlign: 'right' }}>
+                                  {formatNumber(item.lunch || 0)},00
+                                </TableCell>
+                                <TableCell style={{ textAlign: 'right' }}>
+                                  {formatNumber(item.dinner || 0)},00
+                                </TableCell>
+                                <TableCell style={{ textAlign: 'right' }}>
+                                  {formatNumber(item.accommodation || 0)},00
+                                </TableCell>
+
+                                {isInternationalMemo && (
+                                  <>
+                                    <TableCell style={{ textAlign: 'right' }}>
+                                      {formatNumber(item.communication || 0)},00
+                                    </TableCell>
+                                    <TableCell style={{ textAlign: 'right' }}>
+                                      {formatNumber(item.visa || 0)},00
+                                    </TableCell>
+                                    <TableCell style={{ textAlign: 'right' }}>
+                                      {formatNumber(item.medical || 0)},00
+                                    </TableCell>
+                                    <TableCell style={{ textAlign: 'right' }}>
+                                      {formatNumber(item.taxes || 0)},00
+                                    </TableCell>
+                                  </>
+                                )}
+
+                                {/* Colonne Total du jour → aussi à droite */}
+                                <TableCell style={{ textAlign: 'right', fontWeight: '600' }}>
+                                  {formatNumber(item.total || 0)},00
+                                </TableCell>
+                              </tr>
+                            );
+                          })}
+
+                          {/* Ligne Total Général */}
+                          <TotalRow>
+                            <TableCell 
+                              colSpan={isInternationalMemo ? 10 : 6} 
+                              style={{ textAlign: 'left', fontWeight: 'bold' }}
+                            >
+                              Total
+                            </TableCell>
+                            <TableCell style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                              <strong>{formatNumber(grandTotal)},00</strong>
+                            </TableCell>
+                          </TotalRow>
                         </tbody>
                     </IndemnityTable>
                 </>

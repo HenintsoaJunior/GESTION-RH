@@ -85,7 +85,7 @@ namespace MyApp.Api.Services.mission
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
  
-        private static void ApplyCenturyGothicFont(Run run)
+        private static void ApplyArialFont(Run run)
         {
             if (run.RunProperties == null)
             {
@@ -93,16 +93,17 @@ namespace MyApp.Api.Services.mission
             }
             var rFonts = new RunFonts()
             {
-                Ascii = "Century Gothic",
-                HighAnsi = "Century Gothic",
-                ComplexScript = "Century Gothic",
-                EastAsia = "Century Gothic"
+                Ascii = "Arial",
+                HighAnsi = "Arial",
+                ComplexScript = "Arial",
+                EastAsia = "Arial"
             };
             run.RunProperties.AppendChild(rFonts);
             // Set font size to 8pt (16 half-points) for better fit on A4
             var fontSize = new FontSize() { Val = "16" };
             run.RunProperties.Append(fontSize);
         }
+        
         public async Task<byte[]> GenerateIMPDFAsync(string employeeId, string missionId)
         {
             var missionAssignation = await _repository.GetByIdAsync(employeeId, missionId);
@@ -115,7 +116,7 @@ namespace MyApp.Api.Services.mission
             {
                 throw new InvalidOperationException("Aucune compensation trouvée pour cette assignation de mission.");
             }
-            string templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\File\IM.docx"));
+            string templatePath = TemplatePathHelper.GetTemplatePath("IM.docx");
             if (!File.Exists(templatePath))
             {
                 throw new FileNotFoundException("Le fichier modèle n'existe pas.", templatePath);
@@ -153,7 +154,6 @@ namespace MyApp.Api.Services.mission
                 { "${fonction}", missionAssignation.Employee?.JobTitle ?? "" },
                 { "${matricule}", missionAssignation.Employee?.EmployeeCode ?? "" },
                 { "${direction}", missionAssignation.Employee?.Direction?.DirectionName ?? "" },
-                // { "${departement}", missionAssignation.Employee?.Department?.DepartmentName ?? "" },
                 { "${service}", missionAssignation.Employee?.Service?.ServiceName?? "" },
                 { "${lieu}", missionAssignation.Mission?.Lieu?.Nom ?? "" },
                 { "${motif}", missionAssignation.Mission?.Description ?? "" },
@@ -227,34 +227,26 @@ namespace MyApp.Api.Services.mission
                     }
                     if (targetParagraph != null && runToRemove != null)
                     {
-                        // Supprimer le run contenant le placeholder
                         runToRemove.Remove();
-                        // Déterminer si la mission est internationale
                         bool isInternational = missionAssignation.Mission?.MissionType != "national";
-                        // Créer le tableau
                         var table = new Table();
                         var tableProperties = new TableProperties();
                         tableProperties.Append(new TableStyle() { Val = "TableGrid" });
-                        // Set table to fixed width to fill available space on A4 (approx 9026 dxa after margins)
                         var tableWidth = new TableWidth() { Type = TableWidthUnitValues.Dxa, Width = "9026" };
                         tableProperties.Append(tableWidth);
-                        // Use fixed layout for better control
                         var tableLayout = new TableLayout() { Type = TableLayoutValues.Fixed };
                         tableProperties.Append(tableLayout);
                         table.AppendChild(tableProperties);
-                        // Configuration conditionnelle des colonnes avec largeurs ajustées pour remplir la largeur A4 (9026 dxa total)
                         string[] headers;
                         string[] widths;
                         if (isInternational)
                         {
                             headers = new[] { "Date", "Transport", "Petit Déjeuner", "Déjeuner", "Dîner", "Hébergement", "Communication", "Visa sur place", "Frais médicaux", "Taxes", "Montant Total" };
-                            // Widths summing to 9026 dxa
                             widths = new[] { "1266", "766", "766", "766", "766", "766", "766", "766", "766", "766", "866" };
                         }
                         else
                         {
                             headers = new[] { "Date", "Transport", "Petit Déjeuner", "Déjeuner", "Dîner", "Hébergement", "Montant Total" };
-                            // Adjusted widths for national to sum to 9029 dxa (close to 9026)
                             widths = new[] { "1547", "1147", "1147", "1147", "1147", "1147", "1747" };
                         }
                         // Ligne d'en-tête
@@ -262,13 +254,11 @@ namespace MyApp.Api.Services.mission
                         for (int i = 0; i < headers.Length; i++)
                         {
                             var headerCell = new TableCell(new Paragraph(new Run(new Text(headers[i]))));
-                            ApplyCenturyGothicFont(headerCell.Descendants<Run>().First());
-                            // Bold for headers
+                            ApplyArialFont(headerCell.Descendants<Run>().First());
                             var headerRun = headerCell.Descendants<Run>().First();
                             headerRun.RunProperties ??= new RunProperties();
                             headerRun.RunProperties.Append(new Bold());
                             var cellProperties = new TableCellProperties(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = widths[i] });
-                            // Ajouter des bordures solides à chaque cellule
                             var borders = new TableCellBorders(
                                 new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
                                 new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
@@ -278,14 +268,12 @@ namespace MyApp.Api.Services.mission
                                 new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
                             );
                             cellProperties.Append(borders);
-                            // Center align for headers
                             var headerParagraph = headerCell.Descendants<Paragraph>().First();
                             headerParagraph.ParagraphProperties ??= new ParagraphProperties();
                             headerParagraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Center });
                             headerCell.Append(cellProperties);
                             headerRow.Append(headerCell);
                         }
-                        // Ajouter les propriétés pour répéter l'en-tête sur les nouvelles pages
                         var headerRowProperties = new TableRowProperties(new TableHeader());
                         headerRow.PrependChild(headerRowProperties);
                         table.Append(headerRow);
@@ -298,16 +286,16 @@ namespace MyApp.Api.Services.mission
                                 var dailyTotal = comp.TransportAmount + comp.BreakfastAmount + comp.LunchAmount + comp.DinnerAmount + comp.AccommodationAmount + comp.TaxesAmount;
                                 values = new[] {
                                     comp.PaymentDate?.ToString("dd/MM/yyyy") ?? "",
-                                    $"{comp.TransportAmount:F2}",
-                                    $"{comp.BreakfastAmount:F2}",
-                                    $"{comp.LunchAmount:F2}",
-                                    $"{comp.DinnerAmount:F2}",
-                                    $"{comp.AccommodationAmount:F2}",
-                                    "0.00",
-                                    "0.00",
-                                    "0.00",
-                                    $"{comp.TaxesAmount:F2}",
-                                    $"{dailyTotal:F2}"
+                                    comp.TransportAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                    comp.BreakfastAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                    comp.LunchAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                    comp.DinnerAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                    comp.AccommodationAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                    "0,00",
+                                    "0,00",
+                                    "0,00",
+                                    comp.TaxesAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                    dailyTotal.ToString("N2", new System.Globalization.CultureInfo("fr-FR"))
                                 };
                             }
                             else
@@ -315,21 +303,20 @@ namespace MyApp.Api.Services.mission
                                 var totalRowAmount = comp.TransportAmount + comp.BreakfastAmount + comp.LunchAmount + comp.DinnerAmount + comp.AccommodationAmount;
                                 values = new[] {
                                     comp.PaymentDate?.ToString("dd/MM/yyyy") ?? "",
-                                    $"{comp.TransportAmount:F2}",
-                                    $"{comp.BreakfastAmount:F2}",
-                                    $"{comp.LunchAmount:F2}",
-                                    $"{comp.DinnerAmount:F2}",
-                                    $"{comp.AccommodationAmount:F2}",
-                                    $"{totalRowAmount:F2}"
+                                    comp.TransportAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                    comp.BreakfastAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                    comp.LunchAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                    comp.DinnerAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                    comp.AccommodationAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                    totalRowAmount.ToString("N2", new System.Globalization.CultureInfo("fr-FR"))
                                 };
                             }
                             var dataRow = new TableRow();
                             for (int i = 0; i < values.Length; i++)
                             {
                                 var dataCell = new TableCell(new Paragraph(new Run(new Text(values[i]))));
-                                ApplyCenturyGothicFont(dataCell.Descendants<Run>().First());
+                                ApplyArialFont(dataCell.Descendants<Run>().First());
                                 var cellProperties = new TableCellProperties(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = widths[i] });
-                                // Ajouter des bordures solides à chaque cellule
                                 var borders = new TableCellBorders(
                                     new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
                                     new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
@@ -339,12 +326,15 @@ namespace MyApp.Api.Services.mission
                                     new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
                                 );
                                 cellProperties.Append(borders);
-                                // Alignement à droite pour les colonnes de montants (à partir de l'index 1, sauf Date)
+                                var paragraph = dataCell.Descendants<Paragraph>().First();
+                                paragraph.ParagraphProperties ??= new ParagraphProperties();
                                 if (i > 0)
                                 {
-                                    var paragraph = dataCell.Descendants<Paragraph>().First();
-                                    paragraph.ParagraphProperties ??= new ParagraphProperties();
                                     paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Right });
+                                }
+                                else
+                                {
+                                    paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Left });
                                 }
                                 dataCell.Append(cellProperties);
                                 dataRow.Append(dataCell);
@@ -359,25 +349,24 @@ namespace MyApp.Api.Services.mission
                             var totalMedicaux = dto.Compensations.Sum(c => c.MedicalExpensesAmount);
                             var oneTimeTotal = totalCommunication + totalVisa + totalMedicaux;
                             var oneTimeValues = new[] {
-                                "", // Date vide
-                                "", // Transport vide
-                                "", // Petit Déjeuner vide
-                                "", // Déjeuner vide
-                                "", // Dinner vide
-                                "", // Hébergement vide
-                                $"{totalCommunication:F2}",
-                                $"{totalVisa:F2}",
-                                $"{totalMedicaux:F2}",
-                                "", // Taxes vide
-                                $"{oneTimeTotal:F2}"
+                                "",
+                                "",
+                                "",
+                                "",
+                                "",
+                                "",
+                                totalCommunication.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                totalVisa.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                totalMedicaux.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                "",
+                                oneTimeTotal.ToString("N2", new System.Globalization.CultureInfo("fr-FR"))
                             };
                             var oneTimeRow = new TableRow();
                             for (int i = 0; i < oneTimeValues.Length; i++)
                             {
                                 var oneTimeCell = new TableCell(new Paragraph(new Run(new Text(oneTimeValues[i]))));
-                                ApplyCenturyGothicFont(oneTimeCell.Descendants<Run>().First());
+                                ApplyArialFont(oneTimeCell.Descendants<Run>().First());
                                 var cellProperties = new TableCellProperties(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = widths[i] });
-                                // Ajouter des bordures solides à chaque cellule
                                 var borders = new TableCellBorders(
                                     new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
                                     new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
@@ -387,15 +376,10 @@ namespace MyApp.Api.Services.mission
                                     new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
                                 );
                                 cellProperties.Append(borders);
-                                // Alignement à droite pour les colonnes de montants (à partir de l'index 1)
-                                if (i > 0)
-                                {
-                                    var paragraph = oneTimeCell.Descendants<Paragraph>().First();
-                                    paragraph.ParagraphProperties ??= new ParagraphProperties();
-                                    paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Right });
-                                }
+                                var paragraph = oneTimeCell.Descendants<Paragraph>().First();
+                                paragraph.ParagraphProperties ??= new ParagraphProperties();
+                                paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Right });
                                 oneTimeCell.Append(cellProperties);
-                                // Gras pour toute la ligne des frais uniques
                                 var run = oneTimeCell.Descendants<Run>().First();
                                 run.RunProperties ??= new RunProperties();
                                 run.RunProperties.Append(new Bold());
@@ -419,15 +403,15 @@ namespace MyApp.Api.Services.mission
                             grandTotal += totalCommunication + totalVisa + totalMedicaux + totalTaxes;
                             var totalValues = new[] {
                                 "Total",
-                                "", "", "", "", "", "", "", "", "", $"{grandTotal:F2}"
+                                "", "", "", "", "", "", "", "", "", 
+                                grandTotal.ToString("N2", new System.Globalization.CultureInfo("fr-FR"))
                             };
                             var totalRow = new TableRow();
                             for (int i = 0; i < totalValues.Length; i++)
                             {
                                 var totalCell = new TableCell(new Paragraph(new Run(new Text(totalValues[i]))));
-                                ApplyCenturyGothicFont(totalCell.Descendants<Run>().First());
+                                ApplyArialFont(totalCell.Descendants<Run>().First());
                                 var cellProperties = new TableCellProperties(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = widths[i] });
-                                // Ajouter des bordures solides à chaque cellule
                                 var borders = new TableCellBorders(
                                     new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
                                     new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
@@ -437,17 +421,12 @@ namespace MyApp.Api.Services.mission
                                     new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
                                 );
                                 cellProperties.Append(borders);
-                                // Alignement à droite pour les colonnes de montants (à partir de l'index 1)
-                                if (i > 0)
-                                {
-                                    var paragraph = totalCell.Descendants<Paragraph>().First();
-                                    paragraph.ParagraphProperties ??= new ParagraphProperties();
-                                    paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Right });
-                                }
+                                var paragraph = totalCell.Descendants<Paragraph>().First();
+                                paragraph.ParagraphProperties ??= new ParagraphProperties();
+                                paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Right });
                                 totalCell.Append(cellProperties);
                                 if (i == 0 || i == totalValues.Length - 1)
                                 {
-                                    // Bold for Total label and grand total
                                     var run = totalCell.Descendants<Run>().First();
                                     run.RunProperties ??= new RunProperties();
                                     run.RunProperties.Append(new Bold());
@@ -460,20 +439,19 @@ namespace MyApp.Api.Services.mission
                         {
                             var totalValues = new[] {
                                 "Total",
-                                $"{totalTransport:F2}",
-                                $"{totalPetitDej:F2}",
-                                $"{totalDejeuner:F2}",
-                                $"{totalDiner:F2}",
-                                $"{totalHebergement:F2}",
-                                $"{grandTotal:F2}"
+                                totalTransport.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                totalPetitDej.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                totalDejeuner.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                totalDiner.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                totalHebergement.ToString("N2", new System.Globalization.CultureInfo("fr-FR")),
+                                grandTotal.ToString("N2", new System.Globalization.CultureInfo("fr-FR"))
                             };
                             var totalRow = new TableRow();
                             for (int i = 0; i < totalValues.Length; i++)
                             {
                                 var totalCell = new TableCell(new Paragraph(new Run(new Text(totalValues[i]))));
-                                ApplyCenturyGothicFont(totalCell.Descendants<Run>().First());
+                                ApplyArialFont(totalCell.Descendants<Run>().First());
                                 var cellProperties = new TableCellProperties(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = widths[i] });
-                                // Ajouter des bordures solides à chaque cellule
                                 var borders = new TableCellBorders(
                                     new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
                                     new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" },
@@ -483,17 +461,12 @@ namespace MyApp.Api.Services.mission
                                     new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6, Color = "000000" }
                                 );
                                 cellProperties.Append(borders);
-                                // Alignement à droite pour les colonnes de montants (à partir de l'index 1)
-                                if (i > 0)
-                                {
-                                    var paragraph = totalCell.Descendants<Paragraph>().First();
-                                    paragraph.ParagraphProperties ??= new ParagraphProperties();
-                                    paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Right });
-                                }
+                                var paragraph = totalCell.Descendants<Paragraph>().First();
+                                paragraph.ParagraphProperties ??= new ParagraphProperties();
+                                paragraph.ParagraphProperties.Append(new Justification() { Val = JustificationValues.Right });
                                 totalCell.Append(cellProperties);
                                 if (i == 0 || i == totalValues.Length - 1)
                                 {
-                                    // Bold for Total label and grand total
                                     var run = totalCell.Descendants<Run>().First();
                                     run.RunProperties ??= new RunProperties();
                                     run.RunProperties.Append(new Bold());
@@ -502,7 +475,6 @@ namespace MyApp.Api.Services.mission
                             }
                             table.Append(totalRow);
                         }
-                        // Insérer le tableau après le paragraphe cible
                         targetParagraph.InsertAfterSelf(table);
                     }
                 }
@@ -575,7 +547,8 @@ namespace MyApp.Api.Services.mission
             {
                 throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}, MissionId: {missionId}");
             }
-            string templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\File\OM.docx"));
+            string templatePath = TemplatePathHelper.GetTemplatePath("OM.docx");
+            
             if (!File.Exists(templatePath))
             {
                 throw new FileNotFoundException("Le fichier modèle n'existe pas.", templatePath);
@@ -687,7 +660,7 @@ namespace MyApp.Api.Services.mission
                 throw new InvalidOperationException($"Mission assignation not found for EmployeeId: {employeeId}");
             }
  
-            string templatePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\File\ATD.docx"));
+            string templatePath = TemplatePathHelper.GetTemplatePath("ATD.docx");
             if (!File.Exists(templatePath))
             {
                 throw new FileNotFoundException("Le fichier modèle n'existe pas.", templatePath);
