@@ -23,6 +23,10 @@ var builder = WebApplication.CreateBuilder(args);
 //               .AllowAnyHeader();
 //     });
 // });
+if (OperatingSystem.IsLinux())
+{
+    AppContext.SetSwitch("System.Drawing.EnableUnixSupport", true);
+}
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>

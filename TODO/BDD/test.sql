@@ -386,36 +386,6 @@ INSERT INTO geo_zones (zone_id, name) VALUES
 ('19', 'Pacifique Sud');
 
 
--- INSERT INTO lieu (lieu_id, nom, ville, code_postal, pays, zone_id, created_at, updated_at) VALUES
--- ('1', 'Analamanga', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('2', 'Bongolava', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('3', 'Itasy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('4', 'Vakinankaratra', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('5', 'Diana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('6', 'Sava', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('7', 'Amoron''i Mania', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('8', 'Atsimo-Atsinanana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('9', 'Haute Matsiatra', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('10', 'Ihorombe', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('11', 'Fitovinany', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('12', 'Vatovavy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('13', 'Betsiboka', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('14', 'Boeny', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('15', 'Melaky', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('16', 'Sofia', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('17', 'Alaotra-Mangoro', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('18', 'Analanjirofo', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('19', 'Atsinanana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('20', 'Androy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('21', 'Anosy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('22', 'Atsimo-Andrefana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('23', 'Menabe', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
--- ('24', 'Nosy Be', '', '', 'Madagascar', '1', GETDATE(), GETDATE());
-
--- ============================
--- MENU DYNAMIQUE
--- ============================
-
 -- Insertion des modules (ajout du nouveau module 'tableau_de_bord' au-dessus de 'mission')
 INSERT INTO module (module_id, module_name, description, created_at, updated_at) VALUES
 ('user', 'Utilisateurs', 'Gestion des utilisateurs et rôles', GETDATE(), GETDATE()),
@@ -472,6 +442,9 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
 ('h_hab_3', 'menu_hab', 'menu_hab_3', GETDATE(), GETDATE());
+
+
+
 
 
 INSERT INTO expense_type (expense_type_id, type, time_start, time_end, created_at, updated_at)
