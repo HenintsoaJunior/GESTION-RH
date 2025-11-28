@@ -1078,40 +1078,62 @@ const DetailsMission: React.FC = () => {
   const firstAssignation = assignations[0];
 
   const tabs = useMemo((): Tab[] => {
-    if (!firstAssignation) return [];
+    if (!firstAssignation || !mission) return [];
+
     const assignmentType = firstAssignation.type;
     const employeeId = firstAssignation.employee.employeeId;
-    const shouldShowRendu = assignmentType === "Indemnité" || assignmentType === "Note de frais";
-    const tabList: Tab[] = [{
-      label: "Détails",
-      onClick: () => navigate(fullBasePath),
-      path: "",
-    }];
+    const assignationId = firstAssignation.assignationId;
+
+    const isMissionComplete = mission.status?.toLowerCase() === "complete";
+
+    const shouldShowRendu = 
+      (assignmentType === "Indemnité" || assignmentType === "Note de frais") 
+      && isMissionComplete; 
+
+    const tabList: Tab[] = [
+      {
+        label: "Détails",
+        onClick: () => navigate(fullBasePath),
+        path: "",
+      }
+    ];
+
     if (isMissionFullyValidated) {
       if (assignmentType === "Indemnité") {
         tabList.push({
           label: "Indemnités",
-          onClick: () => handleNavigateToPayment(employeeId, firstAssignation.assignationId),
-          path: `payment/${firstAssignation.assignationId}`,
+          onClick: () => handleNavigateToPayment(employeeId, assignationId),
+          path: `payment/${assignationId}`,
         });
       }
       if (assignmentType === "Note de frais") {
         tabList.push({
           label: "Note de Frais",
-          onClick: () => handleNavigateToNote(firstAssignation.assignationId),
-          path: `note/${firstAssignation.assignationId}`,
+          onClick: () => handleNavigateToNote(assignationId),
+          path: `note/${assignationId}`,
         });
       }
+
       if (shouldShowRendu) {
         tabList.push({
           label: "Rendu",
-          onClick: () => handleNavigateToReport(firstAssignation.assignationId, employeeId),
-          path: `report/${firstAssignation.assignationId}`,
+          onClick: () => handleNavigateToReport(assignationId, employeeId),
+          path: `report/${assignationId}`,
         });
       }
     }
+
     return tabList;
-  }, [firstAssignation, handleNavigateToPayment, handleNavigateToNote, handleNavigateToReport, navigate, fullBasePath, isMissionFullyValidated]);
+  }, [
+    firstAssignation,
+    mission,
+    handleNavigateToPayment,
+    handleNavigateToNote,
+    handleNavigateToReport,
+    navigate,
+    fullBasePath,
+    isMissionFullyValidated
+  ]);
 
   // Fonction pour rendre les onglets sans les boutons PDF
   const renderTabsOnly = () => (

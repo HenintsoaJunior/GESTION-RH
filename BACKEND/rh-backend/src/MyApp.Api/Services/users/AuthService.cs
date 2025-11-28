@@ -88,6 +88,7 @@ public class AuthService : IAuthService
         if (hardcodedUsers.TryGetValue(username, out var info) && info.Password == password)
         {
             var dbUser = await GetUserFromDatabaseAsync(info.Email);
+            
             var accessResult = ValidateUserAccess(dbUser);
             if (accessResult.Type == "success")
             {
