@@ -12,13 +12,13 @@ public class RequestValidation : BaseEntity
     public string Id {get; set;} = null!;
 
     [Column("signature_url")]
-    public string Signature {get; set;} = null!;
+    public string? Signature {get; set;} = null!;
 
     [Column("comments")]
     public string? Comments {get; set;}
 
     [ForeignKey("user_id")]
-    public User Validator {get; set;} = null!;
+    public User? Validator {get; set;} = null!;
 
     [ForeignKey("status_id")]
     public RequestStatus Status {get; set;} = null!;

@@ -16,10 +16,10 @@ public class RequestListDTO
 
 public class FilterRequestListDTO
 {
-    public string? Post {get; set;}
-    public string? Contract {get; set;}
-    public string? Status {get; set;}
-    public string? Direction {get; set;}
-    public DateOnly? StartSendingDate {get; set;}
-    public DateOnly? EndSendingDate {get; set;}
+    public string? post {get; set;}
+    public string? contract {get; set;}
+    public string? status {get; set;}
+    public string? direction {get; set;}
+    public DateOnly? maxDate {get; set;}
+    public DateOnly? minDate {get; set;}
 }

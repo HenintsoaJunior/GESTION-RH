@@ -22,3 +22,17 @@ INSERT INTO contract_types (contract_type_id, code, label) VALUES
 ('CTR_002', 'CDI', 'Contrat à Durée Indéterminée'),
 ('CTR_003', 'Stage', 'Stage'),
 ('CTR_004', 'VIE', 'Volontariat International en Entreprise');
+
+
+-- STATUTS DE DEMANDE
+INSERT INTO requests_status (status_id, status_name) VALUES
+('STT/DMD-001', 'Brouillon'),
+('STT/DMD-002', 'En cours'),
+('STT/DMD-003', 'Validée'),
+('STT/DMD-004', 'Refusée');
+
+-- STATUTS DE FICHE
+INSERT INTO job_descriptions_status (status_id, status_name) VALUES
+('STT/FCP-001', 'Brouillon'),
+('STT/FCP-002', 'En cours'),
+('STT/FCP-003', 'Publiée');
