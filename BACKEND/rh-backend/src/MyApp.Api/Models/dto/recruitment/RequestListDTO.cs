@@ -6,7 +6,7 @@ public class RequestListDTO
 {
     public string Id  {get; set;} = null!;
     public string Post {get; set;} = null!;
-    public int Effective {get; set;}
+    public short Effective {get; set;}
     public string Contract {get; set;} = null!;
     public DateOnly WishedDate {get; set;}
     public string Status {get; set;} = null!;

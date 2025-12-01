@@ -8,7 +8,7 @@ public class RequestFormDTO
     public string Post {get; set;} = null!;
 
     [Required(ErrorMessage = "Effectif obligatoire")]
-    public int Effective {get; set;}
+    public short Effective {get; set;}
 
     [Required(ErrorMessage = "Remplacement obligatoire")]
     public bool IsReplacement {get; set;}

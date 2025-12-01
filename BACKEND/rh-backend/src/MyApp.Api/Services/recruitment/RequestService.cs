@@ -1,3 +1,4 @@
+using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Repositories.recruitment;
 

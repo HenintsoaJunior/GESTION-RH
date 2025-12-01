@@ -22,9 +22,13 @@ public class RequestRepository : IRequestRepository
 {
     private readonly AppDbContext _dbCtx;
     private readonly ISequenceGenerator _generator;
+    private readonly ILogger<RequestRepository> _logger;
 
-    public RequestRepository(AppDbContext ctx, ISequenceGenerator sqc) {
+    public RequestRepository(AppDbContext ctx, ISequenceGenerator sqc
+    , ILogger<RequestRepository> log
+    ) {
         _dbCtx = ctx; _generator = sqc;
+        _logger = log;
     }
 
     public async Task<IDbContextTransaction> BeginTransactionAsync() {
@@ -101,7 +105,7 @@ public class RequestRepository : IRequestRepository
 
 
     public async Task AddRequest(RequestFormDTO data) {
-        await this.BeginTransactionAsync();
+        // await this.BeginTransactionAsync();
         try {
             // Charger les entités liées (possible null)
             var replacementReason = data.ReplacementReasonId != null
@@ -118,8 +122,7 @@ public class RequestRepository : IRequestRepository
             var applicant = await _dbCtx.Users.FindAsync(data.ApplicantUserId)
                 ?? throw new Exception("Utilisateur demandeur introuvable");
 
-            var defaultStatus = await _dbCtx.RequestStatus.AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == "STT_DMD-001")
+            var defaultStatus = await _dbCtx.RequestStatuses.FindAsync("STD_001")
                 ?? throw new Exception("Statut par défaut introuvable");
 
             // Construire la demande
@@ -142,21 +145,23 @@ public class RequestRepository : IRequestRepository
                 ApplicantUser = applicant,
                 IsDeleted = false
             };
+            await _dbCtx.RecruitmentRequests.AddAsync(request);
+            await _dbCtx.SaveChangesAsync();
 
             var reqValidation = new RequestValidation
             {
                 Id = _generator.GenerateSequence("seq_request_validation_id", "DMD/REC/VAL"),
                 Status = defaultStatus,
+                Validator = applicant,
                 Request = request
             };
-
-            await _dbCtx.RecruitmentRequests.AddAsync(request);
             await _dbCtx.RequestValidations.AddAsync(reqValidation);
+            await _dbCtx.SaveChangesAsync();
 
-            await this.CommitTransactionAsync();
+            // await this.CommitTransactionAsync();
         }
         catch {
-            await this.RollbackTransactionAsync();
+            // await this.RollbackTransactionAsync();
             throw;
         }
     }

@@ -12,7 +12,7 @@ public class RequestValidation : BaseEntity
     public string Id {get; set;} = null!;
 
     [Column("signature_url")]
-    public string? Signature {get; set;} = null!;
+    public byte[] Signature {get; set;} = null!;
 
     [Column("comments")]
     public string? Comments {get; set;}

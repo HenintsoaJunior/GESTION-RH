@@ -16,7 +16,7 @@ public class RecruitmentRequest : BaseEntity
     public string Post {get; set;} = null!;
 
     [Column("effective")]
-    public int Effective {get; set;}
+    public short Effective {get; set;}
 
     [Column("month_duration")]
     public int? MonthDuration {get; set;}

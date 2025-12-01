@@ -26,13 +26,13 @@ INSERT INTO contract_types (contract_type_id, code, label) VALUES
 
 -- STATUTS DE DEMANDE
 INSERT INTO requests_status (status_id, status_name) VALUES
-('STT/DMD-001', 'Brouillon'),
-('STT/DMD-002', 'En cours'),
-('STT/DMD-003', 'Validée'),
-('STT/DMD-004', 'Refusée');
+('STD_001', 'Brouillon'),
+('STD_002', 'En cours'),
+('STD_003', 'Validée'),
+('STD_004', 'Refusée');
 
 -- STATUTS DE FICHE
 INSERT INTO job_descriptions_status (status_id, status_name) VALUES
-('STT/FCP-001', 'Brouillon'),
-('STT/FCP-002', 'En cours'),
-('STT/FCP-003', 'Publiée');
+('STF_001', 'Brouillon'),
+('STF_002', 'En cours'),
+('STF_003', 'Publiée');
