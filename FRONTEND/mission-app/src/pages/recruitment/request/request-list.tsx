@@ -10,7 +10,7 @@ const RequestList : React.FC = () => {
 }
 
 const ProtectedRequestList : React.FC = () => (
-    <ProtectedRoute requiredHabilitation="Voir la page des missions">
+    <ProtectedRoute requiredHabilitation="Lister demandes recrutement">
         <RequestList />
     </ProtectedRoute>
 );

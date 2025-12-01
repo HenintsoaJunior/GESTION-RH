@@ -10,9 +10,6 @@ namespace MyApp.Api.Repositories.recruitment;
 
 public interface IRequestRepository
 {
-    Task<IDbContextTransaction> BeginTransactionAsync();
-    Task CommitTransactionAsync();
-    Task RollbackTransactionAsync();
     Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO dto, int page, int pageSize);
     Task AddRequest(RequestFormDTO data);
 }
@@ -29,18 +26,6 @@ public class RequestRepository : IRequestRepository
     ) {
         _dbCtx = ctx; _generator = sqc;
         _logger = log;
-    }
-
-    public async Task<IDbContextTransaction> BeginTransactionAsync() {
-        return await _dbCtx.Database.BeginTransactionAsync();
-    }
-
-    public async Task CommitTransactionAsync() {
-        await _dbCtx.Database.CommitTransactionAsync();
-    }
-
-    public async Task RollbackTransactionAsync() {
-        await _dbCtx.Database.RollbackTransactionAsync();
     }
 
     public async Task<(List<RequestListDTO>, int)> SearchRequests(
@@ -105,9 +90,9 @@ public class RequestRepository : IRequestRepository
 
 
     public async Task AddRequest(RequestFormDTO data) {
-        // await this.BeginTransactionAsync();
+        using var transaction = await _dbCtx.Database.BeginTransactionAsync();
+        
         try {
-            // Charger les entités liées (possible null)
             var replacementReason = data.ReplacementReasonId != null
                 ? await _dbCtx.ReplacementReasons.FindAsync(data.ReplacementReasonId)
                 : null;
@@ -125,7 +110,7 @@ public class RequestRepository : IRequestRepository
             var defaultStatus = await _dbCtx.RequestStatuses.FindAsync("STD_001")
                 ?? throw new Exception("Statut par défaut introuvable");
 
-            // Construire la demande
+        // Construire la demande
             var request = new RecruitmentRequest
             {
                 Id = _generator.GenerateSequence("seq_request_id", "DMD/REC"),
@@ -145,8 +130,6 @@ public class RequestRepository : IRequestRepository
                 ApplicantUser = applicant,
                 IsDeleted = false
             };
-            await _dbCtx.RecruitmentRequests.AddAsync(request);
-            await _dbCtx.SaveChangesAsync();
 
             var reqValidation = new RequestValidation
             {
@@ -155,13 +138,14 @@ public class RequestRepository : IRequestRepository
                 Validator = applicant,
                 Request = request
             };
+            await _dbCtx.RecruitmentRequests.AddAsync(request);
             await _dbCtx.RequestValidations.AddAsync(reqValidation);
-            await _dbCtx.SaveChangesAsync();
 
-            // await this.CommitTransactionAsync();
+            await _dbCtx.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
         catch {
-            // await this.RollbackTransactionAsync();
+            await transaction.RollbackAsync();
             throw;
         }
     }

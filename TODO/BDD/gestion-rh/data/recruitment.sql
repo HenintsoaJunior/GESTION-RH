@@ -36,3 +36,14 @@ INSERT INTO job_descriptions_status (status_id, status_name) VALUES
 ('STF_001', 'Brouillon'),
 ('STF_002', 'En cours'),
 ('STF_003', 'Publiée');
+
+
+-- HABILITATIONS ET GROUPES
+INSERT INTO habilitation_groups (group_id, label) VALUES
+('HABG_004', 'Gestion des Recrutements');
+
+INSERT INTO habilitations (habilitation_id, group_id, label, description) VALUES
+('HAB_031', 'HABG_004', 'Lister demandes recrutement', 'Permet de voir la liste des demandes de recrutement'),
+('HAB_032', 'HABG_004', 'Créer demande recrutement', 'Permet de cré demande de recrutement'),
+('HAB_033', 'HABG_004', 'Annuler demande recrutement', 'Permet d’annuler une demande de recrutement');
+
