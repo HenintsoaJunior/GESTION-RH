@@ -16,8 +16,7 @@ public class RequestFormDTO
     public string? ReplacementReasonId {get; set;}
     public string? LastTitularId {get; set;}
 
-    [Required(ErrorMessage = "Type du contrat obligatoire")]
-    public string ContractId {get; set;} = null!;
+    public string? ContractId {get; set;} = null!;
     public string? ContractPrecision {get; set;}
     public int? MonthDuration {get; set;}
 

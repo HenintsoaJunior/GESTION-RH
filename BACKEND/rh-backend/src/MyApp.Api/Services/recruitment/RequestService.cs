@@ -8,6 +8,7 @@ public interface IRequestService
 {
     Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO filters, int page, int pageSize);
     Task AddRequest(RequestFormDTO data);
+    Task<List<RequestStatus>> GetAllStatuses();
 }
 
 public class RequestService(
@@ -36,6 +37,18 @@ public class RequestService(
         }
         catch(Exception ex) {
             _logger.LogError(ex, "Erreur lors de l'insertion de la demande");
+            throw;
+        }
+    }
+
+
+    public async Task<List<RequestStatus>> GetAllStatuses() {
+        try {
+            _logger.LogInformation("Recherche des statuts de demande");
+            return await _repo.GetAllStatuses();
+        }
+        catch(Exception ex) {
+            _logger.LogError(ex, "Erreur lors de la recherche des statuts");
             throw;
         }
     }

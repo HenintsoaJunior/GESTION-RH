@@ -55,7 +55,7 @@ CREATE TABLE recruitment_requests(
    updated_at DATETIME2,
    applicant_user VARCHAR(250) NOT NULL,
    replacement_reason_id VARCHAR(50),
-   contract_type_id VARCHAR(50) NOT NULL,
+   contract_type_id VARCHAR(50),
    last_titular_user VARCHAR(250),
    PRIMARY KEY(request_id),
    FOREIGN KEY(applicant_user) REFERENCES users(user_id),

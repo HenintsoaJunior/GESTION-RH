@@ -12,6 +12,7 @@ public interface IRequestRepository
 {
     Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO dto, int page, int pageSize);
     Task AddRequest(RequestFormDTO data);
+    Task<List<RequestStatus>> GetAllStatuses();
 }
 
 
@@ -43,7 +44,7 @@ public class RequestRepository : IRequestRepository
 
     // --- Filtre: Contract ---
         if(!string.IsNullOrWhiteSpace(dto.contract))
-            query = query.Where(r => r.Request.Contract.ContractTypeId == dto.contract);
+            query = query.Where(r => r.Request.Contract.Code == dto.contract);
 
     // --- Filtre: Status ---
         if(!string.IsNullOrWhiteSpace(dto.status))
@@ -56,14 +57,14 @@ public class RequestRepository : IRequestRepository
             );
 
     // --- Filtre: Date début et Date fin ---
-        if(dto.maxDate.HasValue)
-            query = query.Where(r => 
-                DateOnly.FromDateTime(r.Request.CreatedAt) >= dto.maxDate.Value
-            );
-
         if(dto.minDate.HasValue)
             query = query.Where(r => 
-                DateOnly.FromDateTime(r.Request.CreatedAt) <= dto.minDate.Value
+                DateOnly.FromDateTime(r.Request.CreatedAt) >= dto.minDate.Value
+            );
+
+        if(dto.maxDate.HasValue)
+            query = query.Where(r => 
+                DateOnly.FromDateTime(r.Request.CreatedAt) <= dto.maxDate.Value
             );
 
     // --- Compter avant la pagination ---
@@ -148,5 +149,11 @@ public class RequestRepository : IRequestRepository
             await transaction.RollbackAsync();
             throw;
         }
+    }
+
+
+    public async Task<List<RequestStatus>> GetAllStatuses() {
+        return await _dbCtx.RequestStatuses.AsNoTracking()
+            .ToListAsync();
     }
 }

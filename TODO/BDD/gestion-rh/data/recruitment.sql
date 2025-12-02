@@ -16,12 +16,12 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h_rec_stats', 'menu3', 'menu3_3', GETDATE(), GETDATE());
 
 
--- CONTRATS
-INSERT INTO contract_types (contract_type_id, code, label) VALUES
-('CTR_001', 'CDD', 'Contrat à Durée Déterminée'),
-('CTR_002', 'CDI', 'Contrat à Durée Indéterminée'),
-('CTR_003', 'Stage', 'Stage'),
-('CTR_004', 'VIE', 'Volontariat International en Entreprise');
+-- -- CONTRATS
+-- INSERT INTO contract_types (contract_type_id, code, label) VALUES
+-- ('CTR_001', 'CDD', 'Contrat à Durée Déterminée'),
+-- ('CTR_002', 'CDI', 'Contrat à Durée Indéterminée'),
+-- ('CTR_003', 'Stage', 'Stage'),
+-- ('CTR_004', 'VIE', 'Volontariat International en Entreprise');
 
 
 -- STATUTS DE DEMANDE

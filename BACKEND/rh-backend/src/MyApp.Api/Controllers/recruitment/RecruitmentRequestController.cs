@@ -52,4 +52,24 @@ public class RecruitmentRequestController(IRequestService _service)
             return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
         }
     }
+
+
+    [HttpGet("statuses")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAllStatuses() {
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try {
+            var statuses = await _service.GetAllStatuses();
+            return Ok(new { data = statuses, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
 }
