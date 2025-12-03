@@ -36,6 +36,7 @@ public class RequestRepository : IRequestRepository
             .Include(r => r.Status).Include(r => r.Request)
                 .ThenInclude(req => req.ApplicantUser)
             .Include(r => r.Request.Contract)
+            .Where(r => r.Request.IsDeleted==false)
             .AsQueryable();
 
     // --- Filtre: Post ---
@@ -48,7 +49,7 @@ public class RequestRepository : IRequestRepository
 
     // --- Filtre: Status ---
         if(!string.IsNullOrWhiteSpace(dto.status))
-            query = query.Where(r => r.Status.Id == dto.status);
+            query = query.Where(r => r.Status.Name == dto.status);
 
     // --- Filtre: Direction ---
         if(!string.IsNullOrWhiteSpace(dto.direction))
@@ -155,5 +156,16 @@ public class RequestRepository : IRequestRepository
     public async Task<List<RequestStatus>> GetAllStatuses() {
         return await _dbCtx.RequestStatuses.AsNoTracking()
             .ToListAsync();
+    }
+
+
+    public async Task DeleteRequest(RecruitmentRequest req) {
+        if(req.IsDeleted==false) {
+            req.IsDeleted = true;
+            await _dbCtx.SaveChangesAsync();
+        }
+        else {
+           throw new Exception("Demande déjà supprimée."); 
+        }
     }
 }

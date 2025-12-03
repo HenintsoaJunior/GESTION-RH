@@ -23,6 +23,7 @@ namespace MyApp.Api.Services.employee
         Task<EmployeeStats> GetStatisticsAsync();
         Task<IEnumerable<Employee>> GetAllEmployeeSimpleAsync();
         Task<IEnumerable<Employee>> GetByMatriculeSimpleAsync(string[] matricules);
+        Task<Employee?> GetByMatricule(string matricule);
     }
 
     public class EmployeeService : IEmployeeService
@@ -239,6 +240,25 @@ namespace MyApp.Api.Services.employee
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la récupération des employés par matricules");
+                throw;
+            }
+        }
+
+        public async Task<Employee?> GetByMatricule(string matricule) {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(matricule))
+                {
+                    _logger.LogWarning("Tentative de récupération d'un employé avec une matricule null ou vide");
+                    return null;
+                }
+
+                _logger.LogInformation("Récupération de l'employé avec matricule: {EmployeeId}", matricule);
+                return await _repository.GetByMatricule(matricule);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de l'employé avec matricule: {EmployeeId}", matricule);
                 throw;
             }
         }

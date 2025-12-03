@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-    //  Plus, Edit, Trash2,
-     Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import {
   TableContainer,
   DataTable,
@@ -38,11 +36,11 @@ import { useGetAllDirections } from "@/api/direction/services";
 import ProtectedRoute from "@/components/protected-route";
 
 import Alert from "@/components/alert";
-// import Modal from "@/components/modal";
 import Pagination from "@/components/pagination";
 
 import type { ContractType } from "@/api/contract/services";
 import type { Direction } from "@/api/direction/services";
+import RecruitmentRequestForm from "./request-form";
 
 // Types
 interface FiltersState {
@@ -64,19 +62,14 @@ interface AlertState {
 
 // Composant
 const RequestList: React.FC = () => {
-    // const [selectedStatus, setSelectedStatus] = useState<StatusDTO | null>(null);
-    // const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
-    // const [requestToDelete, setRequestToDelete] = useState<string | null>(null);
+    const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
     const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
   
     const [filters, setFilters] = useState<FiltersState>({
         post: "",
         status: "",
-        // selectedStatus: null,
         direction: "",
-        // selectedDirection: null,
         contract: "",
-        // selectedContract: null,
         dateMin: "",
         dateMax: "",
     });
@@ -127,7 +120,7 @@ const RequestList: React.FC = () => {
         }),
         [appliedFilters]
     );
-    const { data: searchResponse, isLoading, error } = useSearchRequests(searchFilters, page, pageSize);
+    const { data: searchResponse, isLoading, error, refetch } = useSearchRequests(searchFilters, page, pageSize);
 
     const requests = useMemo(() => searchResponse?.list || [], [searchResponse]);
     const hasFilters = useMemo(
@@ -139,13 +132,13 @@ const RequestList: React.FC = () => {
         setTotalCount(searchResponse?.totalCount || 0);
     }, [searchResponse]);
 
-    // const handleFormSuccess = useCallback(
-    //     (message: string) => {
-    //         setIsFormOpen(false);
-    //         setAlert({ isOpen: true, type: "success", message });
-    //         refetch();
-    //     }, [refetch]
-    // );
+    const handleFormSuccess = useCallback(
+        (message: string) => {
+            setIsFormOpen(false);
+            setAlert({ isOpen: true, type: "success", message });
+            refetch();
+        }, [refetch]
+    );
 
     const handleFilterSubmit = useCallback(
         (e: React.FormEvent) => {
@@ -167,6 +160,10 @@ const RequestList: React.FC = () => {
         setFilters(reset);
         setAppliedFilters(reset);
         setPage(1);
+    }, []);
+
+    const handleOpenForm = useCallback(() => {
+        setIsFormOpen(true);
     }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,6 +203,14 @@ const RequestList: React.FC = () => {
             isOpen={alert.isOpen}
             onClose={() => setAlert({ ...alert, isOpen: false })}
         />
+
+        {isFormOpen && (
+            <RecruitmentRequestForm
+                isOpen={isFormOpen}
+                onClose={() => setIsFormOpen(false)}
+                onFormSuccess={handleFormSuccess}
+            />
+        )}
 
         {/* Filtres */}
         <FiltersContainer>
@@ -315,10 +320,10 @@ const RequestList: React.FC = () => {
         <TableContainer>
             <TableHeader>
                 <TableTitle>Liste des demandes de recrutement</TableTitle>
-                {/* <ButtonSearch onClick={handleAddClick}>
+                <ButtonSearch onClick={handleOpenForm}>
                     <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-                    Ajouter
-                </ButtonSearch> */}
+                    Faire une demande
+                </ButtonSearch>
             </TableHeader>
 
             <DataTable>
@@ -345,24 +350,24 @@ const RequestList: React.FC = () => {
                     requests.map((req) => (
                         <TableRow key={req.id}>
                             <TableCell>{req.id}</TableCell>
-                        <TableCell>{req.post}</TableCell>
-                        <TableCell>{req.effective}</TableCell>
-                        <TableCell>{req.contract || "N/A"}</TableCell>
-                        <TableCell>
-                            {req.wishedDate ? new Date(req.wishedDate).toLocaleDateString("fr-FR") : "N/A"}
-                        </TableCell>
-                        <TableCell>{req.status || "N/A"}</TableCell>
-                        <TableCell>
-                            {req.sendingDate ? new Date(req.sendingDate).toLocaleDateString("fr-FR") : "N/A"}
-                        </TableCell>
-                        <TableCell style={{ textAlign: "center" }}>
-                            {/* <EditButton onClick={() => handleEditClick(emp)}>
-                            <Edit size={16} />
-                            </EditButton>
-                            <CancelButton onClick={() => handleDeleteClick(emp.employeeId)}>
-                            <Trash2 size={16} />
-                            </CancelButton> */}
-                        </TableCell>
+                            <TableCell>{req.post}</TableCell>
+                            <TableCell>{req.effective}</TableCell>
+                            <TableCell>{req.contract || "N/A"}</TableCell>
+                            <TableCell>
+                                {req.wishedDate ? new Date(req.wishedDate).toLocaleDateString("fr-FR") : "N/A"}
+                            </TableCell>
+                            <TableCell>{req.status || "N/A"}</TableCell>
+                            <TableCell>
+                                {req.sendingDate ? new Date(req.sendingDate).toLocaleDateString("fr-FR") : "N/A"}
+                            </TableCell>
+                            <TableCell style={{ textAlign: "center" }}>
+                                {/* <EditButton onClick={() => handleEditClick(emp)}>
+                                <Edit size={16} />
+                                </EditButton>
+                                <CancelButton onClick={() => handleDeleteClick(emp.employeeId)}>
+                                <Trash2 size={16} />
+                                </CancelButton> */}
+                            </TableCell>
                         </TableRow>
                     ))
                     ) : (

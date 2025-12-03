@@ -548,3 +548,57 @@ export const useUserCollaboratorsMatricules = (userId: string | undefined) => {
     enabled: !!userId,
   });
 };
+
+export interface EmployeeInformations {
+  id: string;
+  matricule: string;
+  firstName: string;
+  lastName: string;
+  post: string;
+  service: string;
+  department: string;
+  direction: string;
+  superiorId?: string;
+  superiorName?: string;
+  superiorPost?: string;
+}
+
+export const useEmployeeInformations = () => {
+  const matricule = JSON.parse(localStorage.getItem("user") || "null")?.matricule;
+  const queryKey = [...USER_COLLABORATORS_MATRICULES_BASE_KEY, matricule] as const;
+
+  return useQuery<EmployeeInformations, Error>({
+    queryKey,
+    queryFn: async () => {
+      if (!matricule) {
+        throw new Error('matricule is required for fetching collaborators matricules');
+      }
+      try {
+        const userInfo = await api.get(`/api/Employee/matricule/${matricule}`);
+        const superiorInfo = await api.get(`/api/User/${userInfo.data.employeeId}/info`);
+
+        const employeeData: EmployeeInformations = {
+          id: userInfo.data.employeeId,
+          matricule: userInfo.data.employeeCode,
+          firstName: userInfo.data.firstName,
+          lastName: userInfo.data.lastName,
+          post: userInfo.data.jobTitle,
+          service: userInfo.data.service.serviceName,
+          department: userInfo.data.department.departmentName,
+          direction: userInfo.data.direction.directionName,
+          superiorId: superiorInfo.data[0].userId,
+          superiorName: superiorInfo.data[0].name,
+          superiorPost: superiorInfo.data[0].position
+        };
+
+        return employeeData;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          return error.response.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!matricule,
+  });
+};

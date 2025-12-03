@@ -214,10 +214,10 @@ public class UserController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult> GetUserInfo(string userId)
     {
-        if (!User.Identity?.IsAuthenticated ?? true)
-        {
-            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        }
+        // if (!User.Identity?.IsAuthenticated ?? true)
+        // {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
 
         try
         {

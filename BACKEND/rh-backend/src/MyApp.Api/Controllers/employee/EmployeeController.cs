@@ -352,5 +352,45 @@ namespace MyApp.Api.Controllers.employee
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
+
+
+        [HttpGet("matricule/{matricule}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetByMatricule(string matricule)
+        {
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            // {
+            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            // }
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(matricule))
+                {
+                    logger.LogWarning("Tentative de récupération d'un employé avec matricule null ou vide");
+                    return BadRequest(new { data = (object?)null, status = 400, message = "Le matricule de l'employé ne peut pas être null ou vide." });
+                }
+
+                logger.LogInformation("Récupération de l'employé avec la matricule: {matricule}", matricule);
+                var employee = await employeeService.GetByMatricule(matricule);
+                if (employee == null)
+                {
+                    logger.LogWarning("Employé non trouvé pour la matricule: {matricule}", matricule);
+                    return NotFound(new { data = (object?)null, status = 404, message = "Employé non trouvé." });
+                }
+
+                return Ok(new { data = employee, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération de l'employé avec la matricule: {matricule}", matricule);
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Erreur lors de la récupération de l'employé avec la matricule: {matricule}", matricule);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
     }
 }
