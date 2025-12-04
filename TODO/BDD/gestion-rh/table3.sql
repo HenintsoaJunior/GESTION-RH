@@ -51,17 +51,17 @@ CREATE TABLE recruitment_requests(
    replacement_date DATE,
    begining_date DATE NOT NULL,
    is_deleted BIT NOT NULL DEFAULT 0,
-   created_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   user_id VARCHAR(250) NOT NULL,
+   created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+   updated_at DATETIME2,
+   applicant_user VARCHAR(250) NOT NULL,
    replacement_reason_id VARCHAR(50),
    contract_type_id VARCHAR(50) NOT NULL,
-   user_id_1 VARCHAR(250) NOT NULL,
+   last_titular_user VARCHAR(250),
    PRIMARY KEY(request_id),
-   FOREIGN KEY(user_id) REFERENCES users(user_id),
+   FOREIGN KEY(applicant_user) REFERENCES users(user_id),
    FOREIGN KEY(replacement_reason_id) REFERENCES replacement_reasons(replacement_reason_id),
    FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id),
-   FOREIGN KEY(user_id_1) REFERENCES users(user_id)
+   FOREIGN KEY(last_titular_user) REFERENCES users(user_id)
 );
 
  
@@ -76,8 +76,9 @@ CREATE TABLE sites_requests(
  
 CREATE TABLE requests_validations(
    request_validation_id VARCHAR(50) NOT NULL,
-   created_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   signature_url VARCHAR(150)  NOT NULL,
+   created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+   updated_at DATETIME2,
+   signature_url VARBINARY(MAX),
    comments VARCHAR(max),
    user_id VARCHAR(250) NOT NULL,
    status_id VARCHAR(50) NOT NULL,
@@ -90,8 +91,8 @@ CREATE TABLE requests_validations(
  
 CREATE TABLE job_descriptions(
    job_description_id VARCHAR(50) NOT NULL,
-   created_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+   updated_at DATETIME2,
    mission VARCHAR(max) NOT NULL,
    request_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(job_description_id),
@@ -109,7 +110,8 @@ CREATE TABLE Attributions(
  
 CREATE TABLE jobs_validations(
    job_validation_id VARCHAR(50) NOT NULL,
-   created_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+   updated_at DATETIME2,
    user_id VARCHAR(250) NOT NULL,
    status_id VARCHAR(50) NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
@@ -162,7 +164,8 @@ CREATE TABLE candidatures(
    email_contact VARCHAR(50)  NOT NULL,
    cv_url VARCHAR(150)  NOT NULL,
    lm_url VARCHAR(150)  NOT NULL,
-   created_at DATETIME2 NOT NULL,
+   created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+   updated_at DATETIME2,
    job_description_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(candidature_id),
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
@@ -180,8 +183,9 @@ CREATE TABLE evaluations(
  
 CREATE TABLE tests(
    test_id VARCHAR(50) NOT NULL,
-   test_datetime DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   created_at DATETIME2 NOT NULL,
+   test_datetime DATETIME2 NOT NULL DEFAULT GETDATE(),
+   created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+   updated_at DATETIME2,
    is_passed BIT NOT NULL,
    user_id VARCHAR(250) NOT NULL,
    candidature_id VARCHAR(50) NOT NULL,
@@ -193,8 +197,8 @@ CREATE TABLE tests(
 CREATE TABLE comments_candidatures(
    comment_id VARCHAR(50) NOT NULL,
    comment VARCHAR(max) NOT NULL,
-   created_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME2 NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+   updated_at DATETIME2,
    user_id VARCHAR(250) NOT NULL,
    candidature_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(comment_id),

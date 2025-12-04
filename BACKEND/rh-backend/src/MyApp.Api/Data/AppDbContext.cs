@@ -7,6 +7,7 @@ using MyApp.Api.Entities.menu;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Entities.notifications;
 using MyApp.Api.Entities.prevision;
+using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.tmp;
 using MyApp.Api.Entities.users;
@@ -138,7 +139,12 @@ namespace MyApp.Api.Data
         }
 
 
-    // RECRUTEMENT
-        
+    // RECRUTEMENT UNIQUEMENT
+        public DbSet<RecruitmentRequest> RecruitmentRequests {get; set;}
+        public DbSet<ReplacementReason> ReplacementReasons {get; set;}
+        public DbSet<JobDescriptionStatus> JobDescriptionStatus {get; set;}
+        public DbSet<RequestStatus> RequestStatuses {get; set;}
+        public DbSet<SiteRequest> SiteRequests {get; set;}
+        public DbSet<RequestValidation> RequestValidations {get; set;}
     }
 }
