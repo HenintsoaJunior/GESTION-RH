@@ -1,7 +1,16 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import api from '@/utils/axios-config';
 
+// Clé de base pour toutes les queries liées aux lieux
 const LIEUX_BASE_KEY = ['lieux'] as const;
+
+// ========================
+// Interfaces & Types
+// ========================
 
 export interface GeoZone {
   zoneId: string;
@@ -54,13 +63,22 @@ export interface ApiResponse<T> {
   message: string;
 }
 
+// Réponses spécifiques
 type GetLieuxResponse = SearchData;
 type GetAllLieuxResponse = ApiResponse<Lieu[]>;
 type GetLieuByIdResponse = ApiResponse<Lieu>;
 type CreateLieuResponse = ApiResponse<{ id: string; lieu: Lieu }>;
 
-export const useGetLieux = (filters: LieuSearchFilters = {}, page: number = 1, pageSize: number = 10) => {
-  const queryKey = [...LIEUX_BASE_KEY, { ...filters, page, pageSize }] as const;
+// ========================
+// Queries
+// ========================
+
+export const useGetLieux = (
+  filters: LieuSearchFilters = {},
+  page: number = 1,
+  pageSize: number = 10
+) => {
+  const queryKey = [...LIEUX_BASE_KEY, 'search', { ...filters, page, pageSize }] as const;
 
   return useQuery<GetLieuxResponse, Error>({
     queryKey,
@@ -73,6 +91,7 @@ export const useGetLieux = (filters: LieuSearchFilters = {}, page: number = 1, p
         page: page.toString(),
         pageSize: pageSize.toString(),
       });
+
       const response = await api.get(`/api/Lieu/search?${params.toString()}`);
       return response.data;
     },
@@ -80,7 +99,7 @@ export const useGetLieux = (filters: LieuSearchFilters = {}, page: number = 1, p
 };
 
 export const useGetAllLieux = () => {
-  const queryKey = [...LIEUX_BASE_KEY, 'getAll'] as const;
+  const queryKey = [...LIEUX_BASE_KEY, 'all'] as const;
 
   return useQuery<GetAllLieuxResponse, Error>({
     queryKey,
@@ -91,6 +110,7 @@ export const useGetAllLieux = () => {
   });
 };
 
+// Alias pour compatibilité ascendante
 export const useLieux = useGetAllLieux;
 
 export const useGetLieuById = (lieuId: string) => {
@@ -106,7 +126,22 @@ export const useGetLieuById = (lieuId: string) => {
   });
 };
 
+// ========================
+// Invalidation Helper
+// ========================
+
+const useInvalidateLieux = () => {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: LIEUX_BASE_KEY });
+};
+
+// ========================
+// Mutations avec invalidation automatique
+// ========================
+
 export const useCreateLieu = () => {
+  const invalidateLieux = useInvalidateLieux();
+
   return useMutation<CreateLieuResponse, Error, LieuDTOForm>({
     mutationFn: async (data: LieuDTOForm) => {
       const payload = {
@@ -121,10 +156,16 @@ export const useCreateLieu = () => {
       const response = await api.post('/api/Lieu', payload);
       return response.data;
     },
+    onSuccess: () => {
+      invalidateLieux();
+    },
   });
 };
 
 export const useUpdateLieu = (lieuId: string) => {
+  const queryClient = useQueryClient();
+  const invalidateLieux = useInvalidateLieux();
+
   return useMutation<ApiResponse<Lieu>, Error, LieuDTOForm>({
     mutationFn: async (data: LieuDTOForm) => {
       const payload = {
@@ -135,19 +176,43 @@ export const useUpdateLieu = (lieuId: string) => {
         Pays: data.pays,
         Latitude: data.latitude,
         Longitude: data.longitude,
-        ...(data.zoneId && { ZoneId: data.zoneId }),
+        ...(data.zoneId !== undefined && { ZoneId: data.zoneId }),
       };
       const response = await api.put(`/api/Lieu/${lieuId}`, payload);
       return response.data;
+    },
+    onSuccess: (response) => {
+      // Invalide toutes les listes et recherches
+      invalidateLieux();
+
+      // Mise à jour optimiste du détail du lieu (évite un refetch complet)
+      if (response.data) {
+        queryClient.setQueryData<GetLieuByIdResponse>(
+          [...LIEUX_BASE_KEY, lieuId],
+          response
+        );
+      }
     },
   });
 };
 
 export const useDeleteLieu = () => {
+  const queryClient = useQueryClient();
+  const invalidateLieux = useInvalidateLieux();
+
   return useMutation<ApiResponse<null>, Error, string>({
     mutationFn: async (lieuId: string) => {
       const response = await api.delete(`/api/Lieu/${lieuId}`);
       return response.data;
+    },
+    onSuccess: (_data, lieuId) => {
+      invalidateLieux();
+
+      // Supprime le détail du lieu du cache (évite 404 si on y accède après suppression)
+      queryClient.removeQueries({
+        queryKey: [...LIEUX_BASE_KEY, lieuId],
+        exact: true,
+      });
     },
   });
 };

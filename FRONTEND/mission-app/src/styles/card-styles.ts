@@ -263,12 +263,16 @@ export const ActionsContainer = styled.div<{ $singleButton?: boolean }>`
     display: flex;
     flex-direction: row;
     gap: 8px;
-    justify-content: ${props => props.$singleButton ? 'center' : 'flex-start'};
+    justify-content: flex-start;
     align-items: center;
     margin: 12px 0;
     padding: 8px 16px;
     border-top: 1px solid var(--border-color);
     background: var(--bg-light);
+    width: 100%;
+    box-sizing: border-box;
+    flex-wrap: nowrap;
+    overflow: visible;
 
     @media (max-width: 768px) {
         flex-direction: column;
@@ -288,7 +292,7 @@ export const ActionButton = styled.button`
     align-items: center;
     gap: 6px;
     flex: 1;
-    max-width: 120px;
+    min-width: 0;
     padding: 8px 12px;
     border: 1px solid transparent;
     border-radius: 6px;
@@ -298,6 +302,8 @@ export const ActionButton = styled.button`
     transition: all 0.2s ease;
     white-space: nowrap;
     justify-content: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     /* Style par défaut pour "Voir détails" */
     background-color: var(--primary-bg);

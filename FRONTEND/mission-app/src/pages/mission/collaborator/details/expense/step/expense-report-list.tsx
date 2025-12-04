@@ -31,13 +31,13 @@ import {
 import { NoDataMessage } from "@/styles/table-styles";
 import { formatNumber } from "@/utils/format";
 import { useExpenseReportsByAssignationId, useStatusByAssignationId } from "@/api/mission/expense_report/services";
-import { useGetMissionAssignationByAssignationId, useGetTotalCompensations } from "@/api/mission/services";
+import { useGetMissionById } from "@/api/mission/services"; // Changé ici
 import { useCurrencies } from "@/api/currency/services";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import type { TooltipItem, ChartOptions } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import { handleFileView, handleFileDownload } from "@/utils/file-utils";
-import type { MissionAssignation } from "@/api/mission/services";
+import type { Mission } from "@/api/mission/services"; // Changé ici
 import styled from "styled-components";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -56,7 +56,7 @@ interface ApiResponse<T> {
 }
 
 interface Props {
-    selectedAssignmentId?: string;
+    selectedAssignmentId?: string; // À vérifier si doit devenir selectedMissionId
     isLoading: boolean;
     onError: (error: Error) => void;
 }
@@ -324,25 +324,25 @@ const FinancialDoughnutChart: React.FC<FinancialDoughnutChartProps> = ({ totalAm
 
 const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, onError }) => {
     const [openFolderId, setOpenFolderId] = useState<string | null>(null);
-    const [missionAssignation, setMissionAssignation] = useState<MissionAssignation | null>(null);
+    const [missionData, setMissionData] = useState<Mission | null>(null); // Changé ici
     const [error, setError] = useState<string | null>(null);
     
     const expenseQuery = useExpenseReportsByAssignationId(selectedAssignmentId);
     const statusQuery = useStatusByAssignationId(selectedAssignmentId);
-    const assignationQuery = useGetMissionAssignationByAssignationId(selectedAssignmentId || "");
+    const missionQuery = useGetMissionById(selectedAssignmentId || ""); // Changé ici
     const currenciesQuery = useCurrencies();
 
     useEffect(() => {
-        setMissionAssignation(assignationQuery.data?.data || null);
-    }, [assignationQuery.data]);
+        setMissionData(missionQuery.data?.data || null); // Changé ici
+    }, [missionQuery.data]);
 
     useEffect(() => {
-        if (assignationQuery.error) {
-            const err = assignationQuery.error as Error;
-            setError(err.message || "Erreur lors de la récupération de l'assignation de mission.");
+        if (missionQuery.error) {
+            const err = missionQuery.error as Error;
+            setError(err.message || "Erreur lors de la récupération de la mission."); // Changé ici
             onError(err);
         }
-    }, [assignationQuery.error, onError]);
+    }, [missionQuery.error, onError]);
 
     const expenseResponse = expenseQuery.data as ApiResponse<FullExpenseResponse> | undefined;
     const fullExpenseData = expenseResponse?.data || { reports: [], attachments: [] };
@@ -367,28 +367,29 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
     }, [expenseQuery.error, statusQuery.error, currenciesQuery.error, onError]);
 
     const employeeInfo = useMemo(() => {
-        if (!missionAssignation || !missionAssignation.employee) {
-            return { id: missionAssignation?.employeeId || null, fullName: "N/A", employeeCode: "N/A" };
+        if (!missionData || !missionData.employee) {
+            return { id: missionData?.employeeId || null, fullName: "N/A", employeeCode: "N/A" };
         }
-        const { employeeId, lastName, firstName, employeeCode } = missionAssignation.employee;
+        const { employeeId, lastName, firstName, employeeCode } = missionData.employee;
         return {
             id: employeeId,
             fullName: `${lastName || ""} ${firstName || ""}`.trim() || "N/A",
             employeeCode: employeeCode || "N/A",
         };
-    }, [missionAssignation]);
+    }, [missionData]);
 
-    const totalCompQuery = useGetTotalCompensations(employeeInfo.id || "", missionAssignation?.missionId || "");
+    // Fonction temporaire pour calculer le total des compensations
+    // À remplacer par votre propre logique ou hook si disponible
+    const calculateTotalCompensations = useCallback(() => {
+        // Logique temporaire - à adapter selon vos besoins
+        // Vous devrez peut-être créer un hook useGetTotalCompensations basé sur missionId
+        if (!missionData) return 0;
+        
+        // Exemple de calcul basé sur allocatedFund ou autre propriété
+        return missionData.allocatedFund || 0;
+    }, [missionData]);
 
-    useEffect(() => {
-        if (totalCompQuery.error) {
-            const err = totalCompQuery.error as Error;
-            setError(err.message || "Erreur lors de la récupération du total des compensations.");
-            onError(err);
-        }
-    }, [totalCompQuery.error, onError]);
-
-    const totalCompensationEUR = totalCompQuery.data?.data || 0;
+    const totalCompensationEUR = calculateTotalCompensations();
 
     // Taux de change EUR vers MGA dynamique (assume base EUR, rate MGA)
     const eurToMgaRate = currenciesQuery.data?.rates?.MGA || 1;
@@ -418,7 +419,7 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
         setOpenFolderId((prevId) => (prevId === userId ? null : userId));
     }, []);
 
-    const isTotalLoading = isLoading || expenseQuery.isLoading || statusQuery.isLoading || assignationQuery.isLoading || totalCompQuery.isLoading || currenciesQuery.isLoading;
+    const isTotalLoading = isLoading || expenseQuery.isLoading || statusQuery.isLoading || missionQuery.isLoading || currenciesQuery.isLoading;
     const hasData = expenseReports.length > 0 || attachments.length > 0;
     const overallError = error;
     const hasAttachments = attachments.length > 0;

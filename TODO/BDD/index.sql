@@ -12,7 +12,6 @@ DROP TABLE IF EXISTS expense_report;
 DROP TABLE IF EXISTS mission_budget;
 DROP TABLE IF EXISTS mission_validation;
 DROP TABLE IF EXISTS compensation;
-DROP TABLE IF EXISTS mission_assignation;
 DROP TABLE IF EXISTS compensation_scale;
 DROP TABLE IF EXISTS expense_compensation_scale;
 DROP TABLE IF EXISTS employee_nationalities;
@@ -351,57 +350,45 @@ CREATE TABLE lieu (
 );
 
 CREATE TABLE mission (
-   mission_id VARCHAR(50),
-   mission_type VARCHAR(50) NOT NULL CHECK(mission_type IN('national', 'international')),
-   name VARCHAR(255),
-   description TEXT,
-   start_date DATE,
-   end_date DATE,
-   status VARCHAR(20) NOT NULL DEFAULT 'En Cours',
-   lieu_id VARCHAR(50) NOT NULL,
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   PRIMARY KEY(mission_id),
-   FOREIGN KEY(lieu_id) REFERENCES lieu(lieu_id)
-);
-
-CREATE TABLE mission_assignation (
-   assignation_id VARCHAR(50),
-   departure_date DATE NOT NULL,
-   departure_time TIME,
-   return_date DATE,
-   return_time TIME,
-   duration INT,
-   is_validated INT DEFAULT 0, 
-   type VARCHAR(50) NOT NULL CHECK(type IN('Indemnité', 'Note de frais')),
-   allocated_fund DECIMAL(15,2),
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   transport_id VARCHAR(50),
-   mission_id VARCHAR(50) NOT NULL,
-   employee_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY (assignation_id),
-   FOREIGN KEY (transport_id) REFERENCES transport(transport_id),
-   FOREIGN KEY (mission_id) REFERENCES mission(mission_id) ON DELETE CASCADE,
-   FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
+   mission_id        VARCHAR(50) PRIMARY KEY,
+   mission_type      VARCHAR(20)  NOT NULL DEFAULT 'unknown',
+   name              VARCHAR(255),
+   description       TEXT,
+   start_date        DATE NOT NULL,
+   end_date          DATE NOT NULL,
+   status            VARCHAR(30)  NOT NULL DEFAULT 'pending approval',
+   lieu_id           VARCHAR(50)  NOT NULL,
+   employee_id       VARCHAR(50)  NOT NULL,                    
+   departure_date    DATE,
+   departure_time    TIME,
+   return_date       DATE,
+   return_time       TIME,
+   duration          INT,                                       
+   is_validated      INT          DEFAULT 0,                   
+   type              VARCHAR(20)  NOT NULL DEFAULT 'Indemnité',
+   allocated_fund    DECIMAL(15,2),
+   transport_id      VARCHAR(50),
+   created_at        DATETIME     DEFAULT CURRENT_TIMESTAMP,
+   updated_at        DATETIME,
+   FOREIGN KEY (lieu_id)      REFERENCES lieu(lieu_id),
+   FOREIGN KEY (employee_id)  REFERENCES employees(employee_id),
+   FOREIGN KEY (transport_id) REFERENCES transport(transport_id)
 );
 
 CREATE TABLE mission_validation(
-   mission_validation_id VARCHAR(50),
-   status VARCHAR(50),
-   validation_date DATETIME,
-   type VARCHAR(50),
-   created_at DATETIME,
-   updated_at DATETIME,
-   to_whom VARCHAR(250) NOT NULL,
-   mission_creator VARCHAR(250) NOT NULL,
-   mission_id VARCHAR(50) NOT NULL,
-   mission_assignation_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(mission_validation_id),
-   FOREIGN KEY(to_whom) REFERENCES users(user_id) ON DELETE NO ACTION,
-   FOREIGN KEY(mission_creator) REFERENCES users(user_id) ON DELETE NO ACTION,
-   FOREIGN KEY(mission_id) REFERENCES mission(mission_id) ON DELETE NO ACTION, 
-   FOREIGN KEY(mission_assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE
+   mission_validation_id VARCHAR(50)    PRIMARY KEY,
+   status                VARCHAR(50),
+   validation_date       DATETIME,
+   type                  VARCHAR(50),
+   created_at            DATETIME       DEFAULT CURRENT_TIMESTAMP,
+   updated_at            DATETIME,
+   to_whom               VARCHAR(250)   NOT NULL,
+   mission_creator       VARCHAR(250)   NOT NULL,
+   mission_id            VARCHAR(50)    NOT NULL,
+
+   FOREIGN KEY(to_whom)         REFERENCES users(user_id)      ON DELETE NO ACTION,
+   FOREIGN KEY(mission_creator) REFERENCES users(user_id)      ON DELETE NO ACTION,
+   FOREIGN KEY(mission_id)      REFERENCES mission(mission_id) ON DELETE CASCADE 
 );
 
 CREATE TABLE comments(
@@ -434,25 +421,25 @@ CREATE TABLE mission_budget(
 );
 
 CREATE TABLE compensation(
-   compensation_id VARCHAR(50),
-   transport_amount DECIMAL(15,2),
-   breakfast_amount DECIMAL(15,2),
-   lunch_amount DECIMAL(15,2),
-   dinner_amount DECIMAL(15,2),
-   accommodation_amount DECIMAL(15,2),
-   communication_amount DECIMAL(15,2),
-   visa_amount DECIMAL(15,2),
+   compensation_id         VARCHAR(50) PRIMARY KEY,
+   transport_amount        DECIMAL(15,2),
+   breakfast_amount        DECIMAL(15,2),
+   lunch_amount            DECIMAL(15,2),
+   dinner_amount           DECIMAL(15,2),
+   accommodation_amount    DECIMAL(15,2),
+   communication_amount    DECIMAL(15,2),
+   visa_amount             DECIMAL(15,2),
    medical_expenses_amount DECIMAL(15,2),
-   taxes_amount DECIMAL(15,2),
-   status VARCHAR(50) DEFAULT 'unpaid',
-   payment_date DATETIME,
-   devise VARCHAR(50) NOT NULL,
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   assignation_id VARCHAR(50) NOT NULL,
-   employee_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(compensation_id),
-   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE,
+   taxes_amount            DECIMAL(15,2),
+   status                  VARCHAR(50) DEFAULT 'unpaid',
+   payment_date            DATETIME,
+   devise                  VARCHAR(50) NOT NULL,
+   created_at              DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at              DATETIME,
+   mission_id              VARCHAR(50) NOT NULL,
+   employee_id             VARCHAR(50) NOT NULL,
+
+   FOREIGN KEY(mission_id)  REFERENCES mission(mission_id) ON DELETE CASCADE,
    FOREIGN KEY(employee_id) REFERENCES employees(employee_id)
 );
 
@@ -465,47 +452,45 @@ CREATE TABLE expense_report_type(
 );
 
 CREATE TABLE expense_report(
-   expense_report_id VARCHAR(50),
-   titled VARCHAR(250),
-   description TEXT,
-   type VARCHAR(50) CHECK(type IN('CB', 'ESP')), --carte bancaire ou espèces
-   currency_unit VARCHAR(50),
-   amount DECIMAL(15,2),
-   amount_mga DECIMAL(15,2),
-   rate DECIMAL(15,2),
-   status VARCHAR(50) DEFAULT 'notreimbursed',
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   assignation_id VARCHAR(50) NOT NULL,
-   expense_report_type_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(expense_report_id),
-   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE,
+   expense_report_id       VARCHAR(50) PRIMARY KEY,
+   titled                  VARCHAR(250),
+   description             TEXT,
+   type                    VARCHAR(50) CHECK(type IN('CB', 'ESP')), 
+   currency_unit           VARCHAR(50),
+   amount                  DECIMAL(15,2),
+   amount_mga              DECIMAL(15,2),
+   rate                    DECIMAL(15,2),
+   status                  VARCHAR(50) DEFAULT 'notreimbursed',
+   created_at              DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at              DATETIME,
+   mission_id              VARCHAR(50) NOT NULL,
+   expense_report_type_id  VARCHAR(50) NOT NULL,
+
+   FOREIGN KEY(mission_id)             REFERENCES mission(mission_id) ON DELETE CASCADE,
    FOREIGN KEY(expense_report_type_id) REFERENCES expense_report_type(expense_report_type_id)
 );
 
 CREATE TABLE expense_report_attachments (
-   attachment_id VARCHAR(50),
-   assignation_id VARCHAR(50) NOT NULL,
-   file_name VARCHAR(255) NOT NULL,
-   file_content VARBINARY(MAX),
-   file_size INT,
-   file_type VARCHAR(100),
-   uploaded_at DATETIME DEFAULT GETDATE(),
-   PRIMARY KEY(attachment_id),
-   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE
+   attachment_id VARCHAR(50) PRIMARY KEY,
+   mission_id    VARCHAR(50) NOT NULL,
+   file_name     VARCHAR(255) NOT NULL,
+   file_content  VARBINARY(MAX),
+   file_size     INT,
+   file_type     VARCHAR(100),
+   uploaded_at   DATETIME DEFAULT GETDATE(),
+   FOREIGN KEY(mission_id) REFERENCES mission(mission_id) ON DELETE CASCADE
 );
 
--- compte rendu mission
 CREATE TABLE mission_report(
-   mission_report_id VARCHAR(50),
-   text TEXT,
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   user_id VARCHAR(250) NOT NULL,
-   assignation_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(mission_report_id),
-   FOREIGN KEY(user_id) REFERENCES users(user_id),
-   FOREIGN KEY(assignation_id) REFERENCES mission_assignation(assignation_id) ON DELETE CASCADE
+   mission_report_id VARCHAR(50) PRIMARY KEY,
+   text              TEXT,
+   created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at        DATETIME,
+   user_id           VARCHAR(250) NOT NULL,
+   mission_id        VARCHAR(50) NOT NULL,
+
+   FOREIGN KEY(user_id)    REFERENCES users(user_id),
+   FOREIGN KEY(mission_id) REFERENCES mission(mission_id) ON DELETE CASCADE
 );
 
 CREATE TABLE mission_report_attachments (

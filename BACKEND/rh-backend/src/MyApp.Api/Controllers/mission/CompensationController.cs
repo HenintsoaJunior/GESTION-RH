@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Services.mission;
@@ -10,169 +9,140 @@ namespace MyApp.Api.Controllers.mission
     public class CompensationController : ControllerBase
     {
         private readonly ICompensationService _compensationService;
-        private readonly IMissionAssignationService _service;
+        private readonly IMissionService _missionService;
 
-        public CompensationController(ICompensationService compensationService, IMissionAssignationService service)
+        public CompensationController(
+            ICompensationService compensationService,
+            IMissionService missionService)
         {
             _compensationService = compensationService ?? throw new ArgumentNullException(nameof(compensationService));
-            _service = service ?? throw new ArgumentNullException(nameof(service));
+            _missionService = missionService ?? throw new ArgumentNullException(nameof(missionService));
         }
 
+        // GET: api/Compensation/by-employee/E001/mission/M123
         [HttpGet("by-employee/{employeeId}/mission/{missionId}")]
-        [AllowAnonymous]
-        public async Task<ActionResult> GetByEmployeeId(string employeeId, string missionId)
+        public async Task<ActionResult> GetByEmployeeAndMission(string employeeId, string missionId)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
-            {
-                return BadRequest(new { data = (object?)null, status = 400, message = "Employee ID and Mission ID cannot be null or empty" });
-            }
+                return BadRequest(new { data = (object?)null, status = 400, message = "Les IDs employé et mission sont requis" });
 
             try
             {
                 var result = await _compensationService.GetByEmployeeIdAsync(employeeId, missionId);
-                if (result.Assignation == null)
-                {
-                    return NotFound(new { data = (object?)null, status = 404, message = $"No assignation found for employee {employeeId} and mission {missionId}" });
-                }
 
-                var responseData = result;
-                return Ok(new { data = responseData, status = 200, message = "success" });
+                if (result == null || result.Mission == null)
+                    return NotFound(new { data = (object?)null, status = 404, message = $"Aucune compensation trouvée pour l'employé {employeeId} et la mission {missionId}" });
+
+                return Ok(new { data = result, status = 200, message = "success" });
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "Erreur serveur", error = ex.Message });
             }
         }
 
+        // GET: api/Compensation/total-paid
         [HttpGet("total-paid")]
-        [AllowAnonymous]
         public async Task<ActionResult> GetTotalPaidAmount()
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             try
             {
-                var totalAmount = await _compensationService.GetTotalPaidAmountAsync();
-                var responseData = new { TotalPaidAmount = totalAmount };
-                return Ok(new { data = responseData, status = 200, message = "success" });
+                var total = await _compensationService.GetTotalPaidAmountAsync();
+                return Ok(new { data = new { totalPaidAmount = total }, status = 200, message = "success" });
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "Erreur lors du calcul du total payé", error = ex.Message });
             }
         }
 
+        // GET: api/Compensation/total-notpaid
         [HttpGet("total-notpaid")]
-        [AllowAnonymous]
         public async Task<ActionResult> GetTotalNotPaidAmount()
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             try
             {
-                var totalAmount = await _compensationService.GetTotalNotPaidAmountAsync();
-                var responseData = new { TotalNotPaidAmount = totalAmount };
-                return Ok(new { data = responseData, status = 200, message = "success" });
+                var total = await _compensationService.GetTotalNotPaidAmountAsync();
+                return Ok(new { data = new { totalNotPaidAmount = total }, status = 200, message = "success" });
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "Erreur lors du calcul du total non payé", error = ex.Message });
             }
         }
 
+        // GET: api/Compensation/by-status?status=paid&page=1&pageSize=10
         [HttpGet("by-status")]
-        [AllowAnonymous]
         public async Task<ActionResult> GetByStatus([FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             if (page < 1 || pageSize < 1)
-            {
-                return BadRequest(new { data = (object?)null, status = 400, message = "La page et la taille de la page doivent être supérieures à 0." });
-            }
+                return BadRequest(new { data = (object?)null, status = 400, message = "page et pageSize doivent être supérieurs à 0" });
 
             try
             {
                 var (results, totalCount) = await _compensationService.GetCompensationsByStatusAsync(status, page, pageSize);
-                var responseData = new
+
+                var response = new
                 {
-                    Data = results,
-                    TotalCount = totalCount,
-                    Page = page,
-                    PageSize = pageSize
+                    items = results,
+                    totalCount,
+                    page,
+                    pageSize,
+                    totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
                 };
-                return Ok(new { data = responseData, status = 200, message = "success" });
+
+                return Ok(new { data = response, status = 200, message = "success" });
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "An error occurred while retrieving compensations by status" });
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "Erreur lors de la récupération des compensations par statut", error = ex.Message });
             }
         }
 
+        // GET: api/Compensation
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult> GetAll()
         {
             try
             {
                 var compensations = await _compensationService.GetAllAsync();
                 return Ok(new { data = compensations, status = 200, message = "success" });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "An error occurred while retrieving compensations" });
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "Erreur lors de la récupération de toutes les compensations", error = ex.Message });
             }
         }
 
+        // POST: api/Compensation/generate-excel
         [HttpPost("generate-excel")]
-        public async Task<IActionResult> GenerateExcel([FromBody] GeneratePaiementDTO? generatePaiementDto)
+        public async Task<IActionResult> GenerateExcel([FromBody] GeneratePaiementDTO? dto)
         {
-            if (generatePaiementDto == null || string.IsNullOrWhiteSpace(generatePaiementDto.MissionId))
-            {
-                return BadRequest(new { data = (object?)null, status = 400, message = "Les données de paiement ou l'identifiant de la mission sont requis." });
-            }
+            if (dto == null || string.IsNullOrWhiteSpace(dto.MissionId) || string.IsNullOrWhiteSpace(dto.EmployeeId))
+                return BadRequest(new { data = (object?)null, status = 400, message = "MissionId et EmployeeId sont requis dans le corps de la requête" });
 
             try
             {
-                var excelBytes = await _service.GenerateExcelReportAsync(
-                    generatePaiementDto.EmployeeId,
-                    generatePaiementDto.MissionId);
+                var excelBytes = await _missionService.GenerateExcelReportAsync(dto.EmployeeId, dto.MissionId);
 
-                var excelName = $"MissionPaymentReport-{generatePaiementDto.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.xlsx";
-                return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
+                var fileName = $"Rapport_Indemnites_Mission_{dto.MissionId}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+                return File(
+                    excelBytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    fileName);
             }
             catch (InvalidOperationException ex)
             {
@@ -180,49 +150,51 @@ namespace MyApp.Api.Controllers.mission
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { data = (object?)null, status = 500, message = $"Erreur lors de la génération du fichier Excel : {ex.Message}" });
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "Erreur lors de la génération du fichier Excel", error = ex.Message });
             }
         }
 
-        [HttpPut("{employeId}/{assignation_id}/status")]
-        [AllowAnonymous]
-        public async Task<ActionResult> UpdateStatus(string employeId, string assignation_id, [FromBody] string status)
+        // PUT: api/Compensation/employee/E001/mission/M123/status
+        [HttpPut("employee/{employeeId}/mission/{missionId}/status")]
+        public async Task<ActionResult> UpdateStatus(string employeeId, string missionId, [FromBody] CompensationStatusUpdateDTO dto)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
-            if (string.IsNullOrEmpty(employeId) || string.IsNullOrEmpty(assignation_id))
-            {
-                return BadRequest(new { data = (object?)null, status = 400, message = "Employee ID and Assignation ID must be provided." });
-            }
+            if (string.IsNullOrWhiteSpace(employeeId) || string.IsNullOrWhiteSpace(missionId))
+                return BadRequest(new { data = (object?)null, status = 400, message = "employeeId et missionId sont requis" });
 
-            if (string.IsNullOrEmpty(status))
-            {
-                return BadRequest(new { data = (object?)null, status = 400, message = "Status cannot be null or empty" });
-            }
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Status))
+                return BadRequest(new { data = (object?)null, status = 400, message = "Le champ 'status' est requis" });
 
             try
             {
-                var updated = await _compensationService.UpdateStatusAsync(employeId, assignation_id, status);
+                var updated = await _compensationService.UpdateStatusAsync(employeeId, missionId, dto.Status);
 
                 if (!updated)
-                {
-                    return NotFound(new { data = (object?)null, status = 404, message = $"Compensation for Employee ID {employeId} and Assignation ID {assignation_id} not found." });
-                }
+                    return NotFound(new { data = (object?)null, status = 404, message = $"Compensation non trouvée pour l'employé {employeeId} et la mission {missionId}" });
 
-                return Ok(new { data = (object?)null, status = 200, message = $"Compensation status for Employee ID {employeId} and Assignation ID {assignation_id} successfully updated to {status}" });
+                return Ok(new
+                {
+                    data = (object?)null,
+                    status = 200,
+                    message = $"Statut mis à jour avec succès : {dto.Status}"
+                });
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "Erreur lors de la mise à jour du statut", error = ex.Message });
             }
         }
+    }
+
+    // DTO pour la mise à jour du statut
+    public class CompensationStatusUpdateDTO
+    {
+        public string Status { get; set; } = string.Empty;
     }
 }

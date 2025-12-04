@@ -4,12 +4,15 @@ import { useTransports, type Transport } from "@/api/transport/services";
 import {
   useCreateMission,
   useUpdateMission,
-  useGetMissionAssignationByMissionId,
-  type MissionDTOForm,
-  type MissionAssignationDTOForm,
-  type CreateMissionResponseData,
-  type UpdateMissionResponseData,
+  useGetMissionById,
+  type CreateMissionInput,
+  type UpdateMissionInput,
+  type CreateMissionResponse,
   type ApiResponse,
+  type Mission,
+  MissionTypeEnum,
+  MissionStatusEnum,
+  PaymentTypeEnum,
 } from "@/api/mission/services";
 import { useUserCollaboratorsMatricules } from "@/api/users/services";
 import { useGetEmployeesByMatriculesSimple } from "@/api/collaborator/services";
@@ -113,7 +116,7 @@ const useMissionForm = ({
     location: "",
     startDate: initialStartDate || null,
     endDate: null,
-    missionType: "national",
+    missionType: "Nationale",
     beneficiary: {
       beneficiary: "",
       employeeId: "",
@@ -142,16 +145,20 @@ const useMissionForm = ({
   const [regions, setRegions] = useState<Lieu[]>([]);
   const [regionNames, setRegionNames] = useState<string[]>([]);
   const [regionDisplayNames, setRegionDisplayNames] = useState<string[]>([]);
+  const [transports, setTransports] = useState<Transport[]>([]);
+  const [transportTypes, setTransportTypes] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestions>({
     beneficiary: [],
     transport: [],
     mission: [],
   });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [selectedLieuIsValid, setSelectedLieuIsValid] = useState<boolean>(true);
+  const [selectedTransportIsValid, setSelectedTransportIsValid] = useState<boolean>(true);
 
   const { data: lieuxData, isLoading: isRegionsLoading } = useLieux();
   const { data: transportsData, isLoading: isTransportsLoading } = useTransports();
-  const { data: missionResponse, isLoading: isMissionDetailLoading } = useGetMissionAssignationByMissionId(
+  const { data: missionResponse, isLoading: isMissionDetailLoading } = useGetMissionById(
     missionId || ""
   );
 
@@ -167,28 +174,72 @@ const useMissionForm = ({
 
   const { data: employeesData, isLoading: isEmployeesLoading } = useGetEmployeesByMatriculesSimple(matricules);
 
+  // Fonction pour obtenir des suggestions uniques d'employés
   const employeeSuggestions: EmployeeSuggestion[] = useMemo(() => {
-    return (employeesData?.data || []).map((emp: Employee) => ({
-      id: emp.employeeId,
-      name: `${emp.lastName} ${emp.firstName}`,
-      displayName: `${emp.lastName} ${emp.firstName} (${emp.direction?.acronym || "N/A"})`,
-      employeeCode: emp.employeeCode || "",
-      jobTitle: emp.jobTitle || "",
-      site: emp.site?.siteName || "",
-      direction: emp.direction?.directionName || "",
-      department: emp.department?.departmentName || "",
-      service: emp.service?.serviceName || "",
-      costCenter: "",
-      acronym: emp.direction?.acronym || "N/A",
-    }));
+    const employees = employeesData?.data || [];
+    const uniqueEmployees = employees.reduce((acc: EmployeeSuggestion[], emp: Employee) => {
+      const existingEmployee = acc.find(item => item.id === emp.employeeId);
+      if (!existingEmployee) {
+        acc.push({
+          id: emp.employeeId,
+          name: `${emp.lastName} ${emp.firstName}`,
+          displayName: `${emp.lastName} ${emp.firstName} (${emp.direction?.acronym || "N/A"})`,
+          employeeCode: emp.employeeCode || "",
+          jobTitle: emp.jobTitle || "",
+          site: emp.site?.siteName || "",
+          direction: emp.direction?.directionName || "",
+          department: emp.department?.departmentName || "",
+          service: emp.service?.serviceName || "",
+          costCenter: "",
+          acronym: emp.direction?.acronym || "N/A",
+        });
+      }
+      return acc;
+    }, []);
+    return uniqueEmployees;
   }, [employeesData]);
 
+  // Fonction pour obtenir des suggestions de transport uniques
   const transportSuggestions: TransportSuggestion[] = useMemo(() => {
-    return (transportsData?.data || []).map((transport: Transport) => ({
-      id: transport.transportId,
-      type: transport.type,
-    }));
+    const transportList = transportsData?.data || [];
+    const uniqueTransports = transportList.reduce((acc: TransportSuggestion[], transport: Transport) => {
+      const existingTransport = acc.find(item => 
+        item.type.toLowerCase() === transport.type.toLowerCase()
+      );
+      if (!existingTransport) {
+        acc.push({
+          id: transport.transportId,
+          type: transport.type,
+        });
+      }
+      return acc;
+    }, []);
+    return uniqueTransports;
   }, [transportsData]);
+
+  // Fonction pour vérifier si un lieu existe dans la base de données (sans le pays)
+  const checkLieuExists = useCallback((locationValue: string): boolean => {
+    if (!locationValue || regions.length === 0) return false;
+    
+    // Extraire uniquement le nom du lieu (sans le pays)
+    const locationParts = locationValue.split("/");
+    const locationName = locationParts[0]?.trim();
+    if (!locationName) return false;
+    
+    // Vérifier si le lieu existe dans les régions chargées
+    return regions.some(region => 
+      region.nom.toLowerCase() === locationName.toLowerCase()
+    );
+  }, [regions]);
+
+  // Fonction pour vérifier si un transport existe dans la base de données
+  const checkTransportExists = useCallback((transportValue: string): boolean => {
+    if (!transportValue || transports.length === 0) return true; // Retourne true si vide
+    
+    return transports.some(transport => 
+      transport.type.toLowerCase() === transportValue.toLowerCase()
+    );
+  }, [transports]);
 
   const isLoading = useMemo(
     () => ({
@@ -201,17 +252,60 @@ const useMissionForm = ({
     [isRegionsLoading, isEmployeesLoading, isTransportsLoading, isMissionDetailLoading]
   );
 
-  // Update regions and display names
+  // Update regions and display names avec vérification d'unicité
   useEffect(() => {
     if (lieuxData?.data) {
       const data = lieuxData.data;
-      setRegions(data);
-      setRegionNames(data.map((lieu) => lieu.nom));
-      setRegionDisplayNames(data.map((lieu) => `${lieu.nom}${lieu.pays ? `/${lieu.pays}` : ""}`));
+      
+      // Filtrer les doublons basés sur le nom (insensible à la casse)
+      const uniqueLieux = data.reduce((acc: Lieu[], lieu: Lieu) => {
+        const existingLieu = acc.find(item => 
+          item.nom.toLowerCase() === lieu.nom.toLowerCase()
+        );
+        if (!existingLieu) {
+          acc.push(lieu);
+        }
+        return acc;
+      }, []);
+      
+      setRegions(uniqueLieux);
+      
+      // Créer des noms uniques pour les régions
+      const uniqueNames = uniqueLieux.map((lieu) => lieu.nom);
+      const uniqueDisplayNames = uniqueLieux.map((lieu) => 
+        `${lieu.nom}${lieu.pays ? `/${lieu.pays}` : ""}`
+      );
+      
+      setRegionNames(uniqueNames);
+      setRegionDisplayNames(uniqueDisplayNames);
     }
   }, [lieuxData]);
 
-  // Update suggestions
+  // Update transports avec vérification d'unicité
+  useEffect(() => {
+    if (transportsData?.data) {
+      const data = transportsData.data;
+      
+      // Filtrer les doublons basés sur le type (insensible à la casse)
+      const uniqueTransports = data.reduce((acc: Transport[], transport: Transport) => {
+        const existingTransport = acc.find(item => 
+          item.type.toLowerCase() === transport.type.toLowerCase()
+        );
+        if (!existingTransport) {
+          acc.push(transport);
+        }
+        return acc;
+      }, []);
+      
+      setTransports(uniqueTransports);
+      
+      // Créer des types uniques
+      const uniqueTypes = uniqueTransports.map((transport) => transport.type);
+      setTransportTypes(uniqueTypes);
+    }
+  }, [transportsData]);
+
+  // Update suggestions avec vérification d'unicité
   useEffect(() => {
     setSuggestions((prev) => ({
       ...prev,
@@ -220,9 +314,63 @@ const useMissionForm = ({
     }));
   }, [employeeSuggestions, transportSuggestions]);
 
+  // Validation du lieu sélectionné
+  useEffect(() => {
+    if (formData.location) {
+      const isValid = checkLieuExists(formData.location);
+      setSelectedLieuIsValid(isValid);
+      
+      if (!isValid) {
+        setFieldErrors(prev => ({
+          ...prev,
+          lieuId: ["Le lieu sélectionné n'existe pas dans la base de données. Veuillez en choisir un existant ou en ajouter un nouveau."]
+        }));
+      } else {
+        setFieldErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.lieuId;
+          return newErrors;
+        });
+      }
+    } else {
+      setSelectedLieuIsValid(true);
+    }
+  }, [formData.location, checkLieuExists]);
+
+  // Validation du transport sélectionné (uniquement si une valeur est fournie)
+  useEffect(() => {
+    const transportValue = formData.beneficiary.transport;
+    if (transportValue && formData.missionType === "Nationale") {
+      const isValid = checkTransportExists(transportValue);
+      setSelectedTransportIsValid(isValid);
+      
+      if (!isValid) {
+        setFieldErrors(prev => ({
+          ...prev,
+          "beneficiary.transport": ["Le moyen de transport sélectionné n'existe pas dans la base de données. Veuillez en choisir un existant ou en ajouter un nouveau."]
+        }));
+      } else {
+        setFieldErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors["beneficiary.transport"];
+          return newErrors;
+        });
+      }
+    } else {
+      // Si pas de transport ou mission internationale, c'est valide
+      setSelectedTransportIsValid(true);
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors["beneficiary.transport"];
+        return newErrors;
+      });
+    }
+  }, [formData.beneficiary.transport, formData.missionType, checkTransportExists]);
+
   // Handle mission type changes for international missions
   useEffect(() => {
-    if (formData.missionType === "international") {
+    console.log("Mission Type changed:", formData.missionType);
+    if (formData.missionType === "Internationale") {
       setFormData((prev) => ({
         ...prev,
         type: "Note de frais",
@@ -251,8 +399,6 @@ const useMissionForm = ({
     }
   }, [formData.missionType]);
 
-  useEffect(() => {}, [fieldErrors]);
-
   const showAlert = useCallback((type: Alert["type"], message: string, errors: FieldErrors = {}) => {
     if (type === "error") {
       setErrorModal({ isOpen: true, message });
@@ -268,8 +414,6 @@ const useMissionForm = ({
   const calculateMissionDuration = useCallback((
     departureDate: string,
     returnDate: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _missionStartDate?: string | null
   ): MissionDurationResult => {
     if (!departureDate || !returnDate) {
       return { missionDuration: "", error: undefined };
@@ -300,10 +444,16 @@ const useMissionForm = ({
     return { missionDuration: durationDays.toString(), error: undefined };
   }, []);
 
+  // Validation améliorée pour l'étape 1 qui vérifie aussi l'existence des valeurs
   const validateStep1 = useCallback((): boolean => {
     const errors: FieldErrors = {};
+    
     if (!formData.missionTitle) errors.missionTitle = ["Le titre de la mission est requis."];
     if (!formData.location) errors.lieuId = ["Le lieu est requis."];
+    else if (!selectedLieuIsValid) {
+      errors.lieuId = ["Le lieu sélectionné n'existe pas dans la base de données. Veuillez en choisir un existant ou en ajouter un nouveau."];
+    }
+    
     if (!formData.missionType) errors.missionType = ["Le type de mission est requis."];
 
     const beneficiary = formData.beneficiary;
@@ -314,6 +464,11 @@ const useMissionForm = ({
     if (!beneficiary.direction) errors["beneficiary.direction"] = ["La direction est requise."];
     if (!beneficiary.department) errors["beneficiary.department"] = ["Le département est requis."];
     if (!beneficiary.service) errors["beneficiary.service"] = ["Le service est requis."];
+    
+    // Le transport n'est PAS obligatoire - seulement validation si une valeur est fournie
+    if (formData.missionType === "Nationale" && beneficiary.transport && !selectedTransportIsValid) {
+      errors["beneficiary.transport"] = ["Le transport sélectionné n'existe pas dans la base de données."];
+    }
 
     setFieldErrors((prev) => {
       const updatedErrors = { ...prev, ...errors };
@@ -326,7 +481,7 @@ const useMissionForm = ({
     });
 
     return Object.keys(errors).length === 0;
-  }, [formData]);
+  }, [formData, selectedLieuIsValid, selectedTransportIsValid]);
 
   const validateStep2 = useCallback((): boolean => {
     const errors: FieldErrors = {};
@@ -348,8 +503,8 @@ const useMissionForm = ({
     if (!beneficiary.returnTime) errors["beneficiary.returnTime"] = ["L'heure de retour est requise."];
     if (!beneficiary.missionDuration) errors["beneficiary.missionDuration"] = ["La durée de la mission est requise."];
 
-    if (beneficiary.departureDate && beneficiary.returnDate && formData.startDate) {
-      const { error } = calculateMissionDuration(beneficiary.departureDate, beneficiary.returnDate, formData.startDate);
+    if (beneficiary.departureDate && beneficiary.returnDate) {
+      const { error } = calculateMissionDuration(beneficiary.departureDate, beneficiary.returnDate);
       if (error) {
         errors["beneficiary.departureDate"] = [...(errors["beneficiary.departureDate"] || []), error];
         errors["beneficiary.returnDate"] = [...(errors["beneficiary.returnDate"] || []), error];
@@ -401,6 +556,27 @@ const useMissionForm = ({
 
   const handleAddNewSuggestion = useCallback((field: string, value: string) => {
     if (field === "location") {
+      // Vérifier si le lieu existe déjà
+      const lieuExists = regions.some(l => l.nom.toLowerCase() === value.toLowerCase());
+      if (lieuExists) {
+        // Ne pas afficher d'alerte, simplement sélectionner le lieu existant
+        const existingLieu = regions.find(l => l.nom.toLowerCase() === value.toLowerCase());
+        if (existingLieu) {
+          setFormData((prev) => ({ 
+            ...prev, 
+            location: `${existingLieu.nom}${existingLieu.pays ? `/${existingLieu.pays}` : ""}`, 
+            lieuId: existingLieu.lieuId 
+          }));
+          setSelectedLieuIsValid(true);
+          setFieldErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors.lieuId;
+            return newErrors;
+          });
+        }
+        return;
+      }
+
       const newRegion: Lieu = { 
         lieuId: `temp-${Date.now()}`, 
         nom: value,
@@ -408,45 +584,151 @@ const useMissionForm = ({
         codePostal: "", 
         pays: "Madagascar",
         zoneId: "",
+        longitude: 0,
+        latitude: 0,
         createdAt: new Date().toISOString(),
-        updatedAt: ""
+        updatedAt: null
       };
-      setRegions((prev) => [...prev, newRegion]);
-      setRegionNames((prev) => [...prev, value]);
-      setRegionDisplayNames((prev) => [...prev, `${value}/Madagascar`]);
+      
+      // Mettre à jour les états avec unicité garantie
+      setRegions((prev) => {
+        const newRegions = [...prev];
+        if (!newRegions.some(r => r.nom.toLowerCase() === value.toLowerCase())) {
+          newRegions.push(newRegion);
+        }
+        return newRegions;
+      });
+      
+      setRegionNames((prev) => {
+        const newNames = [...prev];
+        if (!newNames.some(name => name.toLowerCase() === value.toLowerCase())) {
+          newNames.push(value);
+        }
+        return newNames;
+      });
+      
+      setRegionDisplayNames((prev) => {
+        const newDisplayNames = [...prev];
+        const displayValue = `${value}/Madagascar`;
+        if (!newDisplayNames.some(display => display === displayValue)) {
+          newDisplayNames.push(displayValue);
+        }
+        return newDisplayNames;
+      });
+      
+      // Mettre à jour le formulaire
       setFormData((prev) => ({ 
         ...prev, 
         location: `${value}/Madagascar`, 
         lieuId: newRegion.lieuId 
       }));
-      showAlert("success", `"${value}" ajouté aux suggestions pour ${field}`);
+      
+      // Valider le lieu
+      setSelectedLieuIsValid(true);
+      
+      setAlert({ 
+        isOpen: true, 
+        type: "success", 
+        message: `"${value}" a été ajouté aux lieux avec succès.` 
+      });
+      
       setFieldErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors.lieuId;
         return newErrors;
       });
+      
     } else if (field === "transport") {
-      const newTransport: TransportSuggestion = { id: `temp-${Date.now()}`, type: value };
-      setSuggestions((prev) => ({
-        ...prev,
-        transport: [...prev.transport, newTransport],
-      }));
+      // Vérifier si le transport existe déjà
+      const transportExists = transports.some(t => t.type.toLowerCase() === value.toLowerCase());
+      if (transportExists) {
+        // Ne pas afficher d'alerte, simplement sélectionner le transport existant
+        const existingTransport = transports.find(t => t.type.toLowerCase() === value.toLowerCase());
+        const existingSuggestion = suggestions.transport.find(t => t.type.toLowerCase() === value.toLowerCase());
+        
+        if (existingTransport && existingSuggestion) {
+          setFormData((prev) => ({
+            ...prev,
+            beneficiary: { 
+              ...prev.beneficiary, 
+              transport: existingTransport.type, 
+              transportId: existingTransport.transportId 
+            },
+          }));
+          setSelectedTransportIsValid(true);
+          setFieldErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors["beneficiary.transport"];
+            delete newErrors["beneficiary.transportId"];
+            return newErrors;
+          });
+        }
+        return;
+      }
+
+      const newTransport: Transport = { 
+        transportId: `temp-${Date.now()}`, 
+        type: value,
+        createdAt: new Date().toISOString(),
+        updatedAt: null
+      };
+      
+      // Mettre à jour les états avec unicité garantie
+      setTransports((prev) => {
+        const newTransports = [...prev];
+        if (!newTransports.some(t => t.type.toLowerCase() === value.toLowerCase())) {
+          newTransports.push(newTransport);
+        }
+        return newTransports;
+      });
+      
+      setTransportTypes((prev) => {
+        const newTypes = [...prev];
+        if (!newTypes.some(type => type.toLowerCase() === value.toLowerCase())) {
+          newTypes.push(value);
+        }
+        return newTypes;
+      });
+      
+      // Mettre à jour les suggestions avec unicité garantie
+      setSuggestions((prev) => {
+        const newTransportSuggestions = [...prev.transport];
+        if (!newTransportSuggestions.some(t => t.type.toLowerCase() === value.toLowerCase())) {
+          newTransportSuggestions.push({ id: newTransport.transportId, type: value });
+        }
+        return {
+          ...prev,
+          transport: newTransportSuggestions,
+        };
+      });
+      
+      // Mettre à jour le formulaire
       setFormData((prev) => ({
         ...prev,
         beneficiary: { 
           ...prev.beneficiary, 
           transport: value, 
-          transportId: newTransport.id 
+          transportId: newTransport.transportId 
         },
       }));
-      showAlert("success", `"${value}" ajouté aux suggestions pour ${field}`);
+      
+      // Valider le transport
+      setSelectedTransportIsValid(true);
+      
+      setAlert({ 
+        isOpen: true, 
+        type: "success", 
+        message: `"${value}" a été ajouté aux moyens de transport avec succès.` 
+      });
+      
       setFieldErrors((prev) => {
         const newErrors = { ...prev };
+        delete newErrors["beneficiary.transport"];
         delete newErrors["beneficiary.transportId"];
         return newErrors;
       });
     }
-  }, [showAlert]);
+  }, [regions, transports, suggestions.transport]);
 
   const handleInputChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -484,12 +766,23 @@ const useMissionForm = ({
         if (name === "transport") {
           const selectedTransport = suggestions.transport.find((t) => t.type === value);
           updatedBeneficiary.transportId = selectedTransport ? selectedTransport.id : null;
+          
+          // Vérifier la validité du transport sélectionné seulement si une valeur est fournie
+          if (value && selectedTransport) {
+            setSelectedTransportIsValid(true);
+          } else if (value) {
+            // Transport non trouvé dans les suggestions
+            setSelectedTransportIsValid(false);
+          } else {
+            // Si vide, c'est valide (optionnel)
+            setSelectedTransportIsValid(true);
+          }
         }
 
         if (name === "departureDate" || name === "returnDate") {
           const depDate = name === "departureDate" ? value : updatedBeneficiary.departureDate;
           const retDate = name === "returnDate" ? value : updatedBeneficiary.returnDate;
-          const { missionDuration, error } = calculateMissionDuration(depDate, retDate, prev.startDate);
+          const { missionDuration, error } = calculateMissionDuration(depDate, retDate);
 
           setFieldErrors((prevErrors) => {
             const updatedErrors = { ...prevErrors };
@@ -517,7 +810,23 @@ const useMissionForm = ({
       setFieldErrors((prev) => {
         const updatedErrors = { ...prev };
         const fieldKey = `beneficiary.${name}`;
-        if (value) {
+        
+        if (name === "transport") {
+          // Pour le transport, on vérifie d'abord s'il existe
+          if (value) {
+            const transportExists = checkTransportExists(value);
+            setSelectedTransportIsValid(transportExists);
+            
+            if (!transportExists) {
+              updatedErrors[fieldKey] = ["Le transport sélectionné n'existe pas dans la base."];
+            } else {
+              delete updatedErrors[fieldKey];
+            }
+          } else {
+            delete updatedErrors[fieldKey];
+            setSelectedTransportIsValid(true);
+          }
+        } else if (value) {
           delete updatedErrors[fieldKey];
         } else {
           let errorMessage = `${name} est requis.`;
@@ -527,7 +836,6 @@ const useMissionForm = ({
           updatedErrors[fieldKey] = [errorMessage];
         }
 
-        // Clear related beneficiary errors when beneficiary is selected
         if (name === "beneficiary" && value) {
           const relatedFields = ["matricule", "function", "base", "direction", "department", "service"];
           relatedFields.forEach((field) => {
@@ -556,36 +864,23 @@ const useMissionForm = ({
         if (name === "location") {
           const selectedRegion = regions.find((region) => `${region.nom}${region.pays ? `/${region.pays}` : ""}` === value);
           updatedFormData.lieuId = selectedRegion ? selectedRegion.lieuId : "";
+          
+          if (value && selectedRegion) {
+            setSelectedLieuIsValid(true);
+          } else if (value) {
+            setSelectedLieuIsValid(false);
+          }
         }
 
         if (name === "startDate") {
-          // Set default departureDate to startDate if departureDate is empty
           let updatedBeneficiary = prev.beneficiary;
           if (!prev.beneficiary.departureDate) {
             updatedBeneficiary = { ...prev.beneficiary, departureDate: value || "" };
           }
 
-          const { missionDuration, error } = calculateMissionDuration(
-            updatedBeneficiary.departureDate,
-            updatedBeneficiary.returnDate,
-            value
-          );
-          setFieldErrors((prevErrors) => {
-            const updatedErrors = { ...prevErrors };
-            if (error) {
-              updatedErrors["beneficiary.departureDate"] = [error];
-              updatedErrors["beneficiary.returnDate"] = [error];
-              updatedErrors["beneficiary.missionDuration"] = [error];
-            } else {
-              delete updatedErrors["beneficiary.departureDate"];
-              delete updatedErrors["beneficiary.returnDate"];
-              delete updatedErrors["beneficiary.missionDuration"];
-            }
-            return updatedErrors;
-          });
           return {
             ...updatedFormData,
-            beneficiary: { ...updatedBeneficiary, missionDuration },
+            beneficiary: updatedBeneficiary,
           };
         }
 
@@ -596,6 +891,7 @@ const useMissionForm = ({
         const updatedErrors = { ...prev };
         let errorKey = name;
         let errorMessage = "";
+        
         switch (name) {
           case "missionTitle":
             errorMessage = "Le titre de la mission est requis.";
@@ -611,30 +907,45 @@ const useMissionForm = ({
             break;
           case "location":
             errorKey = "lieuId";
-            errorMessage = "Le lieu est requis.";
+            if (value) {
+              const lieuExists = checkLieuExists(value);
+              setSelectedLieuIsValid(lieuExists);
+              if (!lieuExists) {
+                errorMessage = "Le lieu sélectionné n'existe pas dans la base de données. Veuillez en choisir un existant ou en ajouter un nouveau.";
+              } else {
+                delete updatedErrors[errorKey];
+                break;
+              }
+            } else {
+              errorMessage = "Le lieu est requis.";
+              setSelectedLieuIsValid(false);
+            }
             break;
           default:
             errorMessage = `${name} est requis.`;
         }
-        if (value) {
+        
+        if (value && name !== "location") {
           delete updatedErrors[errorKey];
-        } else if (name !== "description") {
+        } else if (name !== "description" && errorMessage) {
           updatedErrors[errorKey] = [errorMessage];
         }
 
         return updatedErrors;
       });
     }
-  }, [suggestions, regions, calculateMissionDuration]);
+  }, [suggestions, regions, calculateMissionDuration, checkLieuExists, checkTransportExists]);
 
-  // ----------------------------------------------------------------------
-  // Fonctions de Navigation et de Soumission
-  // ----------------------------------------------------------------------
-
+  // Navigation functions avec validation renforcée
   const handleNext = useCallback(() => {
     if (currentStep === 1) {
       const isValid = validateStep1();
-      if (isValid) {
+      // Vérifier aussi les validations de lieu et transport
+      const lieuValid = formData.location ? selectedLieuIsValid : true;
+      // Le transport peut être vide, donc toujours valide sauf si une valeur invalide est fournie
+      const transportValid = !formData.beneficiary.transport || selectedTransportIsValid;
+      
+      if (isValid && lieuValid && transportValid) {
         setCurrentStep(2);
       } else {
         showAlert("error", "Veuillez corriger les erreurs avant de continuer.", fieldErrors);
@@ -647,7 +958,7 @@ const useMissionForm = ({
         showAlert("error", "Veuillez corriger les erreurs avant de continuer.", fieldErrors);
       }
     }
-  }, [currentStep, validateStep1, validateStep2, showAlert, fieldErrors]);
+  }, [currentStep, validateStep1, validateStep2, formData, selectedLieuIsValid, selectedTransportIsValid, showAlert, fieldErrors]);
 
   const handlePrevious = useCallback(() => {
     if (currentStep === 2) {
@@ -664,7 +975,7 @@ const useMissionForm = ({
       location: "",
       startDate: initialStartDate || null,
       endDate: null,
-      missionType: "national",
+      missionType: "Nationale",
       beneficiary: {
         beneficiary: "",
         employeeId: "",
@@ -687,9 +998,11 @@ const useMissionForm = ({
       type: "Indemnité",
     });
     setFieldErrors({});
+    setSelectedLieuIsValid(true);
+    setSelectedTransportIsValid(true);
     setCurrentStep(1);
-    showAlert("info", "Formulaire réinitialisé.");
-  }, [initialStartDate, showAlert]);
+    setAlert({ isOpen: true, type: "info", message: "Formulaire réinitialisé." });
+  }, [initialStartDate]);
 
   const handleCancel = useCallback(() => {
     handleReset();
@@ -697,13 +1010,49 @@ const useMissionForm = ({
   }, [handleReset, onClose]);
 
   const createMutation = useCreateMission();
-  const updateMutation = useUpdateMission(missionId || "");
+  const updateMutation = useUpdateMission();
+
+  const convertFormValuesToEnums = useCallback((formData: FormData) => {
+    let missionType: MissionTypeEnum;
+    if (formData.missionType === "Nationale") {
+      missionType = MissionTypeEnum.National;
+    } else if (formData.missionType === "Internationale") {
+      missionType = MissionTypeEnum.International;
+    } else {
+      missionType = MissionTypeEnum.Unknown;
+    }
+    
+    let paymentType: PaymentTypeEnum;
+    if (formData.type === "Indemnité") {
+      paymentType = PaymentTypeEnum.Indemnite;
+    } else if (formData.type === "Note de frais") {
+      paymentType = PaymentTypeEnum.NoteFrais;
+    } else {
+      paymentType = PaymentTypeEnum.Indemnite;
+    }
+    const status = MissionStatusEnum.PendingApproval;
+    return {
+      missionType,
+      paymentType,
+      status
+    };
+  }, []);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
       if (hasClickedSubmit || isSubmitting) {
+        return;
+      }
+
+      if (!selectedLieuIsValid) {
+        showAlert("error", "Le lieu sélectionné n'existe pas dans la base de données. Veuillez en choisir un existant ou en ajouter un nouveau.");
+        return;
+      }
+
+      if (formData.missionType === "Nationale" && formData.beneficiary.transport && !selectedTransportIsValid) {
+        showAlert("error", "Le transport sélectionné n'existe pas dans la base de données. Veuillez en choisir un existant ou en ajouter un nouveau.");
         return;
       }
 
@@ -723,56 +1072,83 @@ const useMissionForm = ({
       try {
         const userId = userData?.userId || "";
 
-        const locationName = formData.location.split("/")[0];
+        const locationName = formData.location?.split("/")[0] || "";
         const selectedRegion = regions.find((region) => region.nom === locationName);
         const beneficiary = formData.beneficiary;
         const selectedEmployee = suggestions.beneficiary.find((emp) => emp.id === beneficiary.employeeId);
-
-        if (formData.location && !selectedRegion && !formData.lieuId) {
-          setErrorModal({ isOpen: true, message: "Le lieu sélectionné n'est pas valide ou n'a pas d'ID." });
+        if (!selectedRegion || !selectedRegion.lieuId) {
+          setErrorModal({ isOpen: true, message: "Le lieu sélectionné n'est pas valide." });
           return;
         }
-        if (!beneficiary.employeeId || !selectedEmployee) {
+        
+        if (!selectedEmployee) {
           setErrorModal({ isOpen: true, message: "Le bénéficiaire sélectionné n'est pas valide." });
           return;
         }
+        
+        const { missionType, paymentType, status } = convertFormValuesToEnums(formData);
 
+        console.log("Données avant envoi à l'API:", {
+          missionType: {
+            value: missionType,
+            numeric: Number(missionType),
+            expected: "1 pour Nationale, 2 pour Internationale"
+          },
+          paymentType: {
+            value: paymentType,
+            numeric: Number(paymentType),
+            expected: "1 pour Indemnité, 2 pour Note de frais"
+          },
+          status: {
+            value: status,
+            numeric: Number(status)
+          },
+          transportId: beneficiary.transportId || "" 
+        });
 
-        const missionData: MissionDTOForm = {
-          missionType: formData.missionType,
-          type: formData.type,
-          name: formData.missionTitle,
-          description: formData.description,
-          startDate: formData.startDate ? new Date(formData.startDate).toISOString() : "",
-          endDate: formData.endDate ? new Date(formData.endDate).toISOString() : "",
-          lieuId: selectedRegion ? selectedRegion.lieuId : formData.lieuId,
+        const missionData: CreateMissionInput = {
+          missionType: missionType,
+          type: paymentType,
+          name: formData.missionTitle || "",
+          description: formData.description || "",
+          status: status,
+          startDate: formData.startDate || "",
+          endDate: formData.endDate || "",
+          lieuId: selectedRegion.lieuId,
+          employeeId: selectedEmployee.id,
+          departureDate: beneficiary.departureDate || "",
+          departureTime: beneficiary.departureTime || "",
+          returnDate: beneficiary.returnDate || "",
+          returnTime: beneficiary.returnTime || "",
+          duration: parseInt(beneficiary.missionDuration as string) || 0,
+          isValidated: 0,
+          allocatedFund: 0,
+          transportId: beneficiary.transportId || null,
           userId: userId,
-          assignations: [
-            {
-              employeeId: selectedEmployee.id,
-              transportId: beneficiary.transport
-                ? suggestions.transport.find((t) => t.type === beneficiary.transport)?.id ?? null
-                : null,
-              departureDate: beneficiary.departureDate ? new Date(beneficiary.departureDate).toISOString() : "",
-              departureTime: beneficiary.departureTime || "",
-              returnDate: beneficiary.returnDate ? new Date(beneficiary.returnDate).toISOString() : "",
-              returnTime: beneficiary.returnTime || "",
-              type: formData.type,
-              allocatedFund: 0, // Assuming not in form, or add
-              duration: parseInt(beneficiary.missionDuration) || 0,
-            } as MissionAssignationDTOForm,
-          ],
         };
 
-        let response: ApiResponse<CreateMissionResponseData | UpdateMissionResponseData>;
+        const cleanMissionData = Object.fromEntries(
+          Object.entries(missionData).map(([key, value]) => [
+            key, 
+            value === undefined ? "" : value
+          ])
+        ) as CreateMissionInput;
+
+        console.log("Données finales envoyées à l'API:", cleanMissionData);
+
+        let response: ApiResponse<Mission> | CreateMissionResponse;
         let successMessage: string;
 
         if (missionId) {
-          response = await updateMutation.mutateAsync(missionData);
+          const updateData: UpdateMissionInput = {
+            missionId: missionId,
+            ...cleanMissionData
+          };
+          response = await updateMutation.mutateAsync(updateData);
           successMessage = "Mission mise à jour avec succès.";
         } else {
-          response = await createMutation.mutateAsync(missionData);
-          successMessage = "Mission créée et assignée avec succès.";
+          response = await createMutation.mutateAsync(cleanMissionData);
+          successMessage = "Mission créée avec succès.";
         }
 
         if (response.status !== 200) {
@@ -780,7 +1156,7 @@ const useMissionForm = ({
         }
 
         onFormSuccess("success", successMessage);
-        showAlert("success", successMessage);
+        setAlert({ isOpen: true, type: "success", message: successMessage });
 
         setHasClickedSubmit(false);
         setIsSubmitting(false);
@@ -789,7 +1165,7 @@ const useMissionForm = ({
       } catch (error: unknown) {
         console.error("Submit error:", error);
         const errorMessage = error instanceof Error ? error.message : "Une erreur est survenue lors de la soumission";
-        showAlert("error", errorMessage);
+        setErrorModal({ isOpen: true, message: errorMessage });
         setHasClickedSubmit(false);
         setIsSubmitting(false);
       }
@@ -799,75 +1175,101 @@ const useMissionForm = ({
       isSubmitting,
       formData,
       regions,
+      transports,
       suggestions.beneficiary,
-      suggestions.transport,
       missionId,
       userData,
       validateStep1,
       validateStep2,
       validateStep3,
-      showAlert,
       fieldErrors,
       onFormSuccess,
       onClose,
       createMutation,
       updateMutation,
+      convertFormValuesToEnums,
+      selectedLieuIsValid,
+      selectedTransportIsValid,
     ]
   );
 
   useEffect(() => {
     if (!isOpen || !missionId || !missionResponse?.data || regions.length === 0 || employeeSuggestions.length === 0 || transportSuggestions.length === 0) return;
 
-    const data = missionResponse.data;
-    const assignationData = data;
-    const employeeData = assignationData.employee ?? {};
-    const transportData = assignationData.transport ?? {};
-    const missionData = assignationData.mission ?? {};
+    const missionData = missionResponse.data;
 
-    const selectedEmployee = employeeSuggestions.find(e => e.id === (employeeData as unknown as Partial<Employee>).employeeId);
-    const selectedTransport = transportSuggestions.find(t => t.id === (transportData as unknown as Partial<Transport>).transportId);
-    const selectedRegion = regions.find(r => r.lieuId === missionData.lieuId);
+    if (missionData) {
+      const selectedEmployee = employeeSuggestions.find(e => e.id === missionData.employeeId);
+      const selectedTransport = transportSuggestions.find(t => t.id === missionData.transportId);
+      const selectedRegion = regions.find(r => r.lieuId === missionData.lieuId);
 
-    setFormData((prev) => {
-      const name = missionData.name || "";
-      const location = selectedRegion 
-        ? `${selectedRegion.nom}${selectedRegion.pays ? `/${selectedRegion.pays}` : ""}` 
-        : (missionData as { lieu?: { nom: string } }).lieu?.nom || "";
+      console.log("Chargement des données de mission pour édition:", {
+        missionData: missionData,
+        missionType: missionData.missionType,
+        paymentType: missionData.type,
+        selectedEmployee: selectedEmployee,
+        selectedTransport: selectedTransport,
+        selectedRegion: selectedRegion
+      });
+      
+      // Convertir les enums en valeurs de formulaire avec gestion des null
+      const missionType = missionData.missionType === MissionTypeEnum.National ? "Nationale" :
+                         missionData.missionType === MissionTypeEnum.International ? "Internationale" : "Nationale";
+      
+      const paymentType = missionData.type === PaymentTypeEnum.Indemnite ? "Indemnité" :
+                         missionData.type === PaymentTypeEnum.NoteFrais ? "Note de frais" : "Indemnité";
 
-      const beneficiaryDetails = selectedEmployee ? {
-        beneficiary: selectedEmployee.displayName || `${(employeeData as unknown as Partial<Employee>).lastName || ''} ${(employeeData as unknown as Partial<Employee>).firstName || ''}`,
-        employeeId: selectedEmployee.id || "",
-        matricule: selectedEmployee.employeeCode || "",
-        function: selectedEmployee.jobTitle || "",
-        base: selectedEmployee.site || "",
-        direction: selectedEmployee.direction || "",
-        department: selectedEmployee.department || "",
-        service: selectedEmployee.service || "",
-        costCenter: selectedEmployee.costCenter || "",
-        transport: selectedTransport?.type || (transportData as unknown as Partial<Transport>).type || "",
-        transportId: selectedTransport?.id || (transportData as unknown as Partial<Transport>).transportId || null,
-        departureDate: assignationData.departureDate?.substring(0, 10) || "",
-        departureTime: assignationData.departureTime || "",
-        missionDuration: assignationData.duration?.toString() || "",
-        returnDate: assignationData.returnDate?.substring(0, 10) || "",
-        returnTime: assignationData.returnTime || "",
-        type: assignationData.type || "Indemnité",
-      } : prev.beneficiary;
+      setFormData((prev) => {
+        const location = selectedRegion 
+          ? `${selectedRegion.nom}${selectedRegion.pays ? `/${selectedRegion.pays}` : ""}` 
+          : "";
 
-      return {
-        ...prev,
-        missionTitle: name,
-        description: missionData.description || "",
-        location: location,
-        lieuId: missionData.lieuId || "",
-        startDate: missionData.startDate?.substring(0, 10) || null,
-        endDate: missionData.endDate?.substring(0, 10) || null,
-        missionType: missionData.missionType || "national",
-        type: assignationData.type || "Indemnité",
-        beneficiary: beneficiaryDetails,
-      };
-    });
-  }, [isOpen, missionId, missionResponse, regions, employeeSuggestions, transportSuggestions]);
+        const beneficiaryDetails = selectedEmployee ? {
+          beneficiary: selectedEmployee.displayName || `${missionData.employee?.lastName || ''} ${missionData.employee?.firstName || ''}`.trim() || "Non spécifié",
+          employeeId: selectedEmployee.id || "",
+          matricule: selectedEmployee.employeeCode || "",
+          function: selectedEmployee.jobTitle || "",
+          base: selectedEmployee.site || "",
+          direction: selectedEmployee.direction || "",
+          department: selectedEmployee.department || "",
+          service: selectedEmployee.service || "",
+          costCenter: selectedEmployee.costCenter || "",
+          transport: selectedTransport?.type || missionData.transport?.type || "",
+          transportId: selectedTransport?.id || missionData.transportId || "",
+          departureDate: missionData.departureDate?.substring(0, 10) || "",
+          departureTime: missionData.departureTime || "",
+          missionDuration: missionData.duration?.toString() || "0",
+          returnDate: missionData.returnDate?.substring(0, 10) || "",
+          returnTime: missionData.returnTime || "",
+        } : {
+          ...prev.beneficiary,
+          beneficiary: "Non spécifié",
+          missionDuration: missionData.duration?.toString() || "0",
+        };
+
+        if (location) {
+          setSelectedLieuIsValid(checkLieuExists(location));
+        }
+        
+        if (beneficiaryDetails.transport) {
+          setSelectedTransportIsValid(checkTransportExists(beneficiaryDetails.transport));
+        }
+
+        return {
+          ...prev,
+          missionTitle: missionData.name || "",
+          description: missionData.description || "",
+          location: location,
+          lieuId: missionData.lieuId || "",
+          startDate: missionData.startDate?.substring(0, 10) || null,
+          endDate: missionData.endDate?.substring(0, 10) || null,
+          missionType: missionType,
+          type: paymentType,
+          beneficiary: beneficiaryDetails,
+        };
+      });
+    }
+  }, [isOpen, missionId, missionResponse, regions, employeeSuggestions, transportSuggestions, checkLieuExists, checkTransportExists]);
 
   useEffect(() => {
     if (suggestions.beneficiary.length === 0 || transportSuggestions.length === 0) return;
@@ -916,6 +1318,8 @@ const useMissionForm = ({
     regions,
     regionNames,
     regionDisplayNames,
+    transports,
+    transportTypes,
     suggestions,
     alert,
     setAlert,
@@ -928,6 +1332,8 @@ const useMissionForm = ({
     validateStep3,
     handleReset,
     handleCancel,
+    selectedLieuIsValid,
+    selectedTransportIsValid,
   };
 };
 

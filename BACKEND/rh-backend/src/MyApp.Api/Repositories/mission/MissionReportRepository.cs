@@ -8,7 +8,7 @@ namespace MyApp.Api.Repositories.mission
     {
         Task<IEnumerable<MissionReport>> GetAllAsync();
         Task<MissionReport?> GetByIdAsync(string id);
-        Task<IEnumerable<MissionReport>> GetByAssignationIdAsync(string assignationId);
+        Task<IEnumerable<MissionReport>> GetByMissionIdAsync(string assignationId);
         Task AddAsync(MissionReport entity);
         Task UpdateAsync(MissionReport entity);
         Task DeleteAsync(MissionReport entity);
@@ -28,7 +28,7 @@ namespace MyApp.Api.Repositories.mission
         {
             return await _context.MissionReports
                 .Include(mr => mr.User)
-                .Include(mr => mr.MissionAssignation)
+                .Include(mr => mr.Mission)
                 .OrderByDescending(mr => mr.CreatedAt)
                 .ToListAsync();
         }
@@ -38,15 +38,15 @@ namespace MyApp.Api.Repositories.mission
             return await _context.MissionReports
                 .AsNoTracking()
                 .Include(mr => mr.User)
-                .Include(mr => mr.MissionAssignation)
+                .Include(mr => mr.Mission)
                 .FirstOrDefaultAsync(mr => mr.MissionReportId == id);
         }
 
-        public async Task<IEnumerable<MissionReport>> GetByAssignationIdAsync(string assignationId)
+        public async Task<IEnumerable<MissionReport>> GetByMissionIdAsync(string missionId)
         {
             return await _context.MissionReports
                 .Include(mr => mr.User)
-                .Where(mr => mr.AssignationId == assignationId)
+                .Where(mr => mr.MissionId == missionId)
                 .OrderByDescending(mr => mr.CreatedAt)
                 .ToListAsync();
         }

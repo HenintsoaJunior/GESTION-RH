@@ -52,12 +52,12 @@ namespace MyApp.Api.Entities.mission
         [MaxLength(50)]
         public string Status { get; set; } = "unpaid";
         
-        [Column("assignation_id")]
+        [Column("mission_id")]
         [MaxLength(50)]
-        public string AssignationId { get; set; } = null!;
+        public string MissionId { get; set; } = null!;
         
-        [ForeignKey("AssignationId")]
-        public MissionAssignation? Assignation { get; set; }
+        [ForeignKey("MissionId")]
+        public Mission? Mission { get; set; }
         
         [Column("employee_id")]
         [MaxLength(50)]
@@ -81,7 +81,7 @@ namespace MyApp.Api.Entities.mission
             Status = compensationDTO.Status;
             PaymentDate = compensationDTO.PaymentDate;
             Devise = compensationDTO.Devise;
-            AssignationId = compensationDTO.AssignationId;
+            MissionId = compensationDTO.MissionId;
             EmployeeId = compensationDTO.EmployeeId;
             CreatedAt = compensationDTO.CreatedAt;
             UpdatedAt = compensationDTO.UpdatedAt;

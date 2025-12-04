@@ -11,7 +11,6 @@ import {
 } from "@/styles/popup-styles";
 import {
   FormContainer,
-  GenericForm,
   FormSectionTitle,
   FormTable,
   FormRow,
@@ -20,39 +19,54 @@ import {
   FormInput,
   ErrorMessage
 } from "@/styles/form-container";
-import { useCreateTransport, useUpdateTransport } from '@/api/transport/services';
-import type { Transport, TransportDTOForm } from '@/api/transport/services';
+
+import { 
+  useCreateTransport, 
+  useUpdateTransport,
+  type Transport, 
+  type TransportDTOForm 
+} from '@/api/transport/services';
 
 interface TransportFormProps {
   isOpen: boolean;
   onClose: () => void;
   onFormSuccess: (message: string) => void;
   transport: Transport | null;
+  prefillType?: string;
+  onSuccessClose?: (newTransport: any) => void;
 }
 
-const TransportForm: React.FC<TransportFormProps> = ({ isOpen, onClose, onFormSuccess, transport }) => {
+const TransportForm: React.FC<TransportFormProps> = ({ 
+  isOpen, 
+  onClose, 
+  onFormSuccess, 
+  transport,
+  prefillType = '',
+  onSuccessClose 
+}) => {
   const [formData, setFormData] = useState<TransportDTOForm>({ type: '' });
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
+
   const createTransportMutation = useCreateTransport();
-  const updateTransportMutation = useUpdateTransport();
+  const updateTransportMutation = useUpdateTransport(transport?.transportId || '');
 
   useEffect(() => {
     if (transport) {
       setFormData({ type: transport.type });
+    } else if (prefillType) {
+      setFormData({ type: prefillType });
     } else {
       setFormData({ type: '' });
     }
     setFieldErrors({});
-  }, [transport]);
+  }, [transport, prefillType, isOpen]);
 
-  // Mémorisation des états calculés
   const isUpdateMode = useMemo(() => !!transport, [transport]);
   const isProcessing = useMemo(() => 
     createTransportMutation.isPending || updateTransportMutation.isPending,
     [createTransportMutation.isPending, updateTransportMutation.isPending]
   );
 
-  // Mémorisation des textes dynamiques
   const popupTitle = useMemo(() => 
     isUpdateMode ? 'Modifier le transport' : 'Ajouter un transport',
     [isUpdateMode]
@@ -68,9 +82,8 @@ const TransportForm: React.FC<TransportFormProps> = ({ isOpen, onClose, onFormSu
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: TransportDTOForm) => ({ ...prev, [name]: value }));
-    // Clear error on change
-    if (fieldErrors[name as keyof TransportDTOForm]) {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) {
       setFieldErrors(prev => ({ ...prev, [name]: [] }));
     }
   }, [fieldErrors]);
@@ -78,44 +91,80 @@ const TransportForm: React.FC<TransportFormProps> = ({ isOpen, onClose, onFormSu
   const validateForm = useCallback((): boolean => {
     const newErrors: { [key: string]: string[] } = {};
     if (!formData.type.trim()) {
-      newErrors.type = ['Type est requis'];
+      newErrors.type = ['Le type est requis'];
     }
     setFieldErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [formData]);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(async () => {
+    if (isProcessing) return;
+    
     if (!validateForm()) return;
-    if (transport) {
-      updateTransportMutation.mutate({ id: transport.transportId, transport: formData }, {
-        onSuccess: () => {
-          onFormSuccess('Transport modifié avec succès.');
-        },
-      });
-    } else {
-      createTransportMutation.mutate(formData, {
-        onSuccess: () => {
-          onFormSuccess('Transport créé avec succès.');
-        },
-      });
-    }
-  }, [transport, formData, updateTransportMutation, createTransportMutation, onFormSuccess, validateForm]);
 
-  const handleCancel = useCallback(() => {
+    const handleSuccess = (data: any, message: string) => {
+      onFormSuccess(message);
+      if (onSuccessClose && data?.data) {
+        onSuccessClose(data.data);
+      }
+    };
+
+    try {
+      if (isUpdateMode) {
+        await updateTransportMutation.mutateAsync(formData, {
+          onSuccess: (response) => {
+            handleSuccess(response, 'Transport modifié avec succès.');
+          },
+        });
+      } else {
+        await createTransportMutation.mutateAsync(formData, {
+          onSuccess: (response) => {
+            handleSuccess(response, 'Transport créé avec succès.');
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la création/modification du transport:', error);
+    }
+  }, [
+    formData,
+    isUpdateMode,
+    validateForm,
+    updateTransportMutation,
+    createTransportMutation,
+    onFormSuccess,
+    onSuccessClose,
+    isProcessing
+  ]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  }, [handleSubmit]);
+
+  const handleCancel = useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setFieldErrors({});
     onClose();
   }, [onClose]);
 
-  // Ne pas afficher le popup si non ouvert
+  const handleOverlayClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+
   if (!isOpen) return null;
 
   return (
-    <PopupOverlay>
-      <PagePopup>
+    <PopupOverlay onClick={handleCancel}>
+      <PagePopup onClick={handleOverlayClick}>
         <PopupHeader>
           <PopupTitle>{popupTitle}</PopupTitle>
-          <PopupClose
+          <PopupClose 
             onClick={handleCancel}
             disabled={isProcessing}
             aria-label="Fermer le formulaire"
@@ -127,7 +176,12 @@ const TransportForm: React.FC<TransportFormProps> = ({ isOpen, onClose, onFormSu
 
         <PopupContent>
           <FormContainer>
-            <GenericForm id="transportForm" onSubmit={handleSubmit}>
+            <div 
+              onKeyDown={handleKeyDown}
+              role="form"
+              aria-label={popupTitle}
+              style={{ width: '100%' }}
+            >
               <FormSectionTitle>Informations sur le Transport</FormSectionTitle>
               <FormTable>
                 <tbody>
@@ -140,44 +194,39 @@ const TransportForm: React.FC<TransportFormProps> = ({ isOpen, onClose, onFormSu
                         value={formData.type}
                         onChange={handleChange}
                         disabled={isProcessing}
-                        className={fieldErrors.type && fieldErrors.type.length > 0 ? "input-error" : ""}
+                        className={fieldErrors.type ? "input-error" : ""}
+                        placeholder="Ex: Voiture de service, Train, Avion..."
+                        autoFocus
+                        required
                       />
-                      {fieldErrors.type && fieldErrors.type.length > 0 && (
+                      {fieldErrors.type && (
                         <ErrorMessage>{fieldErrors.type.join(", ")}</ErrorMessage>
                       )}
                     </FormFieldCell>
                   </FormRow>
                 </tbody>
               </FormTable>
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                <ButtonPrimary
-                  type="button"
-                  onClick={handleCancel}
+                <ButtonPrimary 
+                  type="button" 
+                  onClick={handleCancel} 
                   disabled={isProcessing}
-                  style={{
-                    opacity: isProcessing ? 0.6 : 1,
-                    cursor: isProcessing ? 'not-allowed' : 'pointer',
-                    transition: 'opacity 0.3s ease'
-                  }}
+                  style={{ cursor: isProcessing ? 'not-allowed' : 'pointer' }}
                 >
                   Annuler
                 </ButtonPrimary>
-                <ButtonPrimary
-                  type="submit"
+                <ButtonPrimary 
+                  type="button" 
+                  onClick={handleSubmit}
                   disabled={isProcessing}
-                  title={isProcessing ? submittingText : submitText}
-                  aria-label={isProcessing ? submittingText : submitText}
-                  style={{
-                    opacity: isProcessing ? 0.6 : 1,
-                    cursor: isProcessing ? 'not-allowed' : 'pointer',
-                    transition: 'opacity 0.3s ease'
-                  }}
+                  style={{ cursor: isProcessing ? 'not-allowed' : 'pointer' }}
                 >
-                  <Save size={16} aria-hidden="true" />
+                  <Save size={16} />
                   <span>{isProcessing ? submittingText : submitText}</span>
                 </ButtonPrimary>
               </div>
-            </GenericForm>
+            </div>
           </FormContainer>
         </PopupContent>
       </PagePopup>

@@ -31,7 +31,6 @@ import {
 import { useGetLieux, useDeleteLieu } from "@/api/lieu/services";
 import { useGetAllGeoZones } from "@/api/zones/services";
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAutoOpenModal } from "@/utils/use-auto-open-modal";
 import Alert from "@/components/alert";
 import Modal from "@/components/modal";
 import Pagination from "@/components/pagination";
@@ -63,17 +62,42 @@ const LieuList: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [lieuToDelete, setLieuToDelete] = useState<string | null>(null);
   const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
+  const [hasAutoOpened, setHasAutoOpened] = useState<boolean>(false);
 
-  const [filters, setFilters] = useState<FiltersState>({ nom: "", ville: "", pays: "", zoneSearch: "", selectedGeoZone: null });
-  const [appliedFilters, setAppliedFilters] = useState<FiltersState>({ nom: "", ville: "", pays: "", zoneSearch: "", selectedGeoZone: null });
+  const [filters, setFilters] = useState<FiltersState>({ 
+    nom: "", 
+    ville: "", 
+    pays: "", 
+    zoneSearch: "", 
+    selectedGeoZone: null 
+  });
+  const [appliedFilters, setAppliedFilters] = useState<FiltersState>({ 
+    nom: "", 
+    ville: "", 
+    pays: "", 
+    zoneSearch: "", 
+    selectedGeoZone: null 
+  });
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [totalCount, setTotalCount] = useState<number>(0);
 
+  // Récupération des paramètres d'URL pour l'ouverture automatique
+  // Supporte plusieurs formats de paramètres
+  const autoOpen = searchParams.get('autoOpen') === 'true' || 
+                   searchParams.get('mode') === 'add' || 
+                   searchParams.get('fieldType') === 'location';
+  const fieldLabel = searchParams.get('fieldLabel') || 'nom'; // Valeur par défaut 'nom'
+  const initialValue = searchParams.get('initialValue');
+  const returnUrl = searchParams.get('returnUrl');
+
   const { data: geoZonesData } = useGetAllGeoZones();
   const geoZones = useMemo(() => geoZonesData?.data || [], [geoZonesData]);
 
-  const zoneSuggestions = useMemo(() => geoZones.map((zone: GeoZone) => zone.name), [geoZones]);
+  const zoneSuggestions = useMemo(() => 
+    geoZones.map((zone: GeoZone) => zone.name), 
+    [geoZones]
+  );
 
   const filteredZoneSuggestions = useMemo(() =>
     zoneSuggestions.filter((sug) =>
@@ -88,34 +112,56 @@ const LieuList: React.FC = () => {
     pays: appliedFilters.pays.trim() || undefined,
     zoneId: appliedFilters.selectedGeoZone?.zoneId || undefined,
   };
-  const { data: searchResponse, isLoading, error, refetch } = useGetLieux(searchFilters, page, pageSize);
+  
+  const { 
+    data: searchResponse, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useGetLieux(searchFilters, page, pageSize);
+  
   const deleteLieuMutation = useDeleteLieu();
 
   const lieux = useMemo(() => searchResponse?.data || [], [searchResponse]);
 
-  const hasFilters = appliedFilters.nom.trim() !== "" || appliedFilters.ville.trim() !== "" || appliedFilters.pays.trim() !== "" || !!appliedFilters.selectedGeoZone;
+  const hasFilters = appliedFilters.nom.trim() !== "" || 
+    appliedFilters.ville.trim() !== "" || 
+    appliedFilters.pays.trim() !== "" || 
+    !!appliedFilters.selectedGeoZone;
 
-  const defaultLieuPartial: Partial<Lieu> = {
-    ville: '',
-    codePostal: '',
-    pays: '',
-  };
+  // Effet pour ouvrir automatiquement le formulaire lors de la navigation
+  useEffect(() => {
+    if (autoOpen && !hasAutoOpened && !isFormOpen) {
+      // Prépare un objet partiel avec la valeur pré-remplie
+      const prefillData: Partial<Lieu> = {
+        ville: '',
+        codePostal: '',
+        pays: '',
+        // Pré-remplit le champ spécifié dans l'URL
+        ...(fieldLabel && initialValue 
+          ? { [fieldLabel]: decodeURIComponent(initialValue) } 
+          : {})
+      };
+      
+      setSelectedLieu(prefillData);
+      setIsFormOpen(true);
+      setHasAutoOpened(true);
+      
+      console.log("Lieu form auto-opened with prefill:", prefillData);
+      
+      // Pas besoin de nettoyer l'URL ici, laissez les paramètres
+      // Ils seront utilisés pour le retour après création
+    }
+  }, [autoOpen, fieldLabel, initialValue, isFormOpen, hasAutoOpened]);
 
-  const handleNavigateBack = useCallback((returnUrl: string) => {
+  const handleNavigateBack = useCallback(() => {
     if (returnUrl) {
       navigate(decodeURIComponent(returnUrl));
     } else {
-      // Fallback: navigate to default mission page, adjust as needed
+      // Fallback: navigate to default mission page
       navigate('/mission');
     }
-  }, [navigate]);
-
-  useAutoOpenModal<Lieu>({
-    entityName: 'Lieu',
-    defaultPartial: defaultLieuPartial,
-    setSelectedEntity: setSelectedLieu,
-    setIsOpen: setIsFormOpen,
-  });
+  }, [navigate, returnUrl]);
 
   useEffect(() => {
     if (searchResponse) {
@@ -128,11 +174,13 @@ const LieuList: React.FC = () => {
   const handleAddClick = useCallback(() => {
     setSelectedLieu(null);
     setIsFormOpen(true);
+    setHasAutoOpened(false);
   }, []);
 
   const handleEditClick = useCallback((lieu: Lieu) => {
     setSelectedLieu(lieu);
     setIsFormOpen(true);
+    setHasAutoOpened(false);
   }, []);
 
   const handleDeleteClick = useCallback((lieuId: string) => {
@@ -144,12 +192,20 @@ const LieuList: React.FC = () => {
     if (lieuToDelete) {
       deleteLieuMutation.mutate(lieuToDelete, {
         onSuccess: () => {
-          setAlert({ isOpen: true, type: "success", message: "Lieu supprimé avec succès." });
+          setAlert({ 
+            isOpen: true, 
+            type: "success", 
+            message: "Lieu supprimé avec succès." 
+          });
           setIsDeleteModalOpen(false);
           refetch();
         },
         onError: () => {
-          setAlert({ isOpen: true, type: "error", message: "Erreur lors de la suppression du lieu." });
+          setAlert({ 
+            isOpen: true, 
+            type: "error", 
+            message: "Erreur lors de la suppression du lieu." 
+          });
         },
       });
     }
@@ -157,15 +213,22 @@ const LieuList: React.FC = () => {
 
   const handleFormSuccess = useCallback((message: string) => {
     setIsFormOpen(false);
-    setAlert({ isOpen: true, type: "success", message });
+    
     refetch();
 
-    // Navigue vers la page d'origine après succès (création/modification)
-    const returnUrl = searchParams.get('returnUrl');
-    if (returnUrl) {
-      handleNavigateBack(returnUrl);
+    if (returnUrl && autoOpen) {
+      handleNavigateBack();
+    } else {
+      console.log("Lieu form success:", message);
     }
-  }, [refetch, searchParams, handleNavigateBack]);
+  }, [refetch, returnUrl, autoOpen, handleNavigateBack]);
+
+  const handleFormClose = useCallback(() => {
+    setIsFormOpen(false);
+    if (autoOpen && returnUrl) {
+      handleNavigateBack();
+    }
+  }, [autoOpen, returnUrl, handleNavigateBack]);
 
   const handleFilterSubmit = useCallback((event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -174,7 +237,13 @@ const LieuList: React.FC = () => {
   }, [filters]);
 
   const handleResetFilters = useCallback((): void => {
-    const resetFilters: FiltersState = { nom: "", ville: "", pays: "", zoneSearch: "", selectedGeoZone: null };
+    const resetFilters: FiltersState = { 
+      nom: "", 
+      ville: "", 
+      pays: "", 
+      zoneSearch: "", 
+      selectedGeoZone: null 
+    };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
     setPage(1);
@@ -213,24 +282,37 @@ const LieuList: React.FC = () => {
     setPage(1);
   }, []);
 
+  // Reset hasAutoOpened quand le formulaire se ferme
+  useEffect(() => {
+    if (!isFormOpen) {
+      setHasAutoOpened(false);
+    }
+  }, [isFormOpen]);
+
   if (error) return <div>Une erreur est survenue.</div>;
 
   return (
     <>
-      <Alert
-        type={alert.type}
-        message={alert.message}
-        isOpen={alert.isOpen}
-        onClose={() => setAlert({ ...alert, isOpen: false })}
-      />
+      {/* Alert seulement affiché quand on n'est pas en mode autoOpen */}
+      {!autoOpen && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          isOpen={alert.isOpen}
+          onClose={() => setAlert({ ...alert, isOpen: false })}
+        />
+      )}
+      
       {isFormOpen && (
         <LieuForm
           isOpen={isFormOpen}
-          onClose={() => setIsFormOpen(false)}
+          onClose={handleFormClose}
           onFormSuccess={handleFormSuccess}
           lieu={selectedLieu as Lieu | null}
+          prefillNom={fieldLabel === 'nom' && initialValue ? decodeURIComponent(initialValue) : ''}
         />
       )}
+      
       {isDeleteModalOpen && (
         <Modal
           type="error"
@@ -244,6 +326,7 @@ const LieuList: React.FC = () => {
           showActions={true}
         />
       )}
+      
       <FiltersContainer>
         <FiltersHeader>
           <FiltersTitle>Filtre</FiltersTitle>
@@ -321,10 +404,14 @@ const LieuList: React.FC = () => {
           </form>
         </FiltersSection>
       </FiltersContainer>
+      
       <TableContainer>
         <TableHeader>
           <TableTitle>Lieux</TableTitle>
-          <ButtonSearch title="Ajouter un lieu" onClick={handleAddClick}>
+          <ButtonSearch 
+            title="Ajouter un lieu" 
+            onClick={handleAddClick}
+          >
             <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Ajouter un lieu
           </ButtonSearch>
@@ -337,7 +424,9 @@ const LieuList: React.FC = () => {
               <TableHeadCell>Code Postal</TableHeadCell>
               <TableHeadCell>Pays</TableHeadCell>
               <TableHeadCell>Zone Géographique</TableHeadCell>
-              <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
+              <TableHeadCell style={{ width: "100px", textAlign: "center" }}>
+                Actions
+              </TableHeadCell>
             </tr>
           </thead>
           <tbody>
@@ -369,7 +458,9 @@ const LieuList: React.FC = () => {
               <TableRow>
                 <TableCell colSpan={6}>
                   <NoDataMessage>
-                    {hasFilters ? "Aucun lieu ne correspond aux critères." : "Aucun lieu trouvé."}
+                    {hasFilters 
+                      ? "Aucun lieu ne correspond aux critères." 
+                      : "Aucun lieu trouvé."}
                   </NoDataMessage>
                 </TableCell>
               </TableRow>
@@ -384,7 +475,6 @@ const LieuList: React.FC = () => {
           onPageSizeChange={handlePageSizeChange}
         />
       </TableContainer>
-      
     </>
   );
 };
