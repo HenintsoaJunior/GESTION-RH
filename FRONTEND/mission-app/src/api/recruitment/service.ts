@@ -5,6 +5,7 @@ import api from '@/utils/axios-config';
 // Base key pour React Query
 const SEARCH_REQUESTS_BASE_KEY = ['searchRequests'] as const;
 const SEARCH_STATUSES_BASE_KEY = ['searchRequestStatuses'] as const;
+const SEARCH_REASONS_BASE_KEY = ['searchReasons'] as const;
 
 // Types
 export interface FilterRequestDTO {
@@ -26,7 +27,7 @@ export interface RequestDTO {
     sendingDate: string;
 }
 
-export interface StatusDTO {
+export interface DocumentDTO {
     id: string;
     name: string;
 }
@@ -66,7 +67,7 @@ export const useSearchRequests = (
 
 export const useSearchRequestStatuses = () => {
     const queryKey = [...SEARCH_STATUSES_BASE_KEY] as const;
-    return useQuery<{ data:StatusDTO[] }, Error>({
+    return useQuery<{ data:DocumentDTO[] }, Error>({
         queryKey,
         queryFn: async () => {
             try {
@@ -74,6 +75,25 @@ export const useSearchRequestStatuses = () => {
                 return {
                     data: response.data.data
                 };
+            } catch(error) {
+                if(axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || 'Erreur serveur');
+                }
+                throw error;
+            }
+        }
+    })
+};
+
+
+export const useGetReplacementReasons = () => {
+    const queryKey = [...SEARCH_REASONS_BASE_KEY] as const;
+    return useQuery<{ data:DocumentDTO[] }, Error>({
+        queryKey,
+        queryFn: async () => {
+            try {
+                const response = await api.get('/api/recruitment/replacement-reasons');
+                return response.data;
             } catch(error) {
                 if(axios.isAxiosError(error) && error.response) {
                     throw new Error(error.response.data?.message || 'Erreur serveur');

@@ -1,6 +1,7 @@
 CREATE TABLE replacement_reasons(
    replacement_reason_id VARCHAR(50) NOT NULL,
    reason_name VARCHAR(70)  NOT NULL,
+   is_deleted BIT DEFAULT 0,
    PRIMARY KEY(replacement_reason_id)
 );
  
@@ -55,6 +56,7 @@ CREATE TABLE recruitment_requests(
    updated_at DATETIME2,
    applicant_user VARCHAR(250) NOT NULL,
    replacement_reason_id VARCHAR(50),
+   reason_precision VARCHAR(70),
    contract_type_id VARCHAR(50),
    last_titular_user VARCHAR(250),
    PRIMARY KEY(request_id),

@@ -552,8 +552,7 @@ export const useUserCollaboratorsMatricules = (userId: string | undefined) => {
 export interface EmployeeInformations {
   id: string;
   matricule: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   post: string;
   service: string;
   department: string;
@@ -564,32 +563,42 @@ export interface EmployeeInformations {
 }
 
 export const useEmployeeInformations = () => {
-  const matricule = JSON.parse(localStorage.getItem("user") || "null")?.matricule;
-  const queryKey = [...USER_COLLABORATORS_MATRICULES_BASE_KEY, matricule] as const;
+  const userId = JSON.parse(localStorage.getItem("user") || "null")?.userId;
+  const queryKey = [...USER_COLLABORATORS_MATRICULES_BASE_KEY, userId] as const;
 
   return useQuery<EmployeeInformations, Error>({
     queryKey,
     queryFn: async () => {
-      if (!matricule) {
+      if (!userId) {
         throw new Error('matricule is required for fetching collaborators matricules');
       }
       try {
-        const userInfo = await api.get(`/api/Employee/matricule/${matricule}`);
-        const superiorInfo = await api.get(`/api/User/${userInfo.data.employeeId}/info`);
+        const resp1 = await api.get(`/api/User/${userId}/info`);
+        const userInfo = resp1.data.data[0] ?? {};
+
+        const [resp2, resp3] = await Promise.all([
+          api.get(`/api/Employee/matricule/${userInfo.matricule}`),
+          api.get(`/api/User/${userInfo.superiorId}/info`)
+        ]);
+        const employeeInfo = resp2.data.data;
+        const superiorInfo = resp3.data.data[0] ?? {};
+
+        // console.log('User Data:', userInfo);
+        // console.log('Superior Data:', employeeInfo);
 
         const employeeData: EmployeeInformations = {
-          id: userInfo.data.employeeId,
-          matricule: userInfo.data.employeeCode,
-          firstName: userInfo.data.firstName,
-          lastName: userInfo.data.lastName,
-          post: userInfo.data.jobTitle,
-          service: userInfo.data.service.serviceName,
-          department: userInfo.data.department.departmentName,
-          direction: userInfo.data.direction.directionName,
-          superiorId: superiorInfo.data[0].userId,
-          superiorName: superiorInfo.data[0].name,
-          superiorPost: superiorInfo.data[0].position
+          id: userInfo.userId,
+          name: userInfo.name,
+          matricule: userInfo.matricule,
+          post: userInfo.position,
+          superiorId: userInfo.superiorId,
+          superiorName: userInfo.superiorName,
+          direction: userInfo.department,
+          department: employeeInfo.department.departmentName,
+          service: employeeInfo.service.serviceName,
+          superiorPost: superiorInfo.position
         };
+
 
         return employeeData;
       } catch (error) {
@@ -599,6 +608,6 @@ export const useEmployeeInformations = () => {
         throw error;
       }
     },
-    enabled: !!matricule,
+    enabled: !!userId,
   });
 };

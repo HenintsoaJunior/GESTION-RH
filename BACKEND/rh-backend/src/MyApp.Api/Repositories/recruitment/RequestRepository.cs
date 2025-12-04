@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
-using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Utils.generator;
@@ -140,6 +138,17 @@ public class RequestRepository : IRequestRepository
                 Validator = applicant,
                 Request = request
             };
+
+            for(int i=0; i<data.Sites.Length; i++) {
+                var siteRequest = new SiteRequest
+                {
+                    Id = _generator.GenerateSequence("seq_site_request_id", "DMD/REC/SITE"),
+                    Request = request,
+                    Site = await _dbCtx.Sites.FindAsync(data.Sites[i]) ?? throw new Exception("Site introuvable")
+                };
+                await _dbCtx.SiteRequests.AddAsync(siteRequest);
+            }
+
             await _dbCtx.RecruitmentRequests.AddAsync(request);
             await _dbCtx.RequestValidations.AddAsync(reqValidation);
 

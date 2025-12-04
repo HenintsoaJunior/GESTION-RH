@@ -1,5 +1,6 @@
 import { Save, X } from "lucide-react";
 import * as FaIcons from "react-icons/fa";
+import React, { useCallback, useState } from "react";
 import {
     PopupOverlay,
     PagePopup,
@@ -21,171 +22,68 @@ import {
 } from "@/styles/form-container";
 import Alert from "@/components/alert";
 import PostInformationsStep from "./components/post-info-step";
-import CompensationStep from "./components/reasons-step";
-import useMissionForm from "./hooks/use-request-form";
-import Modal from 'react-modal';
-import React, { useEffect, useMemo, useCallback } from "react";
+import RecruitmentReasonStep from "./components/reasons-step";
+import useRecruitmentForm from "./hooks/use-request-form";
 
 interface RecruitmentRequestFormProps {
     isOpen: boolean;
     onClose: () => void;
-    requestId?: string | number | null;
-    initialStartDate?: string;
     onFormSuccess: (type: string, message: string) => void;
 }
 
-interface Beneficiary {
-    beneficiary: string;
-    matricule: string;
-    function: string;
-    base: string;
-    direction: string;
-    department: string;
-    service: string;
-    costCenter: string;
-    transport: string;
-    departureDate: string;
-    departureTime: string;
-    returnDate: string;
-    returnTime: string;
-    missionDuration: string | number;
-}
-
-interface MissionFormData {
-    missionType?: string;
-    missionTitle?: string;
-    description?: string;
-    location?: string;
-    beneficiary: Beneficiary;
-    startDate?: string;
-    endDate?: string;
-    type: string;
-}
-
-interface UseMissionFormReturn {
-    currentStep: number;
-    formData: MissionFormData;
-    isSubmitting: boolean;
-    hasClickedSubmit: boolean;
-    alert: {
-        isOpen: boolean;
-        type: "success" | "info" | "error" | "warning";
-        message: string;
-    };
-    setAlert: (alert: UseMissionFormReturn["alert"]) => void;
-    errorModal: {
-        isOpen: boolean;
-        message: string;
-    };
-    setErrorModal: (errorModal: UseMissionFormReturn["errorModal"]) => void;
-    regionDisplayNames: string[];
-    suggestions: {
-        beneficiary: { displayName: string }[];
-        transport: { type: string }[];
-    };
-    isLoading: {
-        regions: boolean;
-        employees: boolean;
-        transports: boolean;
-        missionDetail?: boolean;
-    };
-    fieldErrors: { [key: string]: string[] };
-    handleInputChange: (
-        e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } },
-        section?: string
-    ) => void;
-    handleAddNewSuggestion: (type: string, value: string) => void;
-    handleNext: () => void;
-    handlePrevious: () => void;
-    handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
-    handleCancel: () => void;
-}
-
-const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({ 
-  isOpen, 
-  onClose, 
-  requestId, 
-  initialStartDate, 
-  onFormSuccess 
+const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
+  isOpen,
+  onClose,
+  onFormSuccess
 }) => {
-    const hookReturn = useMissionForm({ 
-      isOpen, 
-      onClose, 
-      requestId: requestId?.toString(), 
-      initialStartDate, 
-      onFormSuccess 
+    const {
+      currentStep,
+      formData,
+      fieldErrors,
+      handleInputChange,
+      validateStep2,
+      handleNext,
+      handlePrevious,
+      handleReset,
+    } = useRecruitmentForm();
+
+    const [alert, setAlert] = useState<{ isOpen: boolean; type: "success" | "info" | "error"; message: string }>({
+      isOpen: false, type: "info", message: ""
     });
 
-    const {
-        currentStep,
-        formData,
-        isSubmitting,
-        hasClickedSubmit,
-        alert,
-        setAlert,
-        errorModal,
-        setErrorModal,
-        regionDisplayNames,
-        isLoading,
-        fieldErrors,
-        handleInputChange,
-        handleAddNewSuggestion,
-        handleNext,
-        handlePrevious,
-        handleSubmit,
-        handleCancel,
-    } = hookReturn as unknown as UseMissionFormReturn;
+    const handleAlertClose = useCallback(() => setAlert((a) => ({ ...a, isOpen: false })), []);
+    const showError = useCallback((message: string) => setAlert({ isOpen: true, type: "error", message }), []);
 
-// Configuration de Modal au montage du composant
-    useEffect(() => {
-      Modal.setAppElement("#root");
-    }, []);
-
-// Mémorisation des états calculés pour éviter les recalculs
-    const isUpdateMode = useMemo(() => !!requestId, [requestId]);
-    const isProcessing = useMemo(() => isSubmitting || hasClickedSubmit, [isSubmitting, hasClickedSubmit]);
-    const isDataLoading = useMemo(() => 
-      isLoading.regions || 
-      isLoading.employees || 
-      isLoading.transports || 
-      (isUpdateMode && isLoading.missionDetail),
-      [isLoading.regions, isLoading.employees, isLoading.transports, isUpdateMode, isLoading.missionDetail]
-    );
-
-// Mémorisation des textes dynamiques
-    const popupTitle = useMemo(() => 
-      isUpdateMode ? "Mise à Jour de la demande" : "Création d'une demande",
-      [isUpdateMode]
-    );
-    const submitText = useMemo(() => 
-      isUpdateMode ? "Mettre à Jour" : "Valider et Créer",
-      [isUpdateMode]
-    );
-    const submittingText = useMemo(() => 
-      isUpdateMode ? "Mise à jour en cours..." : "Création en cours...",
-      [isUpdateMode]
-    );
-
-// Callbacks mémorisés pour les actions de fermeture
-    const handleAlertClose = useCallback(() => {
-      setAlert({ ...alert, isOpen: false });
-    }, [alert, setAlert]);
-
-    const handleErrorModalClose = useCallback(() => {
-      setErrorModal({ isOpen: false, message: "" });
-    }, [setErrorModal]);
-
-// Ne pas afficher le popup si non ouvert
     if (!isOpen) return null;
+
+    const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      
+      if (currentStep === 1) {
+        // Step 1: handleNext already validates internally
+        console.log("RequestForm - step 1 proceeding to next:", { formData });
+        handleNext();
+      } else if (currentStep === 2) {
+        // Step 2: validate and submit
+        const ok = validateStep2();
+        console.log("RequestForm - final payload:", { formData });
+        if (!ok) {
+          showError("Veuillez corriger les erreurs avant de valider.");
+          return;
+        }
+        onFormSuccess("success", "Demande validée — payload loggé en console.");
+        handleReset();
+        onClose();
+      }
+    };
 
     return (
         <PopupOverlay>
             <PagePopup>
                 <PopupHeader>
-                    <PopupTitle>{popupTitle}</PopupTitle> 
+                    <PopupTitle>Demande de recrutement</PopupTitle>
                     <PopupClose
-                        onClick={handleCancel}
-                        disabled={isProcessing || isDataLoading}
+                        onClick={() => { handleReset(); onClose(); }}
                         aria-label="Fermer le formulaire"
                         title="Fermer"
                     >
@@ -194,54 +92,10 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                 </PopupHeader>
 
                 <PopupContent>
-                    {/* Alerte de notification */}
                     {alert.isOpen && (
-                        <Alert
-                            type={alert.type}
-                            message={alert.message}
-                            isOpen={alert.isOpen}
-                            onClose={handleAlertClose}
-                        />
+                      <Alert type={alert.type} message={alert.message} isOpen={alert.isOpen} onClose={handleAlertClose} />
                     )}
-                    
-                    {/* Modal d'erreur de validation */}
-                    <Modal
-                        isOpen={errorModal.isOpen}
-                        onRequestClose={handleErrorModalClose}
-                        contentLabel="Erreur de validation"
-                        className="error-modal"
-                        overlayClassName="error-modal-overlay"
-                        ariaHideApp={false}
-                        shouldCloseOnOverlayClick={true}
-                        shouldCloseOnEsc={true}
-                    >
-                        <div className="modal-header">
-                            <h2 className="modal-title">Erreur de validation</h2>
-                            <button 
-                                className="modal-close-button"
-                                onClick={handleErrorModalClose}
-                                aria-label="Fermer la modale"
-                                type="button"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <p>{errorModal.message}</p>
-                        </div>
-                        <div className="modal-footer">
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-                                <ButtonPrimary 
-                                    onClick={handleErrorModalClose}
-                                    type="button"
-                                >
-                                    OK
-                                </ButtonPrimary>
-                            </div>
-                        </div>
-                    </Modal>
 
-                    {/* Stepper de navigation */}
                     <StepperWrapper>
                         <StepItem active={currentStep === 1}>
                             <span>1</span> Informations du poste
@@ -252,65 +106,65 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                     </StepperWrapper>
 
                     <FormContainer>
-                        {/* Formulaire multi-étapes */}
-                        <GenericForm id="combinedMissionForm" onSubmit={handleSubmit}>
-                            {/* Étape 1: Mission et Collaborateur */}
+                        <GenericForm id="recruitmentForm" onSubmit={onSubmit}>
                             <StepContent active={currentStep === 1}>
                                 <PostInformationsStep
-                                    formData={formData}
+                                    formData={{
+                                      post: formData.post,
+                                      effective: formData.effective,
+                                      contractId: formData.contractId,
+                                      contractPrecision: formData.contractPrecision,
+                                      monthDuration: formData.monthDuration,
+                                      sites: formData.sites,
+                                      applicantUserId: formData.applicantUserId || "",
+                                    }}
                                     fieldErrors={fieldErrors}
-                                    isSubmitting={isProcessing}
-                                    isLoading={isLoading}
-                                    regionDisplayNames={regionDisplayNames}
+                                    isSubmitting={false}
+                                    suggestions={{ applicant: [] }}
                                     handleInputChange={handleInputChange}
-                                    handleAddNewSuggestion={handleAddNewSuggestion}
                                 />
                                 <StepNavigation>
                                     <NextButton
                                         type="button"
                                         onClick={handleNext}
-                                        disabled={isProcessing || isDataLoading}
                                         aria-label="Passer à l'étape suivante"
-                                        title="Étape suivante"
+                                        title="Suivant"
                                     >
                                         Suivant <FaIcons.FaArrowRight className="w-4 h-4" />
                                     </NextButton>
                                 </StepNavigation>
                             </StepContent>
 
-                            {/* Étape 2: Compensation et soumission */}
                             <StepContent active={currentStep === 2}>
-                                <CompensationStep
-                                    formData={formData}
+                                <RecruitmentReasonStep
+                                    formData={{
+                                      isReplacement: formData.isReplacement,
+                                      replacementReasonId: formData.replacementReasonId,
+                                      replacementDate: formData.replacementDate,
+                                      reasonPrecision: formData.reasonPrecision,
+                                      lastTitularId: formData.lastTitularId,
+                                      beginningDate: formData.beginningDate,
+                                    }}
                                     fieldErrors={fieldErrors}
-                                    isSubmitting={isProcessing}
+                                    isSubmitting={false}
                                     handleInputChange={handleInputChange}
                                 />
                                 <StepNavigation>
                                     <PreviousButton
                                         type="button"
                                         onClick={handlePrevious}
-                                        disabled={isProcessing}
                                         aria-label="Revenir à l'étape précédente"
-                                        title="Étape précédente"
+                                        title="Précédent"
                                     >
                                         <FaIcons.FaArrowLeft className="w-4 h-4" /> Précédent
                                     </PreviousButton>
                                     <ButtonPrimary
                                         type="submit"
-                                        disabled={isProcessing || isDataLoading}
-                                        title={isProcessing ? submittingText : submitText}
-                                        aria-label={isProcessing ? submittingText : submitText}
-                                        style={{
-                                            opacity: isProcessing || isDataLoading ? 0.6 : 1,
-                                            cursor: isProcessing || isDataLoading ? 'not-allowed' : 'pointer',
-                                            transition: 'opacity 0.3s ease'
-                                        }}
+                                        title="Valider la demande"
+                                        aria-label="Valider la demande"
                                     >
                                         <Save size={16} aria-hidden="true" />
-                                        <span>
-                                            {isProcessing ? submittingText : submitText} 
-                                        </span>
+                                        <span>Valider</span>
                                     </ButtonPrimary>
                                 </StepNavigation>
                             </StepContent>

@@ -8,12 +8,16 @@ public class RequestFormDTO
     public string Post {get; set;} = null!;
 
     [Required(ErrorMessage = "Effectif obligatoire")]
+    [MinLength(0, ErrorMessage = "Effectif positif obligatoire")]
     public short Effective {get; set;}
 
-    [Required(ErrorMessage = "Remplacement obligatoire")]
+    public string[] Sites {get; set;} = [];
+
+    [Required(ErrorMessage = "Remplacement ou pas obligatoire")]
     public bool IsReplacement {get; set;}
     public DateOnly? ReplacementDate {get; set;}
     public string? ReplacementReasonId {get; set;}
+    public string? ReasonPrecision {get; set;}
     public string? LastTitularId {get; set;}
 
     public string? ContractId {get; set;} = null!;

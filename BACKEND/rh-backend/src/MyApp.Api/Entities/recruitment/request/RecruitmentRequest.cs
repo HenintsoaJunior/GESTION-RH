@@ -33,14 +33,17 @@ public class RecruitmentRequest : BaseEntity
     [Column("begining_date")]
     public DateOnly BeginingDate {get; set;}
 
-    [Column("is_deleted")]
-    public bool IsDeleted {get; set;}
-
     [ForeignKey("applicant_user")]
     public User ApplicantUser {get; set;} = null!;
 
     [ForeignKey("replacement_reason_id")]
     public ReplacementReason? ReplacementReason {get; set;}
+
+    [Column("is_deleted")]
+    public bool IsDeleted  { get; set; } = false;
+
+    [Column("reason_precision")]
+    public string? ReasonPrecision {get; set;}
 
     [ForeignKey("contract_type_id")]
     public ContractType Contract {get; set;} = null!;

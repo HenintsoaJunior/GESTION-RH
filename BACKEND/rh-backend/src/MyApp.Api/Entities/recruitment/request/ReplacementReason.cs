@@ -12,4 +12,7 @@ public class ReplacementReason
 
     [Column("reason_name")]
     public string Reason {get; set;} = null!;
+
+    [Column("is_deleted")]
+    public bool IsDeleted  { get; set; } = false;
 }

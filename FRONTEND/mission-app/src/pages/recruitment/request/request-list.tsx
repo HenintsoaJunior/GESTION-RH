@@ -30,7 +30,7 @@ import {
   NoDataMessage,
 } from "@/styles/table-styles";
 
-import { useSearchRequests, useSearchRequestStatuses, type FilterRequestDTO, type StatusDTO } from "@/api/recruitment/service";
+import { useSearchRequests, useSearchRequestStatuses, type FilterRequestDTO, type DocumentDTO } from "@/api/recruitment/service";
 import { useGetContractTypes } from "@/api/contract/services";
 import { useGetAllDirections } from "@/api/direction/services";
 import ProtectedRoute from "@/components/protected-route";
@@ -48,7 +48,7 @@ interface FiltersState {
     status: string;
     direction: string;
     contract: string;
-    selectedStatus?: StatusDTO | null;
+    selectedStatus?: DocumentDTO | null;
     selectedDirection?: Direction | null;
     selectedContract?: ContractType | null;
     dateMin: string;

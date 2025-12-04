@@ -12,18 +12,22 @@ import {
 	FormInput,
 	ErrorMessage,
 } from "@/styles/form-container";
-import { useEmployeeInformations, type UserPostInformation } from "@/api/users/services";
+import { useEmployeeInformations, type EmployeeInformations } from "@/api/users/services";
+import { useGetSites, type Site } from "@/api/site/services";
 
 
-interface PostInformationsStepProps {
-	formData: {
-		post: string;
-		effective: number | "";
-		contractId: string;
-		contractPrecision?: string;
-		monthDuration?: number | "";
-		applicantUserId: string;
-	};
+export interface PostInformationForm {
+	post: string;
+	effective: number | "";
+	contractId: string | "";
+	contractPrecision?: string | "";
+	monthDuration?: number | "";
+	sites: string[];
+	applicantUserId: string;
+}
+
+interface PostInformationStepProps {
+	formData: PostInformationForm;
 	fieldErrors: { [key: string]: string[] };
 	isSubmitting: boolean;
 	isLoading?: { [key: string]: boolean };
@@ -49,21 +53,20 @@ interface CurrentUser {
 	managerFunction?: string;
 }
 
-const PostInformationsStep: React.FC<PostInformationsStepProps> = ({
+const PostInformationStep: React.FC<PostInformationStepProps> = ({
 	formData,
 	fieldErrors,
 	isSubmitting,
 	handleInputChange,
 }) => {
 	const { data: contractsResponse, isLoading: contractsLoading } = useGetContractTypes();
+	const { data: sitesResponse, isLoading: sitesLoading } = useGetSites();
 	const { data: infosResponse } = useEmployeeInformations();
 	const contracts: ContractType[] = contractsResponse?.data || [];
+	const sites: Site[] = sitesResponse?.data || [];
 
-	// selected contract by code (same as request-list.tsx)
 	const selectedContract = contracts.find((c) => c.code === formData.contractId) || null;
-	// option "other" selected explicitly
 	const isOther = formData.contractId === "other";
-	// CDD detection (contract code equals "CDD" or label includes "CDD")
 	const isCDD =
 		Boolean(selectedContract) &&
 		(
@@ -71,44 +74,19 @@ const PostInformationsStep: React.FC<PostInformationsStepProps> = ({
 			(selectedContract?.label || "").toUpperCase().includes("CDD")
 		);
 
-	// derive visibility
-	const showPrecision = isOther && !isCDD; // precision only when "Autre" and not CDD
-	const showDuration = isOther || isCDD; // duration when "Autre" OR when CDD
+	const showPrecision = isOther && !isCDD; 
+	const showDuration = isOther || isCDD; 
 
-	// Normaliser les différentes formes de réponse et extraire l'objet employee
-	// handle cases: infosResponse, infosResponse.data, infosResponse.data.data
-	const payload = (infosResponse as any)?.data ?? infosResponse;
-	const employee = (payload as any)?.data ?? payload;
-	const currentUser: CurrentUser | null = employee
-		? {
-				// identifiant : prefer employeeId (ex: "EMP-000445")
-				id: employee.employeeId ?? employee.id ?? employee.employeeCode ?? "",
-				// direction : direction.directionName or directionName
-				direction:
-					employee.direction?.directionName ?? employee.directionName ?? employee.direction ?? "",
-				// department : department.departmentName or departmentName
-				department:
-					employee.department?.departmentName ?? employee.departmentName ?? employee.department ?? "",
-				// service : service.serviceName or serviceName
-				service:
-					employee.service?.serviceName ?? employee.serviceName ?? employee.service ?? "",
-				// supérieur : try several possible property names
-				managerName:
-					employee.superiorName ??
-					employee.managerName ??
-					employee.supervisorName ??
-					(employee.supervisor && (employee.supervisor.name ?? employee.supervisor.fullName)) ??
-					"",
-				managerFunction:
-					employee.superiorPost ??
-					employee.managerFunction ??
-					employee.managerTitle ??
-					(employee.supervisor && (employee.supervisor.function ?? employee.supervisor.title)) ??
-					"",
-		  }
-		: null;
+	const employee = (infosResponse as EmployeeInformations);
 
-	console.log("Current User Info:", currentUser);
+	const currentUser: CurrentUser | null = employee? {
+		id: employee.id,
+		direction: employee.direction,
+		department: employee.department,
+		service: employee.service,
+		managerName: employee.superiorName,
+		managerFunction: employee.superiorPost
+	} : null;
 
 	return (
 		<>
@@ -202,6 +180,45 @@ const PostInformationsStep: React.FC<PostInformationsStepProps> = ({
 						</FormFieldCell>
 					</FormRow>
 
+					{/* Sites : checkboxes multiples */}
+					<FormRow>
+						<FormFieldCell colSpan={2}>
+							<FormLabelRequired>Sites</FormLabelRequired>
+							{sitesLoading ? (
+								<div>Chargement des sites...</div>
+							) : (
+								<div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
+									{sites.map((site) => (
+										<label
+											key={site.siteId}
+											style={{ display: "flex", alignItems: "center", gap: 8 }}
+										>
+											<FormInput
+												type="checkbox"
+												name={`site_${site.siteId}`}
+												checked={formData.sites?.includes(site.siteId) || false}
+												onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+													handleInputChange({
+														target: {
+															name: `site_${site.siteId}`,
+															value: e.target.checked ? "true" : "false",
+														},
+													});
+												}}
+												disabled={isSubmitting}
+											/>
+											<span style={{ whiteSpace: "nowrap" }}>{site.siteName || site.code}</span>
+										</label>
+									))}
+								</div>
+							)}
+
+							{fieldErrors.sites && fieldErrors.sites.length > 0 && (
+								<ErrorMessage>{fieldErrors.sites.join(", ")}</ErrorMessage>
+							)}
+						</FormFieldCell>
+					</FormRow>
+
 					{/* Si Autre -> précision + durée ; Si CDD -> durée seulement */}
 					{showPrecision && (
 						<FormRow className="dual-field-row">
@@ -277,7 +294,7 @@ const PostInformationsStep: React.FC<PostInformationsStepProps> = ({
 								</div>
 
 								{/* Service */}
-								<div>
+								<div style={{ gridColumn: "1 / -1" }}>
 									<FormLabel>Service</FormLabel>
 									<FormInput
 										type="text"
@@ -289,7 +306,7 @@ const PostInformationsStep: React.FC<PostInformationsStepProps> = ({
 								</div>
 
 								{/* Supérieur */}
-								<div>
+								<div style={{ gridColumn: "1 / -1" }}>
 									<FormLabel>Supérieur</FormLabel>
 									<FormInput
 										type="text"
@@ -300,7 +317,7 @@ const PostInformationsStep: React.FC<PostInformationsStepProps> = ({
 									/>
 								</div>
 
-								{/* Fonction du supérieur (full width) */}
+								{/* Fonction du supérieur (à droite du Supérieur) */}
 								<div style={{ gridColumn: "1 / -1" }}>
 									<FormLabel>Fonction du supérieur</FormLabel>
 									<FormInput
@@ -332,4 +349,4 @@ const PostInformationsStep: React.FC<PostInformationsStepProps> = ({
 	);
 };
 
-export default PostInformationsStep;
+export default PostInformationStep;

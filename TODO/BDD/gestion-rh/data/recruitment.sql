@@ -47,3 +47,11 @@ INSERT INTO habilitations (habilitation_id, group_id, label, description) VALUES
 ('HAB_032', 'HABG_004', 'Créer demande recrutement', 'Permet de cré demande de recrutement'),
 ('HAB_033', 'HABG_004', 'Annuler demande recrutement', 'Permet d’annuler une demande de recrutement');
 
+INSERT INTO replacement_reasons (replacement_reason_id, reason_name) VALUES
+('RR_001', 'Décès'),
+('RR_002', 'Démission'),
+('RR_003', 'Essai non concluant'),
+('RR_004', 'Retraite'),
+('RR_005', 'Licenciement'),
+('RR_006', 'Rupture de contrat à l’amiable'),
+('RR_007', 'Mobilité interne');
