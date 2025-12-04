@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useQuery,useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback as useReactCallback } from 'react';
 import axios from 'axios';
 import api from '@/utils/axios-config';
 
-const MISSION_VALIDATIONS_BY_ASSIGNATION_ID_KEY = ['missionValidationsByAssignationId'] as const;
+const MISSION_VALIDATIONS_BY_MISSION_ID_KEY = ['missionValidationsByMissionId'] as const;
 const MISSION_VALIDATION_REQUESTS_KEY = ['missionValidationRequests'] as const;
 const HAS_ANY_VALIDATOR_VALIDATED_KEY = ['hasAnyValidatorValidated'] as const;
 const HAS_VALIDATION_LINE_KEY = ['hasValidationLine'] as const;
@@ -45,16 +45,28 @@ export interface Lieu {
 
 export interface Mission {
   missionId: string;
-  missionType: string;
+  missionType: number;
   name: string;
   description: string;
-  status: string;
+  status: number;
   startDate: string;
   endDate: string;
   lieuId: string;
   lieu: Lieu;
+  employeeId: string;
+  employee: Employee | null;
+  departureDate: string;
+  departureTime: string;
+  returnDate: string;
+  returnTime: string;
+  duration: number;
+  isValidated: number;
+  type: number;
+  allocatedFund: number;
+  transportId: string | null;
+  transport: unknown | null;
   createdAt: string;
-  updatedAt: string;
+  updatedAt: string | null;
 }
 
 export interface Direction {
@@ -118,26 +130,6 @@ export interface Employee {
   updatedAt: string | null;
 }
 
-export interface MissionAssignation {
-  assignationId: string;
-  employeeId: string;
-  missionId: string;
-  transportId: string | null;
-  departureDate: string;
-  departureTime: string;
-  returnDate: string;
-  returnTime: string;
-  duration: number;
-  isValidated: number | null;
-  employee: Employee | null;
-  mission: Mission | null;
-  transport: unknown | null;
-  type: string;
-  allocatedFund: number;
-  createdAt: string;
-  updatedAt: string | null;
-}
-
 export interface MissionValidation {
   missionValidationId: string;
   status: string;
@@ -146,8 +138,6 @@ export interface MissionValidation {
   creator: User | null;
   missionId: string;
   mission: Mission;
-  missionAssignationId: string;
-  missionAssignation: MissionAssignation;
   toWhom: string;
   validator: User | null;
   type: string;
@@ -203,9 +193,8 @@ export interface FormattedMission {
   email: string;
   createdAt: string;
   updatedAt: string | null;
-  missionAssignationId: string;
-  missionType: string;
-  missionStatus: string;
+  missionType: number;
+  missionStatus: number;
   allocatedFund: number;
   type: string;
   assignationType: string;
@@ -235,7 +224,6 @@ export interface ApiResponse<T> {
   message: string;
 }
 
-
 const formatMissionValidationToFormattedMission = (validation: MissionValidation): FormattedMission => {
   const {
     missionValidationId,
@@ -244,7 +232,6 @@ const formatMissionValidationToFormattedMission = (validation: MissionValidation
     missionCreator,
     creator,
     mission,
-    missionAssignation,
     toWhom,
     type: validationType,
     createdAt,
@@ -258,45 +245,33 @@ const formatMissionValidationToFormattedMission = (validation: MissionValidation
     status: missionStatus,
     endDate,
     lieu,
-  } = mission;
-
-  const {
-    assignationId: missionAssignationId,
     employee,
     departureDate,
     departureTime,
     returnDate,
     returnTime,
     duration,
-    allocatedFund,
     type: assignationType,
-    employeeId: empId,
-  } = missionAssignation;
+    allocatedFund,
+  } = mission;
 
-  const {
-    employeeCode,
-    jobTitle,
-    department,
-    direction,
-    service,
-    firstName,
-    lastName,
-    email: empEmail,
-  } = employee || {};
-
-  const departmentName = department?.departmentName || '';
-  const directionName = direction?.directionName || '';
-  const serviceName = service?.serviceName || '';
-  const employeeFullName = `${firstName || ''} ${lastName || ''}`.trim() || '';
-  const employeeEmailValue = empEmail || '';
-  const employeeFunctionValue = jobTitle || '';
+  const employeeCode = employee?.employeeCode || '';
+  const jobTitle = employee?.jobTitle || '';
+  const employeeId = employee?.employeeId || '';
+  const firstName = employee?.firstName || '';
+  const lastName = employee?.lastName || '';
+  const empEmail = employee?.email || '';
+  const direction = employee?.direction?.directionName || '';
+  const department = employee?.department?.departmentName || '';
+  const service = employee?.service?.serviceName || '';
+  const employeeName = `${firstName} ${lastName}`.trim();
 
   return {
     id: missionValidationId,
     title: missionName,
     description,
     requestedBy: creator?.name || 'Unknown',
-    department: departmentName,
+    department,
     status: validationStatus,
     requestDate: createdAt,
     dueDate: endDate,
@@ -304,8 +279,8 @@ const formatMissionValidationToFormattedMission = (validation: MissionValidation
     location: lieu?.nom || '',
     comments: '',
     signature: creator?.signature || '',
-    matricule: employeeCode || '',
-    function: employeeFunctionValue,
+    matricule: employeeCode,
+    function: jobTitle,
     transport: '',
     departureTime,
     departureDate,
@@ -320,33 +295,32 @@ const formatMissionValidationToFormattedMission = (validation: MissionValidation
     email: creator?.email || '',
     createdAt,
     updatedAt,
-    missionAssignationId,
     missionType,
     missionStatus,
     allocatedFund,
     type: validationType,
-    assignationType,
-    employeeId: empId || '',
+    assignationType: assignationType.toString(),
+    employeeId,
     missionId: mission.missionId,
-    employeeName: employeeFullName,
-    direction: directionName,
-    service: serviceName,
-    employeeEmail: employeeEmailValue,
-    employeeFunction: employeeFunctionValue,
+    employeeName,
+    direction,
+    service,
+    employeeEmail: empEmail,
+    employeeFunction: jobTitle,
   };
 };
 
-export const useGetMissionValidationsByAssignationId = (assignationId: string | undefined) => {
-  const queryKey = [...MISSION_VALIDATIONS_BY_ASSIGNATION_ID_KEY, assignationId] as const;
+export const useGetMissionValidationsByMissionId = (missionId: string | undefined) => {
+  const queryKey = [...MISSION_VALIDATIONS_BY_MISSION_ID_KEY, missionId] as const;
 
   return useQuery<MissionValidation[], Error>({
     queryKey,
     queryFn: async () => {
-      if (!assignationId) {
-        throw new Error('assignationId is required for fetching mission validations');
+      if (!missionId) {
+        throw new Error('missionId is required for fetching mission validations');
       }
       try {
-        const response = await api.get(`/api/MissionValidation/by-assignation-id/${assignationId}`);
+        const response = await api.get(`/api/MissionValidation/by-mission-id/${missionId}`);
         if (response.data.status !== 200) {
           throw new Error(response.data.message || 'Failed to fetch mission validations');
         }
@@ -358,7 +332,7 @@ export const useGetMissionValidationsByAssignationId = (assignationId: string | 
         throw error;
       }
     },
-    enabled: !!assignationId, 
+    enabled: !!missionId,
   });
 };
 
@@ -402,23 +376,49 @@ export const useGetMissionValidationRequests = (
         if (filter?.requestDateTo) {
           params.append('requestDateTo', filter.requestDateTo);
         }
-        const response = await api.get(`/api/MissionValidation/requests/${userId}?${params.toString()}`);
+        
+        const url = `/api/MissionValidation/requests/${userId}?${params.toString()}`;
+        
+        const response = await api.get(url);
+
+        // CORRECTION IMPORTANTE : La réponse de l'API a la structure suivante :
+        // {
+        //   "data": { "results": [...], "totalCount": X },
+        //   "status": 200,
+        //   "message": "success"
+        // }
+        
         if (response.data.status !== 200) {
           throw new Error(response.data.message || 'Failed to fetch mission validation requests');
         }
-        const rawData = response.data.data;
+        
+        // Ici, response.data est déjà l'objet ApiResponse
+        const apiResponse = response.data as ApiResponse<MissionValidationRequestsResponse>;
+        
+        if (!apiResponse.data) {
+          return {
+            results: [],
+            totalCount: 0,
+          };
+        }
+        
+        const rawData = apiResponse.data;
+        
         return {
-          results: rawData.results.map(formatMissionValidationToFormattedMission),
-          totalCount: rawData.totalCount,
+          results: rawData.results ? rawData.results.map(formatMissionValidationToFormattedMission) : [],
+          totalCount: rawData.totalCount || 0,
         };
       } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-          throw new Error(error.response.data.message || 'An error occurred while fetching mission validation requests');
+        if (axios.isAxiosError(error)) {
+          
+          throw new Error(error.response?.data?.message || 'An error occurred while fetching mission validation requests');
         }
         throw error;
       }
     },
     enabled: !!userId,
+    retry: 1,
+    staleTime: 30000, // 30 seconds
   });
 };
 
@@ -427,14 +427,15 @@ export const useValidateMission = (userId: string) => {
   
   return useReactCallback(async (
     missionValidationId: string, 
-    missionAssignationId: string, 
+    missionId: string, 
     action: string, 
     type?: string, 
     comment = "", 
     missionBudget?: MissionBudget
   ) => {
-    if (!missionValidationId || !missionAssignationId) {
-      throw new Error("Mission Validation ID and Mission Assignation ID are required");
+    
+    if (!missionValidationId || !missionId) {
+      throw new Error("Mission Validation ID and Mission ID are required");
     }
     if (!userId) {
       throw new Error("User ID is required. Please ensure you are logged in.");
@@ -445,7 +446,7 @@ export const useValidateMission = (userId: string) => {
 
     const payload = {
       missionValidationId,
-      missionAssignationId,
+      missionId, // Utiliser missionId directement au lieu de missionAssignationId
       userId,
       ...(action === "validate" && {
         type,
@@ -458,17 +459,29 @@ export const useValidateMission = (userId: string) => {
       })
     };
 
+ 
     const endpoint: "/api/MissionValidation/validate" | "/api/MissionValidation/reject" = 
       action === "validate" ? "/api/MissionValidation/validate" : "/api/MissionValidation/reject";
 
-    const response = await api.post(endpoint, payload);
-    if (response.data.status !== 200) {
-      throw new Error(response.data.message || `Failed to ${action} mission validation`);
-    }
-
-    queryClient.invalidateQueries({ queryKey: HAS_ANY_VALIDATOR_VALIDATED_KEY });
+    try {
+      const response = await api.post(endpoint, payload);
     
-    return response.data.data;
+      if (response.data.status !== 200) {
+        throw new Error(response.data.message || `Failed to ${action} mission validation`);
+      }
+
+      // Invalider le cache pour forcer un rechargement
+      queryClient.invalidateQueries({ queryKey: MISSION_VALIDATION_REQUESTS_KEY });
+      queryClient.invalidateQueries({ queryKey: HAS_ANY_VALIDATOR_VALIDATED_KEY });
+      
+      return response.data.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        throw new Error(`Validation failed: ${errorMessage}`);
+      }
+      throw error;
+    }
   }, [userId, queryClient]);
 };
 

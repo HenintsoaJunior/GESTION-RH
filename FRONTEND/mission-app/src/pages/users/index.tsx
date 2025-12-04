@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom"; // Ajout pour les query params et navigation
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp, RefreshCw, X, List, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, RefreshCw, X, List, Search, Filter } from "lucide-react";
 import axios, { AxiosError } from "axios";
 import {
   FiltersContainer,
@@ -362,7 +362,10 @@ const UserList: React.FC = () => {
       {!isHidden && (
         <FiltersContainer $isMinimized={isMinimized}>
           <FiltersHeader>
-            <FiltersTitle>Filtre</FiltersTitle>
+            <FiltersTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Filter size={18} />
+              Filtres avancés
+            </FiltersTitle>
             <FiltersControls>
               <FilterControlButton
                 $isMinimized={isMinimized}

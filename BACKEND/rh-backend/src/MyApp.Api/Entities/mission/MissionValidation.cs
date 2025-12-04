@@ -37,14 +37,6 @@ namespace MyApp.Api.Entities.mission
 
         [ForeignKey("MissionId")]
         public Mission? Mission { get; set; }
-
-        [Required]
-        [Column("mission_assignation_id")]
-        [MaxLength(50)]
-        public string MissionAssignationId { get; set; } = null!;
-
-        [ForeignKey("MissionAssignationId")]
-        public MissionAssignation? MissionAssignation { get; set; }
         
         [Column("to_whom")]
         [MaxLength(250)]
@@ -62,7 +54,6 @@ namespace MyApp.Api.Entities.mission
         public MissionValidation(MissionValidationDTOForm dto)
         {
             MissionId = dto.MissionId;
-            MissionAssignationId = dto.MissionAssignationId;
             MissionCreator = dto.MissionCreator;
             Status = dto.Status;
             ToWhom = dto.ToWhom;

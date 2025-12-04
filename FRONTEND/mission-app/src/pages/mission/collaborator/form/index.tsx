@@ -155,7 +155,7 @@ const MissionForm: React.FC<MissionFormProps> = ({
 
     // Mémorisation des textes dynamiques
     const popupTitle = useMemo(() => 
-      isUpdateMode ? "Mise à Jour de la Mission" : "Création et Assignation d'une Mission",
+      isUpdateMode ? "Mise à Jour de la Mission" : "Formulaire de Demande de Mission",
       [isUpdateMode]
     );
     const submitText = useMemo(() => 

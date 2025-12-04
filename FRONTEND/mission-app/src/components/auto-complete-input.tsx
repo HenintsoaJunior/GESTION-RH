@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import * as FaIcons from "react-icons/fa";
 import styled, { css } from "styled-components";
+import * as FaIcons from "react-icons/fa";
 
 interface AutoCompleteInputProps {
   value: string;
@@ -13,7 +12,6 @@ interface AutoCompleteInputProps {
   className?: string;
   fieldType: string;
   fieldLabel: string;
-  addNewRoute?: string;
   showAddOption?: boolean;
   maxVisibleItems?: number;
 }
@@ -56,32 +54,28 @@ const InputWrapper = styled.div<{ className?: string }>`
   }
 `;
 
-const IconButton = styled.span`
+const IconButton = styled.span<{ $disabled?: boolean }>`
   position: absolute;
   right: 0;
   top: 50%;
   transform: translateY(-50%);
   padding: 8px 12px;
-  cursor: pointer;
+  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
   background: transparent;
   border-left: 1px solid #dee2e6;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.2s;
+  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
 
   &:hover:not(:disabled) {
-    background: #e9ecef;
+    background: ${({ $disabled }) => ($disabled ? 'transparent' : '#e9ecef')};
   }
 
   svg {
     font-size: 12px;
     color: #6c757d;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
   }
 `;
 
@@ -169,7 +163,6 @@ const AddItem = styled.div.withConfig({
   }
 `;
 
-
 const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
   value,
   onChange,
@@ -177,10 +170,8 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
   placeholder,
   disabled = false,
   onAddNew,
-  className = "form-input",   // ← Une seule déclaration
-  fieldType = "",
+  className = "form-input",
   fieldLabel = "",
-  addNewRoute = "",
   showAddOption = true,
   maxVisibleItems = 3,
 }) => {
@@ -188,32 +179,6 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  // Récupération de la nouvelle valeur depuis l'URL après création
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const newValue = searchParams.get("newValue");
-    const urlFieldType = searchParams.get("fieldType");
-
-    if (newValue && urlFieldType === fieldType && newValue !== value) {
-      onChange(newValue);
-
-      const remainingParams = new URLSearchParams(location.search);
-      remainingParams.delete("newValue");
-      remainingParams.delete("fieldType");
-
-      const cleanUrl = remainingParams.toString()
-        ? `${location.pathname}?${remainingParams.toString()}`
-        : location.pathname;
-
-      setTimeout(() => navigate(cleanUrl, { replace: true }), 100);
-
-      setIsOpen(false);
-      setTimeout(() => inputRef.current?.focus(), 200);
-    }
-  }, [location.search, location.pathname, fieldType, onChange, value, navigate]);
 
   // Filtrage des suggestions
   useEffect(() => {
@@ -249,23 +214,19 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
     inputRef.current?.blur();
   };
 
-  const handleAddNew = () => {
-    if (value && canAddNew) {
-      const params = new URLSearchParams();
-      params.set("fieldType", fieldType);
-      params.set("fieldLabel", fieldLabel);
-      params.set("initialValue", value);
-      params.set("returnUrl", location.pathname + location.search);
-
-      const redirectUrl = addNewRoute || `/add-${fieldType}`;
-      navigate(`${redirectUrl}?${params.toString()}`);
-      setIsOpen(false);
-    }
-    onAddNew?.();
+  const handleAddNewClick = () => {
+    if (!onAddNew) return;
+    
+    // Fermer le dropdown
+    setIsOpen(false);
+    
+    // Appeler la fonction de callback pour ouvrir la popup
+    onAddNew();
   };
 
-  const canAddNew =
-    Boolean(value) &&
+  const canAddNew = 
+    showAddOption && 
+    Boolean(value) && 
     !suggestions.some((s) => s.toLowerCase() === value.toLowerCase());
 
   const shouldShowScrollable = filteredSuggestions.length > maxVisibleItems;
@@ -291,6 +252,7 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
           aria-controls="autocomplete-dropdown"
         />
         <IconButton
+          $disabled={disabled}
           onClick={() => !disabled && setIsOpen(!isOpen)}
           aria-label={isOpen ? "Masquer les suggestions" : "Afficher les suggestions"}
           role="button"
@@ -304,28 +266,32 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
         <Dropdown id="autocomplete-dropdown" scrollable={shouldShowScrollable} role="listbox">
           {filteredSuggestions.length > 0 ? (
             <SuggestionsContainer>
-              {filteredSuggestions.map((suggestion, index) => (
-                <Suggestion
-                  key={suggestion}
-                  id={`suggestion-${index}`}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  selected={value === suggestion}
-                  role="option"
-                  aria-selected={value === suggestion}
-                >
-                  {suggestion}
-                </Suggestion>
-              ))}
+              {filteredSuggestions.map((suggestion, index) => {
+                // Créer une clé unique en combinant la valeur et l'index
+                const uniqueKey = `${suggestion}_${index}`;
+                return (
+                  <Suggestion
+                    key={uniqueKey}
+                    id={`suggestion-${index}`}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    selected={value === suggestion}
+                    role="option"
+                    aria-selected={value === suggestion}
+                  >
+                    {suggestion}
+                  </Suggestion>
+                );
+              })}
             </SuggestionsContainer>
           ) : (
             <NoSuggestion role="status">Aucune suggestion trouvée</NoSuggestion>
           )}
 
-          {/* Option "Ajouter" sans répétition de la valeur */}
-          {value && showAddOption && (
+          {/* Option "Ajouter" */}
+          {value && showAddOption && onAddNew && (
             <AddOption>
               <AddItem
-                onClick={handleAddNew}
+                onClick={handleAddNewClick}
                 enabled={canAddNew}
                 role="button"
                 aria-disabled={!canAddNew}
@@ -334,7 +300,7 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
                 <FaIcons.FaPlus />
                 {canAddNew
                   ? `Ajouter comme nouvelle ${fieldLabel.toLowerCase()}`
-                  : "Existe déjà"}
+                  : `${fieldLabel} existe déjà`}
               </AddItem>
             </AddOption>
           )}

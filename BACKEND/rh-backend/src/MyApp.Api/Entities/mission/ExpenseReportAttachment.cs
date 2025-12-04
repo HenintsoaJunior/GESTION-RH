@@ -12,8 +12,8 @@ namespace MyApp.Api.Entities.mission
         public string AttachmentId { get; set; } = string.Empty;
 
         [Required]
-        [Column("assignation_id")]
-        public string AssignationId { get; set; } = string.Empty;
+        [Column("mission_id")]
+        public string MissionId { get; set; } = string.Empty;
 
         [Required]
         [Column("file_name")]

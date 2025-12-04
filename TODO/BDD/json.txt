@@ -1,0 +1,53 @@
+curl -X 'POST' \
+  'http://localhost:5183/api/Mission' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "missionType": "international",
+  "type": "Note de frais",
+  "name": "TEST",
+  "description": "TEST",
+  "status": "TEST",
+  "startDate": "2025-11-28",
+  "endDate": "2025-11-28",
+  "lieuId": "LIEU-000001",
+  "employeeId": "EMP-000681",
+  "departureDate": "2025-11-28",
+  "departureTime": "08:00",
+  "returnDate": "2025-11-28",
+  "returnTime": "17:00",
+  "duration": 9,
+  "isValidated": 0,
+  "allocatedFund": 9999999999999.99,
+  "transportId": "tr001",
+  "userId": "002b1f12-e8c5-4a30-81ca-e8532855de71"
+}
+'
+
+{
+  "data": {
+    "id": "MIS-000002",
+    "mission": {
+      "missionType": "international",
+      "type": "Note de frais",
+      "name": "TEST",
+      "description": "TEST",
+      "status": "TEST",
+      "startDate": "2025-11-28T00:00:00",
+      "endDate": "2025-11-28T00:00:00",
+      "lieuId": "LIEU-000001",
+      "employeeId": "EMP-000181",
+      "departureDate": "2025-11-28T00:00:00",
+      "departureTime": "08:00:00",
+      "returnDate": "2025-11-28T00:00:00",
+      "returnTime": "17:00:00",
+      "duration": 9,
+      "isValidated": 0,
+      "allocatedFund": 9999999999999.99,
+      "transportId": "tr001",
+      "userId": "002b1f12-e8c5-4a30-81ca-e8532855de71"
+    }
+  },
+  "status": 200,
+  "message": "success"
+}

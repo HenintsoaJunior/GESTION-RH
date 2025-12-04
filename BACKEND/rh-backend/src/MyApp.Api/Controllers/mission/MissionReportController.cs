@@ -24,24 +24,24 @@ namespace MyApp.Api.Controllers.mission
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
         
-        // GET: api/MissionReport/assignation/{assignationId}
-        [HttpGet("assignation/{assignationId}")]
+        // GET: api/MissionReport/assignation/{missionId}
+        [HttpGet("mission/{missionId}")]
         [AllowAnonymous]
-        public async Task<ActionResult> GetByAssignationId(string assignationId)
+        public async Task<ActionResult> GetByMissionId(string missionId)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
             {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
             }
 
-            if (string.IsNullOrEmpty(assignationId))
+            if (string.IsNullOrEmpty(missionId))
             {
                 return BadRequest(new { data = (object?)null, status = 400, message = "Assignation ID cannot be null or empty" });
             }
 
             try
             {
-                var reports = await _service.GetByAssignationIdAsync(assignationId);
+                var reports = await _service.GetByMissionIdAsync(missionId);
                 return Ok(new { data = reports, status = 200, message = "success" });
             }
             catch (ArgumentException ex)
@@ -50,7 +50,7 @@ namespace MyApp.Api.Controllers.mission
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des rapports par assignation {AssignationId}", assignationId);
+                _logger.LogError(ex, "Erreur lors de la récupération des rapports par assignation {missionId}", missionId);
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }

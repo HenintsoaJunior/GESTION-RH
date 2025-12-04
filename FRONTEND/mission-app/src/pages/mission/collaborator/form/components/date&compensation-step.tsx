@@ -148,7 +148,6 @@ const CompensationStep: React.FC<CompensationStepProps> = ({
             </FormFieldCell>
           </FormRow>
           <FormRow className="dual-field-row">
-            
             <FormFieldCell>
               <FormLabelRequired>Heure de départ</FormLabelRequired>
               <FormInput
@@ -184,7 +183,7 @@ const CompensationStep: React.FC<CompensationStepProps> = ({
               <FormInput
                 type="number"
                 name="missionDuration"
-                value={formData.beneficiary.missionDuration}
+                value={formData.beneficiary.missionDuration || ""}
                 className={fieldErrors["beneficiary.missionDuration"] ? "input-error" : ""}
                 disabled={isSubmitting}
                 readOnly

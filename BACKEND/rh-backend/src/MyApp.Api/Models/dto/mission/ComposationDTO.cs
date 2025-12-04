@@ -18,7 +18,7 @@ public class CompensationDTO
     public string Status { get; set; } = "unpaid";
     public DateTime? PaymentDate { get; set; }
     public string Devise { get; set; } = null!;
-    public string AssignationId { get; set; } = null!;
+    public string MissionId { get; set; } = null!;
     public string EmployeeId { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
@@ -26,6 +26,6 @@ public class CompensationDTO
 
 public class AssignationWithCompensationsDto
 {
-    public MissionAssignation Assignation { get; set; } = null!;
+    public Mission Mission { get; set; } = null!;
     public IEnumerable<Compensation> Compensations { get; set; } = Enumerable.Empty<Compensation>();
 }
