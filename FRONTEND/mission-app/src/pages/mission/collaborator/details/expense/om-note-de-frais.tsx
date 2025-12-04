@@ -22,7 +22,7 @@ import {
 import { NoDataMessage } from "@/styles/table-styles";
 
 interface FormData {
-    assignationId: string;
+    assignationId: string; // Garder assignationId pour la compatibilité avec l'API
     userId: string;
     expenseLinesByType: Record<string, ExpenseLine[]>;
     attachments: Attachment[];
@@ -79,7 +79,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
     onBack 
 }) => {
     const [formData, setFormData] = useState<FormData>({
-        assignationId: selectedMissionId || "", // À adapter si nécessaire
+        assignationId: selectedMissionId || "",
         userId: "",
         expenseLinesByType: {},
         attachments: [],
@@ -105,7 +105,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
     const missionId = selectedMissionId;
 
     const isInternational = useMemo(() => {
-        return missionQuery.data?.data?.missionType === 'international';
+        return missionQuery.data?.data?.missionType === 2; // 2 = MissionTypeEnum.International
     }, [missionQuery.data]);
 
     const { data: compensationsResponse, isLoading: compensationsLoading } = useCompensationsByEmployeeAndMission(
@@ -274,8 +274,10 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
     const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const { assignationId, userId, expenseLinesByType, attachments } = formData;
+        
+        // Utiliser missionId pour l'assignationId
         if (!assignationId) {
-            setFieldErrors({ assignationId: ["L'assignation est requise."] });
+            setFieldErrors({ assignationId: ["La mission est requise."] });
             return;
         }
         if (!userId) {
@@ -286,10 +288,11 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
             setFieldErrors({ general: ["Au moins une ligne de dépense est requise."] });
             return;
         }
+        
         createMutation.mutate(
             {
                 userId,
-                assignationId,
+                assignationId: assignationId, // Utiliser assignationId qui contient missionId
                 expenseLinesByType,
                 attachments,
             },
@@ -498,7 +501,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                 <>
                     {/* <SectionTitle>Liste des Notes de Frais</SectionTitle> */}
                     <ExpenseReportList
-                        selectedAssignmentId={selectedMissionId} // À vérifier si cette prop doit aussi changer
+                        selectedAssignmentId={selectedMissionId} // Garder selectedAssignmentId pour la compatibilité
                         isLoading={missionQuery.isLoading}
                         onError={handleError}
                     />
