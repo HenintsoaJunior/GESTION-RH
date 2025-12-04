@@ -48,43 +48,35 @@ namespace MyApp.Api.Repositories.employee
                 .Include(e => e.Site)
                 .AsQueryable();
 
-            // Filtre par titre (JobTitle)
             if (!string.IsNullOrWhiteSpace(filters.JobTitle))
             {
                 query = query.Where(e => e.JobTitle != null && e.JobTitle.Contains(filters.JobTitle));
             }
 
-            // Filtre par nom (LastName)
             if (!string.IsNullOrWhiteSpace(filters.LastName))
             {
                 query = query.Where(e => e.LastName.Contains(filters.LastName));
             }
 
-            // Filtre par prénom (FirstName)
             if (!string.IsNullOrWhiteSpace(filters.FirstName))
             {
                 query = query.Where(e => e.FirstName!.Contains(filters.FirstName));
             }
 
-            // Filtre par direction (DirectionId)
             if (!string.IsNullOrWhiteSpace(filters.DirectionId))
             {
                 query = query.Where(e => e.DirectionId == filters.DirectionId);
             }
 
-            // Filtre par type de contrat (ContractTypeId)
             if (!string.IsNullOrWhiteSpace(filters.ContractTypeId))
             {
                 query = query.Where(e => e.ContractTypeId == filters.ContractTypeId);
             }
 
-            // Filtre par code employé (EmployeeCode)
             if (!string.IsNullOrWhiteSpace(filters.EmployeeCode))
             {
                 query = query.Where(e => e.EmployeeCode != null && e.EmployeeCode.Contains(filters.EmployeeCode));
             }
-
-            // Filtre par site (SiteId)
             if (!string.IsNullOrWhiteSpace(filters.SiteId))
             {
                 query = query.Where(e => e.SiteId == filters.SiteId);

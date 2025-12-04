@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { X, Save, MapPin } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import type { LatLngTuple } from 'leaflet';
@@ -139,7 +139,7 @@ const LieuForm: React.FC<LieuFormProps> = ({
     setFieldErrors({});
   }, [isOpen, lieu, prefillNom]);
 
-  // 🔥 NOUVELLE VERSION : À chaque clic → on ÉCRASE le nom avec la ville trouvée
+  // Récupération de l'adresse via géocodage inverse
   const fetchAddress = async (lat: number, lng: number) => {
     setIsLoadingAddress(true);
     try {
@@ -159,8 +159,7 @@ const LieuForm: React.FC<LieuFormProps> = ({
         ville: ville || prev.ville,
         codePostal: codePostal || prev.codePostal,
         pays: pays || prev.pays,
-        // → On FORCE toujours le nom avec la ville du dernier clic
-        nom: ville || prev.nom, // si ville vide (rare), on garde l'ancien
+        nom: ville || prev.nom,
       }));
     } catch (err) {
       console.error('Reverse geocoding failed:', err);
@@ -200,9 +199,31 @@ const LieuForm: React.FC<LieuFormProps> = ({
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(async () => {
+    if (isProcessing) return;
+    
     if (!validate()) return;
+
+    const handleSuccess = (data: any) => {
+      // N'appeler onFormSuccess que si nécessaire
+      // Pour éviter les alertes, on passe un message vide ou on n'appelle pas du tout
+      if (onFormSuccess) {
+        // Passer un message vide pour éviter l'alerte
+        onFormSuccess("");
+      }
+      
+      const newLieu: Lieu = data.data;
+      
+      if (!isUpdateMode && onSuccessClose) {
+        onSuccessClose(newLieu);
+      } else {
+        onClose();
+      }
+    };
+
+    const errorHandler = (error: any) => {
+      console.error('Erreur lors de la création/modification du lieu:', error);
+    };
 
     const payload: LieuDTOForm = {
       nom: formData.nom.trim(),
@@ -214,27 +235,51 @@ const LieuForm: React.FC<LieuFormProps> = ({
       longitude: formData.longitude,
     };
 
-    const successHandler = (data: any) => {
-      const newLieu: Lieu = data.data;
-      onFormSuccess(isUpdateMode ? 'Lieu modifié avec succès.' : 'Lieu créé avec succès.');
-
-      if (!isUpdateMode && onSuccessClose) {
-        onSuccessClose(newLieu);
+    try {
+      if (isUpdateMode) {
+        await updateMutation.mutateAsync(payload, { 
+          onSuccess: handleSuccess,
+          onError: errorHandler
+        });
       } else {
-        onClose();
+        await createMutation.mutateAsync(payload, { 
+          onSuccess: handleSuccess,
+          onError: errorHandler
+        });
       }
-    };
-
-    if (isUpdateMode) {
-      updateMutation.mutate(payload, { onSuccess: successHandler });
-    } else {
-      createMutation.mutate(payload, { onSuccess: successHandler });
+    } catch (error) {
+      console.error('Erreur lors de la création/modification du lieu:', error);
     }
+  }, [
+    formData,
+    isUpdateMode,
+    validate,
+    updateMutation,
+    createMutation,
+    onFormSuccess,
+    onSuccessClose,
+    onClose,
+    isProcessing
+  ]);
+
+  // Gestion spéciale pour la touche Entrée
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isProcessing) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  // Gestion de la soumission du formulaire
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation(); // Empêche la propagation de l'événement
+    handleSubmit();
+    return false;
   };
 
   if (!isOpen) return null;
 
-  // Le reste du JSX est IDENTIQUE
   return (
     <PopupOverlay>
       <PagePopup style={{ maxWidth: '1100px', width: '95%' }}>
@@ -247,7 +292,10 @@ const LieuForm: React.FC<LieuFormProps> = ({
 
         <PopupContent>
           <FormContainer>
-            <GenericForm onSubmit={handleSubmit}>
+            <GenericForm 
+              onSubmit={handleFormSubmit}
+              onKeyDown={handleKeyDown}
+            >
               <FormSectionTitle>Informations générales</FormSectionTitle>
 
               <FormTable>
@@ -259,6 +307,7 @@ const LieuForm: React.FC<LieuFormProps> = ({
                         name="nom"
                         value={formData.nom}
                         onChange={handleChange}
+                        onKeyDown={handleKeyDown}
                         disabled={isProcessing}
                         placeholder="Ex: Antananarivo, Stade Mahamasina..."
                       />
@@ -270,6 +319,7 @@ const LieuForm: React.FC<LieuFormProps> = ({
                         name="pays"
                         value={formData.pays}
                         onChange={handleChange}
+                        onKeyDown={handleKeyDown}
                         disabled={isProcessing}
                         placeholder="Ex: Madagascar"
                       />
@@ -304,6 +354,7 @@ const LieuForm: React.FC<LieuFormProps> = ({
                         name="latitude"
                         value={formData.latitude}
                         onChange={handleChange}
+                        onKeyDown={handleKeyDown}
                         disabled={isProcessing}
                       />
                     </FormFieldCell>
@@ -315,6 +366,7 @@ const LieuForm: React.FC<LieuFormProps> = ({
                         name="longitude"
                         value={formData.longitude}
                         onChange={handleChange}
+                        onKeyDown={handleKeyDown}
                         disabled={isProcessing}
                       />
                     </FormFieldCell>
@@ -369,10 +421,18 @@ const LieuForm: React.FC<LieuFormProps> = ({
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '32px' }}>
-                <ButtonPrimary type="button" onClick={onClose} disabled={isProcessing}>
+                <ButtonPrimary 
+                  type="button" 
+                  onClick={onClose} 
+                  disabled={isProcessing}
+                >
                   Annuler
                 </ButtonPrimary>
-                <ButtonPrimary type="submit" disabled={isProcessing}>
+                <ButtonPrimary 
+                  type="button" 
+                  onClick={handleSubmit} 
+                  disabled={isProcessing}
+                >
                   <Save size={16} />
                   <span>{isProcessing ? 'En cours...' : isUpdateMode ? 'Modifier' : 'Créer'}</span>
                 </ButtonPrimary>

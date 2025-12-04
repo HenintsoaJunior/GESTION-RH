@@ -48,12 +48,12 @@ namespace MyApp.Api.Entities.mission
         public decimal Rate { get; set; } = 0m;
 
         [Required]
-        [Column("assignation_id")]
+        [Column("mission_id")]
         [MaxLength(50)]
-        public string AssignationId { get; set; } = string.Empty;  
+        public string MissionId { get; set; } = string.Empty;  
 
-        [ForeignKey("AssignationId")]
-        public MissionAssignation? MissionAssignation { get; set; }
+        [ForeignKey("MissionId")]
+        public Mission? Mission { get; set; }
 
         [Required]
         [Column("expense_report_type_id")]
@@ -74,7 +74,7 @@ namespace MyApp.Api.Entities.mission
             Amount = dto.Amount;
             AmountMGA = dto.AmountMGA;
             Rate = dto.Rate;
-            AssignationId = dto.AssignationId ?? string.Empty;
+            MissionId = dto.MissionId ?? string.Empty;
             ExpenseReportTypeId = dto.ExpenseReportTypeId ?? string.Empty;
         }
     }

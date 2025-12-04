@@ -8,9 +8,9 @@ namespace MyApp.Api.Repositories.mission
     {
         Task<IEnumerable<Compensation>> GetAllAsync();
         Task<IEnumerable<Compensation>> GetByEmployeeIdAsync(string employeeId);
-        Task<IEnumerable<Compensation>> GetByAssignationIdAsync(string assignationId);
+        Task<IEnumerable<Compensation>> GetByMissionIdAsync(string missionId);
         Task<Compensation?> GetByIdAsync(string compensationId);
-        Task<List<Compensation>> GetByEmployeeAndAssignationIdAsync(string employeeId, string assignationId);
+        Task<List<Compensation>> GetByEmployeeAndMissionIdAsync(string employeeId, string missionId);
         Task<decimal> GetTotalPaidAmountAsync();
         Task<decimal> GetTotalNotPaidAmountAsync();
         Task AddAsync(Compensation compensation);
@@ -30,7 +30,6 @@ namespace MyApp.Api.Repositories.mission
         public async Task<IEnumerable<Compensation>> GetAllAsync()
         {
             return await _context.Compensations
-                .Include(c => c.Assignation)
                 .Include(c => c.Employee)
                 .OrderByDescending(c => c.PaymentDate)
                 .ToListAsync();
@@ -40,16 +39,15 @@ namespace MyApp.Api.Repositories.mission
         {
             return await _context.Compensations
                 .Where(c => c.EmployeeId == employeeId)
-                .Include(c => c.Assignation)
                 .Include(c => c.Employee)
                 .OrderByDescending(c => c.PaymentDate)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Compensation>> GetByAssignationIdAsync(string assignationId)
+        public async Task<IEnumerable<Compensation>> GetByMissionIdAsync(string missionId)
         {
             return await _context.Compensations
-                .Where(c => c.AssignationId == assignationId)
+                .Where(c => c.MissionId == missionId)
                 .OrderByDescending(c => c.PaymentDate)
                 .ToListAsync();
         }
@@ -57,17 +55,16 @@ namespace MyApp.Api.Repositories.mission
         public async Task<Compensation?> GetByIdAsync(string compensationId)
         {
             return await _context.Compensations
-                .Include(c => c.Assignation)
                 .Include(c => c.Employee)
                 .FirstOrDefaultAsync(c => c.CompensationId == compensationId);
         }
 
-        public async Task<List<Compensation>> GetByEmployeeAndAssignationIdAsync(string employeeId, string assignationId)
+        public async Task<List<Compensation>> GetByEmployeeAndMissionIdAsync(string employeeId, string missionId)
         {
             return await _context.Compensations
-                .Include(c => c.Assignation)
+                .AsNoTracking()
                 .Include(c => c.Employee)
-                .Where(c => c.EmployeeId == employeeId && c.AssignationId == assignationId)
+                .Where(c => c.EmployeeId == employeeId && c.MissionId == missionId)
                 .OrderByDescending(c => c.PaymentDate)
                 .ToListAsync();
         }
@@ -93,16 +90,30 @@ namespace MyApp.Api.Repositories.mission
 
         public Task UpdateAsync(Compensation compensation)
         {
-            var existingCompensation = _context.Compensations.Local.FirstOrDefault(c => c.CompensationId == compensation.CompensationId);
+            var existingCompensation = _context.Compensations.Local
+                .FirstOrDefault(c => c.CompensationId == compensation.CompensationId);
+            
             if (existingCompensation != null)
             {
-                _context.Entry(existingCompensation).CurrentValues.SetValues(compensation);
+                // Détacher l'entité existante pour éviter les conflits
+                _context.Entry(existingCompensation).State = EntityState.Detached;
             }
-            else
+            
+            // Attacher et marquer comme modifié
+            _context.Compensations.Attach(compensation);
+            _context.Entry(compensation).State = EntityState.Modified;
+            
+            // Empêcher le tracking des entités liées (Employee, Mission, etc.)
+            if (compensation.Employee != null)
             {
-                _context.Compensations.Update(compensation);
+                _context.Entry(compensation.Employee).State = EntityState.Unchanged;
             }
-
+            
+            if (compensation.Mission != null)
+            {
+                _context.Entry(compensation.Mission).State = EntityState.Unchanged;
+            }
+            
             return Task.CompletedTask;
         }
 

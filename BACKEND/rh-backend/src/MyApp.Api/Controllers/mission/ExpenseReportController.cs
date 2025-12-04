@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Services.mission;
 
@@ -19,23 +18,20 @@ namespace MyApp.Api.Controllers.mission
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        // POST: api/ExpenseReport
         [HttpPost]
-        [AllowAnonymous]
         public async Task<ActionResult> Create([FromBody] ExpenseReportDTOForm dto)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             if (dto == null)
-            {
-                return BadRequest(new { data = (object?)null, status = 400, message = "ExpenseReport data cannot be null" });
-            }
+                return BadRequest(new { data = (object?)null, status = 400, message = "Les données du rapport de frais ne peuvent pas être nulles" });
 
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                var errors = ModelState
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
                 return BadRequest(new { data = new { fieldErrors = errors }, status = 400, message = "validation error" });
             }
 
@@ -43,415 +39,276 @@ namespace MyApp.Api.Controllers.mission
             {
                 var affectedIds = await _service.CreateAsync(dto);
                 var responseData = new { affectedIds };
-                return CreatedAtAction(nameof(GetById), new { id = affectedIds.FirstOrDefault() }, new { data = responseData, status = 201, message = "success" });
+                return CreatedAtAction(nameof(GetById), new { id = affectedIds.FirstOrDefault() }, 
+                    new { data = responseData, status = 201, message = "Rapports de frais créés/mis à jour avec succès" });
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning("Données invalides pour Create ExpenseReport: {Message}", ex.Message);
+                _logger.LogWarning(ex, "Données invalides lors de la création des rapports de frais");
                 return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Erreur lors de Create ExpenseReport");
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+                _logger.LogError(ex, "Erreur serveur lors de la création des rapports de frais");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "Une erreur est survenue" });
             }
         }
 
-        [HttpGet("assignation/{assignationId}")]
-        [AllowAnonymous]
-        public async Task<ActionResult> GetByAssignationId(string assignationId)
+        // GET: api/ExpenseReport/mission/{missionId}
+        [HttpGet("mission/{missionId}")]
+        public async Task<ActionResult> GetByMissionId(string missionId)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             try
             {
-                var (reports, totalAmount, attachments) = await _service.GetByAssignationIdAsync(assignationId);
+                var (reports, totalAmount, attachments) = await _service.GetByMissionIdAsync(missionId);
                 var responseData = new { reports, totalAmount, attachments };
                 return Ok(new { data = responseData, status = 200, message = "success" });
             }
-            catch (ArgumentException ex) when (ex.ParamName == nameof(assignationId))
+            catch (ArgumentException ex)
             {
-                _logger.LogWarning("AssignationId invalide: {AssignationId}", assignationId);
+                _logger.LogWarning("MissionId invalide : {MissionId} - {Message}", missionId, ex.Message);
                 return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Erreur lors de GetByAssignationId pour AssignationId: {AssignationId}", assignationId);
-                Console.WriteLine(e);
+                _logger.LogError(ex, "Erreur lors de la récupération des rapports pour la mission {MissionId}", missionId);
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
-        [HttpGet("status/{assignationId}")]
-        [AllowAnonymous]
-        public async Task<ActionResult> GetStatusByAssignationId(string assignationId)
+        // GET: api/ExpenseReport/status/mission/{missionId}
+        [HttpGet("status/mission/{missionId}")]
+        public async Task<ActionResult> GetStatusByMissionId(string missionId)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             try
             {
-                var statuses = await _service.GetStatusByAssignationIdAsync(assignationId);
-                var responseData = statuses;
-                return Ok(new { data = responseData, status = 200, message = "success" });
+                var statuses = await _service.GetStatusByMissionIdAsync(missionId);
+                return Ok(new { data = statuses, status = 200, message = "success" });
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Erreur lors de la récupération des statuts pour AssignationId: {AssignationId}", assignationId);
-                Console.WriteLine(e);
+                _logger.LogError(ex, "Erreur lors de la récupération des statuts pour la mission {MissionId}", missionId);
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
-        [HttpPost("reimburse/{assignationId}")]
-        [AllowAnonymous]
-        public async Task<ActionResult> ReimburseByAssignationId(string assignationId, [FromQuery] string userId)
+        // POST: api/ExpenseReport/reimburse/mission/{missionId}?userId=xxx
+        [HttpPost("reimburse/mission/{missionId}")]
+        public async Task<ActionResult> ReimburseByMissionId(string missionId, [FromQuery] string userId)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             if (string.IsNullOrWhiteSpace(userId))
-            {
-                return BadRequest(new { data = (object?)null, status = 400, message = "L'ID utilisateur est requis pour le remboursement." });
-            }
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'ID utilisateur est requis pour le remboursement" });
 
             try
             {
-                var success = await _service.ReimburseByAssignationIdAsync(assignationId, userId);
+                var success = await _service.ReimburseByMissionIdAsync(missionId, userId);
                 if (!success)
-                {
-                    return NotFound(new { data = (object?)null, status = 404, message = $"Aucun rapport de frais trouvé pour assignationId: {assignationId}." });
-                }
+                    return NotFound(new { data = (object?)null, status = 404, message = $"Aucun rapport de frais non remboursé trouvé pour la mission {missionId}" });
 
-                var responseData = new { message = "Remboursement effectué avec succès.", assignationId };
-                return Ok(new { data = responseData, status = 200, message = "success" });
+                return Ok(new { data = new { message = "Remboursement effectué avec succès", missionId }, status = 200, message = "success" });
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning("Paramètres invalides pour ReimburseByAssignationId: {AssignationId} - {Message}", assignationId, ex.Message);
                 return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Erreur lors du remboursement pour assignationId: {AssignationId}", assignationId);
-                Console.WriteLine(e);
+                _logger.LogError(ex, "Erreur lors du remboursement de la mission {MissionId}", missionId);
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
-        [HttpGet("distinct-mission-assignations")]
-        [AllowAnonymous]
-        public async Task<ActionResult> GetDistinctMissionAssignations([FromQuery] MissionAssignationQueryDTO query, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        // GET: api/ExpenseReport/total-amount/mission/{missionId}
+        [HttpGet("total-amount/mission/{missionId}")]
+        public async Task<ActionResult> GetTotalAmountByMissionId(string missionId)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             try
             {
-                var (items, totalCount) = await _service.GetDistinctMissionAssignationsAsync(query.Status, page, pageSize);
-                var responseData = new { items, totalCount, pageNumber = page, pageSize = pageSize };
-                return Ok(new { data = responseData, status = 200, message = "success" });
+                var totalAmount = await _service.GetTotalAmountByMissionIdAsync(missionId);
+                return Ok(new { data = new { totalAmount }, status = 200, message = "success" });
             }
-
             catch (ArgumentException ex)
             {
-                _logger.LogWarning("Paramètres invalides pour GetDistinctMissionAssignations: {Message}", ex.Message);
                 return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Erreur lors de la récupération des assignations de mission distinctes");
-                Console.WriteLine(e);
+                _logger.LogError(ex, "Erreur lors du calcul du montant total pour la mission {MissionId}", missionId);
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
+        // GET: api/ExpenseReport/total-reimbursed
         [HttpGet("total-reimbursed")]
-        [AllowAnonymous]
         public async Task<ActionResult> GetTotalReimbursedAmount()
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             try
             {
-                var totalReimbursed = await _service.GetTotalReimbursedAmountAsync();
-                var responseData = new { totalReimbursedAmount = totalReimbursed };
-                return Ok(new { data = responseData, status = 200, message = "success" });
+                var total = await _service.GetTotalReimbursedAmountAsync();
+                return Ok(new { data = new { totalReimbursedAmount = total }, status = 200, message = "success" });
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Erreur lors de la récupération du total des montants remboursés");
-                Console.WriteLine(e);
+                _logger.LogError(ex, "Erreur lors de la récupération du total remboursé");
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
+        // GET: api/ExpenseReport/total-notreimbursed
         [HttpGet("total-notreimbursed")]
-        [AllowAnonymous]
         public async Task<ActionResult> GetTotalNotReimbursedAmount()
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             try
             {
-                var totalNotReimbursed = await _service.GetTotalNotReimbursedAmountAsync();
-                var responseData = new { totalNotReimbursedAmount = totalNotReimbursed };
-                return Ok(new { data = responseData, status = 200, message = "success" });
+                var total = await _service.GetTotalNotReimbursedAmountAsync();
+                return Ok(new { data = new { totalNotReimbursedAmount = total }, status = 200, message = "success" });
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Erreur lors de la récupération du total des montants non remboursés");
-                Console.WriteLine(e);
+                _logger.LogError(ex, "Erreur lors de la récupération du total non remboursé");
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
+        // GET: api/ExpenseReport/count-reimbursed
         [HttpGet("count-reimbursed")]
-        [AllowAnonymous]
         public async Task<ActionResult> GetTotalReimbursedCount()
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
-            try
-            {
-                var totalReimbursedCount = await _service.GetTotalReimbursedCountAsync();
-                var responseData = new { totalReimbursedCount };
-                return Ok(new { data = responseData, status = 200, message = "success" });
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Erreur lors de la récupération du nombre total de rapports remboursés");
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
-            }
+            var count = await _service.GetTotalReimbursedCountAsync();
+            return Ok(new { data = new { totalReimbursedCount = count }, status = 200, message = "success" });
         }
 
+        // GET: api/ExpenseReport/count-notreimbursed
         [HttpGet("count-notreimbursed")]
-        [AllowAnonymous]
         public async Task<ActionResult> GetTotalNotReimbursedCount()
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
-            try
-            {
-                var totalNotReimbursedCount = await _service.GetTotalNotReimbursedCountAsync();
-                var responseData = new { totalNotReimbursedCount };
-                return Ok(new { data = responseData, status = 200, message = "success" });
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Erreur lors de la récupération du nombre total de rapports non remboursés");
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
-            }
-        }
-
-        [HttpGet("total-amount/{assignationId}")]
-        [AllowAnonymous]
-        public async Task<ActionResult> GetTotalAmountByAssignationId(string assignationId)
-        {
-            if (!User.Identity?.IsAuthenticated ?? true)
-            {
-                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
-
-            try
-            {
-                var totalAmount = await _service.GetTotalAmountByAssignationIdAsync(assignationId);
-                var responseData = new { totalAmount };
-                return Ok(new { data = responseData, status = 200, message = "success" });
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning("AssignationId invalide: {AssignationId}, Message: {Message}", assignationId, ex.Message);
-                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Erreur lors de la récupération du montant total pour AssignationId: {AssignationId}", assignationId);
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
-            }
+            var count = await _service.GetTotalNotReimbursedCountAsync();
+            return Ok(new { data = new { totalNotReimbursedCount = count }, status = 200, message = "success" });
         }
 
         // GET: api/ExpenseReport
         [HttpGet]
-        [AllowAnonymous]
         public async Task<ActionResult> GetAll()
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
-            try
-            {
-                var reports = await _service.GetAllAsync();
-                return Ok(new { data = reports, status = 200, message = "success" });
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
-            }
+            var reports = await _service.GetAllAsync();
+            return Ok(new { data = reports, status = 200, message = "success" });
         }
 
         // GET: api/ExpenseReport/{id}
         [HttpGet("{id}")]
-        [AllowAnonymous]
         public async Task<ActionResult> GetById(string id)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             try
             {
                 var report = await _service.GetByIdAsync(id);
-                var responseData = report;
-                return Ok(new { data = responseData, status = 200, message = "success" });
+                if (report == null)
+                    return NotFound(new { data = (object?)null, status = 404, message = "Rapport de frais non trouvé" });
+
+                return Ok(new { data = report, status = 200, message = "success" });
             }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("n'existe pas"))
+            catch (Exception ex)
             {
-                _logger.LogWarning("Rapport de frais avec l'ID {ExpenseReportId} n'existe pas", id);
-                return NotFound(new { data = (object?)null, status = 404, message = ex.Message });
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Erreur lors de GetById pour ExpenseReportId: {ExpenseReportId}", id);
-                Console.WriteLine(e);
+                _logger.LogError(ex, "Erreur lors de la récupération du rapport {Id}", id);
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
+        // GET: api/ExpenseReport/by-status?status=notreimbursed&page=1&pageSize=10
         [HttpGet("by-status")]
-        // [AllowAnonymous]
         public async Task<ActionResult> GetByStatus([FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            // if (!User.Identity?.IsAuthenticated ?? true)
-            // {
-            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            // }
-
             try
             {
                 var (reports, totalCount) = await _service.GetByStatusAsync(status, page, pageSize);
-                var responseData = new { reports, totalCount, pageNumber = page, pageSize = pageSize };
-                return Ok(new { data = responseData, status = 200, message = "success" });
+                var response = new
+                {
+                    reports,
+                    totalCount,
+                    pageNumber = page,
+                    pageSize,
+                    totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+                return Ok(new { data = response, status = 200, message = "success" });
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Erreur lors de la récupération des rapports de frais par statut");
-                Console.WriteLine(e);
+                _logger.LogError(ex, "Erreur lors de la récupération des rapports par statut {Status}", status ?? "all");
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
         // PUT: api/ExpenseReport/{id}
         [HttpPut("{id}")]
-        [AllowAnonymous]
         public async Task<ActionResult> Update(string id, [FromBody] ExpenseLineDTO dto)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             if (dto == null)
-            {
-                return BadRequest(new { data = (object?)null, status = 400, message = "ExpenseLine data cannot be null" });
-            }
+                return BadRequest(new { data = (object?)null, status = 400, message = "Les données sont requises" });
 
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.ToDictionary(kvp => kvp.Key, kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+                var errors = ModelState.ToDictionary(k => k.Key, k => k.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
                 return BadRequest(new { data = new { fieldErrors = errors }, status = 400, message = "validation error" });
             }
 
-            try
-            {
-                var success = await _service.UpdateAsync(id, dto);
-                if (!success)
-                {
-                    return NotFound(new { data = (object?)null, status = 404, message = $"Rapport de frais avec l'ID {id} introuvable." });
-                }
-                return NoContent();
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning("Données invalides pour Update ExpenseReportId: {ExpenseReportId} - {Message}", id, ex.Message);
-                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Erreur lors de Update pour ExpenseReportId: {ExpenseReportId}", id);
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
-            }
+            var success = await _service.UpdateAsync(id, dto);
+            if (!success)
+                return NotFound(new { data = (object?)null, status = 404, message = "Rapport de frais non trouvé" });
+
+            return NoContent();
         }
 
-        // DELETE: api/ExpenseReport/{id}?userId=USER123
+        // DELETE: api/ExpenseReport/{id}?userId=xxx
         [HttpDelete("{id}")]
-        [AllowAnonymous]
         public async Task<ActionResult> Delete(string id, [FromQuery] string userId)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
-            {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
 
             if (string.IsNullOrWhiteSpace(userId))
-            {
-                return BadRequest(new { data = (object?)null, status = 400, message = "L'ID utilisateur est requis pour la suppression." });
-            }
+                return BadRequest(new { data = (object?)null, status = 400, message = "userId est requis" });
 
-            try
-            {
-                var success = await _service.DeleteAsync(id, userId);
-                if (!success)
-                {
-                    return NotFound(new { data = (object?)null, status = 404, message = $"Rapport de frais avec l'ID {id} introuvable." });
-                }
-                return NoContent();
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning("Paramètres invalides pour Delete ExpenseReportId: {ExpenseReportId} - {Message}", id, ex.Message);
-                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Erreur lors de Delete pour ExpenseReportId: {ExpenseReportId}", id);
-                Console.WriteLine(e);
-                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
-            }
+            var success = await _service.DeleteAsync(id, userId);
+            if (!success)
+                return NotFound(new { data = (object?)null, status = 404, message = "Rapport de frais non trouvé" });
+
+            return NoContent();
         }
     }
 }

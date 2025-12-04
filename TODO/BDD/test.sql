@@ -306,7 +306,7 @@ VALUES
 ('HAB_012', 'HABG_002', 'Modifier une mission', 'Permet de modifier les informations d’une mission (dates, participants, objectifs, etc.).'),
 ('HAB_013', 'HABG_002', 'Annuler une mission', 'Autorise l’annulation d’une mission en cours ou planifiée.'),
 ('HAB_014', 'HABG_002', 'Ajouter une mission', 'Permet d’ajouter une nouvelle mission dans le système.'),
-('HAB_015', 'HABG_002', 'Voir les détails d’une mission', 'Autorise la consultation des détails complets d’une mission spécifique.'),
+('HAB_015', 'HABG_002', 'Voir les détails mission', 'Autorise la consultation des détails complets d’une mission spécifique.'),
 ('HAB_028', 'HABG_002', 'Voir les missions de tous les collaborateurs', 'Autorise la consultation de la liste complète des missions assignées à l’ensemble des collaborateurs du système.'),
 ('HAB_030', 'HABG_002', 'Supprimer une mission', 'Autorise la suppression d’un mission.'),
 

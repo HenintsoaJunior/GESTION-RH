@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { ExpenseReportType, ExpenseLine, Attachment } from "@/api/mission/expense_report/services";
 import { useAllExpenseReportTypes, useCreateExpenseReport } from "@/api/mission/expense_report/services";
-import { useGetMissionAssignationByAssignationId } from "@/api/mission/services";
+import { useGetMissionById } from "@/api/mission/services";
 import { useCompensationsByEmployeeAndMission, type Compensation } from "@/api/mission/compensation(indemnité)/services";
 import ExpenseReportStep from "./step/expense-report-step";
 import ExpenseReportList from "./step/expense-report-list";
@@ -22,7 +22,7 @@ import {
 import { NoDataMessage } from "@/styles/table-styles";
 
 interface FormData {
-    assignationId: string;
+    assignationId: string; // Garder assignationId pour la compatibilité avec l'API
     userId: string;
     expenseLinesByType: Record<string, ExpenseLine[]>;
     attachments: Attachment[];
@@ -67,7 +67,7 @@ interface MissionPayment {
 }
 
 interface OMNoteDeFraisProps {
-    selectedAssignmentId?: string;
+    selectedMissionId?: string;
     onBack?: () => void;
     missionPayment?: MissionPayment;
     onExportExcel?: () => void;
@@ -75,11 +75,11 @@ interface OMNoteDeFraisProps {
 }
 
 const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({ 
-    selectedAssignmentId, 
+    selectedMissionId,
     onBack 
 }) => {
     const [formData, setFormData] = useState<FormData>({
-        assignationId: selectedAssignmentId || "",
+        assignationId: selectedMissionId || "",
         userId: "",
         expenseLinesByType: {},
         attachments: [],
@@ -95,16 +95,18 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
 
     const { data: expenseReportTypesData, isLoading: loadingTypes, error: typesError } = useAllExpenseReportTypes();
 
-    const assignationQuery = useGetMissionAssignationByAssignationId(selectedAssignmentId || "");
+    // Utilisation du nouveau hook basé sur les missions
+    const missionQuery = useGetMissionById(selectedMissionId || "");
 
     const createMutation = useCreateExpenseReport();
 
-    const employeeId = assignationQuery.data?.data?.employee?.employeeId;
-    const missionId = assignationQuery.data?.data?.mission?.missionId;
+    // Adaptation pour utiliser les données de mission directement
+    const employeeId = missionQuery.data?.data?.employeeId;
+    const missionId = selectedMissionId;
 
     const isInternational = useMemo(() => {
-        return assignationQuery.data?.data?.mission?.missionType === 'international';
-    }, [assignationQuery.data]);
+        return missionQuery.data?.data?.missionType === 2; // 2 = MissionTypeEnum.International
+    }, [missionQuery.data]);
 
     const { data: compensationsResponse, isLoading: compensationsLoading } = useCompensationsByEmployeeAndMission(
         employeeId ?? undefined,
@@ -126,9 +128,11 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
     }, [loadingTypes, typesError, expenseReportTypesData]);
 
     useEffect(() => {
-        if (compensationsResponse?.data) {
+        if (compensationsResponse?.data && missionQuery.data?.data) {
           const responseData = compensationsResponse.data;
-          const { assignation, compensations } = responseData;
+          const {compensations } = responseData;
+          const missionData = missionQuery.data.data;
+          
           const totalAmount = compensations.reduce((sum, comp) => {
             const communicationAmount = comp.communicationAmount ?? 0;
             const visaAmount = comp.visaAmount ?? 0;
@@ -146,6 +150,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
               taxesAmount
             ));
           }, 0);
+          
           const dailyPaiements = compensations
             .map((comp: Compensation) => {
               const communicationAmount = comp.communicationAmount ?? 0;
@@ -172,7 +177,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                 compensationScales.push({ 
                   amount: comp.transportAmount!, 
                   expenseType: { type: "Transport" },
-                  transportId: assignation.transportId ?? undefined 
+                  transportId: missionData.transportId ?? undefined 
                 });
               }
               if ((comp.breakfastAmount ?? 0) > 0) {
@@ -229,24 +234,25 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                 compensationScales,
               };
             })
-            .filter((payment) => payment.compensationScales.length > 0); // Optional: filter out days with no compensations
+            .filter((payment) => payment.compensationScales.length > 0);
 
+          // Construction des détails d'assignation à partir des données de mission
           const assignmentDetails: AssignmentDetails = {
-            beneficiary: `${assignation.employee.firstName} ${assignation.employee.lastName}`,
-            matricule: assignation.employee.employeeCode ?? '',
-            missionTitle: assignation.mission.name ?? '',
-            function: assignation.employee.jobTitle ?? '',
-            base: assignation.employee.site.siteName ?? '',
-            meansOfTransport: assignation.transport?.type ?? "Non spécifié",
-            direction: assignation.employee.direction.directionName ?? '',
-            departmentService: `${assignation.employee.department.departmentName ?? ''} / ${assignation.employee.service.serviceName ?? ''}`,
-            costCenter: assignation.allocatedFund,
-            departureDate: assignation.departureDate ?? '',
-            departureTime: assignation.departureTime ?? '',
-            missionDuration: assignation.duration,
-            returnDate: assignation.returnDate ?? '',
-            returnTime: assignation.returnTime ?? '',
-            startDate: assignation.mission.startDate ?? '',
+            beneficiary: `${missionData.employee.firstName} ${missionData.employee.lastName}`,
+            matricule: missionData.employee.employeeCode ?? '',
+            missionTitle: missionData.name ?? '',
+            function: missionData.employee.jobTitle ?? '',
+            base: missionData.employee.site.siteName ?? '',
+            meansOfTransport: missionData.transport?.type ?? "Non spécifié",
+            direction: missionData.employee.direction?.directionName ?? '',
+            departmentService: `${missionData.employee.department?.departmentName ?? ''} / ${missionData.employee.service?.serviceName ?? ''}`,
+            costCenter: missionData.allocatedFund,
+            departureDate: missionData.departureDate ?? '',
+            departureTime: missionData.departureTime ?? '',
+            missionDuration: missionData.duration,
+            returnDate: missionData.returnDate ?? '',
+            returnTime: missionData.returnTime ?? '',
+            startDate: missionData.startDate ?? '',
           };
 
           setLocalMissionPayment({
@@ -255,7 +261,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
             totalAmount,
           });
         }
-    }, [compensationsResponse]);
+    }, [compensationsResponse, missionQuery.data]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -268,8 +274,10 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
     const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const { assignationId, userId, expenseLinesByType, attachments } = formData;
+        
+        // Utiliser missionId pour l'assignationId
         if (!assignationId) {
-            setFieldErrors({ assignationId: ["L'assignation est requise."] });
+            setFieldErrors({ assignationId: ["La mission est requise."] });
             return;
         }
         if (!userId) {
@@ -280,10 +288,11 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
             setFieldErrors({ general: ["Au moins une ligne de dépense est requise."] });
             return;
         }
+        
         createMutation.mutate(
             {
                 userId,
-                assignationId,
+                assignationId: assignationId, // Utiliser assignationId qui contient missionId
                 expenseLinesByType,
                 attachments,
             },
@@ -292,7 +301,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                     const resp = response as ApiResponse;
                     if (resp.status === 201) {
                         setFormData({
-                            assignationId: selectedAssignmentId || "",
+                            assignationId: selectedMissionId || "",
                             userId: "",
                             expenseLinesByType: {},
                             attachments: [],
@@ -417,7 +426,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                             {getToggleButtonContent().icon}
                             {getToggleButtonContent().label}
                         </ToggleButton>
-                        {assignationQuery.data && isInternational && <ActionButton onClick={openAvanceView} title="Voir les indemnités avancées">
+                        {missionQuery.data && isInternational && <ActionButton onClick={openAvanceView} title="Voir les indemnités avancées">
                             <Wallet size={16} /> Indemnités Avancées
                         </ActionButton>}
                     </HeaderActions>
@@ -446,14 +455,14 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                         {getToggleButtonContent().icon}
                         {getToggleButtonContent().label}
                     </ToggleButton>
-                    {assignationQuery.data && isInternational && <ActionButton onClick={openAvanceView} title="Voir les indemnités avancées">
+                    {missionQuery.data && isInternational && <ActionButton onClick={openAvanceView} title="Voir les indemnités avancées">
                         <Wallet size={16} /> Indemnités Avancées
                     </ActionButton>}
                 </HeaderActions>
             </PageHeader>
             <Separator />
             {viewMode === "avance" ? (
-                assignationQuery.isLoading || compensationsLoading ? (
+                missionQuery.isLoading || compensationsLoading ? (
                     <LoadingContainer>
                         <p style={{ marginLeft: "10px" }}>Chargement des indemnités avancées...</p>
                     </LoadingContainer>
@@ -461,7 +470,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                     localMissionPayment ? (
                         <OMPayment
                             missionPayment={localMissionPayment}
-                            selectedAssignmentId={selectedAssignmentId || ""}
+                            selectedMissionId={selectedMissionId || ""}
                             onExportExcel={defaultOnExportExcel}
                             formatDate={defaultFormatDate}
                             onBack={onBack || defaultOnBack}
@@ -469,7 +478,7 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                             employeeId={employeeId || ""}
                         />
                     ) : (
-                        <NoDataMessage>Aucune indemnité trouvée pour cette assignation.</NoDataMessage>
+                        <NoDataMessage>Aucune indemnité trouvée pour cette mission.</NoDataMessage>
                     )
                 ) : (
                     <NoDataMessage>Les indemnités avancées ne sont disponibles que pour les missions internationales.</NoDataMessage>
@@ -492,8 +501,8 @@ const OMNoteDeFrais: React.FC<OMNoteDeFraisProps> = ({
                 <>
                     {/* <SectionTitle>Liste des Notes de Frais</SectionTitle> */}
                     <ExpenseReportList
-                        selectedAssignmentId={selectedAssignmentId}
-                        isLoading={assignationQuery.isLoading}
+                        selectedAssignmentId={selectedMissionId} // Garder selectedAssignmentId pour la compatibilité
+                        isLoading={missionQuery.isLoading}
                         onError={handleError}
                     />
                 </>

@@ -15,7 +15,7 @@ namespace MyApp.Api.Models.dto.mission
         public string UserId { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "L'ID d'assignation est requis.")]
-        public string AssignationId { get; set; } = string.Empty;
+        public string MissionId { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Au moins un type de frais doit être fourni.")]
         public Dictionary<string, List<ExpenseLineDTO>> ExpenseLinesByType { get; set; } = new Dictionary<string, List<ExpenseLineDTO>>();
@@ -44,8 +44,8 @@ namespace MyApp.Api.Models.dto.mission
 
         public decimal Rate { get; set; }
 
-        [Required(ErrorMessage = "La AssignationId est requise.")]
-        public string AssignationId { get; set; } = string.Empty;
+        [Required(ErrorMessage = "La MissionId est requise.")]
+        public string MissionId { get; set; } = string.Empty;
 
         public string ExpenseReportTypeId { get; set; } = string.Empty;
 

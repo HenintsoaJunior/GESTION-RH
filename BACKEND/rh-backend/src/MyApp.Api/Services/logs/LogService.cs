@@ -15,6 +15,15 @@ namespace MyApp.Api.Services.logs
         Task LogAsync<T>(string action, T? oldEntity, T? newEntity, string userId, string fields);
         Task LogAsync<T>(string action, string tableName, T? oldEntity, T? newEntity, string userId);
         Task LogAsync<T>(string action, string tableName, T? oldEntity, T? newEntity, string userId, string fields);
+        Task LogStatusChangeAsync<T>(
+        string action,
+        string tableName,
+        T entity,
+        string propertyName,
+        object? oldValue,
+        object? newValue,
+        string userId);
+        
         Task<IEnumerable<Log>> GetAllAsync();
         Task<Log?> GetByIdAsync(string logId);
         Task AddAsync(LogDTOForm dto);
@@ -70,6 +79,33 @@ namespace MyApp.Api.Services.logs
         {
             var tableName = typeof(T).Name.ToLower() + "s";
             await LogAsync(action, tableName, oldEntity, newEntity, userId);
+        }
+
+        public async Task LogStatusChangeAsync<T>(
+            string action,
+            string tableName,
+            T entity,
+            string propertyName,
+            object? oldValue,
+            object? newValue,
+            string userId)
+        {
+            var oldValues = oldValue is null 
+                ? null 
+                : JsonSerializer.Serialize(new Dictionary<string, object?> { { propertyName, oldValue } });
+
+            var newValues = newValue is null 
+                ? null 
+                : JsonSerializer.Serialize(new Dictionary<string, object?> { { propertyName, newValue } });
+
+            await LogAsync(
+                action: action,
+                tableName: tableName,
+                oldEntity: default(T),
+                newEntity: default(T),
+                userId: userId,
+                fields: propertyName
+            );
         }
 
         public async Task LogAsync(string action, string? oldValues, string? newValues, string userId, string? fields = null)

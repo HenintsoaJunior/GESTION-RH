@@ -18,7 +18,7 @@ namespace MyApp.Api.Entities.employee
 
         [Column("employee_code")]
         [MaxLength(50)]
-        public string? EmployeeCode { get; set; }
+        public string EmployeeCode { get; set; } = default!;
 
         [Required]
         [Column("last_name")]

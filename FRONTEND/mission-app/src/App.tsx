@@ -6,7 +6,7 @@ import LogList from '@/pages/logs';
 import RoleList from '@/pages/access';
 import Error403Page from '@/pages/error/403';
 import ProfilePage from '@/layouts/profil-page';
-import MissionList from '@/pages/mission/collaborator/list/mission-list';
+import MissionList from '@/pages/mission/collaborator/list/index';
 import DetailsMission from '@/pages/mission/collaborator/details/mission-details';
 import MissionValidationPage from '@/pages/mission/validation';
 import TresoPage from '@/pages/mission/treso';
@@ -22,13 +22,11 @@ import ContractTypeList from './pages/referentiel/contract/list';
 import UnitList from '@/pages/referentiel/unit/list';
 import EmployeeList from '@/pages/referentiel/collaborateur/list';
 import LieuList from '@/pages/referentiel/lieu/list';
-import MissionListArchive from './pages/mission/collaborator/list/mission-list-archive';
 import TransportList from '@/pages/referentiel/transport/list';
 import GeoZoneList from '@/pages/referentiel/zone/list';
 import CompensationScalesPage from '@/pages/referentiel/compensation-scale';
 import CompensationMission from '@/pages/mission/treso/components/compensation_mission';
 import Reimbursement from '@/pages/mission/treso/components/reimbursement';
-import TableauBord from '@/pages/tableau-bord';
 import MissionsEnCoursMapPage from './pages/maps';
 import Home from '@/pages/Home';
 import ProtectedRequestList from './pages/recruitment/request/request-list';
@@ -52,7 +50,7 @@ function App() {
         <Route path="/profil-page" element={<ProfilePage />} />
         {/* ADMIN */}
         <Route path="/dashboard" element={<Home />} />
-        <Route path="/tableau-bord" element={<TableauBord />} />
+        {/* <Route path="/tableau-bord" element={<TableauBord />} /> */}
         <Route path="/utilisateur" element={<UserList />} />
         <Route path="/logs" element={<LogList />} />
         <Route path="/access/list" element={<RoleList />} />
@@ -76,7 +74,6 @@ function App() {
         <Route path="/mission/list" element={<MissionList />} />
         <Route path="/mission/maps" element={<MissionsEnCoursMapPage />} />
 
-        <Route path="/mission/archived" element={<MissionListArchive />} /> 
         <Route path="/mission/collaborateur/:missionId/*" element={<DetailsMission />} />
         <Route path="/mission/to-validate" element={<MissionValidationPage />} />
         {/* TRESO */}
