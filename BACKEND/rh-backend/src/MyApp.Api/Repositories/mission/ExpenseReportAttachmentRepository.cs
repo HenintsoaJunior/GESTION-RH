@@ -6,7 +6,7 @@ namespace MyApp.Api.Repositories.mission
 {
     public interface IExpenseReportAttachmentRepository
     {
-        Task<IEnumerable<ExpenseReportAttachment>> GetByAssignationIdAsync(string assignationId);
+        Task<IEnumerable<ExpenseReportAttachment>> GetByMissionIdAsync(string mission_id);
         Task AddAsync(ExpenseReportAttachment entity);
         Task DeleteAsync(ExpenseReportAttachment entity);
         Task SaveChangesAsync();
@@ -21,11 +21,11 @@ namespace MyApp.Api.Repositories.mission
             _context = context;
         }
 
-        public async Task<IEnumerable<ExpenseReportAttachment>> GetByAssignationIdAsync(string assignationId)
+        public async Task<IEnumerable<ExpenseReportAttachment>> GetByMissionIdAsync(string missionId)
         {
             return await _context.ExpenseReportAttachments
                 .AsNoTracking()
-                .Where(a => a.AssignationId == assignationId)
+                .Where(a => a.MissionId == missionId)
                 .ToListAsync();
         }
 

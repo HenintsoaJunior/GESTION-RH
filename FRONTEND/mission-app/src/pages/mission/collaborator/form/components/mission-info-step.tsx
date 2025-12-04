@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { useNavigateToReferentiel } from "@/utils/use-navigate-to-referentiel";
+import { useEffect, useState } from "react";
 import {
   FormSectionTitle,
   FormTable,
@@ -12,6 +11,11 @@ import {
   StyledAutoCompleteInput,
   ErrorMessage,
 } from "@/styles/form-container";
+import LieuForm from "@/pages/referentiel/lieu/form/index";
+import TransportForm from "@/pages/referentiel/transport/form/index";
+import { useGetLieuById } from "@/api/lieu/services";
+import { useGetTransportById } from "@/api/transport/services";
+import type { Transport } from "@/api/transport/services";
 
 interface MissionCollaboratorStepProps {
   formData: {
@@ -19,6 +23,7 @@ interface MissionCollaboratorStepProps {
     missionTitle?: string;
     description?: string;
     location?: string;
+    lieuData?: string; 
     beneficiary: {
       beneficiary: string;
       matricule: string;
@@ -44,6 +49,9 @@ interface MissionCollaboratorStepProps {
     section?: string
   ) => void;
   handleAddNewSuggestion: (type: string, value: string) => void;
+  onLieuFormOpen?: () => void;
+  onLieuCreated?: (newLieu: any) => void;
+  onTransportCreated?: (newTransport: any) => void;
 }
 
 const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
@@ -54,19 +62,265 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
   regionDisplayNames,
   suggestions,
   handleInputChange,
+  handleAddNewSuggestion,
+  onLieuFormOpen,
+  onLieuCreated,
+  onTransportCreated,
 }) => {
-  // Debug fieldErrors changes to confirm propagation
   useEffect(() => {
-    console.log("MissionCollaboratorStep - fieldErrors:", fieldErrors);
   }, [fieldErrors]);
+  
+  const [lieuFormOpen, setLieuFormOpen] = useState(false);
+  const [transportFormOpen, setTransportFormOpen] = useState(false);
+  const [lieuFormPrefill, setLieuFormPrefill] = useState("");
+  const [transportFormPrefill, setTransportFormPrefill] = useState("");
+  const [recentLieuId, setRecentLieuId] = useState<string | null>(null);
+  const [selectedTransport, setSelectedTransport] = useState<Transport | null>(null);
+  const [justCreatedTransportId, setJustCreatedTransportId] = useState<string | null>(null);
+  const [uniqueTransportSuggestions, setUniqueTransportSuggestions] = useState<string[]>([]);
+  
+  const isInternational = formData.missionType === "Internationale";
+  
+  const { data: lieuDetails, isLoading: isLoadingLieuDetails } = useGetLieuById(
+    recentLieuId || ""
+  );
 
-  const { navigateAndPrefill } = useNavigateToReferentiel();
+  const { data: transportDetails } = useGetTransportById(
+    justCreatedTransportId || ""
+  );
 
-  const isInternational = formData.missionType === "international";
+  // Mettre à jour les suggestions de transport uniques
+  useEffect(() => {
+    if (suggestions.transport) {
+      // Créer un Set pour éliminer les doublons
+      const uniqueTypes = Array.from(
+        new Set(suggestions.transport.map(t => t.type).filter(Boolean))
+      );
+      setUniqueTransportSuggestions(uniqueTypes);
+    }
+  }, [suggestions.transport]);
+
+  // Ajouter un nouveau transport unique aux suggestions
+  useEffect(() => {
+    if (transportDetails?.data?.type) {
+      const newType = transportDetails.data.type;
+      
+      // Ajouter uniquement si ce n'est pas déjà dans la liste
+      if (!uniqueTransportSuggestions.includes(newType)) {
+        setUniqueTransportSuggestions(prev => [...prev, newType]);
+      }
+    }
+  }, [transportDetails?.data?.type, uniqueTransportSuggestions]);
+
+  useEffect(() => {
+    if (recentLieuId && lieuDetails?.data) {
+      
+      const lieu = lieuDetails.data;
+      
+      let displayValue = lieu.nom;
+      if (lieu.pays) {
+        displayValue = lieu.pays;
+        if (lieu.ville) {
+          displayValue = `${lieu.ville}/${lieu.pays}`;
+        }
+      }
+      
+      handleInputChange({ 
+        target: { 
+          name: "location", 
+          value: displayValue
+        } 
+      });
+      
+      const structuredLieu = {
+        nom: lieu.nom,
+        pays: lieu.pays,
+        ville: lieu.ville || "",
+        codePostal: lieu.codePostal || "",
+        latitude: lieu.latitude || 0,
+        longitude: lieu.longitude || 0,
+        lieuId: lieu.lieuId,
+        zoneId: lieu.zoneId || null,
+        geoZone: lieu.geoZone || null,
+        originalData: lieu
+      };
+      
+      handleInputChange({ 
+        target: { 
+          name: "lieuData", 
+          value: JSON.stringify(structuredLieu) 
+        } 
+      });
+      
+      if (onLieuCreated) {
+        onLieuCreated(lieu);
+      }
+      
+      setRecentLieuId(null);
+    }
+  }, [lieuDetails, recentLieuId, handleInputChange, onLieuCreated]);
+
+  // Effet pour récupérer les détails du transport quand on a un ID récent
+  useEffect(() => {
+    if (transportDetails?.data) {
+      const transport = transportDetails.data;
+      const transportType = transport.type || "";
+      
+      if (transportType) {
+        // Mettre à jour le champ de transport avec le type
+        handleInputChange({ 
+          target: { 
+            name: "transport", 
+            value: transportType
+          } 
+        }, "beneficiary");
+        
+        // Ajouter la nouvelle suggestion à la liste
+        handleAddNewSuggestion("transport", transportType);
+        
+        if (onTransportCreated) {
+          onTransportCreated(transport);
+        }
+        
+        // Réinitialiser l'ID
+        setJustCreatedTransportId(null);
+      }
+    }
+  }, [transportDetails, handleInputChange, handleAddNewSuggestion, onTransportCreated]);
+
+  const handleLieuCreated = (newLieu: any) => {
+    
+    let lieuObject = newLieu;
+    
+    if (newLieu && newLieu.data) {
+      lieuObject = newLieu.data;
+    }
+    
+    if (lieuObject?.originalData?.lieuId) {
+      setRecentLieuId(lieuObject.originalData.lieuId);
+    }
+    else if (lieuObject?.lieuId) {
+      setRecentLieuId(lieuObject.lieuId);
+    }
+    else {
+      
+      const lieuNom = lieuObject?.nom || "Lieu sans nom";
+      const lieuPays = lieuObject?.pays || "";
+      const lieuVille = lieuObject?.ville || "";
+      
+      let displayValue = lieuNom;
+      if (lieuPays) {
+        displayValue = lieuPays;
+        if (lieuVille) {
+          displayValue = `${lieuVille}/${lieuPays}`;
+        }
+      }
+      
+      handleInputChange({ 
+        target: { 
+          name: "location", 
+          value: displayValue
+        } 
+      });
+      
+      const structuredLieu = {
+        nom: lieuNom,
+        pays: lieuPays,
+        ville: lieuVille,
+        codePostal: lieuObject?.codePostal || "",
+        latitude: lieuObject?.latitude || 0,
+        longitude: lieuObject?.longitude || 0,
+        lieuId: lieuObject?.lieuId || "",
+        zoneId: lieuObject?.zoneId || null,
+        originalData: lieuObject
+      };
+      
+      handleInputChange({ 
+        target: { 
+          name: "lieuData", 
+          value: JSON.stringify(structuredLieu) 
+        } 
+      });
+      
+      if (onLieuCreated) {
+        onLieuCreated(lieuObject);
+      }
+    }
+    
+    setLieuFormOpen(false);
+    setLieuFormPrefill("");
+  };
+
+  const handleTransportCreated = (newTransport: any) => {
+    
+    let transportObject = newTransport;
+    
+    if (newTransport && newTransport.data) {
+      transportObject = newTransport.data;
+    }
+    
+    // Fermer le popup IMMÉDIATEMENT
+    setTransportFormOpen(false);
+    setTransportFormPrefill("");
+    setSelectedTransport(null);
+    
+    // Si nous avons un transportId, le stocker pour récupérer les détails via GET
+    if (transportObject?.transportId) {
+      setJustCreatedTransportId(transportObject.transportId);
+    }
+    // Si nous avons un ID dans originalData
+    else if (transportObject?.originalData?.transportId) {
+      setJustCreatedTransportId(transportObject.originalData.transportId);
+    }
+    // Sinon, traiter directement les données si disponibles
+    else if (transportObject?.type) {
+      // Si on a directement le type, on l'utilise
+      const transportType = transportObject.type;
+      
+      handleInputChange({ 
+        target: { 
+          name: "transport", 
+          value: transportType
+        } 
+      }, "beneficiary");
+      
+      handleAddNewSuggestion("transport", transportType);
+      
+      if (onTransportCreated) {
+        onTransportCreated(transportObject);
+      }
+    }
+  };
+
+  const handleAddNewLocation = () => {
+    if (formData.location) {
+      setLieuFormPrefill(formData.location);
+    } else {
+      setLieuFormPrefill("");
+    }
+    
+    setLieuFormOpen(true);
+    
+    if (onLieuFormOpen) {
+      onLieuFormOpen();
+    }
+  };
+
+  const handleAddNewTransport = () => {
+    setSelectedTransport(null);
+    setJustCreatedTransportId(null); // Réinitialiser l'ID précédent
+    
+    if (formData.beneficiary.transport) {
+      setTransportFormPrefill(formData.beneficiary.transport);
+    } else {
+      setTransportFormPrefill("");
+    }
+    
+    setTransportFormOpen(true);
+  };
 
   return (
     <>
-      {/* Section Informations de la Mission */}
       <FormSectionTitle>Informations de la Mission</FormSectionTitle>
       <FormTable>
         <tbody>
@@ -78,8 +332,8 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                   <FormInput
                     type="radio"
                     name="missionType"
-                    value="national"
-                    checked={formData.missionType === "national"}
+                    value="Nationale"
+                    checked={formData.missionType === "Nationale"}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
                     disabled={isSubmitting}
                   />
@@ -89,8 +343,8 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                   <FormInput
                     type="radio"
                     name="missionType"
-                    value="international"
-                    checked={formData.missionType === "international"}
+                    value="Internationale"
+                    checked={formData.missionType === "Internationale"}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
                     disabled={isSubmitting}
                   />
@@ -141,31 +395,39 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
               <FormLabelRequired>Lieu</FormLabelRequired>
               <StyledAutoCompleteInput
                 value={formData.location || ""}
-                onChange={(value: string) => handleInputChange({ target: { name: "location", value } })}
+                onChange={(value: string) => {
+                  handleInputChange({ target: { name: "location", value } });
+                  if (formData.lieuData) {
+                    handleInputChange({ target: { name: "lieuData", value: "" } });
+                  }
+                }}
                 suggestions={regionDisplayNames}
                 placeholder={isLoading.regions ? "Chargement des lieux..." : "Saisir ou sélectionner un lieu..."}
                 disabled={isSubmitting || isLoading.regions}
-                onAddNew={() =>
-                  navigateAndPrefill({
-                    route: "/referentiel/lieu",
-                    fieldLabel: "nom",
-                    value: formData.location || "",
-                  })
-                }
+                onAddNew={handleAddNewLocation}
                 fieldType="location"
                 fieldLabel="lieu"
-                addNewRoute="/referentiel/lieu"
                 className={fieldErrors.lieuId ? "input-error" : ""}
               />
               {fieldErrors.lieuId && fieldErrors.lieuId.length > 0 && (
                 <ErrorMessage>{fieldErrors.lieuId.join(", ")}</ErrorMessage>
+              )}
+              
+              {isLoadingLieuDetails && recentLieuId && (
+                <div style={{ 
+                  marginTop: '4px', 
+                  fontSize: '0.85em',
+                  color: '#3498db',
+                  fontStyle: 'italic'
+                }}>
+                  Chargement des détails du lieu...
+                </div>
               )}
             </FormFieldCell>
           </FormRow>
         </tbody>
       </FormTable>
 
-      {/* Section Détails du Collaborateur */}
       <FormSectionTitle>Détails du Missionaire</FormSectionTitle>
       <FormTable>
         <tbody>
@@ -181,7 +443,6 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 showAddOption={false}
                 fieldType="beneficiary"
                 fieldLabel="bénéficiaire"
-                addNewRoute="/referentiel/collaborator"
                 className={fieldErrors["beneficiary.beneficiary"] ? "input-error" : ""}
               />
               {fieldErrors["beneficiary.beneficiary"] && fieldErrors["beneficiary.beneficiary"].length > 0 && (
@@ -292,26 +553,18 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e, "beneficiary")}
                 disabled={isSubmitting}
               />
-
               {!isInternational && (
                 <>
                   <FormLabel>Moyen de transport</FormLabel>
                   <StyledAutoCompleteInput
                     value={formData.beneficiary.transport || ""}
                     onChange={(value: string) => handleInputChange({ target: { name: "transport", value } }, "beneficiary")}
-                    suggestions={suggestions.transport.map((t) => t.type)}
-                    placeholder={suggestions.transport.length === 0 ? "Aucun moyen de transport disponible" : "Saisir ou sélectionner un moyen de transport..."}
+                    suggestions={uniqueTransportSuggestions}
+                    placeholder={uniqueTransportSuggestions.length === 0 ? "Aucun moyen de transport disponible" : "Saisir ou sélectionner un moyen de transport..."}
                     disabled={isSubmitting}
-                    onAddNew={() =>
-                      navigateAndPrefill({
-                        route: "/referentiel/transport",
-                        fieldLabel: "type",
-                        value: formData.beneficiary.transport || "",
-                      })
-                    }
+                    onAddNew={handleAddNewTransport}
                     fieldType="transport"
                     fieldLabel="moyen de transport"
-                    addNewRoute="/referentiel/transport"
                     className={fieldErrors["beneficiary.transport"] ? "input-error" : ""}
                   />
                   {fieldErrors["beneficiary.transport"] && fieldErrors["beneficiary.transport"].length > 0 && (
@@ -323,6 +576,33 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
           </FormRow>
         </tbody>
       </FormTable>
+
+      <LieuForm
+        isOpen={lieuFormOpen}
+        onClose={() => {
+          setLieuFormOpen(false);
+          setLieuFormPrefill("");
+        }}
+        onFormSuccess={() => {
+        }}
+        prefillNom={lieuFormPrefill}
+        onSuccessClose={handleLieuCreated}
+      />
+
+      <TransportForm
+        isOpen={transportFormOpen}
+        onClose={() => {
+          setTransportFormOpen(false);
+          setTransportFormPrefill("");
+          setSelectedTransport(null);
+          setJustCreatedTransportId(null);
+        }}
+        onFormSuccess={() => {
+        }}
+        transport={selectedTransport}
+        prefillType={transportFormPrefill}
+        onSuccessClose={handleTransportCreated}
+      />
     </>
   );
 };

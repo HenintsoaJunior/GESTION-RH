@@ -10,7 +10,7 @@ namespace MyApp.Api.Services.mission
     public interface IExpenseReportAttachmentService
     {
         Task<List<string>> InsertAsync(List<ExpenseReportAttachmentDTO> dtos, string assignationId);
-        Task<bool> DeleteByAssignationIdAsync(string assignationId);
+        Task<bool> DeleteByMissionIdAsync(string assignationId);
     }
     
     public class ExpenseReportAttachmentService : IExpenseReportAttachmentService
@@ -32,12 +32,12 @@ namespace MyApp.Api.Services.mission
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<List<string>> InsertAsync(List<ExpenseReportAttachmentDTO> dtos, string assignationId)
+        public async Task<List<string>> InsertAsync(List<ExpenseReportAttachmentDTO> dtos, string missionId)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(assignationId))
-                    throw new ArgumentException("L'ID d'assignation est requis", nameof(assignationId));
+                if (string.IsNullOrWhiteSpace(missionId))
+                    throw new ArgumentException("L'ID d'assignation est requis", nameof(missionId));
                 if (dtos == null || !dtos.Any())
                     throw new ArgumentException("Au moins un fichier doit être fourni", nameof(dtos));
 
@@ -51,7 +51,7 @@ namespace MyApp.Api.Services.mission
                     var entity = new ExpenseReportAttachment
                     {
                         AttachmentId = _sequenceGenerator.GenerateSequence("seq_expense_report_attachment", "ERA", 6, "-"),
-                        AssignationId = assignationId,
+                        MissionId = missionId,
                         FileName = dto.FileName,
                         FileContent = dto.FileContent,
                         FileSize = dto.FileSize,
@@ -65,28 +65,28 @@ namespace MyApp.Api.Services.mission
 
                 await _repository.SaveChangesAsync();
 
-                _logger.LogInformation("Pièces jointes insérées avec succès pour assignationId: {AssignationId}. IDs: {InsertedIds}", assignationId, string.Join(", ", insertedIds));
+                _logger.LogInformation("Pièces jointes insérées avec succès pour missionId: {missionId}. IDs: {InsertedIds}", missionId, string.Join(", ", insertedIds));
 
                 return insertedIds;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de l'insertion des pièces jointes pour assignationId: {AssignationId}", assignationId);
+                _logger.LogError(ex, "Erreur lors de l'insertion des pièces jointes pour missionId: {missionId}", missionId);
                 throw;
             }
         }
 
-        public async Task<bool> DeleteByAssignationIdAsync(string assignationId)
+        public async Task<bool> DeleteByMissionIdAsync(string missionId)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(assignationId))
-                    throw new ArgumentException("L'ID d'assignation est requis", nameof(assignationId));
+                if (string.IsNullOrWhiteSpace(missionId))
+                    throw new ArgumentException("L'ID d'assignation est requis", nameof(missionId));
 
-                var existingAttachments = await _repository.GetByAssignationIdAsync(assignationId);
+                var existingAttachments = await _repository.GetByMissionIdAsync(missionId);
                 if (!existingAttachments.Any())
                 {
-                    _logger.LogInformation("Aucune pièce jointe à SUPPRESSION pour assignationId: {AssignationId}", assignationId);
+                    _logger.LogInformation("Aucune pièce jointe à SUPPRESSION pour missionId: {missionId}", missionId);
                     return true;
                 }
 
@@ -98,12 +98,12 @@ namespace MyApp.Api.Services.mission
 
                 await _repository.SaveChangesAsync();
 
-                _logger.LogInformation("Pièces jointes supprimées avec succès pour assignationId: {AssignationId}", assignationId);
+                _logger.LogInformation("Pièces jointes supprimées avec succès pour missionId: {missionId}", missionId);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la suppression des pièces jointes pour assignationId: {AssignationId}", assignationId);
+                _logger.LogError(ex, "Erreur lors de la suppression des pièces jointes pour missionId: {missionId}", missionId);
                 throw;
             }
         }

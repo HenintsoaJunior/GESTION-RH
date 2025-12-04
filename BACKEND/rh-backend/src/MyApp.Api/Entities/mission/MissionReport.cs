@@ -26,12 +26,12 @@ namespace MyApp.Api.Entities.mission
         public User? User { get; set; }
 
         [Required]
-        [Column("assignation_id")]
+        [Column("mission_id")]
         [MaxLength(50)]
-        public string AssignationId { get; set; } = null!;
+        public string MissionId { get; set; } = null!;
 
-        [ForeignKey("AssignationId")]
-        public MissionAssignation? MissionAssignation { get; set; }
+        [ForeignKey("MissionId")]
+        public Mission? Mission { get; set; }
 
         public MissionReport() { }
 
@@ -39,7 +39,7 @@ namespace MyApp.Api.Entities.mission
         {
             Text = dto.Text;
             UserId = dto.UserId;
-            AssignationId = dto.AssignationId;
+            MissionId = dto.MissionId;
         }
     }
 }

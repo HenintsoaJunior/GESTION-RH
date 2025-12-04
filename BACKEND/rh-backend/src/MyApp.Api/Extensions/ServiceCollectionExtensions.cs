@@ -1,9 +1,6 @@
 using System.Reflection;
-using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using MyApp.Api.Data;
-using MyApp.Api.Repositories;
-using MyApp.Api.Services;
+using MyApp.Api.Converters;
+using System.Text.Json.Serialization;
 
 namespace MyApp.Api.Extensions
 {
@@ -34,6 +31,48 @@ namespace MyApp.Api.Extensions
                 if (interfaceType != null)
                     services.AddScoped(interfaceType, implType);
             }
+        }
+
+        public static IServiceCollection AddAllEnumDescriptionConverters(this IServiceCollection services)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+
+            // On récupère le type générique ouvert une seule fois
+            var openConverterType = typeof(EnumDescriptionJsonConverter<>);
+
+            var enumTypes = assembly.GetTypes()
+                .Where(t => t.IsEnum)
+                .ToList();
+
+            foreach (var enumType in enumTypes)
+            {
+                var attr = enumType.GetCustomAttribute<JsonConverterAttribute>();
+                if (attr == null) continue;
+
+                var converterType = attr.ConverterType;
+                if (converterType == null) continue;
+
+                bool isOurConverter = converterType.IsGenericType &&
+                    converterType.GetGenericTypeDefinition() == openConverterType;
+
+                bool isClosedOurConverter = converterType.IsGenericType &&
+                    converterType.GetGenericTypeDefinition() == openConverterType;
+
+                if (!isOurConverter && !isClosedOurConverter) continue;
+
+                var closedConverterType = openConverterType.MakeGenericType(enumType);
+                var instance = Activator.CreateInstance(closedConverterType);
+
+                if (instance is JsonConverter converter)
+                {
+                    services.ConfigureHttpJsonOptions(options =>
+                    {
+                        options.SerializerOptions.Converters.Add(converter);
+                    });
+                }
+            }
+
+            return services;
         }
     }
 }

@@ -17,6 +17,8 @@ namespace MyApp.Api.Models.dto.lieu
         [Required(ErrorMessage = "Le pays est requis.")]
         [StringLength(255, ErrorMessage = "Le pays ne peut pas dépasser 255 caractères.")]
         public string Pays { get; set; } = string.Empty;
+        public decimal Longitude { get; set; }
+        public decimal Latitude { get; set; }
 
         [Required(ErrorMessage = "Le zone est requis.")]
         [StringLength(50, ErrorMessage = "L'ID de la zone ne peut pas dépasser 50 caractères.")]

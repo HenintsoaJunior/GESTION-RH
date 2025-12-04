@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import * as FaIcons from "react-icons/fa";
 import styled, { css } from "styled-components";
-import type { RefObject } from "react";
+import * as FaIcons from "react-icons/fa";
 
 interface AutoCompleteInputProps {
   value: string;
@@ -14,7 +12,6 @@ interface AutoCompleteInputProps {
   className?: string;
   fieldType: string;
   fieldLabel: string;
-  addNewRoute?: string;
   showAddOption?: boolean;
   maxVisibleItems?: number;
 }
@@ -57,32 +54,28 @@ const InputWrapper = styled.div<{ className?: string }>`
   }
 `;
 
-const IconButton = styled.span`
+const IconButton = styled.span<{ $disabled?: boolean }>`
   position: absolute;
   right: 0;
   top: 50%;
   transform: translateY(-50%);
   padding: 8px 12px;
-  cursor: pointer;
+  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
   background: transparent;
   border-left: 1px solid #dee2e6;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.2s;
+  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
 
   &:hover:not(:disabled) {
-    background: #e9ecef;
+    background: ${({ $disabled }) => ($disabled ? 'transparent' : '#e9ecef')};
   }
 
   svg {
     font-size: 12px;
     color: #6c757d;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
   }
 `;
 
@@ -178,56 +171,19 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
   disabled = false,
   onAddNew,
   className = "form-input",
-  fieldType = "",
   fieldLabel = "",
-  addNewRoute = "",
   showAddOption = true,
   maxVisibleItems = 3,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
-  const containerRef: RefObject<HTMLDivElement | null> = useRef<HTMLDivElement | null>(null);
-  const inputRef: RefObject<HTMLInputElement | null> = useRef<HTMLInputElement | null>(null);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Effet pour récupérer la nouvelle valeur depuis l'URL après création
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const newValue = searchParams.get("newValue");
-    const urlFieldType = searchParams.get("fieldType");
-    
-    // Si une nouvelle valeur est présente et correspond au type de champ
-    if (newValue && urlFieldType === fieldType && newValue !== value) {
-      onChange(newValue);
-      
-      // Naviguer vers la même page sans les paramètres
-      const cleanPath = location.pathname;
-      const remainingParams = new URLSearchParams(location.search);
-      remainingParams.delete("newValue");
-      remainingParams.delete("fieldType");
-      
-      const cleanUrl = remainingParams.toString() 
-        ? `${cleanPath}?${remainingParams.toString()}`
-        : cleanPath;
-      
-      // Utiliser navigate avec replace pour nettoyer l'URL
-      setTimeout(() => {
-        navigate(cleanUrl, { replace: true });
-      }, 100);
-      
-      // Fermer la dropdown et donner le focus
-      setIsOpen(false);
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 200);
-    }
-  }, [location.search, location.pathname, fieldType, onChange, value, navigate]);
-
-  // Filtrer les suggestions basées sur la valeur de l'input
+  // Filtrage des suggestions
   useEffect(() => {
     if (value) {
-      const filtered: string[] = suggestions.filter((s: string) =>
+      const filtered = suggestions.filter((s) =>
         s.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredSuggestions(filtered);
@@ -236,49 +192,44 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
     }
   }, [value, suggestions]);
 
-  // Gérer les clics en dehors du composant
+  // Click outside → fermer le dropdown
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent): void => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const newValue: string = e.target.value;
-    onChange(newValue);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
     setIsOpen(true);
   };
 
-  const handleSuggestionClick = (suggestion: string): void => {
+  const handleSuggestionClick = (suggestion: string) => {
     onChange(suggestion);
     setIsOpen(false);
     inputRef.current?.blur();
   };
 
-  const handleAddNew = (): void => {
-    if (value && !suggestions.includes(value)) {
-      // Créer les paramètres pour la navigation
-      const params = new URLSearchParams();
-      params.set("fieldType", fieldType);
-      params.set("fieldLabel", fieldLabel);
-      params.set("initialValue", value);
-      params.set("returnUrl", location.pathname + location.search);
-      
-      const redirectUrl: string = addNewRoute || `/add-${fieldType}`;
-      navigate(`${redirectUrl}?${params.toString()}`);
-      setIsOpen(false);
-    }
-    onAddNew?.();
+  const handleAddNewClick = () => {
+    if (!onAddNew) return;
+    
+    // Fermer le dropdown
+    setIsOpen(false);
+    
+    // Appeler la fonction de callback pour ouvrir la popup
+    onAddNew();
   };
 
-  const canAddNew: boolean = Boolean(value) && !suggestions.some((s: string) => s.toLowerCase() === value.toLowerCase());
+  const canAddNew = 
+    showAddOption && 
+    Boolean(value) && 
+    !suggestions.some((s) => s.toLowerCase() === value.toLowerCase());
 
-  const shouldShowScrollable: boolean = filteredSuggestions.length > maxVisibleItems;
+  const shouldShowScrollable = filteredSuggestions.length > maxVisibleItems;
 
   return (
     <Container
@@ -299,57 +250,57 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
           disabled={disabled}
           aria-autocomplete="list"
           aria-controls="autocomplete-dropdown"
-          aria-activedescendant={isOpen && filteredSuggestions.length > 0 ? "suggestion-0" : undefined}
         />
         <IconButton
+          $disabled={disabled}
           onClick={() => !disabled && setIsOpen(!isOpen)}
           aria-label={isOpen ? "Masquer les suggestions" : "Afficher les suggestions"}
           role="button"
           tabIndex={disabled ? -1 : 0}
-          aria-disabled={disabled}
         >
           {isOpen ? <FaIcons.FaAngleUp /> : <FaIcons.FaAngleDown />}
         </IconButton>
       </InputWrapper>
 
       {isOpen && !disabled && (
-        <Dropdown 
-          id="autocomplete-dropdown" 
-          scrollable={shouldShowScrollable}
-          role="listbox"
-        >
+        <Dropdown id="autocomplete-dropdown" scrollable={shouldShowScrollable} role="listbox">
           {filteredSuggestions.length > 0 ? (
             <SuggestionsContainer>
-              {filteredSuggestions.map((suggestion: string, index: number) => (
-                <Suggestion
-                  key={suggestion}
-                  id={`suggestion-${index}`}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  selected={value === suggestion}
-                  role="option"
-                  aria-selected={value === suggestion}
-                >
-                  {suggestion}
-                </Suggestion>
-              ))}
+              {filteredSuggestions.map((suggestion, index) => {
+                // Créer une clé unique en combinant la valeur et l'index
+                const uniqueKey = `${suggestion}_${index}`;
+                return (
+                  <Suggestion
+                    key={uniqueKey}
+                    id={`suggestion-${index}`}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    selected={value === suggestion}
+                    role="option"
+                    aria-selected={value === suggestion}
+                  >
+                    {suggestion}
+                  </Suggestion>
+                );
+              })}
             </SuggestionsContainer>
           ) : (
-            <NoSuggestion role="status">
-              Aucune suggestion trouvée
-            </NoSuggestion>
+            <NoSuggestion role="status">Aucune suggestion trouvée</NoSuggestion>
           )}
 
-          {value && showAddOption && (
+          {/* Option "Ajouter" */}
+          {value && showAddOption && onAddNew && (
             <AddOption>
               <AddItem
-                onClick={handleAddNew}
+                onClick={handleAddNewClick}
                 enabled={canAddNew}
                 role="button"
                 aria-disabled={!canAddNew}
                 tabIndex={canAddNew ? 0 : -1}
               >
                 <FaIcons.FaPlus />
-                {canAddNew ? `Ajouter "${value}"` : `"${value}" existe déjà`}
+                {canAddNew
+                  ? `Ajouter comme nouvelle ${fieldLabel.toLowerCase()}`
+                  : `${fieldLabel} existe déjà`}
               </AddItem>
             </AddOption>
           )}

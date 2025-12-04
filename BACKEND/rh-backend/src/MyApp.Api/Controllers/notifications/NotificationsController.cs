@@ -117,6 +117,7 @@ namespace MyApp.Api.Controllers.notifications
                 return StatusCode(500, new { Message = "An error occurred while retrieving unread notification counts by menu", Error = ex.Message });
             }
         }
+
         [HttpGet("by-user/{userId}/last-three-unread")]
         public async Task<IActionResult> GetLastThreeUnreadNotifications(string userId)
         {
@@ -150,6 +151,24 @@ namespace MyApp.Api.Controllers.notifications
             catch (Exception ex)
             {
                 return StatusCode(500, new { Message = "An error occurred while retrieving unread notification count", Error = ex.Message });
+            }
+        }
+
+        [HttpGet("by-user/{userId}/unread")]
+        public async Task<IActionResult> GetUnreadNotifications(string userId)
+        {
+            try
+            {
+                var unreadNotifications = await _notificationRecipientsService.GetUnreadAsync(userId);
+                return Ok(unreadNotifications);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving unread notifications for user", Error = ex.Message });
             }
         }
 
@@ -242,6 +261,36 @@ namespace MyApp.Api.Controllers.notifications
             catch (Exception ex)
             {
                 return StatusCode(500, new { Message = "An error occurred while deleting the recipient relationship", Error = ex.Message });
+            }
+        }
+
+        [HttpPut("{notificationId}/recipient/{userId}/mark-as-read")]
+        public async Task<IActionResult> MarkNotificationAsRead(string notificationId, string userId)
+        {
+            if (string.IsNullOrEmpty(notificationId) || string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new { Message = "Notification ID and User ID are required" });
+            }
+
+            try
+            {
+                var marked = await _notificationRecipientsService.MarkAsReadAsync(notificationId, userId);
+                if (!marked)
+                {
+                    return NotFound(new { Message = $"Recipient relationship for Notification {notificationId} and User {userId} not found or already read" });
+                }
+                return Ok(new { 
+                    Message = $"Notification {notificationId} marked as read for User {userId}",
+                    Data = new { NotificationId = notificationId, UserId = userId }
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while marking the notification as read", Error = ex.Message });
             }
         }
     }

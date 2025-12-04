@@ -11,32 +11,30 @@ namespace MyApp.Api.Controllers.mission
     public class MissionValidationController(
         IMissionValidationService missionValidationService,
         IConfiguration configuration,
-        ILogger<MissionValidationController> logger,
-        IMissionAssignationService missionAssignationService)
+        ILogger<MissionValidationController> logger)
         : ControllerBase
     {
         private readonly IMissionValidationService _missionValidationService = missionValidationService ?? throw new ArgumentNullException(nameof(missionValidationService));
-        private readonly IMissionAssignationService _missionAssignationService = missionAssignationService ?? throw new ArgumentNullException(nameof(missionAssignationService));
         private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         private readonly ILogger<MissionValidationController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        [HttpGet("by-assignation-id/{assignationId}")]
+        [HttpGet("by-mission-id/{missionId}")]
         [AllowAnonymous]
-        public async Task<ActionResult> GetByAssignationId(string assignationId)
+        public async Task<ActionResult> GetByMissionId(string missionId)
         {
             if (!User.Identity?.IsAuthenticated ?? true)
             {
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
             }
 
-            if (string.IsNullOrWhiteSpace(assignationId))
+            if (string.IsNullOrWhiteSpace(missionId))
             {
-                return BadRequest(new { data = (object?)null, status = 400, message = "L'assignationId ne peut pas être null ou vide." });
+                return BadRequest(new { data = (object?)null, status = 400, message = "L'missionId ne peut pas être null ou vide." });
             }
 
             try
             {
-                var entity = await _missionValidationService.GetByAssignationIdAsync(assignationId);
+                var entity = await _missionValidationService.GetByMissionIdAsync(missionId);
 
                 if (entity != null)
                 {
@@ -44,7 +42,7 @@ namespace MyApp.Api.Controllers.mission
                     return Ok(new { data = responseData, status = 200, message = "success" });
                 }
 
-                return NotFound(new { data = (object?)null, status = 404, message = $"Validation de mission pour assignationId {assignationId} non trouvée." });
+                return NotFound(new { data = (object?)null, status = 404, message = $"Validation de mission pour missionId {missionId} non trouvée." });
             }
             catch (ArgumentException ex)
             {
@@ -52,7 +50,7 @@ namespace MyApp.Api.Controllers.mission
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Erreur lors de la récupération de la validation de mission avec assignationId={AssignationId}", assignationId);
+                _logger.LogError(e, "Erreur lors de la récupération de la validation de mission avec missionId={missionId}", missionId);
                 Console.WriteLine(e);
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
@@ -114,9 +112,9 @@ namespace MyApp.Api.Controllers.mission
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
             }
 
-            if (validation == null || string.IsNullOrWhiteSpace(validation.MissionValidationId) || string.IsNullOrWhiteSpace(validation.MissionAssignationId))
+            if (validation == null || string.IsNullOrWhiteSpace(validation.MissionValidationId) || string.IsNullOrWhiteSpace(validation.MissionId))
             {
-                return BadRequest(new { data = (object?)null, status = 400, message = "Les données de validation (MissionValidationId et MissionAssignationId) sont requises." });
+                return BadRequest(new { data = (object?)null, status = 400, message = "Les données de validation (MissionValidationId et MissionId) sont requises." });
             }
 
             if (string.IsNullOrWhiteSpace(validation.UserId))
@@ -126,7 +124,7 @@ namespace MyApp.Api.Controllers.mission
 
             try
             {
-                var result = await _missionValidationService.RejectedAsync(validation.MissionValidationId, validation.MissionAssignationId, validation.UserId);
+                var result = await _missionValidationService.RejectedAsync(validation.MissionValidationId, validation.MissionId, validation.UserId);
                 if (!result)
                 {
                     return NotFound(new { data = (object?)null, status = 404, message = "Validation de mission non trouvée." });
@@ -141,14 +139,14 @@ namespace MyApp.Api.Controllers.mission
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Erreur lors du rejet de la validation de mission pour missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}",
-                    validation?.MissionValidationId, validation?.MissionAssignationId);
+                _logger.LogError(e, "Erreur lors du rejet de la validation de mission pour missionValidationId={MissionValidationId}, MissionId={MissionId}",
+                    validation?.MissionValidationId, validation?.MissionId);
                 Console.WriteLine(e);
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }
 
-        // POST: api/MissionValidation/validate/{missionValidationId}/{missionAssignationId}
+        // POST: api/MissionValidation/validate/{missionValidationId}/{MissionId}
         [HttpPost("validate")]
         [AllowAnonymous]
         public async Task<ActionResult> Validate([FromBody] Validation validation)
@@ -158,9 +156,9 @@ namespace MyApp.Api.Controllers.mission
                 return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
             }
 
-            if (validation == null || string.IsNullOrWhiteSpace(validation.MissionValidationId) || string.IsNullOrWhiteSpace(validation.MissionAssignationId))
+            if (validation == null || string.IsNullOrWhiteSpace(validation.MissionValidationId) || string.IsNullOrWhiteSpace(validation.MissionValidationId))
             {
-                return BadRequest(new { data = (object?)null, status = 400, message = "Les données de validation (MissionValidationId et MissionAssignationId) sont requises." });
+                return BadRequest(new { data = (object?)null, status = 400, message = "Les données de validation (MissionValidationId et MissionId) sont requises." });
             }
 
             try
@@ -174,7 +172,7 @@ namespace MyApp.Api.Controllers.mission
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Erreur lors de la validation de missionValidationId={MissionValidationId}, missionAssignationId={MissionAssignationId}", validation.MissionValidationId, validation.MissionAssignationId);
+                _logger.LogError(e, "Erreur lors de la validation de missionValidationId={MissionValidationId}", validation.MissionValidationId);
                 Console.WriteLine(e);
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
@@ -492,6 +490,54 @@ namespace MyApp.Api.Controllers.mission
             {
                 _logger.LogError(e, "Erreur lors de la vérification de ligne de validation pour userId {UserId}", userId);
                 Console.WriteLine(e);
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("pending-validation-count")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetPendingMissionsCountAsync()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var count = await _missionValidationService.GetPendingMissionsCountAsync();
+                var responseData = count;
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération du nombre de missions en attente de validation");
+                return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+            }
+        }
+
+        [HttpGet("validation-rate")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetValidationRateAsync()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+
+            try
+            {
+                var (rate, date) = await _missionValidationService.GetValidationRateAsync();
+                var responseData = new { Rate = rate, Date = date };
+                return Ok(new { data = responseData, status = 200, message = "success" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du taux de validation");
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }

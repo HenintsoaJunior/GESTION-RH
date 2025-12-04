@@ -20,7 +20,7 @@ import {
   FiltersToggle,
   ButtonShowFilters,
 } from "@/styles/table-styles";
-import { X, List, ChevronDown, ChevronUp } from "lucide-react";
+import { X, List, ChevronDown, ChevronUp, Filter } from "lucide-react";
 
 // Types from previous context
 interface Filter {
@@ -105,7 +105,10 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
       {!isHidden && (
         <FiltersContainer $isMinimized={isMinimized}>
           <FiltersHeader>
-            <FiltersTitle>Filtres de Recherche</FiltersTitle>
+            <FiltersTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Filter size={18} />
+              Filtres avancés
+            </FiltersTitle>
             <FiltersControls>
               <FilterControlButton
                 $isMinimized={isMinimized}
@@ -163,49 +166,11 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
                           <option value="pending">En attente</option>
                           <option value="approved">Validé</option>
                           <option value="rejected">Rejeté</option>
+                          <option value="Annulé">Annulé</option>
                         </FormInputSearch>
                       </FormFieldCell>
                     </FormRow>
                     <FormRow>
-                      <FormFieldCell>
-                        <fieldset style={{ 
-                          display: "grid", 
-                          gridTemplateColumns: "1fr 1fr", 
-                          gap: "var(--spacing-md)",
-                          background: "var(--bg-primary, #ffffff)",
-                          padding: "var(--spacing-md)",
-                          border: "1px solid var(--border-color, #ddd)",
-                          borderRadius: "var(--border-radius, 4px)",
-                          margin: "0"
-                        }}>
-                          <legend style={{ 
-                            fontWeight: "var(--font-weight-semibold)",
-                            color: "var(--text-color)",
-                            padding: "0 var(--spacing-sm)",
-                            fontSize: "0.75rem"
-                          }}>
-                            Date Validation
-                          </legend>
-                          <div>
-                            <FormLabelSearch>Du</FormLabelSearch>
-                            <FormInputSearch
-                              type="date"
-                              value={filters.validationDateFrom || ""}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("validationDateFrom", e.target.value)}
-                              disabled={isLoading.missions}
-                            />
-                          </div>
-                          <div>
-                            <FormLabelSearch>Au</FormLabelSearch>
-                            <FormInputSearch
-                              type="date"
-                              value={filters.validationDateTo || ""}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("validationDateTo", e.target.value)}
-                              disabled={isLoading.missions}
-                            />
-                          </div>
-                        </fieldset>
-                      </FormFieldCell>
                       <FormFieldCell>
                         <fieldset style={{ 
                           display: "grid", 
@@ -245,6 +210,47 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
                           </div>
                         </fieldset>
                       </FormFieldCell>
+                      
+                      <FormFieldCell>
+                        <fieldset style={{ 
+                          display: "grid", 
+                          gridTemplateColumns: "1fr 1fr", 
+                          gap: "var(--spacing-md)",
+                          background: "var(--bg-primary, #ffffff)",
+                          padding: "var(--spacing-md)",
+                          border: "1px solid var(--border-color, #ddd)",
+                          borderRadius: "var(--border-radius, 4px)",
+                          margin: "0"
+                        }}>
+                          <legend style={{ 
+                            fontWeight: "var(--font-weight-semibold)",
+                            color: "var(--text-color)",
+                            padding: "0 var(--spacing-sm)",
+                            fontSize: "0.75rem"
+                          }}>
+                            Date Validation
+                          </legend>
+                          <div>
+                            <FormLabelSearch>Du</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.validationDateFrom || ""}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("validationDateFrom", e.target.value)}
+                              disabled={isLoading.missions}
+                            />
+                          </div>
+                          <div>
+                            <FormLabelSearch>Au</FormLabelSearch>
+                            <FormInputSearch
+                              type="date"
+                              value={filters.validationDateTo || ""}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("validationDateTo", e.target.value)}
+                              disabled={isLoading.missions}
+                            />
+                          </div>
+                        </fieldset>
+                      </FormFieldCell>
+                      
                     </FormRow>
                   </tbody>
                 </FormTableSearch>

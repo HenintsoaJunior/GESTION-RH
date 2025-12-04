@@ -306,8 +306,9 @@ VALUES
 ('HAB_012', 'HABG_002', 'Modifier une mission', 'Permet de modifier les informations d’une mission (dates, participants, objectifs, etc.).'),
 ('HAB_013', 'HABG_002', 'Annuler une mission', 'Autorise l’annulation d’une mission en cours ou planifiée.'),
 ('HAB_014', 'HABG_002', 'Ajouter une mission', 'Permet d’ajouter une nouvelle mission dans le système.'),
-('HAB_015', 'HABG_002', 'Voir les détails d’une mission', 'Autorise la consultation des détails complets d’une mission spécifique.'),
+('HAB_015', 'HABG_002', 'Voir les détails mission', 'Autorise la consultation des détails complets d’une mission spécifique.'),
 ('HAB_028', 'HABG_002', 'Voir les missions de tous les collaborateurs', 'Autorise la consultation de la liste complète des missions assignées à l’ensemble des collaborateurs du système.'),
+('HAB_030', 'HABG_002', 'Supprimer une mission', 'Autorise la suppression d’un mission.'),
 
 -- Navigation / Accès aux modules et menus
 ('HAB_016', 'HABG_003', 'Voir les utilisateurs', 'Permet d’accéder au menu et à la page des utilisateurs.'),
@@ -321,7 +322,8 @@ VALUES
 ('HAB_024', 'HABG_003', 'Voir la liste des missions', 'Permet d’accéder au sous-menu Liste des missions.'),
 ('HAB_025', 'HABG_003', 'Voir les missions archivées', 'Permet d’accéder au sous-menu Missions archivées.'),
 ('HAB_026', 'HABG_003', 'Voir la trésorerie', 'Permet d’accéder au sous-menu et à la page Trésorerie.'),
-('HAB_027', 'HABG_003', 'Voir les habilitations', 'Permet d’accéder au sous-menu Habilitation.');
+('HAB_027', 'HABG_003', 'Voir les habilitations', 'Permet d’accéder au sous-menu Habilitation.'),
+('HAB_029', 'HABG_003', 'Voir le tableau de bord', 'Permet d’accéder au tableau de bord.');
 
 -- ============================
 -- ROLE HABILITATION
@@ -384,47 +386,22 @@ INSERT INTO geo_zones (zone_id, name) VALUES
 ('19', 'Pacifique Sud');
 
 
-INSERT INTO lieu (lieu_id, nom, ville, code_postal, pays, zone_id, created_at, updated_at) VALUES
-('1', 'Analamanga', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('2', 'Bongolava', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('3', 'Itasy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('4', 'Vakinankaratra', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('5', 'Diana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('6', 'Sava', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('7', 'Amoron''i Mania', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('8', 'Atsimo-Atsinanana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('9', 'Haute Matsiatra', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('10', 'Ihorombe', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('11', 'Fitovinany', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('12', 'Vatovavy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('13', 'Betsiboka', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('14', 'Boeny', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('15', 'Melaky', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('16', 'Sofia', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('17', 'Alaotra-Mangoro', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('18', 'Analanjirofo', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('19', 'Atsinanana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('20', 'Androy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('21', 'Anosy', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('22', 'Atsimo-Andrefana', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('23', 'Menabe', '', '', 'Madagascar', '1', GETDATE(), GETDATE()),
-('24', 'Nosy Be', '', '', 'Madagascar', '1', GETDATE(), GETDATE());
-
--- ============================
--- MENU DYNAMIQUE
--- ============================
-
--- Insertion des modules (ajout du nouveau module 'referentiel' au-dessus de 'import')
+-- Insertion des modules (ajout du nouveau module 'tableau_de_bord' au-dessus de 'mission')
 INSERT INTO module (module_id, module_name, description, created_at, updated_at) VALUES
 ('user', 'Utilisateurs', 'Gestion des utilisateurs et rôles', GETDATE(), GETDATE()),
 ('habilitation', 'Droit & Accès', 'Gestion des droits et autorisations', GETDATE(), GETDATE()),
+('tableau_de_bord', 'Tableau de bord', 'Gestion du tableau de bord et des indicateurs', GETDATE(), GETDATE()),
 ('mission', 'Suivi des Missions', 'Gestion des missions, assignations et paiements', GETDATE(), GETDATE()),
 ('logs', 'Logs', 'Suivi et journalisation des actions utilisateurs et systèmes', GETDATE(), GETDATE()),
 ('treasury', 'Trésorerie', 'Gestion des flux financiers et de la trésorerie', GETDATE(), GETDATE()),
 ('referentiel', 'Référentiel', 'Gestion des données référentielles', GETDATE(), GETDATE()),
 ('import', 'Import', 'Gestion des imports de données et fichiers', GETDATE(), GETDATE()); 
 
--- Insertion des menus (ajout du menu pour 'referentiel' en position 3 dans 'administration', au-dessus de 'import' décalé à 4, et 'logs' à 5)
+-- Insertion des menus (ajout du menu pour 'tableau_de_bord' en position 1 dans 'navigation', mission décalé à 2)
+INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
+('menu_dashboard', 'tableau_de_bord', 'fa-tachometer-alt', '/tableau-bord', 1, 1, 'tableau_de_bord', 'navigation', GETDATE(), GETDATE()),
+('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE());
+
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu0', 'utilisateurs', 'fa-users', '/utilisateur', 1, 1, 'user', 'administration', GETDATE(), GETDATE());
 
@@ -437,18 +414,19 @@ INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id
 ('menu_import', 'import', 'fa-upload', '/import', 1, 4, 'import', 'administration', GETDATE(), GETDATE()),  -- Import décalé à position 4
 ('menu_logs', 'logs', 'fa-file-alt', '/logs', 1, 5, 'logs', 'administration', GETDATE(), GETDATE());  -- Logs décalé à position 5
 
--- Navigation: mission
+-- Navigation: mission (ajout du menu 'maps' en position 7 sous mission, après trésorerie en position 6)
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_3', 'Missions', 'fa-list', '/mission/list', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
 ('menu2_4', 'Missions archivées', 'fa-archive', '/mission/archived', 1, 5, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_5', 'trésorerie', 'fa-money-bill-alt', '/treasury', 1, 6, 'treasury', 'navigation', GETDATE(), GETDATE());
+('menu2_5', 'trésorerie', 'fa-money-bill-alt', '/treasury', 1, 6, 'treasury', 'navigation', GETDATE(), GETDATE()),
+('menu2_6', 'maps', 'fa-map', '/mission/maps', 1, 7, 'mission', 'navigation', GETDATE(), GETDATE());
 
 INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
 ('menu_hab_3', 'Habilitation', 'fa-key', '/habilitation', 1, 6, 'habilitation', 'administration', GETDATE(), GETDATE());
 
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
+('h_dashboard', NULL, 'menu_dashboard', GETDATE(), GETDATE()),
 ('h0', NULL, 'menu0', GETDATE(), GETDATE()),
 ('h_hab', NULL, 'menu_hab', GETDATE(), GETDATE()),
 ('h_hab_2', 'menu_hab', 'menu_hab_2', GETDATE(), GETDATE()),
@@ -459,10 +437,14 @@ INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, u
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
 ('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
 ('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE()),
-('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE());
+('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE()),
+('h9', 'menu2', 'menu2_6', GETDATE(), GETDATE());
 
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
 ('h_hab_3', 'menu_hab', 'menu_hab_3', GETDATE(), GETDATE());
+
+
+
 
 
 INSERT INTO expense_type (expense_type_id, type, time_start, time_end, created_at, updated_at)

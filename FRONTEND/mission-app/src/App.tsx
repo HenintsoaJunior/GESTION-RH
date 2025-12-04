@@ -1,13 +1,12 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
 import LoginPage from '@/features/auth/login';
 import Template from '@/layouts/template';
-import HomePage from '@/pages/Home';
 import UserList from '@/pages/users';
 import LogList from '@/pages/logs';
 import RoleList from '@/pages/access';
 import Error403Page from '@/pages/error/403';
 import ProfilePage from '@/layouts/profil-page';
-import MissionList from '@/pages/mission/collaborator/list/mission-list';
+import MissionList from '@/pages/mission/collaborator/list/index';
 import DetailsMission from '@/pages/mission/collaborator/details/mission-details';
 import MissionValidationPage from '@/pages/mission/validation';
 import TresoPage from '@/pages/mission/treso';
@@ -23,12 +22,14 @@ import ContractTypeList from './pages/referentiel/contract/list';
 import UnitList from '@/pages/referentiel/unit/list';
 import EmployeeList from '@/pages/referentiel/collaborateur/list';
 import LieuList from '@/pages/referentiel/lieu/list';
-import MissionListArchive from './pages/mission/collaborator/list/mission-list-archive';
 import TransportList from '@/pages/referentiel/transport/list';
 import GeoZoneList from '@/pages/referentiel/zone/list';
 import CompensationScalesPage from '@/pages/referentiel/compensation-scale';
 import CompensationMission from '@/pages/mission/treso/components/compensation_mission';
 import Reimbursement from '@/pages/mission/treso/components/reimbursement';
+import MissionsEnCoursMapPage from './pages/maps';
+import Home from '@/pages/Home';
+import ProtectedRequestList from './pages/recruitment/request/request-list';
 // import { useAuthSync } from '@/utils/use-auth-sync';
 function App() {
 
@@ -48,8 +49,8 @@ function App() {
         
         <Route path="/profil-page" element={<ProfilePage />} />
         {/* ADMIN */}
-        
-        <Route path="/dashboard" element={<HomePage />} />
+        <Route path="/dashboard" element={<Home />} />
+        {/* <Route path="/tableau-bord" element={<TableauBord />} /> */}
         <Route path="/utilisateur" element={<UserList />} />
         <Route path="/logs" element={<LogList />} />
         <Route path="/access/list" element={<RoleList />} />
@@ -71,7 +72,8 @@ function App() {
 
          {/* MISSION */}
         <Route path="/mission/list" element={<MissionList />} />
-        <Route path="/mission/archived" element={<MissionListArchive />} /> 
+        <Route path="/mission/maps" element={<MissionsEnCoursMapPage />} />
+
         <Route path="/mission/collaborateur/:missionId/*" element={<DetailsMission />} />
         <Route path="/mission/to-validate" element={<MissionValidationPage />} />
         {/* TRESO */}
@@ -79,6 +81,7 @@ function App() {
         <Route path="/treasury/compensation" element={<CompensationMission />} />
         <Route path="/treasury/remboursement" element={<Reimbursement />} />
 
+        <Route path="/recrutement/demandes/liste" element={<ProtectedRequestList />} />
         
         {/* ERROR */}
         <Route path="/403" element={<Error403Page />} />

@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useCallback, useState } from 'react';
-import { X, Save } from 'lucide-react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { X, Save, MapPin } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import type { LatLngTuple } from 'leaflet';
+import { Icon } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   PopupOverlay,
   PagePopup,
@@ -7,7 +14,7 @@ import {
   PopupTitle,
   PopupClose,
   PopupContent,
-  ButtonPrimary
+  ButtonPrimary,
 } from "@/styles/popup-styles";
 import {
   FormContainer,
@@ -18,222 +25,308 @@ import {
   FormFieldCell,
   FormLabelRequired,
   FormInput,
-  FormLabel,
   StyledAutoCompleteInput,
-  ErrorMessage
+  ErrorMessage,
 } from "@/styles/form-container";
 import { useCreateLieu, useUpdateLieu } from '@/api/lieu/services';
 import { useGetAllGeoZones } from '@/api/zones/services';
 import type { Lieu, LieuDTOForm, GeoZone } from '@/api/lieu/services';
 
+// Fix icônes Leaflet
+delete (Icon.Default.prototype as any)._getIconUrl;
+Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
+
+const defaultIcon = new Icon({
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+function MapClickHandler({ onClick }: { onClick: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click: (e) => onClick(e.latlng.lat, e.latlng.lng),
+  });
+  return null;
+}
+
 interface LieuFormProps {
   isOpen: boolean;
   onClose: () => void;
   onFormSuccess: (message: string) => void;
-  lieu: Lieu | null;
+  lieu?: Lieu | null;
+  prefillNom?: string;
+  onSuccessClose?: (newLieu: Lieu) => void;
 }
 
-const LieuForm: React.FC<LieuFormProps> = ({ isOpen, onClose, onFormSuccess, lieu }) => {
-  const [formData, setFormData] = useState<LieuDTOForm>({ nom: '', ville: '', codePostal: '', pays: '', zoneId: '' });
-  const [zoneSearch, setZoneSearch] = useState<string>('');
-  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
-  const createLieuMutation = useCreateLieu();
-  const lieuId = lieu?.lieuId || '';
-  const updateLieuMutation = useUpdateLieu(lieuId);
+const LieuForm: React.FC<LieuFormProps> = ({
+  isOpen,
+  onClose,
+  onFormSuccess,
+  lieu = null,
+  prefillNom = '',
+  onSuccessClose,
+}) => {
+  const [formData, setFormData] = useState<LieuDTOForm>({
+    nom: '',
+    ville: null,
+    codePostal: null,
+    pays: '',
+    zoneId: null,
+    latitude: 0,
+    longitude: 0,
+  });
+
+  const [zoneSearch, setZoneSearch] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [markerPosition, setMarkerPosition] = useState<LatLngTuple | null>(null);
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+
+  const createMutation = useCreateLieu();
+  const updateMutation = useUpdateLieu(lieu?.lieuId ?? '');
   const { data: geoZonesData } = useGetAllGeoZones();
 
-  const geoZones: GeoZone[] = useMemo(() => geoZonesData?.data || [], [geoZonesData]);
-
-  const zoneSuggestions = useMemo(() => geoZones.map((zone: GeoZone) => zone.name), [geoZones]);
-
-  const filteredZoneSuggestions = useMemo(() => 
-    zoneSuggestions.filter((sug) => sug.toLowerCase().includes(zoneSearch.toLowerCase())),
+  const geoZones = useMemo<GeoZone[]>(() => geoZonesData?.data || [], [geoZonesData]);
+  const zoneSuggestions = useMemo(() => geoZones.map(z => z.name), [geoZones]);
+  const filteredZoneSuggestions = useMemo(
+    () => zoneSuggestions.filter(s => s.toLowerCase().includes(zoneSearch.toLowerCase())),
     [zoneSuggestions, zoneSearch]
   );
 
+  const isUpdateMode = !!lieu?.lieuId;
+  const isProcessing = createMutation.isPending || updateMutation.isPending || isLoadingAddress;
+
+  // Reset + pré-remplissage
   useEffect(() => {
+    if (!isOpen) {
+      setMarkerPosition(null);
+      return;
+    }
+
     if (lieu) {
-      setFormData({ 
-        nom: lieu.nom, 
-        ville: lieu.ville ?? '', 
-        codePostal: lieu.codePostal ?? '', 
-        pays: lieu.pays, 
-        zoneId: lieu.zoneId ?? '' 
+      setFormData({
+        nom: lieu.nom,
+        ville: lieu.ville ?? null,
+        codePostal: lieu.codePostal ?? null,
+        pays: lieu.pays,
+        zoneId: lieu.zoneId ?? null,
+        latitude: lieu.latitude ?? 0,
+        longitude: lieu.longitude ?? 0,
       });
       setZoneSearch(lieu.geoZone?.name || '');
+      if (lieu.latitude && lieu.longitude) {
+        setMarkerPosition([lieu.latitude, lieu.longitude]);
+      }
     } else {
-      setFormData({ nom: '', ville: '', codePostal: '', pays: '', zoneId: '' });
+      setFormData({
+        nom: prefillNom || '',
+        ville: null,
+        codePostal: null,
+        pays: '',
+        zoneId: null,
+        latitude: 0,
+        longitude: 0,
+      });
       setZoneSearch('');
+      setMarkerPosition(null);
     }
     setFieldErrors({});
-  }, [lieu]);
+  }, [isOpen, lieu, prefillNom]);
 
-  // Mémorisation des états calculés
-  const isUpdateMode = useMemo(() => !!lieu?.lieuId, [lieu]);
-  const isProcessing = useMemo(() => 
-    createLieuMutation.isPending || updateLieuMutation.isPending,
-    [createLieuMutation.isPending, updateLieuMutation.isPending]
-  );
+  // Récupération de l'adresse via géocodage inverse
+  const fetchAddress = async (lat: number, lng: number) => {
+    setIsLoadingAddress(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+      );
+      const data = await res.json();
+      const a = data.address || {};
+      const ville = a.city || a.town || a.village || a.hamlet || a.suburb || '';
+      const codePostal = a.postcode || '';
+      const pays = a.country || a.country_code?.toUpperCase() || '';
 
-  // Mémorisation des textes dynamiques
-  const popupTitle = useMemo(() => 
-    isUpdateMode ? 'Modifier le lieu' : 'Ajouter un lieu',
-    [isUpdateMode]
-  );
-  const submitText = useMemo(() => 
-    isUpdateMode ? 'Modifier' : 'Ajouter',
-    [isUpdateMode]
-  );
-  const submittingText = useMemo(() => 
-    isUpdateMode ? 'Modification en cours...' : 'Création en cours...',
-    [isUpdateMode]
-  );
+      setFormData(prev => ({
+        ...prev,
+        latitude: lat,
+        longitude: lng,
+        ville: ville || prev.ville,
+        codePostal: codePostal || prev.codePostal,
+        pays: pays || prev.pays,
+        nom: ville || prev.nom,
+      }));
+    } catch (err) {
+      console.error('Reverse geocoding failed:', err);
+    } finally {
+      setIsLoadingAddress(false);
+    }
+  };
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMapClick = (lat: number, lng: number) => {
+    setMarkerPosition([lat, lng]);
+    fetchAddress(lat, lng);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: LieuDTOForm) => ({ ...prev, [name]: value }));
-    // Clear error on change
-    if (fieldErrors[name as keyof LieuDTOForm]) {
-      setFieldErrors(prev => ({ ...prev, [name]: [] }));
-    }
-  }, [fieldErrors]);
+    const numValue = ['latitude', 'longitude'].includes(name) ? parseFloat(value) || 0 : value;
+    setFormData(prev => ({ ...prev, [name]: numValue }));
+    if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: [] }));
+  };
 
-  const handleZoneChange = useCallback((value: string): void => {
+  const handleZoneChange = (value: string) => {
     setZoneSearch(value);
-    const matchedZone = geoZones.find((zone: GeoZone) => zone.name === value);
-    if (matchedZone) {
-      setFormData((prev) => ({ ...prev, zoneId: matchedZone.zoneId }));
-    } else {
-      setFormData((prev) => ({ ...prev, zoneId: '' }));
-    }
-    // Clear error on change
-    if (fieldErrors['zoneId']) {
-      setFieldErrors(prev => ({ ...prev, 'zoneId': [] }));
-    }
-  }, [geoZones, fieldErrors]);
+    const matched = geoZones.find(z => z.name === value);
+    setFormData(prev => ({ ...prev, zoneId: matched?.zoneId ?? null }));
+    if (fieldErrors.zoneId) setFieldErrors(prev => ({ ...prev, zoneId: [] }));
+  };
 
-  const validateForm = useCallback((): boolean => {
-    const newErrors: { [key: string]: string[] } = {};
-    if (!formData.nom.trim()) {
-      newErrors.nom = ['Nom du lieu est requis'];
+  const validate = () => {
+    const errors: Record<string, string[]> = {};
+    if (!formData.nom.trim()) errors.nom = ['Le nom est requis'];
+    if (!formData.pays.trim()) errors.pays = ['Le pays est requis'];
+    if (!formData.zoneId) errors.zoneId = ['La zone est requise'];
+    if (!isUpdateMode && formData.latitude === 0 && formData.longitude === 0) {
+      errors.position = ['Veuillez placer un marqueur sur la carte'];
     }
-    if (!formData.pays.trim()) {
-      newErrors.pays = ['Pays est requis'];
-    }
-    if (formData.zoneId == null || !formData.zoneId.trim()) {
-      newErrors.zoneId = ['Zone géographique est requise'];
-    }
-    setFieldErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [formData]);
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  const handleSubmit = useCallback(async () => {
+    if (isProcessing) return;
+    
+    if (!validate()) return;
+
+    const handleSuccess = (data: any) => {
+      // N'appeler onFormSuccess que si nécessaire
+      // Pour éviter les alertes, on passe un message vide ou on n'appelle pas du tout
+      if (onFormSuccess) {
+        // Passer un message vide pour éviter l'alerte
+        onFormSuccess("");
+      }
+      
+      const newLieu: Lieu = data.data;
+      
+      if (!isUpdateMode && onSuccessClose) {
+        onSuccessClose(newLieu);
+      } else {
+        onClose();
+      }
+    };
+
+    const errorHandler = (error: any) => {
+      console.error('Erreur lors de la création/modification du lieu:', error);
+    };
+
+    const payload: LieuDTOForm = {
+      nom: formData.nom.trim(),
+      ville: formData.ville || null,
+      codePostal: formData.codePostal || null,
+      pays: formData.pays.trim(),
+      zoneId: formData.zoneId || null,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+    };
+
+    try {
+      if (isUpdateMode) {
+        await updateMutation.mutateAsync(payload, { 
+          onSuccess: handleSuccess,
+          onError: errorHandler
+        });
+      } else {
+        await createMutation.mutateAsync(payload, { 
+          onSuccess: handleSuccess,
+          onError: errorHandler
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la création/modification du lieu:', error);
+    }
+  }, [
+    formData,
+    isUpdateMode,
+    validate,
+    updateMutation,
+    createMutation,
+    onFormSuccess,
+    onSuccessClose,
+    onClose,
+    isProcessing
+  ]);
+
+  // Gestion spéciale pour la touche Entrée
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isProcessing) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  // Gestion de la soumission du formulaire
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
-    if (lieu?.lieuId) {
-      updateLieuMutation.mutate(formData, {
-        onSuccess: () => {
-          onFormSuccess('Lieu modifié avec succès.');
-        },
-      });
-    } else {
-      createLieuMutation.mutate(formData, {
-        onSuccess: () => {
-          onFormSuccess('Lieu créé avec succès.');
-        },
-      });
-    }
-  }, [lieu?.lieuId, formData, updateLieuMutation, createLieuMutation, onFormSuccess, validateForm]);
+    e.stopPropagation(); // Empêche la propagation de l'événement
+    handleSubmit();
+    return false;
+  };
 
-  const handleCancel = useCallback(() => {
-    setFieldErrors({});
-    onClose();
-  }, [onClose]);
-
-  // Ne pas afficher le popup si non ouvert
   if (!isOpen) return null;
 
   return (
     <PopupOverlay>
-      <PagePopup>
+      <PagePopup style={{ maxWidth: '1100px', width: '95%' }}>
         <PopupHeader>
-          <PopupTitle>{popupTitle}</PopupTitle>
-          <PopupClose
-            onClick={handleCancel}
-            disabled={isProcessing}
-            aria-label="Fermer le formulaire"
-            title="Fermer"
-          >
+          <PopupTitle>{isUpdateMode ? 'Modifier le lieu' : 'Ajouter un lieu'}</PopupTitle>
+          <PopupClose onClick={onClose} disabled={isProcessing}>
             <X className="w-5 h-5" />
           </PopupClose>
         </PopupHeader>
 
         <PopupContent>
           <FormContainer>
-            <GenericForm id="lieuForm" onSubmit={handleSubmit}>
-              <FormSectionTitle>Informations sur le Lieu</FormSectionTitle>
+            <GenericForm 
+              onSubmit={handleFormSubmit}
+              onKeyDown={handleKeyDown}
+            >
+              <FormSectionTitle>Informations générales</FormSectionTitle>
+
               <FormTable>
                 <tbody>
                   <FormRow className="dual-field-row">
                     <FormFieldCell>
                       <FormLabelRequired>Nom du lieu</FormLabelRequired>
                       <FormInput
-                        type="text"
                         name="nom"
                         value={formData.nom}
                         onChange={handleChange}
+                        onKeyDown={handleKeyDown}
                         disabled={isProcessing}
-                        className={fieldErrors.nom && fieldErrors.nom.length > 0 ? "input-error" : ""}
+                        placeholder="Ex: Antananarivo, Stade Mahamasina..."
                       />
-                      {fieldErrors.nom && fieldErrors.nom.length > 0 && (
-                        <ErrorMessage>{fieldErrors.nom.join(", ")}</ErrorMessage>
-                      )}
+                      {fieldErrors.nom && <ErrorMessage>{fieldErrors.nom[0]}</ErrorMessage>}
                     </FormFieldCell>
                     <FormFieldCell>
                       <FormLabelRequired>Pays</FormLabelRequired>
                       <FormInput
-                        type="text"
                         name="pays"
                         value={formData.pays}
                         onChange={handleChange}
+                        onKeyDown={handleKeyDown}
                         disabled={isProcessing}
-                        className={fieldErrors.pays && fieldErrors.pays.length > 0 ? "input-error" : ""}
+                        placeholder="Ex: Madagascar"
                       />
-                      {fieldErrors.pays && fieldErrors.pays.length > 0 && (
-                        <ErrorMessage>{fieldErrors.pays.join(", ")}</ErrorMessage>
-                      )}
+                      {fieldErrors.pays && <ErrorMessage>{fieldErrors.pays[0]}</ErrorMessage>}
                     </FormFieldCell>
                   </FormRow>
-                  <FormRow className="dual-field-row">
-                    <FormFieldCell>
-                      <FormLabel>Ville</FormLabel>
-                      <FormInput
-                        type="text"
-                        name="ville"
-                        value={formData.ville ?? ''}
-                        onChange={handleChange}
-                        disabled={isProcessing}
-                        className={fieldErrors.ville && fieldErrors.ville.length > 0 ? "input-error" : ""}
-                      />
-                      {fieldErrors.ville && fieldErrors.ville.length > 0 && (
-                        <ErrorMessage>{fieldErrors.ville.join(", ")}</ErrorMessage>
-                      )}
-                    </FormFieldCell>
-                    <FormFieldCell>
-                      <FormLabel>Code Postal</FormLabel>
-                      <FormInput
-                        type="text"
-                        name="codePostal"
-                        value={formData.codePostal ?? ''}
-                        onChange={handleChange}
-                        disabled={isProcessing}
-                        className={fieldErrors.codePostal && fieldErrors.codePostal.length > 0 ? "input-error" : ""}
-                      />
-                      {fieldErrors.codePostal && fieldErrors.codePostal.length > 0 && (
-                        <ErrorMessage>{fieldErrors.codePostal.join(", ")}</ErrorMessage>
-                      )}
-                    </FormFieldCell>
-                  </FormRow>
+
                   <FormRow>
                     <FormFieldCell>
                       <FormLabelRequired>Zone Géographique</FormLabelRequired>
@@ -242,45 +335,106 @@ const LieuForm: React.FC<LieuFormProps> = ({ isOpen, onClose, onFormSuccess, lie
                         onChange={handleZoneChange}
                         suggestions={filteredZoneSuggestions}
                         maxVisibleItems={5}
-                        placeholder="Sélectionner une zone géographique..."
+                        placeholder="Sélectionner une zone..."
                         disabled={isProcessing}
                         fieldType="zone"
                         fieldLabel="zone"
                         showAddOption={false}
                       />
-                      {fieldErrors.zoneId && fieldErrors.zoneId.length > 0 && (
-                        <ErrorMessage>{fieldErrors.zoneId.join(", ")}</ErrorMessage>
-                      )}
+                      {fieldErrors.zoneId && <ErrorMessage>{fieldErrors.zoneId[0]}</ErrorMessage>}
+                    </FormFieldCell>
+                  </FormRow>
+
+                  <FormRow className="dual-field-row">
+                    <FormFieldCell>
+                      <FormLabelRequired>Latitude</FormLabelRequired>
+                      <FormInput
+                        type="number"
+                        step="0.000001"
+                        name="latitude"
+                        value={formData.latitude}
+                        onChange={handleChange}
+                        onKeyDown={handleKeyDown}
+                        disabled={isProcessing}
+                      />
+                    </FormFieldCell>
+                    <FormFieldCell>
+                      <FormLabelRequired>Longitude</FormLabelRequired>
+                      <FormInput
+                        type="number"
+                        step="0.000001"
+                        name="longitude"
+                        value={formData.longitude}
+                        onChange={handleChange}
+                        onKeyDown={handleKeyDown}
+                        disabled={isProcessing}
+                      />
                     </FormFieldCell>
                   </FormRow>
                 </tbody>
               </FormTable>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                <ButtonPrimary
-                  type="button"
-                  onClick={handleCancel}
+
+              <div style={{ marginTop: '30px' }}>
+                <FormSectionTitle>
+                  <MapPin size={18} style={{ marginRight: '8px' }} />
+                  Cliquez sur la carte pour placer le marqueur
+                </FormSectionTitle>
+
+                <div style={{ height: '420px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #e0e0e0', position: 'relative' }}>
+                  <MapContainer
+                    center={markerPosition ?? [-18.8792, 47.5079]}
+                    zoom={markerPosition ? 15 : 6}
+                    style={{ height: '100%', width: '100%' }}
+                  >
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    <MapClickHandler onClick={handleMapClick} />
+                    {markerPosition && <Marker position={markerPosition} icon={defaultIcon} />}
+                  </MapContainer>
+
+                  {isLoadingAddress && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 10,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'rgba(0,0,0,0.8)',
+                      color: 'white',
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      fontSize: '14px',
+                      zIndex: 1000,
+                    }}>
+                      Recherche de l'adresse en cours...
+                    </div>
+                  )}
+                </div>
+
+                {fieldErrors.position && <ErrorMessage style={{ marginTop: '8px' }}>{fieldErrors.position[0]}</ErrorMessage>}
+
+                <p style={{ marginTop: '12px', fontSize: '14px', color: '#555' }}>
+                  Position : <strong>{formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}</strong>
+                  {formData.ville && ` — ${formData.ville}${formData.codePostal ? ` (${formData.codePostal})` : ''}`}
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '32px' }}>
+                <ButtonPrimary 
+                  type="button" 
+                  onClick={onClose} 
                   disabled={isProcessing}
-                  style={{
-                    opacity: isProcessing ? 0.6 : 1,
-                    cursor: isProcessing ? 'not-allowed' : 'pointer',
-                    transition: 'opacity 0.3s ease'
-                  }}
                 >
                   Annuler
                 </ButtonPrimary>
-                <ButtonPrimary
-                  type="submit"
+                <ButtonPrimary 
+                  type="button" 
+                  onClick={handleSubmit} 
                   disabled={isProcessing}
-                  title={isProcessing ? submittingText : submitText}
-                  aria-label={isProcessing ? submittingText : submitText}
-                  style={{
-                    opacity: isProcessing ? 0.6 : 1,
-                    cursor: isProcessing ? 'not-allowed' : 'pointer',
-                    transition: 'opacity 0.3s ease'
-                  }}
                 >
-                  <Save size={16} aria-hidden="true" />
-                  <span>{isProcessing ? submittingText : submitText}</span>
+                  <Save size={16} />
+                  <span>{isProcessing ? 'En cours...' : isUpdateMode ? 'Modifier' : 'Créer'}</span>
                 </ButtonPrimary>
               </div>
             </GenericForm>

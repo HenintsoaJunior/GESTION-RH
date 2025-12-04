@@ -1,6 +1,7 @@
+// StatusFilter.tsx
 import { useState, useRef, useEffect } from 'react';
-import { Check, ChevronDown, Search, X } from 'lucide-react';
-import styled, { css } from 'styled-components';
+import { ChevronDown, X } from 'lucide-react';
+import * as S from '@/styles/status-filter'; 
 
 export interface Status {
   id: string;
@@ -9,10 +10,10 @@ export interface Status {
   category: 'progress' | 'success' | 'warning' | 'error';
 }
 
-const STATUSES: Status[] = [
+export const STATUSES: Status[] = [
   { id: 'draft', label: 'Brouillon', color: '#94a3b8', category: 'progress' },
   { id: 'pending', label: 'En attente', color: '#fbbf24', category: 'warning' },
-  { id: 'in-review', label: 'En révision', color: '#60a5fa', category: 'progress' },
+  { id: 'pending approval', label: 'En attente de validation', color: '#fbbf24', category: 'progress' },
   { id: 'approved', label: 'Approuvé', color: '#34d399', category: 'success' },
   { id: 'rejected', label: 'Rejeté', color: '#f87171', category: 'error' },
   { id: 'in-progress', label: 'En cours', color: '#3b82f6', category: 'progress' },
@@ -30,17 +31,27 @@ const STATUSES: Status[] = [
   { id: 'failed', label: 'Échoué', color: '#be123c', category: 'error' },
   { id: 'backlog', label: 'Backlog', color: '#71717a', category: 'progress' },
   { id: 'ready', label: 'Prêt', color: '#22c55e', category: 'success' },
+  { id: 'canceled', label: 'Annulé', color: '#ef4444', category: 'error' },
+  { id: 'payment in progress', label: 'Paiement en cours', color: '#0ea5e9', category: 'progress' },
+  { id: 'planned', label: 'Planifié', color: '#8b5cf6', category: 'progress' },
+  { id: 'in progress', label: 'En cours d\'exécution', color: '#3b82f6', category: 'progress' },
+  { id: 'closed', label: 'Clôturé', color: '#10b981', category: 'success' },
+  { id: 'mission rejected', label: 'Mission Rejeté', color: '#ef4444', category: 'error' },
+  { id: 'paid', label: 'Payé', color: '#10b981', category: 'success' },
+  { id: 'unpaid', label: 'Impayé', color: '#ef4444', category: 'error' },
 ];
 
-const statusConfig: Record<string, { color: string; category: Status['category'] }> = {
-  'pending approval': { color: '#60a5fa', category: 'progress' },
-  'payment in progress': { color: '#3b82f6', category: 'progress' },
-  'indemnity paid': { color: '#34d399', category: 'success' },
-  'expense note paid': { color: '#10b981', category: 'success' },
-  'planned': { color: '#8b5cf6', category: 'progress' },
+export const statusConfig: Record<string, { color: string; category: Status['category'] }> = {
+  'pending approval': { color: '#fbbf24', category: 'warning' },
+  'payment in progress': { color: '#0ea5e9', category: 'progress' },
+  'planned': { color: '#8b5cf6', category: 'progress' }, 
   'in progress': { color: '#3b82f6', category: 'progress' },
   'completed': { color: '#10b981', category: 'success' },
-  'canceled': { color: '#6b7280', category: 'error' },
+  'closed': { color: '#10b981', category: 'success' }, 
+  'canceled': { color: '#ef4444', category: 'error' }, 
+  'mission rejected': { color: '#ef4444', category: 'error' }, 
+  'rejected': { color: '#be123c', category: 'error' }, 
+
 };
 
 interface StatusFilterProps {
@@ -49,297 +60,16 @@ interface StatusFilterProps {
   options?: { label: string; value: string; }[];
 }
 
-// Styled Components (adapted to match form input styles and theme variables)
-const Container = styled.div`
-  position: relative;
-  width: 100%;
-`;
-
-const ToggleButton = styled.button<{ $isOpen: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: 32px;
-  border: 1px solid var(--border-light);
-  border-radius: 0;
-  font-size: var(--font-size-xs);
-  font-family: var(--font-family);
-  background-color: var(--bg-light);
-  color: var(--text-input);
-  box-sizing: border-box;
-  line-height: 1.2;
-  padding: var(--spacing-xs) var(--spacing-md);
-  padding-right: var(--spacing-xl);
-  cursor: pointer;
-  transition: border-color 0.15s ease-in-out, background-color 0.15s ease-in-out;
-
-  &:hover {
-    border: 1px solid var(--primary-color);
-    background-color: var(--bg-secondary);
-  }
-
-  &:focus {
-    border: 1px solid var(--primary-color);
-    background-color: var(--bg-primary);
-    outline: none;
-    box-shadow: inset 0 0 2px var(--primary-shadow);
-  }
-
-  span {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-  }
-
-  .badge {
-    padding: var(--spacing-2xs) var(--spacing-xs);
-    background-color: var(--primary-light);
-    color: var(--primary-color);
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-2xs);
-    font-weight: 600;
-  }
-
-  svg {
-    width: 1rem;
-    height: 1rem;
-    color: var(--text-muted);
-    transition: transform 0.15s ease-in-out;
-    flex-shrink: 0;
-  }
-
-  ${({ $isOpen }) =>
-    $isOpen &&
-    css`
-      svg {
-        transform: rotate(180deg);
-      }
-    `}
-`;
-
-const Dropdown = styled.div`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: var(--spacing-xs);
-  width: 100%;
-  max-width: 24rem;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
-  z-index: 50;
-  overflow: hidden;
-  font-family: var(--font-family);
-`;
-
-const SearchSection = styled.div`
-  padding: var(--spacing-sm);
-  border-bottom: 1px solid var(--border-light);
-  background-color: var(--bg-secondary);
-`;
-
-const SearchInputWrapper = styled.div`
-  position: relative;
-  width: 100%;
-`;
-
-const SearchIcon = styled(Search)`
-  position: absolute;
-  left: var(--spacing-sm);
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1rem;
-  height: 1rem;
-  color: var(--text-muted);
-`;
-
-const SearchInput = styled.input`
-  width: 100%;
-  height: 32px;
-  border: 1px solid var(--border-light);
-  border-radius: 0;
-  font-size: var(--font-size-xs);
-  font-family: var(--font-family);
-  background-color: var(--bg-light);
-  color: var(--text-input);
-  box-sizing: border-box;
-  line-height: 1.2;
-  padding: var(--spacing-xs) var(--spacing-md);
-  padding-left: var(--spacing-2xl);
-
-  &:hover {
-    border: 1px solid var(--primary-color);
-  }
-
-  &:focus {
-    border: 1px solid var(--primary-color);
-    background-color: var(--bg-primary);
-    outline: none;
-    box-shadow: inset 0 0 2px var(--primary-shadow);
-  }
-`;
-
-const Content = styled.div`
-  max-height: 24rem;
-  overflow-y: auto;
-  padding: var(--spacing-sm);
-`;
-
-const CategoryHeader = styled.div`
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: 12px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--spacing-sm);
-  font-family: var(--font-family);
-`;
-
-const StatusGrid = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-2xs);
-`;
-
-const StatusButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isSelected' && prop !== 'color'
-})<{ isSelected: boolean; color: string }>`
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  transition: all 0.15s ease-in-out;
-  border: 2px solid transparent;
-  cursor: pointer;
-  font-family: var(--font-family);
-  box-sizing: border-box;
-
-  ${({ isSelected }) =>
-    isSelected
-      ? css`
-          background: linear-gradient(to right, var(--bg-light), var(--primary-light));
-          border-color: var(--primary-color);
-          span {
-            color: var(--text-color);
-          }
-          svg {
-            color: var(--primary-color);
-          }
-        `
-      : css`
-          background-color: var(--bg-secondary);
-          &:hover {
-            background-color: var(--bg-light);
-          }
-          span {
-            color: var(--text-secondary);
-          }
-        `}
-
-  .color-dot {
-    width: 0.75rem;
-    height: 0.75rem;
-    border-radius: var(--radius-full);
-    flex-shrink: 0;
-    background-color: ${({ color }) => color};
-  }
-
-  span {
-    flex: 1;
-    text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--text-secondary);
-  }
-
-  svg {
-    width: 1rem;
-    height: 1rem;
-    flex-shrink: 0;
-  }
-`;
-
-const NoResults = styled.div`
-  text-align: center;
-  padding: var(--spacing-2xl) 0;
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family);
-`;
-
-const Footer = styled.div`
-  padding: var(--spacing-sm);
-  border-top: 1px solid var(--border-light);
-  display: flex;
-  gap: var(--spacing-sm);
-  background-color: var(--bg-secondary);
-`;
-
-const ActionButton = styled.button<{ variant: 'select' | 'clear' }>`
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-2xs);
-  padding: var(--spacing-xs) var(--spacing-md);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-family: var(--font-family);
-  font-size: var(--font-size-sm);
-  transition: background-color 0.15s ease-in-out;
-
-  ${({ variant }) =>
-    variant === 'select'
-      ? css`
-          background-color: var(--primary-light);
-          color: var(--primary-color);
-          &:hover {
-            background-color: var(--primary-color);
-            color: var(--text-white);
-          }
-        `
-      : css`
-          background-color: var(--bg-light);
-          color: var(--text-secondary);
-          &:hover {
-            background-color: var(--bg-secondary);
-          }
-        `}
-`;
-
-// Individual Status Badge Component (inspired by the design in the filter)
 interface StatusBadgeProps {
   status: Status;
-  isSelected?: boolean;
   onClick?: () => void;
   className?: string;
 }
 
-export const StatusBadge = ({ status, isSelected = false, onClick, className = '' }: StatusBadgeProps) => (
-  <StatusButton
-    isSelected={isSelected}
-    color={status.color}
-    onClick={onClick}
-    className={className}
-    as={onClick ? 'button' : 'div'}
-  >
-    <div className="color-dot" />
-    <span>{status.label}</span>
-    {isSelected && <Check />}
-  </StatusButton>
-);
-
 export default function StatusFilter({ selectedStatuses, onStatusChange, options }: StatusFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRadioStatus, setSelectedRadioStatus] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   let statuses: Status[] = STATUSES;
@@ -362,6 +92,15 @@ export default function StatusFilter({ selectedStatuses, onStatusChange, options
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Synchroniser la sélection radio avec le tableau selectedStatuses
+  useEffect(() => {
+    if (selectedStatuses.length === 1) {
+      setSelectedRadioStatus(selectedStatuses[0]);
+    } else if (selectedStatuses.length === 0) {
+      setSelectedRadioStatus(null);
+    }
+  }, [selectedStatuses]);
+
   const filteredStatuses = statuses.filter((status) =>
     status.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -373,20 +112,22 @@ export default function StatusFilter({ selectedStatuses, onStatusChange, options
     error: filteredStatuses.filter((s) => s.category === 'error'),
   };
 
-  const toggleStatus = (statusId: string) => {
-    if (selectedStatuses.includes(statusId)) {
-      onStatusChange(selectedStatuses.filter((id) => id !== statusId));
+  const handleRadioChange = (statusId: string) => {
+    if (selectedRadioStatus === statusId) {
+      // Si on clique sur le même, on le désélectionne
+      setSelectedRadioStatus(null);
+      onStatusChange([]);
     } else {
-      onStatusChange([...selectedStatuses, statusId]);
+      // Sinon on sélectionne le nouveau
+      setSelectedRadioStatus(statusId);
+      onStatusChange([statusId]);
     }
   };
 
   const clearAll = () => {
+    setSelectedRadioStatus(null);
     onStatusChange([]);
-  };
-
-  const selectAll = () => {
-    onStatusChange(statuses.map((s) => s.id));
+    setIsOpen(false);
   };
 
   const categoryLabels = {
@@ -396,73 +137,126 @@ export default function StatusFilter({ selectedStatuses, onStatusChange, options
     error: 'Erreur',
   };
 
+  const hasSelectedStatus = selectedStatuses.length > 0;
+
   return (
-    <Container ref={dropdownRef}>
-      <ToggleButton onClick={() => setIsOpen(!isOpen)} $isOpen={isOpen}>
+    <S.Container ref={dropdownRef}>
+      <S.ToggleButton 
+        onClick={() => setIsOpen(!isOpen)} 
+        $isOpen={isOpen}
+        type="button"
+      >
         <span>
           Statuts
-          {selectedStatuses.length > 0 && (
+          {hasSelectedStatus && (
             <span className="badge">{selectedStatuses.length}</span>
           )}
         </span>
         <ChevronDown />
-      </ToggleButton>
+      </S.ToggleButton>
 
       {isOpen && (
-        <Dropdown>
-          <SearchSection>
-            <SearchInputWrapper>
-              <SearchIcon />
-              <SearchInput
+        <S.Dropdown>
+          <S.SearchSection>
+            <S.SearchInputWrapper>
+              <S.SearchIcon />
+              <S.SearchInput
                 type="text"
                 placeholder="Rechercher un statut..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                autoFocus
               />
-            </SearchInputWrapper>
-          </SearchSection>
+            </S.SearchInputWrapper>
+          </S.SearchSection>
 
-          <Content>
+          <S.Content>
             {Object.entries(groupedStatuses).map(
               ([category, statusesInCategory]) =>
                 statusesInCategory.length > 0 && (
                   <div key={category}>
-                    <CategoryHeader>{categoryLabels[category as keyof typeof categoryLabels]}</CategoryHeader>
-                    <StatusGrid>
+                    <S.CategoryHeader>
+                      {categoryLabels[category as keyof typeof categoryLabels]} 
+                      <span style={{float: 'right', fontSize: '9px'}}>
+                        ({statusesInCategory.length})
+                      </span>
+                    </S.CategoryHeader>
+                    <S.StatusList>
                       {statusesInCategory.map((status) => {
-                        const isSelected = selectedStatuses.includes(status.id);
+                        const isSelected = selectedRadioStatus === status.id;
                         return (
-                          <StatusButton
+                          <S.RadioOption
                             key={status.id}
-                            onClick={() => toggleStatus(status.id)}
-                            isSelected={isSelected}
-                            color={status.color}
+                            $isSelected={isSelected}
+                            $category={status.category}
                           >
-                            <div className="color-dot" />
-                            <span>{status.label}</span>
-                            {isSelected && <Check />}
-                          </StatusButton>
+                            <input
+                              type="radio"
+                              name="status-filter"
+                              value={status.id}
+                              checked={isSelected}
+                              onChange={() => handleRadioChange(status.id)}
+                            />
+                            <S.RadioIndicator 
+                              $isSelected={isSelected}
+                              $category={status.category}
+                            />
+                            <span className="status-label">{status.label}</span>
+                          </S.RadioOption>
                         );
                       })}
-                    </StatusGrid>
+                    </S.StatusList>
                   </div>
                 )
             )}
 
-            {filteredStatuses.length === 0 && <NoResults>Aucun statut trouvé</NoResults>}
-          </Content>
+            {filteredStatuses.length === 0 && (
+              <S.NoResults>
+                Aucun statut trouvé
+                <S.NoResultsSubtext>
+                  Essayez un autre terme de recherche
+                </S.NoResultsSubtext>
+              </S.NoResults>
+            )}
+          </S.Content>
 
-          <Footer>
-            <ActionButton variant="select" onClick={selectAll}>
-              Tout sélectionner
-            </ActionButton>
-            <ActionButton variant="clear" onClick={clearAll}>
-              <X />
-              Effacer
-            </ActionButton>
-          </Footer>
-        </Dropdown>
+          {hasSelectedStatus && (
+            <S.Footer>
+              <S.ClearButton onClick={clearAll}>
+                <X size={12} />
+                Effacer la sélection
+              </S.ClearButton>
+            </S.Footer>
+          )}
+        </S.Dropdown>
       )}
-    </Container>
+    </S.Container>
   );
 }
+
+// Composant StatusBadge exporté
+export const StatusBadge = ({ status, onClick, className = '' }: StatusBadgeProps) => (
+  <S.StatusBadge
+    $category={status.category}
+    $color={status.color}
+    $clickable={!!onClick}
+    onClick={onClick}
+    className={className}
+    title={status.label}
+  >
+    {status.label}
+  </S.StatusBadge>
+);
+
+// Composant FilterStatusBadge exporté (version simplifiée)
+export const FilterStatusBadge = ({ status, onClick, className = '' }: StatusBadgeProps) => (
+  <S.FilterStatusBadge
+    $category={status.category}
+    $clickable={!!onClick}
+    onClick={onClick}
+    className={className}
+    title={status.label}
+  >
+    {status.label}
+  </S.FilterStatusBadge>
+);

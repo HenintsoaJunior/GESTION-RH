@@ -13,7 +13,7 @@ namespace MyApp.Api.Models.dto.employee
         public string? FirstName { get; set; }
 
         [MaxLength(50, ErrorMessage = "Le code employé ne peut pas dépasser 50 caractères.")]
-        public string? EmployeeCode { get; set; }
+        public string EmployeeCode { get; set; } = default!;
 
         public DateTime? BirthDate { get; set; }
 

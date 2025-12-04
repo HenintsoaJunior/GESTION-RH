@@ -1,8 +1,8 @@
 using MyApp.Api.Entities.mission;
+using MyApp.Api.enums;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Repositories.mission;
 using MyApp.Api.Utils.generator;
-using System.Linq;
 
 namespace MyApp.Api.Services.mission
 {
@@ -11,7 +11,7 @@ namespace MyApp.Api.Services.mission
         Task<IEnumerable<Compensation>> GetAllAsync();
         Task<AssignationWithCompensationsDto> GetByEmployeeIdAsync(string employeeId, string missionId);
         Task<string> CreateAsync(CompensationDTO compensation);
-        Task<bool> UpdateStatusAsync(string employeeId, string assignationId, string status);
+        Task<bool> UpdateStatusAsync(string employeeId, string missionId, string status);
         Task<(IEnumerable<AssignationWithCompensationsDto>, int)> GetCompensationsByStatusAsync(string? status, int page = 1, int pageSize = 10);
         Task<decimal> GetTotalPaidAmountAsync();
         Task<decimal> GetTotalNotPaidAmountAsync();
@@ -20,19 +20,19 @@ namespace MyApp.Api.Services.mission
     public class CompensationService : ICompensationService
     {
         private readonly ICompensationRepository _repository;
-        private readonly IMissionAssignationRepository _missionAssignationRepository;
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<CompensationService> _logger;
+        private readonly IMissionRepository _missionService;
 
         public CompensationService(
             ICompensationRepository repository,
-            IMissionAssignationRepository missionAssignationRepository,
             ISequenceGenerator sequenceGenerator,
-            ILogger<CompensationService> logger
+            ILogger<CompensationService> logger,
+            IMissionRepository missionService
         )
         {
+            _missionService = missionService ?? throw new ArgumentNullException(nameof(missionService));
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-            _missionAssignationRepository = missionAssignationRepository ?? throw new ArgumentNullException(nameof(missionAssignationRepository));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -55,10 +55,10 @@ namespace MyApp.Api.Services.mission
         {
             try
             {
-                var missionAssignation = await _missionAssignationRepository.GetByIdAsync(employeeId, missionId);
+                var mission = await _missionService.GetByIdAsync(employeeId, missionId);
 
-                var compensations = await _repository.GetByAssignationIdAsync(missionAssignation!.AssignationId);
-                return new AssignationWithCompensationsDto { Assignation = missionAssignation, Compensations = compensations };
+                var compensations = await _repository.GetByMissionIdAsync(mission!.MissionId);
+                return new AssignationWithCompensationsDto { Mission = mission, Compensations = compensations };
             }
             catch (Exception ex)
             {
@@ -72,13 +72,13 @@ namespace MyApp.Api.Services.mission
             try
             {
                 var effectiveStatus = string.IsNullOrWhiteSpace(status) ? null : status;
-                var (missionAssignations, totalCount) = await _missionAssignationRepository.GetWithCompensationByStatusAsync(effectiveStatus, page, pageSize);
+                var (mission, totalCount) = await _missionService.GetWithCompensationByStatusAsync(effectiveStatus, page, pageSize);
 
                 var dtos = new List<AssignationWithCompensationsDto>();
-                foreach (var ma in missionAssignations)
+                foreach (var ma in mission)
                 {
-                    var compensations = await _repository.GetByAssignationIdAsync(ma.AssignationId);
-                    dtos.Add(new AssignationWithCompensationsDto { Assignation = ma, Compensations = compensations });
+                    var compensations = await _repository.GetByMissionIdAsync(ma.MissionId);
+                    dtos.Add(new AssignationWithCompensationsDto { Mission = ma, Compensations = compensations });
                 }
 
                 return (dtos, totalCount);
@@ -97,8 +97,8 @@ namespace MyApp.Api.Services.mission
                 if (compensation == null)
                     throw new ArgumentNullException(nameof(compensation), "Les données de la compensation ne peuvent pas être nulles");
 
-                if (string.IsNullOrWhiteSpace(compensation.AssignationId))
-                    throw new ArgumentException("L'AssignationId ne peut pas être vide.", nameof(compensation.AssignationId));
+                if (string.IsNullOrWhiteSpace(compensation.MissionId))
+                    throw new ArgumentException("L'missionId ne peut pas être vide.", nameof(compensation.MissionId));
 
                 if (string.IsNullOrWhiteSpace(compensation.EmployeeId))
                     throw new ArgumentException("L'EmployeeId ne peut pas être vide.", nameof(compensation.EmployeeId));
@@ -119,21 +119,22 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<bool> UpdateStatusAsync(string employeeId, string assignationId, string status)
+        public async Task<bool> UpdateStatusAsync(string employeeId, string missionId, string status)
         {
             try
             {
-                var entities = await _repository.GetByEmployeeAndAssignationIdAsync(employeeId, assignationId);
+                // Utiliser AsNoTracking pour éviter le tracking automatique
+                var entities = await _repository.GetByEmployeeAndMissionIdAsync(employeeId, missionId);
 
                 if (entities == null || !entities.Any())
                 {
                     return false;
                 }
 
-                var missionAssignation = await _missionAssignationRepository.GetByAssignationIdAsync(assignationId);
-                if (missionAssignation == null)
+                var mission = await _missionService.GetByIdAsync(missionId);
+                if (mission == null)
                 {
-                    _logger.LogWarning("Mission assignation not found for assignationId: {assignationId}", assignationId);
+                    _logger.LogWarning("Mission assignation not found for missionId: {missionId}", missionId);
                     return false;
                 }
 
@@ -141,16 +142,18 @@ namespace MyApp.Api.Services.mission
                 {
                     entity.Status = status;
                     entity.UpdatedAt = DateTime.UtcNow;
+                    
+                    // Ne pas passer les entités liées
+                    entity.Employee = null;
+                    entity.Mission = null;
+                    
                     await _repository.UpdateAsync(entity);
                 }
 
                 if (status == "paid")
                 {
-                    if (missionAssignation.Mission != null)
-                    {
-                        missionAssignation.Mission.Status = "indemnity paid";
-                        await _missionAssignationRepository.UpdateAsync(missionAssignation);
-                    }
+                    mission.Status = MissionStatus.Planned;
+                    await _missionService.UpdateAsync(mission);
                 }
 
                 await _repository.SaveChangesAsync();
@@ -158,7 +161,7 @@ namespace MyApp.Api.Services.mission
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour du statut de la compensation {employeeId} {assignationId}", employeeId, assignationId);
+                _logger.LogError(ex, "Erreur lors de la mise à jour du statut de la compensation {employeeId} {missionId}", employeeId, missionId);
                 throw;
             }
         }

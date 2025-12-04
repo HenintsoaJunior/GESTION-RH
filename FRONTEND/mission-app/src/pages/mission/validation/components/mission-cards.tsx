@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-// Importations Lucide-React
 import {
     Clock as ClockIcon,
     CheckCircle,
@@ -11,13 +10,13 @@ import {
     User,
     AlertTriangle,
     ArrowRight,
-    Eye, // Ajout pour l'icône "Voir détails"
+    Eye, 
 } from "lucide-react";
 import {
     Loading,
     NoDataMessage,
-    StatusBadge,
 } from "@/styles/table-styles";
+import { StatusBadge, STATUSES } from "@/components/status";
 import Pagination from "@/components/pagination"; 
 import {
     CardsPaginationContainer,
@@ -29,7 +28,6 @@ import {
     CardHeader,
     CardTitle,
     CardInfo,
-    // Nouveaux styles pour les boutons d'actions
     ActionButton,
     ActionsContainer,
 } from "@/styles/card-styles";
@@ -100,21 +98,10 @@ const MissionCards: React.FC<MissionCardsProps> = ({
     };
 
     /**
-     * Retourne le badge de statut stylisé.
+     * Récupère la configuration du statut depuis STATUSES
      */
-    const getStatusBadge = (status: string) => {
-        const statusInfo = {
-            pending: { icon: ClockIcon, text: "En attente", class: "status-pending" },
-            approved: { icon: CheckCircle, text: "Validé", class: "status-approved" },
-            rejected: { icon: XCircle, text: "Rejetée", class: "status-cancelled" },
-        }[status] || { icon: ClockIcon, text: "Inconnu", class: "status-pending" };
-
-        const Icon = statusInfo.icon;
-        return (
-            <StatusBadge className={statusInfo.class}>
-                <Icon size={10} /> {statusInfo.text}
-            </StatusBadge>
-        );
+    const getStatusObject = (status: string) => {
+        return STATUSES.find(s => s.id === status) || { id: status, label: status, color: '#6b7280', category: 'progress' as const };
     };
 
     // Vérifie si des filtres sont appliqués pour afficher le message "NoData" approprié
@@ -194,7 +181,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
             );
         }
 
-        if (status === 'rejected') {
+        if (status === 'rejected' || status === 'Annulé') {
             return (
                 <IndicatorBlock $daysUntilDue={neutralDays} style={{ 
                     backgroundColor: 'var(--danger-bg)', 
@@ -215,7 +202,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px',
                     }}>
-                        REJETÉ
+                        {status === 'rejected' ? 'REJETÉ' : 'ANNULÉ'}
                     </IndicatorText>
                 </IndicatorBlock>
             );
@@ -288,7 +275,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
             <CardsContainer
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gridTemplateColumns: `repeat(${pageSize === 3 ? 3 : 3}, 1fr)`,
                   gap: 'var(--spacing-md, 1rem)',
                   alignItems: 'stretch',
                 }}
@@ -319,7 +306,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                     <CardTitle title={mission.title} style={{ fontSize: '0.875rem' }}>
                                         {mission.title}
                                     </CardTitle>
-                                    {getStatusBadge(mission.status)}
+                                    <StatusBadge status={getStatusObject(mission.status)} />
                                 </CardHeader>
                                 
                                 {/* 3. Informations de la mission - DESIGN AMÉLIORÉ ET RÉDUIT */}
@@ -465,12 +452,8 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                     )}
                                 </CardInfo>
 
-                                {/* 4. Barre d'actions améliorée - Toujours présente, avec boutons conditionnels */}
-                                <ActionsContainer 
-                                    $singleButton={mission.status !== 'pending'}
-                                    style={{ marginTop: 'auto' }}
-                                >
-                                    {/* Boutons conditionnels pour les missions en attente */}
+                                {/* 4. Barre d'actions améliorée - Conditionnelle selon le statut */}
+                                <ActionsContainer style={{ marginTop: 'auto' }}>
                                     {mission.status === 'pending' && (
                                         <>
                                             <ActionButton
@@ -495,11 +478,10 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                             </ActionButton>
                                         </>
                                     )}
-                                    {/* Bouton "Voir détails" toujours présent */}
                                     <ActionButton
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleRowClick(mission.missionId);
+                                            handleRowClick(mission.id);
                                         }}
                                         className="details"
                                     >
@@ -514,7 +496,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                     <NoDataMessage>
                         {hasFilters
                             ? "Aucune mission ne correspond aux critères de recherche."
-                            : "Aucune mission trouvée."}
+                            : "Aucune mission validation trouvée."}
                     </NoDataMessage>
                 )}
             </CardsContainer>
@@ -522,7 +504,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
             {/* Pagination */}
             {totalEntries > 0 && (
                 <Pagination
-                    currentPage={currentPage}
+                    currentPage={currentPage} 
                     pageSize={pageSize}
                     totalEntries={totalEntries}
                     onPageChange={handlePageChange}

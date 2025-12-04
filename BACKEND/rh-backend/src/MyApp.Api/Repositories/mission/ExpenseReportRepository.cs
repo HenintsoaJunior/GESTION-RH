@@ -2,48 +2,39 @@
 using MyApp.Api.Data;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Models.record;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace MyApp.Api.Repositories.mission
 {
     public interface IExpenseReportRepository
     {
-        Task<IEnumerable<ExpenseReport>> GetByAssignationIdAsync(string assignationId);
+        Task<IEnumerable<ExpenseReport>> GetByMissionIdAsync(string missionId);
         Task<IEnumerable<ExpenseReport>> GetAllAsync();
+        Task<IEnumerable<ExpenseReport>> GetNotReimbursedAsync();
         Task<ExpenseReport?> GetByIdAsync(string id);
         Task AddAsync(ExpenseReport entity);
         Task UpdateAsync(ExpenseReport entity);
         Task DeleteAsync(ExpenseReport entity);
         Task SaveChangesAsync();
-        Task<(IEnumerable<MissionAssignation>? Items, int TotalCount)> GetDistinctMissionAssignationsAsync(string? status, int pageNumber, int pageSize);
-        Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByStatusAsync(string? status, int pageNumber, int pageSize);
+        Task<(IEnumerable<Mission> Items, int TotalCount)> GetDistinctMissionsWithExpensesAsync(string? status, int page, int pageSize);
+        Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByStatusAsync(string? status, int page, int pageSize);
     }
 
     public class ExpenseReportRepository : IExpenseReportRepository
     {
         private readonly AppDbContext _context;
 
-        public ExpenseReportRepository(AppDbContext context)
-        {
-            _context = context;
-        }
-        
-        public async Task<IEnumerable<ExpenseReport>> GetByAssignationIdAsync(string assignationId)
-        {
-            return await _context.ExpenseReports
-                .AsNoTracking()
-                .Where(er => er.AssignationId == assignationId)
-                .Include(er => er.ExpenseReportType)
-                .ToListAsync();
-        }
+        public ExpenseReportRepository(AppDbContext context) => _context = context;
 
-        public async Task<IEnumerable<ExpenseReport>> search()
+        public async Task<IEnumerable<ExpenseReport>> GetByMissionIdAsync(string missionId)
         {
             return await _context.ExpenseReports
                 .AsNoTracking()
-                .Include(er => er.MissionAssignation)
+                .Where(er => er.MissionId == missionId)
                 .Include(er => er.ExpenseReportType)
+                .Include(er => er.Mission!)
+                    .ThenInclude(m => m.Lieu)
+                .Include(er => er.Mission!)
+                    .ThenInclude(m => m.Employee)
                 .ToListAsync();
         }
 
@@ -51,7 +42,23 @@ namespace MyApp.Api.Repositories.mission
         {
             return await _context.ExpenseReports
                 .AsNoTracking()
-                .Include(er => er.MissionAssignation)
+                .Include(er => er.Mission!)
+                    .ThenInclude(m => m.Lieu)
+                .Include(er => er.Mission!)
+                    .ThenInclude(m => m.Employee)
+                .Include(er => er.ExpenseReportType)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<ExpenseReport>> GetNotReimbursedAsync()
+        {
+            return await _context.ExpenseReports
+                .AsNoTracking()
+                .Where(er => er.Status == "notreimbursed")
+                .Include(er => er.Mission!)
+                    .ThenInclude(m => m.Lieu)
+                .Include(er => er.Mission!)
+                    .ThenInclude(m => m.Employee)
                 .Include(er => er.ExpenseReportType)
                 .ToListAsync();
         }
@@ -60,169 +67,108 @@ namespace MyApp.Api.Repositories.mission
         {
             return await _context.ExpenseReports
                 .AsNoTracking()
-                .Include(er => er.MissionAssignation)
+                .Include(er => er.Mission!)
+                    .ThenInclude(m => m.Lieu)
+                .Include(er => er.Mission!)
+                    .ThenInclude(m => m.Employee)
                 .Include(er => er.ExpenseReportType)
                 .FirstOrDefaultAsync(er => er.ExpenseReportId == id);
         }
 
-        public async Task AddAsync(ExpenseReport entity)
+        public async Task AddAsync(ExpenseReport entity) => await _context.ExpenseReports.AddAsync(entity);
+        public Task UpdateAsync(ExpenseReport entity) { _context.ExpenseReports.Update(entity); return Task.CompletedTask; }
+        public Task DeleteAsync(ExpenseReport entity)
         {
-            await _context.ExpenseReports.AddAsync(entity);
-        }
-
-        public Task UpdateAsync(ExpenseReport entity)
-        {
-            _context.ExpenseReports.Update(entity);
+            if (entity.ExpenseReportType != null) entity.ExpenseReportType = null;
+            _context.ExpenseReports.Remove(entity);
             return Task.CompletedTask;
         }
+        public async Task SaveChangesAsync() => await _context.SaveChangesAsync();
 
-        public async Task DeleteAsync(ExpenseReport entity)
+        public async Task<(IEnumerable<Mission> Items, int TotalCount)> GetDistinctMissionsWithExpensesAsync(
+            string? status, int page, int pageSize)
         {
-            if (entity.ExpenseReportType != null)
-            {
-                entity.ExpenseReportType = null;
-            }
+            var query = _context.ExpenseReports.AsNoTracking().Where(er => er.MissionId != null);
+            if (!string.IsNullOrWhiteSpace(status))
+                query = query.Where(er => er.Status == status);
 
-            _context.ExpenseReports.Remove(entity);
-            await Task.CompletedTask; 
+            var missions = query
+                .Select(er => er.Mission!)
+                .Distinct()
+                .Include(m => m.Employee)
+                .Include(m => m.Lieu);
+
+            var total = await missions.CountAsync();
+
+            var items = await missions
+                .OrderByDescending(m => m.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);
         }
 
-        public async Task SaveChangesAsync()
-        {
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<(IEnumerable<MissionAssignation>? Items, int TotalCount)> GetDistinctMissionAssignationsAsync(string? status, int pageNumber, int pageSize)
+        public async Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByStatusAsync(
+            string? status, int page, int pageSize)
         {
             var query = _context.ExpenseReports
                 .AsNoTracking()
-                .Include(er => er.MissionAssignation)
-                .ThenInclude(ma => ma!.Employee)
-                .Where(er => er.MissionAssignation != null);
+                .Where(er => er.MissionId != null &&
+                            (string.IsNullOrWhiteSpace(status) || er.Status == status));
 
-            if (!string.IsNullOrEmpty(status))
-            {
-                query = query.Where(er => er.Status == status);
-            }
+            var grouped = query
+                .GroupBy(er => er.MissionId)
+                .Select(g => new
+                {
+                    MissionId = g.Key!,
+                    TotalAmount = g.Sum(x => x.Amount),
+                    CreatedAt = g.Min(x => x.CreatedAt),
+                    LatestStatus = g.OrderByDescending(x => x.CreatedAt).Select(x => x.Status!).First()
+                });
 
-            var assignationIdsQuery = query
-                .Select(er => er.AssignationId)
-                .Distinct();
+            var totalCount = await grouped.CountAsync();
 
-            var totalCount = await assignationIdsQuery.CountAsync();
-
-            if (totalCount == 0)
-            {
-                return (null, 0);
-            }
-
-            var result = await assignationIdsQuery
-                .OrderBy(id => id)
-                .Skip((pageNumber - 1) * pageSize)
+            var result = await grouped
+                .OrderByDescending(g => g.CreatedAt)
+                .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Join(_context.MissionAssignations.Include(ma => ma.Employee),
-                      assignationId => assignationId,
-                      missionAssignation => missionAssignation.AssignationId,
-                      (assignationId, missionAssignation) => missionAssignation)
+                .Join(
+                    _context.Missions
+                        .Include(m => m.Employee)
+                        .Include(m => m.Lieu), // On charge Lieu
+                    g => g.MissionId,
+                    m => m.MissionId,
+                    (g, m) => new
+                    {
+                        g.MissionId,
+                        MissionName = m.Name ?? "Sans titre",
+                        g.LatestStatus,
+                        EmployeeLastName = m.Employee != null ? m.Employee.LastName : null,
+                        EmployeeFirstName = m.Employee != null ? m.Employee.FirstName : null,
+                        m.EmployeeId,
+                        EmployeeCode = m.Employee != null ? m.Employee.EmployeeCode : null,
+                        LieuNom = m.Lieu != null ? m.Lieu.Nom : null,
+                        g.CreatedAt,
+                        g.TotalAmount
+                    })
+                .Select(x => new ExpenseSummary(
+                    x.MissionId,
+                    x.MissionName,
+                    x.LatestStatus,
+                    string.Join(" ", 
+                        new[] { x.EmployeeLastName, x.EmployeeFirstName }
+                            .Where(n => !string.IsNullOrWhiteSpace(n))
+                    ).Trim(),
+                    x.EmployeeId ?? "",
+                    x.EmployeeCode ?? "",
+                    x.LieuNom ?? "Non spécifié",
+                    x.CreatedAt,
+                    x.TotalAmount
+                ))
                 .ToListAsync();
 
             return (result, totalCount);
         }
-
-        public async Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByStatusAsync(string? status, int pageNumber, int pageSize)
-        {
-            var baseQuery = _context.ExpenseReports
-                .AsNoTracking()
-                .Where(er => er.MissionAssignation != null && (string.IsNullOrEmpty(status) || er.Status == status));
-
-            var summaryGroups = baseQuery
-                .GroupBy(er => er.AssignationId)
-                .Select(g => new
-                {
-                    AssignationId = g.Key,
-                    TotalAmount = g.Sum(x => x.AmountMGA),
-                    CreatedAt = g.Min(x => x.CreatedAt)
-                });
-
-            var maxDatesSubquery = baseQuery
-                .GroupBy(er => er.AssignationId)
-                .Select(g => new
-                {
-                    AssignationId = g.Key,
-                    MaxCreatedAt = g.Max(x => x.CreatedAt)
-                });
-
-            var latestJoined = baseQuery
-                .Join(maxDatesSubquery,
-                    er => new { er.AssignationId, Date = er.CreatedAt },
-                    md => new { AssignationId = md.AssignationId, Date = md.MaxCreatedAt },
-                    (er, md) => new { er.AssignationId, er.Status });
-
-            var latestStatusQuery = latestJoined
-                .GroupBy(x => x.AssignationId)
-                .Select(g => new
-                {
-                    AssignationId = g.Key,
-                    Status = g.First().Status
-                });
-
-            var expenseGroups = summaryGroups
-                .Join(latestStatusQuery,
-                    s => s.AssignationId,
-                    ls => ls.AssignationId,
-                    (s, ls) => new
-                    {
-                        AssignationId = s.AssignationId,
-                        TotalAmount = s.TotalAmount,
-                        CreatedAt = s.CreatedAt,
-                        Status = ls.Status
-                    });
-
-            var resultQuery = from eg in expenseGroups
-                              join ma in _context.MissionAssignations.AsNoTracking()
-                              on eg.AssignationId equals ma.AssignationId
-                              join employee in _context.Employees.AsNoTracking()
-                              on ma.EmployeeId equals employee.EmployeeId
-                              join mission in _context.Missions.AsNoTracking()
-                              on ma.MissionId equals mission.MissionId
-                              join lieu in _context.Lieux.AsNoTracking()
-                              on mission.LieuId equals lieu.LieuId into lj
-                              from l in lj.DefaultIfEmpty()
-                              select new
-                              {
-                                  MissionId = mission.MissionId,
-                                  AssignationId = eg.AssignationId,
-                                  MissionName = mission.Name ?? "",
-                                  Status = eg.Status,
-                                  EmployeeName = (employee.LastName ?? "") + " " + (employee.FirstName ?? ""),
-                                  EmployeeCode = employee.EmployeeCode ?? "",
-                                  LieuName = l != null ? (l.Nom ?? "") : "",
-                                  CreatedAt = eg.CreatedAt,
-                                  TotalAmount = eg.TotalAmount
-                              };
-
-            var totalCount = await resultQuery.CountAsync();
-
-            var orderedPaged = resultQuery
-                .OrderByDescending(x => x.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize);
-
-            var anonList = await orderedPaged.ToListAsync();
-
-            var results = anonList.Select(a => new ExpenseSummary(
-                a.MissionId,
-                a.AssignationId,
-                a.MissionName,
-                a.Status,
-                a.EmployeeName,
-                a.EmployeeCode,
-                a.LieuName,
-                a.CreatedAt,
-                a.TotalAmount
-            )).ToList();
-
-            return (results, totalCount);
-        }        
     }
 }

@@ -30,6 +30,7 @@ import {
 
 import TemplateFooter from "./template-footer";
 import { getInitials } from "@/utils/initials";
+import { ToastContainer } from "@/components/notification-toast";
 
 interface Menu {
   menuKey: string;
@@ -76,8 +77,8 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
-  const [activeItem, setActiveItem] = useState<string>("dashboard");
-  const [headerTitle, setHeaderTitle] = useState<string>("Dashboard");
+  const [activeItem, setActiveItem] = useState<string>("tableau_de_bord");
+  const [headerTitle, setHeaderTitle] = useState<string>("Tableau de bord");
   const [theme,] = useState<string>(localStorage.getItem("theme") || "default");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
@@ -153,6 +154,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   const hasVoirMissionsArchivees = useHasHabilitation(user.userId, "Voir les missions archivées");
   const hasVoirTresorier = useHasHabilitation(user.userId, "Voir la trésorerie");
   const hasVoirHabilitation = useHasHabilitation(user.userId, "Voir les habilitations");
+  const hasVoirTableauBord = useHasHabilitation(user.userId, "Voir le tableau de bord");
 
   const { data: hasValidationLine = true } = useHasValidationLine(user.userId);
 
@@ -169,6 +171,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     "Missions archivées": hasVoirMissionsArchivees,
     trésorerie: hasVoirTresorier,
     Habilitation: hasVoirHabilitation,
+    tableau_de_bord: hasVoirTableauBord,
   }), [
     hasVoirUtilisateurs,
     hasVoirDroitAcces,
@@ -182,6 +185,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     hasVoirMissionsArchivees,
     hasVoirTresorier,
     hasVoirHabilitation,
+    hasVoirTableauBord,
     hasValidationLine,
   ]);
 
@@ -325,8 +329,8 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
 
     breadcrumbs.push({
       title: "Accueil",
-      path: "/dashboard",
-      isActive: currentPath === "/",
+      path: "/tableau-bord",
+      isActive: currentPath === "/tableau-bord",
       clickable: true,
     });
 
@@ -447,11 +451,11 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         return newExpanded;
       });
     } else {
-      if (activeItem !== "dashboard") {
-        setActiveItem("dashboard");
+      if (activeItem !== "tableau_de_bord") {
+        setActiveItem("tableau_de_bord");
       }
-      if (headerTitle !== "Dashboard") {
-        setHeaderTitle("Dashboard");
+      if (headerTitle !== "Tableau de bord") {
+        setHeaderTitle("Tableau de bord");
       }
       setExpandedMenus((prev) => {
         const newExpanded = { ...prev };
@@ -672,6 +676,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         <Content>{children}</Content>
 
         <TemplateFooter />
+        <ToastContainer userId={user.userId} />
       </MainContent>
     </App>
   );
