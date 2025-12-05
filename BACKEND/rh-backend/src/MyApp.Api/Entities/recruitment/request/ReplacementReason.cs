@@ -11,7 +11,7 @@ public class ReplacementReason
     public string Id {get; set;} = null!;
 
     [Column("reason_name")]
-    public string Reason {get; set;} = null!;
+    public string Name {get; set;} = null!;
 
     [Column("is_deleted")]
     public bool IsDeleted  { get; set; } = false;

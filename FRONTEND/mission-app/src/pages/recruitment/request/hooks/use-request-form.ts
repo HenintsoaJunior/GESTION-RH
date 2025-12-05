@@ -9,7 +9,7 @@ interface RecruitmentRequestFormProps {
   initialStartDate?: string | null;
 }
 
-interface RecruitmentRequestForm 
+export interface RecruitmentRequestForm 
 {
   post: string;
   effective: number | "";
@@ -121,10 +121,8 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
   );
 
   const validateStep = useCallback(() => {
-    // Validation for Step 1 (Post Information)
     const errors: FieldErrors = {};
 
-    // fields to validate using switch-style logic
     const postValue = formData.post ?? "";
     const effectiveRaw = formData.effective;
     const effective = effectiveRaw === "" ? NaN : Number(effectiveRaw);
@@ -186,7 +184,6 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
   }, [formData, contracts]);
 
   const validateStep2 = useCallback(() => {
-    // Validation for Step 2 (Recruitment Reasons)
     const errors: FieldErrors = {};
 
     const beginningDateValue = formData.beginningDate ?? "";
@@ -219,6 +216,11 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
           errors.reasonPrecision = ["La précision du motif est requise pour 'Autre'."];
         }
       }
+
+      // Validation du dernier titulaire
+      if (!formData.lastTitularId || String(formData.lastTitularId).trim() === "") {
+        errors.lastTitularId = ["Le dernier titulaire est requis pour un remplacement."];
+      }
     }
 
     setFieldErrors((prev) => {
@@ -241,8 +243,8 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
       isValid = validateStep2();
     }
 
-    console.log(`handleNext (step ${currentStep}) - validation result:`, isValid);
-    console.log(`handleNext (step ${currentStep}) - payload preview:`, { ...formData });
+    // console.log(`handleNext (step ${currentStep}) - validation result:`, isValid);
+    // console.log(`handleNext (step ${currentStep}) - payload preview:`, { ...formData });
 
     if (isValid) {
       setCurrentStep((s) => Math.min(s + 1, 2)); // move to next step (max step 2)

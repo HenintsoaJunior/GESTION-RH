@@ -142,7 +142,7 @@ public class RequestRepository : IRequestRepository
             for(int i=0; i<data.Sites.Length; i++) {
                 var siteRequest = new SiteRequest
                 {
-                    Id = _generator.GenerateSequence("seq_site_request_id", "DMD/REC/SITE"),
+                    Id = _generator.GenerateSequence("seq_id_site_request", "DMD/REC/SITE"),
                     Request = request,
                     Site = await _dbCtx.Sites.FindAsync(data.Sites[i]) ?? throw new Exception("Site introuvable")
                 };

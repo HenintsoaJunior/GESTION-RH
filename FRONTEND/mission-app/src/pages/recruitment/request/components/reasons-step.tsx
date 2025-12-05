@@ -1,189 +1,263 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
-	FormSectionTitle,
-	FormTable,
-	FormRow,
-	FormFieldCell,
-	FormLabel,
-	FormLabelRequired,
-	FormInput,
-	ErrorMessage,
+    FormSectionTitle,
+    FormTable,
+    FormRow,
+    FormFieldCell,
+    FormLabel,
+    FormLabelRequired,
+    FormInput,
+    ErrorMessage,
+    StyledAutoCompleteInput,
 } from "@/styles/form-container";
-import { useGetReplacementReasons, type DocumentDTO } from "@/api/recruitment/service";
+import {
+    useGetReplacementReasons,
+    useGetUsersByDirection,
+    type DocumentDTO,
+} from "@/api/recruitment/service";
 
 export interface RecruitmentReasonForm {
-	isReplacement: boolean;
-	replacementReasonId?: string;
-	replacementDate?: string;
-	reasonPrecision?: string;
-	lastTitularId?: string;
-	beginningDate: string;
+    isReplacement: boolean;
+    replacementReasonId?: string;
+    replacementDate?: string;
+    reasonPrecision?: string;
+    lastTitularId?: string;
+    beginningDate: string;
 }
 
 interface RecruitmentReasonStepProps {
-	formData: RecruitmentReasonForm;
-	fieldErrors?: { [key: string]: string[] };
-	isSubmitting?: boolean;
-	handleInputChange: (
-		e:
-			| React.ChangeEvent<HTMLInputElement>
-			| React.ChangeEvent<HTMLTextAreaElement>
-			| React.ChangeEvent<HTMLSelectElement>
-			| { target: { name: string; value: string } },
-		section?: string
-	) => void;
+    formData: RecruitmentReasonForm;
+    direction: string;
+    fieldErrors?: { [key: string]: string[] };
+    isSubmitting?: boolean;
+    handleInputChange: (
+        e:
+            | React.ChangeEvent<HTMLInputElement>
+            | React.ChangeEvent<HTMLTextAreaElement>
+            | React.ChangeEvent<HTMLSelectElement>
+            | { target: { name: string; value: string } },
+        section?: string
+    ) => void;
 }
 
 const RecruitmentReasonStep: React.FC<RecruitmentReasonStepProps> = ({
-	formData,
-	fieldErrors = {},
-	isSubmitting = false,
-	handleInputChange,
+    formData,
+    direction,
+    fieldErrors = {},
+    isSubmitting = false,
+    handleInputChange,
 }) => {
-	const { data: reasonsResponse, isLoading: reasonsLoading } = useGetReplacementReasons();
-	const reasons: DocumentDTO[] = reasonsResponse?.data || [];
-	const isOtherReason = formData.replacementReasonId === "other";
+    /** Motifs */
+    const { data: reasonsResponse, isLoading: reasonsLoading } = useGetReplacementReasons();
+    const reasons: DocumentDTO[] = useMemo(() => reasonsResponse?.data || [], [reasonsResponse]);
+    const isOtherReason = formData.replacementReasonId === "other";
 
-	return ( <>
-		{/* Section 1: Remplacement */}
-		<FormSectionTitle>Détails du remplacement</FormSectionTitle>
-		<FormTable>
-			<tbody>
-				{/* Checkbox Remplacement */}
-				<FormRow>
-					<FormFieldCell colSpan={2}>
-						<label style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-start" }}>
-							<FormInput
-								type="checkbox"
-								name="isReplacement"
-								checked={formData.isReplacement || false}
-								onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-									handleInputChange({
-										target: { name: "isReplacement", value: e.target.checked ? "true" : "false" },
-									});
-								}}
-								disabled={isSubmitting}
-							/>
-							<span style={{ fontWeight: 500 }}>Ceci est un remplacement</span>
-						</label>
-					</FormFieldCell>
-				</FormRow>
+    /** Employés */
+    const { data: usersResponse, isLoading: usersLoading } = useGetUsersByDirection(direction);
+    const users: DocumentDTO[] = useMemo(() => usersResponse?.data || [], [usersResponse]);
 
-				{/* Motifs de remplacement (visible si isReplacement coché) */}
-				{formData.isReplacement && (
-					<>
-						<FormRow>
-							<FormFieldCell colSpan={2}>
-								<FormLabelRequired>Motif de remplacement</FormLabelRequired>
-								<FormInput
-									type="text"
-									name="replacementReasonId"
-									value={formData.replacementReasonId || ""}
-									onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
-									placeholder="Chercher un motif..."
-									disabled={isSubmitting || reasonsLoading}
-									className={fieldErrors?.replacementReasonId ? "input-error" : ""}
-									list="reasonSuggestions"
-								/>
-								<datalist id="reasonSuggestions">
-									{reasons.map((reason) => (
-										<option key={reason.id} value={reason.id}>
-											{reason.name}
-										</option>
-									))}
-									<option value="other">Autre</option>
-								</datalist>
-								{fieldErrors?.replacementReasonId && fieldErrors.replacementReasonId.length > 0 && (
-									<ErrorMessage>{fieldErrors.replacementReasonId.join(", ")}</ErrorMessage>
-								)}
-							</FormFieldCell>
-						</FormRow>
+    /** Suggestions employees */
+    const userSuggestions = useMemo(
+		() => users.map(u => ({
+			id: u.id,
+			label: u.name
+		})),
+		[users]
+	);
 
-						{/* Date de remplacement */}
-						<FormRow className="dual-field-row">
-							<FormFieldCell>
-								<FormLabelRequired>Date de remplacement</FormLabelRequired>
-								<FormInput
-									type="date"
-									name="replacementDate"
-									value={formData.replacementDate || ""}
-									onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
-									disabled={isSubmitting}
-									className={fieldErrors?.replacementDate ? "input-error" : ""}
-								/>
-								{fieldErrors?.replacementDate && fieldErrors.replacementDate.length > 0 && (
-									<ErrorMessage>{fieldErrors.replacementDate.join(", ")}</ErrorMessage>
-								)}
-							</FormFieldCell>
+	// Mapping des labels pour l’autocomplete
+	const reasonSuggestions = useMemo(
+		() => reasons.map(r => ({
+			id: r.id,
+			label: r.name
+		})),
+		[reasons]
+	);
 
-							{/* Dernier titulaire */}
-							<FormFieldCell>
-								<FormLabel>Dernier titulaire</FormLabel>
-								<FormInput
-									type="text"
-									name="lastTitularId"
-									value={formData.lastTitularId || ""}
-									onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
-									placeholder="À compléter..."
-									disabled={isSubmitting}
-									className={fieldErrors?.lastTitularId ? "input-error" : ""}
-								/>
-								{fieldErrors?.lastTitularId && fieldErrors.lastTitularId.length > 0 && (
-									<ErrorMessage>{fieldErrors.lastTitularId.join(", ")}</ErrorMessage>
-								)}
-							</FormFieldCell>
-						</FormRow>
+	// Trouver le label correspondant à l’ID contenu dans le formulaire
+	const selectedReasonLabel =
+		reasonSuggestions.find(r => r.id === formData.replacementReasonId)?.label || "";
 
-						{/* Précision si "Autre" sélectionné */}
-						{isOtherReason && (
-							<FormRow>
-								<FormFieldCell colSpan={2}>
-									<FormLabelRequired>Précision du motif</FormLabelRequired>
-									<FormInput
-										type="text"
-										name="reasonPrecision"
-										value={formData.reasonPrecision || ""}
-										onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
-										placeholder="Préciser le motif..."
-										disabled={isSubmitting}
-										className={fieldErrors?.reasonPrecision ? "input-error" : ""}
+    return (
+        <>
+            {/* Section 1: Remplacement */}
+            <FormSectionTitle>Détails du remplacement</FormSectionTitle>
+
+            <FormTable>
+                <tbody>
+                    {/* Checkbox Remplacement */}
+                    <FormRow>
+                        <FormFieldCell colSpan={2}>
+                            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <FormInput
+                                    type="checkbox"
+                                    name="isReplacement"
+                                    checked={formData.isReplacement || false}
+                                    onChange={(e) =>
+                                        handleInputChange({
+                                            target: {
+                                                name: "isReplacement",
+                                                value: e.target.checked ? "true" : "false",
+                                            },
+                                        })
+                                    }
+                                    disabled={isSubmitting}
+                                />
+                                <span style={{ fontWeight: 500 }}>Ceci est un remplacement</span>
+                            </label>
+                        </FormFieldCell>
+                    </FormRow>
+
+                    {formData.isReplacement && (
+                        <>
+                            {/* Motif */}
+                            <FormRow>
+                                <FormFieldCell colSpan={2}>
+									<FormLabelRequired>Motif de remplacement</FormLabelRequired>
+
+									<StyledAutoCompleteInput
+										value={selectedReasonLabel}   // <-- Affiche le label
+										onChange={(label) => {
+											const selected = reasonSuggestions.find(r => r.label === label);
+
+											handleInputChange({
+												target: {
+													name: "replacementReasonId",
+													value: selected ? selected.id : ""   // <-- Envoie l’ID
+												}
+											});
+										}}
+										suggestions={reasonSuggestions.map(r => r.label)} // <-- Liste des labels
+										placeholder="Chercher un motif..."
+										disabled={isSubmitting || reasonsLoading}
+										maxVisibleItems={5}
+										fieldType="reason"
+										fieldLabel="Motif de remplacement"
 									/>
-									{fieldErrors?.reasonPrecision && fieldErrors.reasonPrecision.length > 0 && (
-										<ErrorMessage>{fieldErrors.reasonPrecision.join(", ")}</ErrorMessage>
+
+									{fieldErrors?.replacementReasonId && (
+										<ErrorMessage>
+											{fieldErrors.replacementReasonId.join(", ")}
+										</ErrorMessage>
 									)}
 								</FormFieldCell>
-							</FormRow>
-						)}
-					</>
-				)}
-			</tbody>
-		</FormTable>
+                            </FormRow>
 
-		{/* Section 2: Date souhaitée */}
-		<FormSectionTitle>Date souhaitée</FormSectionTitle>
-		<FormTable>
-			<tbody>
-				<FormRow>
-					<FormFieldCell colSpan={2}>
-						<FormLabelRequired>Date de début souhaitée</FormLabelRequired>
-						<FormInput
-							type="date"
-							name="beginningDate"
-							value={formData.beginningDate || ""}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
-							disabled={isSubmitting}
-							className={fieldErrors?.beginningDate ? "input-error" : ""}
-						/>
-						{fieldErrors?.beginningDate && fieldErrors.beginningDate.length > 0 && (
-							<ErrorMessage>{fieldErrors.beginningDate.join(", ")}</ErrorMessage>
-						)}
-					</FormFieldCell>
-				</FormRow>
-			</tbody>
-		</FormTable>
-	</> );
+                            {/* Date + dernier titulaire */}
+                            <FormRow className="dual-field-row">
+                                {/* Date */}
+                                <FormFieldCell>
+                                    <FormLabelRequired>Date de remplacement</FormLabelRequired>
+                                    <FormInput
+                                        type="date"
+                                        name="replacementDate"
+                                        value={formData.replacementDate || ""}
+                                        onChange={(e) => handleInputChange(e)}
+                                        disabled={isSubmitting}
+                                        className={
+                                            fieldErrors?.replacementDate ? "input-error" : ""
+                                        }
+                                    />
+                                    {fieldErrors?.replacementDate && (
+                                        <ErrorMessage>
+                                            {fieldErrors.replacementDate.join(", ")}
+                                        </ErrorMessage>
+                                    )}
+                                </FormFieldCell>
+
+                                {/* Dernier titulaire (AUTOCOMPLETE) */}
+                                <FormFieldCell>
+									<FormLabel>Dernier titulaire</FormLabel>
+									<StyledAutoCompleteInput
+										value={
+											userSuggestions.find(u => u.id === formData.lastTitularId)?.label || ""
+										}
+										onChange={(label) => {
+											const selectedUser = userSuggestions.find(u => u.label === label);
+											handleInputChange({
+												target: {
+													name: "lastTitularId",
+													value: selectedUser ? selectedUser.id : ""
+												}
+											});
+										}}
+										suggestions={userSuggestions.map(u => u.label)}
+										placeholder="Rechercher employé..."
+										disabled={isSubmitting || usersLoading}
+										maxVisibleItems={5}
+										fieldType="employee"
+										fieldLabel="Dernier titulaire"
+									/>
+
+									{fieldErrors?.lastTitularId && (
+										<ErrorMessage>{fieldErrors.lastTitularId.join(", ")}</ErrorMessage>
+									)}
+								</FormFieldCell>
+
+                            </FormRow>
+
+                            {/* Précision si motif "Autre" */}
+                            {isOtherReason && (
+                                <FormRow>
+                                    <FormFieldCell colSpan={2}>
+                                        <FormLabelRequired>Précision du motif</FormLabelRequired>
+                                        <FormInput
+                                            type="text"
+                                            name="reasonPrecision"
+                                            value={formData.reasonPrecision || ""}
+                                            onChange={(e) => handleInputChange(e)}
+                                            disabled={isSubmitting}
+                                            placeholder="Préciser..."
+                                            className={
+                                                fieldErrors?.reasonPrecision ? "input-error" : ""
+                                            }
+                                        />
+                                        {fieldErrors?.reasonPrecision && (
+                                            <ErrorMessage>
+                                                {fieldErrors.reasonPrecision.join(", ")}
+                                            </ErrorMessage>
+                                        )}
+                                    </FormFieldCell>
+                                </FormRow>
+                            )}
+                        </>
+                    )}
+                </tbody>
+            </FormTable>
+
+            {/* Section 2 */}
+            <FormSectionTitle>Date souhaitée</FormSectionTitle>
+
+            <FormTable>
+                <tbody>
+                    <FormRow>
+                        <FormFieldCell colSpan={2}>
+                            <FormLabelRequired>Date de début souhaitée</FormLabelRequired>
+
+                            <FormInput
+                                type="date"
+                                name="beginningDate"
+                                value={formData.beginningDate || ""}
+                                onChange={(e) => handleInputChange(e)}
+                                disabled={isSubmitting}
+                                className={
+                                    fieldErrors?.beginningDate ? "input-error" : ""
+                                }
+                            />
+
+                            {fieldErrors?.beginningDate && (
+                                <ErrorMessage>
+                                    {fieldErrors.beginningDate.join(", ")}
+                                </ErrorMessage>
+                            )}
+                        </FormFieldCell>
+                    </FormRow>
+                </tbody>
+            </FormTable>
+        </>
+    );
 };
 
 export default RecruitmentReasonStep;

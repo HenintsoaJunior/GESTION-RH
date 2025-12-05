@@ -35,6 +35,7 @@ namespace MyApp.Api.Repositories.users
         Task<User?> GetDirectorByDepartmentAsync(string department);
         Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
         Task<int> GetUserCountByRoleAsync(string role);
+        Task<IEnumerable<UserDto2>> GetUsersByDirection(string name);
     }
 
     public class UserRepository : IUserRepository
@@ -505,6 +506,18 @@ namespace MyApp.Api.Repositories.users
                 .Select(ur => ur.UserId)
                 .Distinct()
                 .CountAsync();
+        }
+
+
+        public async Task<IEnumerable<UserDto2>> GetUsersByDirection(string name) {
+            var users = await _context.Users
+                .Where(u => (u.Department??"").ToLower().Equals(name.ToLower()))
+                .Select(u => new UserDto2 {
+                    Id = u.UserId, 
+                    Name = u.Name ?? "",
+                }).AsNoTracking().ToListAsync();
+
+            return users;
         }
     }
 }

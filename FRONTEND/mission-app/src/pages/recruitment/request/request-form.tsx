@@ -24,12 +24,15 @@ import Alert from "@/components/alert";
 import PostInformationsStep from "./components/post-info-step";
 import RecruitmentReasonStep from "./components/reasons-step";
 import useRecruitmentForm from "./hooks/use-request-form";
+import { useCreateRecruitmentRequest } from "@/api/recruitment/service";
 
 interface RecruitmentRequestFormProps {
     isOpen: boolean;
     onClose: () => void;
     onFormSuccess: (type: string, message: string) => void;
 }
+
+// import { useCreateRecruitmentRequest } from "@/api/recruitment/services";
 
 const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
   isOpen,
@@ -47,6 +50,10 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
       handleReset,
     } = useRecruitmentForm();
 
+    const createRequest = useCreateRecruitmentRequest();
+
+    const [sharedDirection, setSharedDirection] = useState<string>("");
+
     const [alert, setAlert] = useState<{ isOpen: boolean; type: "success" | "info" | "error"; message: string }>({
       isOpen: false, type: "info", message: ""
     });
@@ -56,24 +63,40 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
 
     if (!isOpen) return null;
 
-    const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       
       if (currentStep === 1) {
-        // Step 1: handleNext already validates internally
-        console.log("RequestForm - step 1 proceeding to next:", { formData });
         handleNext();
-      } else if (currentStep === 2) {
-        // Step 2: validate and submit
+        return;
+      }
+
+      if (currentStep === 2) {
         const ok = validateStep2();
-        console.log("RequestForm - final payload:", { formData });
         if (!ok) {
           showError("Veuillez corriger les erreurs avant de valider.");
           return;
         }
-        onFormSuccess("success", "Demande validée — payload loggé en console.");
-        handleReset();
-        onClose();
+
+        try {
+            console.log("Données du formulaire à envoyer :", formData);
+          // Envoi du formulaire
+          await createRequest.mutateAsync(formData);
+
+          // Message de succès
+          setAlert({ isOpen: true, type: "success", message: "Demande créée avec succès !" });
+
+          // Callback parent pour notifier succès
+          onFormSuccess("success", "Demande créée avec succès !");
+
+          // Reset formulaire et fermeture
+          handleReset();
+          onClose();
+
+        } catch (error: any) {
+          console.error("Erreur lors de la création de la demande :", error);
+          showError("Erreur lors de la création de la demande.");
+        }
       }
     };
 
@@ -122,6 +145,7 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                                     isSubmitting={false}
                                     suggestions={{ applicant: [] }}
                                     handleInputChange={handleInputChange}
+                                    onDirectionChange={setSharedDirection}
                                 />
                                 <StepNavigation>
                                     <NextButton
@@ -148,6 +172,7 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                                     fieldErrors={fieldErrors}
                                     isSubmitting={false}
                                     handleInputChange={handleInputChange}
+                                    direction={sharedDirection}
                                 />
                                 <StepNavigation>
                                     <PreviousButton

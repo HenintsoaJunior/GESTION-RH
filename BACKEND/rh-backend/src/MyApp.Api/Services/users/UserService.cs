@@ -39,6 +39,7 @@ namespace MyApp.Api.Services.users
         Task<int> GetUserCountByRoleAsync(string role);
         Task<UserDto?> GetDirecteurTutelleAsync(string userMatricule);
         Task<UserDto?> GetResponsableSousDirecteurTutelleAsync(string userMatricule);
+        Task<IEnumerable<UserDto2>> GetUsersByDirection(string directionId);
     }
 
     public class UserService : IUserService
@@ -285,6 +286,15 @@ namespace MyApp.Api.Services.users
                 throw new ArgumentException("Role cannot be null or empty.", nameof(role));
 
             return await _repository.GetUserCountByRoleAsync(role);
+        }
+
+
+        public async Task<IEnumerable<UserDto2>> GetUsersByDirection(string directionId) {
+            if (string.IsNullOrWhiteSpace(directionId))
+                throw new ArgumentException("La direction ne peut pas être vide.");
+
+            IEnumerable<UserDto2> users = await _repository.GetUsersByDirection(directionId);
+            return users;
         }
         
         private static UserDto MapToDto(User user)

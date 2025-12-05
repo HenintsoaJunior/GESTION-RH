@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useGetContractTypes, type ContractType } from "@/api/contract/services";
 import {
 	FormSectionTitle,
@@ -29,11 +29,13 @@ export interface PostInformationForm {
 interface PostInformationStepProps {
 	formData: PostInformationForm;
 	fieldErrors: { [key: string]: string[] };
+	direction?: string;
 	isSubmitting: boolean;
 	isLoading?: { [key: string]: boolean };
 	suggestions: {
 		applicant?: { displayName: string }[];
 	};
+	onDirectionChange?: (value: string) => void;
 	handleInputChange: (
 		e:
 			| React.ChangeEvent<HTMLInputElement>
@@ -58,6 +60,7 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 	fieldErrors,
 	isSubmitting,
 	handleInputChange,
+	onDirectionChange,
 }) => {
 	const { data: contractsResponse, isLoading: contractsLoading } = useGetContractTypes();
 	const { data: sitesResponse, isLoading: sitesLoading } = useGetSites();
@@ -65,13 +68,12 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 	const contracts: ContractType[] = contractsResponse?.data || [];
 	const sites: Site[] = sitesResponse?.data || [];
 
-	const selectedContract = contracts.find((c) => c.code === formData.contractId) || null;
+	const selectedContract = contracts.find((c) => c.contractTypeId === formData.contractId) || null;
 	const isOther = formData.contractId === "other";
 	const isCDD =
 		Boolean(selectedContract) &&
 		(
-			(selectedContract?.code || "").toUpperCase() === "CDD" ||
-			(selectedContract?.label || "").toUpperCase().includes("CDD")
+			(selectedContract?.code || "").toUpperCase() === "CDD"
 		);
 
 	const showPrecision = isOther && !isCDD; 
@@ -87,6 +89,12 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 		managerName: employee.superiorName,
 		managerFunction: employee.superiorPost
 	} : null;
+
+	useEffect(() => {
+		if (currentUser?.direction) {
+			onDirectionChange?.(currentUser.direction);
+		}
+	}, [currentUser]);
 
 	return (
 		<>
@@ -146,10 +154,10 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 											<FormInput
 												type="radio"
 												name="contractId"
-												value={ct.code}
-												checked={formData.contractId === ct.code}
+												value={ct.contractTypeId}
+												checked={formData.contractId === ct.contractTypeId}
 												onChange={() =>
-													handleInputChange({ target: { name: "contractId", value: ct.code } })
+													handleInputChange({ target: { name: "contractId", value: ct.contractTypeId } })
 												}
 												disabled={isSubmitting}
 											/>
@@ -180,46 +188,6 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 						</FormFieldCell>
 					</FormRow>
 
-					{/* Sites : checkboxes multiples */}
-					<FormRow>
-						<FormFieldCell colSpan={2}>
-							<FormLabelRequired>Sites</FormLabelRequired>
-							{sitesLoading ? (
-								<div>Chargement des sites...</div>
-							) : (
-								<div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
-									{sites.map((site) => (
-										<label
-											key={site.siteId}
-											style={{ display: "flex", alignItems: "center", gap: 8 }}
-										>
-											<FormInput
-												type="checkbox"
-												name={`site_${site.siteId}`}
-												checked={formData.sites?.includes(site.siteId) || false}
-												onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-													handleInputChange({
-														target: {
-															name: `site_${site.siteId}`,
-															value: e.target.checked ? "true" : "false",
-														},
-													});
-												}}
-												disabled={isSubmitting}
-											/>
-											<span style={{ whiteSpace: "nowrap" }}>{site.siteName || site.code}</span>
-										</label>
-									))}
-								</div>
-							)}
-
-							{fieldErrors.sites && fieldErrors.sites.length > 0 && (
-								<ErrorMessage>{fieldErrors.sites.join(", ")}</ErrorMessage>
-							)}
-						</FormFieldCell>
-					</FormRow>
-
-					{/* Si Autre -> précision + durée ; Si CDD -> durée seulement */}
 					{showPrecision && (
 						<FormRow className="dual-field-row">
 							<FormFieldCell>
@@ -263,6 +231,45 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 							</FormFieldCell>
 						</FormRow>
 					)}
+
+					{/* Sites : checkboxes multiples */}
+					<FormRow>
+						<FormFieldCell colSpan={2}>
+							<FormLabelRequired>Sites</FormLabelRequired>
+							{sitesLoading ? (
+								<div>Chargement des sites...</div>
+							) : (
+								<div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
+									{sites.map((site) => (
+										<label
+											key={site.siteId}
+											style={{ display: "flex", alignItems: "center", gap: 8 }}
+										>
+											<FormInput
+												type="checkbox"
+												name={`site_${site.siteId}`}
+												checked={formData.sites?.includes(site.siteId) || false}
+												onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+													handleInputChange({
+														target: {
+															name: `site_${site.siteId}`,
+															value: e.target.checked ? "true" : "false",
+														},
+													});
+												}}
+												disabled={isSubmitting}
+											/>
+											<span style={{ whiteSpace: "nowrap" }}>{site.siteName || site.code}</span>
+										</label>
+									))}
+								</div>
+							)}
+
+							{fieldErrors.sites && fieldErrors.sites.length > 0 && (
+								<ErrorMessage>{fieldErrors.sites.join(", ")}</ErrorMessage>
+							)}
+						</FormFieldCell>
+					</FormRow>
 
 					{/* Rattachement du poste : 5 champs readonly + hidden applicantUserId */}
 					<FormRow>

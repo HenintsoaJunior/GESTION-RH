@@ -440,6 +440,39 @@ public class UserController : ControllerBase
         }
     }
 
+
+    [HttpGet("directions/{id}")]
+    [AllowAnonymous]
+    public async Task<ActionResult> GetUsersByDirection(string id)
+    {
+        // if (!User.Identity?.IsAuthenticated ?? true)
+        // {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try {
+            if (string.IsNullOrEmpty(id)) {
+                return BadRequest(new { data = (object?)null, status = 400, message = "ID de la direction ne doit pas être vide." });
+            }
+
+            var users = await _userService.GetUsersByDirection(id);
+            if (users == null) {
+                return NotFound(new { data = (object?)null, status = 404, message = "Direction not found." });
+            }
+
+            return Ok(new { data = users, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
+        }
+    }
+
 ///
 /// 
 /// 

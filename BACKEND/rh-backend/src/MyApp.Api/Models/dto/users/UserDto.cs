@@ -114,3 +114,10 @@ public class UserAvailabilityFormDTO
     [MaxLength(20)]
     public string? Status { get; set; }
 }
+
+
+public class UserDto2
+{
+    public string Id { get; set; } = null!;
+    public string? Name { get; set; } = null!;
+}

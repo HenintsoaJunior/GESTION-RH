@@ -1,11 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import api from '@/utils/axios-config';
+import type { RecruitmentRequestForm } from '@/pages/recruitment/request/hooks/use-request-form';
 
 // Base key pour React Query
 const SEARCH_REQUESTS_BASE_KEY = ['searchRequests'] as const;
 const SEARCH_STATUSES_BASE_KEY = ['searchRequestStatuses'] as const;
 const SEARCH_REASONS_BASE_KEY = ['searchReasons'] as const;
+
+const INSERT_REQUEST_BASE_KEY = ['addRequest'] as const;
 
 // Types
 export interface FilterRequestDTO {
@@ -30,6 +33,12 @@ export interface RequestDTO {
 export interface DocumentDTO {
     id: string;
     name: string;
+}
+
+interface CreateRequestResponse {
+    data: null;
+    status: boolean;
+    message: string;
 }
 
 
@@ -103,3 +112,32 @@ export const useGetReplacementReasons = () => {
         }
     })
 };
+
+
+export const useCreateRecruitmentRequest = () => {
+    const queryClient = useQueryClient();
+    return useMutation<CreateRequestResponse, Error, RecruitmentRequestForm>({
+        mutationFn: (data) => api.post('/api/recruitment/requests', data).then(r => r.data),
+        onSuccess: () => queryClient.invalidateQueries({ 
+            queryKey: INSERT_REQUEST_BASE_KEY 
+        }),
+    });
+};
+
+
+export const useGetUsersByDirection = (direction: string) => {
+    return useQuery<{ data: DocumentDTO[] }, Error>({
+        queryKey: ['usersByDirection', direction] as const,
+        queryFn: async () => {
+            try {
+                const response = await api.get(`/api/User/directions/${direction}`);
+                return response.data;
+            } catch(error) {
+                if(axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || 'Erreur serveur');
+                }
+                throw error;
+            }
+        }
+    });
+}

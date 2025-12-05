@@ -8,7 +8,7 @@ public class RequestFormDTO
     public string Post {get; set;} = null!;
 
     [Required(ErrorMessage = "Effectif obligatoire")]
-    [MinLength(0, ErrorMessage = "Effectif positif obligatoire")]
+    [Range(0, short.MaxValue, ErrorMessage = "Effectif doit être positif")]
     public short Effective {get; set;}
 
     public string[] Sites {get; set;} = [];

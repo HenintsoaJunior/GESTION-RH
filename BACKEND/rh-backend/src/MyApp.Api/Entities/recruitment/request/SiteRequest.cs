@@ -8,7 +8,7 @@ namespace MyApp.Api.Entities.recruitment;
 public class SiteRequest
 {
     [Key]
-    [Column("site_request_id")]
+    [Column("id_site_request")]
     public string Id {get; set;} = null!;
 
     [ForeignKey("site_id")]

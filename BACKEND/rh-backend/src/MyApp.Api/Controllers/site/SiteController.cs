@@ -24,10 +24,10 @@ namespace MyApp.Api.Controllers.site
         [AllowAnonymous]
         public async Task<ActionResult> GetAll()
         {
-            if (!User.Identity?.IsAuthenticated ?? true)
-            {
-                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-            }
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            // {
+            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            // }
 
             try
             {
