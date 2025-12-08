@@ -19,24 +19,24 @@ if (OperatingSystem.IsLinux())
 }
 
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://10.0.180.37:8090")
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
 // builder.Services.AddCors(options =>
 // {
 //     options.AddPolicy("AllowFrontend", policy =>
 //     {
-//         policy.WithOrigins("http://localhost:5173")
+//         policy.WithOrigins("http://10.0.180.37:8090")
 //               .AllowAnyMethod()
 //               .AllowAnyHeader();
 //     });
 // });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
