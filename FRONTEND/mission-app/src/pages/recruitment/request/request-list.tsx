@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Search } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Edit, Plus, Search, X } from "lucide-react";
 import {
   TableContainer,
   DataTable,
@@ -28,6 +29,8 @@ import {
   ButtonReset,
   Loading,
   NoDataMessage,
+  EditButton,
+  CancelButton,
 } from "@/styles/table-styles";
 
 import { useSearchRequests, useSearchRequestStatuses, type FilterRequestDTO, type DocumentDTO } from "@/api/recruitment/service";
@@ -349,7 +352,11 @@ const RequestList: React.FC = () => {
                     ) : requests.length > 0 ? (
                     requests.map((req) => (
                         <TableRow key={req.id}>
-                            <TableCell>{req.id}</TableCell>
+                            <TableCell>
+                                <Link to={`/recrutement/demandes/${req.id}/details`} className="link">
+                                {req.id}
+                                </Link>
+                            </TableCell>
                             <TableCell>{req.post}</TableCell>
                             <TableCell>{req.effective}</TableCell>
                             <TableCell>{req.contract || "N/A"}</TableCell>
@@ -361,12 +368,12 @@ const RequestList: React.FC = () => {
                                 {req.sendingDate ? new Date(req.sendingDate).toLocaleDateString("fr-FR") : "N/A"}
                             </TableCell>
                             <TableCell style={{ textAlign: "center" }}>
-                                {/* <EditButton onClick={() => handleEditClick(emp)}>
-                                <Edit size={16} />
+                                <EditButton onClick={() => console.log("Edited")}>
+                                    <Edit size={16} />
                                 </EditButton>
-                                <CancelButton onClick={() => handleDeleteClick(emp.employeeId)}>
-                                <Trash2 size={16} />
-                                </CancelButton> */}
+                                <CancelButton onClick={() => console.log("Canceled")}>
+                                    <X size={16} />
+                                </CancelButton>
                             </TableCell>
                         </TableRow>
                     ))

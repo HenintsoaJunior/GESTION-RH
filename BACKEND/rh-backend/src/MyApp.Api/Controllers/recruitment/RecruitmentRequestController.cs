@@ -15,9 +15,9 @@ public class RecruitmentRequestController(IRequestService _service)
     public async Task<IActionResult> SearchRequests([FromQuery] FilterRequestListDTO filters, 
         [FromQuery] int page=1, [FromQuery] int pageSize=10
     ) {
-        // if(!User.Identity?.IsAuthenticated ?? true) {
-        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        // }
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
 
         try {
             var (results, totalCount) = await _service.SearchRequests(filters, page, pageSize);
@@ -37,9 +37,9 @@ public class RecruitmentRequestController(IRequestService _service)
     [AllowAnonymous]
     public async Task<IActionResult> AddRequest([FromBody] RequestFormDTO data)
     {
-        // if(!User.Identity?.IsAuthenticated ?? true) {
-        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        // }
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
 
         try {
             await _service.AddRequest(data);
@@ -57,13 +57,33 @@ public class RecruitmentRequestController(IRequestService _service)
     [HttpGet("statuses")]
     [AllowAnonymous]
     public async Task<IActionResult> GetAllStatuses() {
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
+
+        try {
+            var statuses = await _service.GetAllStatuses();
+            return Ok(new { data = statuses, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
+
+
+    [HttpGet("{id}/details")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetRequestDetails([FromRoute] string id) {
         // if(!User.Identity?.IsAuthenticated ?? true) {
         //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
         // }
 
         try {
-            var statuses = await _service.GetAllStatuses();
-            return Ok(new { data = statuses, status = 200, message = "success" });
+            var results = await _service.GetRequestDetails(id);
+            return Ok(new { data = results, status = 200, message = "success" });
         }
         catch (ArgumentException ex) {
             return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });

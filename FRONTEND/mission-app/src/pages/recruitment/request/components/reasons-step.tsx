@@ -20,10 +20,10 @@ import {
 
 export interface RecruitmentReasonForm {
     isReplacement: boolean;
-    replacementReasonId?: string;
-    replacementDate?: string;
-    reasonPrecision?: string;
-    lastTitularId?: string;
+    replacementReasonId: string | null;
+    replacementDate: string | null;
+    reasonPrecision: string | null;
+    lastTitularId: string | null;
     beginningDate: string;
 }
 
@@ -37,7 +37,7 @@ interface RecruitmentReasonStepProps {
             | React.ChangeEvent<HTMLInputElement>
             | React.ChangeEvent<HTMLTextAreaElement>
             | React.ChangeEvent<HTMLSelectElement>
-            | { target: { name: string; value: string } },
+            | { target: { name: string; value: string | null } },
         section?: string
     ) => void;
 }
@@ -125,7 +125,7 @@ const RecruitmentReasonStep: React.FC<RecruitmentReasonStepProps> = ({
 											handleInputChange({
 												target: {
 													name: "replacementReasonId",
-													value: selected ? selected.id : ""   // <-- Envoie l’ID
+													value: selected ? selected.id : null   // <-- Envoie l’ID
 												}
 											});
 										}}
@@ -179,7 +179,7 @@ const RecruitmentReasonStep: React.FC<RecruitmentReasonStepProps> = ({
 											handleInputChange({
 												target: {
 													name: "lastTitularId",
-													value: selectedUser ? selectedUser.id : ""
+													value: selectedUser ? selectedUser.id : null
 												}
 											});
 										}}

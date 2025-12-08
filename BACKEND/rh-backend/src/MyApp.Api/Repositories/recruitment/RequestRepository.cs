@@ -8,9 +8,10 @@ namespace MyApp.Api.Repositories.recruitment;
 
 public interface IRequestRepository
 {
+    Task<List<RequestStatus>> GetAllStatuses();
     Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO dto, int page, int pageSize);
     Task AddRequest(RequestFormDTO data);
-    Task<List<RequestStatus>> GetAllStatuses();
+    Task<RequestDetailsDTO> GetRequestDetails(string id);
 }
 
 
@@ -43,7 +44,8 @@ public class RequestRepository : IRequestRepository
 
     // --- Filtre: Contract ---
         if(!string.IsNullOrWhiteSpace(dto.contract))
-            query = query.Where(r => r.Request.Contract.Code == dto.contract);
+            query = query.Where(r => r.Request.Contract != null &&
+                r.Request.Contract.Code == dto.contract);
 
     // --- Filtre: Status ---
         if(!string.IsNullOrWhiteSpace(dto.status))
@@ -78,8 +80,8 @@ public class RequestRepository : IRequestRepository
                 Id = r.Request.Id,
                 Post = r.Request.Post,
                 Effective = r.Request.Effective,
-                Contract = r.Request.Contract.Code,
-                WishedDate = r.Request.BeginingDate,
+                Contract = r.Request.Contract!=null ? r.Request.Contract.Code:"Autre" ,
+                WishedDate = r.Request.BeginningDate,
                 Status = r.Status.Name,
                 SendingDate = DateOnly.FromDateTime(r.Request.CreatedAt)
             })
@@ -101,8 +103,9 @@ public class RequestRepository : IRequestRepository
                 ? await _dbCtx.Users.FindAsync(data.LastTitularId)
                 : null;
 
-            var contract = await _dbCtx.ContractTypes.FindAsync(data.ContractId)
-                ?? throw new Exception("Type de contrat introuvable");
+            var contract = await _dbCtx.ContractTypes.FirstOrDefaultAsync(
+                c => c.ContractTypeId == data.ContractId
+            );
 
             var applicant = await _dbCtx.Users.FindAsync(data.ApplicantUserId)
                 ?? throw new Exception("Utilisateur demandeur introuvable");
@@ -113,7 +116,7 @@ public class RequestRepository : IRequestRepository
         // Construire la demande
             var request = new RecruitmentRequest
             {
-                Id = _generator.GenerateSequence("seq_request_id", "DMD/REC"),
+                Id = _generator.GenerateSequence("seq_request_id", "DMD_REC"),
                 Post = data.Post,
                 Effective = data.Effective,
 
@@ -126,14 +129,14 @@ public class RequestRepository : IRequestRepository
                 ContractPrecision = data.ContractPrecision,
                 MonthDuration = data.MonthDuration,
 
-                BeginingDate = data.BeginingDate,
+                BeginningDate = data.BeginningDate,
                 ApplicantUser = applicant,
                 IsDeleted = false
             };
 
             var reqValidation = new RequestValidation
             {
-                Id = _generator.GenerateSequence("seq_request_validation_id", "DMD/REC/VAL"),
+                Id = _generator.GenerateSequence("seq_request_validation_id", "DMD_REC_VAL"),
                 Status = defaultStatus,
                 Validator = applicant,
                 Request = request
@@ -142,11 +145,11 @@ public class RequestRepository : IRequestRepository
             for(int i=0; i<data.Sites.Length; i++) {
                 var siteRequest = new SiteRequest
                 {
-                    Id = _generator.GenerateSequence("seq_id_site_request", "DMD/REC/SITE"),
+                    Id = _generator.GenerateSequence("seq_id_site_request", "DMD_REC_SITE"),
                     Request = request,
                     Site = await _dbCtx.Sites.FindAsync(data.Sites[i]) ?? throw new Exception("Site introuvable")
                 };
-                await _dbCtx.SiteRequests.AddAsync(siteRequest);
+                await _dbCtx.SitesRequests.AddAsync(siteRequest);
             }
 
             await _dbCtx.RecruitmentRequests.AddAsync(request);
@@ -176,5 +179,55 @@ public class RequestRepository : IRequestRepository
         else {
            throw new Exception("Demande déjà supprimée."); 
         }
+    }
+
+
+    public async Task<RequestDetailsDTO> GetRequestDetails(string id) {
+    // Charger la demande avec toutes les dépendances
+        var request = await _dbCtx.RecruitmentRequests
+        .Include(r => r.ApplicantUser)
+        .Include(r => r.ReplacementReason)
+        .Include(r => r.Contract)
+        .Include(r => r.LastTitular)
+        .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
+
+        if(request == null)
+            throw new ArgumentException("Demande introuvable");
+
+    // Charger les sites
+        var sites = await _dbCtx.SitesRequests
+            .Where(s => s.Request.Id == id)
+            .Select(s => s.Site.SiteName)
+            .AsNoTracking().ToListAsync();
+
+    // Récupérer les validations + dernier statut
+        var validations = await _dbCtx.RequestValidations
+            .Where(v => v.Request.Id == id)
+            .Include(v => v.Status)
+            .OrderBy(v => v.CreatedAt)
+            .AsNoTracking().ToListAsync();
+
+        var lastStatus = validations.LastOrDefault()?.Status?.Name ?? "Inconnu";
+
+        int validationLevel = validations.Count-1;
+
+    // Construire le DTO
+        return new RequestDetailsDTO
+        {
+            Id = request.Id,
+            ApplicantUser = request.ApplicantUser.Name??"",
+            Status = lastStatus,
+            IsReplacement = request.IsReplacement,
+            ReplacementDate = request.ReplacementDate,
+            ReplacementReason = request.ReplacementReason?.Name,
+            ReasonPrecision = request.ReasonPrecision,
+            LastTitularId = request.LastTitular?.UserId,
+            Sites = sites.ToArray(),
+            Contract = request.Contract?.Code,
+            ContractPrecision = request.ContractPrecision,
+            MonthDuration = request.MonthDuration,
+            BeginningDate = request.BeginningDate,
+            ValidationLevel = validationLevel
+        };
     }
 }

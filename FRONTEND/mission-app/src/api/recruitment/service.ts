@@ -5,10 +5,9 @@ import type { RecruitmentRequestForm } from '@/pages/recruitment/request/hooks/u
 
 // Base key pour React Query
 const SEARCH_REQUESTS_BASE_KEY = ['searchRequests'] as const;
+const SEARCH_REQUEST_DETAILS_BASE_KEY = ['searchRequestDetails'] as const;
 const SEARCH_STATUSES_BASE_KEY = ['searchRequestStatuses'] as const;
 const SEARCH_REASONS_BASE_KEY = ['searchReasons'] as const;
-
-const INSERT_REQUEST_BASE_KEY = ['addRequest'] as const;
 
 // Types
 export interface FilterRequestDTO {
@@ -28,6 +27,23 @@ export interface RequestDTO {
     wishedDate: string;
     status: string;
     sendingDate: string;
+}
+
+export interface RequestDetailsDTO {
+    id: string;
+    applicantUser: string;
+    status: string;
+    isReplacement: boolean;
+    replacementDate?: string | null;
+    replacementReason?: string | null;
+    reasonPrecision?: string | null;
+    lastTitularId?: string | null;
+    sites: string[];
+    contract?: string | null;
+    contractPrecision?: string | null;
+    monthDuration?: number | null;
+    beginningDate: string; 
+    validationLevel: number;
 }
 
 export interface DocumentDTO {
@@ -119,7 +135,7 @@ export const useCreateRecruitmentRequest = () => {
     return useMutation<CreateRequestResponse, Error, RecruitmentRequestForm>({
         mutationFn: (data) => api.post('/api/recruitment/requests', data).then(r => r.data),
         onSuccess: () => queryClient.invalidateQueries({ 
-            queryKey: INSERT_REQUEST_BASE_KEY 
+            queryKey: SEARCH_REQUESTS_BASE_KEY 
         }),
     });
 };
@@ -140,4 +156,24 @@ export const useGetUsersByDirection = (direction: string) => {
             }
         }
     });
-}
+};
+
+
+export const useGetRecruitmentRequestDetails = (id: string) => {
+    const queryKey = [...SEARCH_REQUEST_DETAILS_BASE_KEY, id] as const;
+
+    return useQuery<{ data: RequestDTO }, Error>({
+        queryKey,
+        queryFn: async () => {
+            try {
+                const response = await api.get(`/api/recruitment/requests/${id}/details`);
+                return response.data;
+            } catch(error) {
+                if(axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || 'Erreur serveur');
+                }
+                throw error;
+            }
+        }
+    });
+};

@@ -18,10 +18,10 @@ import { useGetSites, type Site } from "@/api/site/services";
 
 export interface PostInformationForm {
 	post: string;
-	effective: number | "";
-	contractId: string | "";
-	contractPrecision?: string | "";
-	monthDuration?: number | "";
+	effective: number | null;
+	contractId: string | null;
+	contractPrecision?: string | null;
+	monthDuration?: number | null;
 	sites: string[];
 	applicantUserId: string;
 }
@@ -126,7 +126,7 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 							<FormInput
 								type="number"
 								name="effective"
-								value={formData.effective === "" ? "" : String(formData.effective)}
+								value={formData.effective?.toString() === "" ? 0 : Number(formData.effective)}
 								onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
 								placeholder="0"
 								disabled={isSubmitting}
@@ -216,9 +216,9 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 									type="number"
 									name="monthDuration"
 									value={
-										formData.monthDuration === undefined || formData.monthDuration === ""
-											? ""
-											: String(formData.monthDuration)
+										formData.monthDuration === undefined || formData.monthDuration?.toString() === ""
+											? 0
+											: Number(formData.monthDuration)
 									}
 									onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
 									placeholder="Nombre de mois"

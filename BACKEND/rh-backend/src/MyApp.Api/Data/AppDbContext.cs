@@ -144,7 +144,7 @@ namespace MyApp.Api.Data
         public DbSet<ReplacementReason> ReplacementReasons {get; set;}
         public DbSet<JobDescriptionStatus> JobDescriptionStatus {get; set;}
         public DbSet<RequestStatus> RequestStatuses {get; set;}
-        public DbSet<SiteRequest> SiteRequests {get; set;}
+        public DbSet<SiteRequest> SitesRequests {get; set;}
         public DbSet<RequestValidation> RequestValidations {get; set;}
     }
 }

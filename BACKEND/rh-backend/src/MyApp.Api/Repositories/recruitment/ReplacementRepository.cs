@@ -8,8 +8,9 @@ namespace MyApp.Api.Repositories.recruitment;
 public interface IReplacementRepository
 {
     Task AddReplacement(ReplacementReason data);
-    Task DeleteReplacement(string id);
     Task<List<ReplacementReason>> GetAllReasons();
+    Task UpdateReplacement(string id, ReplacementReason newData);
+    Task DeleteReplacement(string id);
 }
 
 
@@ -22,6 +23,18 @@ public class ReplacementRepository(AppDbContext ctx, ISequenceGenerator seq) : I
     public async Task AddReplacement(ReplacementReason data) {
         data.Id = _seqGenerator.GenerateSequence("seq_replacement_reason_id", "MRC");
         await _dbCtx.ReplacementReasons.AddAsync(data);
+        await  _dbCtx.SaveChangesAsync();
+    }
+
+
+    public async Task UpdateReplacement(string id, ReplacementReason newData) {
+        var data = await _dbCtx.ReplacementReasons.FirstOrDefaultAsync(r => r.Id == id) 
+            ?? throw new ArgumentException("Motif de remplacement introuvable");
+        
+        data.Name = newData.Name;
+        data.IsDeleted = false;
+
+        _dbCtx.ReplacementReasons.Update(data);
         await  _dbCtx.SaveChangesAsync();
     }
 

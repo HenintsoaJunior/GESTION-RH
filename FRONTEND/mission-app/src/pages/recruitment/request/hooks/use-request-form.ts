@@ -12,18 +12,18 @@ interface RecruitmentRequestFormProps {
 export interface RecruitmentRequestForm 
 {
   post: string;
-  effective: number | "";
-  contractId: string;
-  contractPrecision?: string;
-  monthDuration?: number | "";
+  effective: number | null;
+  contractId: string | null;
+  contractPrecision: string | null;
+  monthDuration: number | null;
   sites: string[];
-  applicantUserId?: string;
+  applicantUserId: string;
 
   isReplacement: boolean;
-  replacementReasonId?: string;
-  replacementDate?: string;
-  reasonPrecision?: string;
-  lastTitularId?: string;
+  replacementReasonId: string | null;
+  replacementDate: string | null;
+  reasonPrecision: string | null;
+  lastTitularId: string | null;
   beginningDate: string;
 }
 
@@ -31,17 +31,17 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [formData, setFormData] = useState<RecruitmentRequestForm>({
     post: "",
-    effective: "",
+    effective: 0,
     contractId: initialContractId,
-    contractPrecision: "",
-    monthDuration: "",
+    contractPrecision: null,
+    monthDuration: 0,
     sites: [],
     applicantUserId: "",
     isReplacement: false,
-    replacementReasonId: "",
-    replacementDate: "",
-    reasonPrecision: "",
-    lastTitularId: "",
+    replacementReasonId: null,
+    replacementDate: null,
+    reasonPrecision: null,
+    lastTitularId: null,
     beginningDate: "",
   });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -71,7 +71,7 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
   }, [currentUserId]);
 
   const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: string } }) => {
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: string | null } }) => {
       const { name, value } = e.target;
 
       // handle site checkboxes (name format: site_${siteId})
@@ -124,13 +124,11 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
     const errors: FieldErrors = {};
 
     const postValue = formData.post ?? "";
-    const effectiveRaw = formData.effective;
-    const effective = effectiveRaw === "" ? NaN : Number(effectiveRaw);
-    const contractId = formData.contractId ?? "";
+    const effective = formData.effective;
+    const contractId = formData.contractId ?? null;
     const applicantId = formData.applicantUserId ?? "";
-    const contractPrecision = formData.contractPrecision ?? "";
-    const monthDurationRaw = formData.monthDuration;
-    const monthDuration = monthDurationRaw === "" ? NaN : Number(monthDurationRaw);
+    const contractPrecision = formData.contractPrecision ?? null;
+    const monthDuration = formData.monthDuration ?? null;
 
     // switch-style checks
     const fields = ["post", "effective", "contractId", "applicantUserId"] as const;
@@ -140,7 +138,7 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
           if (!postValue || String(postValue).trim() === "") errors.post = ["Le poste est requis."];
           break;
         case "effective":
-          if (isNaN(effective) || effective <= 0) errors.effective = ["L'effectif doit être un nombre supérieur à 0."];
+          if (effective != null && effective <= 0) errors.effective = ["L'effectif doit être un nombre supérieur à 0."];
           break;
         case "contractId":
           if (!contractId || String(contractId).trim() === "") errors.contractId = ["Veuillez sélectionner un contrat."];
@@ -162,7 +160,7 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
     const isOther = String(contractId).toLowerCase() === "other";
 
     if (isCDD || isOther) {
-      if (isNaN(monthDuration) || monthDuration <= 0) {
+      if(monthDuration != null && monthDuration <= 0) {
         errors.monthDuration = ["La durée (mois) est requise et doit être positive."];
       }
     }
@@ -259,10 +257,10 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
   const handleReset = useCallback(() => {
     setFormData({
       post: "",
-      effective: "",
+      effective: 0,
       contractId: "",
       contractPrecision: "",
-      monthDuration: "",
+      monthDuration: 0,
       sites: [],
       applicantUserId: currentUserId || "",
       isReplacement: false,

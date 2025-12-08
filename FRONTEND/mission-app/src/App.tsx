@@ -30,6 +30,7 @@ import Reimbursement from '@/pages/mission/treso/components/reimbursement';
 import MissionsEnCoursMapPage from './pages/maps';
 import Home from '@/pages/Home';
 import ProtectedRequestList from './pages/recruitment/request/request-list';
+import ProtectedRequestDetails from './pages/recruitment/request/request-details';
 // import { useAuthSync } from '@/utils/use-auth-sync';
 function App() {
 
@@ -82,6 +83,7 @@ function App() {
         <Route path="/treasury/remboursement" element={<Reimbursement />} />
 
         <Route path="/recrutement/demandes/liste" element={<ProtectedRequestList />} />
+        <Route path="/recrutement/demandes/:id/details" element={<ProtectedRequestDetails />} />
         
         {/* ERROR */}
         <Route path="/403" element={<Error403Page />} />

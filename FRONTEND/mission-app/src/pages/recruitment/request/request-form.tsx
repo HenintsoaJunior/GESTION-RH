@@ -32,8 +32,6 @@ interface RecruitmentRequestFormProps {
     onFormSuccess: (type: string, message: string) => void;
 }
 
-// import { useCreateRecruitmentRequest } from "@/api/recruitment/services";
-
 const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
   isOpen,
   onClose,
@@ -55,7 +53,7 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
     const [sharedDirection, setSharedDirection] = useState<string>("");
 
     const [alert, setAlert] = useState<{ isOpen: boolean; type: "success" | "info" | "error"; message: string }>({
-      isOpen: false, type: "info", message: ""
+        isOpen: false, type: "info", message: ""
     });
 
     const handleAlertClose = useCallback(() => setAlert((a) => ({ ...a, isOpen: false })), []);
@@ -64,40 +62,49 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
     if (!isOpen) return null;
 
     const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
+        e.preventDefault();
       
-      if (currentStep === 1) {
-        handleNext();
-        return;
-      }
-
-      if (currentStep === 2) {
-        const ok = validateStep2();
-        if (!ok) {
-          showError("Veuillez corriger les erreurs avant de valider.");
-          return;
+        if (currentStep === 1) {
+                handleNext();
+                return;
         }
 
-        try {
-            console.log("Données du formulaire à envoyer :", formData);
-          // Envoi du formulaire
-          await createRequest.mutateAsync(formData);
+        if (currentStep === 2) {
+            const ok = validateStep2();
+            if (!ok) {
+                showError("Veuillez corriger les erreurs avant de valider.");
+                return;
+            }
 
-          // Message de succès
-          setAlert({ isOpen: true, type: "success", message: "Demande créée avec succès !" });
+            try {
+                if(formData.contractId==="other") formData.contractId=null;
+                const beginningDate = new Date(formData.beginningDate);
+                formData.beginningDate = beginningDate.toISOString().split('T')[0];
 
-          // Callback parent pour notifier succès
-          onFormSuccess("success", "Demande créée avec succès !");
+                console.log("Données du formulaire à envoyer :", formData);
+            // Envoi du formulaire
+                await createRequest.mutateAsync(formData);
 
-          // Reset formulaire et fermeture
-          handleReset();
-          onClose();
+            // Message de succès
+                setAlert({ isOpen: true, type: "success", message: "Demande créée avec succès !" });
 
-        } catch (error: any) {
-          console.error("Erreur lors de la création de la demande :", error);
-          showError("Erreur lors de la création de la demande.");
+            // Callback parent pour notifier succès
+                onFormSuccess("success", "Demande créée avec succès !");
+
+            // Reset formulaire et fermeture
+                handleReset();
+                onClose();
+
+            } catch (error: unknown) {
+                console.error("Erreur lors de la création :", error);
+
+                showError(
+                    error instanceof Error
+                        ? error.message
+                        : "Erreur lors de la création de la demande."
+                );
+            }
         }
-      }
     };
 
     return (
@@ -135,11 +142,11 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                                     formData={{
                                       post: formData.post,
                                       effective: formData.effective,
-                                      contractId: formData.contractId,
-                                      contractPrecision: formData.contractPrecision,
+                                      contractId: formData.contractId!="" ? formData.contractId:null,
+                                      contractPrecision: formData.contractPrecision!="" ? formData.contractPrecision:null,
                                       monthDuration: formData.monthDuration,
                                       sites: formData.sites,
-                                      applicantUserId: formData.applicantUserId || "",
+                                      applicantUserId: formData.applicantUserId ?? ""
                                     }}
                                     fieldErrors={fieldErrors}
                                     isSubmitting={false}
@@ -163,8 +170,8 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                                 <RecruitmentReasonStep
                                     formData={{
                                       isReplacement: formData.isReplacement,
-                                      replacementReasonId: formData.replacementReasonId,
-                                      replacementDate: formData.replacementDate,
+                                      replacementReasonId: formData.replacementReasonId!="" ? formData.replacementReasonId:null,
+                                      replacementDate: formData.replacementDate!="" ? formData.replacementDate:null,
                                       reasonPrecision: formData.reasonPrecision,
                                       lastTitularId: formData.lastTitularId,
                                       beginningDate: formData.beginningDate,

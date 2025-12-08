@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace MyApp.Api.Models.dto.recruitment;
 
 public class RequestListDTO
@@ -7,10 +5,29 @@ public class RequestListDTO
     public string Id  {get; set;} = null!;
     public string Post {get; set;} = null!;
     public short Effective {get; set;}
-    public string Contract {get; set;} = null!;
+    public string? Contract {get; set;}
     public DateOnly WishedDate {get; set;}
     public string Status {get; set;} = null!;
     public DateOnly SendingDate {get; set;}
+}
+
+
+public class RequestDetailsDTO
+{
+    public string Id  {get; set;} = null!;
+    public string ApplicantUser {get; set;} = null!;
+    public string Status {get; set;} = null!;
+    public bool IsReplacement {get; set;}
+    public DateOnly? ReplacementDate {get; set;}
+    public string? ReplacementReason {get; set;}
+    public string? ReasonPrecision {get; set;}
+    public string? LastTitularId {get; set;}
+    public string[] Sites {get; set;} = [];
+    public string? Contract {get; set;}
+    public string? ContractPrecision {get; set;}
+    public short? MonthDuration {get; set;}
+    public DateOnly BeginningDate {get; set;}
+    public int ValidationLevel {get; set;}
 }
 
 

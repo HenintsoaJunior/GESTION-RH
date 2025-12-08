@@ -22,10 +22,10 @@ public class RequestFormDTO
 
     public string? ContractId {get; set;} = null!;
     public string? ContractPrecision {get; set;}
-    public int? MonthDuration {get; set;}
+    public short? MonthDuration {get; set;}
 
     [Required(ErrorMessage = "Date de prise de service obligatoire")]
-    public DateOnly BeginingDate {get; set;}
+    public DateOnly BeginningDate {get; set;}
 
     public string ApplicantUserId {get; set;} = null!;
 }

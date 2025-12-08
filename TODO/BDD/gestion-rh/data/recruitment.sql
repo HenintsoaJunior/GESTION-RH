@@ -45,7 +45,8 @@ INSERT INTO habilitation_groups (group_id, label) VALUES
 INSERT INTO habilitations (habilitation_id, group_id, label, description) VALUES
 ('HAB_031', 'HABG_004', 'Lister demandes recrutement', 'Permet de voir la liste des demandes de recrutement'),
 ('HAB_032', 'HABG_004', 'Créer demande recrutement', 'Permet de cré demande de recrutement'),
-('HAB_033', 'HABG_004', 'Annuler demande recrutement', 'Permet d’annuler une demande de recrutement');
+('HAB_033', 'HABG_004', 'Annuler demande recrutement', 'Permet d’annuler une demande de recrutement'),
+('HAB_034', 'HABG_004', 'Lister détails demande recrutement', 'Permet de voir les détails d’une demande de recrutement');
 
 INSERT INTO replacement_reasons (replacement_reason_id, reason_name) VALUES
 ('RR_001', 'Décès'),

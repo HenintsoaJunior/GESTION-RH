@@ -19,7 +19,7 @@ public class RecruitmentRequest : BaseEntity
     public short Effective {get; set;}
 
     [Column("month_duration")]
-    public int? MonthDuration {get; set;}
+    public short? MonthDuration {get; set;}
 
     [Column("contract_precision")]
     public string? ContractPrecision {get; set;}
@@ -31,7 +31,7 @@ public class RecruitmentRequest : BaseEntity
     public DateOnly? ReplacementDate {get; set;}
 
     [Column("begining_date")]
-    public DateOnly BeginingDate {get; set;}
+    public DateOnly BeginningDate {get; set;}
 
     [ForeignKey("applicant_user")]
     public User ApplicantUser {get; set;} = null!;
@@ -46,7 +46,7 @@ public class RecruitmentRequest : BaseEntity
     public string? ReasonPrecision {get; set;}
 
     [ForeignKey("contract_type_id")]
-    public ContractType Contract {get; set;} = null!;
+    public ContractType? Contract {get; set;}
 
     [ForeignKey("last_titular_user")]
     public User? LastTitular {get; set;}
