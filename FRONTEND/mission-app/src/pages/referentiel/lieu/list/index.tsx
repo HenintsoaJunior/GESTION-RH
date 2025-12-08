@@ -1,6 +1,8 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { Plus, Edit, Trash2, Search, Filter, X, ChevronDown, ChevronUp, List } from "lucide-react";
+import styled from "styled-components";
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   TableContainer,
   DataTable,
@@ -15,10 +17,9 @@ import {
   FiltersContainer,
   FiltersHeader,
   FiltersTitle,
+  FiltersControls,
+  FilterControlButton,
   FiltersSection,
-  FormTableSearch,
-  FormRow,
-  FormFieldCell,
   FormLabelSearch,
   FormInputSearch,
   StyledAutoCompleteInput,
@@ -27,16 +28,32 @@ import {
   ButtonReset,
   Loading,
   NoDataMessage,
+  FiltersToggle,
+  ButtonShowFilters,
+  FormFieldCell,
 } from "@/styles/table-styles";
 import { useGetLieux, useDeleteLieu } from "@/api/lieu/services";
 import { useGetAllGeoZones } from "@/api/zones/services";
-import { useSearchParams, useNavigate } from 'react-router-dom';
 import Alert from "@/components/alert";
 import Modal from "@/components/modal";
 import Pagination from "@/components/pagination";
 import LieuForm from "../form/index";
 import type { Lieu } from "@/api/lieu/services";
 import type { GeoZone } from "@/api/zones/services";
+
+const FilterGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-md);
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
 
 interface FiltersState {
   nom: string;
@@ -61,8 +78,14 @@ const LieuList: React.FC = () => {
   const [selectedLieu, setSelectedLieu] = useState<SelectedLieu>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [lieuToDelete, setLieuToDelete] = useState<string | null>(null);
-  const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
+  const [alert, setAlert] = useState<AlertState>({ 
+    isOpen: false, 
+    type: "info", 
+    message: "" 
+  });
   const [hasAutoOpened, setHasAutoOpened] = useState<boolean>(false);
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [isHidden, setIsHidden] = useState<boolean>(false);
 
   const [filters, setFilters] = useState<FiltersState>({ 
     nom: "", 
@@ -80,14 +103,12 @@ const LieuList: React.FC = () => {
   });
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
-  const [totalCount, setTotalCount] = useState<number>(0);
 
   // Récupération des paramètres d'URL pour l'ouverture automatique
-  // Supporte plusieurs formats de paramètres
   const autoOpen = searchParams.get('autoOpen') === 'true' || 
                    searchParams.get('mode') === 'add' || 
                    searchParams.get('fieldType') === 'location';
-  const fieldLabel = searchParams.get('fieldLabel') || 'nom'; // Valeur par défaut 'nom'
+  const fieldLabel = searchParams.get('fieldLabel') || 'nom';
   const initialValue = searchParams.get('initialValue');
   const returnUrl = searchParams.get('returnUrl');
 
@@ -123,11 +144,16 @@ const LieuList: React.FC = () => {
   const deleteLieuMutation = useDeleteLieu();
 
   const lieux = useMemo(() => searchResponse?.data || [], [searchResponse]);
+  const totalCount = useMemo(() => searchResponse?.totalCount || 0, [searchResponse]);
 
-  const hasFilters = appliedFilters.nom.trim() !== "" || 
-    appliedFilters.ville.trim() !== "" || 
-    appliedFilters.pays.trim() !== "" || 
-    !!appliedFilters.selectedGeoZone;
+  const hasFilters = useMemo(() => {
+    return Object.values(filters).some((val) => {
+      if (typeof val === 'string') {
+        return (val || "").trim() !== "";
+      }
+      return val !== null && val !== undefined;
+    });
+  }, [filters]);
 
   // Effet pour ouvrir automatiquement le formulaire lors de la navigation
   useEffect(() => {
@@ -137,7 +163,6 @@ const LieuList: React.FC = () => {
         ville: '',
         codePostal: '',
         pays: '',
-        // Pré-remplit le champ spécifié dans l'URL
         ...(fieldLabel && initialValue 
           ? { [fieldLabel]: decodeURIComponent(initialValue) } 
           : {})
@@ -146,11 +171,6 @@ const LieuList: React.FC = () => {
       setSelectedLieu(prefillData);
       setIsFormOpen(true);
       setHasAutoOpened(true);
-      
-      console.log("Lieu form auto-opened with prefill:", prefillData);
-      
-      // Pas besoin de nettoyer l'URL ici, laissez les paramètres
-      // Ils seront utilisés pour le retour après création
     }
   }, [autoOpen, fieldLabel, initialValue, isFormOpen, hasAutoOpened]);
 
@@ -158,18 +178,9 @@ const LieuList: React.FC = () => {
     if (returnUrl) {
       navigate(decodeURIComponent(returnUrl));
     } else {
-      // Fallback: navigate to default mission page
       navigate('/mission');
     }
   }, [navigate, returnUrl]);
-
-  useEffect(() => {
-    if (searchResponse) {
-      setTotalCount(searchResponse.totalCount || 0);
-    } else {
-      setTotalCount(0);
-    }
-  }, [searchResponse]);
 
   const handleAddClick = useCallback(() => {
     setSelectedLieu(null);
@@ -211,15 +222,12 @@ const LieuList: React.FC = () => {
     }
   }, [lieuToDelete, deleteLieuMutation, refetch]);
 
-  const handleFormSuccess = useCallback((message: string) => {
+  const handleFormSuccess = useCallback(() => {
     setIsFormOpen(false);
-    
     refetch();
 
     if (returnUrl && autoOpen) {
       handleNavigateBack();
-    } else {
-      console.log("Lieu form success:", message);
     }
   }, [refetch, returnUrl, autoOpen, handleNavigateBack]);
 
@@ -291,6 +299,17 @@ const LieuList: React.FC = () => {
 
   if (error) return <div>Une erreur est survenue.</div>;
 
+  if (isHidden) {
+    return (
+      <FiltersToggle>
+        <ButtonShowFilters type="button" onClick={() => setIsHidden(false)}>
+          <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+          Afficher les filtres
+        </ButtonShowFilters>
+      </FiltersToggle>
+    );
+  }
+
   return (
     <>
       {/* Alert seulement affiché quand on n'est pas en mode autoOpen */}
@@ -327,82 +346,101 @@ const LieuList: React.FC = () => {
         />
       )}
       
-      <FiltersContainer>
+      <FiltersContainer $isMinimized={isMinimized}>
         <FiltersHeader>
-          <FiltersTitle>Filtre</FiltersTitle>
+          <FiltersTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Filter size={18} />
+            Filtres avancés
+          </FiltersTitle>
+          <FiltersControls>
+            <FilterControlButton
+              $isMinimized={isMinimized}
+              onClick={() => setIsMinimized((p) => !p)}
+              title={isMinimized ? "Développer" : "Réduire"}
+            >
+              {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </FilterControlButton>
+            <FilterControlButton 
+              $isClose 
+              onClick={() => setIsHidden(true)} 
+              title="Fermer"
+            >
+              <X size={16} />
+            </FilterControlButton>
+          </FiltersControls>
         </FiltersHeader>
-        <FiltersSection>
-          <Separator />
-          <form onSubmit={handleFilterSubmit}>
-            <FormTableSearch>
-              <tbody>
-                <FormRow className="dual-field-row">
-                  <FormFieldCell>
-                    <FormLabelSearch>Nom</FormLabelSearch>
-                    <FormInputSearch
-                      type="text"
-                      value={filters.nom}
-                      onChange={handleNomChange}
-                      placeholder="Rechercher par nom..."
-                      disabled={isLoading}
-                    />
-                  </FormFieldCell>
-                  <FormFieldCell>
-                    <FormLabelSearch>Ville</FormLabelSearch>
-                    <FormInputSearch
-                      type="text"
-                      value={filters.ville}
-                      onChange={handleVilleChange}
-                      placeholder="Rechercher par ville..."
-                      disabled={isLoading}
-                    />
-                  </FormFieldCell>
-                </FormRow>
-                <FormRow className="dual-field-row">
-                  <FormFieldCell>
-                    <FormLabelSearch>Pays</FormLabelSearch>
-                    <FormInputSearch
-                      type="text"
-                      value={filters.pays}
-                      onChange={handlePaysChange}
-                      placeholder="Rechercher par pays..."
-                      disabled={isLoading}
-                    />
-                  </FormFieldCell>
-                  <FormFieldCell>
-                    <FormLabelSearch>Zone Géographique</FormLabelSearch>
-                    <StyledAutoCompleteInput
-                      value={filters.zoneSearch || ""}
-                      onChange={handleZoneChange}
-                      suggestions={filteredZoneSuggestions}
-                      maxVisibleItems={5}
-                      placeholder="Sélectionner une zone..."
-                      disabled={isLoading}
-                      fieldType="zone"
-                      fieldLabel="zone"
-                      showAddOption={false}
-                    />
-                  </FormFieldCell>
-                </FormRow>
-              </tbody>
-            </FormTableSearch>
+
+        {!isMinimized && (
+          <FiltersSection>
             <Separator />
-            <FiltersActions>
-              <ButtonReset
-                type="button"
-                onClick={handleResetFilters}
-                disabled={!hasFilters || isLoading}
-                title="Effacer filtre"
-              >
-                Effacer filtres
-              </ButtonReset>
-              <ButtonSearch type="submit" disabled={isLoading} title="Rechercher">
-                <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-                Rechercher
-              </ButtonSearch>
-            </FiltersActions>
-          </form>
-        </FiltersSection>
+            <form onSubmit={handleFilterSubmit}>
+              <FilterGrid>
+                <FormFieldCell as="div">
+                  <FormLabelSearch>Nom</FormLabelSearch>
+                  <FormInputSearch
+                    type="text"
+                    value={filters.nom}
+                    onChange={handleNomChange}
+                    placeholder="Rechercher par nom..."
+                    disabled={isLoading}
+                  />
+                </FormFieldCell>
+                <FormFieldCell as="div">
+                  <FormLabelSearch>Ville</FormLabelSearch>
+                  <FormInputSearch
+                    type="text"
+                    value={filters.ville}
+                    onChange={handleVilleChange}
+                    placeholder="Rechercher par ville..."
+                    disabled={isLoading}
+                  />
+                </FormFieldCell>
+                <FormFieldCell as="div">
+                  <FormLabelSearch>Pays</FormLabelSearch>
+                  <FormInputSearch
+                    type="text"
+                    value={filters.pays}
+                    onChange={handlePaysChange}
+                    placeholder="Rechercher par pays..."
+                    disabled={isLoading}
+                  />
+                </FormFieldCell>
+                <FormFieldCell as="div">
+                  <FormLabelSearch>Zone Géographique</FormLabelSearch>
+                  <StyledAutoCompleteInput
+                    value={filters.zoneSearch || ""}
+                    onChange={handleZoneChange}
+                    suggestions={filteredZoneSuggestions}
+                    maxVisibleItems={5}
+                    placeholder="Sélectionner une zone..."
+                    disabled={isLoading}
+                    fieldType="zone"
+                    fieldLabel="zone"
+                    showAddOption={false}
+                  />
+                </FormFieldCell>
+              </FilterGrid>
+              
+              <Separator />
+              
+              <FiltersActions>
+                <ButtonReset
+                  type="button"
+                  onClick={handleResetFilters}
+                  disabled={!hasFilters || isLoading}
+                  title="Effacer filtre"
+                >
+                  <X size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                  Effacer filtres
+                </ButtonReset>
+                <ButtonSearch type="submit" disabled={isLoading} title="Rechercher">
+                  <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                  Rechercher
+                </ButtonSearch>
+              </FiltersActions>
+            </form>
+          </FiltersSection>
+        )}
       </FiltersContainer>
       
       <TableContainer>

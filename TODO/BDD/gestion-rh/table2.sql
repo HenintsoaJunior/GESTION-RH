@@ -157,18 +157,29 @@ CREATE TABLE lieu (
 );
 
 CREATE TABLE mission (
-   mission_id VARCHAR(50),
-   mission_type VARCHAR(50) NOT NULL CHECK(mission_type IN('national', 'international')),
-   name VARCHAR(255),
-   description TEXT,
-   start_date DATE,
-   end_date DATE,
-   status VARCHAR(20) NOT NULL DEFAULT 'En Cours',
-   lieu_id VARCHAR(50) NOT NULL,
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   PRIMARY KEY(mission_id),
-   FOREIGN KEY(lieu_id) REFERENCES lieu(lieu_id)
+   mission_id        VARCHAR(50) PRIMARY KEY,
+   mission_type      VARCHAR(20)  NOT NULL DEFAULT 'unknown',
+   name              VARCHAR(255),
+   description       TEXT,
+   start_date        DATE NOT NULL,
+   end_date          DATE NOT NULL,
+   status            VARCHAR(30)  NOT NULL DEFAULT 'pending approval',
+   lieu_id           VARCHAR(50)  NOT NULL,
+   employee_id       VARCHAR(50)  NOT NULL,                    
+   departure_date    DATE,
+   departure_time    TIME,
+   return_date       DATE,
+   return_time       TIME,
+   duration          INT,                                       
+   is_validated      INT          DEFAULT 0,                   
+   type              VARCHAR(20)  NOT NULL DEFAULT 'Indemnité',
+   allocated_fund    DECIMAL(15,2),
+   transport_id      VARCHAR(50),
+   created_at        DATETIME     DEFAULT CURRENT_TIMESTAMP,
+   updated_at        DATETIME,
+   FOREIGN KEY (lieu_id)      REFERENCES lieu(lieu_id),
+   FOREIGN KEY (employee_id)  REFERENCES employees(employee_id),
+   FOREIGN KEY (transport_id) REFERENCES transport(transport_id)
 );
 
 CREATE TABLE mission_assignation (

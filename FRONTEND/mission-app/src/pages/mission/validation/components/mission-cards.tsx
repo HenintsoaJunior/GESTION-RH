@@ -45,6 +45,7 @@ interface LoadingState {
 interface AppliedFilters {
   employeeId: string;
   employeeName: string;
+  employeeMatricule: string;
   status: string;
   validationDateFrom?: string;
   validationDateTo?: string;
@@ -108,6 +109,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
     const hasFilters =
         appliedFilters.employeeId ||
         appliedFilters.employeeName ||
+        appliedFilters.employeeMatricule || // Ajout du filtrage par matricule
         appliedFilters.status ||
         appliedFilters.validationDateFrom ||
         appliedFilters.validationDateTo ||

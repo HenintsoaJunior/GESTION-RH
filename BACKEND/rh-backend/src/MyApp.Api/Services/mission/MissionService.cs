@@ -53,7 +53,7 @@ namespace MyApp.Api.Services.mission
         Task<byte[]> GenerateMissionOrderPDFAsync(string employeeId, string missionId);
         Task<byte[]> GenerateATDPDFAsync(string employeeId);
         Task<byte[]> GenerateExcelReportAsync(string employeeId, string missionId);
-        Task<(IEnumerable<Mission>, int)> GetWithCompensationByStatusAsync(string? status, int page = 1, int pageSize = 10);
+        Task<(IEnumerable<Mission>, int)> GetWithCompensationByStatusAsync(CompensationStatusFilter filter, int page = 1, int pageSize = 10);
         Task<IEnumerable<Mission>> GetOngoingMissionsWithDetailsAsync();
         Task<bool> CloseAsync(string id, string userId);
     }
@@ -206,25 +206,20 @@ namespace MyApp.Api.Services.mission
             run.RunProperties.Append(fontSize);
         }
 
-        public async Task<(IEnumerable<Mission>, int)> GetWithCompensationByStatusAsync(string? status, int page = 1, int pageSize = 10)
+        public async Task<(IEnumerable<Mission>, int)> GetWithCompensationByStatusAsync(CompensationStatusFilter filter, int page = 1, int pageSize = 10)
         {
             try
             {
                 if (page < 1) page = 1;
                 if (pageSize < 1) pageSize = 10;
 
-                var effectiveStatus = string.IsNullOrWhiteSpace(status) ? null : status.Trim().ToLowerInvariant();
-
-                _logger.LogInformation("Recherche des missions avec statut de compensation : {Status}, page={Page}, pageSize={PageSize}", 
-                    effectiveStatus ?? "all", page, pageSize);
-
-                var (missions, totalCount) = await _repository.GetWithCompensationByStatusAsync(effectiveStatus, page, pageSize);
+                var (missions, totalCount) = await _repository.GetWithCompensationByStatusAsync(filter, page, pageSize);
 
                 return (missions, totalCount);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des missions par statut de compensation {Status}", status ?? "null");
+                _logger.LogError(ex, "Erreur lors de la récupération des missions par statut de compensation");
                 throw;
             }
         }
@@ -1074,21 +1069,98 @@ namespace MyApp.Api.Services.mission
         }
  
 
-        private async Task<(UserDto? validator, string validatorType)> GetHierarchicalValidatorAsync(string? employeeCode)
+    private async Task<(UserDto? validator, string validatorType)> GetHierarchicalValidatorAsync(string? employeeCode, string? missionCreatorUserId = null)
+    {
+        Console.WriteLine($"=== GetHierarchicalValidatorAsync ===");
+        Console.WriteLine($"Paramètres: employeeCode='{employeeCode}', missionCreatorUserId='{missionCreatorUserId}'");
+        
+        if (string.IsNullOrWhiteSpace(employeeCode))
         {
-            if (string.IsNullOrWhiteSpace(employeeCode)) return (null, string.Empty);
-
-            var directeur = await _userService.GetDirecteurTutelleAsync(employeeCode);
-            if (directeur != null) return (directeur, "Directeur de tutelle");
-
-            var responsable = await _userService.GetResponsableSousDirecteurTutelleAsync(employeeCode);
-            if (responsable != null) return (responsable, "Responsable sous-directeur");
-
-            var superior = await _userService.GetSuperiorAsync(employeeCode);
-            if (superior != null) return (superior, "Supérieur hiérarchique");
-
-            return (null, string.Empty);
+            Console.WriteLine($"employeeCode est vide ou null, retour (null, string.Empty)");
+            return (null!, string.Empty);
         }
+
+        Console.WriteLine($"1. Recherche de l'utilisateur avec matricule: {employeeCode}");
+        var userMatricule = await _userService.GetByMatriculeAsync(employeeCode);
+        Console.WriteLine($"   Résultat: {(userMatricule != null ? $"Trouvé - UserId: {userMatricule.UserId}" : "Non trouvé")}");
+
+        Console.WriteLine($"2. Recherche du directeur de tutelle pour: {employeeCode}");
+        var directeur = await _userService.GetDirecteurTutelleAsync(employeeCode);
+
+        if (directeur != null && !string.IsNullOrWhiteSpace(missionCreatorUserId))
+        {
+            Console.WriteLine($"3. Condition: directeur trouvé ET missionCreatorUserId fourni");
+            Console.WriteLine($"   Vérification si le créateur est directeur de tutelle...");
+            
+            bool isCreatorDirecteurTutelle = await _userService.IsDirecteurTutelleAsync(userMatricule!.UserId);
+            Console.WriteLine($"   isCreatorDirecteurTutelle: {isCreatorDirecteurTutelle}");
+
+            if (isCreatorDirecteurTutelle)
+            {
+                Console.WriteLine($"   3a. Le créateur EST directeur de tutelle");
+                Console.WriteLine($"       Recherche du responsable sous-directeur...");
+                
+                var responsableSubDirecteur = await _userService.GetResponsableSousDirecteurTutelleAsync(employeeCode);
+                Console.WriteLine($"       Responsable sous-directeur: {(responsableSubDirecteur != null ? $"Trouvé - UserId: {responsableSubDirecteur.UserId}" : "Non trouvé")}");
+                
+                if (responsableSubDirecteur != null)
+                {
+                    Console.WriteLine($"       Retour: responsable sous-directeur (validation exceptionnelle)");
+                    return (responsableSubDirecteur, "Responsable sous-directeur (validation exceptionnelle)");
+                }
+
+                Console.WriteLine($"       Recherche du supérieur hiérarchique...");
+                var superiorHierarchique = await _userService.GetSuperiorAsync(employeeCode);
+                Console.WriteLine($"       Supérieur hiérarchique: {(superiorHierarchique != null ? $"Trouvé - UserId: {superiorHierarchique.UserId}" : "Non trouvé")}");
+                
+                if (superiorHierarchique != null)
+                {
+                    Console.WriteLine($"       Retour: supérieur hiérarchique (validation exceptionnelle)");
+                    return (superiorHierarchique, "Supérieur hiérarchique (validation exceptionnelle)");
+                }
+
+                Console.WriteLine($"       Aucun validateur trouvé, retour (null, string.Empty)");
+                return (null!, string.Empty);
+            }
+            else
+            {
+                Console.WriteLine($"   3b. Le créateur N'EST PAS directeur de tutelle");
+                Console.WriteLine($"       Retour: directeur de tutelle");
+                return (directeur, "Directeur de tutelle");
+            }
+        }
+        else if (directeur != null)
+        {
+            Console.WriteLine($"4. Condition: directeur trouvé MAIS missionCreatorUserId NON fourni ou vide");
+            Console.WriteLine($"   Retour: directeur de tutelle");
+            return (directeur, "Directeur de tutelle");
+        }
+
+        Console.WriteLine($"5. Aucun directeur de tutelle trouvé");
+        Console.WriteLine($"   Recherche du responsable sous-directeur...");
+        var responsable = await _userService.GetResponsableSousDirecteurTutelleAsync(employeeCode);
+        Console.WriteLine($"   Résultat: {(responsable != null ? $"Trouvé - UserId: {responsable.UserId}" : "Non trouvé")}");
+        
+        if (responsable != null)
+        {
+            Console.WriteLine($"   Retour: responsable sous-directeur");
+            return (responsable, "Responsable sous-directeur");
+        }
+
+        Console.WriteLine($"   Recherche du supérieur hiérarchique...");
+        var superior = await _userService.GetSuperiorAsync(employeeCode);
+        Console.WriteLine($"   Résultat: {(superior != null ? $"Trouvé - UserId: {superior.UserId}" : "Non trouvé")}");
+        
+        if (superior != null)
+        {
+            Console.WriteLine($"   Retour: supérieur hiérarchique");
+            return (superior, "Supérieur hiérarchique");
+        }
+
+        Console.WriteLine($"6. Aucun validateur trouvé dans la hiérarchie");
+        Console.WriteLine($"   Retour: (null, string.Empty)");
+        return (null!, string.Empty);
+    }
 
         public async Task<MissionResultDTO?> VerifyMissionByNameAsync(string name)
         {
@@ -1178,24 +1250,30 @@ namespace MyApp.Api.Services.mission
 
                 mission.Employee = employee;
 
+                // 1. Créer la mission D'ABORD
+                await _repository.AddAsync(mission);
+                await _repository.SaveChangesAsync(); // IMPORTANT : Sauvegarder pour que la mission existe en base
+
+                // 2. Calculer le paiement APRÈS la création de la mission
                 var missionPaiement = new MissionPaiement();
                 var (totalAmount, dateDebut) = await missionPaiement.GenerateTotalPaiementAsync(mission, _compensationScaleService);
 
+                // 3. Créer la prévision SEULEMENT après que la mission existe
                 if (totalAmount > 0)
                 {
                     var prevision = new PrevisionPriceDtoForm
                     {
                         Amount = totalAmount,
-                        DepartureDate = dateDebut
+                        DepartureDate = dateDebut,
+                        IsPaid = 0,
+                        MissionId = missionId, // Maintenant missionId existe dans la base
                     };
                     await _previsionPriceService.AddAsync(prevision);
                 }
 
-                await _repository.AddAsync(mission);
-                await _repository.SaveChangesAsync();
-
+                // Le reste du code reste inchangé...
                 var recipientUserIds = new HashSet<string>();
-                var (validator, validatorType) = await GetHierarchicalValidatorAsync(employee.EmployeeCode);
+                var (validator, validatorType) = await GetHierarchicalValidatorAsync(employee.EmployeeCode, missionDto.UserId);
                 var drh = await _userService.GetDrhAsync();
 
                 if (validator != null && !string.IsNullOrWhiteSpace(validator.UserId))

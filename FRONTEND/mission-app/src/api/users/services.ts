@@ -20,6 +20,7 @@ export const USER_AVAILABILITY_KEY = ['userAvailability'] as const;
 export const USER_COLLABORATORS_MATRICULES_BASE_KEY = ['userCollaboratorsMatricules'] as const;
 
 export interface UserSearchFilters {
+  matricule?: string;
   name?: string;
   department?: string;
   role?: string;

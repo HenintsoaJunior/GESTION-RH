@@ -26,6 +26,7 @@ import { X, List, ChevronDown, ChevronUp, Filter } from "lucide-react";
 interface Filter {
   employeeId: string;
   employeeName: string;
+  employeeMatricule: string;
   status: string;
   validationDateFrom?: string;
   validationDateTo?: string;
@@ -38,6 +39,7 @@ interface BeneficiarySuggestion {
   name: string;
   displayName: string;
   acronym: string;
+  matricule?: string;
 }
 
 interface Suggestions {
@@ -82,16 +84,35 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
   const toggleHide = () => setIsHidden((prev) => !prev);
 
   const handleEmployeeNameChange = (value: string) => {
+    const selectedEmployee = suggestions.beneficiary.find(
+      (emp) => emp.displayName === value
+    );
+    
     setFilters((prev) => ({
       ...prev,
       employeeName: value,
-      employeeId: value ? prev.employeeId : "",
+      employeeId: selectedEmployee ? selectedEmployee.id : "",
+      employeeMatricule: selectedEmployee ? selectedEmployee.matricule || "" : "",
+    }));
+  };
+
+  const handleMatriculeChange = (value: string) => {
+    const selectedEmployee = suggestions.beneficiary.find(
+      (emp) => emp.matricule === value
+    );
+    
+    setFilters((prev) => ({
+      ...prev,
+      employeeMatricule: value,
+      employeeName: selectedEmployee ? selectedEmployee.displayName : "",
+      employeeId: selectedEmployee ? selectedEmployee.id : "",
     }));
   };
 
   const isFilterEmpty = (): boolean => {
     return (
       !filters.employeeName &&
+      !filters.employeeMatricule &&
       !filters.status &&
       !filters.validationDateFrom &&
       !filters.validationDateTo &&
@@ -99,6 +120,24 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
       !filters.requestDateTo
     );
   };
+
+  const matriculeSuggestions = suggestions.beneficiary
+    .filter(emp => emp.matricule && emp.matricule.trim() !== "")
+    .map(emp => ({
+      value: emp.matricule as string,
+      label: emp.matricule as string,
+      data: emp
+    }))
+    .filter((item, index, self) => 
+      self.findIndex(t => t.value === item.value) === index
+    );
+
+  const employeeNameSuggestions = suggestions.beneficiary
+    .map(emp => ({
+      value: emp.displayName,
+      label: emp.displayName,
+      data: emp
+    }));
 
   return (
     <>
@@ -134,19 +173,45 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
                   <tbody>
                     <FormRow>
                       <FormFieldCell>
+                        <FormLabelSearch>Matricule</FormLabelSearch>
+                        <StyledAutoCompleteInput
+                          value={filters.employeeMatricule || ""}
+                          onChange={handleMatriculeChange}
+                          suggestions={matriculeSuggestions
+                            .filter((item) =>
+                              item.value
+                                .toLowerCase()
+                                .includes((filters.employeeMatricule || "").toLowerCase()) ||
+                              item.data.name
+                                .toLowerCase()
+                                .includes((filters.employeeMatricule || "").toLowerCase())
+                            )
+                            .map(item => item.value)}
+                          maxVisibleItems={5}
+                          placeholder="Rechercher par matricule..."
+                          disabled={isLoading.employees || isLoading.missions}
+                          fieldType="matricule"
+                          fieldLabel="matricule"
+                          showAddOption={false}
+                        />
+                      </FormFieldCell>
+                      <FormFieldCell>
                         <FormLabelSearch>Collaborateur</FormLabelSearch>
                         <StyledAutoCompleteInput
                           value={filters.employeeName || ""}
                           onChange={handleEmployeeNameChange}
-                          suggestions={suggestions.beneficiary
-                            .filter((emp) =>
-                              emp.displayName
+                          suggestions={employeeNameSuggestions
+                            .filter((item) =>
+                              item.data.name
                                 .toLowerCase()
-                                .includes((filters.employeeName || "").toLowerCase())
+                                .includes((filters.employeeName || "").toLowerCase()) ||
+                              (item.data.matricule && item.data.matricule
+                                .toLowerCase()
+                                .includes((filters.employeeName || "").toLowerCase()))
                             )
-                            .map((emp) => emp.displayName)}
+                            .map(item => item.value)}
                           maxVisibleItems={5}
-                          placeholder="Rechercher par nom collaborateur..."
+                          placeholder="Rechercher par nom ou matricule..."
                           disabled={isLoading.employees || isLoading.missions}
                           fieldType="beneficiary"
                           fieldLabel="collaborateur"
@@ -250,7 +315,6 @@ const MissionFilters: React.FC<MissionFiltersProps> = ({
                           </div>
                         </fieldset>
                       </FormFieldCell>
-                      
                     </FormRow>
                   </tbody>
                 </FormTableSearch>

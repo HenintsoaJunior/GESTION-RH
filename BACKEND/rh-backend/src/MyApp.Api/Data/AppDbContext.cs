@@ -133,10 +133,9 @@ namespace MyApp.Api.Data
                 entity.HasIndex(e => e.GenderId);
 
                 entity.HasIndex(e => new { e.LastName, e.FirstName });
-            });
-
-            
+            });            
         }
+        
 
 
     // RECRUTEMENT UNIQUEMENT

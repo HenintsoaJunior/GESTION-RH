@@ -43,6 +43,7 @@ import {
   useCloseMission,
   useDeleteMissionWithUserId,
 } from "@/api/mission/services";
+import { useMissionReports } from "@/api/mission/report/services";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -110,6 +111,20 @@ const MissionTable: React.FC<MissionTableProps> = ({
   const [hoveredContent] = useState<{text: string; x: number; y: number} | null>(null);
   const { mutate: closeMission, isPending: isClosing } = useCloseMission();
   const { isPending: isDeleting } = useDeleteMissionWithUserId();
+  const { data: allReportsResponse } = useMissionReports();
+
+  // Créer un Map des rapports par mission ID pour vérification rapide
+  const reportsByMissionId = useMemo(() => {
+    const map = new Map<string, boolean>();
+    if (allReportsResponse?.data) {
+      allReportsResponse.data.forEach((report: any) => {
+        if (report.missionId) {
+          map.set(report.missionId.trim(), true);
+        }
+      });
+    }
+    return map;
+  }, [allReportsResponse]);
 
   // Calculer si nous avons besoin d'afficher des actions
   const hasActions = useMemo(() => {
@@ -244,6 +259,14 @@ const MissionTable: React.FC<MissionTableProps> = ({
     e.stopPropagation();
     e.preventDefault();
     
+    // MODIFICATION IMPORTANTE: Vérifier si un rapport existe avant de clôturer
+    const hasReport = reportsByMissionId.has(mission.missionId);
+    
+    if (!hasReport) {
+      alert("Impossible de clôturer la mission: aucun rapport n'a été soumis. Veuillez d'abord soumettre un rapport de mission.");
+      return;
+    }
+    
     if (onCloseClick) {
       onCloseClick(mission);
     } else if (userId && canCloseMission) {
@@ -275,7 +298,8 @@ const MissionTable: React.FC<MissionTableProps> = ({
   // Fonction simplifiée pour déterminer quelles actions afficher
   const getAvailableActions = (
     status: any, 
-    isValidated: boolean
+    isValidated: boolean,
+    missionId: string
   ): {
     showDelete: boolean;
     showEdit: boolean;
@@ -308,13 +332,14 @@ const MissionTable: React.FC<MissionTableProps> = ({
     }
     
     // Cas 3: Mission terminée (peut être clôturée)
-    // MODIFICATION IMPORTANTE: On peut clôturer même si la mission est validée
+    // MODIFICATION: On vérifie si un rapport existe avant de permettre la clôture
     if (isCompleted && canCloseMission) {
+      const hasReport = reportsByMissionId.has(missionId);
       return {
         showDelete: false,
         showEdit: false,
         showCancel: false,
-        showClose: true,
+        showClose: hasReport, // Seulement si un rapport existe
       };
     }
     
@@ -329,9 +354,10 @@ const MissionTable: React.FC<MissionTableProps> = ({
 
   const shouldShowActions = (
     status: any, 
-    isValidated: boolean
+    isValidated: boolean,
+    missionId: string
   ): boolean => {
-    const actions = getAvailableActions(status, isValidated);
+    const actions = getAvailableActions(status, isValidated, missionId);
     return actions.showDelete || actions.showEdit || actions.showCancel || actions.showClose;
   };
 
@@ -376,9 +402,12 @@ const MissionTable: React.FC<MissionTableProps> = ({
       <div
         style={{
           width: '100%',
-          minHeight: '32px',
+          minHeight: '20px', 
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0', 
+          margin: '0', 
         }}
       >
         <StatusBadge status={status} />
@@ -514,10 +543,11 @@ const MissionTable: React.FC<MissionTableProps> = ({
                   const isValidated = validatedMissions[mission.missionId] || false;
                   const employeeName = `${mission.employee.firstName} ${mission.employee.lastName}`;
                   
-                  const actions = getAvailableActions(mission.status, isValidated);
-                  const shouldShow = shouldShowActions(mission.status, isValidated);
+                  const actions = getAvailableActions(mission.status, isValidated, mission.missionId);
+                  const shouldShow = shouldShowActions(mission.status, isValidated, mission.missionId);
                   const isCompleted = isCompletedStatus(mission.status);
                   const isClosed = isClosedStatus(mission.status);
+                  const hasReport = reportsByMissionId.has(mission.missionId);
                   
                   return (
                     <ClickableTableRow
@@ -539,12 +569,12 @@ const MissionTable: React.FC<MissionTableProps> = ({
                         {renderCellContent(mission.lieu.nom, false)}
                       </TableCell>
                       <TableCell style={{ 
-                        padding: '12px 8px',
+                        padding: '4px 2px',
                         overflow: 'hidden',
-                        maxWidth: '100%'
+                        maxWidth: '100%',
+                        textAlign: 'center',
                       }}>
                         {renderStatus(getStatus(normalizedStatus))}
-                        
                       </TableCell>
                       <TableCell style={{ 
                         padding: '12px 8px',
@@ -602,14 +632,19 @@ const MissionTable: React.FC<MissionTableProps> = ({
                               </ActionButton>
                             )}
                             
-                            {/* Clôturer (uniquement pour missions terminées) */}
+                            {/* Clôturer (uniquement pour missions terminées avec rapport) */}
                             {actions.showClose && isCompleted && canCloseMission && !isClosed && (
                               <ActionButton
                                 variant="edit"
                                 onClick={(e) => handleCloseClick(e, mission)}
-                                title="Clôturer la mission"
-                                disabled={isClosing}
-                                style={{ backgroundColor: '#10b981', borderColor: '#10b981', color: 'white' }}
+                                title={hasReport ? "Clôturer la mission" : "Impossible de clôturer: aucun rapport"}
+                                disabled={isClosing || !hasReport}
+                                style={{ 
+                                  backgroundColor: hasReport ? '#10b981' : '#9ca3af', 
+                                  borderColor: hasReport ? '#10b981' : '#9ca3af', 
+                                  color: 'white',
+                                  cursor: hasReport ? 'pointer' : 'not-allowed'
+                                }}
                               >
                                 <CheckCircle size={16} />
                               </ActionButton>

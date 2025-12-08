@@ -40,6 +40,7 @@ namespace MyApp.Api.Services.users
         Task<UserDto?> GetDirecteurTutelleAsync(string userMatricule);
         Task<UserDto?> GetResponsableSousDirecteurTutelleAsync(string userMatricule);
         Task<IEnumerable<UserDto2>> GetUsersByDirection(string directionId);
+        Task<bool> IsDirecteurTutelleAsync(string userId);
     }
 
     public class UserService : IUserService
@@ -51,6 +52,31 @@ namespace MyApp.Api.Services.users
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _cache = cache;
+        }
+
+        public async Task<bool> IsDirecteurTutelleAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+            try
+            {
+                var user = await GetByIdAsync(userId);
+                if (user == null)
+                    return false;
+
+                if (string.IsNullOrWhiteSpace(user.Matricule))
+                    return false;
+
+                var directeurTutelle = await GetDirecteurTutelleAsync(user.Matricule);
+                
+                return directeurTutelle != null && directeurTutelle.UserId == userId;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erreur lors de la vérification du rôle directeur de tutelle: {ex.Message}");
+                return false;
+            }
         }
 
         public async Task<UserDto?> GetDrhAsync()

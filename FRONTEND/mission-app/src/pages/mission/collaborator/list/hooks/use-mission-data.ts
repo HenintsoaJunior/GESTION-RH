@@ -105,7 +105,7 @@ export const useMissionData = (activeTab: string, setActiveTab: (tab: any) => vo
   const canCancelMission = useHasHabilitation(userId, "Annuler une mission");
   const canDeleteMission = useHasHabilitation(userId, "Supprimer une mission");
   const canViewDetails = useHasHabilitation(userId, "Voir les détails mission");
-const canClosedMission = useHasHabilitation(userId, "Voir les détails mission");
+  const canClosedMission = useHasHabilitation(userId, "Voir les détails mission");
 
   // APIs
   const { data: employeesResponse } = useGetAllEmployeesSimple();
