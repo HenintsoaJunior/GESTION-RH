@@ -36,7 +36,6 @@ import {
 import { useSearchRequests, useSearchRequestStatuses, type FilterRequestDTO, type DocumentDTO } from "@/api/recruitment/service";
 import { useGetContractTypes } from "@/api/contract/services";
 import { useGetAllDirections } from "@/api/direction/services";
-import ProtectedRoute from "@/components/protected-route";
 
 import Alert from "@/components/alert";
 import Pagination from "@/components/pagination";
@@ -44,6 +43,7 @@ import Pagination from "@/components/pagination";
 import type { ContractType } from "@/api/contract/services";
 import type { Direction } from "@/api/direction/services";
 import RecruitmentRequestForm from "./request-form";
+import { useHasHabilitation } from "@/api/users/services";
 
 // Types
 interface FiltersState {
@@ -130,6 +130,12 @@ const RequestList: React.FC = () => {
         () => Object.values(searchFilters).some((f) => f !== undefined && f !== null && f !== ""),
         [searchFilters]
     );
+
+// Gestion Habilitations
+    const userData = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = userData?.userId || "";
+
+    const canAddRequest = useHasHabilitation(userId, "Créer demande recrutement");
 
     useEffect(() => {
         setTotalCount(searchResponse?.totalCount || 0);
@@ -323,10 +329,13 @@ const RequestList: React.FC = () => {
         <TableContainer>
             <TableHeader>
                 <TableTitle>Liste des demandes de recrutement</TableTitle>
-                <ButtonSearch onClick={handleOpenForm}>
-                    <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-                    Faire une demande
-                </ButtonSearch>
+                { canAddRequest && (
+                    <ButtonSearch onClick={handleOpenForm}>
+                        <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                        Faire une demande
+                    </ButtonSearch>
+                )}
+               
             </TableHeader>
 
             <DataTable>
@@ -400,11 +409,4 @@ const RequestList: React.FC = () => {
     </> );
 };
 
-// Page protégée
-const ProtectedRequestList: React.FC = () => (
-  <ProtectedRoute requiredHabilitation="Lister demandes recrutement">
-    <RequestList />
-  </ProtectedRoute>
-);
-
-export default ProtectedRequestList;
+export default RequestList;
