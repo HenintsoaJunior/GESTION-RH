@@ -334,8 +334,24 @@ export const useExportMissionExcel = () => {
   });
 };
 
-export const useCompensationsByStatus = (status?: string, page: number = 1, pageSize: number = 10) => {
-  const queryKey = [...COMPENSATIONS_BY_STATUS_KEY, status, page, pageSize] as const;
+export interface CompensationFilters {
+  employeeId?: string;
+  employeeMatricule?: string;
+  status?: string;
+  requestDateFrom?: string;
+  requestDateTo?: string;
+  validationDateFrom?: string;
+  validationDateTo?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export const useCompensationsByStatus = (
+  page: number = 1, 
+  pageSize: number = 10,
+  filters?: Omit<CompensationFilters, 'page' | 'pageSize'>
+) => {
+  const queryKey = [...COMPENSATIONS_BY_STATUS_KEY, page, pageSize, filters] as const;
 
   return useQuery<CompensationsByStatusResponse, Error>({
     queryKey,
@@ -345,13 +361,59 @@ export const useCompensationsByStatus = (status?: string, page: number = 1, page
         pageSize: pageSize.toString(),
       });
 
-      if (status !== undefined) {
-        params.append('status', status);
+      if (filters?.employeeId && filters.employeeId.trim() !== "") {
+        params.append('employeeId', filters.employeeId);
       }
 
-      const response = await api.get(`/api/Compensation/by-status?${params.toString()}`);
-      return response.data;
+      if (filters?.employeeMatricule && filters.employeeMatricule.trim() !== "") {
+        params.append('EmployeeMatricule', filters.employeeMatricule);
+      }
+
+      if (filters?.status && filters.status.trim() !== "") {
+        params.append('status', filters.status);
+      }
+
+      if (filters?.requestDateFrom && filters.requestDateFrom.trim() !== "") {
+        params.append('requestDateFrom', filters.requestDateFrom);
+      }
+
+      if (filters?.requestDateTo && filters.requestDateTo.trim() !== "") {
+        params.append('requestDateTo', filters.requestDateTo);
+      }
+
+      if (filters?.validationDateFrom && filters.validationDateFrom.trim() !== "") {
+        params.append('validationDateFrom', filters.validationDateFrom);
+      }
+
+      if (filters?.validationDateTo && filters.validationDateTo.trim() !== "") {
+        params.append('validationDateTo', filters.validationDateTo);
+      }
+
+      const url = `/api/Compensation/by-status?${params.toString()}`;
+
+      try {
+        const response = await api.get(url);
+        
+        if (response.data?.data?.items) {
+        } else {
+          console.log('⚠️ Aucun item trouvé dans la réponse');
+        }
+        
+        return response.data;
+      } catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+          console.error('📡 Détails de l\'erreur Axios:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            url: error.config?.url
+          });
+        }
+        console.error('❌ useQuery a échoué');
+        throw error;
+      }
     },
+    // Supprimez onError et onSuccess ici car ils ne sont pas supportés dans useQuery
   });
 };
 
@@ -377,20 +439,16 @@ export const useUpdateStatus = () => {
         throw new Error('Erreur réseau ou inconnue');
       }
     },
-    onSuccess: (data, variables) => {
-      // Invalidate relevant queries to refetch updated data
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: COMPENSATIONS_BY_STATUS_KEY });
       queryClient.invalidateQueries({ queryKey: TOTAL_NOT_PAID_KEY });
       
-      // Si vous avez des requêtes spécifiques à l'employé ou à la mission
       queryClient.invalidateQueries({ 
         queryKey: ['compensation', variables.employeeId, variables.missionId] 
       });
       
-      // Invalider les requêtes générales de compensation
       queryClient.invalidateQueries({ queryKey: ['compensations'] });
       
-      console.log('Statut mis à jour avec succès:', data.message);
     },
     onError: (error) => {
       console.error('Erreur lors de la mise à jour du statut:', error.message);

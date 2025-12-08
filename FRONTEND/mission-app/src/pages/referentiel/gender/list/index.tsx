@@ -1,6 +1,7 @@
 "use client";
 import { useState, useCallback, useMemo } from "react";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Filter, X, ChevronDown, ChevronUp, List } from "lucide-react";
+import styled from "styled-components";
 import {
   TableContainer,
   DataTable,
@@ -15,10 +16,9 @@ import {
   FiltersContainer,
   FiltersHeader,
   FiltersTitle,
+  FiltersControls,
+  FilterControlButton,
   FiltersSection,
-  FormTableSearch,
-  FormRow,
-  FormFieldCell,
   FormLabelSearch,
   FormInputSearch,
   Separator,
@@ -26,12 +26,25 @@ import {
   ButtonReset,
   Loading,
   NoDataMessage,
+  FiltersToggle,
+  ButtonShowFilters,
+  FormFieldCell,
 } from "@/styles/table-styles";
 import { useGetGenders, useDeleteGender } from "@/api/gender/services";
 import Alert from "@/components/alert";
 import Modal from "@/components/modal";
 import GenderForm from "../form/index";
 import type { Gender } from "@/api/gender/services";
+
+const FilterGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-md);
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
 
 interface FiltersState {
   label: string;
@@ -48,7 +61,13 @@ const GenderList: React.FC = () => {
   const [selectedGender, setSelectedGender] = useState<Gender | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [genderToDelete, setGenderToDelete] = useState<string | null>(null);
-  const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
+  const [alert, setAlert] = useState<AlertState>({ 
+    isOpen: false, 
+    type: "info", 
+    message: "" 
+  });
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [isHidden, setIsHidden] = useState<boolean>(false);
 
   const [filters, setFilters] = useState<FiltersState>({ label: "" });
   const [appliedFilters, setAppliedFilters] = useState<FiltersState>({ label: "" });
@@ -65,7 +84,9 @@ const GenderList: React.FC = () => {
     );
   }, [genders, appliedFilters]);
 
-  const hasFilters = appliedFilters.label.trim() !== "";
+  const hasFilters = useMemo(() => {
+    return Object.values(filters).some((val) => (val || "").trim() !== "");
+  }, [filters]);
 
   const handleAddClick = useCallback(() => {
     setSelectedGender(null);
@@ -86,12 +107,20 @@ const GenderList: React.FC = () => {
     if (genderToDelete) {
       deleteGenderMutation.mutate(genderToDelete, {
         onSuccess: () => {
-          setAlert({ isOpen: true, type: "success", message: "Genre supprimé avec succès." });
+          setAlert({ 
+            isOpen: true, 
+            type: "success", 
+            message: "Genre supprimé avec succès." 
+          });
           setIsDeleteModalOpen(false);
           refetch();
         },
         onError: () => {
-          setAlert({ isOpen: true, type: "error", message: "Erreur lors de la suppression du genre." });
+          setAlert({ 
+            isOpen: true, 
+            type: "error", 
+            message: "Erreur lors de la suppression du genre." 
+          });
         },
       });
     }
@@ -119,6 +148,17 @@ const GenderList: React.FC = () => {
   }, []);
 
   if (error) return <div>Une erreur est survenue.</div>;
+
+  if (isHidden) {
+    return (
+      <FiltersToggle>
+        <ButtonShowFilters type="button" onClick={() => setIsHidden(false)}>
+          <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+          Afficher les filtres
+        </ButtonShowFilters>
+      </FiltersToggle>
+    );
+  }
 
   return (
     <>
@@ -149,47 +189,70 @@ const GenderList: React.FC = () => {
           showActions={true}
         />
       )}
-      <FiltersContainer>
+      
+      <FiltersContainer $isMinimized={isMinimized}>
         <FiltersHeader>
-          <FiltersTitle>Filtre</FiltersTitle>
+          <FiltersTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Filter size={18} />
+            Filtres avancés
+          </FiltersTitle>
+          <FiltersControls>
+            <FilterControlButton
+              $isMinimized={isMinimized}
+              onClick={() => setIsMinimized((p) => !p)}
+              title={isMinimized ? "Développer" : "Réduire"}
+            >
+              {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </FilterControlButton>
+            <FilterControlButton 
+              $isClose 
+              onClick={() => setIsHidden(true)} 
+              title="Fermer"
+            >
+              <X size={16} />
+            </FilterControlButton>
+          </FiltersControls>
         </FiltersHeader>
-        <FiltersSection>
-          <Separator />
-          <form onSubmit={handleFilterSubmit}>
-            <FormTableSearch>
-              <tbody>
-                <FormRow>
-                  <FormFieldCell style={{ width: "100%" }}>
-                    <FormLabelSearch>Label</FormLabelSearch>
-                    <FormInputSearch
-                      type="text"
-                      value={filters.label}
-                      onChange={handleLabelChange}
-                      placeholder="Rechercher par label..."
-                      disabled={isLoading}
-                    />
-                  </FormFieldCell>
-                </FormRow>
-              </tbody>
-            </FormTableSearch>
+
+        {!isMinimized && (
+          <FiltersSection>
             <Separator />
-            <FiltersActions>
-              <ButtonReset
-                type="button"
-                onClick={handleResetFilters}
-                disabled={!hasFilters || isLoading}
-                title="Effacer filtre"
-              >
-                Effacer filtres
-              </ButtonReset>
-              <ButtonSearch type="submit" disabled={isLoading} title="Rechercher">
-                <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-                Rechercher
-              </ButtonSearch>
-            </FiltersActions>
-          </form>
-        </FiltersSection>
+            <form onSubmit={handleFilterSubmit}>
+              <FilterGrid>
+                <FormFieldCell as="div">
+                  <FormLabelSearch>Label</FormLabelSearch>
+                  <FormInputSearch
+                    type="text"
+                    value={filters.label}
+                    onChange={handleLabelChange}
+                    placeholder="Rechercher par label..."
+                    disabled={isLoading}
+                  />
+                </FormFieldCell>
+              </FilterGrid>
+              
+              <Separator />
+              
+              <FiltersActions>
+                <ButtonReset
+                  type="button"
+                  onClick={handleResetFilters}
+                  disabled={!hasFilters || isLoading}
+                  title="Effacer filtre"
+                >
+                  <X size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                  Effacer filtres
+                </ButtonReset>
+                <ButtonSearch type="submit" disabled={isLoading} title="Rechercher">
+                  <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                  Rechercher
+                </ButtonSearch>
+              </FiltersActions>
+            </form>
+          </FiltersSection>
+        )}
       </FiltersContainer>
+      
       <TableContainer>
         <TableHeader>
           <TableTitle>Genres</TableTitle>
@@ -203,13 +266,15 @@ const GenderList: React.FC = () => {
             <tr>
               <TableHeadCell>Code</TableHeadCell>
               <TableHeadCell>Label</TableHeadCell>
-              <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
+              <TableHeadCell style={{ width: "100px", textAlign: "center" }}>
+                Actions
+              </TableHeadCell>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4}>
+                <TableCell colSpan={3}>
                   <Loading>Chargement des données...</Loading>
                 </TableCell>
               </TableRow>
@@ -230,9 +295,12 @@ const GenderList: React.FC = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4}>
+                <TableCell colSpan={3}>
                   <NoDataMessage>
-                    {hasFilters ? "Aucun genre ne correspond aux critères." : "Aucun genre trouvé."}
+                    {hasFilters 
+                      ? "Aucun genre ne correspond aux critères." 
+                      : "Aucun genre trouvé."
+                    }
                   </NoDataMessage>
                 </TableCell>
               </TableRow>

@@ -75,7 +75,6 @@ namespace MyApp.Api.Repositories.mission
                 .Include(mv => mv.Validator)
                 .Where(mv => mv.ToWhom == userId && mv.Status != "cancel" && mv.Status != "Annulé");
 
-            // Filtres
             if (!string.IsNullOrWhiteSpace(requestFilterDto.EmployeeId))
             {
                 query = query.Where(mv => mv.Mission!.EmployeeId == requestFilterDto.EmployeeId);
@@ -84,6 +83,11 @@ namespace MyApp.Api.Repositories.mission
             if (!string.IsNullOrWhiteSpace(requestFilterDto.Status))
             {
                 query = query.Where(mv => mv.Status == requestFilterDto.Status);
+            }
+            if (!string.IsNullOrWhiteSpace(requestFilterDto.EmployeeMatricule))
+            {
+                query = query.Where(mv => mv.Mission!.Employee!.EmployeeCode != null && 
+                                          mv.Mission.Employee.EmployeeCode.Contains(requestFilterDto.EmployeeMatricule));
             }
 
             if (DateTime.TryParse(requestFilterDto.ValidationDateFrom, out var fromValDate))

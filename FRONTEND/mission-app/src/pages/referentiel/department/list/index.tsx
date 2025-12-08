@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { Plus, Edit, Trash2, Search, Filter, X, ChevronDown, ChevronUp, List } from "lucide-react";
+import styled from "styled-components";
 import {
   TableContainer,
   DataTable,
@@ -15,10 +16,9 @@ import {
   FiltersContainer,
   FiltersHeader,
   FiltersTitle,
+  FiltersControls,
+  FilterControlButton,
   FiltersSection,
-  FormTableSearch,
-  FormRow,
-  FormFieldCell,
   FormLabelSearch,
   FormInputSearch,
   StyledAutoCompleteInput,
@@ -27,16 +27,28 @@ import {
   ButtonReset,
   Loading,
   NoDataMessage,
+  FiltersToggle,
+  ButtonShowFilters,
+  FormFieldCell,
 } from "@/styles/table-styles";
 import { useGetDepartments, useDeleteDepartment } from "@/api/department/services";
 import { useGetAllDirections } from "@/api/direction/services";
-
 import Alert from "@/components/alert";
 import Modal from "@/components/modal";
 import Pagination from "@/components/pagination";
 import DepartmentForm from "../form/index";
 import type { Department } from "@/api/department/services";
 import type { Direction } from "@/api/direction/services";
+
+const FilterGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
 
 interface FiltersState {
   name: string;
@@ -56,12 +68,13 @@ const DepartmentList: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [departmentToDelete, setDepartmentToDelete] = useState<string | null>(null);
   const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [isHidden, setIsHidden] = useState<boolean>(false);
 
   const [filters, setFilters] = useState<FiltersState>({ name: "", directionSearch: "", selectedDirection: null });
   const [appliedFilters, setAppliedFilters] = useState<FiltersState>({ name: "", directionSearch: "", selectedDirection: null });
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
-  const [totalCount, setTotalCount] = useState<number>(0);
 
   const { data: allDirectionsResponse } = useGetAllDirections();
   const directions = useMemo(() => allDirectionsResponse?.data || [], [allDirectionsResponse]);
@@ -81,16 +94,16 @@ const DepartmentList: React.FC = () => {
   const deleteDepartmentMutation = useDeleteDepartment();
 
   const departments = useMemo(() => searchResponse?.data || [], [searchResponse]);
+  const totalCount = useMemo(() => searchResponse?.totalCount || 0, [searchResponse]);
 
-  const hasFilters = appliedFilters.name.trim() !== "" || !!appliedFilters.selectedDirection;
-
-  useEffect(() => {
-    if (searchResponse) {
-      setTotalCount(searchResponse.totalCount || 0);
-    } else {
-      setTotalCount(0);
-    }
-  }, [searchResponse]);
+  const hasFilters = useMemo(() => {
+    return Object.values(filters).some((val) => {
+      if (typeof val === 'string') {
+        return (val || "").trim() !== "";
+      }
+      return val !== null && val !== undefined;
+    });
+  }, [filters]);
 
   const handleAddClick = useCallback(() => {
     setSelectedDepartment(null);
@@ -168,6 +181,17 @@ const DepartmentList: React.FC = () => {
 
   if (error) return <div>Une erreur est survenue.</div>;
 
+  if (isHidden) {
+    return (
+      <FiltersToggle>
+        <ButtonShowFilters type="button" onClick={() => setIsHidden(false)}>
+          <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+          Afficher les filtres
+        </ButtonShowFilters>
+      </FiltersToggle>
+    );
+  }
+
   return (
     <>
       <Alert
@@ -197,61 +221,80 @@ const DepartmentList: React.FC = () => {
           showActions={true}
         />
       )}
-      <FiltersContainer>
+      
+      <FiltersContainer $isMinimized={isMinimized}>
         <FiltersHeader>
-          <FiltersTitle>Filtre</FiltersTitle>
+          <FiltersTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Filter size={18} />
+            Filtres avancés
+          </FiltersTitle>
+          <FiltersControls>
+            <FilterControlButton
+              $isMinimized={isMinimized}
+              onClick={() => setIsMinimized((p) => !p)}
+              title={isMinimized ? "Développer" : "Réduire"}
+            >
+              {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </FilterControlButton>
+            <FilterControlButton $isClose onClick={() => setIsHidden(true)} title="Fermer">
+              <X size={16} />
+            </FilterControlButton>
+          </FiltersControls>
         </FiltersHeader>
-        <FiltersSection>
-          <Separator />
-          <form onSubmit={handleFilterSubmit}>
-            <FormTableSearch>
-              <tbody>
-                <FormRow>
-                  <FormFieldCell style={{ width: "50%" }}>
-                    <FormLabelSearch>Nom</FormLabelSearch>
-                    <FormInputSearch
-                      type="text"
-                      value={filters.name}
-                      onChange={handleNameChange}
-                      placeholder="Rechercher par nom..."
-                      disabled={isLoading}
-                    />
-                  </FormFieldCell>
-                  <FormFieldCell style={{ width: "50%" }}>
-                    <FormLabelSearch>Direction</FormLabelSearch>
-                    <StyledAutoCompleteInput
-                      value={filters.directionSearch || ""}
-                      onChange={handleDirectionChange}
-                      suggestions={filteredDirectionSuggestions}
-                      maxVisibleItems={5}
-                      placeholder="Sélectionner une direction..."
-                      disabled={isLoading}
-                      fieldType="direction"
-                      fieldLabel="direction"
-                      showAddOption={false}
-                    />
-                  </FormFieldCell>
-                </FormRow>
-              </tbody>
-            </FormTableSearch>
+
+        {!isMinimized && (
+          <FiltersSection>
             <Separator />
-            <FiltersActions>
-              <ButtonReset
-                type="button"
-                onClick={handleResetFilters}
-                disabled={!hasFilters || isLoading}
-                title="Effacer filtre"
-              >
-                Effacer filtres
-              </ButtonReset>
-              <ButtonSearch type="submit" disabled={isLoading} title="Rechercher">
-                <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-                Rechercher
-              </ButtonSearch>
-            </FiltersActions>
-          </form>
-        </FiltersSection>
+            <form onSubmit={handleFilterSubmit}>
+              <FilterGrid>
+                <FormFieldCell as="div">
+                  <FormLabelSearch>Nom</FormLabelSearch>
+                  <FormInputSearch
+                    type="text"
+                    value={filters.name}
+                    onChange={handleNameChange}
+                    placeholder="Rechercher par nom..."
+                    disabled={isLoading}
+                  />
+                </FormFieldCell>
+                <FormFieldCell as="div">
+                  <FormLabelSearch>Direction</FormLabelSearch>
+                  <StyledAutoCompleteInput
+                    value={filters.directionSearch || ""}
+                    onChange={handleDirectionChange}
+                    suggestions={filteredDirectionSuggestions}
+                    maxVisibleItems={5}
+                    placeholder="Sélectionner une direction..."
+                    disabled={isLoading}
+                    fieldType="direction"
+                    fieldLabel="direction"
+                    showAddOption={false}
+                  />
+                </FormFieldCell>
+              </FilterGrid>
+              
+              <Separator />
+              
+              <FiltersActions>
+                <ButtonReset
+                  type="button"
+                  onClick={handleResetFilters}
+                  disabled={!hasFilters || isLoading}
+                  title="Effacer filtre"
+                >
+                  <X size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                  Effacer filtres
+                </ButtonReset>
+                <ButtonSearch type="submit" disabled={isLoading} title="Rechercher">
+                  <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                  Rechercher
+                </ButtonSearch>
+              </FiltersActions>
+            </form>
+          </FiltersSection>
+        )}
       </FiltersContainer>
+      
       <TableContainer>
         <TableHeader>
           <TableTitle>Départements</TableTitle>
@@ -309,7 +352,6 @@ const DepartmentList: React.FC = () => {
           onPageSizeChange={handlePageSizeChange}
         />
       </TableContainer>
-      
     </>
   );
 };

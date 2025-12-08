@@ -82,17 +82,17 @@ namespace MyApp.Api.Controllers.mission
 
         // GET: api/Compensation/by-status?status=paid&page=1&pageSize=10
         [HttpGet("by-status")]
-        public async Task<ActionResult> GetByStatus([FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<ActionResult> GetByStatus([FromQuery] CompensationStatusFilter filter, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            if (!User.Identity?.IsAuthenticated ?? true)
-                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            // if (!User.Identity?.IsAuthenticated ?? true)
+            //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
 
             if (page < 1 || pageSize < 1)
                 return BadRequest(new { data = (object?)null, status = 400, message = "page et pageSize doivent être supérieurs à 0" });
 
             try
             {
-                var (results, totalCount) = await _compensationService.GetCompensationsByStatusAsync(status, page, pageSize);
+                var (results, totalCount) = await _compensationService.GetCompensationsByStatusAsync(filter, page, pageSize);
 
                 var response = new
                 {

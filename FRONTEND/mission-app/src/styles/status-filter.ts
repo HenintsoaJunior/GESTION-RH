@@ -361,7 +361,7 @@ export const StatusBadge = styled.div<StatusBadgeProps>`
   padding: 2px 10px;
   border-radius: 12px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: ${({ $clickable }) => ($clickable ? 'pointer' : 'default')};
   transition: all 0.2s ease;
   min-width: fit-content;

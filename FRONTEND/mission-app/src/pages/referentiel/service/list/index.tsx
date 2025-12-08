@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { Plus, Edit, Trash2, Search, Filter, X, ChevronDown, ChevronUp, List } from "lucide-react";
+import styled from "styled-components";
 import {
   TableContainer,
   DataTable,
@@ -15,10 +16,9 @@ import {
   FiltersContainer,
   FiltersHeader,
   FiltersTitle,
+  FiltersControls,
+  FilterControlButton,
   FiltersSection,
-  FormTableSearch,
-  FormRow,
-  FormFieldCell,
   FormLabelSearch,
   FormInputSearch,
   StyledAutoCompleteInput,
@@ -27,6 +27,9 @@ import {
   ButtonReset,
   Loading,
   NoDataMessage,
+  FiltersToggle,
+  ButtonShowFilters,
+  FormFieldCell,
 } from "@/styles/table-styles";
 import { useGetServices, useDeleteService } from "@/api/service/services";
 import { useGetAllDepartments } from "@/api/department/services";
@@ -36,6 +39,16 @@ import Pagination from "@/components/pagination";
 import ServiceForm from "../form/index";
 import type { Service } from "@/api/service/services";
 import type { Department } from "@/api/department/services";
+
+const FilterGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
 
 interface FiltersState {
   name: string;
@@ -55,17 +68,29 @@ const ServiceList: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
   const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [isHidden, setIsHidden] = useState<boolean>(false);
 
-  const [filters, setFilters] = useState<FiltersState>({ name: "", departmentSearch: "", selectedDepartment: null });
-  const [appliedFilters, setAppliedFilters] = useState<FiltersState>({ name: "", departmentSearch: "", selectedDepartment: null });
+  const [filters, setFilters] = useState<FiltersState>({ 
+    name: "", 
+    departmentSearch: "", 
+    selectedDepartment: null 
+  });
+  const [appliedFilters, setAppliedFilters] = useState<FiltersState>({ 
+    name: "", 
+    departmentSearch: "", 
+    selectedDepartment: null 
+  });
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
-  const [totalCount, setTotalCount] = useState<number>(0);
 
   const { data: allDeptsResponse } = useGetAllDepartments();
   const allDepartments = useMemo(() => allDeptsResponse?.data || [], [allDeptsResponse]);
 
-  const departmentSuggestions = useMemo(() => allDepartments.map((dept: Department) => dept.departmentName), [allDepartments]);
+  const departmentSuggestions = useMemo(() => 
+    allDepartments.map((dept: Department) => dept.departmentName), 
+    [allDepartments]
+  );
 
   const filteredDepartmentSuggestions = useMemo(() =>
     departmentSuggestions.filter((sug) =>
@@ -76,20 +101,25 @@ const ServiceList: React.FC = () => {
 
   const searchName = appliedFilters.name.trim() || undefined;
   const searchDepartmentId = appliedFilters.selectedDepartment?.departmentId || undefined;
-  const { data: searchResponse, isLoading, error, refetch } = useGetServices(searchName, searchDepartmentId, page, pageSize);
+  const { data: searchResponse, isLoading, error, refetch } = useGetServices(
+    searchName, 
+    searchDepartmentId, 
+    page, 
+    pageSize
+  );
   const deleteServiceMutation = useDeleteService();
 
   const services = useMemo(() => searchResponse?.data || [], [searchResponse]);
+  const totalCount = useMemo(() => searchResponse?.totalCount || 0, [searchResponse]);
 
-  const hasFilters = appliedFilters.name.trim() !== "" || !!appliedFilters.selectedDepartment;
-
-  useEffect(() => {
-    if (searchResponse) {
-      setTotalCount(searchResponse.totalCount || 0);
-    } else {
-      setTotalCount(0);
-    }
-  }, [searchResponse]);
+  const hasFilters = useMemo(() => {
+    return Object.values(filters).some((val) => {
+      if (typeof val === 'string') {
+        return (val || "").trim() !== "";
+      }
+      return val !== null && val !== undefined;
+    });
+  }, [filters]);
 
   const handleAddClick = useCallback(() => {
     setSelectedService(null);
@@ -110,12 +140,20 @@ const ServiceList: React.FC = () => {
     if (serviceToDelete) {
       deleteServiceMutation.mutate(serviceToDelete, {
         onSuccess: () => {
-          setAlert({ isOpen: true, type: "success", message: "Service supprimé avec succès." });
+          setAlert({ 
+            isOpen: true, 
+            type: "success", 
+            message: "Service supprimé avec succès." 
+          });
           setIsDeleteModalOpen(false);
           refetch();
         },
         onError: () => {
-          setAlert({ isOpen: true, type: "error", message: "Erreur lors de la suppression du service." });
+          setAlert({ 
+            isOpen: true, 
+            type: "error", 
+            message: "Erreur lors de la suppression du service." 
+          });
         },
       });
     }
@@ -134,7 +172,11 @@ const ServiceList: React.FC = () => {
   }, [filters]);
 
   const handleResetFilters = useCallback((): void => {
-    const resetFilters: FiltersState = { name: "", departmentSearch: "", selectedDepartment: null };
+    const resetFilters: FiltersState = { 
+      name: "", 
+      departmentSearch: "", 
+      selectedDepartment: null 
+    };
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
     setPage(1);
@@ -146,7 +188,9 @@ const ServiceList: React.FC = () => {
 
   const handleDepartmentChange = useCallback((value: string): void => {
     setFilters((prev) => ({ ...prev, departmentSearch: value }));
-    const matchedDepartment = allDepartments.find((dept: Department) => dept.departmentName === value);
+    const matchedDepartment = allDepartments.find(
+      (dept: Department) => dept.departmentName === value
+    );
     if (matchedDepartment) {
       setFilters((prev) => ({
         ...prev,
@@ -166,6 +210,17 @@ const ServiceList: React.FC = () => {
   }, []);
 
   if (error) return <div>Une erreur est survenue.</div>;
+
+  if (isHidden) {
+    return (
+      <FiltersToggle>
+        <ButtonShowFilters type="button" onClick={() => setIsHidden(false)}>
+          <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+          Afficher les filtres
+        </ButtonShowFilters>
+      </FiltersToggle>
+    );
+  }
 
   return (
     <>
@@ -196,61 +251,84 @@ const ServiceList: React.FC = () => {
           showActions={true}
         />
       )}
-      <FiltersContainer>
+      
+      <FiltersContainer $isMinimized={isMinimized}>
         <FiltersHeader>
-          <FiltersTitle>Filtre</FiltersTitle>
+          <FiltersTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Filter size={18} />
+            Filtres avancés
+          </FiltersTitle>
+          <FiltersControls>
+            <FilterControlButton
+              $isMinimized={isMinimized}
+              onClick={() => setIsMinimized((p) => !p)}
+              title={isMinimized ? "Développer" : "Réduire"}
+            >
+              {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </FilterControlButton>
+            <FilterControlButton 
+              $isClose 
+              onClick={() => setIsHidden(true)} 
+              title="Fermer"
+            >
+              <X size={16} />
+            </FilterControlButton>
+          </FiltersControls>
         </FiltersHeader>
-        <FiltersSection>
-          <Separator />
-          <form onSubmit={handleFilterSubmit}>
-            <FormTableSearch>
-              <tbody>
-                <FormRow>
-                  <FormFieldCell style={{ width: "50%" }}>
-                    <FormLabelSearch>Nom</FormLabelSearch>
-                    <FormInputSearch
-                      type="text"
-                      value={filters.name}
-                      onChange={handleNameChange}
-                      placeholder="Rechercher par nom..."
-                      disabled={isLoading}
-                    />
-                  </FormFieldCell>
-                  <FormFieldCell style={{ width: "50%" }}>
-                    <FormLabelSearch>Département</FormLabelSearch>
-                    <StyledAutoCompleteInput
-                      value={filters.departmentSearch || ""}
-                      onChange={handleDepartmentChange}
-                      suggestions={filteredDepartmentSuggestions}
-                      maxVisibleItems={5}
-                      placeholder="Sélectionner un département..."
-                      disabled={isLoading}
-                      fieldType="department"
-                      fieldLabel="department"
-                      showAddOption={false}
-                    />
-                  </FormFieldCell>
-                </FormRow>
-              </tbody>
-            </FormTableSearch>
+
+        {!isMinimized && (
+          <FiltersSection>
             <Separator />
-            <FiltersActions>
-              <ButtonReset
-                type="button"
-                onClick={handleResetFilters}
-                disabled={!hasFilters || isLoading}
-                title="Effacer filtre"
-              >
-                Effacer filtres
-              </ButtonReset>
-              <ButtonSearch type="submit" disabled={isLoading} title="Rechercher">
-                <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-                Rechercher
-              </ButtonSearch>
-            </FiltersActions>
-          </form>
-        </FiltersSection>
+            <form onSubmit={handleFilterSubmit}>
+              <FilterGrid>
+                <FormFieldCell as="div">
+                  <FormLabelSearch>Nom</FormLabelSearch>
+                  <FormInputSearch
+                    type="text"
+                    value={filters.name}
+                    onChange={handleNameChange}
+                    placeholder="Rechercher par nom..."
+                    disabled={isLoading}
+                  />
+                </FormFieldCell>
+                <FormFieldCell as="div">
+                  <FormLabelSearch>Département</FormLabelSearch>
+                  <StyledAutoCompleteInput
+                    value={filters.departmentSearch || ""}
+                    onChange={handleDepartmentChange}
+                    suggestions={filteredDepartmentSuggestions}
+                    maxVisibleItems={5}
+                    placeholder="Sélectionner un département..."
+                    disabled={isLoading}
+                    fieldType="department"
+                    fieldLabel="department"
+                    showAddOption={false}
+                  />
+                </FormFieldCell>
+              </FilterGrid>
+              
+              <Separator />
+              
+              <FiltersActions>
+                <ButtonReset
+                  type="button"
+                  onClick={handleResetFilters}
+                  disabled={!hasFilters || isLoading}
+                  title="Effacer filtre"
+                >
+                  <X size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                  Effacer filtres
+                </ButtonReset>
+                <ButtonSearch type="submit" disabled={isLoading} title="Rechercher">
+                  <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                  Rechercher
+                </ButtonSearch>
+              </FiltersActions>
+            </form>
+          </FiltersSection>
+        )}
       </FiltersContainer>
+      
       <TableContainer>
         <TableHeader>
           <TableTitle>Services</TableTitle>
@@ -264,7 +342,9 @@ const ServiceList: React.FC = () => {
             <tr>
               <TableHeadCell>Nom</TableHeadCell>
               <TableHeadCell>Département</TableHeadCell>
-              <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
+              <TableHeadCell style={{ width: "100px", textAlign: "center" }}>
+                Actions
+              </TableHeadCell>
             </tr>
           </thead>
           <tbody>
@@ -278,7 +358,9 @@ const ServiceList: React.FC = () => {
               services.map((serviceItem) => (
                 <TableRow key={serviceItem.serviceId}>
                   <TableCell>{serviceItem.serviceName}</TableCell>
-                  <TableCell>{serviceItem.department?.departmentName || 'N/A'}</TableCell>
+                  <TableCell>
+                    {serviceItem.department?.departmentName || 'N/A'}
+                  </TableCell>
                   <TableCell style={{ textAlign: "center" }}>
                     <EditButton onClick={() => handleEditClick(serviceItem)}>
                       <Edit size={16} />
@@ -293,7 +375,10 @@ const ServiceList: React.FC = () => {
               <TableRow>
                 <TableCell colSpan={3}>
                   <NoDataMessage>
-                    {hasFilters ? "Aucun service ne correspond aux critères." : "Aucun service trouvé."}
+                    {hasFilters 
+                      ? "Aucun service ne correspond aux critères." 
+                      : "Aucun service trouvé."
+                    }
                   </NoDataMessage>
                 </TableCell>
               </TableRow>
@@ -301,14 +386,13 @@ const ServiceList: React.FC = () => {
           </tbody>
         </DataTable>
         <Pagination
-        currentPage={page}
-        pageSize={pageSize}
-        totalEntries={totalCount}
-        onPageChange={setPage}
-        onPageSizeChange={handlePageSizeChange}
-      />
+          currentPage={page}
+          pageSize={pageSize}
+          totalEntries={totalCount}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </TableContainer>
-      
     </>
   );
 };

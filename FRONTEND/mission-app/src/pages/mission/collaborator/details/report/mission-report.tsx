@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { Save, List, FileText, Edit2, Trash2, X, Upload, Eye, Download, ChevronDown, Folder } from "lucide-react";
+import { Save, List, FileText, Edit2, Trash2, X, Upload, Eye, Download, ChevronDown, Folder, Lock } from "lucide-react";
 import { 
   PageHeader, 
   HeaderLeft, 
@@ -57,8 +57,10 @@ interface AlertState {
 
 interface MissionReportProps {
   userId?: string | null;
-  assignationId: string;
+  missionId: string;
   onBack?: () => void;
+  isMissionClosed?: boolean;
+  hasReport?: boolean;
 }
 
 const readFileAsBase64 = (file: File): Promise<string> => {
@@ -128,9 +130,16 @@ interface ReportAttachmentsProps {
   isOpen: boolean;
   onToggle: () => void;
   onPreview: (att: Attachment) => void;
+  isMissionClosed?: boolean;
 }
 
-const ReportAttachments: React.FC<ReportAttachmentsProps> = ({ attachments, isOpen, onToggle, onPreview }) => {
+const ReportAttachments: React.FC<ReportAttachmentsProps> = ({ 
+  attachments, 
+  isOpen, 
+  onToggle, 
+  onPreview, 
+  isMissionClosed = false 
+}) => {
   const uniqueAttachments = useMemo((): Attachment[] => {
     const fileNames = new Set<string>();
     const unique: Attachment[] = [];
@@ -146,10 +155,11 @@ const ReportAttachments: React.FC<ReportAttachmentsProps> = ({ attachments, isOp
   return (
     <>
       <FolderContainer>
-        <FolderHeader onClick={onToggle} $isOpen={isOpen}>
+        <FolderHeader onClick={onToggle} $isOpen={isOpen} style={{ cursor: 'pointer' }}>
           <Folder className="folder-icon" size={20} />
           <span style={{ fontSize: "12px" }}>
             Pièces Jointes · {uniqueAttachments.length} fichier{uniqueAttachments.length !== 1 ? "s" : ""}
+            {isMissionClosed && " (lecture seule)"}
           </span>
           <ChevronDown className="chevron" size={20} />
         </FolderHeader>
@@ -252,9 +262,10 @@ const useAlert = () => {
 };
 
 const useMissionReport = (
-  assignationId: string,
+  missionId: string,
   userId: string | null,
-  showAlert: (type: AlertType, message: string) => void
+  showAlert: (type: AlertType, message: string) => void,
+  isMissionClosed: boolean = false
 ) => {
   const [formData, setFormData] = useState({ reportContent: "" });
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -265,18 +276,15 @@ const useMissionReport = (
   const { data: allReportsResponse, isLoading: allReportsLoading } = useMissionReports();
   // Access the data directly as array
   const allMissionReports = useMemo(() => allReportsResponse?.data || [], [allReportsResponse]);
-  // Debug log (remove after testing)
-  console.log('allMissionReports:', allMissionReports);
-  console.log('assignationId prop:', assignationId);
   
   // Since only one report per person, get the first (or only) matching report
   const rawFilteredReports = useMemo(() => {
     const matching = allMissionReports.filter((report: MissionReportType) => 
-      report.assignationId.trim() === assignationId.trim()
+      report.missionId.trim() === missionId.trim()
     );
     // Return the first one if exists, or empty
     return matching.length > 0 ? [matching[0]] : [];
-  }, [allMissionReports, assignationId]) as MissionReportType[];
+  }, [allMissionReports, missionId]) as MissionReportType[];
   const hasExistingReport = rawFilteredReports.length > 0;
   const existingReport = hasExistingReport ? rawFilteredReports[0] : null;
 
@@ -298,10 +306,16 @@ const useMissionReport = (
   const isLoading = allReportsLoading || createMutation.isPending || updateMutation.isPending || deleteMutation.isPending || attachmentsQuery.isLoading;
 
   const updateReportContent = useCallback((value: string) => {
+    if (isMissionClosed) return; // Ne pas permettre la modification si la mission est clôturée
     setFormData((prev) => ({ ...prev, reportContent: value }));
-  }, []);
+  }, [isMissionClosed]);
 
   const handleAttachmentChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isMissionClosed) {
+      showAlert("error", "Impossible de modifier les pièces jointes car la mission est clôturée.");
+      return;
+    }
+    
     const files = Array.from(e.target.files || []) as File[];
 
     const formattedNewFiles = await Promise.all(
@@ -325,6 +339,11 @@ const useMissionReport = (
   };
 
   const handleRemoveAttachment = (index: number, isExisting = false) => {
+    if (isMissionClosed) {
+      showAlert("error", "Impossible de supprimer les pièces jointes car la mission est clôturée.");
+      return;
+    }
+    
     if (isExisting) {
       const updatedExisting = existingAttachments.filter((_: any, i: number) => i !== index);
       setExistingAttachments(updatedExisting);
@@ -335,8 +354,13 @@ const useMissionReport = (
   };
 
   const handleSaveReport = useCallback(async (): Promise<boolean> => {
+    if (isMissionClosed) {
+      showAlert("error", "Impossible de modifier ou créer un rapport car la mission est clôturée.");
+      return false;
+    }
+
     if (!isEditMode && hasExistingReport) {
-      showAlert("error", "Un rapport existe déjà pour cette assignation.");
+      showAlert("error", "Un rapport existe déjà pour cette mission.");
       return false;
     }
 
@@ -345,8 +369,8 @@ const useMissionReport = (
       return false;
     }
 
-    if (!userId || !assignationId) {
-      showAlert("error", "Données manquantes : ID utilisateur ou ID d'assignation requis.");
+    if (!userId || !missionId) {
+      showAlert("error", "Données manquantes : ID utilisateur ou ID de mission requis.");
       return false;
     }
 
@@ -354,7 +378,7 @@ const useMissionReport = (
       const payload: MissionReportDTOForm = {
         Text: formData.reportContent,
         UserId: userId,
-        AssignationId: assignationId,
+        MissionId: missionId, // CORRECTION : MissionId avec M majuscule
         Attachments: [
           ...attachments.map(att => ({
             FileName: att.fileName,
@@ -390,17 +414,27 @@ const useMissionReport = (
       console.error("Error saving report:", error);
       return false;
     }
-  }, [assignationId, userId, formData.reportContent, attachments, existingAttachments, createMutation, updateMutation, hasExistingReport, isEditMode, editingReportId, showAlert]);
+  }, [missionId, userId, formData.reportContent, attachments, existingAttachments, createMutation, updateMutation, hasExistingReport, isEditMode, editingReportId, showAlert, isMissionClosed]);
 
   const handleEditReport = useCallback((report: MissionReportType & { attachments?: Attachment[] }) => {
+    if (isMissionClosed) {
+      showAlert("error", "Impossible de modifier le rapport car la mission est clôturée.");
+      return;
+    }
+    
     setFormData({ reportContent: report.text });
     setEditingReportId(report.missionReportId);
     setIsEditMode(true);
     setAttachments([]);
     setExistingAttachments(report.attachments || []);
-  }, []);
+  }, [isMissionClosed, showAlert]);
 
   const handleDeleteReport = useCallback(async (reportId: string) => {
+    if (isMissionClosed) {
+      showAlert("error", "Impossible de supprimer le rapport car la mission est clôturée.");
+      return;
+    }
+    
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce rapport ?")) {
       return;
     }
@@ -417,15 +451,17 @@ const useMissionReport = (
       showAlert("error", "Erreur lors de la suppression du rapport.");
       console.error("Error deleting report:", error);
     }
-  }, [deleteMutation, userId, showAlert]);
+  }, [deleteMutation, userId, showAlert, isMissionClosed]);
 
   const handleCancelEdit = useCallback(() => {
+    if (isMissionClosed) return;
+    
     setFormData({ reportContent: "" });
     setAttachments([]);
     setExistingAttachments([]);
     setIsEditMode(false);
     setEditingReportId(null);
-  }, []);
+  }, [isMissionClosed]);
 
   return {
     formData,
@@ -448,7 +484,12 @@ const useMissionReport = (
   };
 };
 
-const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assignationId, onBack }) => {
+const MissionReport: React.FC<MissionReportProps> = ({ 
+  userId: propUserId, 
+  missionId, 
+  onBack,
+  isMissionClosed = false
+}) => {
     const userId = propUserId || (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "{}")?.userId || null : null);
     const [viewMode, setViewMode] = useState<"form" | "list">("list");
     const [modalOpen, setModalOpen] = useState(false);
@@ -473,7 +514,7 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
         handleEditReport,
         handleDeleteReport,
         handleCancelEdit,
-    } = useMissionReport(assignationId, userId, showAlert);
+    } = useMissionReport(missionId, userId, showAlert, isMissionClosed);
 
     const handlePreview = useCallback((att: Attachment) => {
       handleFileView(
@@ -486,6 +527,11 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
     }, []);
 
     const toggleView = useCallback(() => {
+        if (isMissionClosed) {
+            showAlert("info", "La mission est clôturée. Vous ne pouvez que visualiser le rapport.");
+            return;
+        }
+        
         if (viewMode === "list" && hasExistingReport) {
             return;
         }
@@ -493,7 +539,7 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
             handleCancelEdit();
         }
         setViewMode((prev) => (prev === "form" ? "list" : "form"));
-    }, [viewMode, handleCancelEdit, hasExistingReport]);
+    }, [viewMode, handleCancelEdit, hasExistingReport, isMissionClosed, showAlert]);
 
     const handleSaveClick = useCallback(async () => {
         const success = await handleSaveReport();
@@ -521,26 +567,53 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
       });
     }, []);
 
-    if (!userId || !assignationId) {
+    if (!userId || !missionId) {
         return (
             <NoDataMessage>
                 Données manquantes :{' '}
                 {!userId && 'ID utilisateur, '}
-                {!assignationId && 'ID d\'assignation'}
+                {!missionId && "ID de mission"}
                 requis.
             </NoDataMessage>
         );
     }
 
-    const saveButtonDisabled = isLoading || !formData.reportContent.trim() || (!isEditMode && hasExistingReport);
-    const saveButtonTitle = (!isEditMode && hasExistingReport)
+    const saveButtonDisabled = isLoading || !formData.reportContent.trim() || (!isEditMode && hasExistingReport) || isMissionClosed;
+    const saveButtonTitle = isMissionClosed 
+        ? "Mission clôturée - modifications désactivées"
+        : (!isEditMode && hasExistingReport)
         ? "Un rapport existe déjà"
         : !formData.reportContent.trim()
         ? "Le rapport est vide"
         : isEditMode ? "Mettre à jour le rapport" : "Enregistrer le rapport";
 
-    const shouldShowToggleButton = viewMode === "form" || !hasExistingReport;
+    const shouldShowToggleButton = (viewMode === "form" || !hasExistingReport) && !isMissionClosed;
     const totalAttachments = attachments.length + existingAttachments.length;
+
+    // Si la mission est clôturée mais qu'il n'y a pas de rapport
+    if (isMissionClosed && !hasExistingReport && filteredReports.length === 0) {
+        return (
+            <>
+                <PageHeader>
+                    <HeaderLeft>
+                      <BtnBack onClick={onBack} title="Retour">
+                          
+                      </BtnBack>
+                    </HeaderLeft>
+                </PageHeader>
+                <Separator />
+                <DetailSection>
+                    <SectionTitle style={{ fontSize: "12px" }}>Rapport de Mission</SectionTitle>
+                    <NoDataMessage style={{ fontSize: "12px", color: "var(--warning-color)" }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Lock size={16} />
+                            <span>Mission clôturée - Aucun rapport disponible. La mission a été clôturée sans rapport.</span>
+                        </div>
+                    </NoDataMessage>
+                </DetailSection>
+            </>
+        );
+    }
 
     return (
         <>
@@ -555,8 +628,8 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                     {shouldShowToggleButton && (
                         <ToggleButton
                             onClick={toggleView}
-                            disabled={isLoading}
-                            title={viewMode === "form" ? "Voir la liste des rapports" : "Créer un nouveau rapport"}
+                            disabled={isLoading || isMissionClosed}
+                            title={isMissionClosed ? "Mission clôturée" : (viewMode === "form" ? "Voir la liste des rapports" : "Créer un nouveau rapport")}
                         >
                             {viewMode === "form" ? <List size={16} /> : <FileText size={16} />}
                             {viewMode === "form" ? "Liste" : "Nouveau Rapport"}
@@ -578,10 +651,15 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                 <DetailSection>
                     <SectionTitle>
                         {isEditMode ? "Modification de Rapport" : "Création de Rapport"}
+                        {isMissionClosed && (
+                            <span style={{ fontSize: "10px", color: "var(--warning-color)", marginLeft: "8px", display: "flex", alignItems: "center", gap: "4px" }}>
+                                <Lock size={12} /> Mission clôturée (lecture seule)
+                            </span>
+                        )}
                     </SectionTitle>
                     {!isEditMode && hasExistingReport ? (
                         <NoDataMessage>
-                            Un rapport existe déjà pour cette assignation. Consultez la liste des rapports.
+                            Un rapport existe déjà pour cette mission. Consultez la liste des rapports.
                         </NoDataMessage>
                     ) : (
                         <>
@@ -591,40 +669,43 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                                         <FormFieldCell colSpan={2}>
                                             <FormLabelRequired>Contenu du rapport</FormLabelRequired>
                                             <RichTextEditor
-                                                placeholder="Rédigez votre rapport ici..."
+                                                placeholder={isMissionClosed ? "Rapport en lecture seule (mission clôturée)" : "Rédigez votre rapport ici..."}
                                                 initialValue={formData.reportContent}
                                                 onChange={(value) => updateReportContent(value)}
-                                                disabled={isLoading}
+                                                disabled={isLoading || isMissionClosed}
                                                 key={editingReportId || 'new'}
                                             />
                                         </FormFieldCell>
                                     </FormRow>
-                                    <FormRow>
-                                        <FormFieldCell colSpan={2}>
-                                            <input 
-                                                type="file" 
-                                                id="file-upload" 
-                                                multiple 
-                                                onChange={handleAttachmentChange} 
-                                                disabled={isLoading} 
-                                                style={{ display: "none" }} 
-                                            />
-                                            <label htmlFor="file-upload" style={{ 
-                                                display: 'inline-flex', 
-                                                alignItems: 'center', 
-                                                gap: '8px', 
-                                                padding: '8px 16px', 
-                                                background: 'var(--primary-color)', 
-                                                color: 'white', 
-                                                borderRadius: '4px', 
-                                                cursor: 'pointer',
-                                                fontSize: '14px'
-                                            }}>
-                                                <Upload size={16} />
-                                                Joindre des pièces jointes
-                                            </label>
-                                        </FormFieldCell>
-                                    </FormRow>
+                                    {!isMissionClosed && (
+                                        <FormRow>
+                                            <FormFieldCell colSpan={2}>
+                                                <input 
+                                                    type="file" 
+                                                    id="file-upload" 
+                                                    multiple 
+                                                    onChange={handleAttachmentChange} 
+                                                    disabled={isLoading || isMissionClosed} 
+                                                    style={{ display: "none" }} 
+                                                />
+                                                <label htmlFor="file-upload" style={{ 
+                                                    display: 'inline-flex', 
+                                                    alignItems: 'center', 
+                                                    gap: '8px', 
+                                                    padding: '8px 16px', 
+                                                    background: isMissionClosed ? 'var(--text-muted)' : 'var(--primary-color)', 
+                                                    color: 'white', 
+                                                    borderRadius: '4px', 
+                                                    cursor: isMissionClosed ? 'not-allowed' : 'pointer',
+                                                    fontSize: '14px',
+                                                    opacity: isMissionClosed ? 0.6 : 1
+                                                }}>
+                                                    <Upload size={16} />
+                                                    {isMissionClosed ? "Modifications désactivées" : "Joindre des pièces jointes"}
+                                                </label>
+                                            </FormFieldCell>
+                                        </FormRow>
+                                    )}
                                     {totalAttachments > 0 && (
                                         <FormRow>
                                             <FormFieldCell colSpan={2}>
@@ -655,19 +736,21 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                                                                             >
                                                                                 <Download size={16} />
                                                                             </IconButton>
-                                                                            <IconButton
-                                                                                onClick={() => handleRemoveAttachment(index, true)}
-                                                                                title="Supprimer"
-                                                                                style={{ color: "var(--danger-color)" }}
-                                                                            >
-                                                                                <Trash2 size={16} />
-                                                                            </IconButton>
+                                                                            {!isMissionClosed && (
+                                                                                <IconButton
+                                                                                    onClick={() => handleRemoveAttachment(index, true)}
+                                                                                    title="Supprimer"
+                                                                                    style={{ color: "var(--danger-color)" }}
+                                                                                >
+                                                                                    <Trash2 size={16} />
+                                                                                </IconButton>
+                                                                            )}
                                                                         </div>
                                                                     </AttachmentItem>
                                                                 ))}
                                                             </>
                                                         )}
-                                                        {attachments.length > 0 && (
+                                                        {attachments.length > 0 && !isMissionClosed && (
                                                             <>
                                                                 <p style={{ margin: '16px 0 8px 0', fontSize: '12px', fontWeight: 'bold' }}>Nouveaux fichiers :</p>
                                                                 {attachments.map((file, index) => (
@@ -692,13 +775,15 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                                                                             >
                                                                                 <Download size={16} />
                                                                             </IconButton>
-                                                                            <IconButton
-                                                                                onClick={() => handleRemoveAttachment(index, false)}
-                                                                                title="Supprimer"
-                                                                                style={{ color: "var(--danger-color)" }}
-                                                                            >
-                                                                                <Trash2 size={16} />
-                                                                            </IconButton>
+                                                                            {!isMissionClosed && (
+                                                                                <IconButton
+                                                                                    onClick={() => handleRemoveAttachment(index, false)}
+                                                                                    title="Supprimer"
+                                                                                    style={{ color: "var(--danger-color)" }}
+                                                                                >
+                                                                                    <Trash2 size={16} />
+                                                                                </IconButton>
+                                                                            )}
                                                                         </div>
                                                                     </AttachmentItem>
                                                                 ))}
@@ -709,26 +794,29 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                                             </FormFieldCell>
                                         </FormRow>
                                     )}
-                                    <FormRow>
-                                        <FormFieldCell colSpan={2} style={{ textAlign: 'right', paddingTop: '20px' }}>
-                                            {isEditMode && (
-                                                <CancelButton
-                                                    onClick={handleCancelEdit}
-                                                    disabled={isLoading}
-                                                    title="Annuler la modification"
+                                    {!isMissionClosed && (
+                                        <FormRow>
+                                            <FormFieldCell colSpan={2} style={{ textAlign: 'right', paddingTop: '20px' }}>
+                                                {isEditMode && (
+                                                    <CancelButton
+                                                        onClick={handleCancelEdit}
+                                                        disabled={isLoading}
+                                                        title="Annuler la modification"
+                                                    >
+                                                        <X size={16} /> Annuler
+                                                    </CancelButton>
+                                                )}
+                                                <SaveButton
+                                                    onClick={handleSaveClick}
+                                                    disabled={saveButtonDisabled}
+                                                    title={saveButtonTitle}
+                                                    style={isMissionClosed ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
                                                 >
-                                                    <X size={16} /> Annuler
-                                                </CancelButton>
-                                            )}
-                                            <SaveButton
-                                                onClick={handleSaveClick}
-                                                disabled={saveButtonDisabled}
-                                                title={saveButtonTitle}
-                                            >
-                                                <Save size={16} /> {isEditMode ? "Mettre à jour" : "Enregistrer"}
-                                            </SaveButton>
-                                        </FormFieldCell>
-                                    </FormRow>
+                                                    <Save size={16} /> {isEditMode ? "Mettre à jour" : "Enregistrer"}
+                                                </SaveButton>
+                                            </FormFieldCell>
+                                        </FormRow>
+                                    )}
                                 </tbody>
                             </FormTable>
                         </>
@@ -736,7 +824,14 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                 </DetailSection>
             ) : (
                 <DetailSection>
-                    <SectionTitle style={{ fontSize: "12px" }}>Liste</SectionTitle>
+                    <SectionTitle style={{ fontSize: "12px" }}>
+                        Liste des Rapports
+                        {isMissionClosed && (
+                            <span style={{ fontSize: "10px", color: "var(--warning-color)", marginLeft: "8px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                <Lock size={12} /> Mission clôturée (lecture seule)
+                            </span>
+                        )}
+                    </SectionTitle>
                     {isLoading ? (
                         <NoDataMessage style={{ fontSize: "12px" }}>Chargement des rapports...</NoDataMessage>
                     ) : filteredReports.length === 0 ? (
@@ -748,24 +843,33 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                                     <ReportHeader>
                                         <div>
                                             <strong style={{ fontSize: "12px" }}>Rapport #{report.missionReportId}</strong>
+                                            {isMissionClosed && (
+                                                <span style={{ fontSize: "10px", color: "var(--warning-color)", marginLeft: "8px" }}>
+                                                    (Mission clôturée)
+                                                </span>
+                                            )}
                                         </div>
                                         
-                                        <ReportActions>
-                                            <EditButton
-                                                onClick={() => handleEditClick(report)}
-                                                disabled={isLoading}
-                                                title="Modifier ce rapport"
-                                            >
-                                                <Edit2 size={16} /> Modifier
-                                            </EditButton>
-                                            <DeleteButton
-                                                onClick={() => handleDeleteReport(report.missionReportId)}
-                                                disabled={isLoading}
-                                                title="Supprimer ce rapport"
-                                            >
-                                                <Trash2 size={16} /> Supprimer
-                                            </DeleteButton>
-                                        </ReportActions>
+                                        {!isMissionClosed && (
+                                            <ReportActions>
+                                                <EditButton
+                                                    onClick={() => handleEditClick(report)}
+                                                    disabled={isLoading || isMissionClosed}
+                                                    title={isMissionClosed ? "Mission clôturée - modifications désactivées" : "Modifier ce rapport"}
+                                                    style={isMissionClosed ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                                                >
+                                                    <Edit2 size={16} /> Modifier
+                                                </EditButton>
+                                                <DeleteButton
+                                                    onClick={() => handleDeleteReport(report.missionReportId)}
+                                                    disabled={isLoading || isMissionClosed}
+                                                    title={isMissionClosed ? "Mission clôturée - modifications désactivées" : "Supprimer ce rapport"}
+                                                    style={isMissionClosed ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                                                >
+                                                    <Trash2 size={16} /> Supprimer
+                                                </DeleteButton>
+                                            </ReportActions>
+                                        )}
                                     </ReportHeader>
                                     
                                     <div style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: report.text }} />
@@ -775,6 +879,7 @@ const MissionReport: React.FC<MissionReportProps> = ({ userId: propUserId, assig
                                         isOpen={openReportIds.has(report.missionReportId)}
                                         onToggle={() => toggleAttachments(report.missionReportId)}
                                         onPreview={handlePreview}
+                                        isMissionClosed={isMissionClosed}
                                       />
                                     )}
                                 </ReportTextContainer>

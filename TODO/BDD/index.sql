@@ -326,14 +326,7 @@ CREATE TABLE expense_compensation_scale(
    FOREIGN KEY(zone_id) REFERENCES geo_zones(zone_id)
 );
 
-CREATE TABLE prevision_price(
-   prevision_id VARCHAR(50),
-   amount DECIMAL(15,2),
-   departure_date DATE NOT NULL,
-   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-   updated_at DATETIME,
-   PRIMARY KEY(prevision_id)
-);
+
 
 CREATE TABLE lieu (
    lieu_id VARCHAR(50) PRIMARY KEY,
@@ -373,6 +366,18 @@ CREATE TABLE mission (
    FOREIGN KEY (lieu_id)      REFERENCES lieu(lieu_id),
    FOREIGN KEY (employee_id)  REFERENCES employees(employee_id),
    FOREIGN KEY (transport_id) REFERENCES transport(transport_id)
+);
+
+CREATE TABLE prevision_price(
+   prevision_id VARCHAR(50),
+   amount DECIMAL(15,2),
+   departure_date DATE NOT NULL,
+   is_paid INT DEFAULT 0,
+   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+   updated_at DATETIME,
+   mission_id VARCHAR(50) NOT NULL,
+   FOREIGN KEY(mission_id) REFERENCES mission(mission_id) ON DELETE CASCADE,
+   PRIMARY KEY(prevision_id)
 );
 
 CREATE TABLE mission_validation(
