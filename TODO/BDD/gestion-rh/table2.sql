@@ -375,3 +375,4 @@ CREATE TABLE tmp_employee(
    direction VARCHAR(100),
    date_fin_contrat DATE
 );
+
