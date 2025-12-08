@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { Plus, Edit, Trash2, Search, Filter, X, ChevronDown, ChevronUp, List } from "lucide-react";
+import styled from "styled-components";
 import {
   TableContainer,
   DataTable,
@@ -15,10 +16,9 @@ import {
   FiltersContainer,
   FiltersHeader,
   FiltersTitle,
+  FiltersControls,
+  FilterControlButton,
   FiltersSection,
-  FormTableSearch,
-  FormRow,
-  FormFieldCell,
   FormLabelSearch,
   FormInputSearch,
   Separator,
@@ -26,6 +26,9 @@ import {
   ButtonReset,
   Loading,
   NoDataMessage,
+  FiltersToggle,
+  ButtonShowFilters,
+  FormFieldCell,
 } from "@/styles/table-styles";
 import { useGetGeoZones, useDeleteGeoZone } from "@/api/zones/services";
 import Alert from "@/components/alert";
@@ -33,6 +36,16 @@ import Modal from "@/components/modal";
 import Pagination from "@/components/pagination";
 import GeoZoneForm from "../form/index";
 import type { GeoZone } from "@/api/zones/services";
+
+const FilterGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-md);
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
 
 interface FiltersState {
   name: string;
@@ -49,29 +62,29 @@ const GeoZoneList: React.FC = () => {
   const [selectedGeoZone, setSelectedGeoZone] = useState<GeoZone | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [geoZoneToDelete, setGeoZoneToDelete] = useState<string | null>(null);
-  const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
+  const [alert, setAlert] = useState<AlertState>({ 
+    isOpen: false, 
+    type: "info", 
+    message: "" 
+  });
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [isHidden, setIsHidden] = useState<boolean>(false);
 
   const [filters, setFilters] = useState<FiltersState>({ name: "" });
   const [appliedFilters, setAppliedFilters] = useState<FiltersState>({ name: "" });
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
-  const [totalCount, setTotalCount] = useState<number>(0);
 
   const searchName = appliedFilters.name.trim() || undefined;
   const { data: searchResponse, isLoading, error, refetch } = useGetGeoZones(searchName, page, pageSize);
   const deleteGeoZoneMutation = useDeleteGeoZone();
 
-  const geoZones = searchResponse?.data || [];
+  const geoZones = useMemo(() => searchResponse?.data || [], [searchResponse]);
+  const totalCount = useMemo(() => searchResponse?.totalCount || 0, [searchResponse]);
 
-  const hasFilters = appliedFilters.name.trim() !== "";
-
-  useEffect(() => {
-    if (searchResponse) {
-      setTotalCount(searchResponse.totalCount || 0);
-    } else {
-      setTotalCount(0);
-    }
-  }, [searchResponse]);
+  const hasFilters = useMemo(() => {
+    return Object.values(filters).some((val) => (val || "").trim() !== "");
+  }, [filters]);
 
   const handleAddClick = useCallback(() => {
     setSelectedGeoZone(null);
@@ -92,12 +105,20 @@ const GeoZoneList: React.FC = () => {
     if (geoZoneToDelete) {
       deleteGeoZoneMutation.mutate(geoZoneToDelete, {
         onSuccess: () => {
-          setAlert({ isOpen: true, type: "success", message: "Zone géo supprimée avec succès." });
+          setAlert({ 
+            isOpen: true, 
+            type: "success", 
+            message: "Zone géographique supprimée avec succès." 
+          });
           setIsDeleteModalOpen(false);
           refetch();
         },
         onError: () => {
-          setAlert({ isOpen: true, type: "error", message: "Erreur lors de la suppression de la zone géo." });
+          setAlert({ 
+            isOpen: true, 
+            type: "error", 
+            message: "Erreur lors de la suppression de la zone géographique." 
+          });
         },
       });
     }
@@ -133,6 +154,17 @@ const GeoZoneList: React.FC = () => {
 
   if (error) return <div>Une erreur est survenue.</div>;
 
+  if (isHidden) {
+    return (
+      <FiltersToggle>
+        <ButtonShowFilters type="button" onClick={() => setIsHidden(false)}>
+          <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+          Afficher les filtres
+        </ButtonShowFilters>
+      </FiltersToggle>
+    );
+  }
+
   return (
     <>
       <Alert
@@ -152,7 +184,7 @@ const GeoZoneList: React.FC = () => {
       {isDeleteModalOpen && (
         <Modal
           type="error"
-          message="Voulez-vous vraiment supprimer cet élément ?"
+          message="Voulez-vous vraiment supprimer cette zone géographique ?"
           isOpen={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
           title="Confirmer la suppression"
@@ -162,50 +194,73 @@ const GeoZoneList: React.FC = () => {
           showActions={true}
         />
       )}
-      <FiltersContainer>
+      
+      <FiltersContainer $isMinimized={isMinimized}>
         <FiltersHeader>
-          <FiltersTitle>Filtre</FiltersTitle>
+          <FiltersTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Filter size={18} />
+            Filtres avancés
+          </FiltersTitle>
+          <FiltersControls>
+            <FilterControlButton
+              $isMinimized={isMinimized}
+              onClick={() => setIsMinimized((p) => !p)}
+              title={isMinimized ? "Développer" : "Réduire"}
+            >
+              {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </FilterControlButton>
+            <FilterControlButton 
+              $isClose 
+              onClick={() => setIsHidden(true)} 
+              title="Fermer"
+            >
+              <X size={16} />
+            </FilterControlButton>
+          </FiltersControls>
         </FiltersHeader>
-        <FiltersSection>
-          <Separator />
-          <form onSubmit={handleFilterSubmit}>
-            <FormTableSearch>
-              <tbody>
-                <FormRow>
-                  <FormFieldCell style={{ width: "100%" }}>
-                    <FormLabelSearch>Nom</FormLabelSearch>
-                    <FormInputSearch
-                      type="text"
-                      value={filters.name}
-                      onChange={handleNameChange}
-                      placeholder="Rechercher par nom..."
-                      disabled={isLoading}
-                    />
-                  </FormFieldCell>
-                </FormRow>
-              </tbody>
-            </FormTableSearch>
+
+        {!isMinimized && (
+          <FiltersSection>
             <Separator />
-            <FiltersActions>
-              <ButtonReset
-                type="button"
-                onClick={handleResetFilters}
-                disabled={!hasFilters || isLoading}
-                title="Effacer filtre"
-              >
-                Effacer filtres
-              </ButtonReset>
-              <ButtonSearch type="submit" disabled={isLoading} title="Rechercher">
-                <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-                Rechercher
-              </ButtonSearch>
-            </FiltersActions>
-          </form>
-        </FiltersSection>
+            <form onSubmit={handleFilterSubmit}>
+              <FilterGrid>
+                <FormFieldCell as="div">
+                  <FormLabelSearch>Nom</FormLabelSearch>
+                  <FormInputSearch
+                    type="text"
+                    value={filters.name}
+                    onChange={handleNameChange}
+                    placeholder="Rechercher par nom..."
+                    disabled={isLoading}
+                  />
+                </FormFieldCell>
+              </FilterGrid>
+              
+              <Separator />
+              
+              <FiltersActions>
+                <ButtonReset
+                  type="button"
+                  onClick={handleResetFilters}
+                  disabled={!hasFilters || isLoading}
+                  title="Effacer filtre"
+                >
+                  <X size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                  Effacer filtres
+                </ButtonReset>
+                <ButtonSearch type="submit" disabled={isLoading} title="Rechercher">
+                  <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
+                  Rechercher
+                </ButtonSearch>
+              </FiltersActions>
+            </form>
+          </FiltersSection>
+        )}
       </FiltersContainer>
+      
       <TableContainer>
         <TableHeader>
-          <TableTitle>Zones Géo</TableTitle>
+          <TableTitle>Zones Géographiques</TableTitle>
           <ButtonSearch title="Ajouter" onClick={handleAddClick}>
             <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
             Ajouter
@@ -215,7 +270,9 @@ const GeoZoneList: React.FC = () => {
           <thead>
             <tr>
               <TableHeadCell>Nom</TableHeadCell>
-              <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
+              <TableHeadCell style={{ width: "100px", textAlign: "center" }}>
+                Actions
+              </TableHeadCell>
             </tr>
           </thead>
           <tbody>
@@ -243,7 +300,10 @@ const GeoZoneList: React.FC = () => {
               <TableRow>
                 <TableCell colSpan={2}>
                   <NoDataMessage>
-                    {hasFilters ? "Aucune zone géo ne correspond aux critères." : "Aucune zone géo trouvée."}
+                    {hasFilters 
+                      ? "Aucune zone géographique ne correspond aux critères." 
+                      : "Aucune zone géographique trouvée."
+                    }
                   </NoDataMessage>
                 </TableCell>
               </TableRow>
@@ -258,7 +318,6 @@ const GeoZoneList: React.FC = () => {
           onPageSizeChange={handlePageSizeChange}
         />
       </TableContainer>
-      
     </>
   );
 };

@@ -28,10 +28,9 @@ interface User {
   updatedAt: string;
 }
 
-interface MissionAssignation {
-  assignationId: string;
-  employeeId: string;
+interface Mission {
   missionId: string;
+  employeeId: string;
   transportId: string | null;
   departureDate: string;
   departureTime: string;
@@ -51,8 +50,8 @@ export interface MissionReport {
   text: string;
   userId: string;
   user: User;
-  assignationId: string;
-  missionAssignation: MissionAssignation;
+  missionId: string; // Changé de assignationId à missionId
+  mission: Mission; // Changé de missionAssignation à mission
   createdAt: string;
   updatedAt: string | null;
 }
@@ -77,7 +76,7 @@ export interface MissionReportAttachmentDTO {
 export interface MissionReportDTOForm {
   Text: string;
   UserId: string;
-  AssignationId: string;
+  MissionId: string; // Changé de AssignationId à MissionId
   Attachments: MissionReportAttachmentDTO[];
 }
 

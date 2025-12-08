@@ -4,29 +4,20 @@ using Microsoft.IdentityModel.Tokens;
 using MyApp.Api.Data;
 using MyApp.Api.Extensions;
 using MyApp.Api.Utils.generator;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
-using System.Net;
 using MyApp.Api.Models.classes.notifications;
+using Hangfire;
+using MyApp.Api.Services.mission;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// builder.Services.AddCors(options =>
-// {
-//     options.AddPolicy("AllowFrontend", policy =>
-//     {
-//         policy.WithOrigins("http://10.0.180.37:8090")
-//               .AllowAnyMethod()
-//               .AllowAnyHeader();
-//     });
-// });
 if (OperatingSystem.IsLinux())
 {
     AppContext.SetSwitch("System.Drawing.EnableUnixSupport", true);
 }
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -44,7 +35,6 @@ builder.Services.AddControllers()
             System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 
-// Register services and database context
 builder.Services.AddScoped<ISequenceGenerator, SequenceGenerator>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -54,7 +44,7 @@ builder.Services.AddAllEnumDescriptionConverters();
 
 builder.Services.AddHttpClient<MyApp.Api.Services.currency.ICurrencyService, MyApp.Api.Services.currency.CurrencyService>();
 builder.Services.AddScoped<EmailSender>();
-// Configure JWT authentication
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -95,30 +85,38 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Configure authorization policies
-builder.Services.AddAuthorization(options =>
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddHangfireServer();
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.AddPolicy("AdminOrRH", policy =>
-        policy.RequireRole("admin", "rh"));
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 });
 
-// Add controllers and Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
-// Configuration des en-têtes forwarded
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    
-});
+builder.Services.AddHostedService<MissionStatusBackgroundService>();
 
 var app = builder.Build();
 
+app.UseHangfireDashboard("/hangfire");
+
+ServiceProviderAccessor.Initialize(app.Services);
+
+RecurringJob.AddOrUpdate(
+    "update-mission-statuses",
+    () => MissionStatusUpdater.UpdateMissionStatuses(),
+    Cron.Minutely);
+
 app.UseForwardedHeaders();
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

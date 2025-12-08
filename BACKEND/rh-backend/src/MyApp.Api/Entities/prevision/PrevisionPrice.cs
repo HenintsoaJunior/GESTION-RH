@@ -18,11 +18,20 @@ public class PrevisionPrice : BaseEntity
     [Column("departure_date")]
     public DateTime DepartureDate { get; set; }
 
+    [Column("is_paid")]
+    public int IsPaid { get; set; } = 0; // 0 = non payé, 1 = payé
+
+    [Column("mission_id")]
+    [StringLength(50)]
+    public string MissionId { get; set; } = null!;
+
     public PrevisionPrice() { }
 
     public PrevisionPrice(PrevisionPriceDtoForm dto)
     {
         Amount = dto.Amount;
         DepartureDate = dto.DepartureDate;
+        IsPaid = dto.IsPaid; 
+        MissionId = dto.MissionId;
     }
 }

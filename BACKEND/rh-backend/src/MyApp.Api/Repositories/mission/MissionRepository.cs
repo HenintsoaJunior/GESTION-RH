@@ -29,7 +29,7 @@ namespace MyApp.Api.Repositories.mission
         Task<int> GetPlannedMissionsThisMonthCountAsync();
         Task<(int count, DateTime date)> GetPlannedMissionsThisDateCountWithDateAsync();
         Task<(decimal nationalRate, decimal internationalRate)> GetMissionTypesRateAsync();
-        Task<(IEnumerable<Mission>, int)> GetWithCompensationByStatusAsync(string? status, int page = 1, int pageSize = 10);
+        Task<(IEnumerable<Mission>, int)> GetWithCompensationByStatusAsync(CompensationStatusFilter filter, int page = 1, int pageSize = 10);
         Task<IEnumerable<Mission>> GetOngoingMissionsWithDetailsAsync();
         Task<bool> CloseAsync(string id);
     }
@@ -79,8 +79,22 @@ namespace MyApp.Api.Repositories.mission
                 .ToListAsync();
         }
 
-        public async Task<(IEnumerable<Mission>, int)> GetWithCompensationByStatusAsync(string? status, int page = 1, int pageSize = 10)
+        public async Task<(IEnumerable<Mission>, int)> GetWithCompensationByStatusAsync(
+            CompensationStatusFilter filter, 
+            int page = 1, 
+            int pageSize = 10)
         {
+            Console.WriteLine($"=== DÉBUT GetWithCompensationByStatusAsync ===");
+            Console.WriteLine($"Filtres reçus:");
+            Console.WriteLine($"- Status: '{filter.Status}'");
+            Console.WriteLine($"- EmployeeId: '{filter.EmployeeId}'");
+            Console.WriteLine($"- EmployeeMatricule: '{filter.EmployeeMatricule}'");
+            Console.WriteLine($"- RequestDateFrom: '{filter.RequestDateFrom}'");
+            Console.WriteLine($"- RequestDateTo: '{filter.RequestDateTo}'");
+            Console.WriteLine($"- ValidationDateFrom: '{filter.ValidationDateFrom}'");
+            Console.WriteLine($"- ValidationDateTo: '{filter.ValidationDateTo}'");
+            Console.WriteLine($"Page: {page}, PageSize: {pageSize}");
+            
             var query = _context.Missions
                 .AsNoTracking()
                 .Include(ma => ma.Employee)
@@ -91,18 +105,168 @@ namespace MyApp.Api.Repositories.mission
                     .ThenInclude(e => e.Service)
                 .Include(ma => ma.Employee)
                     .ThenInclude(e => e.Site)
-                .Include(m => m.Lieu)
+                .Include(ma => ma.Lieu)
                 .Include(ma => ma.Transport)
-                .Where(ma => _context.Compensations
-                    .Any(c => c.MissionId == ma.MissionId
-                        && (string.IsNullOrWhiteSpace(status) || c.Status == status)));
+                .AsQueryable();
 
+            Console.WriteLine($"Query initiale créée");
+
+            // Filtre de base pour les missions avec compensations
+            query = query.Where(ma => _context.Compensations
+                .Any(c => c.MissionId == ma.MissionId));
+            
+            Console.WriteLine($"Après filtre base compensations: {await query.CountAsync()} missions");
+
+            if (!string.IsNullOrWhiteSpace(filter.Status))
+            {
+                Console.WriteLine($"Application filtre Status: '{filter.Status}'");
+                query = query.Where(ma => _context.Compensations
+                    .Any(c => c.MissionId == ma.MissionId && c.Status == filter.Status));
+                
+                var countAfterStatus = await query.CountAsync();
+                Console.WriteLine($"Après filtre Status: {countAfterStatus} missions");
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.EmployeeId))
+            {
+                Console.WriteLine($"Application filtre EmployeeId: '{filter.EmployeeId}'");
+                query = query.Where(ma => ma.EmployeeId == filter.EmployeeId);
+                
+                var countAfterEmployeeId = await query.CountAsync();
+                Console.WriteLine($"Après filtre EmployeeId: {countAfterEmployeeId} missions");
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.EmployeeMatricule))
+            {
+                Console.WriteLine($"Application filtre EmployeeMatricule: '{filter.EmployeeMatricule}'");
+                
+                // Vérification du nom de la propriété
+                var sampleEmployee = await _context.Employees
+                    .Where(e => e.EmployeeCode == filter.EmployeeMatricule)
+                    .FirstOrDefaultAsync();
+                
+                Console.WriteLine($"Employé trouvé avec matricule '{filter.EmployeeMatricule}': {(sampleEmployee != null ? "OUI" : "NON")}");
+                if (sampleEmployee != null)
+                {
+                    Console.WriteLine($"  - EmployeeId: {sampleEmployee.EmployeeId}");
+                    Console.WriteLine($"  - EmployeeCode: {sampleEmployee.EmployeeCode}");
+                }
+                
+                // Test séparé pour voir le problème
+                var testQuery = _context.Missions
+                    .Include(ma => ma.Employee)
+                    .Where(ma => ma.Employee != null && ma.Employee.EmployeeCode == filter.EmployeeMatricule);
+                
+                var testCount = await testQuery.CountAsync();
+                Console.WriteLine($"Test direct filtrage par matricule: {testCount} missions");
+                
+                query = query.Where(ma => ma.Employee != null && 
+                    ma.Employee.EmployeeCode == filter.EmployeeMatricule);
+                
+                var countAfterMatricule = await query.CountAsync();
+                Console.WriteLine($"Après filtre EmployeeMatricule: {countAfterMatricule} missions");
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.RequestDateFrom))
+            {
+                Console.WriteLine($"Tentative parsing RequestDateFrom: '{filter.RequestDateFrom}'");
+                if (DateTime.TryParse(filter.RequestDateFrom, out var dateFrom))
+                {
+                    Console.WriteLine($"Parsing réussi: {dateFrom}");
+                    query = query.Where(ma => ma.CreatedAt >= dateFrom);
+                    Console.WriteLine($"Après filtre RequestDateFrom: {await query.CountAsync()} missions");
+                }
+                else
+                {
+                    Console.WriteLine($"ÉCHEC parsing RequestDateFrom");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.RequestDateTo))
+            {
+                Console.WriteLine($"Tentative parsing RequestDateTo: '{filter.RequestDateTo}'");
+                if (DateTime.TryParse(filter.RequestDateTo, out var dateTo))
+                {
+                    Console.WriteLine($"Parsing réussi: {dateTo}");
+                    query = query.Where(ma => ma.CreatedAt <= dateTo);
+                    Console.WriteLine($"Après filtre RequestDateTo: {await query.CountAsync()} missions");
+                }
+                else
+                {
+                    Console.WriteLine($"ÉCHEC parsing RequestDateTo");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.ValidationDateFrom))
+            {
+                Console.WriteLine($"Tentative parsing ValidationDateFrom: '{filter.ValidationDateFrom}'");
+                if (DateTime.TryParse(filter.ValidationDateFrom, out var validationFrom))
+                {
+                    Console.WriteLine($"Parsing réussi: {validationFrom}");
+                    query = query.Where(ma => _context.Compensations
+                        .Any(c => c.MissionId == ma.MissionId && 
+                            c.PaymentDate != null && 
+                            c.PaymentDate >= validationFrom));
+                    Console.WriteLine($"Après filtre ValidationDateFrom: {await query.CountAsync()} missions");
+                }
+                else
+                {
+                    Console.WriteLine($"ÉCHEC parsing ValidationDateFrom");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.ValidationDateTo))
+            {
+                Console.WriteLine($"Tentative parsing ValidationDateTo: '{filter.ValidationDateTo}'");
+                if (DateTime.TryParse(filter.ValidationDateTo, out var validationTo))
+                {
+                    Console.WriteLine($"Parsing réussi: {validationTo}");
+                    query = query.Where(ma => _context.Compensations
+                        .Any(c => c.MissionId == ma.MissionId && 
+                            c.PaymentDate != null && 
+                            c.PaymentDate <= validationTo));
+                    Console.WriteLine($"Après filtre ValidationDateTo: {await query.CountAsync()} missions");
+                }
+                else
+                {
+                    Console.WriteLine($"ÉCHEC parsing ValidationDateTo");
+                }
+            }
+
+            Console.WriteLine($"=== COMPTAGE FINAL ===");
             var totalCount = await query.CountAsync();
+            Console.WriteLine($"TotalCount final: {totalCount}");
+
+            if (totalCount > 0)
+            {
+                Console.WriteLine($"Récupération des résultats (page {page}, taille {pageSize})");
+                
+                // Pour déboguer, on peut aussi voir quelques missions
+                var sampleMissions = await query
+                    .Take(3)
+                    .Select(ma => new {
+                        ma.MissionId,
+                        ma.EmployeeId,
+                        EmployeeCode = ma.Employee != null ? ma.Employee.EmployeeCode : "NULL",
+                        ma.CreatedAt
+                    })
+                    .ToListAsync();
+                
+                Console.WriteLine($"Exemple de missions (3 premières):");
+                foreach (var mission in sampleMissions)
+                {
+                    Console.WriteLine($"  - MissionId: {mission.MissionId}, EmployeeId: {mission.EmployeeId}, EmployeeCode: {mission.EmployeeCode}, CreatedAt: {mission.CreatedAt}");
+                }
+            }
+
             var results = await query
                 .OrderByDescending(ma => ma.DepartureDate)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            Console.WriteLine($"Résultats retournés: {results.Count}");
+            Console.WriteLine($"=== FIN GetWithCompensationByStatusAsync ===");
 
             return (results, totalCount);
         }

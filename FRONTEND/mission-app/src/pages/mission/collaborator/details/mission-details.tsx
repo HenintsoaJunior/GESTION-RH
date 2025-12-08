@@ -96,6 +96,7 @@ import {
   CommentActionButton,
 } from "@/styles/comment-styles";
 import { getInitials } from "@/utils/initials";
+import { useMissionReports } from "@/api/mission/report/services";
 
 interface Comment {
   commentId: string;
@@ -642,10 +643,13 @@ const useMissionData = (
 ) => {
   const [mission, setMission] = useState<Mission | null>(null);
   const [validationSteps, setValidationSteps] = useState<ValidationStep[]>([]);
+  const [hasReport, setHasReport] = useState<boolean>(false);
 
   const { data: missionResponse, isLoading: missionLoading, refetch: refetchMission } = useGetMissionById(missionId);
 
   const { data: validationsResponse, isLoading: validationsLoading } = useGetMissionValidationsByMissionId(missionId);
+
+  const { data: allReportsResponse, isLoading: reportsLoading } = useMissionReports();
 
   useEffect(() => {
     if (missionResponse?.data) {
@@ -654,6 +658,18 @@ const useMissionData = (
       setMission(null);
     }
   }, [missionResponse]);
+
+  useEffect(() => {
+    if (allReportsResponse?.data && missionId) {
+      const reports = allReportsResponse.data;
+      const reportExists = reports.some((report: any) => 
+        report.missionId && report.missionId.trim() === missionId.trim()
+      );
+      setHasReport(reportExists);
+    } else {
+      setHasReport(false);
+    }
+  }, [allReportsResponse, missionId]);
 
   const mapValidationsToSteps = useCallback((validations: any[]) => {
     const stepMapping: Record<string, { title: string; subtitle: string; order: number }> = {
@@ -723,8 +739,9 @@ const useMissionData = (
   return {
     mission,
     validationSteps,
-    isLoading: missionLoading || validationsLoading,
+    isLoading: missionLoading || validationsLoading || reportsLoading,
     isMissionFullyValidated,
+    hasReport,
     refetch: refetchMission,
   };
 };
@@ -733,6 +750,7 @@ interface Tab {
   label: string;
   onClick: () => void;
   path: string;
+  disabled?: boolean;
 }
 
 const DetailsMission: React.FC = () => {
@@ -761,6 +779,7 @@ const DetailsMission: React.FC = () => {
     validationSteps,
     isLoading: missionLoading,
     isMissionFullyValidated,
+    hasReport,
     refetch: refetchMission,
   } = useMissionData(missionId || "");
 
@@ -1091,9 +1110,11 @@ const DetailsMission: React.FC = () => {
 
     const employeeId = mission.employeeId;
     const missionId = mission.missionId;
+    const missionStatus = normalizeMissionStatus(mission.status);
 
-    const isMissionComplete = normalizeMissionStatus(mission.status) === MissionStatusEnum.Completed;
-    const shouldShowRendu = isMissionComplete;
+    const isMissionClosed = missionStatus === MissionStatusEnum.Closed;
+    const isMissionComplete = missionStatus === MissionStatusEnum.Completed;
+    const shouldShowRendu = isMissionComplete || isMissionClosed;
 
     const tabList: Tab[] = [
       {
@@ -1110,6 +1131,7 @@ const DetailsMission: React.FC = () => {
         path: `payment/${missionId}`,
       });
 
+      // MODIFICATION IMPORTANTE: Toujours montrer l'onglet Rendu si la mission est terminée ou clôturée
       if (shouldShowRendu) {
         tabList.push({
           label: "Rendu",
@@ -1146,7 +1168,7 @@ const DetailsMission: React.FC = () => {
             $isActive={location.pathname === fullPath}
             $hasBorderRight={tabIndex < tabs.length - 1}
             onClick={tab.onClick}
-            disabled={isGlobalLoading}
+            disabled={isGlobalLoading || (tab.disabled ?? false)}
           >
             {tab.label}
           </StyledTabButton>
@@ -1520,8 +1542,10 @@ const DetailsMission: React.FC = () => {
                   {isMissionFullyValidated && selectedMissionId ? (
                     <MissionReport
                       userId={userId}
-                      assignationId={selectedMissionId}
+                      missionId={selectedMissionId}
                       onBack={handleBackToMissionDetails}
+                      isMissionClosed={mission ? normalizeMissionStatus(mission.status) === MissionStatusEnum.Closed : false}
+                      hasReport={hasReport}
                     />
                   ) : (
                     <LoadingContainer>

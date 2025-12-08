@@ -29,29 +29,10 @@ ChartJS.register(
 const TresoPage = () => {
   const navigate = useNavigate();
 
-  // Intégration du hook useTotalNotPaid pour récupérer le total non payé réel
   const { data: totalNotPaidData, isLoading: isTotalNotPaidLoading, error: totalNotPaidError } = useTotalNotPaid();
-  const totalNotPaid = totalNotPaidData?.data?.totalNotPaidAmount || 0;
-
-  // Intégration du hook useTotalNotReimbursed pour récupérer le total non remboursé réel
   const { data: totalNotReimbursedData, isLoading: isTotalNotReimbursedLoading, error: totalNotReimbursedError } = useTotalNotReimbursed();
-  const totalNotReimbursed = totalNotReimbursedData?.data?.totalNotReimbursedAmount || 0;
-
-  // Intégration du hook useCurrencies pour la conversion EUR vers MGA
   const { data: currenciesData, isLoading: isCurrenciesLoading, error: currenciesError } = useCurrencies();
-  const eurToMgaRate = currenciesData?.rates?.MGA || 1; // Assume base EUR, rate MGA pour conversion
-  const totalNotReimbursedMGA = totalNotReimbursed * eurToMgaRate;
-
-  // Intégration du hook usePrevisionForMonth pour récupérer les prévisions du mois
   const { data: previsionMonthData, isLoading: isPrevisionLoading, error: previsionError } = usePrevisionForMonth();
-  const totalPrevision = previsionMonthData?.data?.reduce((sum, item) => sum + item.amount, 0) || 0;
-
-  // Données de démonstration - fallback pour novembre 2025 si pas de données réelles
-  const fallbackDates = [
-    '2025-11-01', '2025-11-05', '2025-11-08', '2025-11-15',
-    '2025-11-20', '2025-11-25', '2025-11-30'
-  ];
-  const fallbackPrevisionData = [15000, 22000, 18000, 28000, 25000, 32000, 29000];
 
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('fr-MG', {
@@ -69,29 +50,22 @@ const TresoPage = () => {
     });
   };
 
-  // Traitement des données de prévision pour le chart (groupement par date, somme si multiples)
+  // Traitement des données de prévision pour le chart
   let chartLabels: string[] = [];
   let previsionChartDataPoints: number[] = [];
+  
   if (previsionMonthData?.data && previsionMonthData.data.length > 0) {
     const groupedByDate = previsionMonthData.data.reduce((acc: Record<string, number>, item) => {
-      const dateKey = item.departureDate.split('T')[0]; // Assume format YYYY-MM-DD ou ISO
+      const dateKey = item.departureDate.split('T')[0];
       acc[dateKey] = (acc[dateKey] || 0) + item.amount;
       return acc;
     }, {});
     const sortedDates = Object.keys(groupedByDate).sort();
     chartLabels = sortedDates.map(date => formatDate(date));
     previsionChartDataPoints = sortedDates.map(date => groupedByDate[date]);
-  } else {
-    chartLabels = fallbackDates.map(date => formatDate(date));
-    previsionChartDataPoints = fallbackPrevisionData;
   }
 
-  // Données cumulatives pour évolution des montants en attente
-  const dates = fallbackDates; // Garder les mêmes dates pour cohérence
-  const nonPayeData = [10000, 25000, 40000, 60000, 80000, 105000, 125000];
-  const nonRembourseData = [5000, 12000, 20000, 35000, 50000, 65000, 87000];
-
-  // Chart data pour prévisions (line simple, style unifié)
+  // Chart data pour prévisions
   const previsionChartData = {
     labels: chartLabels,
     datasets: [
@@ -164,90 +138,7 @@ const TresoPage = () => {
     },
   };
 
-  // Chart data pour évolution des montants en attente (multi-lignes, remplace doughnut)
-  const evolutionChartData = {
-    labels: dates.map(date => formatDate(date)),
-    datasets: [
-      {
-        label: 'Non Payé',
-        data: nonPayeData,
-        borderColor: '#e4002b',
-        backgroundColor: 'rgba(228, 0, 43, 0.1)',
-        tension: 0.1,
-        fill: false,
-        borderWidth: 2,
-      },
-      {
-        label: 'Non Remboursé',
-        data: nonRembourseData,
-        borderColor: '#f59e0b',
-        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-        tension: 0.1,
-        fill: false,
-        borderWidth: 2,
-      },
-    ],
-  };
-
-  const evolutionChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: 'top' as const,
-      },
-      tooltip: {
-        backgroundColor: '#ffffff',
-        padding: 8,
-        titleColor: '#333',
-        bodyColor: '#333',
-        borderColor: '#e0e0e0',
-        borderWidth: 1,
-        callbacks: {
-          label: (context: { datasetIndex: number; parsed: { y: number | null } }) => {
-            const value = context.parsed.y ?? 0;
-            return formatCurrency(value);
-          },
-        },
-      },
-    },
-    scales: {
-      y: {
-        type: 'linear' as const,
-        display: true,
-        position: 'left' as const,
-        beginAtZero: true,
-        grid: {
-          color: 'rgba(0, 0, 0, 0.1)',
-        },
-        ticks: {
-          callback: (value: string | number) => formatCurrency(Number(value)),
-          color: '#63666a',
-          font: {
-            size: 12,
-            family: 'century-gothic, sans-serif',
-            weight: 500 as const,
-          },
-        },
-      },
-      x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          color: '#63666a',
-          font: {
-            size: 12,
-            family: 'century-gothic, sans-serif',
-            weight: 500 as const,
-          },
-        },
-      },
-    },
-  };
-
-  // Gestion de l'état de chargement pour les hooks (affichage conditionnel si l'un ou l'autre charge)
+  // Gestion de l'état de chargement
   if (isTotalNotPaidLoading || isTotalNotReimbursedLoading || isPrevisionLoading || isCurrenciesLoading) {
     return (
       <div style={{ 
@@ -263,7 +154,7 @@ const TresoPage = () => {
     );
   }
 
-  // Gestion d'erreur pour les hooks (affichage d'erreur si l'un ou l'autre échoue)
+  // Gestion d'erreur
   const anyError = totalNotPaidError || totalNotReimbursedError || previsionError || currenciesError;
   if (anyError) {
     return (
@@ -280,14 +171,19 @@ const TresoPage = () => {
     );
   }
 
+  // Extraction des données après vérification du chargement
+  const totalNotPaid = totalNotPaidData?.data?.totalNotPaidAmount ?? 0;
+  const totalNotReimbursed = totalNotReimbursedData?.data?.totalNotReimbursedAmount ?? 0;
+  const eurToMgaRate = currenciesData?.rates?.MGA ?? 1;
+  const totalNotReimbursedMGA = totalNotReimbursed * eurToMgaRate;
+  const totalPrevision = previsionMonthData?.data?.reduce((sum, item) => sum + item.amount, 0) ?? 0;
+
   return (
     <div style={{ 
       fontFamily: 'century-gothic, sans-serif',
       backgroundColor: '#f8f9fa',
       minHeight: '100vh',
     }}>
-      
-
       {/* Content Area */}
       <div style={{
         background: '#ffffff',
@@ -322,7 +218,7 @@ const TresoPage = () => {
             fontFamily: 'century-gothic, sans-serif',
             lineHeight: '1.5',
           }}>
-            Cette page offre une vue d’ensemble sur la trésorerie de la plateforme. Elle permet de suivre les prévisions de dépenses, les montants en attente de paiement et les indicateurs financiers, facilitant ainsi le pilotage budgétaire et la prise de décision.
+            Cette page offre une vue d'ensemble sur la trésorerie de la plateforme. Elle permet de suivre les prévisions de dépenses, les montants en attente de paiement et les indicateurs financiers, facilitant ainsi le pilotage budgétaire et la prise de décision.
           </p>
         </div>
 
@@ -333,7 +229,7 @@ const TresoPage = () => {
           gap: '20px',
           marginBottom: '32px',
         }}>
-          {/* Card 1 - Total Non Payé (mise à jour avec données réelles via useTotalNotPaid) */}
+          {/* Card 1 - Total Non Payé */}
           <div style={{
             backgroundColor: '#f8f9fa',
             padding: '20px',
@@ -405,7 +301,7 @@ const TresoPage = () => {
             </button>
           </div>
 
-          {/* Card 2 - Total Non Remboursé (mise à jour avec données réelles via useTotalNotReimbursed, converti en MGA) */}
+          {/* Card 2 - Total Non Remboursé */}
           <div style={{
             backgroundColor: '#f8f9fa',
             padding: '20px',
@@ -477,7 +373,7 @@ const TresoPage = () => {
             </button>
           </div>
 
-          {/* Card 3 - Total Prévisions (mise à jour avec données réelles via usePrevisionForMonth) */}
+          {/* Card 3 - Total Prévisions */}
           <div style={{
             backgroundColor: '#f8f9fa',
             padding: '20px',
@@ -552,48 +448,28 @@ const TresoPage = () => {
           marginBottom: '24px',
         }}>
           {/* Line Chart - Prévisions */}
-          <div style={{
-            backgroundColor: '#f8f9fa',
-            padding: '20px',
-            borderRadius: '3px',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #e0e0e0',
-          }}>
-            <h3 style={{ 
-              margin: '0 0 20px 0',
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#333',
-              fontFamily: 'century-gothic, sans-serif',
+          {previsionMonthData?.data && previsionMonthData.data.length > 0 && (
+            <div style={{
+              backgroundColor: '#f8f9fa',
+              padding: '20px',
+              borderRadius: '3px',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              border: '1px solid #e0e0e0',
             }}>
-              Prévisions des Dépenses
-            </h3>
-            <div style={{ height: '300px' }}>
-              <Line options={previsionChartOptions} data={previsionChartData} />
+              <h3 style={{ 
+                margin: '0 0 20px 0',
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#333',
+                fontFamily: 'century-gothic, sans-serif',
+              }}>
+                Prévisions des Dépenses
+              </h3>
+              <div style={{ height: '300px' }}>
+                <Line options={previsionChartOptions} data={previsionChartData} />
+              </div>
             </div>
-          </div>
-
-          {/* Line Chart - Évolution des montants (remplace doughnut) */}
-          <div style={{
-            backgroundColor: '#f8f9fa',
-            padding: '20px',
-            borderRadius: '3px',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #e0e0e0',
-          }}>
-            <h3 style={{ 
-              margin: '0 0 20px 0',
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#333',
-              fontFamily: 'century-gothic, sans-serif',
-            }}>
-              Évolution des Montants en Attente
-            </h3>
-            <div style={{ height: '300px' }}>
-              <Line options={evolutionChartOptions} data={evolutionChartData} />
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

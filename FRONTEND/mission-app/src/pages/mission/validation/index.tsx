@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import useMissionValidationData from "./hooks/use-mission-validation-data";
 import MissionCards from "./components/mission-cards";
 import MissionFilters from "./components/mission-filters";
-import AlertComponent from "@/components/alert"; // Ajustez le chemin d'import selon votre structure de dossiers
+import AlertComponent from "@/components/alert";
 
 const MissionValidationPage = () => {
   const navigate = useNavigate();

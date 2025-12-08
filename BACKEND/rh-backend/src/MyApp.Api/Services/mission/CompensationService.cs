@@ -2,6 +2,7 @@ using MyApp.Api.Entities.mission;
 using MyApp.Api.enums;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Repositories.mission;
+using MyApp.Api.Repositories.prevision;
 using MyApp.Api.Utils.generator;
 
 namespace MyApp.Api.Services.mission
@@ -12,7 +13,7 @@ namespace MyApp.Api.Services.mission
         Task<AssignationWithCompensationsDto> GetByEmployeeIdAsync(string employeeId, string missionId);
         Task<string> CreateAsync(CompensationDTO compensation);
         Task<bool> UpdateStatusAsync(string employeeId, string missionId, string status);
-        Task<(IEnumerable<AssignationWithCompensationsDto>, int)> GetCompensationsByStatusAsync(string? status, int page = 1, int pageSize = 10);
+        Task<(IEnumerable<AssignationWithCompensationsDto>, int)> GetCompensationsByStatusAsync(CompensationStatusFilter filter, int page = 1, int pageSize = 10);
         Task<decimal> GetTotalPaidAmountAsync();
         Task<decimal> GetTotalNotPaidAmountAsync();
     }
@@ -23,18 +24,21 @@ namespace MyApp.Api.Services.mission
         private readonly ISequenceGenerator _sequenceGenerator;
         private readonly ILogger<CompensationService> _logger;
         private readonly IMissionRepository _missionService;
+        private readonly IPrevisionPriceRepository _previsionPriceRepository;
 
         public CompensationService(
             ICompensationRepository repository,
             ISequenceGenerator sequenceGenerator,
             ILogger<CompensationService> logger,
-            IMissionRepository missionService
+            IMissionRepository missionService,
+            IPrevisionPriceRepository previsionPriceRepository
         )
         {
             _missionService = missionService ?? throw new ArgumentNullException(nameof(missionService));
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _sequenceGenerator = sequenceGenerator ?? throw new ArgumentNullException(nameof(sequenceGenerator));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _previsionPriceRepository = previsionPriceRepository ?? throw new ArgumentNullException(nameof(previsionPriceRepository));
         }
 
         public async Task<IEnumerable<Compensation>> GetAllAsync()
@@ -67,12 +71,11 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<(IEnumerable<AssignationWithCompensationsDto>, int)> GetCompensationsByStatusAsync(string? status, int page = 1, int pageSize = 10)
+        public async Task<(IEnumerable<AssignationWithCompensationsDto>, int)> GetCompensationsByStatusAsync(CompensationStatusFilter filter, int page = 1, int pageSize = 10)
         {
             try
             {
-                var effectiveStatus = string.IsNullOrWhiteSpace(status) ? null : status;
-                var (mission, totalCount) = await _missionService.GetWithCompensationByStatusAsync(effectiveStatus, page, pageSize);
+                var (mission, totalCount) = await _missionService.GetWithCompensationByStatusAsync(filter, page, pageSize);
 
                 var dtos = new List<AssignationWithCompensationsDto>();
                 foreach (var ma in mission)
@@ -85,7 +88,7 @@ namespace MyApp.Api.Services.mission
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des compensations par status {Status}", status ?? "null");
+                _logger.LogError(ex, "Erreur lors de la récupération des compensations ");
                 throw;
             }
         }
@@ -154,6 +157,9 @@ namespace MyApp.Api.Services.mission
                 {
                     mission.Status = MissionStatus.Planned;
                     await _missionService.UpdateAsync(mission);
+                    
+                    // Mettre à jour IsPaid dans PrevisionPrice à 1
+                    await UpdatePrevisionPaymentStatusAsync(missionId);
                 }
 
                 await _repository.SaveChangesAsync();
@@ -166,7 +172,39 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        // Implémentation pour le total des montants payés
+        private async Task UpdatePrevisionPaymentStatusAsync(string missionId)
+        {
+            try
+            {
+                var previsionPrices = await _previsionPriceRepository.GetByMissionIdAsync(missionId);
+                
+                if (previsionPrices?.Any() == true)
+                {
+                    foreach (var previsionPrice in previsionPrices)
+                    {
+                        if (previsionPrice != null)
+                        {
+                            previsionPrice.IsPaid = 1;
+                            previsionPrice.UpdatedAt = DateTime.UtcNow;
+                            
+                            await _previsionPriceRepository.UpdateAsync(previsionPrice);
+                        }
+                    }
+                    
+                    await _previsionPriceRepository.SaveChangesAsync();
+                    _logger.LogInformation("Mise à jour du statut de paiement pour la mission {missionId}", missionId);
+                }
+                else
+                {
+                    _logger.LogInformation("Aucun PrevisionPrice trouvé pour la mission {missionId}", missionId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour du statut de paiement de la prévision pour la mission {missionId}", missionId);
+            }
+        }
+        
         public async Task<decimal> GetTotalPaidAmountAsync()
         {
             try

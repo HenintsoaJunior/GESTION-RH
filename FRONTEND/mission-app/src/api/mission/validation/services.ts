@@ -147,6 +147,7 @@ export interface MissionValidation {
 
 export interface RequestFilter {
   employeeId?: string;
+  employeeMatricule?: string;
   status?: string;
   validationDateFrom?: string;
   validationDateTo?: string;
@@ -358,18 +359,31 @@ export const useGetMissionValidationRequests = (
           page: page.toString(),
           pageSize: pageSize.toString(),
         });
+        
+        // Filtre par ID employé
         if (filter?.employeeId) {
           params.append('employeeId', filter.employeeId);
         }
+        
+        // Filtre par matricule employé - AJOUTÉ
+        if (filter?.employeeMatricule) {
+          params.append('employeeMatricule', filter.employeeMatricule);
+        }
+        
+        // Filtre par statut
         if (filter?.status) {
           params.append('status', filter.status);
         }
+        
+        // Filtres par date de validation
         if (filter?.validationDateFrom) {
           params.append('validationDateFrom', filter.validationDateFrom);
         }
         if (filter?.validationDateTo) {
           params.append('validationDateTo', filter.validationDateTo);
         }
+        
+        // Filtres par date de demande
         if (filter?.requestDateFrom) {
           params.append('requestDateFrom', filter.requestDateFrom);
         }
@@ -379,14 +393,19 @@ export const useGetMissionValidationRequests = (
         
         const url = `/api/MissionValidation/requests/${userId}?${params.toString()}`;
         
+        console.log('DEBUG: URL appelée pour les missions:', url);
+        console.log('DEBUG: Paramètres de filtrage:', {
+          employeeId: filter?.employeeId,
+          employeeMatricule: filter?.employeeMatricule,
+          status: filter?.status,
+          validationDateFrom: filter?.validationDateFrom,
+          validationDateTo: filter?.validationDateTo,
+          requestDateFrom: filter?.requestDateFrom,
+          requestDateTo: filter?.requestDateTo,
+        });
+        
         const response = await api.get(url);
 
-        // CORRECTION IMPORTANTE : La réponse de l'API a la structure suivante :
-        // {
-        //   "data": { "results": [...], "totalCount": X },
-        //   "status": 200,
-        //   "message": "success"
-        // }
         
         if (response.data.status !== 200) {
           throw new Error(response.data.message || 'Failed to fetch mission validation requests');
@@ -404,15 +423,27 @@ export const useGetMissionValidationRequests = (
         
         const rawData = apiResponse.data;
         
+        // Log pour déboguer les données reçues
+        console.log('DEBUG: Données missions reçues:', {
+          totalCount: rawData.totalCount,
+          resultsCount: rawData.results?.length || 0,
+          firstResult: rawData.results?.[0],
+        });
+        
         return {
           results: rawData.results ? rawData.results.map(formatMissionValidationToFormattedMission) : [],
           totalCount: rawData.totalCount || 0,
         };
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          
+          console.error('DEBUG: Erreur API lors du fetch des missions:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status,
+          });
           throw new Error(error.response?.data?.message || 'An error occurred while fetching mission validation requests');
         }
+        console.error('DEBUG: Erreur inconnue lors du fetch des missions:', error);
         throw error;
       }
     },
