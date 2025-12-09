@@ -221,7 +221,7 @@ public class RequestRepository : IRequestRepository
             ReplacementDate = request.ReplacementDate,
             ReplacementReason = request.ReplacementReason?.Name,
             ReasonPrecision = request.ReasonPrecision,
-            LastTitularId = request.LastTitular?.UserId,
+            LastTitular = request.LastTitular?.Name,
             Sites = sites.ToArray(),
             Contract = request.Contract?.Code,
             ContractPrecision = request.ContractPrecision,

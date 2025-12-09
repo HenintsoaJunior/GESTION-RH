@@ -336,7 +336,7 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("{matricule}/directeur-tutelle")]
-    // [AllowAnonymous]
+    [AllowAnonymous]
     public async Task<ActionResult> GetDirecteurTutelle(string matricule)
     {
         // if (!User.Identity?.IsAuthenticated ?? true)

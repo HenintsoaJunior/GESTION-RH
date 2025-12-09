@@ -21,13 +21,20 @@ public class RequestDetailsDTO
     public DateOnly? ReplacementDate {get; set;}
     public string? ReplacementReason {get; set;}
     public string? ReasonPrecision {get; set;}
-    public string? LastTitularId {get; set;}
+    public string? LastTitular {get; set;}
     public string[] Sites {get; set;} = [];
     public string? Contract {get; set;}
     public string? ContractPrecision {get; set;}
     public short? MonthDuration {get; set;}
     public DateOnly BeginningDate {get; set;}
     public int ValidationLevel {get; set;}
+}
+
+
+public class ValidationDTO
+{
+    public RequestDetailsDTO RequestDetails {get; set;} = null!;
+    public byte[] Signatures {get; set;} = null!;
 }
 
 

@@ -136,6 +136,7 @@ const RequestList: React.FC = () => {
     const userId = userData?.userId || "";
 
     const canAddRequest = useHasHabilitation(userId, "Créer demande recrutement");
+    const canViewDetails = useHasHabilitation(userId, "Afficher détails demande recrutement");
 
     useEffect(() => {
         setTotalCount(searchResponse?.totalCount || 0);
@@ -341,14 +342,14 @@ const RequestList: React.FC = () => {
             <DataTable>
                 <thead>
                     <tr>
-                    <TableHeadCell>Référence</TableHeadCell>
-                    <TableHeadCell>Poste</TableHeadCell>
-                    <TableHeadCell>Efféctif</TableHeadCell>
-                    <TableHeadCell>Contrat</TableHeadCell>
-                    <TableHeadCell>Date souhaitée</TableHeadCell>
-                    <TableHeadCell>Statut</TableHeadCell>
-                    <TableHeadCell>Date d'envoi</TableHeadCell>
-                    <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
+                        <TableHeadCell>Référence</TableHeadCell>
+                        <TableHeadCell>Poste</TableHeadCell>
+                        <TableHeadCell>Efféctif</TableHeadCell>
+                        <TableHeadCell>Contrat</TableHeadCell>
+                        <TableHeadCell>Date souhaitée</TableHeadCell>
+                        <TableHeadCell>Statut</TableHeadCell>
+                        <TableHeadCell>Date d'envoi</TableHeadCell>
+                        <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
                     </tr>
                 </thead>
                 <tbody>
@@ -362,9 +363,11 @@ const RequestList: React.FC = () => {
                     requests.map((req) => (
                         <TableRow key={req.id}>
                             <TableCell>
-                                <Link to={`/recrutement/demandes/${req.id}/details`} className="link">
-                                {req.id}
-                                </Link>
+                                { canViewDetails ? (
+                                    <Link to={`/recrutement/demandes/${req.id}/details`} className="link">
+                                    {req.id}
+                                    </Link>
+                                ) : ( req.id ) }
                             </TableCell>
                             <TableCell>{req.post}</TableCell>
                             <TableCell>{req.effective}</TableCell>

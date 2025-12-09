@@ -37,7 +37,7 @@ export interface RequestDetailsDTO {
     replacementDate?: string | null;
     replacementReason?: string | null;
     reasonPrecision?: string | null;
-    lastTitularId?: string | null;
+    lastTitular?: string | null;
     sites: string[];
     contract?: string | null;
     contractPrecision?: string | null;
@@ -162,7 +162,7 @@ export const useGetUsersByDirection = (direction: string) => {
 export const useGetRecruitmentRequestDetails = (id: string) => {
     const queryKey = [...SEARCH_REQUEST_DETAILS_BASE_KEY, id] as const;
 
-    return useQuery<{ data: RequestDTO }, Error>({
+    return useQuery<{ data: RequestDetailsDTO }, Error>({
         queryKey,
         queryFn: async () => {
             try {
