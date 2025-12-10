@@ -7,7 +7,8 @@ namespace MyApp.Api.Controllers.recruitment;
 
 [ApiController]
 [Route("api/recruitment/requests")]
-public class RecruitmentRequestController(IRequestService _service) 
+public class RecruitmentRequestController(IRequestService _service, 
+    IRequestValidationService _validationService) 
  : ControllerBase
 {
     [HttpGet]
@@ -83,6 +84,26 @@ public class RecruitmentRequestController(IRequestService _service)
 
         try {
             var results = await _service.GetRequestDetails(id);
+            return Ok(new { data = results, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
+
+
+    [HttpGet("{id}/validators")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetRequestValidators([FromRoute] string id) {
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try {
+            var results = await _validationService.GetAllDirectorValidator(id);
             return Ok(new { data = results, status = 200, message = "success" });
         }
         catch (ArgumentException ex) {

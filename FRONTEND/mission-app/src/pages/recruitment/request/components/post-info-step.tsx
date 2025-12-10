@@ -216,9 +216,8 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 									type="number"
 									name="monthDuration"
 									value={
-										formData.monthDuration === undefined || formData.monthDuration?.toString() === ""
-											? 0
-											: Number(formData.monthDuration)
+										formData.monthDuration === undefined || formData.monthDuration?.toString() === "" ? 
+											undefined : Number(formData.monthDuration)
 									}
 									onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
 									placeholder="Nombre de mois"

@@ -31,6 +31,7 @@ import MissionsEnCoursMapPage from './pages/maps';
 import Home from '@/pages/Home';
 import RequestList from './pages/recruitment/request/request-list';
 import ProtectedRequestDetails from './pages/recruitment/request/request-details';
+import DraftRequestList from './pages/recruitment/validation/draft-request-list';
 // import { useAuthSync } from '@/utils/use-auth-sync';
 function App() {
 
@@ -84,6 +85,8 @@ function App() {
 
         <Route path="/recrutement/demandes/liste" element={<RequestList />} />
         <Route path="/recrutement/demandes/:id/details" element={<ProtectedRequestDetails />} />
+
+        <Route path="/recrutement/demandes/validation" element={<DraftRequestList />} />
         
         {/* ERROR */}
         <Route path="/403" element={<Error403Page />} />

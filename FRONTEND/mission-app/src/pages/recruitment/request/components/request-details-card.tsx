@@ -22,7 +22,7 @@ const RequestDetailsCard: React.FC<Props> = ({ details }) => {
     const fBeginningDate = formatDate(beginningDate, "dd/MM/yyyy");
 
     const endingDate = addMonths(beginningDate, details.monthDuration ?? 0);
-    const fEndingDate = formatDate(endingDate, "dd/MM/yyyy");
+    const fEndingDate = (details.monthDuration!=null) ? formatDate(endingDate, "dd/MM/yyyy"):"--";
 
     return (
         <div className="request-container">
@@ -69,7 +69,7 @@ const RequestDetailsCard: React.FC<Props> = ({ details }) => {
 
                 <div className="detail-row">
                     <span className="label">Durée :</span>
-                    <span className="value">{details.monthDuration ?? "—"} mois</span>
+                    <span className="value">{details.monthDuration != null ? details.monthDuration + " mois" : "--"}</span>
                 </div>
 
                 <div className="detail-row">

@@ -34,7 +34,7 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
     effective: 0,
     contractId: initialContractId,
     contractPrecision: null,
-    monthDuration: 0,
+    monthDuration: null,
     sites: [],
     applicantUserId: "",
     isReplacement: false,
@@ -241,9 +241,6 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
       isValid = validateStep2();
     }
 
-    // console.log(`handleNext (step ${currentStep}) - validation result:`, isValid);
-    // console.log(`handleNext (step ${currentStep}) - payload preview:`, { ...formData });
-
     if (isValid) {
       setCurrentStep((s) => Math.min(s + 1, 2)); // move to next step (max step 2)
     }
@@ -260,7 +257,7 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
       effective: 0,
       contractId: "",
       contractPrecision: "",
-      monthDuration: 0,
+      monthDuration: null,
       sites: [],
       applicantUserId: currentUserId || "",
       isReplacement: false,

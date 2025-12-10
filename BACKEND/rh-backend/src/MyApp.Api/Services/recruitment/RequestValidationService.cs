@@ -1,11 +1,11 @@
-using MyApp.Api.Entities.users;
+using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.recruitment;
 
 namespace MyApp.Api.Services.recruitment;
 
 public interface IRequestValidationService
 {
-    Task<List<User>> GetAllDirectors();
+    Task<List<UserDto>> GetAllDirectorValidator(string requestId);
 }
 
 public class RequestValidationService(
@@ -16,13 +16,13 @@ public class RequestValidationService(
     private readonly IRequestValidationRepository _repo = r1;
 
 
-    public async Task<List<User>> GetAllDirectors() {
+    public async Task<List<UserDto>> GetAllDirectorValidator(string requestId) {
         try {
-            log.LogInformation("Recherche des directeurs");
-            return await _repo.GetAllDirectors();
+            _logger.LogInformation("Recherche des directeurs validateurs");
+            return await _repo.GetAllDirectorValidator(requestId);
         }
         catch(Exception ex) {
-            log.LogError(ex, "Erreur lors de la recherche des directeurs");
+            _logger.LogError(ex, "Erreur lors de la recherche des directeurs");
             throw;
         }
     }
