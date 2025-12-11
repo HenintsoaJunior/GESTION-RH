@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import type { RequestValidationFormDTO } from "../components/validation-form";
+import { useValidateRecruitmentRequest } from "@/api/recruitment/service";
 
 interface FieldErrors {
     [key: string]: string[];
@@ -16,7 +17,6 @@ interface UseValidateRequestReturn {
 }
 
 const useValidateRequest = (): UseValidateRequestReturn => {
-
     const [formData, setFormData] = useState<RequestValidationFormDTO>({
         requestId: "",
         validatorId: "",
@@ -24,6 +24,8 @@ const useValidateRequest = (): UseValidateRequestReturn => {
         signature: null,
         comments: null
     });
+
+    const validate = useValidateRecruitmentRequest();
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -72,7 +74,9 @@ const useValidateRequest = (): UseValidateRequestReturn => {
 
     const submitValidation = async (data: RequestValidationFormDTO) => {
         console.log("Validation envoyée :", data);
-        return new Promise<void>((resolve) => setTimeout(resolve, 500));
+
+    // Envoi du formulaire vers le backend
+        await validate.mutateAsync(formData);
     };
 
     return {

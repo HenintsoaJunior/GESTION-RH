@@ -113,4 +113,25 @@ public class RecruitmentRequestController(IRequestService _service,
             return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
         }
     }
+
+
+    [HttpPost("validate")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ValidateRecruitmentRequest([FromBody] CreateRequestValidationDTO data)
+    {
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try {
+            await _validationService.DoValidationForRequest(data);
+            return Ok(new { data = (object?)null, status = 200, message = "Validation faite avec succès" });
+        }
+        catch(ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch(Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
 }

@@ -8,12 +8,17 @@ import { FormContainer, GenericForm } from "@/styles/form-container";
 import Alert from "@/components/alert";
 import ValidationForm, { type RequestValidationFormDTO } from "./components/validation-form";
 import useValidateRequest from "./hooks/use-validate-request";
+import type { AxiosError } from "axios";
 
 interface RequestValidationFormProps {
     isOpen: boolean;
     requestId: string;
     onClose: () => void;
     onFormSuccess: (type: string, message: string) => void;
+}
+
+interface BackendError {
+    message?: string;
 }
 
 const RequestValidationForm: React.FC<RequestValidationFormProps> = ({
@@ -65,9 +70,13 @@ const RequestValidationForm: React.FC<RequestValidationFormProps> = ({
             handleReset();
             onClose();
 
-        } catch (err) {
-            console.error(err);
-            showError("Erreur lors de la validation.");
+        } catch (err: unknown) {
+            const axiosError = err as AxiosError<BackendError>;
+
+            const backendMessage =
+                axiosError.response?.data?.message || "Erreur inconnue";
+
+            showError(backendMessage);
         }
     };
 

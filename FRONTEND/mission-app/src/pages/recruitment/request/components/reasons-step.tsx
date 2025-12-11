@@ -24,6 +24,8 @@ export interface RecruitmentReasonForm {
     replacementDate: string | null;
     reasonPrecision: string | null;
     lastTitularId: string | null;
+    isPlanned: boolean;
+    notPlannedReason: string | null;
     beginningDate: string;
 }
 
@@ -37,7 +39,7 @@ interface RecruitmentReasonStepProps {
             | React.ChangeEvent<HTMLInputElement>
             | React.ChangeEvent<HTMLTextAreaElement>
             | React.ChangeEvent<HTMLSelectElement>
-            | { target: { name: string; value: string | null } },
+            | { target: { name: string; value: string | number | boolean | null } },
         section?: string
     ) => void;
 }
@@ -68,13 +70,18 @@ const RecruitmentReasonStep: React.FC<RecruitmentReasonStepProps> = ({
 	);
 
 	// Mapping des labels pour l’autocomplete
-	const reasonSuggestions = useMemo(
-		() => reasons.map(r => ({
-			id: r.id,
-			label: r.name
-		})),
-		[reasons]
-	);
+	const reasonSuggestions = useMemo(() => {
+        const dbReasons = reasons.map(r => ({
+            id: r.id,
+            label: r.name
+        }));
+
+        // 🔥 Ajout manuel de l’option "Autre"
+        return [
+            ...dbReasons,
+            { id: "other", label: "Autre" }
+        ];
+    }, [reasons]);
 
 	// Trouver le label correspondant à l’ID contenu dans le formulaire
 	const selectedReasonLabel =
@@ -145,11 +152,35 @@ const RecruitmentReasonStep: React.FC<RecruitmentReasonStepProps> = ({
 								</FormFieldCell>
                             </FormRow>
 
+                            {isOtherReason && (
+                                <FormRow>
+                                    <FormFieldCell colSpan={2}>
+                                        <FormLabelRequired>Précision du motif</FormLabelRequired>
+                                        <FormInput
+                                            type="text"
+                                            name="reasonPrecision"
+                                            value={formData.reasonPrecision || ""}
+                                            onChange={(e) => handleInputChange(e)}
+                                            disabled={isSubmitting}
+                                            placeholder="Préciser..."
+                                            className={
+                                                fieldErrors?.reasonPrecision ? "input-error" : ""
+                                            }
+                                        />
+                                        {fieldErrors?.reasonPrecision && (
+                                            <ErrorMessage>
+                                                {fieldErrors.reasonPrecision.join(", ")}
+                                            </ErrorMessage>
+                                        )}
+                                    </FormFieldCell>
+                                </FormRow>
+                            )}
+
                             {/* Date + dernier titulaire */}
                             <FormRow className="dual-field-row">
                                 {/* Date */}
                                 <FormFieldCell>
-                                    <FormLabelRequired>Date de remplacement</FormLabelRequired>
+                                    <FormLabelRequired>Date de survenance</FormLabelRequired>
                                     <FormInput
                                         type="date"
                                         name="replacementDate"
@@ -169,7 +200,7 @@ const RecruitmentReasonStep: React.FC<RecruitmentReasonStepProps> = ({
 
                                 {/* Dernier titulaire (AUTOCOMPLETE) */}
                                 <FormFieldCell>
-									<FormLabel>Dernier titulaire</FormLabel>
+									<FormLabel>Ancien titulaire</FormLabel>
 									<StyledAutoCompleteInput
 										value={
 											userSuggestions.find(u => u.id === formData.lastTitularId)?.label || ""
@@ -197,39 +228,78 @@ const RecruitmentReasonStep: React.FC<RecruitmentReasonStepProps> = ({
 								</FormFieldCell>
 
                             </FormRow>
-
-                            {/* Précision si motif "Autre" */}
-                            {isOtherReason && (
-                                <FormRow>
-                                    <FormFieldCell colSpan={2}>
-                                        <FormLabelRequired>Précision du motif</FormLabelRequired>
-                                        <FormInput
-                                            type="text"
-                                            name="reasonPrecision"
-                                            value={formData.reasonPrecision || ""}
-                                            onChange={(e) => handleInputChange(e)}
-                                            disabled={isSubmitting}
-                                            placeholder="Préciser..."
-                                            className={
-                                                fieldErrors?.reasonPrecision ? "input-error" : ""
-                                            }
-                                        />
-                                        {fieldErrors?.reasonPrecision && (
-                                            <ErrorMessage>
-                                                {fieldErrors.reasonPrecision.join(", ")}
-                                            </ErrorMessage>
-                                        )}
-                                    </FormFieldCell>
-                                </FormRow>
-                            )}
                         </>
                     )}
                 </tbody>
             </FormTable>
 
+            <FormSectionTitle>Budget concerné</FormSectionTitle>
+            <FormTable>
+                <tbody>
+                    {/* Checkbox Prévue ou pas */}
+                    <FormRow>
+                        <FormFieldCell colSpan={2}>
+                            <div  style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginTop: 8 }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <FormInput
+                                        type="radio"
+                                        name="isPlanned"
+                                        checked={formData.isPlanned === true}
+                                        onChange={() =>
+                                            handleInputChange({
+                                                target: { name: "isPlanned", value: true }
+                                            })
+                                        }
+                                        disabled={isSubmitting}
+                                    />
+                                    <span>Prévu</span>
+                                </label>
+
+                                <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <FormInput
+                                        type="radio"
+                                        name="isPlanned"
+                                        checked={formData.isPlanned === false}
+                                        onChange={() =>
+                                            handleInputChange({
+                                                target: { name: "isPlanned", value: false }
+                                            })
+                                        }
+                                        disabled={isSubmitting}
+                                    />
+                                    <span>Non prévu</span>
+                                </label>
+                            </div>
+                        </FormFieldCell>
+                    </FormRow>
+
+                    {!formData.isPlanned && ( <>
+                        <FormRow>
+                            <FormFieldCell colSpan={2}>
+                                <FormLabelRequired>Explications</FormLabelRequired>
+                                <textarea
+                                    name="notPlannedReason"
+                                    value={formData.notPlannedReason ?? ""}
+                                    onChange={(e) =>
+                                        handleInputChange({
+                                            target: { name: "notPlannedReason", value: e.target.value }
+                                        })
+                                    }
+                                    style={{ width: "100%", minHeight: 120 }}
+                                    disabled={isSubmitting}
+                                />
+    
+                                {fieldErrors.notPlannedReason && (
+                                    <ErrorMessage>{fieldErrors.notPlannedReason.join(", ")}</ErrorMessage>
+                                )}
+                            </FormFieldCell>
+                        </FormRow>
+                    </> )}
+                </tbody>
+            </FormTable>
+
             {/* Section 2 */}
             <FormSectionTitle>Date souhaitée</FormSectionTitle>
-
             <FormTable>
                 <tbody>
                     <FormRow>

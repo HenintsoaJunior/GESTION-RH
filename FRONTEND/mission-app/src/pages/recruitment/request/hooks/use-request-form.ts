@@ -25,6 +25,8 @@ export interface RecruitmentRequestForm
   reasonPrecision: string | null;
   lastTitularId: string | null;
   beginningDate: string;
+  isPlanned: boolean;
+  notPlannedReason: string | null;
 }
 
 const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormProps = {}) => {
@@ -42,6 +44,8 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
     replacementDate: null,
     reasonPrecision: null,
     lastTitularId: null,
+    isPlanned: false,
+    notPlannedReason: null,
     beginningDate: "",
   });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -71,7 +75,7 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
   }, [currentUserId]);
 
   const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: string | null } }) => {
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: string | number | boolean | null } }) => {
       const { name, value } = e.target;
 
       // handle site checkboxes (name format: site_${siteId})
@@ -190,6 +194,8 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
     const replacementDate = formData.replacementDate ?? "";
     const reasonPrecision = formData.reasonPrecision ?? "";
     const isOtherReason = replacementReasonId === "other";
+    const isPlanned = formData.isPlanned;
+    const notPlannedReason = formData.notPlannedReason ?? "";
 
     // Date souhaitée is ALWAYS required (not just when isReplacement is true)
     if (!beginningDateValue || String(beginningDateValue).trim() === "") {
@@ -218,6 +224,12 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
       // Validation du dernier titulaire
       if (!formData.lastTitularId || String(formData.lastTitularId).trim() === "") {
         errors.lastTitularId = ["Le dernier titulaire est requis pour un remplacement."];
+      }
+    }
+
+    if(!isPlanned) {
+      if(!notPlannedReason || String(notPlannedReason).trim() === "") {
+        errors.notPlannedReason = ["Les explications sur le budget sont requises."];
       }
     }
 
@@ -255,17 +267,19 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
     setFormData({
       post: "",
       effective: 0,
-      contractId: "",
-      contractPrecision: "",
+      contractId: null,
+      contractPrecision: null,
       monthDuration: null,
       sites: [],
       applicantUserId: currentUserId || "",
       isReplacement: false,
-      replacementReasonId: "",
-      replacementDate: "",
-      reasonPrecision: "",
-      lastTitularId: "",
+      replacementReasonId: null,
+      replacementDate: null,
+      reasonPrecision: null,
+      lastTitularId: null,
       beginningDate: "",
+      isPlanned: false,
+      notPlannedReason: null
     });
     setFieldErrors({});
     setCurrentStep(1);

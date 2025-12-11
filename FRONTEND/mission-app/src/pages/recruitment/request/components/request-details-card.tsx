@@ -91,8 +91,8 @@ const RequestDetailsCard: React.FC<Props> = ({ details }) => {
                     </div>
 
                     <div className="detail-row">
-                        <span className="label">Raison :</span>
-                        <span className="value">{details.replacementReason ?? "—"}</span>
+                        <span className="label">Motif du remplacement :</span>
+                        <span className="value">{details.replacementReason ?? details.reasonPrecision}</span>
                     </div>
 
                     <div className="detail-row">

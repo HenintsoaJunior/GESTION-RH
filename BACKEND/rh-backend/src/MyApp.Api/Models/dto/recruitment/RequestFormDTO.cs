@@ -28,4 +28,8 @@ public class RequestFormDTO
     public DateOnly BeginningDate {get; set;}
 
     public string ApplicantUserId {get; set;} = null!;
+
+    [Required(ErrorMessage = "Dotation au budget obligatoire")]
+    public bool IsPlanned {get; set;}
+    public string? NotPlannedReason {get; set;}
 }

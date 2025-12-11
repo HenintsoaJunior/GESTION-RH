@@ -21,8 +21,9 @@ public class RecruitmentRequest : BaseEntity
     [Column("month_duration")]
     public short? MonthDuration {get; set;}
 
-    [Column("contract_precision")]
-    public string? ContractPrecision {get; set;}
+    [Column("begining_date")]
+    public DateOnly BeginningDate {get; set;}
+
 
     [Column("is_replacement")]
     public bool IsReplacement {get; set;}
@@ -30,8 +31,6 @@ public class RecruitmentRequest : BaseEntity
     [Column("replacement_date")]
     public DateOnly? ReplacementDate {get; set;}
 
-    [Column("begining_date")]
-    public DateOnly BeginningDate {get; set;}
 
     [ForeignKey("applicant_user")]
     public User ApplicantUser {get; set;} = null!;
@@ -39,15 +38,27 @@ public class RecruitmentRequest : BaseEntity
     [ForeignKey("replacement_reason_id")]
     public ReplacementReason? ReplacementReason {get; set;}
 
-    [Column("is_deleted")]
-    public bool IsDeleted  { get; set; } = false;
-
     [Column("reason_precision")]
     public string? ReasonPrecision {get; set;}
+
+    [ForeignKey("last_titular_user")]
+    public User? LastTitular {get; set;}
+
 
     [ForeignKey("contract_type_id")]
     public ContractType? Contract {get; set;}
 
-    [ForeignKey("last_titular_user")]
-    public User? LastTitular {get; set;}
+    [Column("contract_precision")]
+    public string? ContractPrecision {get; set;}
+
+
+    [Column("is_planned")]
+    public bool IsPlanned {get; set;}
+
+    [Column("not_planned_reason")]
+    public string? NotPlannedReason {get; set;}
+
+
+    [Column("is_deleted")]
+    public bool IsDeleted  { get; set; } = false;
 }

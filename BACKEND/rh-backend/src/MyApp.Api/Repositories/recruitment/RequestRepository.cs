@@ -28,66 +28,71 @@ public class RequestRepository : IRequestRepository
         _logger = log;
     }
 
-    public async Task<(List<RequestListDTO>, int)> SearchRequests(
+
+  public async Task<(List<RequestListDTO>, int)> SearchRequests(
         FilterRequestListDTO dto, int page, int pageSize
     ) {
         var query = _dbCtx.RequestValidations.AsNoTracking()
-            .Include(r => r.Status).Include(r => r.Request)
+            .Include(r => r.Status)
+            .Include(r => r.Request)
                 .ThenInclude(req => req.ApplicantUser)
             .Include(r => r.Request.Contract)
-            .Where(r => r.Request.IsDeleted==false)
+            .Where(r => !r.Request.IsDeleted)
             .AsQueryable();
 
-    // --- Filtre: Post ---
-        if(!string.IsNullOrWhiteSpace(dto.post)) 
+        // --- Appliquer les filtres sur la demande ---
+        if (!string.IsNullOrWhiteSpace(dto.post))
             query = query.Where(r => r.Request.Post.ToLower().Contains(dto.post.ToLower()));
 
-    // --- Filtre: Contract ---
-        if(!string.IsNullOrWhiteSpace(dto.contract))
-            query = query.Where(r => r.Request.Contract != null &&
-                r.Request.Contract.Code == dto.contract);
+        if (!string.IsNullOrWhiteSpace(dto.contract))
+            query = query.Where(r => r.Request.Contract != null && r.Request.Contract.Code == dto.contract);
 
-    // --- Filtre: Status ---
-        if(!string.IsNullOrWhiteSpace(dto.status))
-            query = query.Where(r => r.Status.Name == dto.status);
+        if (!string.IsNullOrWhiteSpace(dto.direction))
+            query = query.Where(r => r.Request.ApplicantUser.Department == dto.direction);
 
-    // --- Filtre: Direction ---
-        if(!string.IsNullOrWhiteSpace(dto.direction))
-            query = query.Where(r =>
-                r.Request.ApplicantUser.Department == dto.direction
-            );
+        if (dto.minDate.HasValue)
+            query = query.Where(r => DateOnly.FromDateTime(r.Request.CreatedAt) >= dto.minDate.Value);
 
-    // --- Filtre: Date début et Date fin ---
-        if(dto.minDate.HasValue)
-            query = query.Where(r => 
-                DateOnly.FromDateTime(r.Request.CreatedAt) >= dto.minDate.Value
-            );
+        if (dto.maxDate.HasValue)
+            query = query.Where(r => DateOnly.FromDateTime(r.Request.CreatedAt) <= dto.maxDate.Value);
 
-        if(dto.maxDate.HasValue)
-            query = query.Where(r => 
-                DateOnly.FromDateTime(r.Request.CreatedAt) <= dto.maxDate.Value
-            );
+        // --- Charger toutes les validations filtrées côté client ---
+        var allValidations = await query.ToListAsync();
 
-    // --- Compter avant la pagination ---
-        int totalCount = await query.CountAsync();
+        // --- Grouper par demande et prendre la dernière validation ---
+        var lastValidations = allValidations
+            .GroupBy(v => v.Request.Id)
+            .Select(g => g.OrderByDescending(v => v.CreatedAt).First())
+            .ToList();
 
-    // --- Pagination + tri ---
-        var list = await query
-            .OrderByDescending(r => r.CreatedAt).ThenBy(r => r.Request.Post)
+        // --- Filtrer par statut après avoir pris la dernière validation ---
+        if (!string.IsNullOrWhiteSpace(dto.status))
+        {
+            lastValidations = lastValidations
+                .Where(v => v.Status.Name.Equals(dto.status, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        // --- Pagination côté client ---
+        int totalCount = lastValidations.Count;
+        var paged = lastValidations
+            .OrderByDescending(v => v.CreatedAt)
+            .ThenBy(v => v.Request.Post)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(r => new RequestListDTO {
+            .Select(r => new RequestListDTO
+            {
                 Id = r.Request.Id,
                 Post = r.Request.Post,
                 Effective = r.Request.Effective,
-                Contract = r.Request.Contract!=null ? r.Request.Contract.Code:"Autre" ,
+                Contract = r.Request.Contract != null ? r.Request.Contract.Code : "Autre",
                 WishedDate = r.Request.BeginningDate,
                 Status = r.Status.Name,
                 SendingDate = DateOnly.FromDateTime(r.Request.CreatedAt)
             })
-        .ToListAsync();
+            .ToList();
 
-        return (list, totalCount);
+        return (paged, totalCount);
     }
 
 
@@ -123,6 +128,7 @@ public class RequestRepository : IRequestRepository
                 IsReplacement = data.IsReplacement,
                 ReplacementReason = replacementReason,
                 ReplacementDate = data.ReplacementDate,
+                ReasonPrecision = data.ReasonPrecision,
                 LastTitular = lastTitular,
 
                 Contract = contract,
@@ -131,7 +137,10 @@ public class RequestRepository : IRequestRepository
 
                 BeginningDate = data.BeginningDate,
                 ApplicantUser = applicant,
-                IsDeleted = false
+                IsDeleted = false,
+
+                IsPlanned = data.IsPlanned,
+                NotPlannedReason = data.NotPlannedReason
             };
 
             var reqValidation = new RequestValidation
@@ -227,7 +236,9 @@ public class RequestRepository : IRequestRepository
             ContractPrecision = request.ContractPrecision,
             MonthDuration = request.MonthDuration,
             BeginningDate = request.BeginningDate,
-            ValidationLevel = validationLevel
+            ValidationLevel = validationLevel,
+            IsPlanned = request.IsPlanned,
+            NotPlannedReason = request.NotPlannedReason
         };
     }
 }

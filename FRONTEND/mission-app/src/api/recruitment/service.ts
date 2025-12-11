@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import api from '@/utils/axios-config';
 import type { RecruitmentRequestForm } from '@/pages/recruitment/request/hooks/use-request-form';
+import type { RequestValidationFormDTO } from '@/pages/recruitment/validation/components/validation-form';
 
 // Base key pour React Query
 const SEARCH_REQUESTS_BASE_KEY = ['searchRequests'] as const;
@@ -175,5 +176,16 @@ export const useGetRecruitmentRequestDetails = (id: string) => {
                 throw error;
             }
         }
+    });
+};
+
+
+export const useValidateRecruitmentRequest = () => {
+    const queryClient = useQueryClient();
+    return useMutation<CreateRequestResponse, Error, RequestValidationFormDTO>({
+        mutationFn: (data) => api.post('/api/recruitment/requests/validate', data).then(r => r.data),
+        onSuccess: () => queryClient.invalidateQueries({ 
+            queryKey: SEARCH_REQUESTS_BASE_KEY 
+        }),
     });
 };

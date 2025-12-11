@@ -78,10 +78,11 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
 
             try {
                 if(formData.contractId==="other") formData.contractId=null;
+                if(formData.replacementReasonId==="other") formData.replacementReasonId=null;
+
                 const beginningDate = new Date(formData.beginningDate);
                 formData.beginningDate = beginningDate.toISOString().split('T')[0];
 
-                console.log("Données du formulaire à envoyer :", formData);
             // Envoi du formulaire
                 await createRequest.mutateAsync(formData);
 
@@ -173,6 +174,8 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                                       replacementReasonId: formData.replacementReasonId!="" ? formData.replacementReasonId:null,
                                       replacementDate: formData.replacementDate!="" ? formData.replacementDate:null,
                                       reasonPrecision: formData.reasonPrecision,
+                                      isPlanned: formData.isPlanned,
+                                      notPlannedReason: formData.notPlannedReason,
                                       lastTitularId: formData.lastTitularId,
                                       beginningDate: formData.beginningDate,
                                     }}

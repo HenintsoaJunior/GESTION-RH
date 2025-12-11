@@ -28,6 +28,8 @@ public class RequestDetailsDTO
     public short? MonthDuration {get; set;}
     public DateOnly BeginningDate {get; set;}
     public int ValidationLevel {get; set;}
+    public bool IsPlanned {get; set;}
+    public string? NotPlannedReason {get; set;}
 }
 
 
