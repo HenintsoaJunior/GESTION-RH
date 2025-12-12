@@ -1,26 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from 'react-router-dom';
 import {
-    Clock as ClockIcon,
-    CheckCircle as CheckIcon,
-    XCircle,
-    Calendar,
-    MapPin,
-    AlertTriangle,
-    DollarSign,
     X,
     List,
     ChevronDown,
     ChevronUp,
     ArrowLeft,
-    Eye, 
-    User,
 } from "lucide-react";
 import {
     Loading,
     NoDataMessage,
-    StatusBadge,
     FiltersContainer,
     FiltersHeader,
     FiltersTitle,
@@ -40,48 +31,19 @@ import {
     StyledAutoCompleteInput,
 } from "@/styles/table-styles";
 import {
-    PageHeader as DetailsPageHeader,
-    HeaderLeft as DetailsHeaderLeft,
-    BtnBack as DetailsBtnBack,
-    HeaderActions as DetailsHeaderActions,
-    Separator as DetailsSeparator,
-} from "@/styles/detailsmission-styles";
-import {
     CardsPaginationContainer,
     CardsContainer,
-    Card,
-    IndicatorBlock,
-    IndicatorValue,
-    IndicatorText,
-    CardHeader,
-    CardTitle,
-    CardInfo,
-    ActionButton,
-    ActionsContainer,
 } from "@/styles/card-styles";
 import Pagination from "@/components/pagination";
-import { useExpenseReportsByStatus, useReimburseByAssignationId, type ExpenseSummary } from "@/api/mission/expense_report/services";
-import { useCurrencies } from '@/api/currency/services';
+import { useExpenseReportsByFilters, useReimburseByMissionId } from "@/api/mission/expense_report/services";
 import { useGetAllEmployeesSimple } from "@/api/collaborator/services";
 import type { Employee as CollabEmployee } from "@/api/collaborator/services";
 import Modal from "@/components/modal";
-import AlertComponent from "@/components/alert"; // Ajustez le chemin d'import selon votre structure de dossiers
+import AlertComponent from "@/components/alert";
+import { ReimbursementCard } from "./reimbursement-card";
+import type { FormattedRemboursement, Filter, LoadingState } from "./types/reimbursement";
 
-interface Filter {
-  status: string;
-  missionType: string;
-  employeeSearch: string;
-  paymentDateMin: string;
-  paymentDateMax: string;
-  fictionalFilter: string;
-}
-
-interface LoadingState {
-  remboursements: boolean;
-  currencies: boolean;
-  employees: boolean;
-}
-
+// Interface pour les props des filtres
 interface RemboursementFiltersProps {
   isHidden: boolean;
   setIsHidden: React.Dispatch<React.SetStateAction<boolean>>;
@@ -91,14 +53,16 @@ interface RemboursementFiltersProps {
   handleFilterSubmit: () => void;
   handleResetFilters: () => void;
   filteredEmployeeSuggestions: string[];
+  filteredMatriculeSuggestions: string[];
   missionTypes: string[];
   handleEmployeeChange: (value: string) => void;
+  handleMatriculeChange: (value: string) => void;
   handleMissionTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   handlePaymentDateMinChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handlePaymentDateMaxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleFictionalFilterChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
+// Composant de filtres
 const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
   isHidden,
   setIsHidden,
@@ -108,16 +72,20 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
   handleFilterSubmit,
   handleResetFilters,
   filteredEmployeeSuggestions,
+  filteredMatriculeSuggestions,
   missionTypes,
   handleEmployeeChange,
+  handleMatriculeChange,
   handleMissionTypeChange,
   handlePaymentDateMinChange,
   handlePaymentDateMaxChange,
 }) => {
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  
   const handleFilterChange = (name: keyof Filter, value: string) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
+  
   const toggleMinimize = () => setIsMinimized((prev) => !prev);
   const toggleHide = () => setIsHidden((prev) => !prev);
 
@@ -156,16 +124,30 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
                   <tbody>
                     <FormRow>
                       <FormFieldCell>
+                        <FormLabelSearch>Matricule</FormLabelSearch>
+                        <StyledAutoCompleteInput
+                          value={filters.employeeCode || ""}
+                          onChange={handleMatriculeChange}
+                          suggestions={filteredMatriculeSuggestions}
+                          maxVisibleItems={5}
+                          placeholder="Recherche par matricule ..."
+                          disabled={isLoading.employees || isLoading.remboursements}
+                          fieldType="employee"
+                          fieldLabel="matricule"
+                          showAddOption={false}
+                        />
+                      </FormFieldCell>
+                      <FormFieldCell>
                         <FormLabelSearch>Collaborateur</FormLabelSearch>
                         <StyledAutoCompleteInput
                           value={filters.employeeSearch || ""}
                           onChange={handleEmployeeChange}
                           suggestions={filteredEmployeeSuggestions}
                           maxVisibleItems={5}
-                          placeholder="Sélectionner un employé..."
-                          disabled={isLoading.employees || isLoading.remboursements || isLoading.currencies}
+                          placeholder="Recherche par collaborateur ..."
+                          disabled={isLoading.employees || isLoading.remboursements}
                           fieldType="employee"
-                          fieldLabel="employé"
+                          fieldLabel="collaborateur"
                           showAddOption={false}
                         />
                       </FormFieldCell>
@@ -176,7 +158,7 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
                           name="status"
                           value={filters.status}
                           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleFilterChange("status", e.target.value)}
-                          disabled={isLoading.remboursements || isLoading.currencies}
+                          disabled={isLoading.remboursements}
                         >
                           <option value="">Tous</option>
                           <option value="notreimbursed">Non remboursé</option>
@@ -189,7 +171,7 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
                           as="select"
                           value={filters.missionType}
                           onChange={handleMissionTypeChange}
-                          disabled={isLoading.remboursements || isLoading.currencies}
+                          disabled={isLoading.remboursements}
                         >
                           <option value="">Tous</option>
                           {missionTypes.map((type) => (
@@ -200,7 +182,7 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
                     </FormRow>
                     
                     <FormRow>
-                      <FormFieldCell colSpan={3}>
+                      <FormFieldCell colSpan={2}>
                         <fieldset style={{ 
                           display: "grid", 
                           gridTemplateColumns: "1fr 1fr", 
@@ -225,7 +207,7 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
                               type="date"
                               value={filters.paymentDateMin}
                               onChange={handlePaymentDateMinChange}
-                              disabled={isLoading.remboursements || isLoading.currencies}
+                              disabled={isLoading.remboursements}
                             />
                           </div>
                           <div>
@@ -234,7 +216,7 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
                               type="date"
                               value={filters.paymentDateMax}
                               onChange={handlePaymentDateMaxChange}
-                              disabled={isLoading.remboursements || isLoading.currencies}
+                              disabled={isLoading.remboursements}
                             />
                           </div>
                         </fieldset>
@@ -246,12 +228,12 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
                   <ButtonReset
                     type="button"
                     onClick={handleResetFilters}
-                    disabled={isLoading.remboursements || isLoading.currencies || isFilterEmpty()}
+                    disabled={isLoading.remboursements || isFilterEmpty()}
                   >
                     Effacer filtres
                   </ButtonReset>
-                  <ButtonSearch type="submit" disabled={isLoading.remboursements || isLoading.currencies}>
-                    {isLoading.remboursements || isLoading.currencies ? "Recherche..." : "Rechercher"}
+                  <ButtonSearch type="submit" disabled={isLoading.remboursements}>
+                    {isLoading.remboursements ? "Recherche..." : "Rechercher"}
                   </ButtonSearch>
                 </FiltersActions>
               </form>
@@ -271,60 +253,40 @@ const RemboursementFilters: React.FC<RemboursementFiltersProps> = ({
   );
 };
 
-interface FormattedRemboursement {
-  assignationId: string;
-  employeeId: string;
-  employeeName: string;
-  employeeCode: string;
-  missionId: string;
-  missionName: string;
-  missionType: string;
-  lieuName: string;
-  totalAmount: number;
-  status: string;
-  createdAt: string;
-  updatedAt: string | null;
-  isValidated: boolean | null;
-  allocatedFund: number;
-}
-
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('fr-MG', {
-    style: 'currency',
-    currency: 'MGA',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-};
-
 const Reimbursement: React.FC = () => {
   const navigate = useNavigate();
+  
+  // États pour les filtres
   const [filters, setFilters] = useState<Filter>({
     status: "",
     missionType: "",
     employeeSearch: "",
+    employeeCode: "",
     paymentDateMin: "",
     paymentDateMax: "",
     fictionalFilter: "",
   });
+  
   const [appliedFilters, setAppliedFilters] = useState<Filter>({
     status: "",
     missionType: "",
     employeeSearch: "",
+    employeeCode: "",
     paymentDateMin: "",
     paymentDateMax: "",
     fictionalFilter: "",
   });
+  
   const [isHidden, setIsHidden] = useState<boolean>(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [selectedRemboursement, setSelectedRemboursement] = useState<{ assignationId: string; employeeId: string } | null>(null);
+  const [selectedRemboursement, setSelectedRemboursement] = useState<{ missionId: string; employeeId: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [remboursements, setRemboursements] = useState<FormattedRemboursement[]>([]);
   const [totalEntries, setTotalEntries] = useState(0);
+  
   const [isLoading, setIsLoading] = useState<LoadingState>({
     remboursements: true,
-    currencies: true,
     employees: true,
   });
 
@@ -341,59 +303,63 @@ const Reimbursement: React.FC = () => {
   const missionTypes = ["National", "International"];
 
   const { data: employeesResponse, isLoading: employeesLoading } = useGetAllEmployeesSimple();
-
-  const statusParam = appliedFilters.status || undefined;
-  const { data: remboursementsResponse, isLoading: remboursementsLoading } = useExpenseReportsByStatus({ 
-    status: statusParam, 
+  
+  // Utiliser le nouveau hook avec tous les filtres
+  const { data: remboursementsResponse, isLoading: remboursementsLoading } = useExpenseReportsByFilters({ 
+    status: appliedFilters.status || undefined,
+    employeeName: appliedFilters.employeeSearch || undefined,
+    employeeCode: appliedFilters.employeeCode || undefined,
+    missionType: appliedFilters.missionType || undefined,
+    paymentDateMin: appliedFilters.paymentDateMin || undefined,
+    paymentDateMax: appliedFilters.paymentDateMax || undefined,
     page: currentPage, 
     pageSize 
   });
 
-  const { data: currenciesData, isLoading: currenciesLoading } = useCurrencies();
-
-  const { mutate: reimburseMutation, isPending: isReimbursing } = useReimburseByAssignationId();
-
-  // Récupération du taux de change EUR -> MGA (assumant que currenciesData est un objet avec des clés comme 'EUR_MGA' ou un tableau d'objets)
-  const eurToMgaRate = useMemo(() => {
-    if (!currenciesData) return 1; // Taux par défaut si pas de données (pas de conversion)
-    // Ajustez cette logique selon la structure exacte de currenciesData
-    // Exemple si c'est un objet: return currenciesData['EUR_MGA'] || 1;
-    // Exemple si c'est un tableau: return currenciesData.find(c => c.from === 'EUR' && c.to === 'MGA')?.rate || 1;
-    return 4800; // Taux fictif pour l'exemple ; remplacez par la vraie logique
-  }, [currenciesData]);
+  const { mutate: reimburseMutation, isPending: isReimbursing } = useReimburseByMissionId();
 
   const employees = useMemo(() => employeesResponse?.data || [], [employeesResponse?.data]) as CollabEmployee[];
 
-  const employeeSuggestions = useMemo(() =>
-    employees.map((emp: CollabEmployee) => `${emp.firstName} ${emp.lastName}`),
+  // Préparer les suggestions pour l'autocomplete de matricule (codes seulement)
+  const matriculeSuggestions = useMemo(() =>
+    employees
+      .filter((emp: CollabEmployee) => emp.employeeCode)
+      .map((emp: CollabEmployee) => emp.employeeCode || ""),
     [employees]
   );
 
-  const filteredEmployeeSuggestions = useMemo(() =>
-    employeeSuggestions.filter((sug) =>
-      sug.toLowerCase().includes((filters.employeeSearch || "").toLowerCase())
-    ),
-    [employeeSuggestions, filters.employeeSearch]
+  // Préparer les suggestions pour l'autocomplete de collaborateur (noms seulement)
+  const employeeNameSuggestions = useMemo(() =>
+    employees
+      .filter((emp: CollabEmployee) => emp.firstName && emp.lastName)
+      .map((emp: CollabEmployee) => `${emp.lastName} ${emp.firstName}`),
+    [employees]
   );
 
-  useEffect(() => {
-    if (!userId) {
-      console.warn("No userId found, skipping remboursement fetch");
-      setIsLoading({ remboursements: false, currencies: false, employees: false });
-      setRemboursements([]);
-      setTotalEntries(0);
-      return;
-    }
-  }, [userId]);
+  // Filtrer les suggestions de matricule
+  const filteredMatriculeSuggestions = useMemo(() =>
+    matriculeSuggestions.filter((code) =>
+      code.toLowerCase().includes((filters.employeeCode || "").toLowerCase())
+    ),
+    [matriculeSuggestions, filters.employeeCode]
+  );
+
+  // Filtrer les suggestions de collaborateur
+  const filteredEmployeeSuggestions = useMemo(() =>
+    employeeNameSuggestions.filter((name) =>
+      name.toLowerCase().includes((filters.employeeSearch || "").toLowerCase())
+    ),
+    [employeeNameSuggestions, filters.employeeSearch]
+  );
 
   useEffect(() => {
     setIsLoading((prev) => ({ 
       ...prev, 
       remboursements: remboursementsLoading,
-      currencies: currenciesLoading,
       employees: employeesLoading,
     }));
-    if (remboursementsResponse && userId && !currenciesLoading && !employeesLoading) {
+    
+    if (remboursementsResponse && userId && !employeesLoading) {
       if (!remboursementsResponse.data || !remboursementsResponse.data.reports || !Array.isArray(remboursementsResponse.data.reports)) {
         console.warn("La réponse ne contient pas un tableau de résultats:", remboursementsResponse);
         setRemboursements([]);
@@ -401,26 +367,23 @@ const Reimbursement: React.FC = () => {
         return;
       }
 
-      const apiData: ExpenseSummary[] = remboursementsResponse.data.reports;
+      const apiData = remboursementsResponse.data.reports;
 
-      const formattedRemboursements: FormattedRemboursement[] = apiData.map((item) => {
-        // Conversion du montant depuis EUR vers MGA
-        const convertedAmount = item.totalAmount * eurToMgaRate;
+      const formattedRemboursements: FormattedRemboursement[] = apiData.map((item: any) => {
         return {
-          assignationId: item.assignationId || "N/A",
-          employeeId: "N/A", 
+          missionId: item.missionId,
+          employeeId: item.employeeCode || "N/A", 
           employeeName: item.employeeName || "Inconnu",
           employeeCode: item.employeeCode || "N/A",
-          missionId: item.missionId, 
           missionName: item.missionTitled || "Mission sans nom",
-          missionType: "Non spécifié", 
+          missionType: item.missionType || "Non spécifié", 
           lieuName: item.lieuName || "Non spécifié",
-          totalAmount: convertedAmount, // Montant converti
+          totalAmount: item.totalAmount,
           status: item.status,
           createdAt: item.createdAt || new Date().toISOString(),
-          updatedAt: null, 
-          isValidated: null, 
-          allocatedFund: 0,
+          updatedAt: item.updatedAt || null, 
+          isValidated: item.isValidated || null, 
+          allocatedFund: item.allocatedFund || 0,
         };
       });
 
@@ -429,80 +392,76 @@ const Reimbursement: React.FC = () => {
       setRemboursements(formattedRemboursements);
       setTotalEntries(total);
     }
-  }, [remboursementsResponse, remboursementsLoading, currenciesLoading, employeesLoading, statusParam, currentPage, pageSize, userId, eurToMgaRate]);
+  }, [remboursementsResponse, remboursementsLoading, employeesLoading, currentPage, pageSize, userId]);
 
-  const handleFilterSubmit = () => {
+  const handleFilterSubmit = useCallback(() => {
     setAppliedFilters({ ...filters });
     setCurrentPage(1);
-  };
+  }, [filters]);
 
-  const handleResetFilters = () => {
-    setFilters({ 
+  const handleResetFilters = useCallback(() => {
+    const resetFilters = { 
       status: "",
       missionType: "",
       employeeSearch: "",
+      employeeCode: "",
       paymentDateMin: "",
       paymentDateMax: "",
       fictionalFilter: "",
-    });
-    setAppliedFilters({ 
-      status: "",
-      missionType: "",
-      employeeSearch: "",
-      paymentDateMin: "",
-      paymentDateMax: "",
-      fictionalFilter: "",
-    });
+    };
+    
+    setFilters(resetFilters);
+    setAppliedFilters(resetFilters);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     setCurrentPage(newPage);
-  };
+  }, []);
 
-  const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handlePageSizeChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
     const newPageSize = Number(event.target.value);
     if (newPageSize > 0 && Number.isInteger(newPageSize)) {
       setPageSize(newPageSize);
       setCurrentPage(1);
     }
-  };
+  }, []);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     navigate("/treasury");
-  };
+  }, [navigate]);
 
-  const openConfirmModal = (assignationId: string, employeeId: string) => {
-    setSelectedRemboursement({ assignationId, employeeId });
+  const openConfirmModal = useCallback((missionId: string, employeeId: string) => {
+    setSelectedRemboursement({ missionId, employeeId });
     setIsConfirmModalOpen(true);
-  };
+  }, []);
 
-  const closeConfirmModal = () => {
+  const closeConfirmModal = useCallback(() => {
     setIsConfirmModalOpen(false);
     setSelectedRemboursement(null);
-  };
+  }, []);
 
-  const confirmAction = () => {
+  const confirmAction = useCallback(() => {
     if (selectedRemboursement && userId) {
       reimburseMutation(
         {
-          assignationId: selectedRemboursement.assignationId,
+          missionId: selectedRemboursement.missionId,
           userId,
         },
         {
           onSuccess: () => {
-            console.log(`Remboursement confirmé pour ${selectedRemboursement.assignationId}`);
-            // Affichage du toast alert de succès
+            console.log(`Remboursement confirmé pour ${selectedRemboursement.missionId}`);
             setAlert({
               message: "Remboursement confirmé avec succès !",
               type: "success",
               isOpen: true,
             });
             closeConfirmModal();
+            // Recharger les données après remboursement
+            handleFilterSubmit();
           },
-          onError: (error) => {
+          onError: (error: any) => {
             console.error("Erreur lors de la mise à jour du statut:", error);
-            // Optionnel: Afficher une alerte d'erreur ici
             setAlert({
               message: "Erreur lors de la confirmation du remboursement.",
               type: "error",
@@ -512,77 +471,18 @@ const Reimbursement: React.FC = () => {
         }
       );
     }
-  };
+  }, [selectedRemboursement, userId, reimburseMutation, closeConfirmModal, handleFilterSubmit]);
 
-  // Fonction pour fermer l'alert
-  const handleAlertClose = () => {
+  const handleAlertClose = useCallback(() => {
     setAlert({ message: "", type: "info", isOpen: false });
-  };
-
-  const formatDate = useCallback((dateString?: string | null): string => {
-    if (!dateString) return "Date non spécifiée";
-    return new Date(dateString).toLocaleDateString("fr-FR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
   }, []);
-
-  const getDaysUntilDue = useCallback((dueDate?: string | null): number => {
-    if (!dueDate) return 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const due = new Date(dueDate);
-    due.setHours(0, 0, 0, 0);
-    const diffTime = due.getTime() - today.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  }, []);
-
-  const filteredRemboursements = useMemo(() => {
-    return remboursements.filter((c) => {
-      // Filter by mission type
-      if (appliedFilters.missionType && c.missionType !== appliedFilters.missionType) return false;
-
-      // Filter by employee search
-      if (appliedFilters.employeeSearch && !c.employeeName.toLowerCase().includes(appliedFilters.employeeSearch.toLowerCase())) return false;
-
-      // Filter by fictional filter (dummy)
-      if (appliedFilters.fictionalFilter && c.status !== appliedFilters.fictionalFilter) return false;
-
-      // Filter by payment dates (existing logic)
-      if (appliedFilters.paymentDateMin || appliedFilters.paymentDateMax) {
-        if (c.status === "notreimbursed") return true; // Show all unreimbursed regardless of date filters
-        if (!c.updatedAt) return false;
-        const paymentDate = new Date(c.updatedAt);
-        if (appliedFilters.paymentDateMin) {
-          const minDate = new Date(appliedFilters.paymentDateMin);
-          if (paymentDate < minDate) return false;
-        }
-        if (appliedFilters.paymentDateMax) {
-          const maxDate = new Date(appliedFilters.paymentDateMax);
-          if (paymentDate > maxDate) return false;
-        }
-      }
-      return true;
-    });
-  }, [remboursements, appliedFilters]);
-
-  const paginatedRemboursements = useMemo(
-    () =>
-      filteredRemboursements.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-      ),
-    [filteredRemboursements, currentPage, pageSize]
-  );
-
-  const hasFilters = useMemo(() =>
-    Object.values(appliedFilters).some((val) => (val || "").trim() !== ""),
-    [appliedFilters]
-  );
 
   const handleEmployeeChange = useCallback((value: string) => {
     setFilters((prev) => ({ ...prev, employeeSearch: value }));
+  }, []);
+
+  const handleMatriculeChange = useCallback((value: string) => {
+    setFilters((prev) => ({ ...prev, employeeCode: value }));
   }, []);
 
   const handleMissionTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -597,374 +497,142 @@ const Reimbursement: React.FC = () => {
     setFilters((prev) => ({ ...prev, paymentDateMax: e.target.value }));
   }, []);
 
-  const handleFictionalFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilters((prev) => ({ ...prev, fictionalFilter: e.target.value }));
-  }, []);
-
-  const getStatusBadge = (status: string) => {
-      const statusInfo = {
-          "notreimbursed": { icon: XCircle, text: "Non remboursé", class: "status-pending" },
-          "reimbursed": { icon: CheckIcon, text: "Remboursé", class: "status-approved" },
-      }[status] || { icon: ClockIcon, text: "Inconnu", class: "status-pending" };
-      const Icon = statusInfo.icon;
-      return (
-          <StatusBadge className={statusInfo.class}>
-              <Icon size={10} /> {statusInfo.text}
-          </StatusBadge>
-      );
-  };
-
-  const renderDueIndicator = (daysUntilDue: number, status: string) => {
-      const neutralDays = 999;
-      if (status === 'reimbursed') {
-          return (
-              <IndicatorBlock $daysUntilDue={neutralDays} style={{
-                  backgroundColor: 'var(--success-bg)',
-                  color: 'var(--success-color)',
-                  border: '2px solid var(--success-border)',
-                  boxShadow: '0 2px 8px rgba(34, 197, 94, 0.2)',
-              }}>
-                  <CheckIcon size={24} style={{ color: 'var(--success-color)' }} />
-                  <IndicatorValue style={{
-                      color: 'var(--success-color)',
-                      fontSize: '20px',
-                      fontWeight: 'bold',
-                  }}>
-                  </IndicatorValue>
-                  <IndicatorText style={{
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                  }}>
-                      REMBOURSÉ
-                  </IndicatorText>
-              </IndicatorBlock>
-          );
-      }
-      const isUrgent = daysUntilDue <= 3 && daysUntilDue >= 0;
-      const isDueSoon = daysUntilDue <= 7 && daysUntilDue > 3;
-      let Icon: React.ComponentType<{ size?: number }>, text: string, displayValue: string | number;
-      let borderColor: string, shadow: string;
-      if (daysUntilDue < 0) {
-          Icon = XCircle;
-          text = `RETARD`;
-          displayValue = `+${Math.abs(daysUntilDue)}j`;
-          borderColor = 'var(--danger-border)';
-          shadow = '0 2px 8px rgba(239, 68, 68, 0.2)';
-      } else if (isUrgent) {
-          Icon = AlertTriangle;
-          text = daysUntilDue === 0 ? "AUJOURD'HUI" : `URGENT`;
-          displayValue = `${daysUntilDue}j`;
-          borderColor = 'var(--error-border)';
-          shadow = '0 2px 8px rgba(239, 68, 68, 0.2)';
-      } else if (isDueSoon) {
-          Icon = ClockIcon;
-          text = `BIENTÔT`;
-          displayValue = `${daysUntilDue}j`;
-          borderColor = 'var(--warning-border)';
-          shadow = '0 2px 8px rgba(245, 158, 11, 0.2)';
-      } else if (daysUntilDue >= 0) {
-          Icon = CheckIcon;
-          text = "OK";
-          displayValue = `${daysUntilDue}j`;
-          borderColor = 'var(--success-border)';
-          shadow = '0 2px 8px rgba(34, 197, 94, 0.2)';
-      } else {
-          Icon = ClockIcon;
-          text = "N/A";
-          displayValue = '--';
-          borderColor = 'var(--border-color)';
-          shadow = 'none';
-      }
-      return (
-          <IndicatorBlock $daysUntilDue={daysUntilDue} style={{
-              border: `2px solid ${borderColor}`,
-              boxShadow: shadow,
-          }}>
-              <Icon size={24} />
-              <IndicatorValue style={{
-                  fontSize: '20px',
-                  fontWeight: 'bold'
-              }}>
-                  {displayValue}
-              </IndicatorValue>
-              <IndicatorText style={{
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-              }}>
-                  {text}
-              </IndicatorText>
-      </IndicatorBlock>
-      );
-  };
-
-  const formatEmployeeName = (fullName: string): string => {
-      return fullName || "Non spécifié";
-  };
+  const hasFilters = useMemo(() =>
+    Object.values(appliedFilters).some((val) => (val || "").trim() !== ""),
+    [appliedFilters]
+  );
 
   return (
       <>
-          <DetailsPageHeader>
-              <DetailsHeaderLeft>
-                  <DetailsBtnBack onClick={handleBack} title="Retour aux missions">
-                      <ArrowLeft className="w-5 h-5" />
-                  </DetailsBtnBack>
-              </DetailsHeaderLeft>
-              <div className="header-center">
-                  <div className="header-title-section">
-                      <h1 className="page-title">Remboursements</h1>
-                      <p className="page-subtitle">Gestion des remboursements</p>
-                  </div>
-              </div>
-              <DetailsHeaderActions />
-          </DetailsPageHeader>
-          <DetailsSeparator />
-          <CardsPaginationContainer>
-              <RemboursementFilters
-                  isHidden={isHidden}
-                  setIsHidden={setIsHidden}
-                  filters={filters}
-                  setFilters={setFilters}
-                  isLoading={isLoading}
-                  handleFilterSubmit={handleFilterSubmit}
-                  handleResetFilters={handleResetFilters}
-                  filteredEmployeeSuggestions={filteredEmployeeSuggestions}
-                  missionTypes={missionTypes}
-                  handleEmployeeChange={handleEmployeeChange}
-                  handleMissionTypeChange={handleMissionTypeChange}
-                  handlePaymentDateMinChange={handlePaymentDateMinChange}
-                  handlePaymentDateMaxChange={handlePaymentDateMaxChange}
-                  handleFictionalFilterChange={handleFictionalFilterChange}
-              />
-              <CardsContainer
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: 'var(--spacing-md, 1rem)',
-                  alignItems: 'stretch',
-                }}
-              >
-                  {isLoading.remboursements || isLoading.currencies || isLoading.employees ? (
-                      <Loading>Chargement des remboursements...</Loading>
-                  ) : paginatedRemboursements.length > 0 ? (
-                      paginatedRemboursements.map((remboursement: FormattedRemboursement) => {
-                          const createdDate = new Date(remboursement.createdAt);
-                          const dueDate = new Date(createdDate);
-                          dueDate.setDate(createdDate.getDate() + 5);
-                          const daysUntilDue = getDaysUntilDue(dueDate.toISOString());
-                          return (
-                              <Card key={remboursement.assignationId} style={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  height: '100%',
-                              }}>
-                                  {renderDueIndicator(daysUntilDue, remboursement.status)}
-                                  <CardHeader style={{ marginBottom: '0.5rem' }}>
-                                      <CardTitle title={remboursement.missionName} style={{ fontSize: '0.875rem' }}>
-                                          {remboursement.missionName}
-                                      </CardTitle>
-                                      {getStatusBadge(remboursement.status)}
-                                  </CardHeader>
-                                  <CardInfo style={{ gap: '0.25rem', flex: 1 }}>
-                                      <div style={{
-                                          background: 'var(--bg-light)',
-                                          padding: '8px',
-                                          borderRadius: '4px',
-                                          border: '1px solid var(--border-color)',
-                                      }}>
-                                          <div style={{
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'space-between',
-                                              gap: '8px',
-                                              flexWrap: 'wrap',
-                                          }}>
-                                              <div style={{
-                                                  display: 'flex',
-                                                  alignItems: 'center',
-                                                  gap: '6px',
-                                                  flex: 1,
-                                                  minWidth: 0,
-                                              }}>
-                                                  <User size={16} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
-                                                  <div style={{
-                                                      fontSize: '13px',
-                                                      fontWeight: '600',
-                                                      color: 'var(--text-color)',
-                                                      overflow: 'hidden',
-                                                      textOverflow: 'ellipsis',
-                                                      whiteSpace: 'nowrap',
-                                                  }}>
-                                                      {formatEmployeeName(remboursement.employeeName || "Non spécifié")}
-                                                  </div>
-                                              </div>
-                                              <div style={{
-                                                  background: 'var(--bg-primary)',
-                                                  padding: '6px 8px',
-                                                  borderRadius: '3px',
-                                                  border: '1px solid var(--border-color)',
-                                                  flexShrink: 0,
-                                              }}>
-                                                  <div style={{
-                                                      fontSize: '8px',
-                                                      color: 'var(--text-secondary)',
-                                                      marginBottom: '1px',
-                                                      textAlign: 'center'
-                                                  }}>
-                                                      MAT.
-                                                  </div>
-                                                  <div style={{
-                                                      fontSize: '11px',
-                                                      fontWeight: '600',
-                                                      color: 'var(--primary-color)',
-                                                      textAlign: 'center'
-                                                  }}>
-                                                      {remboursement.employeeCode || "N/A"}
-                                                  </div>
-                                              </div>
-                                          </div>
-                                      </div>
-                                      <div style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: '6px',
-                                          padding: '6px 0',
-                                          borderBottom: '1px solid var(--border-color)',
-                                          flexWrap: 'wrap',
-                                      }}>
-                                          <MapPin size={14} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
-                                          <div style={{ flex: 1, minWidth: 0 }}>
-                                              <div style={{
-                                                  fontSize: '11px',
-                                                  fontWeight: '500',
-                                                  color: 'var(--text-color)',
-                                                  overflow: 'hidden',
-                                                  textOverflow: 'ellipsis',
-                                                  whiteSpace: 'nowrap',
-                                              }}>
-                                                  {remboursement.lieuName || "Non spécifié"}
-                                              </div>
-                                          </div>
-                                      </div>
-                                      <div style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: '6px',
-                                          padding: '6px 0',
-                                          flexWrap: 'wrap',
-                                      }}>
-                                          <Calendar size={14} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
-                                          <div style={{ flex: 1, minWidth: 0 }}>
-                                              <div style={{
-                                                  fontSize: '11px',
-                                                  fontWeight: '500',
-                                                  color: 'var(--text-color)',
-                                                  overflow: 'hidden',
-                                                  textOverflow: 'ellipsis',
-                                                  whiteSpace: 'nowrap',
-                                              }}>
-                                                  Créé le {formatDate(remboursement.createdAt)}
-                                              </div>
-                                          </div>
-                                      </div>
-                                      <div style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: '6px',
-                                          padding: '6px 0',
-                                          flexWrap: 'wrap',
-                                      }}>
-                                          <DollarSign size={14} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
-                                          <div style={{ flex: 1, minWidth: 0 }}>
-                                              <div style={{
-                                                  fontSize: '11px',
-                                                  fontWeight: '500',
-                                                  color: 'var(--text-color)',
-                                                  overflow: 'hidden',
-                                                  textOverflow: 'ellipsis',
-                                                  whiteSpace: 'nowrap',
-                                              }}>
-                                                  {formatCurrency(remboursement.totalAmount)}
-                                              </div>
-                                          </div>
-                                      </div>
-                                  </CardInfo>
-                                  <ActionsContainer
-                                      $singleButton={remboursement.status !== 'notreimbursed'}
-                                      style={{ marginTop: 'auto' }}
-                                  >
-                                      {remboursement.status === 'notreimbursed' && (
-                                          <>
-                                              <ActionButton
-                                                  onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      openConfirmModal(remboursement.assignationId, remboursement.employeeId);
-                                                  }}
-                                                  className="validate"
-                                                  disabled={isReimbursing}
-                                              >
-                                                  <CheckIcon size={14} />
-                                                  Rembourser
-                                              </ActionButton>
-                                          </>
-                                      )}
-                                      <ActionButton
-                                          onClick={(e) => {
-                                              e.stopPropagation();
-                                              navigate(`/mission/collaborateur/${remboursement.missionId}`);
-                                          }}
-                                          className="details"
-                                          disabled={isReimbursing}
-                                      >
-                                          <Eye size={14} />
-                                          Voir détails
-                                      </ActionButton>
-                                  </ActionsContainer>
-                              </Card>
-                          );
-                      })
-                  ) : (
-                      <NoDataMessage>
-                          {filteredRemboursements.length === 0
-                            ? hasFilters
-                              ? "Aucun remboursement ne correspond aux critères de recherche."
-                              : "Aucun remboursement trouvé."
-                            : "Aucun remboursement sur cette page."
-                          }
-                      </NoDataMessage>
-                  )}
-              </CardsContainer>
-              {totalEntries > 0 && (
-                  <Pagination
-                      currentPage={currentPage}
-                      pageSize={pageSize}
-                      totalEntries={totalEntries}
-                      onPageChange={handlePageChange}
-                      onPageSizeChange={handlePageSizeChange}
-                  />
-              )}
-          </CardsPaginationContainer>
-          <Modal
-              type="success"
-              message="Êtes-vous sûr de vouloir rembourser ces frais ? Cette action est irréversible et passera les rapports au statut 'Remboursé'."
-              isOpen={isConfirmModalOpen}
-              onClose={closeConfirmModal}
-              title="Confirmer le remboursement"
-              confirmAction={confirmAction}
-              confirmLabel={isReimbursing ? "Mise à jour..." : "Confirmer le Remboursement"}
-              cancelLabel="Annuler"
-              showActions={true}
-          />
-          {/* Toast Alert Component */}
-          <AlertComponent
-            type={alert.type}
-            message={alert.message}
-            isOpen={alert.isOpen}
-            onClose={handleAlertClose}
-          />
+        {/* Nouvel en-tête avec le même style que CompensationMission */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 'var(--spacing-lg)',
+          padding: 'var(--spacing-md)',
+          backgroundColor: 'var(--bg-primary)',
+          borderRadius: 'var(--border-radius)',
+          border: '1px solid var(--border-color)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+            <button
+              onClick={handleBack}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-light)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-light)'}
+              title="Retour aux missions"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <h1 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0,
+                color: 'var(--text-color)',
+              }}>
+                Remboursements
+              </h1>
+              <p style={{
+                fontSize: '0.875rem',
+                margin: 0,
+                color: 'var(--text-secondary)',
+              }}>
+                Gestion des remboursements
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <CardsPaginationContainer>
+            <RemboursementFilters
+                isHidden={isHidden}
+                setIsHidden={setIsHidden}
+                filters={filters}
+                setFilters={setFilters}
+                isLoading={isLoading}
+                handleFilterSubmit={handleFilterSubmit}
+                handleResetFilters={handleResetFilters}
+                filteredEmployeeSuggestions={filteredEmployeeSuggestions}
+                filteredMatriculeSuggestions={filteredMatriculeSuggestions}
+                missionTypes={missionTypes}
+                handleEmployeeChange={handleEmployeeChange}
+                handleMatriculeChange={handleMatriculeChange}
+                handleMissionTypeChange={handleMissionTypeChange}
+                handlePaymentDateMinChange={handlePaymentDateMinChange}
+                handlePaymentDateMaxChange={handlePaymentDateMaxChange}
+            />
+            
+            <CardsContainer
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 'var(--spacing-md, 1rem)',
+                alignItems: 'stretch',
+              }}
+            >
+                {isLoading.remboursements || isLoading.employees ? (
+                    <Loading>Chargement des remboursements...</Loading>
+                ) : remboursements.length > 0 ? (
+                    remboursements.map((remboursement: FormattedRemboursement) => (
+                        <ReimbursementCard
+                            key={remboursement.missionId}
+                            remboursement={remboursement}
+                            onReimburse={openConfirmModal}
+                            isReimbursing={isReimbursing}
+                        />
+                    ))
+                ) : (
+                    <NoDataMessage>
+                        {hasFilters
+                          ? "Aucun remboursement ne correspond aux critères de recherche."
+                          : "Aucun remboursement trouvé."
+                        }
+                    </NoDataMessage>
+                )}
+            </CardsContainer>
+            
+            {totalEntries > 0 && (
+                <Pagination
+                    currentPage={currentPage}
+                    pageSize={pageSize}
+                    totalEntries={totalEntries}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                />
+            )}
+        </CardsPaginationContainer>
+        
+        <Modal
+            type="success"
+            message="Êtes-vous sûr de vouloir rembourser ces frais ? Cette action est irréversible et passera les rapports au statut 'Remboursé'."
+            isOpen={isConfirmModalOpen}
+            onClose={closeConfirmModal}
+            title="Confirmer le remboursement"
+            confirmAction={confirmAction}
+            confirmLabel={isReimbursing ? "Mise à jour..." : "Confirmer le Remboursement"}
+            cancelLabel="Annuler"
+            showActions={true}
+        />
+        
+        <AlertComponent
+          type={alert.type}
+          message={alert.message}
+          isOpen={alert.isOpen}
+          onClose={handleAlertClose}
+        />
       </>
   );
 };

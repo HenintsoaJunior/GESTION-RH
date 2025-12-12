@@ -74,7 +74,7 @@ function App() {
         <Route path="/mission/list" element={<MissionList />} />
         <Route path="/mission/maps" element={<MissionsEnCoursMapPage />} />
 
-        <Route path="/mission/collaborateur/:missionId/*" element={<DetailsMission />} />
+        <Route path="/mission/:missionId/*" element={<DetailsMission />} />
         <Route path="/mission/to-validate" element={<MissionValidationPage />} />
         {/* TRESO */}
         <Route path="/treasury" element={<TresoPage />} />

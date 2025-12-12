@@ -90,6 +90,13 @@ namespace MyApp.Api.Models.dto.mission
 
         public string? TransportId { get; set; }
 
+        public int IsVisa { get; set; } = 0;
+
+        [Range(0, 9999999999999.99, ErrorMessage = "Le montant du visa doit être positif.")]
+        public decimal? AmountVisaEur { get; set; }
+
+        public int InclPdj { get; set; } = 0;
+
         [Required(ErrorMessage = "L'userId est requis.")]
         public string UserId { get; set; } = null!;
     }

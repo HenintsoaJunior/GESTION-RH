@@ -1,4 +1,5 @@
 ﻿using MyApp.Api.Entities.mission;
+using MyApp.Api.enums;
 using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Models.record;
 using MyApp.Api.Repositories.mission;
@@ -24,7 +25,7 @@ namespace MyApp.Api.Services.mission
         Task<decimal> GetTotalAmountByMissionIdAsync(string missionId);
         Task<bool> ReimburseByMissionIdAsync(string missionId, string userId);
         Task<IEnumerable<string>> GetStatusByMissionIdAsync(string missionId);
-        Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByStatusAsync(string? status, int page, int pageSize);
+        Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByFilterAsync(ExpenseReportFilterDto filterDto, int page, int pageSize);
     }
 
     public class ExpenseReportService : IExpenseReportService
@@ -283,9 +284,20 @@ namespace MyApp.Api.Services.mission
             decimal total = 0m;
             foreach (var mission in missions)
             {
-                var spent = reports.Where(r => r.MissionId == mission!.MissionId).Sum(r => r.Amount);
-                var allocated = await _missionService.GetTotalCompensationsAsync(mission!.EmployeeId!, mission.MissionId);
-                total += Math.Max(0m, allocated - spent);
+                bool isNationalAndNoteFrais = mission!.MissionType == MissionType.National && 
+                                            mission.Type == PaymentType.NoteFrais;
+                
+                if (isNationalAndNoteFrais)
+                {
+                    var reportsForMission = reports.Where(r => r.MissionId == mission.MissionId);
+                    total += reportsForMission.Sum(r => r.Amount);
+                }
+                else
+                {
+                    var spent = reports.Where(r => r.MissionId == mission.MissionId).Sum(r => r.Amount);
+                    var allocated = await _missionService.GetTotalCompensationsAsync(mission.EmployeeId!, mission.MissionId);
+                    total += Math.Max(0m, allocated - spent);
+                }
             }
             return total;
         }
@@ -337,16 +349,38 @@ namespace MyApp.Api.Services.mission
             return reports.Select(r => r.Status).Where(s => s != null).Distinct()!;
         }
 
-        public async Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByStatusAsync(string? status, int page, int pageSize)
+        public async Task<(IEnumerable<ExpenseSummary>, int TotalCount)> GetByFilterAsync(ExpenseReportFilterDto filterDto, int page, int pageSize)
         {
-            var (summaries, totalCount) = await _repository.GetByStatusAsync(status, page, pageSize);
+            var (summaries, totalCount) = await _repository.GetByFilterAsync(filterDto, page, pageSize);
 
             var result = new List<ExpenseSummary>();
             foreach (var s in summaries)
             {
-                var spent = s.TotalAmount;
-                var allocated = await _missionService.GetTotalCompensationsAsync(s.EmployeeId, s.MissionId);
-                var remaining = Math.Max(0m, allocated - spent);
+                decimal finalAmount;
+                
+                var missionInfo = await _missionService.GetByIdAsync(s.MissionId);
+                
+                if (missionInfo != null)
+                {
+                    bool isNationalAndNoteFrais = missionInfo.MissionType == MissionType.National && 
+                                                missionInfo.Type == PaymentType.NoteFrais;
+                    if (isNationalAndNoteFrais)
+                    {
+                        finalAmount = s.TotalAmount;
+                    }
+                    else
+                    {
+                        var allocated = await _missionService.GetTotalCompensationsAsync(s.EmployeeId, s.MissionId);
+                        var remaining = Math.Max(0m, allocated - s.TotalAmount);
+                        finalAmount = remaining;
+                    }
+                }
+                else
+                {
+                    var allocated = await _missionService.GetTotalCompensationsAsync(s.EmployeeId, s.MissionId);
+                    var remaining = Math.Max(0m, allocated - s.TotalAmount);
+                    finalAmount = remaining;
+                }
 
                 result.Add(new ExpenseSummary(
                     s.MissionId,
@@ -357,7 +391,7 @@ namespace MyApp.Api.Services.mission
                     s.EmployeeCode,
                     s.LieuName,
                     s.CreatedAt,
-                    remaining
+                    finalAmount
                 ));
             }
 

@@ -247,13 +247,12 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
-        // GET: api/ExpenseReport/by-status?status=notreimbursed&page=1&pageSize=10
-        [HttpGet("by-status")]
-        public async Task<ActionResult> GetByStatus([FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        [HttpGet("by-filters")]
+        public async Task<ActionResult> GetByFilter([FromQuery] ExpenseReportFilterDto filterDto, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
-                var (reports, totalCount) = await _service.GetByStatusAsync(status, page, pageSize);
+                var (reports, totalCount) = await _service.GetByFilterAsync(filterDto, page, pageSize);
                 var response = new
                 {
                     reports,
@@ -266,7 +265,7 @@ namespace MyApp.Api.Controllers.mission
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des rapports par statut {Status}", status ?? "all");
+                _logger.LogError(ex, "Erreur lors de la récupération des rapports" ?? "all");
                 return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
             }
         }

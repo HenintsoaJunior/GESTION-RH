@@ -21,4 +21,3 @@ BEGIN
     
     SELECT @@ROWCOUNT AS [Nombre de missions mises à jour];
 END;
-GO

@@ -31,6 +31,9 @@ namespace MyApp.Api.Entities.menu
         [Column("position")]
         public int? Position { get; set; }
 
+        [Column("is_visible")]
+        public int IsVisible { get; set; }
+
         [Column("module_id")]
         [MaxLength(50)]
         public string? ModuleId { get; set; }

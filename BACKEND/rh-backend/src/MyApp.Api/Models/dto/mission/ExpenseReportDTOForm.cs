@@ -23,6 +23,17 @@ namespace MyApp.Api.Models.dto.mission
         public List<ExpenseReportAttachmentDTO>? Attachments { get; set; } = new List<ExpenseReportAttachmentDTO>();
     }
 
+    public class ExpenseReportFilterDto
+    {
+        public string? Status { get; set; }
+        public string? EmployeeName { get; set; }
+        public string? EmployeeCode { get; set; }
+        public string? MissionType { get; set; }
+        public DateTime? PaymentDateMin { get; set; }
+        public DateTime? PaymentDateMax { get; set; }
+
+    }
+
     public class ExpenseLineDTO
     {
         public string? ExpenseReportId { get; set; }

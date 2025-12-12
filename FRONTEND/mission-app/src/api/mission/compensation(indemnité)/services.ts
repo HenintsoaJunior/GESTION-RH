@@ -395,6 +395,7 @@ export const useCompensationsByStatus = (
         const response = await api.get(url);
         
         if (response.data?.data?.items) {
+          console.log(`✅ Récupéré ${response.data.data.items.length} items de compensation`);
         } else {
           console.log('⚠️ Aucun item trouvé dans la réponse');
         }

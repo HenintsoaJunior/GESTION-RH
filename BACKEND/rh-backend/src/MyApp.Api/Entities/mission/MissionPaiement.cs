@@ -174,6 +174,10 @@ namespace MyApp.Api.Entities.mission
         {
             var dayInfo = GetDayInfo(mission, currentDate);
 
+            // Si InclPdj = 1, on exclut le petit déjeuner car déjà inclus dans l'hébergement
+            if (mission.InclPdj == 1 && expenseType.Type?.ToLower() == "petit dejeuner")
+                return false;
+
             if (expenseType.TimeStart == null && expenseType.TimeEnd == null)
             {
                 if (expenseType.Type == "Transport")
@@ -281,8 +285,9 @@ namespace MyApp.Api.Entities.mission
     {
         public Mission? Mission { get; set; }  
         public decimal TransportAmount { get; set; }
+        public decimal VisaAmount { get; set; }
         public IEnumerable<DailyExpensePaiement> DailyPaiements { get; set; } = new List<DailyExpensePaiement>();
-        public decimal TotalAmount => TransportAmount + (DailyPaiements?.Sum(dp => dp.TotalAmount) ?? 0);
+        public decimal TotalAmount => TransportAmount + VisaAmount + (DailyPaiements?.Sum(dp => dp.TotalAmount) ?? 0);
     }
 
     public class DailyExpensePaiement
@@ -318,12 +323,21 @@ namespace MyApp.Api.Entities.mission
             var allScales = await service.GetByCriteriaAsync(criteria);
             var scalesList = allScales.ToList();
 
+            decimal visaAmount = 0m;
+            
+            // Si IsVisa = 1, on utilise AmountVisaEur pour le montant du visa
+            if (mission.IsVisa == 1 && mission.AmountVisaEur.HasValue)
+            {
+                visaAmount = mission.AmountVisaEur.Value;
+            }
+
             if (!scalesList.Any())
             {
                 return new ExpensePaiementResult
                 {
                     Mission = mission,
                     TransportAmount = 0m,
+                    VisaAmount = visaAmount,
                     DailyPaiements = new List<DailyExpensePaiement>()
                 };
             }
@@ -334,6 +348,7 @@ namespace MyApp.Api.Entities.mission
             {
                 Mission = mission,
                 TransportAmount = 0m,
+                VisaAmount = visaAmount,
                 DailyPaiements = dailyPaiements
             };
         }
@@ -354,7 +369,20 @@ namespace MyApp.Api.Entities.mission
             var allScales = await service.GetByCriteriaAsync(criteria);
             var scalesList = allScales.ToList();
 
-            var total = scalesList.Any() ? GenerateTotalPaymentsForDates(mission, scalesList) : 0m;
+            decimal total = 0m;
+            
+            // Ajouter le montant du visa si applicable
+            if (mission.IsVisa == 1 && mission.AmountVisaEur.HasValue)
+            {
+                total += mission.AmountVisaEur.Value;
+            }
+            
+            // Ajouter les montants des échelles de compensation
+            if (scalesList.Any())
+            {
+                total += GenerateTotalPaymentsForDates(mission, scalesList);
+            }
+            
             var dateDebut = mission.DepartureDate ?? DateTime.Today;
 
             return (total, dateDebut);
@@ -415,6 +443,10 @@ namespace MyApp.Api.Entities.mission
         private bool ShouldIncludeExpenseType(ExpenseType type, Mission mission, DateTime currentDate)
         {
             var dayInfo = GetDayInfo(mission, currentDate);
+
+            // Si InclPdj = 1, on exclut le petit déjeuner car déjà inclus dans l'hébergement
+            if (mission.InclPdj == 1 && type.Type?.ToLower() == "petit dejeuner")
+                return false;
 
             if (type.TimeStart == null && type.TimeEnd == null)
                 return type.Type is "Transport" or "Taxes" || dayInfo.IsFirstDay;

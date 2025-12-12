@@ -90,6 +90,15 @@ namespace MyApp.Api.Entities.mission
         [ForeignKey(nameof(TransportId))]
         public Transport? Transport { get; set; }
 
+        [Column("is_visa")]
+        public int IsVisa { get; set; } = 0;
+
+        [Column("amount_visa_eur", TypeName = "decimal(15,2)")]
+        public decimal? AmountVisaEur { get; set; }
+
+        [Column("incl_pdj")]
+        public int InclPdj { get; set; } = 0;
+
         public Mission() { }
 
         public Mission(MissionDTOForm dto)
@@ -111,6 +120,9 @@ namespace MyApp.Api.Entities.mission
             Type            = dto.Type;
             AllocatedFund   = dto.AllocatedFund;
             TransportId     = dto.TransportId;
+            IsVisa          = dto.IsVisa;
+            AmountVisaEur   = dto.AmountVisaEur;
+            InclPdj         = dto.InclPdj;
         }
     }
 }

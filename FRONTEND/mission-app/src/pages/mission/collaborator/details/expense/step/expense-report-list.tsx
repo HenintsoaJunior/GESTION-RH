@@ -30,14 +30,14 @@ import {
 } from "@/styles/detailsmission-styles";
 import { NoDataMessage } from "@/styles/table-styles";
 import { formatNumber } from "@/utils/format";
-import { useExpenseReportsByAssignationId, useStatusByAssignationId } from "@/api/mission/expense_report/services";
-import { useGetMissionById } from "@/api/mission/services"; // Changé ici
+import { useExpenseReportsByMissionId, useStatusByMissionId } from "@/api/mission/expense_report/services";
+import { useGetMissionById } from "@/api/mission/services";
 import { useCurrencies } from "@/api/currency/services";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import type { TooltipItem, ChartOptions } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import { handleFileView, handleFileDownload } from "@/utils/file-utils";
-import type { Mission } from "@/api/mission/services"; // Changé ici
+import type { Mission } from "@/api/mission/services";
 import styled from "styled-components";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -56,7 +56,7 @@ interface ApiResponse<T> {
 }
 
 interface Props {
-    selectedAssignmentId?: string; // À vérifier si doit devenir selectedMissionId
+    selectedMissionId?: string;
     isLoading: boolean;
     onError: (error: Error) => void;
 }
@@ -224,21 +224,42 @@ interface FinancialDoughnutChartProps {
     totalAmountMGA: number;
     totalCompensationMGA: number;
     refundAmount: number;
+    isNationalMission: boolean;
 }
 
-const FinancialDoughnutChart: React.FC<FinancialDoughnutChartProps> = ({ totalAmountMGA, totalCompensationMGA, refundAmount }) => {
+const FinancialDoughnutChart: React.FC<FinancialDoughnutChartProps> = ({ 
+    totalAmountMGA, 
+    totalCompensationMGA, 
+    refundAmount,
+    isNationalMission 
+}) => {
+    // Pour les missions nationales, le montant à rembourser = total des frais
+    // Pour les missions internationales, calculer la variance entre allocation et frais
     const isRefundPositive = refundAmount >= 0;
     const variance = Math.abs(refundAmount);
-    const varianceLabel = isRefundPositive ? "Montant à Restituer" : "Excédent";
-    const varianceColor = isRefundPositive ? "#10b981" : "#ef4444";
-    const varianceHoverColor = isRefundPositive ? "#059669" : "#dc2626";
+    
+    // Définir les labels et données selon le type de mission
+    let labels: string[];
+    let data: number[];
+    let backgroundColors: string[];
+    let hoverBackgroundColors: string[];
+    
+    if (isNationalMission) {
+        // Mission nationale : seulement le total des frais à rembourser
+        labels = ["Total des Frais à Rembourser (en MGA)"];
+        data = [totalAmountMGA];
+        backgroundColors = ["#2563eb"]; // Bleu
+        hoverBackgroundColors = ["#1d4ed8"]; // Bleu foncé
+    } else {
+        // Mission internationale : allocation, frais, et différence
+        const varianceLabel = isRefundPositive ? "Montant à Restituer" : "Excédent";
+        labels = ["Devise Allouée (en MGA)", "Total des Frais (en MGA)", varianceLabel];
+        data = [totalCompensationMGA, totalAmountMGA, variance];
+        backgroundColors = ["#16a34a", "#2563eb", isRefundPositive ? "#10b981" : "#ef4444"];
+        hoverBackgroundColors = ["#15803d", "#1d4ed8", isRefundPositive ? "#059669" : "#dc2626"];
+    }
 
-    const labels = ["Devise Allouée (en MGA)", "Total des Frais (en MGA)", varianceLabel];
-    const data = [totalCompensationMGA, totalAmountMGA, variance];
-    const backgroundColors = ["#16a34a", "#2563eb", varianceColor];
-    const hoverBackgroundColors = ["#15803d", "#1d4ed8", varianceHoverColor];
-
-    const chartTotal = totalCompensationMGA + totalAmountMGA + variance;
+    const chartTotal = data.reduce((sum, val) => sum + val, 0);
 
     // Enregistrer et désenregistrer le plugin avec le cycle de vie du composant
     useEffect(() => {
@@ -322,24 +343,24 @@ const FinancialDoughnutChart: React.FC<FinancialDoughnutChartProps> = ({ totalAm
 
 // === COMPOSANT PRINCIPAL ===
 
-const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, onError }) => {
+const ExpenseReportList: React.FC<Props> = ({ selectedMissionId, isLoading, onError }) => {
     const [openFolderId, setOpenFolderId] = useState<string | null>(null);
-    const [missionData, setMissionData] = useState<Mission | null>(null); // Changé ici
+    const [missionData, setMissionData] = useState<Mission | null>(null);
     const [error, setError] = useState<string | null>(null);
     
-    const expenseQuery = useExpenseReportsByAssignationId(selectedAssignmentId);
-    const statusQuery = useStatusByAssignationId(selectedAssignmentId);
-    const missionQuery = useGetMissionById(selectedAssignmentId || ""); // Changé ici
+    const expenseQuery = useExpenseReportsByMissionId(selectedMissionId);
+    const statusQuery = useStatusByMissionId(selectedMissionId);
+    const missionQuery = useGetMissionById(selectedMissionId || "");
     const currenciesQuery = useCurrencies();
 
     useEffect(() => {
-        setMissionData(missionQuery.data?.data || null); // Changé ici
+        setMissionData(missionQuery.data?.data || null);
     }, [missionQuery.data]);
 
     useEffect(() => {
         if (missionQuery.error) {
             const err = missionQuery.error as Error;
-            setError(err.message || "Erreur lors de la récupération de la mission."); // Changé ici
+            setError(err.message || "Erreur lors de la récupération de la mission.");
             onError(err);
         }
     }, [missionQuery.error, onError]);
@@ -378,19 +399,19 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
         };
     }, [missionData]);
 
-    // Fonction temporaire pour calculer le total des compensations
-    // À remplacer par votre propre logique ou hook si disponible
-    const calculateTotalCompensations = useCallback(() => {
-        // Logique temporaire - à adapter selon vos besoins
-        // Vous devrez peut-être créer un hook useGetTotalCompensations basé sur missionId
-        if (!missionData) return 0;
-        
-        // Exemple de calcul basé sur allocatedFund ou autre propriété
-        return missionData.allocatedFund || 0;
+    // Déterminer si c'est une mission nationale
+    const isNationalMission = useMemo(() => {
+        return missionData?.missionType === 1; // 1 = MissionTypeEnum.National
     }, [missionData]);
 
-    const totalCompensationEUR = calculateTotalCompensations();
-
+    // Pour les missions nationales, pas de devise allouée
+    const totalCompensationEUR = useMemo(() => {
+        if (isNationalMission) {
+            return 0; // Pas de devise allouée pour les missions nationales
+        }
+        return missionData?.allocatedFund || 0;
+    }, [missionData, isNationalMission]);
+                                                                                                                                                                                                                                                                                                                                                                                                        
     // Taux de change EUR vers MGA dynamique (assume base EUR, rate MGA)
     const eurToMgaRate = currenciesQuery.data?.rates?.MGA || 1;
     const totalCompensationMGA = totalCompensationEUR * eurToMgaRate;
@@ -410,10 +431,15 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
         [expenseReports]
     );
 
-    const refundAmount = useMemo(
-        () => totalCompensationMGA - totalAmountMGA,
-        [totalCompensationMGA, totalAmountMGA]
-    );
+    // Pour les missions nationales, le montant à rembourser = total des frais
+    // Pour les missions internationales, calculer la différence entre allocation et frais
+    const refundAmount = useMemo(() => {
+        if (isNationalMission) {
+            return totalAmountMGA; // Pour les missions nationales, rembourser l'intégralité
+        } else {
+            return totalCompensationMGA - totalAmountMGA; // Pour les missions internationales
+        }
+    }, [totalAmountMGA, totalCompensationMGA, isNationalMission]);
 
     const handleToggleFolder = useCallback((userId: string) => {
         setOpenFolderId((prevId) => (prevId === userId ? null : userId));
@@ -438,6 +464,7 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
                             totalAmountMGA={totalAmountMGA}
                             totalCompensationMGA={totalCompensationMGA}
                             refundAmount={refundAmount}
+                            isNationalMission={isNationalMission}
                         />
                         {hasAttachments && (
                             <ChartCard>
@@ -500,21 +527,26 @@ const ExpenseReportList: React.FC<Props> = ({ selectedAssignmentId, isLoading, o
                                             </TableCell>
                                             <TableCell></TableCell>
                                         </TotalRow>
+                                        
+                                        {/* Afficher "Devise Allouée" uniquement pour les missions internationales */}
+                                        {!isNationalMission && (
+                                            <TotalRow>
+                                                <TableCell colSpan={5}>
+                                                    <strong>Devise Allouée (en MGA)</strong>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <strong>{totalCompensationMGA ? `${formatNumber(totalCompensationMGA)},00` : "0,00"}</strong>
+                                                </TableCell>
+                                                <TableCell></TableCell>
+                                            </TotalRow>
+                                        )}
+                                        
                                         <TotalRow>
                                             <TableCell colSpan={5}>
-                                                <strong>Devise Allouée (en MGA)</strong>
+                                                <strong>Montant à Rembourser (en MGA)</strong>
                                             </TableCell>
                                             <TableCell>
-                                                <strong>{totalCompensationMGA ? `${formatNumber(totalCompensationMGA)},00` : "0,00"}</strong>
-                                            </TableCell>
-                                            <TableCell></TableCell>
-                                        </TotalRow>
-                                        <TotalRow>
-                                            <TableCell colSpan={5}>
-                                                <strong>Montant à Restituer (en MGA)</strong>
-                                            </TableCell>
-                                            <TableCell>
-                                                <strong style={{ color: refundAmount >= 0 ? "var(--success-color)" : "var(--error-color)" }}>
+                                                <strong style={{ color: "var(--primary-color)" }}>
                                                     {refundAmount ? `${formatNumber(refundAmount)},00` : "0,00"}
                                                 </strong>
                                             </TableCell>

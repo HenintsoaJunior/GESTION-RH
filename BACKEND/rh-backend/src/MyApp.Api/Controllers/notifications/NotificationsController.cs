@@ -19,6 +19,47 @@ namespace MyApp.Api.Controllers.notifications
             _notificationRecipientsService = notificationRecipientsService ?? throw new ArgumentNullException(nameof(notificationRecipientsService));
         }
 
+
+        [HttpPut("by-user/{userId}/mark-all-as-read")]
+        public async Task<IActionResult> MarkAllNotificationsAsRead(string userId)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new { Message = "User ID cannot be null or empty" });
+            }
+
+            try
+            {
+                var markedCount = await _notificationRecipientsService.MarkAllAsReadAsync(userId);
+                
+                return Ok(new 
+                { 
+                    Success = true,
+                    Message = markedCount > 0 
+                        ? $"{markedCount} notification(s) marked as read" 
+                        : "No unread notifications to mark",
+                    MarkedCount = markedCount,
+                    Timestamp = DateTime.UtcNow
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { 
+                    Success = false,
+                    Message = ex.Message 
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new 
+                { 
+                    Success = false,
+                    Message = "An error occurred while marking all notifications as read",
+                    Error = ex.Message 
+                });
+            }
+        }
+        
         [HttpPost]
         public async Task<IActionResult> CreateNotification([FromBody] NotificationFormDTO notification)
         {
