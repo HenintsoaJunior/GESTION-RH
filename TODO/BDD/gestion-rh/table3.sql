@@ -61,6 +61,7 @@ CREATE TABLE recruitment_requests(
    last_titular_user VARCHAR(250),
    is_planned BIT,
    not_planned_reason VARCHAR(70),
+   last_status VARCHAR(50),
    PRIMARY KEY(request_id),
    FOREIGN KEY(applicant_user) REFERENCES users(user_id),
    FOREIGN KEY(replacement_reason_id) REFERENCES replacement_reasons(replacement_reason_id),

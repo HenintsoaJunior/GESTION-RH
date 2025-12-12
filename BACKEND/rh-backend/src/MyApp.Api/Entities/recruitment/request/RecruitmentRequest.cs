@@ -58,6 +58,8 @@ public class RecruitmentRequest : BaseEntity
     [Column("not_planned_reason")]
     public string? NotPlannedReason {get; set;}
 
+    [Column("last_status")]
+    public string LastStatus {get; set;} = null!;
 
     [Column("is_deleted")]
     public bool IsDeleted  { get; set; } = false;

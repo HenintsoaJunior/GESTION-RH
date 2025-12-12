@@ -33,13 +33,6 @@ public class RequestDetailsDTO
 }
 
 
-public class ValidationDTO
-{
-    public RequestDetailsDTO RequestDetails {get; set;} = null!;
-    public byte[] Signatures {get; set;} = null!;
-}
-
-
 public class FilterRequestListDTO
 {
     public string? post {get; set;}

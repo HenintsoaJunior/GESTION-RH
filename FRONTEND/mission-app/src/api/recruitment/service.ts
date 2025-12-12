@@ -9,6 +9,7 @@ const SEARCH_REQUESTS_BASE_KEY = ['searchRequests'] as const;
 const SEARCH_REQUEST_DETAILS_BASE_KEY = ['searchRequestDetails'] as const;
 const SEARCH_STATUSES_BASE_KEY = ['searchRequestStatuses'] as const;
 const SEARCH_REASONS_BASE_KEY = ['searchReasons'] as const;
+const SEARCH_PENDED_REQUESTS_BASE_KEY = ['searchPendedRequests'] as const;
 
 // Types
 export interface FilterRequestDTO {
@@ -187,5 +188,35 @@ export const useValidateRecruitmentRequest = () => {
         onSuccess: () => queryClient.invalidateQueries({ 
             queryKey: SEARCH_REQUESTS_BASE_KEY 
         }),
+    });
+};
+
+
+export const useSearchPendedRequests = (
+    validatorId:string, page:number = 1, pageSize:number = 10
+) => {
+    const queryKey = [...SEARCH_PENDED_REQUESTS_BASE_KEY, { validatorId, page, pageSize }] as const;
+
+    return useQuery<{ list: RequestDetailsDTO[]; totalCount: number }, Error>({
+        queryKey,
+        queryFn: async () => {
+            try {
+                const response = await api.post('/api/recruitment/requests/pended', validatorId, {
+                    params: { page, pageSize },
+                });
+
+                const apiData = response.data.data;
+
+                return {
+                    list: apiData.results,
+                    totalCount: apiData.totalCount
+                };
+            } catch (error) {
+                if (axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || 'Erreur serveur');
+                }
+                throw error;
+            }
+        }
     });
 };

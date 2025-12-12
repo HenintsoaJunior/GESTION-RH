@@ -29,70 +29,57 @@ public class RequestRepository : IRequestRepository
     }
 
 
-  public async Task<(List<RequestListDTO>, int)> SearchRequests(
+    public async Task<(List<RequestListDTO>, int)> SearchRequests(
         FilterRequestListDTO dto, int page, int pageSize
     ) {
-        var query = _dbCtx.RequestValidations.AsNoTracking()
-            .Include(r => r.Status)
-            .Include(r => r.Request)
-                .ThenInclude(req => req.ApplicantUser)
-            .Include(r => r.Request.Contract)
-            .Where(r => !r.Request.IsDeleted)
+        var query = _dbCtx.RecruitmentRequests
+            .AsNoTracking()
+            .Include(r => r.ApplicantUser)
+            .Include(r => r.Contract)
+            .Where(r => !r.IsDeleted)
             .AsQueryable();
 
-        // --- Appliquer les filtres sur la demande ---
+        // --- Filtres ---
         if (!string.IsNullOrWhiteSpace(dto.post))
-            query = query.Where(r => r.Request.Post.ToLower().Contains(dto.post.ToLower()));
+            query = query.Where(r => r.Post.ToLower().Contains(dto.post.ToLower()));
 
         if (!string.IsNullOrWhiteSpace(dto.contract))
-            query = query.Where(r => r.Request.Contract != null && r.Request.Contract.Code == dto.contract);
+            query = query.Where(r => r.Contract != null && r.Contract.Code == dto.contract);
 
         if (!string.IsNullOrWhiteSpace(dto.direction))
-            query = query.Where(r => r.Request.ApplicantUser.Department == dto.direction);
+            query = query.Where(r => r.ApplicantUser.Department == dto.direction);
 
         if (dto.minDate.HasValue)
-            query = query.Where(r => DateOnly.FromDateTime(r.Request.CreatedAt) >= dto.minDate.Value);
+            query = query.Where(r => DateOnly.FromDateTime(r.CreatedAt) >= dto.minDate.Value);
 
         if (dto.maxDate.HasValue)
-            query = query.Where(r => DateOnly.FromDateTime(r.Request.CreatedAt) <= dto.maxDate.Value);
+            query = query.Where(r => DateOnly.FromDateTime(r.CreatedAt) <= dto.maxDate.Value);
 
-        // --- Charger toutes les validations filtrées côté client ---
-        var allValidations = await query.ToListAsync();
-
-        // --- Grouper par demande et prendre la dernière validation ---
-        var lastValidations = allValidations
-            .GroupBy(v => v.Request.Id)
-            .Select(g => g.OrderByDescending(v => v.CreatedAt).First())
-            .ToList();
-
-        // --- Filtrer par statut après avoir pris la dernière validation ---
+        // --- Filtre par statut (direct sans join) ---
         if (!string.IsNullOrWhiteSpace(dto.status))
-        {
-            lastValidations = lastValidations
-                .Where(v => v.Status.Name.Equals(dto.status, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-        }
+            query = query.Where(r => r.LastStatus.ToLower() == dto.status.ToLower());
 
-        // --- Pagination côté client ---
-        int totalCount = lastValidations.Count;
-        var paged = lastValidations
-            .OrderByDescending(v => v.CreatedAt)
-            .ThenBy(v => v.Request.Post)
+        // --- Compte ---
+        int totalCount = await query.CountAsync();
+
+        // --- Résultats paginés ---
+        var list = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .ThenBy(r => r.Post)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(r => new RequestListDTO
-            {
-                Id = r.Request.Id,
-                Post = r.Request.Post,
-                Effective = r.Request.Effective,
-                Contract = r.Request.Contract != null ? r.Request.Contract.Code : "Autre",
-                WishedDate = r.Request.BeginningDate,
-                Status = r.Status.Name,
-                SendingDate = DateOnly.FromDateTime(r.Request.CreatedAt)
+            .Select(r => new RequestListDTO {
+                Id = r.Id,
+                Post = r.Post,
+                Effective = r.Effective,
+                Contract = r.Contract != null ? r.Contract.Code : "Autre",
+                WishedDate = r.BeginningDate,
+                Status = r.LastStatus,
+                SendingDate = DateOnly.FromDateTime(r.CreatedAt)
             })
-            .ToList();
+            .ToListAsync();
 
-        return (paged, totalCount);
+        return (list, totalCount);
     }
 
 

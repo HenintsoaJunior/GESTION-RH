@@ -18,7 +18,7 @@ public class RequestValidation : BaseEntity
     public string? Comments {get; set;}
 
     [ForeignKey("user_id")]
-    public User? Validator {get; set;} = null!;
+    public User Validator {get; set;} = null!;
 
     [ForeignKey("status_id")]
     public RequestStatus Status {get; set;} = null!;

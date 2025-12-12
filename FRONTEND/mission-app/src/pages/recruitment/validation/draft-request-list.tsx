@@ -30,7 +30,7 @@ import {
   EditButton,
 } from "@/styles/table-styles";
 
-import { useSearchRequests, type FilterRequestDTO } from "@/api/recruitment/service";
+import { useSearchPendedRequests, type FilterRequestDTO } from "@/api/recruitment/service";
 import { useGetContractTypes } from "@/api/contract/services";
 import { useGetAllDirections } from "@/api/direction/services";
 
@@ -81,11 +81,9 @@ const DraftRequestList: React.FC = () => {
 // Récupération des listes pour les filtres
     const { data: directionsResponse } = useGetAllDirections();
     const { data: contractsResponse } = useGetContractTypes();
-    // const { data: requestStatusesResponse } = useSearchRequestStatuses();
 
     const allDirections = useMemo(() => directionsResponse?.data || [], [directionsResponse]);
     const allContracts = useMemo(() => contractsResponse?.data || [], [contractsResponse]);
-    // const allRequestStatuses = useMemo(() => requestStatusesResponse?.data || [], [requestStatusesResponse]);
     
 // Suggestions pour autocomplete
     const directionSuggestions = useMemo(() => allDirections.map((d) => d.directionName), [allDirections]);
@@ -110,8 +108,11 @@ const DraftRequestList: React.FC = () => {
           maxDate: appliedFilters.dateMax.trim() || undefined,
         }),
         [appliedFilters]
-    );
-    const { data: searchResponse, isLoading, error, refetch } = useSearchRequests(searchFilters, page, pageSize);
+    ); 
+    
+    const userData = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = userData?.userId || "";
+    const { data: searchResponse, isLoading, error, refetch } = useSearchPendedRequests(userId, page, pageSize);
 
     const requests = useMemo(() => searchResponse?.list || [], [searchResponse]);
     const hasFilters = useMemo(
@@ -120,9 +121,6 @@ const DraftRequestList: React.FC = () => {
     );
 
 // Gestion Habilitations
-    const userData = JSON.parse(localStorage.getItem("user") || "{}");
-    const userId = userData?.userId || "";
-
     const canViewDetails = useHasHabilitation(userId, "Afficher détails demande recrutement");
 
     useEffect(() => {
@@ -299,7 +297,7 @@ const DraftRequestList: React.FC = () => {
 
         <TableContainer>
             <TableHeader>
-                <TableTitle>Liste des demandes non validées</TableTitle>
+                <TableTitle>Liste des demandes en attente</TableTitle>
             </TableHeader>
 
             <DataTable>

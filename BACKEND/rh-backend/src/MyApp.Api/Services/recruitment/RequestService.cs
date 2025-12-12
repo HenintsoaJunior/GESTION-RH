@@ -1,4 +1,5 @@
 using MyApp.Api.Entities.recruitment;
+using MyApp.Api.Entities.users;
 using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Repositories.recruitment;
 
@@ -18,6 +19,7 @@ public class RequestService(
 {
     private readonly ILogger<RequestService> _logger = log;
     private readonly IRequestRepository _repo = r1;
+    
 
     public async Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO filters, int page, int pageSize) {
         try {

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.recruitment;
+using MyApp.Api.Entities.users;
 using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Models.dto.users;
 using MyApp.Api.Services.users;
@@ -14,6 +15,8 @@ public interface IRequestValidationRepository
     Task<List<UserDto>> GetAllDirectorValidator(string requestId);
     Task<RequestStatus> GetNextValidatedStatus(RecruitmentRequest req, int validatorCount);
     Task DoValidationForRequest(CreateRequestValidationDTO data);
+    Task<bool> HasNotYetValidatedRequest(User user, RecruitmentRequest req);
+    Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(string validatorId, int page, int pageSize);
 }
 
 public class RequestValidationRepository : IRequestValidationRepository
@@ -118,9 +121,21 @@ public class RequestValidationRepository : IRequestValidationRepository
     }
 
 
+    public async Task<bool> HasNotYetValidatedRequest(User user, RecruitmentRequest req) {
+        var hasValidated = await _dbCtx.RequestValidations
+            .AnyAsync(r =>
+                r.Request.Id == req.Id &&
+                r.Validator.UserId == user.UserId &&
+                r.Status.Id != "STD_001"
+            );
+
+        return !hasValidated;
+    }
+
+
     public async Task DoValidationForRequest(CreateRequestValidationDTO data) {
         byte[]? signatureBytes = null; 
-        RequestStatus? newStatus = null;   // On ne crée plus l'entité
+        RequestStatus? newStatus = null;
 
         var userValidator = await _dbCtx.Users.FindAsync(data.ValidatorId)
             ?? throw new ArgumentException("Validateur introuvable");
@@ -131,9 +146,13 @@ public class RequestValidationRepository : IRequestValidationRepository
     // Vérifier l'accès sur la validation
         List<UserDto> validators = await this.GetAllDirectorValidator(request.Id);
         bool canValidate = validators.Any(v => v.UserId == userValidator.UserId);
-
-        if (!canValidate)
+        if(!canValidate)
             throw new ArgumentException("Utilisateur non accordé pour valider");
+
+    // Vérification de l'utilisateur
+        bool notYetValidated = await this.HasNotYetValidatedRequest(userValidator, request);
+        if(!notYetValidated) 
+            throw new ArgumentException("Demande déjà validée par le même utilisateur");
 
     // Traitement des statuts
         if (data.Status.Equals("Approuver", StringComparison.OrdinalIgnoreCase)) {
@@ -146,7 +165,7 @@ public class RequestValidationRepository : IRequestValidationRepository
 
             signatureBytes = Convert.FromBase64String(base64Data);
 
-        // renvoie un RequestStatus existant
+        // Renvoie un RequestStatus existant
             newStatus = await this.GetNextValidatedStatus(request, validators.Count);
         }
         else if (data.Status.Equals("Refuser", StringComparison.OrdinalIgnoreCase)) {
@@ -165,7 +184,7 @@ public class RequestValidationRepository : IRequestValidationRepository
             Comments = data.Comments,
             Request = request,
             Signature = signatureBytes,
-            Status = newStatus,   // toujours un statut existant
+            Status = newStatus,  
             Validator = userValidator,
         };
 
@@ -173,4 +192,65 @@ public class RequestValidationRepository : IRequestValidationRepository
         await _dbCtx.SaveChangesAsync();
     }
 
+
+   public async Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
+        string validatorId, int page, int pageSize)
+    {
+        var validator = await _dbCtx.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UserId == validatorId)
+            ?? throw new ArgumentException("Validateur introuvable");
+
+        // Récupérer toutes les demandes actives
+        var allRequests = await _dbCtx.RecruitmentRequests
+            .AsNoTracking()
+            .Where(r => !r.IsDeleted && !r.LastStatus.Equals("Refusée"))
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
+
+        var pendedList = new List<RequestDetailsDTO>();
+
+        foreach (var req in allRequests)
+        {
+            // Liste ordonnée des validateurs
+            var orderedValidators = await GetAllDirectorValidator(req.Id);
+
+            // Validations existantes (ignorer STD_001)
+            var existingValidations = await _dbCtx.RequestValidations
+                .AsNoTracking()
+                .Where(v => v.Request.Id == req.Id && v.Status.Id != "STD_001")
+                .Select(v => v.Validator.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            // Prochain validateur attendu
+            if (existingValidations.Count >= orderedValidators.Count)
+                continue; // toutes les validations faites
+
+            var nextValidator = orderedValidators[existingValidations.Count];
+
+            // Si le validateur actuel n'est pas celui attendu → ignorer
+            if (nextValidator.UserId != validatorId)
+                continue;
+
+            // Récupérer DTO complet
+            var details = await _reqRepo.GetRequestDetails(req.Id);
+            details.ValidationLevel = existingValidations.Count + 1; // Niveau en cours
+            pendedList.Add(details);
+        }
+
+        int totalCount = pendedList.Count;
+
+        var paged = pendedList
+            .OrderByDescending(r => r.BeginningDate)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return (paged, totalCount);
+    }
 }
+
+// userId-DAF : 00425 : 11715a63-e237-46b3-b568-ffa6fc087000
+// userId-DRH : 00182 : 002b1f12-e8c5-4a30-81ca-e8532855de71
+// userId-DGE : 00431 : ec738732-6e94-4288-be4a-c098408d199d
