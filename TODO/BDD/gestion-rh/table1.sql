@@ -184,6 +184,7 @@ CREATE TABLE menu (
    is_enabled BIT DEFAULT 1,
    position INT,
    module_id VARCHAR(50),
+   is_visible INT,
    section VARCHAR(50) NOT NULL,
    created_at DATETIME NOT NULL DEFAULT GETDATE(),
    updated_at DATETIME NOT NULL DEFAULT GETDATE(),

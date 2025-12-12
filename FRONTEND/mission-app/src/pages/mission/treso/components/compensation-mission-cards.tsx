@@ -37,7 +37,7 @@ import {
     ActionsContainer,
 } from "@/styles/card-styles";
 import Modal from "@/components/modal";
-import type { CompensationMissionCardsProps, FormattedCompensation } from "./types";
+import type { CompensationMissionCardsProps, FormattedCompensation } from "./types/compensation";
 
 const CompensationMissionCards: React.FC<CompensationMissionCardsProps> = ({
     compensations,

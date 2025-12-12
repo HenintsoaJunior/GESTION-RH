@@ -30,7 +30,7 @@ import {
 import type {
     CompensationFiltersProps,
     Filter as FilterType,
-} from "./types";
+} from "./types/compensation";
 
 // Composants stylisés pour la grille et les champs de date
 const FilterGrid = styled.div`

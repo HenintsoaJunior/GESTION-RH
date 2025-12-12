@@ -42,7 +42,7 @@ import {
   useGenerateIM,
   usePreviewIM,
   useGetMissionById,
-  MissionTypeEnum, // IMPORT DE L'ENUM
+  MissionTypeEnum,
 } from "@/api/mission/services";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
@@ -437,12 +437,11 @@ const OMPayment: React.FC<OMPaymentProps> = ({
     missionId, 
     employeeId 
 }) => {
+
     const missionQuery = useGetMissionById(selectedMissionId);
 
-    // CORRECTION : Utilisation de l'enum MissionTypeEnum
     const isInternationalMemo = useMemo(() => {
         const missionType = missionQuery.data?.data?.missionType;
-        // Vérification avec l'enum numérique
         return missionType === MissionTypeEnum.International;
     }, [missionQuery.data]);
 
@@ -584,7 +583,7 @@ const OMPayment: React.FC<OMPaymentProps> = ({
                                 <div className="chart-content">
                                     <MissionAttachments
                                         documents={documents}
-                                        onExportExcel={onExportExcel} // Utilisé ici
+                                        onExportExcel={onExportExcel} 
                                         onGenerateIM={handleExportIM}
                                         onPreviewIM={handlePreviewIM}
                                         employeeId={employeeId}

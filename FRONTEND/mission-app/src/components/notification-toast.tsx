@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useUnreadNotifications } from '@/api/notifications/services';
-import { useMarkNotificationAsRead } from '@/api/notifications/services';
 import type { NotificationData } from '@/api/notifications/services';
 import { format } from 'date-fns';
 import { X } from 'lucide-react';
@@ -30,11 +29,9 @@ const slideInBottom = keyframes`
   }
 `;
 
-
 interface ToastNotificationProps {
   notification: NotificationData;
   onDismiss: () => void;
-  userId: string;
 }
 
 const ToastNotifWrapper = styled.div`
@@ -124,40 +121,28 @@ const DismissButton = styled.button`
   }
 `;
 
-const ToastNotification: React.FC<ToastNotificationProps> = ({ notification, onDismiss, userId }) => {
-  const { mutate: markAsRead } = useMarkNotificationAsRead(userId);
+const ToastNotification: React.FC<ToastNotificationProps> = ({ notification, onDismiss }) => {
   const createdAt = notification.createdAt ? new Date(notification.createdAt) : new Date();
   const timeAgo = format(createdAt, 'MMM dd, yyyy HH:mm');
 
-  const handleMarkAndDismiss = useCallback(() => {
-    markAsRead(
-      { notificationId: notification.notificationId },
-      {
-        onSuccess: () => {
-          onDismiss();
-        },
-      }
-    );
-  }, [markAsRead, notification.notificationId, onDismiss]);
-
   useEffect(() => {
     const timer = setTimeout(() => {
-      handleMarkAndDismiss();
+      onDismiss();
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [handleMarkAndDismiss]);
+  }, [onDismiss]);
 
   return (
     <ToastNotifWrapper>
       <ToastContent>
-        <ToastDetails onClick={handleMarkAndDismiss}>
+        <ToastDetails onClick={onDismiss}>
           <ToastTitle>{notification.notification.title}</ToastTitle>
           <ToastMessage>{notification.notification.message}</ToastMessage>
           <ToastTime>{timeAgo}</ToastTime>
         </ToastDetails>
         <DismissButton
-          onClick={handleMarkAndDismiss}
+          onClick={onDismiss}
           aria-label="Dismiss notification"
         >
           <X size={14} />
@@ -224,15 +209,26 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ userId, position
   const { data: unreadNotifications = [], isLoading, error } = useUnreadNotifications(userId);
   const [visibleNotifications, setVisibleNotifications] = useState<NotificationData[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [newNotifications, setNewNotifications] = useState<NotificationData[]>([]);
 
   useEffect(() => {
     if (unreadNotifications.length > 0) {
-      setVisibleNotifications(unreadNotifications.filter(nr => !dismissedIds.has(nr.notificationId)));
+      const unseenNotifications = unreadNotifications.filter(
+        n => !dismissedIds.has(n.notificationId)
+      );
+      setNewNotifications(unseenNotifications);
     }
   }, [unreadNotifications, dismissedIds]);
 
+  useEffect(() => {
+    if (newNotifications.length > 0) {
+      setVisibleNotifications(newNotifications);
+    }
+  }, [newNotifications]);
+
   const handleDismiss = (notificationId: string) => {
     setDismissedIds(prev => new Set([...prev, notificationId]));
+    setVisibleNotifications(prev => prev.filter(n => n.notificationId !== notificationId));
   };
 
   if (isLoading) {
@@ -243,11 +239,7 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ userId, position
     );
   }
 
-  if (error) {
-    return null;
-  }
-
-  if (visibleNotifications.length === 0) {
+  if (error || visibleNotifications.length === 0) {
     return null;
   }
 
@@ -258,7 +250,6 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ userId, position
           key={notification.notificationId}
           notification={notification}
           onDismiss={() => handleDismiss(notification.notificationId)}
-          userId={userId}
         />
       ))}
     </ToastWrapper>

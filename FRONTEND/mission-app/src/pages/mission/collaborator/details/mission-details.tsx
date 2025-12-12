@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import styled from "styled-components";
-import { CheckCircle, Send, Edit2, Trash2, X, ArrowLeft, ChevronDown, Eye, Download, Folder, FileText } from "lucide-react";
+import { CheckCircle, Send, Edit2, Trash2, X, ArrowLeft, ChevronDown, Eye, Download, Folder, FileText, AlertCircle } from "lucide-react";
 import { useParams, useNavigate, Routes, Route, useLocation } from "react-router-dom";
 import {
   TabContainer,
@@ -97,6 +98,14 @@ import {
 } from "@/styles/comment-styles";
 import { getInitials } from "@/utils/initials";
 import { useMissionReports } from "@/api/mission/report/services";
+
+// Définir PaymentTypeEnum localement si nécessaire
+const PaymentTypeEnum = {
+  Indemnite: 1,
+  NoteFrais: 2,
+} as const;
+
+type PaymentTypeEnum = typeof PaymentTypeEnum[keyof typeof PaymentTypeEnum];
 
 interface Comment {
   commentId: string;
@@ -475,6 +484,72 @@ type TabButtonProps = {
 const StyledTabButton = styled.button<TabButtonProps>`
   ${TabButton}
 `;
+
+// Composant pour l'alerte dans l'onglet Allocation
+interface AllocationNoteAlertProps {
+  missionStatus: MissionStatusEnum;
+  missionType?: MissionTypeEnum;
+  paymentType?: number; // PaymentTypeEnum est numérique (1 ou 2)
+}
+
+const AllocationNoteAlert: React.FC<AllocationNoteAlertProps> = ({ 
+  missionStatus, 
+  missionType,
+  paymentType 
+}) => {
+  const normalizedStatus = normalizeMissionStatus(missionStatus);
+  
+  const isMissionCompleted = normalizedStatus === MissionStatusEnum.Completed;
+  const isMissionClosed = normalizedStatus === MissionStatusEnum.Closed;
+  
+  if (isMissionCompleted || isMissionClosed) {
+    return null;
+  }
+  
+  // Déterminer le texte en fonction du type de mission et de paiement
+  let alertText = "Allocation non disponible";
+  let detailedText = "L'allocation ne peut être consultée que lorsque la mission est terminée.";
+  
+  if (missionType === MissionTypeEnum.National) {
+    if (paymentType === PaymentTypeEnum.NoteFrais) {
+      alertText = "Note de frais non disponible";
+      detailedText = "La note de frais ne peut être créée que lorsque la mission est terminée.";
+    } else if (paymentType === PaymentTypeEnum.Indemnite) {
+      alertText = "Indemnités non disponibles";
+      detailedText = "Les indemnités ne peuvent être consultées que lorsque la mission est terminée.";
+    }
+  } else if (missionType === MissionTypeEnum.International) {
+    alertText = "Indemnités non disponibles";
+    detailedText = "Les indemnités internationales ne peuvent être consultées que lorsque la mission est terminée.";
+  }
+  
+  return (
+    <div
+      style={{
+        backgroundColor: "#fff3cd",
+        border: "1px solid #ffeaa7",
+        borderRadius: "var(--radius-sm)",
+        padding: "var(--spacing-md)",
+        margin: "var(--spacing-md) 0",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "var(--spacing-sm)",
+      }}
+    >
+      <AlertCircle size={20} color="#856404" />
+      <div>
+        <div style={{ fontWeight: "bold", color: "#856404", marginBottom: "4px" }}>
+          {alertText}
+        </div>
+        <div style={{ color: "#856404", fontSize: "14px" }}>
+          {detailedText}
+          <br />
+          Statut actuel : <strong>{findStatusFromMissionStatus(normalizedStatus)?.label || "En cours"}</strong>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const useAlert = () => {
   const [alert, setAlert] = useState<AlertState>({
@@ -868,6 +943,7 @@ const DetailsMission: React.FC = () => {
           if ((comp.transportAmount ?? 0) > 0) {
             compensationScales.push({ 
               amount: comp.transportAmount!, 
+              expenseType: { type: "Transport" },
               transportId: mission.transportId ?? undefined 
             });
           }
@@ -1068,6 +1144,7 @@ const DetailsMission: React.FC = () => {
       try {
         await handleUpdateComment(commentId, editCommentText);
       } catch {
+        // Error handled in hook
       }
     },
     [editCommentText, handleUpdateComment, showAlert]
@@ -1078,6 +1155,7 @@ const DetailsMission: React.FC = () => {
       try {
         await handleDeleteComment(commentId);
       } catch {
+        // Error handled in hook
       }
     },
     [handleDeleteComment]
@@ -1126,12 +1204,11 @@ const DetailsMission: React.FC = () => {
 
     if (isMissionFullyValidated) {
       tabList.push({
-        label: "Indemnités",
+        label: "Allocation",
         onClick: () => handleNavigateToPayment(employeeId, missionId),
         path: `payment/${missionId}`,
       });
 
-      // MODIFICATION IMPORTANTE: Toujours montrer l'onglet Rendu si la mission est terminée ou clôturée
       if (shouldShowRendu) {
         tabList.push({
           label: "Rendu",
@@ -1151,7 +1228,6 @@ const DetailsMission: React.FC = () => {
     isMissionFullyValidated
   ]);
 
-  // Fonction pour obtenir le statut de la mission - UTILISANT LA MÊME LOGIQUE QUE MissionTable
   const getMissionStatus = useMemo(() => {
     if (!mission) return undefined;
     const normalizedStatus = normalizeMissionStatus(mission.status);
@@ -1484,47 +1560,122 @@ const DetailsMission: React.FC = () => {
               element={
                 <>
                   {renderTabsOnly()}
-                  {isMissionFullyValidated && missionPayment.assignmentDetails ? (
-                    <OMPayment
-                      missionPayment={missionPayment as MissionPayment}
-                      selectedMissionId={selectedMissionId || ""}
-                      onBack={handleBackToMissionDetails}
-                      onExportExcel={handleExportExcel}
-                      formatDate={formatDate}
-                      missionId={missionId || ""}
-                      employeeId={selectedEmployeeId || ""}
-                    />
+                  {isMissionFullyValidated && mission ? (
+                    (() => {
+                      const isMissionCompleted = 
+                        normalizeMissionStatus(mission.status) === MissionStatusEnum.Completed || 
+                        normalizeMissionStatus(mission.status) === MissionStatusEnum.Closed;
+                      
+                      // Mission nationale avec note de frais
+                      const isNationalWithNoteFrais = 
+                        mission.missionType === MissionTypeEnum.National && 
+                        mission.type === PaymentTypeEnum.NoteFrais;
+                      
+                      // Mission nationale avec indemnités
+                      const isNationalWithIndemnite = 
+                        mission.missionType === MissionTypeEnum.National && 
+                        mission.type === PaymentTypeEnum.Indemnite;
+                      
+                      // Mission internationale (peut avoir les deux : indemnités ET notes de frais)
+                      const isInternational = 
+                        mission.missionType === MissionTypeEnum.International;
+                      
+                      // CAS 1: Mission nationale avec note de frais
+                      if (isNationalWithNoteFrais) {
+                        // Pour les missions nationales avec note de frais, on affiche seulement si la mission est terminée
+                        if (!isMissionCompleted) {
+                          return (
+                            <AllocationNoteAlert 
+                              missionStatus={mission.status} 
+                              missionType={mission.missionType}
+                              paymentType={mission.type as number}
+                            />
+                          );
+                        }
+                        // Mission terminée : on affiche OMNoteDeFrais
+                        return (
+                          <OMNoteDeFrais
+                            selectedMissionId={selectedMissionId || ""}
+                            onBack={handleBackToMissionDetails}
+                          />
+                        );
+                      }
+                      
+                      // CAS 2: Mission nationale avec indemnités
+                      if (isNationalWithIndemnite && missionPayment.assignmentDetails) {
+                        // Pour les missions nationales avec indemnités, on affiche OMPayment
+                        // Les indemnités sont disponibles même si la mission n'est pas terminée
+                        return (
+                          <OMPayment
+                            missionPayment={missionPayment as MissionPayment}
+                            selectedMissionId={selectedMissionId || ""}
+                            onBack={handleBackToMissionDetails}
+                            onExportExcel={handleExportExcel}
+                            formatDate={formatDate}
+                            missionId={missionId || ""}
+                            employeeId={selectedEmployeeId || ""}
+                          />
+                        );
+                      }
+                      
+                      // CAS 3: Mission internationale
+                      if (isInternational) {
+                        // Pour les missions internationales, on affiche OMNoteDeFrais
+                        // qui gère à la fois les notes de frais ET les indemnités avancées
+                        return (
+                          <OMNoteDeFrais
+                            selectedMissionId={selectedMissionId || ""}
+                            onBack={handleBackToMissionDetails}
+                            missionPayment={missionPayment as MissionPayment}
+                          />
+                        );
+                      }
+                      
+                      // CAS 4: Pour les autres cas (mission nationale sans type défini ou avec une valeur inconnue)
+                      if (mission.missionType === MissionTypeEnum.National && missionPayment.assignmentDetails) {
+                        // Par défaut, on affiche OMPayment si des données sont disponibles
+                        return (
+                          <OMPayment
+                            missionPayment={missionPayment as MissionPayment}
+                            selectedMissionId={selectedMissionId || ""}
+                            onBack={handleBackToMissionDetails}
+                            onExportExcel={handleExportExcel}
+                            formatDate={formatDate}
+                            missionId={missionId || ""}
+                            employeeId={selectedEmployeeId || ""}
+                          />
+                        );
+                      }
+                      
+                      // CAS 5: Mission nationale avec indemnités mais sans données
+                      if (isNationalWithIndemnite || mission.missionType === MissionTypeEnum.National) {
+                        return (
+                          <LoadingContainer>
+                            <LoadingSpinner />
+                            Chargement des indemnités...
+                          </LoadingContainer>
+                        );
+                      }
+                      
+                      // CAS 6: Type de mission inconnu
+                      return (
+                        <div
+                          style={{
+                            textAlign: "center",
+                            padding: "var(--spacing-lg)",
+                            color: "var(--text-secondary)",
+                          }}
+                        >
+                          Type de mission non pris en charge pour l'allocation.
+                        </div>
+                      );
+                    })()
                   ) : (
                     <LoadingContainer>
                       {isMissionFullyValidated ? (
                         <>
                           <LoadingSpinner />
-                          Chargement du paiement...
-                        </>
-                      ) : (
-                        renderRestrictedAccess()
-                      )}
-                    </LoadingContainer>
-                  )}
-                </>
-              }
-            />
-            <Route
-              path="note/:missionId"
-              element={
-                <>
-                  {renderTabsOnly()}
-                  {isMissionFullyValidated && selectedMissionId ? (
-                    <OMNoteDeFrais
-                      selectedMissionId={selectedMissionId}
-                      onBack={handleBackToMissionDetails}
-                    />
-                  ) : (
-                    <LoadingContainer>
-                      {isMissionFullyValidated ? (
-                        <>
-                          <LoadingSpinner />
-                          Chargement de la note de frais...
+                          Chargement de l'allocation...
                         </>
                       ) : (
                         renderRestrictedAccess()

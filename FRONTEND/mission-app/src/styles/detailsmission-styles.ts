@@ -714,16 +714,29 @@ export const SaveButton = styled(ActionButton)`
     }
 `;
 
-export const ToggleButton = styled(ActionButton)`
-    background-color: var(--primary-color);
-    border: 1px solid var(--primary-color);
-    margin-right: 10px;
+// Ajoutez ceci dans votre fichier de styles ou mettez à jour le composant existant
+export const ToggleButton = styled.button<{ disabled?: boolean }>`
+  background: var(--primary-color);
+  color: var(--text-white);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s ease;
+  opacity: ${props => props.disabled ? 0.5 : 1};
 
-    &:hover {
-        background-color: var(--bg-primary);
-        color: var(--primary-color);
-        border-color: var(--primary-color);
-    }
+  &:hover:not(:disabled) {
+    background: var(--primary-dark);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
 `;
 
 export const EditButton = styled(ActionButton)`

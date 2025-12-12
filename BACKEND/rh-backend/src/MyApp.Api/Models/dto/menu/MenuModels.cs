@@ -7,9 +7,9 @@ namespace MyApp.Api.Models.dto.menu
         public string? Icon { get; set; }
         public string? Link { get; set; }
         public bool IsEnabled { get; set; }
+        public int IsVisible { get; set; } 
         public int? Position { get; set; }
         public string? ModuleId { get; set; }
-        
         public string? Section { get; set; }
         public List<string> RoleNames { get; set; } = new List<string>();
     }

@@ -28,6 +28,7 @@ using System.IO;
 using MyApp.Api.Services.mission;
 using MyApp.Api.enums;
 using MyApp.Api.Data;
+using System.Globalization;
 
 namespace MyApp.Api.Services.mission
 {
@@ -51,6 +52,7 @@ namespace MyApp.Api.Services.mission
         Task<decimal> GetTotalCompensationsAsync(string employeeId, string missionId);
         Task<byte[]> GenerateIMPDFAsync(string employeeId, string missionId);
         Task<byte[]> GenerateMissionOrderPDFAsync(string employeeId, string missionId);
+        Task<byte[]> GenerateADHAsync(string employeeId, string missionId);
         Task<byte[]> GenerateATDPDFAsync(string employeeId);
         Task<byte[]> GenerateExcelReportAsync(string employeeId, string missionId);
         Task<(IEnumerable<Mission>, int)> GetWithCompensationByStatusAsync(CompensationStatusFilter filter, int page = 1, int pageSize = 10);
@@ -106,6 +108,8 @@ namespace MyApp.Api.Services.mission
             _previsionPriceService = previsionPriceService ?? throw new ArgumentNullException(nameof(previsionPriceService));
             _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
         }
+
+        
 
         public async Task<bool> CloseAsync(string id, string userId)
         {
@@ -752,6 +756,108 @@ namespace MyApp.Api.Services.mission
         }
 
 
+        public async Task<byte[]> GenerateADHAsync(string employeeId, string missionId)
+        {
+            var mission = await _repository.GetByIdAsync(employeeId, missionId);
+            var accommodation_amount = await _compensationService.GetTotalAccommodationAmountAsync(missionId);
+            if (mission == null)
+            {
+                throw new InvalidOperationException($"Mission not found for EmployeeId: {employeeId}, MissionId: {missionId}");
+            }
+            string templatePath = TemplatePathHelper.GetTemplatePath("ATH.docx");
+            
+            if (!File.Exists(templatePath))
+            {
+                throw new FileNotFoundException("Le fichier modèle n'existe pas.", templatePath);
+            }
+            var replacements = new Dictionary<string, string>
+            {
+                { "${date_delivrance}", DateTime.Now.ToString("dd/MM/yyyy") },
+                { "${nom}", mission.Employee?.LastName ?? "" },
+                { "${prenom}", mission.Employee?.FirstName ?? "" },
+                { "${poste}", mission.Employee?.JobTitle ?? "" },
+                { "${montant}", accommodation_amount.ToFormattedString() }
+            };
+            using var memoryStream = new MemoryStream();
+            using (var fileStream = new FileStream(templatePath, FileMode.Open, FileAccess.Read))
+            {
+                await fileStream.CopyToAsync(memoryStream);
+            }
+            memoryStream.Position = 0;
+            using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(memoryStream, true))
+            {
+                if (wordDoc.MainDocumentPart == null || wordDoc.MainDocumentPart.Document == null)
+                {
+                    throw new InvalidOperationException("Le document Word ne contient pas de partie principale ou de document.");
+                }
+                var body = wordDoc.MainDocumentPart.Document.Body;
+                if (body != null)
+                {
+                    var textElements = body.Descendants<Text>().ToList();
+                    foreach (var text in textElements)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+                    var bodyRuns = body.Descendants<Run>().ToList();
+                    foreach (var run in bodyRuns)
+                    {
+                        string runText = string.Join("", run.Descendants<Text>().Select(t => t.Text));
+                        foreach (var replacement in replacements)
+                        {
+                            if (runText.Contains(replacement.Key))
+                            {
+                                run.RemoveAllChildren<Text>();
+                                string newText = runText.Replace(replacement.Key, replacement.Value);
+                                run.AppendChild(new Text(newText));
+                            }
+                        }
+                    }
+                }
+                foreach (var headerPart in wordDoc.MainDocumentPart.HeaderParts)
+                {
+                    var headerTexts = headerPart.Header.Descendants<Text>().ToList();
+                    foreach (var text in headerTexts)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+                }
+                foreach (var footerPart in wordDoc.MainDocumentPart.FooterParts)
+                {
+                    var footerTexts = footerPart.Footer.Descendants<Text>().ToList();
+                    foreach (var text in footerTexts)
+                    {
+                        foreach (var replacement in replacements)
+                        {
+                            if (text.Text.Contains(replacement.Key))
+                            {
+                                text.Text = text.Text.Replace(replacement.Key, replacement.Value);
+                            }
+                        }
+                    }
+                }
+                wordDoc.MainDocumentPart.Document.Save();
+            }
+            memoryStream.Position = 0;
+            using var PDFStream = new MemoryStream();
+            SpireDoc.Document doc = new SpireDoc.Document();
+            doc.LoadFromStream(memoryStream, SpireDoc.FileFormat.Docx);
+            doc.SaveToStream(PDFStream, SpireDoc.FileFormat.PDF);
+            return PDFStream.ToArray();
+        }
+
+
         public async Task<byte[]> GenerateATDPDFAsync(string employeeId)
         {
             var employee = await _employeeService.GetByIdAsync(employeeId);
@@ -983,7 +1089,7 @@ namespace MyApp.Api.Services.mission
             CreateExcelHeaders(worksheet);
      
             worksheet.Cell(2, 1).Value = "Aucune affectation trouvée pour les critères spécifiés";
-            worksheet.Range("A2:O2").Merge(); // Ajusté
+            worksheet.Range("A2:O2").Merge();
             worksheet.Cell(2, 1).Style.Font.Italic = true;
             worksheet.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
      
@@ -1005,7 +1111,7 @@ namespace MyApp.Api.Services.mission
             {
                 worksheet.Cell(tableStartRow, i + 1).Value = headers[i];
             }
-            var headerRange = worksheet.Range($"A{tableStartRow}:O{tableStartRow}"); // Ajusté
+            var headerRange = worksheet.Range($"A{tableStartRow}:O{tableStartRow}");
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
             headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -1513,5 +1619,13 @@ namespace MyApp.Api.Services.mission
 
         public Task<(decimal nationalRate, decimal internationalRate)> GetMissionTypesRateAsync() 
             => _repository.GetMissionTypesRateAsync();
+    }
+
+    public static class DecimalExtensions
+    {
+        public static string ToFormattedString(this decimal value)
+        {
+            return value.ToString("N0", CultureInfo.InvariantCulture).Replace(",", " ");
+        }
     }
 }

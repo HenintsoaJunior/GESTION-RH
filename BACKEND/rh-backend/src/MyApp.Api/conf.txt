@@ -11,16 +11,50 @@
     "Issuer": "http://10.0.180.37:8089",
     "Audience": "http://10.0.180.37:8090"
   },
+
+  "API": {
+    "Currency": "https://cdn.taux.live/api/latest.json"
+  },
   "Logging": {
     "LogLevel": {
       "Default": "Information",
       "Microsoft.AspNetCore": "Warning"
     }
   },
-  "AllowedHosts": "*"
+  "AllowedHosts": "*",
+  "API_FRONT": "http://10.0.180.37:8090"
 }
 
+LOCALHOST
 
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=RH;User ID=sa;Password=Carasco@20;TrustServerCertificate=True;"
+  },
+  
+  "LdapSettings": {
+    "DomainPath": "LDAP://corp.ravinala",
+    "DomainPath1": "corp.ravinala"
+  },
+  "Jwt": {
+    "Issuer": "http://localhost:5183",
+    "Audience": "http://localhost:3000",
+    "Key": "VotreCléSecrèteTrèsLongueEtSûre1234567890!"
+  },
+
+  "API": {
+    "Currency": "https://cdn.taux.live/api/latest.json"
+  },
+  
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "API_FRONT": "http://localhost:5173",
+  "AllowedHosts": "*"
+}
 
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;

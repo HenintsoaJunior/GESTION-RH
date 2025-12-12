@@ -44,6 +44,37 @@ namespace MyApp.Api.Controllers.mission
             }
         }
 
+        [HttpPost("ATH")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GenerateATH([FromBody] GenerateATHDTO generateOM)
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+            }
+            if (generateOM == null || string.IsNullOrWhiteSpace(generateOM.MissionId))
+            {
+                return BadRequest(new { data = (object?)null, status = 400, message = "Les données ou l'identifiant de la mission sont requis." });
+            }
+
+            try
+            {
+                var pdfBytes = await missionService.GenerateADHAsync(generateOM.EmployeeId, generateOM.MissionId);
+
+                var pdfName = $"AttestationHebergement-{generateOM.MissionId}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
+
+                return File(pdfBytes, "application/pdf", pdfName);
+            }
+            catch (FileNotFoundException ex)
+            {
+                return NotFound(new { data = (object?)null, status = 404, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+            }
+        }
+
         [HttpPost("ATD")]
         [AllowAnonymous]
         public async Task<IActionResult> GenerateATD([FromBody] GenerateATTDTO generateATD)

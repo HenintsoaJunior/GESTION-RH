@@ -184,7 +184,6 @@ namespace MyApp.Api.Services.mission
                 var missionValidation = await _repository.GetByIdAsync(validation.MissionValidationId);
                 if (missionValidation == null)
                 {
-                    _logger.LogWarning("Validation introuvable pour MissionValidationId: {MissionValidationId}", validation.MissionValidationId);
                     return "Validation introuvable.";
                 }
 
@@ -196,8 +195,6 @@ namespace MyApp.Api.Services.mission
                 var mission = await _missionRepository.GetByIdAsync(missionValidation.MissionId);
                 if (mission == null)
                 {
-                    _logger.LogWarning("Mission introuvable ({MissionId}) associée à la validation {MissionValidationId}", 
-                        missionValidation.MissionId, validation.MissionValidationId);
                     return "Mission introuvable.";
                 }
 
@@ -205,44 +202,44 @@ namespace MyApp.Api.Services.mission
 
                 if (isFinalValidation)
                 {
-                    mission.Status = MissionStatus.PaymentInProgress;
+                    bool isNationalWithNoteFrais = false;
+                    
+                    if (int.TryParse(validation.Type, out int typeInt))
+                    {
+                        isNationalWithNoteFrais = mission.MissionType == MissionType.National && 
+                                                typeInt == (int)PaymentType.NoteFrais;
+                        
+                        if (isNationalWithNoteFrais)
+                        {
+                            mission.Status = MissionStatus.Planned;
+                            result = "Validation finale effectuée – mission planifiée.";
+                        }
+                        else
+                        {
+                            mission.Status = MissionStatus.PaymentInProgress;
+                            result = "Validation finale effectuée – mission prête pour paiement.";
+                        }
+                    }
+                    else
+                    {
+                        mission.Status = MissionStatus.PaymentInProgress;
+                        result = "Validation finale effectuée – mission prête pour paiement.";
+                    }
+                    
                     mission.UpdatedAt = DateTime.UtcNow;
                     await _missionRepository.UpdateAsync(mission);
                     await _missionRepository.SaveChangesAsync();
-                    
-                    result = "Validation finale effectuée – mission prête pour paiement.";
 
-                    // Log pour déboguer
-                    _logger.LogInformation(
-                        "Vérification du type de validation: Type='{ValidationType}', " +
-                        "MissionType={MissionType}, " +
-                        "PaymentType.Indemnite int={(int)PaymentType.Indemnite}, " +
-                        "PaymentType.NoteFrais int={(int)PaymentType.NoteFrais}",
-                        validation.Type,
-                        mission.MissionType,
-                        (int)PaymentType.Indemnite,
-                        (int)PaymentType.NoteFrais);
-
-                   if (int.TryParse(validation.Type, out int typeInt))
+                    if (int.TryParse(validation.Type, out int typeIntPayment))
                     {
-                        _logger.LogDebug("Type de validation parsé en int: {TypeInt}", typeInt);
-                        
-                        if (typeInt == (int)PaymentType.Indemnite)
+                        // Génération des paiements pour indemnité
+                        if (typeIntPayment == (int)PaymentType.Indemnite)
                         {
-                            _logger.LogInformation(
-                                "Type de validation détecté: INDEMNITÉ (int={TypeInt}) - Début génération des paiements pour indemnité - " +
-                                "MissionId: {MissionId}, EmployeeId: {EmployeeId}", 
-                                typeInt, mission.MissionId, mission.EmployeeId);
-                            
                             try
                             {
                                 await _missionService.GeneratePaiementsAsync(
                                     mission.EmployeeId,
-                                    mission.MissionId);
-                                
-                                _logger.LogInformation(
-                                    "Génération des paiements pour indemnité terminée avec succès - MissionId: {MissionId}", 
-                                    mission.MissionId);
+                                    mission.MissionId);    
                             }
                             catch (Exception ex)
                             {
@@ -255,23 +252,12 @@ namespace MyApp.Api.Services.mission
                         }
                         
                         if (mission.MissionType == MissionType.International && 
-                            typeInt == (int)PaymentType.NoteFrais)
+                            typeIntPayment == (int)PaymentType.NoteFrais)
                         {
-                            _logger.LogInformation(
-                                "Type de validation détecté: NOTE DE FRAIS INTERNATIONALE (int={TypeInt}) - " +
-                                "Début génération des paiements pour note de frais internationale - " +
-                                "MissionId: {MissionId}, EmployeeId: {EmployeeId}, MissionType: {MissionType}", 
-                                typeInt, mission.MissionId, mission.EmployeeId, mission.MissionType);
-                            
                             try
                             {
-                                await _missionService.GeneratePaiementsAsync(
+                                await _missionService.GenerateExpensePaiementsAsync(
                                     mission.EmployeeId,
-                                    mission.MissionId);
-                                
-                                _logger.LogInformation(
-                                    "Génération des paiements pour note de frais internationale terminée avec succès - " +
-                                    "MissionId: {MissionId}", 
                                     mission.MissionId);
                             }
                             catch (Exception ex)
@@ -284,22 +270,15 @@ namespace MyApp.Api.Services.mission
                             }
                         }
 
-                        // Log si aucune condition n'est remplie
-                        if (typeInt != (int)PaymentType.Indemnite && 
-                            !(mission.MissionType == MissionType.International && typeInt == (int)PaymentType.NoteFrais))
+                        // Pour les missions nationales avec note de frais, ne pas générer de paiements
+                        if (typeIntPayment != (int)PaymentType.Indemnite && 
+                            !(mission.MissionType == MissionType.International && typeIntPayment == (int)PaymentType.NoteFrais))
                         {
                             _logger.LogDebug(
                                 "Aucune génération de paiement déclenchée - " +
                                 "Type de validation: '{Type}' (int={TypeInt}), MissionType: {MissionType}", 
-                                validation.Type, typeInt, mission.MissionType);
+                                validation.Type, typeIntPayment, mission.MissionType);
                         }
-                    }
-                    else
-                    {
-                        _logger.LogWarning(
-                            "Impossible de parser le type de validation en int: '{Type}'. " +
-                            "Attendu: valeurs numériques comme '1', '2', etc.",
-                            validation.Type);
                     }
 
                     var recipientIds = new HashSet<string>();
@@ -311,16 +290,23 @@ namespace MyApp.Api.Services.mission
                             recipientIds.Add(employeeUser.UserId);
                     }
 
-                    var treasurers = await _roleService.GetUsersWithTreasuryRoleAsync();
-                    foreach (var t in treasurers) 
-                        recipientIds.Add(t.UserId);
+                    if (!isNationalWithNoteFrais)
+                    {
+                        var treasurers = await _roleService.GetUsersWithTreasuryRoleAsync();
+                        foreach (var t in treasurers) 
+                            recipientIds.Add(t.UserId);
+                    }
 
                     if (recipientIds.Any())
                     {
+                        var notifMessage = isNationalWithNoteFrais 
+                            ? $"La mission a été validée par {validatorName} et est maintenant planifiée."
+                            : $"La mission a été validée par {validatorName} et est prête pour le paiement.";
+
                         var notif = new NotificationFormDTO
                         {
                             Title = $"Mission validée : {mission.Name}",
-                            Message = $"La mission a été validée par {validatorName} et est prête pour le paiement.",
+                            Message = notifMessage,
                             Type = "mission_validated",
                             RelatedTable = "mission",
                             RelatedMenu = "collaborateur",
@@ -349,7 +335,6 @@ namespace MyApp.Api.Services.mission
                 throw;
             }
         }
-        
         public async Task<MissionValidation?> VerifyMissionValidationByMissionIdAsync(string missionId)
         {
             var filters = new MissionValidationSearchFiltersDTO { MissionId = missionId };
