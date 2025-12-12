@@ -16,7 +16,7 @@ public interface IRequestValidationRepository
     Task<RequestStatus> GetNextValidatedStatus(RecruitmentRequest req, int validatorCount);
     Task DoValidationForRequest(CreateRequestValidationDTO data);
     Task<bool> HasNotYetValidatedRequest(User user, RecruitmentRequest req);
-    Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(string validatorId, int page, int pageSize);
+    Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(string validatorId, FilterRequestListDTO filters, int page, int pageSize);
 }
 
 public class RequestValidationRepository : IRequestValidationRepository
@@ -193,15 +193,47 @@ public class RequestValidationRepository : IRequestValidationRepository
     }
 
 
+    private List<RequestDetailsDTO> ApplyFilters(
+        List<RequestDetailsDTO> list, FilterRequestListDTO filters)
+    {
+        if (list == null || list.Count == 0)
+            return list;
+
+        if (!string.IsNullOrWhiteSpace(filters.contract))
+            list = list.Where(r => 
+                r.Contract?.Equals(filters.contract, StringComparison.OrdinalIgnoreCase) == true
+            ).ToList();
+
+        // Filtre par statut
+        if (!string.IsNullOrWhiteSpace(filters.status))
+            list = list.Where(r => 
+                r.Status?.Equals(filters.status, StringComparison.OrdinalIgnoreCase) == true
+            ).ToList();
+
+        // Filtre date min
+        if (filters.minDate.HasValue)
+            list = list.Where(r => 
+                r.BeginningDate >= filters.minDate.Value
+            ).ToList();
+
+        // Filtre date max
+        if (filters.maxDate.HasValue)
+            list = list.Where(r => 
+                r.BeginningDate <= filters.maxDate.Value
+            ).ToList();
+
+        return list;
+    }
+
+
    public async Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
-        string validatorId, int page, int pageSize)
+        string validatorId, FilterRequestListDTO filters, int page, int pageSize)
     {
         var validator = await _dbCtx.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.UserId == validatorId)
             ?? throw new ArgumentException("Validateur introuvable");
 
-        // Récupérer toutes les demandes actives
         var allRequests = await _dbCtx.RecruitmentRequests
             .AsNoTracking()
             .Where(r => !r.IsDeleted && !r.LastStatus.Equals("Refusée"))
@@ -212,10 +244,8 @@ public class RequestValidationRepository : IRequestValidationRepository
 
         foreach (var req in allRequests)
         {
-            // Liste ordonnée des validateurs
             var orderedValidators = await GetAllDirectorValidator(req.Id);
 
-            // Validations existantes (ignorer STD_001)
             var existingValidations = await _dbCtx.RequestValidations
                 .AsNoTracking()
                 .Where(v => v.Request.Id == req.Id && v.Status.Id != "STD_001")
@@ -223,21 +253,22 @@ public class RequestValidationRepository : IRequestValidationRepository
                 .Distinct()
                 .ToListAsync();
 
-            // Prochain validateur attendu
             if (existingValidations.Count >= orderedValidators.Count)
-                continue; // toutes les validations faites
+                continue;
 
             var nextValidator = orderedValidators[existingValidations.Count];
 
-            // Si le validateur actuel n'est pas celui attendu → ignorer
             if (nextValidator.UserId != validatorId)
                 continue;
 
-            // Récupérer DTO complet
             var details = await _reqRepo.GetRequestDetails(req.Id);
-            details.ValidationLevel = existingValidations.Count + 1; // Niveau en cours
+            details.ValidationLevel = existingValidations.Count;
+
             pendedList.Add(details);
         }
+
+        // 👉 Utilisation centrale et unique des filtres
+        pendedList = ApplyFilters(pendedList, filters);
 
         int totalCount = pendedList.Count;
 
@@ -249,6 +280,7 @@ public class RequestValidationRepository : IRequestValidationRepository
 
         return (paged, totalCount);
     }
+
 }
 
 // userId-DAF : 00425 : 11715a63-e237-46b3-b568-ffa6fc087000

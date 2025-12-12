@@ -1,3 +1,4 @@
+using MyApp.Api.Models.dto.mission;
 using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.recruitment;
@@ -9,7 +10,7 @@ public interface IRequestValidationService
     Task<List<UserDto>> GetAllDirectorValidator(string requestId);
     Task DoValidationForRequest(CreateRequestValidationDTO data);
     Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
-        string validatorId, int page, int pageSize
+        string validatorId, FilterRequestListDTO filters, int page, int pageSize
     );
 }
 
@@ -46,12 +47,12 @@ public class RequestValidationService(
 
 
     public async Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
-        string validatorId, int page, int pageSize
+        string validatorId, FilterRequestListDTO filters, int page, int pageSize
     ) {
         try {
             _logger.LogInformation("Recherche des demandes en attente ...");
             return await _repo.GetAllPendedRecruitmentRequest(
-                validatorId, page, pageSize
+                validatorId, filters, page, pageSize
             );
         }
         catch(Exception ex) {

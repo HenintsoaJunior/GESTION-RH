@@ -138,15 +138,15 @@ public class RecruitmentRequestController(IRequestService _service,
 
     [HttpPost("pended")]
     [AllowAnonymous]
-    public async Task<IActionResult> SearchPendedRequests([FromBody] string validatorId, 
-        [FromQuery] int page=1, [FromQuery] int pageSize=10
+    public async Task<IActionResult> SearchPendedRequests([FromBody] string validatorId,
+        [FromQuery] FilterRequestListDTO filters, [FromQuery] int page=1, [FromQuery] int pageSize=10
     ) {
         // if(!User.Identity?.IsAuthenticated ?? true) {
         //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
         // }
 
         try {
-            var (results, totalCount) = await _validationService.GetAllPendedRecruitmentRequest(validatorId, page, pageSize);
+            var (results, totalCount) = await _validationService.GetAllPendedRecruitmentRequest(validatorId, filters, page, pageSize);
             var responseData = new { results, totalCount, page, pageSize };
             return Ok(new { data = responseData, status = 200, message = "success" });
         }

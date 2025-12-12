@@ -9,7 +9,7 @@ const SEARCH_REQUESTS_BASE_KEY = ['searchRequests'] as const;
 const SEARCH_REQUEST_DETAILS_BASE_KEY = ['searchRequestDetails'] as const;
 const SEARCH_STATUSES_BASE_KEY = ['searchRequestStatuses'] as const;
 const SEARCH_REASONS_BASE_KEY = ['searchReasons'] as const;
-const SEARCH_PENDED_REQUESTS_BASE_KEY = ['searchPendedRequests'] as const;
+// const SEARCH_PENDED_REQUESTS_BASE_KEY = ['searchPendedRequests'] as const;
 
 // Types
 export interface FilterRequestDTO {
@@ -193,16 +193,17 @@ export const useValidateRecruitmentRequest = () => {
 
 
 export const useSearchPendedRequests = (
-    validatorId:string, page:number = 1, pageSize:number = 10
+    validatorId:string, 
+    filters: FilterRequestDTO, page:number = 1, pageSize:number = 10
 ) => {
-    const queryKey = [...SEARCH_PENDED_REQUESTS_BASE_KEY, { validatorId, page, pageSize }] as const;
+    const queryKey = [...SEARCH_REQUESTS_BASE_KEY, { validatorId, page, pageSize }] as const;
 
     return useQuery<{ list: RequestDetailsDTO[]; totalCount: number }, Error>({
         queryKey,
         queryFn: async () => {
             try {
                 const response = await api.post('/api/recruitment/requests/pended', validatorId, {
-                    params: { page, pageSize },
+                    params: { ...filters, page, pageSize },
                 });
 
                 const apiData = response.data.data;

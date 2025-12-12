@@ -1,16 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Link } from "react-router-dom";
-import { CheckLine, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import {
   TableContainer,
-  DataTable,
   TableTitle,
   TableHeader,
-  TableHeadCell,
-  TableRow,
-  TableCell,
   ButtonSearch,
   FiltersContainer,
   FiltersHeader,
@@ -25,9 +20,6 @@ import {
   Separator,
   FiltersActions,
   ButtonReset,
-  Loading,
-  NoDataMessage,
-  EditButton,
 } from "@/styles/table-styles";
 
 import { useSearchPendedRequests, type FilterRequestDTO } from "@/api/recruitment/service";
@@ -35,12 +27,11 @@ import { useGetContractTypes } from "@/api/contract/services";
 import { useGetAllDirections } from "@/api/direction/services";
 
 import Alert from "@/components/alert";
-import Pagination from "@/components/pagination";
-
 import type { ContractType } from "@/api/contract/services";
 import type { Direction } from "@/api/direction/services";
 import { useHasHabilitation } from "@/api/users/services";
 import RequestValidationForm from "./request-validation-form";
+import PendingRequestCards from "./components/pended-request-card";
 
 // Types
 interface FiltersState {
@@ -112,7 +103,7 @@ const DraftRequestList: React.FC = () => {
     
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = userData?.userId || "";
-    const { data: searchResponse, isLoading, error, refetch } = useSearchPendedRequests(userId, page, pageSize);
+    const { data: searchResponse, isLoading, error, refetch } = useSearchPendedRequests(userId, searchFilters, page, pageSize);
 
     const requests = useMemo(() => searchResponse?.list || [], [searchResponse]);
     const hasFilters = useMemo(
@@ -300,71 +291,20 @@ const DraftRequestList: React.FC = () => {
                 <TableTitle>Liste des demandes en attente</TableTitle>
             </TableHeader>
 
-            <DataTable>
-                <thead>
-                    <tr>
-                        <TableHeadCell>Référence</TableHeadCell>
-                        <TableHeadCell>Poste</TableHeadCell>
-                        <TableHeadCell>Efféctif</TableHeadCell>
-                        <TableHeadCell>Contrat</TableHeadCell>
-                        <TableHeadCell>Date souhaitée</TableHeadCell>
-                        <TableHeadCell>Statut</TableHeadCell>
-                        <TableHeadCell>Date d'envoi</TableHeadCell>
-                        <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
-                    </tr>
-                </thead>
-                <tbody>
-                    {isLoading ? (
-                    <TableRow>
-                        <TableCell colSpan={7}>
-                        <Loading>Chargement des données...</Loading>
-                        </TableCell>
-                    </TableRow>
-                    ) : requests.length > 0 ? (
-                    requests.map((req) => (
-                        <TableRow key={req.id}>
-                            <TableCell>
-                                { canViewDetails ? (
-                                    <Link to={`/recrutement/demandes/${req.id}/details`} className="link">
-                                    {req.id}
-                                    </Link>
-                                ) : ( req.id ) }
-                            </TableCell>
-                            <TableCell>{req.post}</TableCell>
-                            <TableCell>{req.effective}</TableCell>
-                            <TableCell>{req.contract || "N/A"}</TableCell>
-                            <TableCell>
-                                {req.wishedDate ? new Date(req.wishedDate).toLocaleDateString("fr-FR") : "N/A"}
-                            </TableCell>
-                            <TableCell>{req.status || "N/A"}</TableCell>
-                            <TableCell>
-                                {req.sendingDate ? new Date(req.sendingDate).toLocaleDateString("fr-FR") : "N/A"}
-                            </TableCell>
-                            <TableCell style={{ textAlign: "center" }}>
-                                <EditButton onClick={() => handleOpenValidationForm(req.id)}>
-                                    <CheckLine size={16} />
-                                </EditButton>
-                            </TableCell>
-                        </TableRow>
-                    ))
-                    ) : (
-                    <TableRow>
-                        <TableCell colSpan={7}>
-                            <NoDataMessage>
-                                {hasFilters ? "Aucune demande ne correspond aux critères." : "Aucune demande trouvée."}
-                            </NoDataMessage>
-                        </TableCell>
-                    </TableRow>
-                    )}
-                </tbody>
-            </DataTable>
-
-            <Pagination
+            <PendingRequestCards
+                requests={requests}
+                isLoading={isLoading}
+                totalEntries={totalCount}
                 currentPage={page}
                 pageSize={pageSize}
-                totalEntries={totalCount}
-                onPageChange={setPage}
-                onPageSizeChange={handlePageSizeChange}
+                handlePageChange={setPage}
+                handlePageSizeChange={handlePageSizeChange}
+                formatDate={(date) => new Date(date).toLocaleDateString("fr-FR")}
+                handleRowClick={(id) => {
+                    if (canViewDetails)
+                        window.location.href = `/recrutement/demandes/${id}/details`;
+                }}
+                handleOpenValidationForm={handleOpenValidationForm}   // <--- ADD
             />
         </TableContainer>
     </> );
