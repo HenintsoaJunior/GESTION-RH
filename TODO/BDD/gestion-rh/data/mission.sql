@@ -1,5 +1,3 @@
-
-
 INSERT INTO expense_type (expense_type_id, type, time_start, time_end, created_at, updated_at)
 VALUES 
 ('exp001', 'Petit Déjeuner', '06:30:00', '08:00:00', GETDATE(), GETDATE()),
@@ -7,7 +5,6 @@ VALUES
 ('exp003', 'Dinner',           '18:30:00', '20:00:00', GETDATE(), GETDATE()),
 ('exp004', 'Hébergement',     '21:00:00', '05:00:00', GETDATE(), GETDATE()),
 ('exp005', 'Communication',     NULL, NULL, GETDATE(), GETDATE()),
-('exp006', 'Visa sur place',     NULL, NULL, GETDATE(), GETDATE()),
 ('exp007', 'Frais médicaux',     NULL, NULL, GETDATE(), GETDATE()),
 ('exp008', 'Taxes',     NULL, NULL, GETDATE(), GETDATE()),
 ('exp009', 'Transport',     NULL, NULL, GETDATE(), GETDATE());
@@ -149,26 +146,6 @@ INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, c
 INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp120', 50.0, GETDATE(), GETDATE(), 'exp005', '17');
 INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp121', 50.0, GETDATE(), GETDATE(), 'exp005', '18');
 INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp122', 50.0, GETDATE(), GETDATE(), 'exp005', '19');
-
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp123', 500.0, GETDATE(), GETDATE(), 'exp006', '1');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp124', 500.0, GETDATE(), GETDATE(), 'exp006', '2');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp125', 500.0, GETDATE(), GETDATE(), 'exp006', '3');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp126', 500.0, GETDATE(), GETDATE(), 'exp006', '4');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp127', 500.0, GETDATE(), GETDATE(), 'exp006', '5');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp128', 500.0, GETDATE(), GETDATE(), 'exp006', '6');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp129', 500.0, GETDATE(), GETDATE(), 'exp006', '7');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp130', 500.0, GETDATE(), GETDATE(), 'exp006', '8');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp131', 500.0, GETDATE(), GETDATE(), 'exp006', '9');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp132', 500.0, GETDATE(), GETDATE(), 'exp006', '10');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp133', 500.0, GETDATE(), GETDATE(), 'exp006', '11');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp134', 500.0, GETDATE(), GETDATE(), 'exp006', '12');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp135', 500.0, GETDATE(), GETDATE(), 'exp006', '13');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp136', 500.0, GETDATE(), GETDATE(), 'exp006', '14');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp137', 500.0, GETDATE(), GETDATE(), 'exp006', '15');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp138', 500.0, GETDATE(), GETDATE(), 'exp006', '16');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp139', 500.0, GETDATE(), GETDATE(), 'exp006', '17');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp140', 500.0, GETDATE(), GETDATE(), 'exp006', '18');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp141', 500.0, GETDATE(), GETDATE(), 'exp006', '19');
 
 INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp142', 200.0, GETDATE(), GETDATE(), 'exp007', '1');
 INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp143', 200.0, GETDATE(), GETDATE(), 'exp007', '2');

@@ -897,160 +897,160 @@
 //                 throw new Exception($"Erreur lors de la génération du PDF: {ex.Message}", ex);
 //             }
 //         }
-//         public async Task<ExpensePaiementResult> GenerateExpensePaiementsAsync(string? employeeId = null, string? missionId = null)
-//         {
-//             try
-//             {
-//                 var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId);
-//                 var assignations = missionAssignations as MissionAssignation[] ?? missionAssignations.ToArray();
-//                 if (assignations.Length == 0)
-//                 {
-//                     return new ExpensePaiementResult
-//                     {
-//                         DailyPaiements = new List<DailyExpensePaiement>(),
-//                         MissionAssignation = null,
-//                         TransportAmount = 0m
-//                     };
-//                 }
-//                 var paiementResults = new List<ExpensePaiementResult>();
-//                 foreach (var missionAssignation in assignations)
-//                 {
-//                     var paiementResult = await GenerateExpensePaymentsForAssignation(missionAssignation);
-//                     paiementResults.Add(paiementResult);
-//                     LogExpensePaymentGenerationResult(paiementResult, missionAssignation.EmployeeId, missionAssignation.MissionId);
-//                     await CreateExpenseCompensationsForResultAsync(paiementResult, missionAssignation);
-//                 }
-//                 return CombineExpensePaiementResults(paiementResults);
-//             }
-//             catch (Exception ex)
-//             {
-//                 throw new Exception($"Erreur lors de la génération des paiements des frais : {ex.Message}", ex);
-//             }
-//         }
-//         private async Task<ExpensePaiementResult> GenerateExpensePaymentsForAssignation(MissionAssignation missionAssignation)
-//         {
-//             var expensePaiement = new ExpensePaiement();
-//             var result = await expensePaiement.GeneratePaiement(missionAssignation, _expenseCompensationScaleService);
-//             // Pour les missions internationales, s'assurer que le transport est toujours généré
-//             var lieu = missionAssignation.Mission?.Lieu;
-//             if (lieu != null && lieu.Pays != "Madagascar" && result.TransportAmount == 0m)
-//             {
-//                 // Récupérer le montant de transport basé sur la zone (assumez une méthode pour obtenir zoneId et montant)
-//                 // Exemple : string zoneId = await GetZoneIdForLieuAsync(lieu.LieuId); // À implémenter si nécessaire
-//                 // decimal transportScale = await _expenseCompensationScaleService.GetTransportScaleForZone(zoneId);
-//                 // result.TransportAmount = transportScale; // Ou += si déjà présent
-//                 // Note: Si GeneratePaiement fetch déjà les scales avec expense_type_id NULL et is_transport=1, cela est redondant.
-//                 // Ajustez selon l'implémentation de ExpensePaiement.
-//             }
-//             return result;
-//         }
+        // public async Task<ExpensePaiementResult> GenerateExpensePaiementsAsync(string? employeeId = null, string? missionId = null)
+        // {
+        //     try
+        //     {
+        //         var missionAssignations = await _repository.GetFilteredAssignationsAsync(employeeId, missionId);
+        //         var assignations = missionAssignations as MissionAssignation[] ?? missionAssignations.ToArray();
+        //         if (assignations.Length == 0)
+        //         {
+        //             return new ExpensePaiementResult
+        //             {
+        //                 DailyPaiements = new List<DailyExpensePaiement>(),
+        //                 MissionAssignation = null,
+        //                 TransportAmount = 0m
+        //             };
+        //         }
+        //         var paiementResults = new List<ExpensePaiementResult>();
+        //         foreach (var missionAssignation in assignations)
+        //         {
+        //             var paiementResult = await GenerateExpensePaymentsForAssignation(missionAssignation);
+        //             paiementResults.Add(paiementResult);
+        //             LogExpensePaymentGenerationResult(paiementResult, missionAssignation.EmployeeId, missionAssignation.MissionId);
+        //             await CreateExpenseCompensationsForResultAsync(paiementResult, missionAssignation);
+        //         }
+        //         return CombineExpensePaiementResults(paiementResults);
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         throw new Exception($"Erreur lors de la génération des paiements des frais : {ex.Message}", ex);
+        //     }
+        // }
+        // private async Task<ExpensePaiementResult> GenerateExpensePaymentsForAssignation(MissionAssignation missionAssignation)
+        // {
+        //     var expensePaiement = new ExpensePaiement();
+        //     var result = await expensePaiement.GeneratePaiement(missionAssignation, _expenseCompensationScaleService);
+        //     // Pour les missions internationales, s'assurer que le transport est toujours généré
+        //     var lieu = missionAssignation.Mission?.Lieu;
+        //     if (lieu != null && lieu.Pays != "Madagascar" && result.TransportAmount == 0m)
+        //     {
+        //         // Récupérer le montant de transport basé sur la zone (assumez une méthode pour obtenir zoneId et montant)
+        //         // Exemple : string zoneId = await GetZoneIdForLieuAsync(lieu.LieuId); // À implémenter si nécessaire
+        //         // decimal transportScale = await _expenseCompensationScaleService.GetTransportScaleForZone(zoneId);
+        //         // result.TransportAmount = transportScale; // Ou += si déjà présent
+        //         // Note: Si GeneratePaiement fetch déjà les scales avec expense_type_id NULL et is_transport=1, cela est redondant.
+        //         // Ajustez selon l'implémentation de ExpensePaiement.
+        //     }
+        //     return result;
+        // }
 //         private static void LogExpensePaymentGenerationResult(ExpensePaiementResult paiementResult, string employeeId, string missionId)
 //         {
 //             // Méthode conservée pour compatibilité mais sans logs
 //         }
-//         private static ExpensePaiementResult CombineExpensePaiementResults(List<ExpensePaiementResult> results)
-//         {
-//             if (results.Count == 1)
-//                 return results[0];
-//             var combinedDailyPaiements = results.SelectMany(r => r.DailyPaiements).ToList();
-//             var totalTransport = results.Sum(r => r.TransportAmount);
+        // private static ExpensePaiementResult CombineExpensePaiementResults(List<ExpensePaiementResult> results)
+        // {
+        //     if (results.Count == 1)
+        //         return results[0];
+        //     var combinedDailyPaiements = results.SelectMany(r => r.DailyPaiements).ToList();
+        //     var totalTransport = results.Sum(r => r.TransportAmount);
      
-//             return new ExpensePaiementResult
-//             {
-//                 DailyPaiements = combinedDailyPaiements,
-//                 TransportAmount = totalTransport
-//             };
-//         }
-//         private async Task CreateExpenseCompensationsForResultAsync(ExpensePaiementResult paiementResult, MissionAssignation missionAssignation)
-//         {
-//             if (paiementResult.DailyPaiements == null || !paiementResult.DailyPaiements.Any())
-//             {
-//                 return;
-//             }
-//             var isInternational = missionAssignation.Mission?.MissionType != "national";
-//             var dailyPaiements = paiementResult.DailyPaiements.OrderBy(d => d.Date).ToList();
-//             var firstDate = dailyPaiements.FirstOrDefault()?.Date;
-//             if (firstDate == null) return;
-//             var numberOfDays = dailyPaiements.Count;
-//             decimal totalCommunication = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Communication"));
-//             decimal totalVisa = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Visa sur place"));
-//             decimal totalMedical = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Frais médicaux"));
+        //     return new ExpensePaiementResult
+        //     {
+        //         DailyPaiements = combinedDailyPaiements,
+        //         TransportAmount = totalTransport
+        //     };
+        // }
+        // private async Task CreateExpenseCompensationsForResultAsync(ExpensePaiementResult paiementResult, MissionAssignation missionAssignation)
+        // {
+        //     if (paiementResult.DailyPaiements == null || !paiementResult.DailyPaiements.Any())
+        //     {
+        //         return;
+        //     }
+        //     var isInternational = missionAssignation.Mission?.MissionType != "national";
+        //     var dailyPaiements = paiementResult.DailyPaiements.OrderBy(d => d.Date).ToList();
+        //     var firstDate = dailyPaiements.FirstOrDefault()?.Date;
+        //     if (firstDate == null) return;
+        //     var numberOfDays = dailyPaiements.Count;
+        //     decimal totalCommunication = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Communication"));
+        //     decimal totalVisa = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Visa sur place"));
+        //     decimal totalMedical = dailyPaiements.Sum(d => CalculateExpenseAmountExpense(d.CompensationScales?.ToList() ?? new List<ExpenseCompensationScale>(), "Frais médicaux"));
       
-//             foreach (var dailyPaiement in dailyPaiements)
-//             {
-//                 var compensationDto = new CompensationDTO
-//                 {
-//                     AssignationId = missionAssignation.AssignationId,
-//                     EmployeeId = missionAssignation.EmployeeId,
-//                     PaymentDate = dailyPaiement.Date,
-//                     Devise = "EUR",
-//                     Status = "unpaid",
-//                     CreatedAt = DateTime.UtcNow,
-//                     UpdatedAt = null,
-//                     TransportAmount = 0m,
-//                     BreakfastAmount = 0m,
-//                     LunchAmount = 0m,
-//                     DinnerAmount = 0m,
-//                     AccommodationAmount = 0m,
-//                     CommunicationAmount = 0m,
-//                     VisaAmount = 0m,
-//                     MedicalExpensesAmount = 0m,
-//                     TaxesAmount = 0m
-//                 };
-//                 // Add all amounts from this day's scales (regular + daily specials like Transport/Taxes)
-//                 if (dailyPaiement.CompensationScales != null)
-//                 {
-//                     foreach (var cs in dailyPaiement.CompensationScales)
-//                     {
-//                         if (cs?.ExpenseType?.Type == null) continue;
-//                         var amount = cs.Amount;
-//                         var type = cs.ExpenseType.Type;
-//                         // Skip only one-time specials, handle them manually below
-//                         if (type == "Communication" || type == "Visa sur place" || type == "Frais médicaux")
-//                         {
-//                             continue;
-//                         }
-//                         switch (type)
-//                         {
-//                             case "Transport":
-//                                 compensationDto.TransportAmount += amount;
-//                                 break;
-//                             case "Petit Déjeuner":
-//                                 compensationDto.BreakfastAmount += amount;
-//                                 break;
-//                             case "Déjeuner":
-//                                 compensationDto.LunchAmount += amount;
-//                                 break;
-//                             case "Dinner":
-//                                 compensationDto.DinnerAmount += amount;
-//                                 break;
-//                             case "Hébergement":
-//                                 compensationDto.AccommodationAmount += amount;
-//                                 break;
-//                             case "Taxes":
-//                                 compensationDto.TaxesAmount += amount;
-//                                 break;
-//                         }
-//                     }
-//                 }
-//                 // Set one-time amounts on first date only (Communication, Visa, Medical)
-//                 if (dailyPaiement.Date?.Date == firstDate.Value.Date)
-//                 {
-//                     compensationDto.CommunicationAmount = totalCommunication;
-//                     compensationDto.VisaAmount = totalVisa;
-//                     compensationDto.MedicalExpensesAmount = totalMedical;
-//                 }
-//                 try
-//                 {
-//                     var compensationId = await _compensationService.CreateAsync(compensationDto);
-//                     _logger.LogInformation("Compensation {CompensationId} créée pour la date {Date} de l'assignation {MissionId}", compensationId, dailyPaiement.Date, missionAssignation.MissionId);
-//                 }
-//                 catch (Exception ex)
-//                 {
-//                     _logger.LogError(ex, "Erreur lors de la création de la compensation pour la date {Date} de l'assignation {MissionId}", dailyPaiement.Date, missionAssignation.MissionId);
-//                 }
-//             }
-//         }
+        //     foreach (var dailyPaiement in dailyPaiements)
+        //     {
+        //         var compensationDto = new CompensationDTO
+        //         {
+        //             AssignationId = missionAssignation.AssignationId,
+        //             EmployeeId = missionAssignation.EmployeeId,
+        //             PaymentDate = dailyPaiement.Date,
+        //             Devise = "EUR",
+        //             Status = "unpaid",
+        //             CreatedAt = DateTime.UtcNow,
+        //             UpdatedAt = null,
+        //             TransportAmount = 0m,
+        //             BreakfastAmount = 0m,
+        //             LunchAmount = 0m,
+        //             DinnerAmount = 0m,
+        //             AccommodationAmount = 0m,
+        //             CommunicationAmount = 0m,
+        //             VisaAmount = 0m,
+        //             MedicalExpensesAmount = 0m,
+        //             TaxesAmount = 0m
+        //         };
+        //         // Add all amounts from this day's scales (regular + daily specials like Transport/Taxes)
+        //         if (dailyPaiement.CompensationScales != null)
+        //         {
+        //             foreach (var cs in dailyPaiement.CompensationScales)
+        //             {
+        //                 if (cs?.ExpenseType?.Type == null) continue;
+        //                 var amount = cs.Amount;
+        //                 var type = cs.ExpenseType.Type;
+        //                 // Skip only one-time specials, handle them manually below
+        //                 if (type == "Communication" || type == "Visa sur place" || type == "Frais médicaux")
+        //                 {
+        //                     continue;
+        //                 }
+        //                 switch (type)
+        //                 {
+        //                     case "Transport":
+        //                         compensationDto.TransportAmount += amount;
+        //                         break;
+        //                     case "Petit Déjeuner":
+        //                         compensationDto.BreakfastAmount += amount;
+        //                         break;
+        //                     case "Déjeuner":
+        //                         compensationDto.LunchAmount += amount;
+        //                         break;
+        //                     case "Dinner":
+        //                         compensationDto.DinnerAmount += amount;
+        //                         break;
+        //                     case "Hébergement":
+        //                         compensationDto.AccommodationAmount += amount;
+        //                         break;
+        //                     case "Taxes":
+        //                         compensationDto.TaxesAmount += amount;
+        //                         break;
+        //                 }
+        //             }
+        //         }
+        //         // Set one-time amounts on first date only (Communication, Visa, Medical)
+        //         if (dailyPaiement.Date?.Date == firstDate.Value.Date)
+        //         {
+        //             compensationDto.CommunicationAmount = totalCommunication;
+        //             compensationDto.VisaAmount = totalVisa;
+        //             compensationDto.MedicalExpensesAmount = totalMedical;
+        //         }
+        //         try
+        //         {
+        //             var compensationId = await _compensationService.CreateAsync(compensationDto);
+        //             _logger.LogInformation("Compensation {CompensationId} créée pour la date {Date} de l'assignation {MissionId}", compensationId, dailyPaiement.Date, missionAssignation.MissionId);
+        //         }
+        //         catch (Exception ex)
+        //         {
+        //             _logger.LogError(ex, "Erreur lors de la création de la compensation pour la date {Date} de l'assignation {MissionId}", dailyPaiement.Date, missionAssignation.MissionId);
+        //         }
+        //     }
+        // }
 //         public async Task<MissionPaiementResult> GeneratePaiementsAsync(string? employeeId = null, string? missionId = null)
 //         {
 //             try
@@ -1616,11 +1616,11 @@
 //                 .Where(scale => scale.TransportId == transportId && scale.TransportId != null)
 //                 .Sum(scale => scale.Amount);
 //         }
-//         public static decimal CalculateExpenseAmountExpense(List<ExpenseCompensationScale> compensationScales, string expenseType)
-//         {
-//             return compensationScales
-//                 .Where(scale => scale.ExpenseType?.Type == expenseType)
-//                 .Sum(scale => scale.Amount);
-//         }
+        // public static decimal CalculateExpenseAmountExpense(List<ExpenseCompensationScale> compensationScales, string expenseType)
+        // {
+        //     return compensationScales
+        //         .Where(scale => scale.ExpenseType?.Type == expenseType)
+        //         .Sum(scale => scale.Amount);
+        // }
 //     }
 // }

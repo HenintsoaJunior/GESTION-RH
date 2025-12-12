@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import {
   FormSectionTitle,
@@ -35,6 +36,9 @@ interface MissionCollaboratorStepProps {
       costCenter: string;
       transport: string;
     };
+    isVisa?: number;
+    amountVisaEur?: number | null;
+    inclPdj?: number;
   };
   fieldErrors: { [key: string]: string[] };
   isSubmitting: boolean;
@@ -45,7 +49,7 @@ interface MissionCollaboratorStepProps {
     transport: { type: string }[];
   };
   handleInputChange: (
-    e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement> | { target: { name: string; value: string } },
+    e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement> | { target: { name: string; value: string | number } },
     section?: string
   ) => void;
   handleAddNewSuggestion: (type: string, value: string) => void;
@@ -324,38 +328,332 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
       <FormSectionTitle>Informations de la Mission</FormSectionTitle>
       <FormTable>
         <tbody>
+          {/* Type de mission */}
           <FormRow>
             <FormFieldCell colSpan={2}>
               <FormLabelRequired>Type de mission</FormLabelRequired>
-              <div className="radio-group" style={{ display: "flex", gap: "20px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                  <FormInput
-                    type="radio"
-                    name="missionType"
-                    value="Nationale"
-                    checked={formData.missionType === "Nationale"}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
-                    disabled={isSubmitting}
-                  />
-                  National
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                  <FormInput
-                    type="radio"
-                    name="missionType"
-                    value="Internationale"
-                    checked={formData.missionType === "Internationale"}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
-                    disabled={isSubmitting}
-                  />
-                  International
-                </label>
+              <div style={{ 
+                display: "flex", 
+                gap: "10px",
+                marginTop: "8px"
+              }}>
+                <button
+                  type="button"
+                  onClick={() => handleInputChange({ 
+                    target: { name: "missionType", value: "Nationale" } 
+                  })}
+                  disabled={isSubmitting}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    padding: "10px 16px",
+                    border: `1px solid ${formData.missionType === "Nationale" ? "var(--primary-color)" : "var(--border-color)"}`,
+                    backgroundColor: formData.missionType === "Nationale" ? "var(--primary-light)" : "var(--bg-primary)",
+                    cursor: "pointer",
+                    transition: "none",
+                    minWidth: "120px",
+                    height: "40px"
+                  }}
+                >
+                  {formData.missionType === "Nationale" ? (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="1" y="1" width="14" height="14" rx="1" fill="var(--primary-color)" stroke="var(--primary-color)" strokeWidth="2"/>
+                      <path d="M4 8L6.5 10.5L12 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="1" y="1" width="14" height="14" rx="1" stroke="var(--border-color)" strokeWidth="2"/>
+                    </svg>
+                  )}
+                  <span style={{
+                    color: formData.missionType === "Nationale" ? "var(--primary-color)" : "var(--text-color)",
+                    fontWeight: formData.missionType === "Nationale" ? "600" : "400",
+                    fontSize: "14px"
+                  }}>
+                    National
+                  </span>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => handleInputChange({ 
+                    target: { name: "missionType", value: "Internationale" } 
+                  })}
+                  disabled={isSubmitting}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    padding: "10px 16px",
+                    border: `1px solid ${formData.missionType === "Internationale" ? "var(--primary-color)" : "var(--border-color)"}`,
+                    backgroundColor: formData.missionType === "Internationale" ? "var(--primary-light)" : "var(--bg-primary)",
+                    cursor: "pointer",
+                    transition: "none",
+                    minWidth: "120px",
+                    height: "40px"
+                  }}
+                >
+                  {formData.missionType === "Internationale" ? (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="1" y="1" width="14" height="14" rx="1" fill="var(--primary-color)" stroke="var(--primary-color)" strokeWidth="2"/>
+                      <path d="M4 8L6.5 10.5L12 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="1" y="1" width="14" height="14" rx="1" stroke="var(--border-color)" strokeWidth="2"/>
+                    </svg>
+                  )}
+                  <span style={{
+                    color: formData.missionType === "Internationale" ? "var(--primary-color)" : "var(--text-color)",
+                    fontWeight: formData.missionType === "Internationale" ? "600" : "400",
+                    fontSize: "14px"
+                  }}>
+                    International
+                  </span>
+                </button>
               </div>
               {fieldErrors.missionType && fieldErrors.missionType.length > 0 && (
                 <ErrorMessage>{fieldErrors.missionType.join(", ")}</ErrorMessage>
               )}
             </FormFieldCell>
           </FormRow>
+          
+          {/* Champs spécifiques pour les missions internationales */}
+          {isInternational && (
+            <>
+              {/* Visa */}
+              <FormRow>
+                <FormFieldCell colSpan={2}>
+                  <FormLabel>Visa sur place</FormLabel>
+                  <div style={{ 
+                    display: "flex", 
+                    gap: "10px",
+                    marginTop: "8px"
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange({ 
+                        target: { name: "isVisa", value: 0 } 
+                      })}
+                      disabled={isSubmitting}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        padding: "10px 16px",
+                        border: `1px solid ${formData.isVisa === 0 ? "var(--primary-color)" : "var(--border-color)"}`,
+                        backgroundColor: formData.isVisa === 0 ? "var(--primary-light)" : "var(--bg-primary)",
+                        cursor: "pointer",
+                        transition: "none",
+                        minWidth: "80px",
+                        height: "40px"
+                      }}
+                    >
+                      {formData.isVisa === 0 ? (
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="14" height="14" rx="1" fill="var(--primary-color)" stroke="var(--primary-color)" strokeWidth="2"/>
+                          <path d="M4 8L6.5 10.5L12 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="14" height="14" rx="1" stroke="var(--border-color)" strokeWidth="2"/>
+                        </svg>
+                      )}
+                      <span style={{
+                        color: formData.isVisa === 0 ? "var(--primary-color)" : "var(--text-color)",
+                        fontWeight: formData.isVisa === 0 ? "600" : "400",
+                        fontSize: "14px"
+                      }}>
+                        Non
+                      </span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange({ 
+                        target: { name: "isVisa", value: 1 } 
+                      })}
+                      disabled={isSubmitting}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        padding: "10px 16px",
+                        border: `1px solid ${formData.isVisa === 1 ? "var(--primary-color)" : "var(--border-color)"}`,
+                        backgroundColor: formData.isVisa === 1 ? "var(--primary-light)" : "var(--bg-primary)",
+                        cursor: "pointer",
+                        transition: "none",
+                        minWidth: "80px",
+                        height: "40px"
+                      }}
+                    >
+                      {formData.isVisa === 1 ? (
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="14" height="14" rx="1" fill="var(--primary-color)" stroke="var(--primary-color)" strokeWidth="2"/>
+                          <path d="M4 8L6.5 10.5L12 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="14" height="14" rx="1" stroke="var(--border-color)" strokeWidth="2"/>
+                        </svg>
+                      )}
+                      <span style={{
+                        color: formData.isVisa === 1 ? "var(--primary-color)" : "var(--text-color)",
+                        fontWeight: formData.isVisa === 1 ? "600" : "400",
+                        fontSize: "14px"
+                      }}>
+                        Oui
+                      </span>
+                    </button>
+                  </div>
+                  {fieldErrors.isVisa && fieldErrors.isVisa.length > 0 && (
+                    <ErrorMessage>{fieldErrors.isVisa.join(", ")}</ErrorMessage>
+                  )}
+                </FormFieldCell>
+              </FormRow>
+              
+              {/* Montant du Visa (EUR) */}
+              {formData.isVisa === 1 && (
+                <FormRow>
+                  <FormFieldCell colSpan={2}>
+                    <FormLabelRequired>Montant du Visa (EUR)</FormLabelRequired>
+                    <div style={{ position: "relative", marginTop: "8px" }}>
+                      <FormInput
+                        type="number"
+                        name="amountVisaEur"
+                        value={formData.amountVisaEur || ""}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
+                        placeholder="Saisir le montant du visa..."
+                        disabled={isSubmitting}
+                        min="0"
+                        step="0.01"
+                        className={fieldErrors.amountVisaEur ? "input-error" : ""}
+                        style={{
+                          paddingRight: "40px",
+                          width: "100%",
+                          height: "40px"
+                        }}
+                      />
+                      <span style={{
+                        position: "absolute",
+                        right: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "var(--text-muted)",
+                        fontSize: "14px",
+                        pointerEvents: "none"
+                      }}>
+                        EUR
+                      </span>
+                    </div>
+                    {fieldErrors.amountVisaEur && fieldErrors.amountVisaEur.length > 0 && (
+                      <ErrorMessage>{fieldErrors.amountVisaEur.join(", ")}</ErrorMessage>
+                    )}
+                  </FormFieldCell>
+                </FormRow>
+              )}
+              
+              {/* Petit-déjeuner inclus */}
+              <FormRow>
+                <FormFieldCell colSpan={2}>
+                  <FormLabel>Hébergement avec petit-déjeuner inclus</FormLabel>
+                  <div style={{ 
+                    display: "flex", 
+                    gap: "10px",
+                    marginTop: "8px"
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange({ 
+                        target: { name: "inclPdj", value: 0 } 
+                      })}
+                      disabled={isSubmitting}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        padding: "10px 16px",
+                        border: `1px solid ${formData.inclPdj === 0 ? "var(--primary-color)" : "var(--border-color)"}`,
+                        backgroundColor: formData.inclPdj === 0 ? "var(--primary-light)" : "var(--bg-primary)",
+                        cursor: "pointer",
+                        transition: "none",
+                        minWidth: "80px",
+                        height: "40px"
+                      }}
+                    >
+                      {formData.inclPdj === 0 ? (
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="14" height="14" rx="1" fill="var(--primary-color)" stroke="var(--primary-color)" strokeWidth="2"/>
+                          <path d="M4 8L6.5 10.5L12 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="14" height="14" rx="1" stroke="var(--border-color)" strokeWidth="2"/>
+                        </svg>
+                      )}
+                      <span style={{
+                        color: formData.inclPdj === 0 ? "var(--primary-color)" : "var(--text-color)",
+                        fontWeight: formData.inclPdj === 0 ? "600" : "400",
+                        fontSize: "14px"
+                      }}>
+                        Non
+                      </span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange({ 
+                        target: { name: "inclPdj", value: 1 } 
+                      })}
+                      disabled={isSubmitting}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        padding: "10px 16px",
+                        border: `1px solid ${formData.inclPdj === 1 ? "var(--primary-color)" : "var(--border-color)"}`,
+                        backgroundColor: formData.inclPdj === 1 ? "var(--primary-light)" : "var(--bg-primary)",
+                        cursor: "pointer",
+                        transition: "none",
+                        minWidth: "80px",
+                        height: "40px"
+                      }}
+                    >
+                      {formData.inclPdj === 1 ? (
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="14" height="14" rx="1" fill="var(--primary-color)" stroke="var(--primary-color)" strokeWidth="2"/>
+                          <path d="M4 8L6.5 10.5L12 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="14" height="14" rx="1" stroke="var(--border-color)" strokeWidth="2"/>
+                        </svg>
+                      )}
+                      <span style={{
+                        color: formData.inclPdj === 1 ? "var(--primary-color)" : "var(--text-color)",
+                        fontWeight: formData.inclPdj === 1 ? "600" : "400",
+                        fontSize: "14px"
+                      }}>
+                        Oui
+                      </span>
+                    </button>
+                  </div>
+                  {fieldErrors.inclPdj && fieldErrors.inclPdj.length > 0 && (
+                    <ErrorMessage>{fieldErrors.inclPdj.join(", ")}</ErrorMessage>
+                  )}
+                </FormFieldCell>
+              </FormRow>
+            </>
+          )}
+          
+          {/* Titre de la mission */}
           <FormRow>
             <FormFieldCell colSpan={2}>
               <FormLabelRequired>Titre de la mission</FormLabelRequired>
@@ -367,12 +665,18 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 placeholder="Saisir le titre de la mission..."
                 disabled={isSubmitting}
                 className={fieldErrors.missionTitle ? "input-error" : ""}
+                style={{
+                  marginTop: "8px",
+                  height: "40px"
+                }}
               />
               {fieldErrors.missionTitle && fieldErrors.missionTitle.length > 0 && (
                 <ErrorMessage>{fieldErrors.missionTitle.join(", ")}</ErrorMessage>
               )}
             </FormFieldCell>
           </FormRow>
+          
+          {/* Description */}
           <FormRow>
             <FormFieldCell colSpan={2}>
               <FormLabel>Description</FormLabel>
@@ -384,31 +688,40 @@ const MissionCollaboratorStep: React.FC<MissionCollaboratorStepProps> = ({
                 disabled={isSubmitting}
                 rows={3}
                 className={fieldErrors.description ? "input-error" : ""}
+                style={{
+                  marginTop: "8px",
+                  resize: "vertical",
+                  minHeight: "80px"
+                }}
               />
               {fieldErrors.description && fieldErrors.description.length > 0 && (
                 <ErrorMessage>{fieldErrors.description.join(", ")}</ErrorMessage>
               )}
             </FormFieldCell>
           </FormRow>
+          
+          {/* Lieu */}
           <FormRow>
             <FormFieldCell colSpan={2}>
               <FormLabelRequired>Lieu</FormLabelRequired>
-              <StyledAutoCompleteInput
-                value={formData.location || ""}
-                onChange={(value: string) => {
-                  handleInputChange({ target: { name: "location", value } });
-                  if (formData.lieuData) {
-                    handleInputChange({ target: { name: "lieuData", value: "" } });
-                  }
-                }}
-                suggestions={regionDisplayNames}
-                placeholder={isLoading.regions ? "Chargement des lieux..." : "Saisir ou sélectionner un lieu..."}
-                disabled={isSubmitting || isLoading.regions}
-                onAddNew={handleAddNewLocation}
-                fieldType="location"
-                fieldLabel="lieu"
-                className={fieldErrors.lieuId ? "input-error" : ""}
-              />
+              <div style={{ marginTop: "8px" }}>
+                <StyledAutoCompleteInput
+                  value={formData.location || ""}
+                  onChange={(value: string) => {
+                    handleInputChange({ target: { name: "location", value } });
+                    if (formData.lieuData) {
+                      handleInputChange({ target: { name: "lieuData", value: "" } });
+                    }
+                  }}
+                  suggestions={regionDisplayNames}
+                  placeholder={isLoading.regions ? "Chargement des lieux..." : "Saisir ou sélectionner un lieu..."}
+                  disabled={isSubmitting || isLoading.regions}
+                  onAddNew={handleAddNewLocation}
+                  fieldType="location"
+                  fieldLabel="lieu"
+                  className={fieldErrors.lieuId ? "input-error" : ""}
+                />
+              </div>
               {fieldErrors.lieuId && fieldErrors.lieuId.length > 0 && (
                 <ErrorMessage>{fieldErrors.lieuId.join(", ")}</ErrorMessage>
               )}

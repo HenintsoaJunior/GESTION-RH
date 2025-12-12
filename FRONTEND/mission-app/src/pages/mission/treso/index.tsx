@@ -31,7 +31,7 @@ const TresoPage = () => {
 
   const { data: totalNotPaidData, isLoading: isTotalNotPaidLoading, error: totalNotPaidError } = useTotalNotPaid();
   const { data: totalNotReimbursedData, isLoading: isTotalNotReimbursedLoading, error: totalNotReimbursedError } = useTotalNotReimbursed();
-  const { data: currenciesData, isLoading: isCurrenciesLoading, error: currenciesError } = useCurrencies();
+  const { isLoading: isCurrenciesLoading, error: currenciesError } = useCurrencies();
   const { data: previsionMonthData, isLoading: isPrevisionLoading, error: previsionError } = usePrevisionForMonth();
 
   const formatCurrency = (value: number): string => {
@@ -174,8 +174,6 @@ const TresoPage = () => {
   // Extraction des données après vérification du chargement
   const totalNotPaid = totalNotPaidData?.data?.totalNotPaidAmount ?? 0;
   const totalNotReimbursed = totalNotReimbursedData?.data?.totalNotReimbursedAmount ?? 0;
-  const eurToMgaRate = currenciesData?.rates?.MGA ?? 1;
-  const totalNotReimbursedMGA = totalNotReimbursed * eurToMgaRate;
   const totalPrevision = previsionMonthData?.data?.reduce((sum, item) => sum + item.amount, 0) ?? 0;
 
   return (
@@ -326,7 +324,7 @@ const TresoPage = () => {
                   margin: 0,
                   fontFamily: 'century-gothic, sans-serif',
                 }}>
-                  {formatCurrency(totalNotReimbursedMGA)}
+                  {formatCurrency(totalNotReimbursed)}
                 </h2>
               </div>
               <div style={{

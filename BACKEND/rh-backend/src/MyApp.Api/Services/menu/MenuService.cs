@@ -33,8 +33,9 @@ namespace MyApp.Api.Services.menu
             var rootHierarchies = await _hierarchyRepository.GetRootMenusAsync();
             var result = new List<MenuHierarchyDto>();
             var menus = await _menuRepository.GetAllAsync();
-            var enabledMenus = menus.Where(m => m.IsEnabled).ToList();
-            var menuDict = enabledMenus.ToDictionary(m => m.MenuId, m => m);
+            
+            var visibleMenus = menus.Where(m => m.IsEnabled && m.IsVisible == 1).ToList();
+            var menuDict = visibleMenus.ToDictionary(m => m.MenuId, m => m);
 
             foreach (var hierarchy in rootHierarchies)
             {
@@ -66,9 +67,10 @@ namespace MyApp.Api.Services.menu
                 Icon = menu.Icon,
                 Link = menu.Link,
                 IsEnabled = menu.IsEnabled,
+                IsVisible = menu.IsVisible, 
                 Position = menu.Position,
                 ModuleId = menu.ModuleId,
-                Section = menu.Section, // Inclure le champ Section
+                Section = menu.Section,
                 RoleNames = menu.MenuRoles?.Select(mr => mr.Role.Name).ToList() ?? new List<string>()
             };
 

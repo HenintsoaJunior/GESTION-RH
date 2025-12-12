@@ -16,6 +16,8 @@ namespace MyApp.Api.Services.mission
         Task<(IEnumerable<AssignationWithCompensationsDto>, int)> GetCompensationsByStatusAsync(CompensationStatusFilter filter, int page = 1, int pageSize = 10);
         Task<decimal> GetTotalPaidAmountAsync();
         Task<decimal> GetTotalNotPaidAmountAsync();
+        Task<decimal> GetTotalAccommodationAmountAsync(string missionId);
+        
     }
 
     public class CompensationService : ICompensationService
@@ -41,6 +43,31 @@ namespace MyApp.Api.Services.mission
             _previsionPriceRepository = previsionPriceRepository ?? throw new ArgumentNullException(nameof(previsionPriceRepository));
         }
 
+        public async Task<decimal> GetTotalAccommodationAmountAsync(string missionId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(missionId))
+                    throw new ArgumentException("L'ID de la mission ne peut pas être vide.", nameof(missionId));
+
+                var compensations = await _repository.GetByMissionIdAsync(missionId);
+                
+                if (compensations == null || !compensations.Any())
+                    return 0m;
+                
+                decimal totalAccommodationAmount = compensations
+                    .Where(c => c.Status?.ToLower() != "annulée" && 
+                            c.Mission?.Status != MissionStatus.Canceled)
+                    .Sum(c => c.AccommodationAmount);
+                
+                return totalAccommodationAmount;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors du calcul du montant total d'hébergement pour la mission {MissionId}", missionId);
+                throw;
+            }
+        }
         public async Task<IEnumerable<Compensation>> GetAllAsync()
         {
             try

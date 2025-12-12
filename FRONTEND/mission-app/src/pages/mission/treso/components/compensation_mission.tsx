@@ -15,7 +15,7 @@ import type {
     Suggestions,
     LoadingState,
     FormattedCompensation,
-} from "./types";
+} from "./types/compensation";
 
 const CompensationMission: React.FC = () => {
     const navigate = useNavigate();
@@ -263,7 +263,7 @@ const CompensationMission: React.FC = () => {
 
     const handleFilterSubmit = () => {
         
-        let updatedFilters: AppliedFilters = { 
+        const updatedFilters: AppliedFilters = { 
             ...appliedFilters,
             employeeId: filters.employeeId,
             employeeName: filters.employeeName,

@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/axios-config';
 
 export const MissionTypeEnum = {
   Unknown: 0,
-  National: 1,
+  National: 1,  
   International: 2,
 } as const;
 
@@ -216,6 +218,9 @@ export interface Mission {
   allocatedFund: number;
   transportId: string | null;
   transport: Transport | null;
+  isVisa: number;
+  amountVisaEur: number | null;
+  inclPdj: number;
   userId: string;
   createdAt: string;
   updatedAt: string | null;
@@ -256,6 +261,9 @@ export interface CreateMissionInput {
   isValidated: number;
   allocatedFund: number;
   transportId?: string | null;
+  isVisa: number;
+  amountVisaEur: number | null;
+  inclPdj: number;
   userId: string;
 }
 
@@ -303,6 +311,8 @@ export interface MissionSearchFilters {
   status?: MissionStatusEnum[];
   missionType?: MissionTypeEnum;
   type?: PaymentTypeEnum;
+  isVisa?: number;
+  inclPdj?: number;
 }
 
 export interface OngoingMission {
@@ -327,6 +337,9 @@ export interface OngoingMission {
   allocatedFund: number;
   transportId: string | null;
   transport: Transport | null;
+  isVisa: number;
+  amountVisaEur: number | null;
+  inclPdj: number;
   userId: string;
   createdAt: string;
   updatedAt: string | null;
@@ -928,7 +941,7 @@ export const useGenerateAccommodationCertificate = () => {
   return useMutation<{ fileName: string; status: string }, Error, { missionId?: string; employeeId?: string }>({
     mutationFn: async (params) => {
       const { missionId, employeeId } = params;
-      const response = await api.post('/api/Mission/AttestationHebergement', 
+      const response = await api.post('/api/Mission/ATH', 
         { 
           missionId: missionId || null, 
           employeeId: employeeId || null 
@@ -958,7 +971,7 @@ export const usePreviewAccommodationCertificate = () => {
   return useMutation<{ blobUrl: string; fileName: string; status: string }, Error, { missionId?: string; employeeId?: string }>({
     mutationFn: async (params) => {
       const { missionId, employeeId } = params;
-      const response = await api.post('/api/Mission/AttestationHebergement', 
+      const response = await api.post('/api/Mission/ATH', 
         { 
           missionId: missionId || null, 
           employeeId: employeeId || null 

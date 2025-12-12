@@ -360,9 +360,6 @@ VALUES
     ('HAB_026', 'ROLE_001'),
     ('HAB_027', 'ROLE_001');
 
--- ============================
--- LIEU
--- ===========================
 
 INSERT INTO geo_zones (zone_id, name) VALUES
 ('1', 'Afrique'),
@@ -385,8 +382,6 @@ INSERT INTO geo_zones (zone_id, name) VALUES
 ('18', 'Amérique centrale'),
 ('19', 'Pacifique Sud');
 
-
--- Insertion des modules (ajout du nouveau module 'tableau_de_bord' au-dessus de 'mission')
 INSERT INTO module (module_id, module_name, description, created_at, updated_at) VALUES
 ('user', 'Utilisateurs', 'Gestion des utilisateurs et rôles', GETDATE(), GETDATE()),
 ('habilitation', 'Droit & Accès', 'Gestion des droits et autorisations', GETDATE(), GETDATE()),
@@ -395,57 +390,41 @@ INSERT INTO module (module_id, module_name, description, created_at, updated_at)
 ('logs', 'Logs', 'Suivi et journalisation des actions utilisateurs et systèmes', GETDATE(), GETDATE()),
 ('treasury', 'Trésorerie', 'Gestion des flux financiers et de la trésorerie', GETDATE(), GETDATE()),
 ('referentiel', 'Référentiel', 'Gestion des données référentielles', GETDATE(), GETDATE()),
-('import', 'Import', 'Gestion des imports de données et fichiers', GETDATE(), GETDATE()); 
+('import', 'Import', 'Gestion des imports de données et fichiers', GETDATE(), GETDATE());
 
--- Insertion des menus (ajout du menu pour 'tableau_de_bord' en position 1 dans 'navigation', mission décalé à 2)
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_dashboard', 'tableau_de_bord', 'fa-tachometer-alt', '/tableau-bord', 1, 1, 'tableau_de_bord', 'navigation', GETDATE(), GETDATE()),
-('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE());
-
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu0', 'utilisateurs', 'fa-users', '/utilisateur', 1, 1, 'user', 'administration', GETDATE(), GETDATE());
-
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_hab', 'Droit & Accès', 'fa-shield-alt', '/droit-access', 1, 2, 'habilitation', 'administration', GETDATE(), GETDATE()),
-('menu_hab_2', 'accès', 'fa-list', '/access/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
-
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_referentiel', 'référentiel', 'fa-database', '/referentiel', 1, 3, 'referentiel', 'administration', GETDATE(), GETDATE()),  -- Position 3 pour Référentiel (au-dessus de Import)
-('menu_import', 'import', 'fa-upload', '/import', 1, 4, 'import', 'administration', GETDATE(), GETDATE()),  -- Import décalé à position 4
-('menu_logs', 'logs', 'fa-file-alt', '/logs', 1, 5, 'logs', 'administration', GETDATE(), GETDATE());  -- Logs décalé à position 5
-
--- Navigation: mission (ajout du menu 'maps' en position 7 sous mission, après trésorerie en position 6)
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_3', 'Missions', 'fa-list', '/mission/list', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_4', 'Missions archivées', 'fa-archive', '/mission/archived', 1, 5, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_5', 'trésorerie', 'fa-money-bill-alt', '/treasury', 1, 6, 'treasury', 'navigation', GETDATE(), GETDATE()),
-('menu2_6', 'maps', 'fa-map', '/mission/maps', 1, 7, 'mission', 'navigation', GETDATE(), GETDATE());
-
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_hab_3', 'Habilitation', 'fa-key', '/habilitation', 1, 6, 'habilitation', 'administration', GETDATE(), GETDATE());
+INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, is_visible, section, created_at, updated_at) VALUES
+('menu_dashboard', 'tableau_de_bord', 'fa-tachometer-alt', '/tableau-bord', 1, 1, 'tableau_de_bord', 1, 'navigation', GETDATE(), GETDATE()),
+('menu2', 'Suivi des Missions', 'fa-briefcase', '/mission', 1, 2, 'mission', 1, 'navigation', GETDATE(), GETDATE()),
+('menu0', 'utilisateurs', 'fa-users', '/utilisateur', 1, 1, 'user', 1, 'administration', GETDATE(), GETDATE()),
+('menu_hab', 'Droit & Accès', 'fa-shield-alt', '/droit-access', 1, 2, 'habilitation', 1, 'administration', GETDATE(), GETDATE()),
+('menu_hab_2', 'accès', 'fa-list', '/access/list', 1, 3, 'habilitation', 1, 'administration', GETDATE(), GETDATE()),
+('menu_referentiel', 'référentiel', 'fa-database', '/referentiel', 1, 3, 'referentiel', 1, 'administration', GETDATE(), GETDATE()),
+('menu_import', 'import', 'fa-upload', '/import', 1, 4, 'import', 1, 'administration', GETDATE(), GETDATE()),
+('menu_logs', 'logs', 'fa-file-alt', '/logs', 1, 5, 'logs', 1, 'administration', GETDATE(), GETDATE()),
+('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 1, 'navigation', GETDATE(), GETDATE()),
+('menu2_3', 'Missions', 'fa-list', '/mission/list', 1, 4, 'mission', 1, 'navigation', GETDATE(), GETDATE()),
+('menu2_4', 'Missions archivées', 'fa-archive', '/mission/archived', 1, 5, 'mission', 1, 'navigation', GETDATE(), GETDATE()),
+('menu2_5', 'trésorerie', 'fa-money-bill-alt', '/treasury', 1, 6, 'treasury', 1, 'navigation', GETDATE(), GETDATE()),
+('menu2_6', 'maps', 'fa-map', '/mission/maps', 1, 7, 'mission', 1, 'navigation', GETDATE(), GETDATE()),
+('menu_hab_3', 'Habilitation', 'fa-key', '/habilitation', 1, 6, 'habilitation', 1, 'administration', GETDATE(), GETDATE()),
+('menu2_detail', 'détails_mission', 'fa-info-circle', '/mission/collaborateur/:missionId', 1, 8, 'mission', 0, 'navigation', GETDATE(), GETDATE());
 
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
 ('h_dashboard', NULL, 'menu_dashboard', GETDATE(), GETDATE()),
 ('h0', NULL, 'menu0', GETDATE(), GETDATE()),
 ('h_hab', NULL, 'menu_hab', GETDATE(), GETDATE()),
 ('h_hab_2', 'menu_hab', 'menu_hab_2', GETDATE(), GETDATE()),
-('h_referentiel', NULL, 'menu_referentiel', GETDATE(), GETDATE()), 
-('h_import', NULL, 'menu_import', GETDATE(), GETDATE()),  
-('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),  
+('h_referentiel', NULL, 'menu_referentiel', GETDATE(), GETDATE()),
+('h_import', NULL, 'menu_import', GETDATE(), GETDATE()),
+('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),
 ('h4', NULL, 'menu2', GETDATE(), GETDATE()),
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
 ('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
 ('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE()),
 ('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE()),
-('h9', 'menu2', 'menu2_6', GETDATE(), GETDATE());
-
-INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
-('h_hab_3', 'menu_hab', 'menu_hab_3', GETDATE(), GETDATE());
-
-
-
-
+('h9', 'menu2', 'menu2_6', GETDATE(), GETDATE()),
+('h_hab_3', 'menu_hab', 'menu_hab_3', GETDATE(), GETDATE()),
+('h2_detail', 'menu2_3', 'menu2_detail', GETDATE(), GETDATE());
 
 INSERT INTO expense_type (expense_type_id, type, time_start, time_end, created_at, updated_at)
 VALUES 
@@ -454,7 +433,6 @@ VALUES
 ('exp003', 'Dinner',           '18:30:00', '20:00:00', GETDATE(), GETDATE()),
 ('exp004', 'Hébergement',     '21:00:00', '05:00:00', GETDATE(), GETDATE()),
 ('exp005', 'Communication',     NULL, NULL, GETDATE(), GETDATE()),
-('exp006', 'Visa sur place',     NULL, NULL, GETDATE(), GETDATE()),
 ('exp007', 'Frais médicaux',     NULL, NULL, GETDATE(), GETDATE()),
 ('exp008', 'Taxes',     NULL, NULL, GETDATE(), GETDATE()),
 ('exp009', 'Transport',     NULL, NULL, GETDATE(), GETDATE());
@@ -596,26 +574,6 @@ INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, c
 INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp120', 50.0, GETDATE(), GETDATE(), 'exp005', '17');
 INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp121', 50.0, GETDATE(), GETDATE(), 'exp005', '18');
 INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp122', 50.0, GETDATE(), GETDATE(), 'exp005', '19');
-
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp123', 500.0, GETDATE(), GETDATE(), 'exp006', '1');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp124', 500.0, GETDATE(), GETDATE(), 'exp006', '2');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp125', 500.0, GETDATE(), GETDATE(), 'exp006', '3');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp126', 500.0, GETDATE(), GETDATE(), 'exp006', '4');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp127', 500.0, GETDATE(), GETDATE(), 'exp006', '5');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp128', 500.0, GETDATE(), GETDATE(), 'exp006', '6');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp129', 500.0, GETDATE(), GETDATE(), 'exp006', '7');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp130', 500.0, GETDATE(), GETDATE(), 'exp006', '8');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp131', 500.0, GETDATE(), GETDATE(), 'exp006', '9');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp132', 500.0, GETDATE(), GETDATE(), 'exp006', '10');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp133', 500.0, GETDATE(), GETDATE(), 'exp006', '11');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp134', 500.0, GETDATE(), GETDATE(), 'exp006', '12');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp135', 500.0, GETDATE(), GETDATE(), 'exp006', '13');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp136', 500.0, GETDATE(), GETDATE(), 'exp006', '14');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp137', 500.0, GETDATE(), GETDATE(), 'exp006', '15');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp138', 500.0, GETDATE(), GETDATE(), 'exp006', '16');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp139', 500.0, GETDATE(), GETDATE(), 'exp006', '17');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp140', 500.0, GETDATE(), GETDATE(), 'exp006', '18');
-INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp141', 500.0, GETDATE(), GETDATE(), 'exp006', '19');
 
 INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp142', 200.0, GETDATE(), GETDATE(), 'exp007', '1');
 INSERT INTO expense_compensation_scale (expense_compensation_scale_id, amount, created_at, updated_at, expense_type_id, zone_id) VALUES ('ex_comp143', 200.0, GETDATE(), GETDATE(), 'exp007', '2');

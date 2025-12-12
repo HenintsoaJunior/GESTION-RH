@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-function-type */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo } from "react";
 import { 
   List, 
@@ -459,6 +461,7 @@ const MissionTable: React.FC<MissionTableProps> = ({
     }
 
     return baseHeaders;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [columnsConfig, hasActions, sortField, sortOrder]);
 
   const hasAppliedFilters = useMemo(() => {

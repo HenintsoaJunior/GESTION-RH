@@ -50,4 +50,4 @@ BEGIN
     JOIN LastVal lv ON lv.request_id = rr.request_id
     WHERE lv.rn = 1;
 END;
-GO
+
