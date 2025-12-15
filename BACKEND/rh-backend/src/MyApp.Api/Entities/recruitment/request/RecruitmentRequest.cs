@@ -63,4 +63,10 @@ public class RecruitmentRequest : BaseEntity
 
     [Column("is_deleted")]
     public bool IsDeleted  { get; set; } = false;
+
+    public ICollection<SiteRequest> SitesRequests { get; set; }
+     = new List<SiteRequest>();
+
+    public ICollection<RequestsPerValidator> RequestsPerValidators { get; set; }
+    = new List<RequestsPerValidator>();
 }

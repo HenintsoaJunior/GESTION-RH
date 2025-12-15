@@ -210,3 +210,13 @@ CREATE TABLE comments_candidatures(
    FOREIGN KEY(user_id) REFERENCES users(user_id),
    FOREIGN KEY(candidature_id) REFERENCES candidatures(candidature_id)
 );
+
+CREATE TABLE requests_per_validators(
+   requests_per_validator_id VARCHAR(50) NOT NULL,
+   request_id VARCHAR(50) NOT NULL,
+   validator_id VARCHAR(250) NOT NULL,
+   is_validated BIT NOT NULL DEFAULT 0,
+   PRIMARY KEY(requests_per_validator_id),
+   FOREIGN KEY(request_id) REFERENCES recruitment_requests(request_id),
+   FOREIGN KEY(validator_id) REFERENCES users(user_id)
+);

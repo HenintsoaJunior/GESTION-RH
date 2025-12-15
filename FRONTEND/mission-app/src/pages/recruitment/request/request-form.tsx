@@ -25,6 +25,7 @@ import PostInformationsStep from "./components/post-info-step";
 import RecruitmentReasonStep from "./components/reasons-step";
 import useRecruitmentForm from "./hooks/use-request-form";
 import { useCreateRecruitmentRequest } from "@/api/recruitment/service";
+import axios from "axios";
 
 interface RecruitmentRequestFormProps {
     isOpen: boolean;
@@ -99,12 +100,26 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
             } catch (error: unknown) {
                 console.error("Erreur lors de la création :", error);
 
-                showError(
-                    error instanceof Error
-                        ? error.message
-                        : "Erreur lors de la création de la demande."
-                );
+                if (axios.isAxiosError(error)) {
+                    const status = error.response?.status;
+                    const backendMessage =
+                        (error.response?.data as any)?.message ??
+                        (error.response?.data as any)?.error ??
+                        error.message;
+
+                    showError(
+                        `Erreur ${status ?? ""} : ${backendMessage}`
+                    );
+                }
+                else if (error instanceof Error) {
+                    // Erreur JS classique
+                    showError(error.message);
+                }
+                else {
+                    showError("Erreur inconnue lors de la création de la demande.");
+                }
             }
+
         }
     };
 

@@ -10,7 +10,7 @@ public interface IRequestRepository
 {
     Task<List<RequestStatus>> GetAllStatuses();
     Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO dto, int page, int pageSize);
-    Task AddRequest(RequestFormDTO data);
+    Task<RecruitmentRequest> AddRequest(RequestFormDTO data);
     Task<RequestDetailsDTO> GetRequestDetails(string id);
 }
 
@@ -19,13 +19,9 @@ public class RequestRepository : IRequestRepository
 {
     private readonly AppDbContext _dbCtx;
     private readonly ISequenceGenerator _generator;
-    private readonly ILogger<RequestRepository> _logger;
 
-    public RequestRepository(AppDbContext ctx, ISequenceGenerator sqc
-    , ILogger<RequestRepository> log
-    ) {
+    public RequestRepository(AppDbContext ctx, ISequenceGenerator sqc) {
         _dbCtx = ctx; _generator = sqc;
-        _logger = log;
     }
 
 
@@ -83,9 +79,7 @@ public class RequestRepository : IRequestRepository
     }
 
 
-    public async Task AddRequest(RequestFormDTO data) {
-        using var transaction = await _dbCtx.Database.BeginTransactionAsync();
-        
+    public async Task<RecruitmentRequest> AddRequest(RequestFormDTO data) {
         try {
             var replacementReason = data.ReplacementReasonId != null
                 ? await _dbCtx.ReplacementReasons.FindAsync(data.ReplacementReasonId)
@@ -151,11 +145,9 @@ public class RequestRepository : IRequestRepository
             await _dbCtx.RecruitmentRequests.AddAsync(request);
             await _dbCtx.RequestValidations.AddAsync(reqValidation);
 
-            await _dbCtx.SaveChangesAsync();
-            await transaction.CommitAsync();
+            return request;
         }
         catch {
-            await transaction.RollbackAsync();
             throw;
         }
     }

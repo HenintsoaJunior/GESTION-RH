@@ -774,3 +774,15 @@ CREATE SEQUENCE seq_comment_id
     NO CYCLE
     CACHE 50;
 -- GO
+
+
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_requests_per_validator_id')
+    DROP SEQUENCE seq_requests_per_validator_id;
+-- GO
+CREATE SEQUENCE seq_requests_per_validator_id
+    AS INT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO CYCLE
+    CACHE 50;

@@ -4,6 +4,7 @@ using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Entities.users;
 using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Models.dto.users;
+using MyApp.Api.Repositories.users;
 using MyApp.Api.Services.users;
 using MyApp.Api.Utils.generator;
 
@@ -17,7 +18,9 @@ public interface IRequestValidationRepository
     Task DoValidationForRequest(CreateRequestValidationDTO data);
     Task<bool> HasNotYetValidatedRequest(User user, RecruitmentRequest req);
     Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(string validatorId, FilterRequestListDTO filters, int page, int pageSize);
+    Task AddRequestInValidations(RecruitmentRequest req, List<UserDto> users);
 }
+
 
 public class RequestValidationRepository : IRequestValidationRepository
 {
@@ -26,7 +29,8 @@ public class RequestValidationRepository : IRequestValidationRepository
     private readonly IRequestRepository _reqRepo;
     private readonly ISequenceGenerator _seqGenerator;
 
-    public RequestValidationRepository(AppDbContext ctx, IUserService service,
+    public RequestValidationRepository(
+     AppDbContext ctx, IUserService service,
      IRequestRepository reqRepo, ISequenceGenerator generator) {
         _dbCtx = ctx; _userService = service; _reqRepo = reqRepo;
         _seqGenerator = generator;
@@ -178,8 +182,7 @@ public class RequestValidationRepository : IRequestValidationRepository
         else throw new ArgumentException("Décision inconnue");
 
         _dbCtx.Attach(newStatus);
-        RequestValidation validation = new RequestValidation 
-        {
+        RequestValidation validation = new RequestValidation {
             Id = _seqGenerator.GenerateSequence("seq_request_validation_id", "DMD_REC_VAL"),
             Comments = data.Comments,
             Request = request,
@@ -188,97 +191,104 @@ public class RequestValidationRepository : IRequestValidationRepository
             Validator = userValidator,
         };
 
+    // Modification de la validation
+        var req = await _dbCtx.RequestsPerValidators
+            .FirstOrDefaultAsync(r => 
+                r.Validator == userValidator &&  r.Request == request
+            );
+
+        if(req != null) req.IsValidated = true;
+
         await _dbCtx.RequestValidations.AddAsync(validation);
         await _dbCtx.SaveChangesAsync();
     }
 
 
-    private List<RequestDetailsDTO> ApplyFilters(
-        List<RequestDetailsDTO> list, FilterRequestListDTO filters)
+    public async Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
+        string validatorId,
+        FilterRequestListDTO filters,
+        int page,
+        int pageSize)
     {
-        if (list == null || list.Count == 0)
-            return list;
+        // 1️⃣ Vérifier l'existence du validateur
+        if (!await _dbCtx.Users.AsNoTracking().AnyAsync(u => u.UserId == validatorId))
+            throw new ArgumentException("Validateur introuvable");
 
+        // 2️⃣ Construire la requête de base
+        var query = _dbCtx.RequestsPerValidators
+            .AsNoTracking()
+            .Where(rpv => rpv.Validator.UserId == validatorId
+                        && !rpv.IsValidated
+                        && !rpv.Request.IsDeleted
+                        && rpv.Request.LastStatus != "Refusée");
+
+        // 3️⃣ Appliquer les filtres côté SQL
+
+        // Filtrer par contrat
         if (!string.IsNullOrWhiteSpace(filters.contract))
-            list = list.Where(r => 
-                r.Contract?.Equals(filters.contract, StringComparison.OrdinalIgnoreCase) == true
-            ).ToList();
+            query = query.Where(rpv => rpv.Request.Contract != null &&
+                                    rpv.Request.Contract.Code.ToUpper() == filters.contract.ToUpper());
 
-        // Filtre par statut
-        if (!string.IsNullOrWhiteSpace(filters.status))
-            list = list.Where(r => 
-                r.Status?.Equals(filters.status, StringComparison.OrdinalIgnoreCase) == true
-            ).ToList();
+        // Filtrer par statut
+        if (!string.IsNullOrWhiteSpace(filters.post))
+        query = query.Where(rpv => rpv.Request.Post != null &&
+            rpv.Request.Post.ToUpper().Contains(filters.post.ToUpper()));
 
-        // Filtre date min
+        // Filtrer par direction de l'utilisateur demandeur
+        if (!string.IsNullOrWhiteSpace(filters.direction))
+            query = query.Where(rpv => rpv.Request.ApplicantUser.Department != null &&
+                                    rpv.Request.ApplicantUser.Department.ToUpper() == filters.direction.ToUpper());
+
+        // Filtrer par date
         if (filters.minDate.HasValue)
-            list = list.Where(r => 
-                r.BeginningDate >= filters.minDate.Value
-            ).ToList();
+            query = query.Where(rpv => DateOnly.FromDateTime(rpv.Request.CreatedAt) >= filters.minDate.Value);
 
-        // Filtre date max
         if (filters.maxDate.HasValue)
-            list = list.Where(r => 
-                r.BeginningDate <= filters.maxDate.Value
-            ).ToList();
+            query = query.Where(rpv => DateOnly.FromDateTime(rpv.Request.CreatedAt) <= filters.maxDate.Value);
 
-        return list;
+        // 4️⃣ Obtenir le total avant pagination
+        int totalCount = await query.Select(rpv => rpv.Request.Id).Distinct().CountAsync();
+
+        // 5️⃣ Pagination et projection vers DTO
+        var pagedRequests = await query
+            .OrderByDescending(rpv => rpv.Request.BeginningDate)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(rpv => new RequestDetailsDTO
+            {
+                Id = rpv.Request.Id,
+                ApplicantUser = rpv.Request.ApplicantUser.Name??"",
+                Status = rpv.Request.LastStatus,
+                Sites = rpv.Request.SitesRequests.Select(sr => sr.Site.SiteName).ToArray(),
+                Contract = rpv.Request.Contract != null ? rpv.Request.Contract.Code : null,
+                BeginningDate = rpv.Request.BeginningDate,
+                ValidationLevel = _dbCtx.RequestsPerValidators
+                                    .Count(v => v.Request.Id == rpv.Request.Id && v.IsValidated),
+                IsPlanned = rpv.Request.IsPlanned,
+                NotPlannedReason = rpv.Request.NotPlannedReason
+            })
+            .ToListAsync();
+
+        return (pagedRequests, totalCount);
     }
 
 
-   public async Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
-        string validatorId, FilterRequestListDTO filters, int page, int pageSize)
-    {
-        var validator = await _dbCtx.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.UserId == validatorId)
-            ?? throw new ArgumentException("Validateur introuvable");
+    public async Task AddRequestInValidations(RecruitmentRequest req, List<UserDto> users) {
+        var requests = new List<RequestsPerValidator>();
 
-        var allRequests = await _dbCtx.RecruitmentRequests
-            .AsNoTracking()
-            .Where(r => !r.IsDeleted && !r.LastStatus.Equals("Refusée"))
-            .OrderByDescending(r => r.CreatedAt)
-            .ToListAsync();
+        foreach (var userDto in users) {
+            var user = await _userService.GetByIdAsync(userDto.UserId) 
+                    ?? throw new ArgumentException("Utilisateur non trouvé");
 
-        var pendedList = new List<RequestDetailsDTO>();
-
-        foreach (var req in allRequests)
-        {
-            var orderedValidators = await GetAllDirectorValidator(req.Id);
-
-            var existingValidations = await _dbCtx.RequestValidations
-                .AsNoTracking()
-                .Where(v => v.Request.Id == req.Id && v.Status.Id != "STD_001")
-                .Select(v => v.Validator.UserId)
-                .Distinct()
-                .ToListAsync();
-
-            if (existingValidations.Count >= orderedValidators.Count)
-                continue;
-
-            var nextValidator = orderedValidators[existingValidations.Count];
-
-            if (nextValidator.UserId != validatorId)
-                continue;
-
-            var details = await _reqRepo.GetRequestDetails(req.Id);
-            details.ValidationLevel = existingValidations.Count;
-
-            pendedList.Add(details);
+            _dbCtx.Users.Attach(user);
+            requests.Add(
+             new RequestsPerValidator {
+                Id = _seqGenerator.GenerateSequence("seq_requests_per_validator_id", "DMD_PVLD"),
+                Validator = user,
+                Request = req, IsValidated = false
+            });
         }
-
-        // 👉 Utilisation centrale et unique des filtres
-        pendedList = ApplyFilters(pendedList, filters);
-
-        int totalCount = pendedList.Count;
-
-        var paged = pendedList
-            .OrderByDescending(r => r.BeginningDate)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
-
-        return (paged, totalCount);
+        await _dbCtx.RequestsPerValidators.AddRangeAsync(requests);
     }
 
 }

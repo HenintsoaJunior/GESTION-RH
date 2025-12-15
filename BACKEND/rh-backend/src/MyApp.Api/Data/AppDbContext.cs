@@ -137,7 +137,6 @@ namespace MyApp.Api.Data
         }
         
 
-
     // RECRUTEMENT UNIQUEMENT
         public DbSet<RecruitmentRequest> RecruitmentRequests {get; set;}
         public DbSet<ReplacementReason> ReplacementReasons {get; set;}
@@ -145,5 +144,6 @@ namespace MyApp.Api.Data
         public DbSet<RequestStatus> RequestStatuses {get; set;}
         public DbSet<SiteRequest> SitesRequests {get; set;}
         public DbSet<RequestValidation> RequestValidations {get; set;}
+        public DbSet<RequestsPerValidator> RequestsPerValidators {get; set;}
     }
 }
