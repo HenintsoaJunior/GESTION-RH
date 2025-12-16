@@ -11,7 +11,10 @@ public interface IRequestRepository
     Task<List<RequestStatus>> GetAllStatuses();
     Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO dto, int page, int pageSize);
     Task<RecruitmentRequest> AddRequest(RequestFormDTO data);
+    Task DeleteRequest(RecruitmentRequest request);
+    // Task UpdateRequest(string requestId, RequestFormDTO data);
     Task<RequestDetailsDTO> GetRequestDetails(string id);
+    Task<RecruitmentRequest> GetRecruitmentRequestById(string requestId);
 }
 
 
@@ -220,4 +223,17 @@ public class RequestRepository : IRequestRepository
             NotPlannedReason = request.NotPlannedReason
         };
     }
+
+
+    public async Task<RecruitmentRequest> GetRecruitmentRequestById(string requestId) {
+        var request = await _dbCtx.RecruitmentRequests.FindAsync(requestId) ?? 
+         throw new ArgumentException("Demande de recrutement introuvable");
+        
+        return request;
+    }
+
+
+    // public async Task UpdateRequest(string requestId, RequestFormDTO data) {
+        
+    // }
 }

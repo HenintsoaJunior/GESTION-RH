@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.recruitment;
@@ -204,68 +205,96 @@ public class RequestValidationRepository : IRequestValidationRepository
     }
 
 
-    public async Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
+   public async Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
         string validatorId,
         FilterRequestListDTO filters,
         int page,
         int pageSize)
     {
-        // 1️⃣ Vérifier l'existence du validateur
+        // Vérifier l'existence du validateur
         if (!await _dbCtx.Users.AsNoTracking().AnyAsync(u => u.UserId == validatorId))
             throw new ArgumentException("Validateur introuvable");
 
-        // 2️⃣ Construire la requête de base
-        var query = _dbCtx.RequestsPerValidators
-            .AsNoTracking()
-            .Where(rpv => rpv.Validator.UserId == validatorId
-                        && !rpv.IsValidated
-                        && !rpv.Request.IsDeleted
-                        && rpv.Request.LastStatus != "Refusée");
+        // Récupérer les IDs des demandes en attente via la TVF
+        var baseQuery = _dbCtx.PendedRequestToValidates
+            .FromSqlRaw(
+                "SELECT * FROM dbo.fn_pending_recruitment_requests(@validator_id)",
+                new SqlParameter("@validator_id", validatorId)
+            )
+            .AsNoTracking();
 
-        // 3️⃣ Appliquer les filtres côté SQL
+        var requestIdsQuery =
+            from pr in baseQuery
+            join r in _dbCtx.RecruitmentRequests on pr.RequestId equals r.Id
+            where !r.IsDeleted && r.LastStatus != "Refusée"
+            select r.Id;
 
-        // Filtrer par contrat
+        // Appliquer les filtres scalaires
         if (!string.IsNullOrWhiteSpace(filters.contract))
-            query = query.Where(rpv => rpv.Request.Contract != null &&
-                                    rpv.Request.Contract.Code.ToUpper() == filters.contract.ToUpper());
+            requestIdsQuery = requestIdsQuery.Where(id =>
+                _dbCtx.RecruitmentRequests.Any(r =>
+                    r.Id == id &&
+                    r.Contract != null &&
+                    r.Contract.Code.ToUpper() == filters.contract.ToUpper()));
 
-        // Filtrer par statut
         if (!string.IsNullOrWhiteSpace(filters.post))
-        query = query.Where(rpv => rpv.Request.Post != null &&
-            rpv.Request.Post.ToUpper().Contains(filters.post.ToUpper()));
+            requestIdsQuery = requestIdsQuery.Where(id =>
+                _dbCtx.RecruitmentRequests.Any(r =>
+                    r.Id == id &&
+                    r.Post != null &&
+                    r.Post.ToUpper().Contains(filters.post.ToUpper())));
 
-        // Filtrer par direction de l'utilisateur demandeur
         if (!string.IsNullOrWhiteSpace(filters.direction))
-            query = query.Where(rpv => rpv.Request.ApplicantUser.Department != null &&
-                                    rpv.Request.ApplicantUser.Department.ToUpper() == filters.direction.ToUpper());
+            requestIdsQuery = requestIdsQuery.Where(id =>
+                _dbCtx.RecruitmentRequests.Any(r =>
+                    r.Id == id &&
+                    r.ApplicantUser.Department != null &&
+                    r.ApplicantUser.Department.ToUpper() == filters.direction.ToUpper()));
 
-        // Filtrer par date
         if (filters.minDate.HasValue)
-            query = query.Where(rpv => DateOnly.FromDateTime(rpv.Request.CreatedAt) >= filters.minDate.Value);
+            requestIdsQuery = requestIdsQuery.Where(id =>
+                _dbCtx.RecruitmentRequests
+                    .Where(r => r.Id == id)
+                    .Select(r => r.CreatedAt)
+                    .FirstOrDefault() >= filters.minDate.Value.ToDateTime(TimeOnly.MinValue));
 
         if (filters.maxDate.HasValue)
-            query = query.Where(rpv => DateOnly.FromDateTime(rpv.Request.CreatedAt) <= filters.maxDate.Value);
+            requestIdsQuery = requestIdsQuery.Where(id =>
+                _dbCtx.RecruitmentRequests
+                    .Where(r => r.Id == id)
+                    .Select(r => r.CreatedAt)
+                    .FirstOrDefault() <= filters.maxDate.Value.ToDateTime(TimeOnly.MaxValue));
 
-        // 4️⃣ Obtenir le total avant pagination
-        int totalCount = await query.Select(rpv => rpv.Request.Id).Distinct().CountAsync();
-
-        // 5️⃣ Pagination et projection vers DTO
-        var pagedRequests = await query
-            .OrderByDescending(rpv => rpv.Request.BeginningDate)
+        int totalCount = await requestIdsQuery.CountAsync();
+        var pageIds = await requestIdsQuery
+            .OrderByDescending(id =>
+                _dbCtx.RecruitmentRequests
+                    .Where(r => r.Id == id)
+                    .Select(r => r.BeginningDate)
+                    .FirstOrDefault())
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(rpv => new RequestDetailsDTO
+            .ToListAsync();
+
+        var pagedRequests = await _dbCtx.RecruitmentRequests
+            .Where(r => pageIds.Contains(r.Id))
+            .Include(r => r.ApplicantUser)
+            .Include(r => r.Contract)
+            .Include(r => r.SitesRequests)
+                .ThenInclude(sr => sr.Site)
+            .AsNoTracking()
+            .Select(r => new RequestDetailsDTO
             {
-                Id = rpv.Request.Id,
-                ApplicantUser = rpv.Request.ApplicantUser.Name??"",
-                Status = rpv.Request.LastStatus,
-                Sites = rpv.Request.SitesRequests.Select(sr => sr.Site.SiteName).ToArray(),
-                Contract = rpv.Request.Contract != null ? rpv.Request.Contract.Code : null,
-                BeginningDate = rpv.Request.BeginningDate,
+                Id = r.Id,
+                ApplicantUser = r.ApplicantUser.Name ?? "",
+                Status = r.LastStatus,
+                Sites = r.SitesRequests.Select(sr => sr.Site.SiteName).ToArray(),
+                Contract = r.Contract != null ? r.Contract.Code : null,
+                BeginningDate = r.BeginningDate,
                 ValidationLevel = _dbCtx.RequestsPerValidators
-                                    .Count(v => v.Request.Id == rpv.Request.Id && v.IsValidated),
-                IsPlanned = rpv.Request.IsPlanned,
-                NotPlannedReason = rpv.Request.NotPlannedReason
+                    .Count(v => v.Request.Id == r.Id && v.IsValidated),
+                IsPlanned = r.IsPlanned,
+                NotPlannedReason = r.NotPlannedReason
             })
             .ToListAsync();
 

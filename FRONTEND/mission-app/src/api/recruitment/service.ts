@@ -10,6 +10,7 @@ const SEARCH_REQUEST_DETAILS_BASE_KEY = ['searchRequestDetails'] as const;
 const SEARCH_STATUSES_BASE_KEY = ['searchRequestStatuses'] as const;
 const SEARCH_REASONS_BASE_KEY = ['searchReasons'] as const;
 const SEARCH_PENDED_REQUESTS_BASE_KEY = ['searchPendedRequests'] as const;
+const CHECK_ACCESS_BASE_KEY = ['isUserValidator'] as const;
 
 // Types
 export interface FilterRequestDTO {
@@ -142,6 +143,20 @@ export const useCreateRecruitmentRequest = () => {
     });
 };
 
+export const useDeleteRequest = () => {
+    const queryClient = useQueryClient(); // pour rafraîchir les listes après suppression
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const response = await api.delete(`/api/recruitment/requests/${id}`);
+            return response.data; // { data, status, message }
+        },
+        onSuccess: () => queryClient.invalidateQueries({
+            queryKey: SEARCH_REQUESTS_BASE_KEY
+        }),
+    });
+};
+
 
 export const useGetUsersByDirection = (direction: string) => {
     return useQuery<{ data: DocumentDTO[] }, Error>({
@@ -218,5 +233,32 @@ export const useSearchPendedRequests = (
                 throw error;
             }
         }
+    });
+};
+
+
+export const useHasValidationInRecruitment = (user: string | undefined) => {
+    const queryKey = [...CHECK_ACCESS_BASE_KEY, { user }] as const;
+
+    return useQuery<{hasValidation: boolean}, Error>({
+        queryKey,
+        queryFn: async () => {
+            if(!user) throw new Error('ID est requis pour vérifier les validations');
+            
+            try {
+                const response = await api.get('/api/recruitment/requests/check-validator', {
+                    params: { user },
+                });
+                const apiData = response.data.data;
+
+                return { hasValidation: apiData };
+            } catch(error) {
+                if(axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || 'Erreur serveur');
+                }
+                throw error;
+            }
+        },
+        enabled: !!user
     });
 };

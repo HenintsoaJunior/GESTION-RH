@@ -133,17 +133,29 @@ namespace MyApp.Api.Data
                 entity.HasIndex(e => e.GenderId);
 
                 entity.HasIndex(e => new { e.LastName, e.FirstName });
-            });            
+            });
+
+            modelBuilder.Entity<PendedRequestToValidate>().HasNoKey();            
         }
         
 
     // RECRUTEMENT UNIQUEMENT
         public DbSet<RecruitmentRequest> RecruitmentRequests {get; set;}
         public DbSet<ReplacementReason> ReplacementReasons {get; set;}
-        public DbSet<JobDescriptionStatus> JobDescriptionStatus {get; set;}
         public DbSet<RequestStatus> RequestStatuses {get; set;}
         public DbSet<SiteRequest> SitesRequests {get; set;}
         public DbSet<RequestValidation> RequestValidations {get; set;}
         public DbSet<RequestsPerValidator> RequestsPerValidators {get; set;}
+        public DbSet<PendedRequestToValidate> PendedRequestToValidates { get; set; } = null!;
+
+        public DbSet<Education> Educations {get; set;}
+        public DbSet<Attribution> Attributions {get; set;}
+        public DbSet<Experience> Experiences {get; set;}
+        public DbSet<Formation> Formations {get; set;}
+        public DbSet<JobDescription> JobDescriptions {get; set;}
+        public DbSet<JobDescriptionStatus> JobDescriptionStatuses {get; set;}
+        public DbSet<JobDescriptionValidation> JobDescriptionValidations {get; set;}
+        public DbSet<LevelEducation> LevelEducations {get; set;}
+        public DbSet<PersonnalSuitability> PersonnalSuitabilities {get; set;}
     }
 }

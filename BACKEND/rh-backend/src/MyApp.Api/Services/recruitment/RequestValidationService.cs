@@ -12,6 +12,7 @@ public interface IRequestValidationService
     Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
         string validatorId, FilterRequestListDTO filters, int page, int pageSize
     );
+    Task<bool> HasRequestsToValidate(string userId);
 }
 
 public class RequestValidationService(
@@ -54,6 +55,23 @@ public class RequestValidationService(
             return await _repo.GetAllPendedRecruitmentRequest(
                 validatorId, filters, page, pageSize
             );
+        }
+        catch(Exception ex) {
+            _logger.LogError(ex, "Erreur lors de la recherche des demandes en attente");
+            throw;
+        }
+    }
+
+
+    public async Task<bool> HasRequestsToValidate(string userId) {
+        FilterRequestListDTO filters = new();
+        try {
+            _logger.LogInformation("Vérification de l'accès de l'utilisateur ...");
+            var (requests, count) = await _repo.GetAllPendedRecruitmentRequest(
+                userId, filters, 1, 5
+            );
+
+            return count > 0;
         }
         catch(Exception ex) {
             _logger.LogError(ex, "Erreur lors de la recherche des demandes en attente");

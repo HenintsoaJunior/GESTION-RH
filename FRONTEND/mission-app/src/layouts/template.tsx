@@ -31,6 +31,7 @@ import {
 import TemplateFooter from "./template-footer";
 import { getInitials } from "@/utils/initials";
 import { ToastContainer } from "@/components/notification-toast";
+import { useHasValidationInRecruitment } from "@/api/recruitment/service";
 
 interface Menu {
   menuKey: string;
@@ -157,6 +158,9 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   const hasVoirTableauBord = useHasHabilitation(user.userId, "Voir le tableau de bord");
 
   const { data: hasValidationLine = true } = useHasValidationLine(user.userId);
+// Vérification de l'accès 
+  const { data: recruitmentValidationData } = useHasValidationInRecruitment(user.userId);
+  const hasValidationInRecruitment = recruitmentValidationData?.hasValidation ?? false;
 
   const habilitationsMap = useMemo(() => ({
     utilisateurs: hasVoirUtilisateurs,
@@ -167,6 +171,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     logs: hasVoirLogs,
     mission: hasVoirMission,
     validation: hasVoirValidation && hasValidationLine,
+    "Validation des demandes": hasValidationInRecruitment,
     Missions: hasVoirMissions,
     "Missions archivées": hasVoirMissionsArchivees,
     trésorerie: hasVoirTresorier,
@@ -187,6 +192,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     hasVoirHabilitation,
     hasVoirTableauBord,
     hasValidationLine,
+    hasValidationInRecruitment
   ]);
 
   const getHasAccess = useCallback((menuKey: string): boolean => {

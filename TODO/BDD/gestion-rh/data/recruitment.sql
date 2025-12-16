@@ -36,9 +36,13 @@ INSERT INTO habilitation_groups (group_id, label) VALUES
 
 INSERT INTO habilitations (habilitation_id, group_id, label, description) VALUES
 ('HAB_031', 'HABG_004', 'Lister demandes recrutement', 'Permet de voir la liste des demandes de recrutement'),
-('HAB_032', 'HABG_004', 'Créer demande recrutement', 'Permet de cré demande de recrutement'),
+('HAB_032', 'HABG_004', 'Créer demande recrutement', 'Permet de créer une demande de recrutement'),
 ('HAB_033', 'HABG_004', 'Annuler demande recrutement', 'Permet d’annuler une demande de recrutement'),
-('HAB_034', 'HABG_004', 'Afficher détails demande recrutement', 'Permet de voir les détails d’une demande de recrutement');
+('HAB_034', 'HABG_004', 'Afficher détails demande recrutement', 'Permet de voir les détails d’une demande de recrutement'),
+('HAB_035', 'HABG_004', 'Créer fiche de poste', 'Permet de créer une fiche de poste'),
+('HAB_036', 'HABG_004', 'Modifier fiche de poste', 'Permet de modifier une fiche de poste'),
+('HAB_037', 'HABG_004', 'Afficher fiche de poste', 'Permet d’afficher la fiche de poste spécifiée'),
+('HAB_038', 'HABG_004', 'Supprimer fiche de poste', 'Permet de supprimer une fiche de poste');
 
 INSERT INTO replacement_reasons (replacement_reason_id, reason_name) VALUES
 ('RR_001', 'Décès'),
@@ -48,3 +52,23 @@ INSERT INTO replacement_reasons (replacement_reason_id, reason_name) VALUES
 ('RR_005', 'Licenciement'),
 ('RR_006', 'Rupture de contrat à l’amiable'),
 ('RR_007', 'Mobilité interne');
+
+
+INSERT INTO level_educations (level_education_id, level_education_name) VALUES
+('NIV_ETU_0001', '6ème'),
+('NIV_ETU_0002', '5ème'),
+('NIV_ETU_0003', '4ème'),
+('NIV_ETU_0004', '3ème'),
+('NIV_ETU_0005', 'Seconde'),
+('NIV_ETU_0006', 'Première'),
+('NIV_ETU_0007', 'Terminale'),
+('NIV_ETU_0008', 'Bac +1'),
+('NIV_ETU_0009', 'Bac +2'),
+('NIV_ETU_0010', 'Bac +3'),
+('NIV_ETU_0011', 'Bac +4'),
+('NIV_ETU_0012', 'Bac +5'),
+('NIV_ETU_0013', 'Bac +6'),
+('NIV_ETU_0014', 'Bac +7'),
+('NIV_ETU_0015', 'Bac +8');
+
+

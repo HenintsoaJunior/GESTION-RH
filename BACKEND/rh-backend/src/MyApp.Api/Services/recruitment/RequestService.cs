@@ -12,6 +12,7 @@ public interface IRequestService
     Task AddRequest(RequestFormDTO data);
     Task<List<RequestStatus>> GetAllStatuses();
     Task<RequestDetailsDTO> GetRequestDetails(string id);
+    Task DeleteRequest(string requestId);
 }
 
 public class RequestService(
@@ -78,6 +79,23 @@ public class RequestService(
         }
         catch(Exception ex) {
             _logger.LogError(ex, "Erreur lors de la recherche des détails");
+            throw;
+        }
+    }
+
+
+    public async Task DeleteRequest(string requestId) {
+        try {
+            _logger.LogInformation("Suppréssion de la demande ...");
+
+            var request = await _repo.GetRecruitmentRequestById(requestId);
+            if(!request.LastStatus.ToLower().Equals("brouillon")) {
+                throw new Exception("Impossible de supprimer une demande en cours ou déjà validée");
+            }
+            await _repo.DeleteRequest(request);
+        }   
+        catch(Exception ex) {
+            _logger.LogError(ex, "Erreur lors de la suppréssion de la demande");
             throw;
         }
     }

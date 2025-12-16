@@ -78,13 +78,33 @@ public class RecruitmentRequestController(IRequestService _service,
     [HttpGet("{id}/details")]
     [AllowAnonymous]
     public async Task<IActionResult> GetRequestDetails([FromRoute] string id) {
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
+
+        try {
+            var results = await _service.GetRequestDetails(id);
+            return Ok(new { data = results, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
+
+
+    [HttpDelete("{id}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> DeleteRequest([FromRoute] string id) {
         // if(!User.Identity?.IsAuthenticated ?? true) {
         //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
         // }
 
         try {
-            var results = await _service.GetRequestDetails(id);
-            return Ok(new { data = results, status = 200, message = "success" });
+            await _service.DeleteRequest(id);
+            return Ok(new { data = id, status = 200, message = "success" });
         }
         catch (ArgumentException ex) {
             return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
@@ -149,6 +169,26 @@ public class RecruitmentRequestController(IRequestService _service,
             var (results, totalCount) = await _validationService.GetAllPendedRecruitmentRequest(validatorId, filters, page, pageSize);
             var responseData = new { results, totalCount, page, pageSize };
             return Ok(new { data = responseData, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
+
+
+    [HttpGet("check-validator")]
+    [AllowAnonymous]
+    public async Task<IActionResult> HasRequestsToValidate([FromQuery] string user) {
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try {
+            var hasRequests = await _validationService.HasRequestsToValidate(user);
+            return Ok(new { data = hasRequests, status = 200, message = "success" });
         }
         catch (ArgumentException ex) {
             return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });

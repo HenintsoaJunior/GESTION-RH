@@ -120,7 +120,7 @@ const DraftRequestList: React.FC = () => {
     // Refetch automatique quand appliedFilters, page ou pageSize changent
     useEffect(() => {
         refetch();
-    }, [appliedFilters, page, pageSize]);
+    }, [appliedFilters, page, pageSize, refetch]);
 
     // Handlers
     const handleFormSuccess = useCallback((message: string) => {

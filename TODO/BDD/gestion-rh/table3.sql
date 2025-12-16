@@ -26,6 +26,7 @@ CREATE TABLE level_educations(
 CREATE TABLE educations(
    education_id VARCHAR(50) NOT NULL,
    education_name VARCHAR(50)  NOT NULL,
+   is_deleted BIT NOT NULL DEFAULT 0,
    PRIMARY KEY(education_id)
 );
  
@@ -105,7 +106,7 @@ CREATE TABLE job_descriptions(
    FOREIGN KEY(request_id) REFERENCES recruitment_requests(request_id)
 );
  
-CREATE TABLE Attributions(
+CREATE TABLE attributions(
    attribution_id VARCHAR(50) NOT NULL,
    attribution VARCHAR(150)  NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
@@ -220,3 +221,33 @@ CREATE TABLE requests_per_validators(
    FOREIGN KEY(request_id) REFERENCES recruitment_requests(request_id),
    FOREIGN KEY(validator_id) REFERENCES users(user_id)
 );
+
+
+-- CREATE FUNCTION dbo.fn_pending_recruitment_requests
+-- (
+--     @validator_id NVARCHAR(50)
+-- )
+-- RETURNS TABLE
+-- AS
+-- RETURN
+-- (
+--     WITH ranked_validators AS (
+--         SELECT
+--             rpv.*,
+--             ROW_NUMBER() OVER (
+--                 PARTITION BY rpv.request_id
+--                 ORDER BY rpv.requests_per_validator_id
+--             ) AS order
+--         FROM requests_per_validators rpv
+--         WHERE rpv.is_validated = 0
+--     )
+--     SELECT rv.*
+--     FROM ranked_validators rv
+--     WHERE rv.validator_id = @validator_id
+--       AND NOT EXISTS (
+--           SELECT 1
+--           FROM ranked_validators p
+--           WHERE p.request_id = rv.request_id
+--             AND p.rn < rv.rn
+--       )
+-- );

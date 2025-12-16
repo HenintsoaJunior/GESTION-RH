@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Edit, Plus, Search, X } from "lucide-react";
+import { Edit, Plus, Search, Trash2 } from "lucide-react";
 import {
   TableContainer,
   DataTable,
@@ -33,7 +33,7 @@ import {
   CancelButton,
 } from "@/styles/table-styles";
 
-import { useSearchRequests, useSearchRequestStatuses, type FilterRequestDTO, type DocumentDTO } from "@/api/recruitment/service";
+import { useSearchRequests, useSearchRequestStatuses, type FilterRequestDTO, type DocumentDTO, useDeleteRequest } from "@/api/recruitment/service";
 import { useGetContractTypes } from "@/api/contract/services";
 import { useGetAllDirections } from "@/api/direction/services";
 
@@ -44,6 +44,8 @@ import type { ContractType } from "@/api/contract/services";
 import type { Direction } from "@/api/direction/services";
 import RecruitmentRequestForm from "./request-form";
 import { useHasHabilitation } from "@/api/users/services";
+import ProtectedRoute from "@/components/protected-route";
+import axios from "axios";
 
 // Types
 interface FiltersState {
@@ -137,6 +139,26 @@ const RequestList: React.FC = () => {
 
     const canAddRequest = useHasHabilitation(userId, "Créer demande recrutement");
     const canViewDetails = useHasHabilitation(userId, "Afficher détails demande recrutement");
+    const canCancelRequest = useHasHabilitation(userId, "Annuler demande recrutement");
+
+
+// Queries pour API
+    const deleteRequestMutation = useDeleteRequest();
+
+    const handleDeleteRequest = (id: string) => {
+        if(window.confirm("Voulez-vous vraiment supprimer cette demande ?")) {
+            deleteRequestMutation.mutate(id, {
+                onSuccess: (data) => {
+                    setAlert({ isOpen: true, type: "success", message: data.message || "Demande supprimée !" });
+                },
+                onError: (error) => {
+                    if(axios.isAxiosError(error) && error.response) {
+                        setAlert({ isOpen: true, type: "error", message: error.response.data?.message || "Erreur lors de la suppression" });
+                    }
+                }
+            });
+        }
+    };
 
     useEffect(() => {
         setTotalCount(searchResponse?.totalCount || 0);
@@ -383,9 +405,11 @@ const RequestList: React.FC = () => {
                                 <EditButton onClick={() => console.log("Edited")}>
                                     <Edit size={16} />
                                 </EditButton>
-                                <CancelButton onClick={() => console.log("Canceled")}>
-                                    <X size={16} />
-                                </CancelButton>
+                                { canCancelRequest && (
+                                    <CancelButton onClick={() => handleDeleteRequest(req.id)}>
+                                        <Trash2 size={16} />
+                                    </CancelButton> )
+                                }
                             </TableCell>
                         </TableRow>
                     ))
@@ -412,4 +436,10 @@ const RequestList: React.FC = () => {
     </> );
 };
 
-export default RequestList;
+const ProtectedRequestList: React.FC = () => (
+    <ProtectedRoute requiredHabilitation="Lister demandes recrutement">
+        <RequestList />
+    </ProtectedRoute>
+);
+
+export default ProtectedRequestList;
