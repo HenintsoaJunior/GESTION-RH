@@ -30,10 +30,11 @@ CREATE TABLE educations(
    PRIMARY KEY(education_id)
 );
  
-CREATE TABLE personnal_suitabilities(
-   personnal_suitability_id VARCHAR(50) NOT NULL,
-   personnal_suitability_name VARCHAR(50)  NOT NULL,
-   PRIMARY KEY(personnal_suitability_id)
+CREATE TABLE soft_skills(
+   soft_skill_id VARCHAR(50) NOT NULL,
+   soft_skill_name VARCHAR(50)  NOT NULL,
+   is_deleted BIT NOT NULL DEFAULT 0,
+   PRIMARY KEY(soft_skill_id)
 );
  
 CREATE TABLE evaluation_types(
@@ -106,11 +107,11 @@ CREATE TABLE job_descriptions(
    FOREIGN KEY(request_id) REFERENCES recruitment_requests(request_id)
 );
  
-CREATE TABLE attributions(
-   attribution_id VARCHAR(50) NOT NULL,
-   attribution VARCHAR(150)  NOT NULL,
+CREATE TABLE job_attributions(
+   job_attribution_id VARCHAR(50) NOT NULL,
+   job_attribution VARCHAR(150)  NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(attribution_id),
+   PRIMARY KEY(job_attribution_id),
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
 );
  
@@ -127,7 +128,7 @@ CREATE TABLE jobs_validations(
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
 );
  
-CREATE TABLE formations(
+CREATE TABLE jobs_formations(
    formation_id VARCHAR(50) NOT NULL,
    education_id VARCHAR(50) NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
@@ -138,7 +139,7 @@ CREATE TABLE formations(
    FOREIGN KEY(level_education_id) REFERENCES level_educations(level_education_id)
 );
  
-CREATE TABLE experiences(
+CREATE TABLE jobs_job_experiences(
    experience_id VARCHAR(50) NOT NULL,
    experience_years SMALLINT NOT NULL DEFAULT 0,
    experience_post VARCHAR(50)  NOT NULL,
@@ -150,15 +151,16 @@ CREATE TABLE experiences(
 CREATE TABLE jobs_suitabilities(
    job_suitability_id VARCHAR(50) NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
-   personnal_suitability_id VARCHAR(50) NOT NULL,
+   soft_skill_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(job_suitability_id),
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id),
-   FOREIGN KEY(personnal_suitability_id) REFERENCES personnal_suitabilities(personnal_suitability_id)
+   FOREIGN KEY(soft_skill_id) REFERENCES soft_skills(soft_skill_id)
 );
  
 CREATE TABLE skills(
    skill_id VARCHAR(50) NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
+   skill_label VARCHAR(100) NOT NULL,
    PRIMARY KEY(skill_id),
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
 );

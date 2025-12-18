@@ -55,7 +55,7 @@ DROP TABLE IF EXISTS evaluations;
 DROP TABLE IF EXISTS candidatures;
 DROP TABLE IF EXISTS skills;
 DROP TABLE IF EXISTS jobs_suitabilities;
-DROP TABLE IF EXISTS experiences;
+DROP TABLE IF EXISTS job_experiences;
 DROP TABLE IF EXISTS formations;
 DROP TABLE IF EXISTS jobs_validations;
 DROP TABLE IF EXISTS Attributions;

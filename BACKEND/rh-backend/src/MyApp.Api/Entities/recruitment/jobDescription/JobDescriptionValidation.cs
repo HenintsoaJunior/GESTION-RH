@@ -4,7 +4,7 @@ using MyApp.Api.Entities.users;
 
 namespace MyApp.Api.Entities.recruitment;
 
-[Table("job_validations")]
+[Table("jobs_validations")]
 public class JobDescriptionValidation : BaseEntity
 {
     [Key]

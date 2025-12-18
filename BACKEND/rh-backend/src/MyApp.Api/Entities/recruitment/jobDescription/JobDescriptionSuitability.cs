@@ -3,18 +3,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyApp.Api.Entities.recruitment;
 
-[Table("job_experiences")]
-public class Experience
+[Table("jobs_suitabilities")]
+public class JobDescriptionSuitability
 {
     [Key]
-    [Column("experience_id")]
+    [Column("job_suitability_id")]
     public string Id { get; set; } = null!;
 
-    [Column("experience_years")]
-    public short ExperienceYears { get; set; }
-
-    [Column("experience_post")]
-    public string ExperiencePost { get; set; } = null!;
+    [ForeignKey("soft_skill_id")]
+    public PersonnalSuitability PersonnalSuitability { get; set; } = null!;
 
     [ForeignKey("job_description_id")]
     public JobDescription JobDescription { get; set; } = null!;

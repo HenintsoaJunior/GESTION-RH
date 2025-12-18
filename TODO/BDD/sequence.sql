@@ -568,10 +568,10 @@ CREATE SEQUENCE seq_education_id
 -- GO
 
 
-IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_personnal_suitability_id')
-    DROP SEQUENCE seq_personnal_suitability_id;
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_soft_skill_id')
+    DROP SEQUENCE seq_soft_skill_id;
 -- GO
-CREATE SEQUENCE seq_personnal_suitability_id
+CREATE SEQUENCE seq_soft_skill_id
     AS INT
     START WITH 1
     INCREMENT BY 1

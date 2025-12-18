@@ -7,9 +7,9 @@ namespace MyApp.Api.Entities.recruitment;
 public class PersonnalSuitability
 {
     [Key]
-    [Column("personnal_suitability_id")]
+    [Column("soft_skill_id")]
     public string Id { get; set; } = null!;
 
-    [Column("personnal_suitability_name")]
+    [Column("soft_skill_name")]
     public string Name { get; set; } = null!;
 }
