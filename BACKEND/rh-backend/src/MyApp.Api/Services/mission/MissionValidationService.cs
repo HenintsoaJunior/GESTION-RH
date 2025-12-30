@@ -335,6 +335,7 @@ namespace MyApp.Api.Services.mission
                 throw;
             }
         }
+        
         public async Task<MissionValidation?> VerifyMissionValidationByMissionIdAsync(string missionId)
         {
             var filters = new MissionValidationSearchFiltersDTO { MissionId = missionId };

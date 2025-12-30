@@ -271,24 +271,20 @@ export interface UpdateMissionInput extends Partial<CreateMissionInput> {
   missionId: string;
 }
 
-interface MissionSearchData {
+interface MissionSearchResponseBody {
   results: Mission[];
   totalCount: number;
   page: number;
   pageSize: number;
 }
 
-interface MissionSearchResponseBody {
-  data: MissionSearchData;
-}
-
+type SearchMissionsResponse = ApiResponse<MissionSearchResponseBody>;
 export interface ApiResponse<T = any> {
   data: T | null;
   status: number;
   message: string;
 }
 
-type SearchMissionsResponse = ApiResponse<MissionSearchResponseBody>;
 
 export interface CreateMissionResponse {
   data: {
@@ -1110,6 +1106,7 @@ export const useMissionCache = () => {
   };
 
   const updateMissionInCache = (missionId: string, updatedMission: Mission) => {
+    // 1. Mettre à jour la mission individuelle
     queryClient.setQueryData(['mission', missionId], (old: ApiResponse<Mission> | undefined) => {
       if (!old) return old;
       return {
@@ -1118,7 +1115,7 @@ export const useMissionCache = () => {
       } as ApiResponse<Mission>;
     });
 
-    // Mettre à jour avec affichages
+    // 2. Mettre à jour avec affichages
     queryClient.setQueryData(['missionWithDisplay', missionId], (old: ApiResponse<MissionWithDisplay> | undefined) => {
       if (!old) return old;
       return {
@@ -1127,27 +1124,24 @@ export const useMissionCache = () => {
       } as ApiResponse<MissionWithDisplay>;
     });
 
+    // 3. Mettre à jour dans les résultats de recherche
     queryClient.setQueriesData({ queryKey: SEARCH_MISSIONS_KEY }, (old: SearchMissionsResponse | undefined) => {
-      if (!old?.data?.data?.results) return old;
+      if (!old?.data?.results) return old; // Changé ici: old?.data?.results au lieu de old?.data?.data?.results
       
       return {
         ...old,
         data: {
           ...old.data,
-          data: {
-            ...old.data.data,
-            results: old.data.data.results.map(m => 
-              m.missionId === missionId ? updatedMission : m
-            ),
-          },
+          results: old.data.results.map(m => 
+            m.missionId === missionId ? updatedMission : m
+          ),
         },
-      };
+      } as SearchMissionsResponse;
     });
   };
 
   return { invalidateMissions, updateMissionInCache };
 };
-
 // ============ HOOK PERSONNALISÉ POUR LES OPTIONS ============
 
 export const useMissionEnums = () => {

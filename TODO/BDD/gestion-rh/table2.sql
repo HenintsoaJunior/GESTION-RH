@@ -189,6 +189,18 @@ CREATE TABLE prevision_price(
    PRIMARY KEY(prevision_id)
 );
 
+CREATE TABLE validators_flow (
+    validator_id VARCHAR(50) PRIMARY KEY,
+    validator_type VARCHAR(50) NOT NULL,
+    user_id VARCHAR(250) NOT NULL,
+    department VARCHAR(50) NOT NULL,
+    backup_order INT DEFAULT 0,
+    superior_id VARCHAR(250),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (superior_id) REFERENCES users(user_id)
+);
 
 CREATE TABLE mission_validation(
    mission_validation_id VARCHAR(50)    PRIMARY KEY,

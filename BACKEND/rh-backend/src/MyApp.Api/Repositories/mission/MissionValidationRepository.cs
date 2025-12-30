@@ -73,7 +73,7 @@ namespace MyApp.Api.Repositories.mission
                     .ThenInclude(m => m!.Employee)
                 .Include(mv => mv.Creator)
                 .Include(mv => mv.Validator)
-                .Where(mv => mv.ToWhom == userId && mv.Status != "cancel" && mv.Status != "Annulé");
+                .Where(mv => mv.ToWhom == userId && mv.Status != "cancel" && mv.Status != "Annulé" && mv.Status != null);
 
             if (!string.IsNullOrWhiteSpace(requestFilterDto.EmployeeId))
             {
@@ -138,19 +138,38 @@ namespace MyApp.Api.Repositories.mission
                 return false;
             }
             
-            
-            // Marquer la ligne courante comme validée
             current.Status = "approved";
             current.ValidationDate = DateTime.UtcNow;
             current.UpdatedAt = DateTime.UtcNow;
-            var hasPending = await _context.MissionValidations
-                .AnyAsync(mv => mv.MissionId == current.MissionId && 
-                            mv.MissionValidationId != missionValidationId && // Exclure la validation courante
-                            (mv.Status == null || mv.Status == "pending"));
             
-            var isFinished = !hasPending;
+            var nextValidation = await _context.MissionValidations
+                .FirstOrDefaultAsync(mv => mv.MissionId == current.MissionId && 
+                                        mv.MissionValidationId != missionValidationId &&
+                                        mv.Status == null);
+            
+            if (nextValidation != null)
+            {
+                nextValidation.Status = "pending";
+                nextValidation.UpdatedAt = DateTime.UtcNow;
+            }
             
             await _context.SaveChangesAsync();
+            
+            // Compter les validations
+            var totalValidations = await _context.MissionValidations
+                .CountAsync(mv => mv.MissionId == current.MissionId);
+            
+            var approvedCount = await _context.MissionValidations
+                .CountAsync(mv => mv.MissionId == current.MissionId && 
+                                mv.Status == "approved");
+            
+            // Les validations null sont considérées comme non nécessaires
+            var nullCount = await _context.MissionValidations
+                .CountAsync(mv => mv.MissionId == current.MissionId && 
+                                mv.Status == null);
+            
+            // Toutes les validations sont soit approuvées, soit null (non nécessaires)
+            var isFinished = (approvedCount + nullCount) == totalValidations;
             
             return isFinished;
         }

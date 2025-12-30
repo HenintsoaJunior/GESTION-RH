@@ -2,9 +2,9 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp, RefreshCw, X, List, Search, Filter } from "lucide-react";
-import axios, { AxiosError } from "axios";
+
 import {
   FiltersContainer,
   FiltersHeader,
@@ -54,7 +54,7 @@ import Alert from "@/components/alert";
 import Pagination from "@/components/pagination";
 import RoleModifPopupComponent from "@/pages/users/access/modif-role";
 import RemoveRolePopupComponent from "@/pages/users/access/remove-role";
-import { BASE_URL } from "@/config/api-config";
+import { useSyncUsers } from "@/api/ldap/service";
 
 interface UserSuggestion {
   id: string;
@@ -127,6 +127,9 @@ const UserList: React.FC = () => {
   const { data: departmentsResponse } = useDepartments();
   const { data: rolesResponse } = useRoles();
 
+  // Utilisation du hook useSyncUsers
+  const { syncUsers, isLoading: isSyncLoading } = useSyncUsers();
+
   useEffect(() => {
     const roleParam = searchParams[0].get("role");
     if (roleParam && filters.role !== roleParam) {
@@ -149,36 +152,43 @@ const UserList: React.FC = () => {
     pageSize
   );
 
-  const syncMutation = useMutation({
-    mutationFn: async () => {
-      const response = await axios.post(`${BASE_URL}/api/User/sync-ldap`, null, {
-        headers: {
-          accept: "*/*",
-        },
-      });
-      return response.data;
-    },
-    onSuccess: (data: { message?: string }) => {
+  const handleSync = async (): Promise<void> => {
+    try {
+      const result = await syncUsers();
+      
+      // Afficher l'alerte de succès avec les statistiques
+      let successMessage = result.message;
+      if (result.statistics) {
+        const stats = result.statistics;
+        successMessage += `\n- Utilisateurs ajoutés: ${stats.usersAdded}\n- Utilisateurs mis à jour: ${stats.usersUpdated}\n- Utilisateurs supprimés: ${stats.usersDeleted}\n- Total traité: ${stats.totalProcessed}`;
+      }
+      
       setAlert({
         isOpen: true,
         type: "success",
-        message: data.message || "Synchronisation LDAP réussie!",
+        message: successMessage,
       });
+      
+      // Invalider les requêtes pour rafraîchir les données
       queryClient.invalidateQueries({ queryKey: USERS_KEY });
       queryClient.invalidateQueries({ queryKey: SEARCH_USERS_BASE_KEY });
-    },
-    onError: (error: AxiosError<{ message?: string }>) => {
-      const message =
-        error.response?.data?.message || error.message || "Erreur lors de la synchronisation LDAP";
+      
+    } catch (error) {
+      // Gestion des erreurs
+      let errorMessage = "Erreur lors de la synchronisation LDAP";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       setAlert({
         isOpen: true,
         type: "error",
-        message,
+        message: errorMessage,
       });
-    },
-  });
+    }
+  };
 
-  const isSyncLoading = syncMutation.isPending;
   const hasFilters: boolean = Object.values(filters).some((val: string) => (val || "").trim() !== "");
 
   const toggleSelection = (userId: string, checked: boolean) => {
@@ -226,10 +236,6 @@ const UserList: React.FC = () => {
     setAppliedFilters(resetFilters);
     setCurrentPage(1);
     navigate("/utilisateur");
-  };
-
-  const handleSync = (): void => {
-    syncMutation.mutate();
   };
 
   const handleActionsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -543,7 +549,7 @@ const UserList: React.FC = () => {
             )}
             <ButtonSearch onClick={handleSync} disabled={isSyncLoading} title="Actualiser">
               <RefreshCw size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-              {isSyncLoading ? "..." : "Actualiser"}
+              {isSyncLoading ? "Synchronisation..." : "Actualiser"}
             </ButtonSearch>
           </div>
         </TableHeader>
