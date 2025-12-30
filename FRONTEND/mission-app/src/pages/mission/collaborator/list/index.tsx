@@ -203,7 +203,7 @@ const MissionList: React.FC = () => {
 
   const handleRowClick = useCallback((missionId: string) => {
     if (canViewDetails) {
-      navigate(`/mission/collaborateur/${missionId}`);
+      navigate(`/mission/${missionId}`);
     }
   }, [canViewDetails, navigate]);
 

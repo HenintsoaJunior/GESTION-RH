@@ -1,3 +1,5 @@
+/* eslint-disable no-case-declarations */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useGetAllEmployeesSimple, useGetEmployeesByMatriculesSimple } from "@/api/collaborator/services";
 import { useLieux } from "@/api/lieu/services";
@@ -104,7 +106,7 @@ export const useMissionData = (activeTab: string, setActiveTab: (tab: any) => vo
   const canModifyMission = useHasHabilitation(userId, "Modifier une mission");
   const canCancelMission = useHasHabilitation(userId, "Annuler une mission");
   const canDeleteMission = useHasHabilitation(userId, "Supprimer une mission");
-  const canViewDetails = useHasHabilitation(userId, "Voir les détails mission");
+  const canViewDetails = useHasHabilitation(userId, "Voir les détails d’une mission");
   const canClosedMission = useHasHabilitation(userId, "Voir les détails mission");
 
   // APIs
@@ -223,12 +225,12 @@ export const useMissionData = (activeTab: string, setActiveTab: (tab: any) => vo
 
   // Extraction des missions
   const missions = useMemo(() => {
-    // @ts-ignore
+    
     const results = searchResponse?.data?.results || [];
     return results;
   }, [searchResponse]);
 
-  // @ts-ignore
+  
   const totalCountFromApi = searchResponse?.data?.totalCount || 0;
 
   // Handlers

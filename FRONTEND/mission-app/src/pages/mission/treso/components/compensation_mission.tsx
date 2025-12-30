@@ -353,7 +353,7 @@ const CompensationMission: React.FC = () => {
     }, []);
 
     const handleRowClick = useCallback((compensationId: string) => {
-        navigate(`/mission/collaborateur/${compensationId}`);
+        navigate(`/mission/${compensationId}`);
     }, [navigate]);
 
     const handleAction = useCallback(async (compensationId: string, employeeId: string, action: 'pay') => {

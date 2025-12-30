@@ -429,7 +429,7 @@ export const ReimbursementCard: React.FC<ReimbursementCardProps> = ({
                 <ActionButton
                     onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/mission/collaborateur/${remboursement.missionId}`);
+                        navigate(`/mission/${remboursement.missionId}`);
                     }}
                     className="details"
                     disabled={isReimbursing}

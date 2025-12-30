@@ -889,7 +889,7 @@ const DetailsMission: React.FC = () => {
     missionId
   );
 
-  const fullBasePath = `/mission/collaborateur/${missionId}`;
+  const fullBasePath = `/mission/${missionId}`;
 
   useEffect(() => {
     if (missionId) {

@@ -20,6 +20,8 @@ Nom de la base : GESTIONDEMISSION_DB
 >> sa_gdm / S@gmmXdb
 
 
+MDP DEFAULT : Mission@2025***
+
 
 
 POUR VINA 
