@@ -274,7 +274,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         }
       }
 
-      // NOUVEAU : Matching par préfixe pour routes enfants (ex. /mission/collaborateur/:id)
+      // NOUVEAU : Matching par préfixe pour routes enfants (ex. /mission/:id)
       // On cherche le menu dont le lien est un préfixe du chemin actuel
       for (const item of items) {
         if (targetPath.startsWith(item.menu.link)) {
@@ -324,35 +324,429 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
 
   // Generate breadcrumbs
   const generateBreadcrumbs = useCallback((): BreadcrumbItem[] => {
-    const currentPath = location.pathname === "/" ? "/" : location.pathname + location.hash;
+    const currentPath = location.pathname;
     const breadcrumbs: BreadcrumbItem[] = [];
 
+    // Toujours ajouter Accueil
     breadcrumbs.push({
       title: "Accueil",
-      path: "/tableau-bord",
-      isActive: currentPath === "/tableau-bord",
+      path: "/dashboard",
+      isActive: currentPath === "/dashboard",
       clickable: true,
     });
 
-    if (currentPath === "/system") {
-      breadcrumbs.push({
-        title: "System",
-        path: "/system",
-        isActive: true,
-      });
-    } else if (currentPath === "/entite") {
-      breadcrumbs.push({
-        title: "Entite",
-        path: "/entite",
-        isActive: true,
-      });
-    } else if (currentPath === "/profil-page") {
+    // Gestion des breadcrumbs selon les routes
+    if (currentPath === "/profil-page") {
       breadcrumbs.push({
         title: "Mon profil",
         path: "/profil-page",
         isActive: true,
       });
-    } else {
+    }
+    
+    // IMPORT
+    else if (currentPath === "/import") {
+      breadcrumbs.push({
+        title: "Import",
+        path: "/import",
+        isActive: true,
+      });
+    }
+    
+    // ADMIN - Utilisateurs
+    else if (currentPath === "/utilisateur") {
+      breadcrumbs.push({
+        title: "Administration",
+        path: "/utilisateur",
+        isActive: false,
+        clickable: false,
+      });
+      breadcrumbs.push({
+        title: "Utilisateurs",
+        path: "/utilisateur",
+        isActive: true,
+      });
+    }
+    
+    // ADMIN - Logs
+    else if (currentPath === "/logs") {
+      breadcrumbs.push({
+        title: "Administration",
+        path: "/logs",
+        isActive: false,
+        clickable: false,
+      });
+      breadcrumbs.push({
+        title: "Logs",
+        path: "/logs",
+        isActive: true,
+      });
+    }
+    
+    // ADMIN - Droits d'accès
+    else if (currentPath === "/access/list") {
+      breadcrumbs.push({
+        title: "Administration",
+        path: "/access/list",
+        isActive: false,
+        clickable: false,
+      });
+      breadcrumbs.push({
+        title: "Droits d'accès",
+        path: "/access/list",
+        isActive: true,
+      });
+    }
+    
+    // ADMIN - Habilitations
+    else if (currentPath === "/habilitation") {
+      breadcrumbs.push({
+        title: "Administration",
+        path: "/habilitation",
+        isActive: false,
+        clickable: false,
+      });
+      breadcrumbs.push({
+        title: "Habilitations",
+        path: "/habilitation",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Page principale
+    else if (currentPath === "/referentiel") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Directions
+    else if (currentPath === "/referentiel/direction") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Directions",
+        path: "/referentiel/direction",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Départements
+    else if (currentPath === "/referentiel/department") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Départements",
+        path: "/referentiel/department",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Services
+    else if (currentPath === "/referentiel/service") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Services",
+        path: "/referentiel/service",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Sites
+    else if (currentPath === "/referentiel/site") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Sites",
+        path: "/referentiel/site",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Genres
+    else if (currentPath === "/referentiel/genders") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Genres",
+        path: "/referentiel/genders",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Types de contrat
+    else if (currentPath === "/referentiel/contract") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Types de contrat",
+        path: "/referentiel/contract",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Unités
+    else if (currentPath === "/referentiel/unit") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Unités",
+        path: "/referentiel/unit",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Collaborateurs
+    else if (currentPath === "/referentiel/collaborator") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Collaborateurs",
+        path: "/referentiel/collaborator",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Lieux
+    else if (currentPath === "/referentiel/lieu") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Lieux",
+        path: "/referentiel/lieu",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Transports
+    else if (currentPath === "/referentiel/transport") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Transports",
+        path: "/referentiel/transport",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Barèmes de compensation
+    else if (currentPath === "/referentiel/compensation-scale") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Barèmes de compensation",
+        path: "/referentiel/compensation-scale",
+        isActive: true,
+      });
+    }
+    
+    // RÉFÉRENTIEL - Zones géographiques
+    else if (currentPath === "/referentiel/geo-zone") {
+      breadcrumbs.push({
+        title: "Référentiel",
+        path: "/referentiel",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Zones géographiques",
+        path: "/referentiel/geo-zone",
+        isActive: true,
+      });
+    }
+    
+    // MISSION - Liste
+    else if (currentPath === "/mission/list") {
+      breadcrumbs.push({
+        title: "Missions",
+        path: "/mission/list",
+        isActive: true,
+      });
+    }
+
+    else if (currentPath === "/validators_flow") {
+      breadcrumbs.push({
+        title: "Validators",
+        path: "/validators_flow",
+        isActive: true,
+      });
+    }
+    
+    // MISSION - Carte
+    else if (currentPath === "/mission/maps") {
+      breadcrumbs.push({
+        title: "Missions",
+        path: "/mission/list",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Carte des missions",
+        path: "/mission/maps",
+        isActive: true,
+      });
+    }
+    
+    // MISSION - Détails avec ID dynamique (CORRIGÉ pour /mission/:missionId)
+    else if (currentPath.match(/^\/mission\/\w+/)) {
+      const pathParts = currentPath.split('/');
+      
+      // Vérifier si c'est une route de détail (ex: /mission/MIS-000001)
+      if (pathParts.length === 3 && pathParts[1] === "mission") {
+        const missionId = pathParts[2];
+        
+        breadcrumbs.push({
+          title: "Missions",
+          path: "/mission/list",
+          isActive: false,
+          clickable: true,
+        });
+        
+        // Formater l'ID pour l'affichage
+        const displayId = missionId.startsWith('MIS-') 
+          ? missionId 
+          : `#${missionId}`;
+        
+        breadcrumbs.push({
+          title: `Mission ${displayId}`,
+          path: currentPath,
+          isActive: true,
+        });
+      }
+    }
+    
+    // MISSION - Validation
+    else if (currentPath === "/mission/to-validate") {
+      breadcrumbs.push({
+        title: "Missions",
+        path: "/mission/list",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Validation",
+        path: "/mission/to-validate",
+        isActive: true,
+      });
+    }
+    
+    // TRÉSORERIE - Page principale
+    else if (currentPath === "/treasury") {
+      breadcrumbs.push({
+        title: "Trésorerie",
+        path: "/treasury",
+        isActive: true,
+      });
+    }
+    
+    // TRÉSORERIE - Compensation
+    else if (currentPath === "/treasury/compensation") {
+      breadcrumbs.push({
+        title: "Trésorerie",
+        path: "/treasury",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Compensation",
+        path: "/treasury/compensation",
+        isActive: true,
+      });
+    }
+    
+    // TRÉSORERIE - Remboursement
+    else if (currentPath === "/treasury/remboursement") {
+      breadcrumbs.push({
+        title: "Trésorerie",
+        path: "/treasury",
+        isActive: false,
+        clickable: true,
+      });
+      breadcrumbs.push({
+        title: "Remboursement",
+        path: "/treasury/remboursement",
+        isActive: true,
+      });
+    }
+    
+    // RECRUTEMENT - Demandes
+    else if (currentPath === "/recrutement/demandes/liste") {
+      breadcrumbs.push({
+        title: "Recrutement",
+        path: "/recrutement/demandes/liste",
+        isActive: false,
+        clickable: false,
+      });
+      breadcrumbs.push({
+        title: "Demandes",
+        path: "/recrutement/demandes/liste",
+        isActive: true,
+      });
+    }
+    
+    // ERREUR - 403
+    else if (currentPath === "/403") {
+      breadcrumbs.push({
+        title: "Erreur 403",
+        path: "/403",
+        isActive: true,
+      });
+    }
+    
+    // DASHBOARD (par défaut)
+    else if (currentPath === "/dashboard") {
+      // Ne rien ajouter de plus, juste "Accueil" qui est déjà actif
+    }
+    
+    // Si aucune route ne correspond, utiliser la logique existante de recherche dans le menu
+    else {
       const matchedResult = findMenuItemByPath(filteredMenuData, currentPath);
       if (matchedResult) {
         const { item, parentKey, title } = matchedResult;
@@ -377,7 +771,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
               title: getMenuLabel(parentMenu),
               path: parentMenu.link,
               isActive: false,
-              clickable: false,
+              clickable: true,
             });
           }
         }
@@ -391,9 +785,8 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     }
 
     return breadcrumbs;
-  }, [location.pathname, location.hash, filteredMenuData, findMenuItemByPath, getMenuLabel]);
+  }, [location.pathname, filteredMenuData, findMenuItemByPath, getMenuLabel]);
 
-  // Initialize expanded menus
   const initializeExpandedMenus = useCallback((menuItems: MenuItem[]): Record<string, boolean> => {
     const expanded: Record<string, boolean> = {};
     const processItems = (items: MenuItem[]) => {
@@ -408,7 +801,6 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     return expanded;
   }, []);
 
-  // Initialize expanded on menu load
   useEffect(() => {
     if (filteredMenuData.length > 0 && !isInitializedRef.current) {
       const initialExpanded = initializeExpandedMenus(filteredMenuData);
@@ -417,10 +809,9 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     }
   }, [filteredMenuData, initializeExpandedMenus]);
 
-  // Update active item etc. (modifié pour gérer le parentKey avec préfixe)
   useEffect(() => {
     if (filteredMenuData.length === 0) return;
-    const currentPath = location.pathname === "/" ? "/" : location.pathname + location.hash;
+    const currentPath = location.pathname === "/" ? "/" : location.pathname;
     if (lastLocationRef.current === currentPath) return;
     if (navigationUpdateRef.current) return;
 
@@ -469,7 +860,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     setTimeout(() => {
       navigationUpdateRef.current = false;
     }, 50);
-  }, [location.pathname, location.hash, filteredMenuData, findMenuItemByPath, activeItem, headerTitle]);
+  }, [location.pathname, filteredMenuData, findMenuItemByPath, activeItem, headerTitle]);
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen((prev) => !prev);

@@ -22,6 +22,18 @@ interface LegendColorProps {
   color?: string;
 }
 
+interface ActionButtonProps {
+  variant?: 'edit' | 'cancel' | 'delete';
+}
+
+interface ClickableTableRowProps {
+  $clickable: boolean;
+}
+
+interface ViewToggleButtonProps {
+  $isActive?: boolean;
+}
+
 export const DashboardContainer = styled.div`
   font-family: var(--font-family);
   background: var(--bg-primary);
@@ -178,6 +190,15 @@ export const TableRow = styled.tr<TableRowProps>`
   }
 `;
 
+export const ClickableTableRow = styled(TableRow)<ClickableTableRowProps>`
+  cursor: ${(props) => (props.$clickable ? 'pointer' : 'default')};
+  height: 56px; /* Hauteur fixe pour toutes les lignes */
+
+  &:hover {
+    background-color: ${(props) => (props.$clickable ? 'var(--bg-secondary, #f8f9fa)' : 'transparent')};
+  }
+`;
+
 export const TableCell = styled.td`
   padding: var(--spacing-md);
   text-align: left;
@@ -186,6 +207,7 @@ export const TableCell = styled.td`
   font-size: var(--font-size-sm);
   color: var(--text-primary);
   font-family: var(--font-family);
+  vertical-align: middle; /* Crucial pour l'alignement vertical */
 
   &:first-child {
     border-left: none;
@@ -216,6 +238,7 @@ export const TableHeadCell = styled.th`
   background: var(--bg-secondary);
   white-space: nowrap;
   font-family: var(--font-family);
+  vertical-align: middle; /* Pour aligner avec les cellules */
 
   border-top: none; 
   &:first-child {
@@ -224,6 +247,12 @@ export const TableHeadCell = styled.th`
   &:last-child {
     border-right: none; 
   }
+`;
+
+export const TableHeadCellStyled = styled(TableHeadCell)`
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const CheckboxHeadCell = styled(TableHeadCell)`
@@ -247,36 +276,122 @@ export const NoDataMessage = styled.div`
 `;
 
 export const StatusBadge = styled.span`
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   font-family: var(--font-family);
+  letter-spacing: 0.01em;
+  height: 22px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
 
   &.status-progress {
-    background: #cce5ff;
-    color: #004085;
+    background: rgba(59, 130, 246, 0.1); /* Bleu très clair */
+    color: #1d4ed8; /* Bleu foncé */
+    border: 1px solid rgba(59, 130, 246, 0.3);
   }
+  
   &.status-waiting {
-   background-color: #fef3c7; /* jaune clair pour indiquer attente */
-   color: #b45309; /* texte marron foncé/orange */
-   border: 1px solid #fde68a;
-   border-radius: 12px;
-   padding: 3px 8px;
-   font-weight: 500;
+    background: rgba(245, 158, 11, 0.1); /* Orange très clair */
+    color: #d97706; /* Orange foncé */
+    border: 1px solid rgba(245, 158, 11, 0.3);
   }
+  
   &.status-pending {
-    background: #fff3cd;
-    color: #856404;
+    background: rgba(139, 92, 246, 0.1); /* Violet très clair */
+    color: #6d28d9; /* Violet foncé */
+    border: 1px solid rgba(139, 92, 246, 0.3);
   }
+  
   &.status-approved {
-    background: #d4edda;
-    color: #155724;
+    background: rgba(34, 197, 94, 0.1); /* Vert très clair */
+    color: #059669; /* Vert foncé */
+    border: 1px solid rgba(34, 197, 94, 0.3);
   }
+  
   &.status-cancelled {
-    background: #f8d7da;
-    color: #721c24;
+    background: rgba(239, 68, 68, 0.1); /* Rouge très clair */
+    color: #dc2626; /* Rouge foncé */
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+  
+  &.status-rejected {
+    background: rgba(190, 18, 60, 0.1); /* Rouge foncé très clair */
+    color: #be123c; /* Rouge foncé */
+    border: 1px solid rgba(190, 18, 60, 0.3);
+  }
+  
+  &.status-payment {
+    background: rgba(14, 165, 233, 0.1); /* Cyan très clair */
+    color: #0c4a6e; /* Cyan foncé */
+    border: 1px solid rgba(14, 165, 233, 0.3);
+  }
+`;
+
+// Variante alternative avec un design plus simple si préféré
+export const StatusBadgeSimple = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  letter-spacing: 0.01em;
+  height: 22px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
+
+  &.status-progress {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+  }
+  
+  &.status-waiting {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+  }
+  
+  &.status-pending {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #d8b4fe;
+  }
+  
+  &.status-approved {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+  
+  &.status-cancelled {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+  }
+  
+  &.status-rejected {
+    background: #fce7f3;
+    color: #9d174d;
+    border: 1px solid #f9a8d4;
+  }
+  
+  &.status-payment {
+    background: #e0f2fe;
+    color: #075985;
+    border: 1px solid #bae6fd;
   }
 `;
 
@@ -677,12 +792,16 @@ export const ButtonReset = styled.button`
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+    background-color: #d32f2f;
+    color: #ffffff;
   }
+
 
   @media (max-width: 768px) {
     width: 100%;
   }
 `;
+
 
 export const ButtonSearch = styled.button`
   display: inline-flex;
@@ -1570,5 +1689,172 @@ export const CheckboxInput = styled.input`
 
   &:checked + ${CheckboxLabel}::after {
     opacity: 1;
+  }
+`;
+
+export const ViewToggleButton = styled(ButtonSearch)<ViewToggleButtonProps>`
+  background-color: ${(props) => (props.$isActive ? 'var(--primary-color)' : 'transparent')};
+  color: ${(props) => (props.$isActive ? '#ffffff' : 'var(--text-color)')};
+  border: ${(props) => (props.$isActive ? '1px solid var(--primary-color)' : '1px solid var(--border-color, #ddd)')};
+
+  &:hover {
+    background-color: ${(props) =>
+      props.$isActive ? 'var(--primary-hover)' : 'var(--bg-secondary, #f8f9fa)'};
+  }
+`;
+
+export const SortableHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
+export const HeaderContent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  white-space: nowrap;
+`;
+
+export const Tooltip = styled.div`
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  max-width: 300px;
+  word-wrap: break-word;
+  z-index: 1000;
+  pointer-events: none;
+  white-space: normal;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 4px solid rgba(0, 0, 0, 0.9);
+  }
+`;
+
+export const TruncatedCell = styled.div`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  position: relative;
+`;
+
+export const ActionsContainer = styled.div`
+  display: flex;
+  gap: var(--spacing-xs);
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+  height: 100%;
+  min-height: 32px;
+  padding: 4px 0;
+`;
+
+export const DateCell = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  height: 100%;
+`;
+export const ActionButton = styled.button<ActionButtonProps>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: ${(props) => {
+    if (props.variant === 'edit') return 'var(--primary-color)';
+    if (props.variant === 'cancel') return 'var(--warning-color, #ffc107)';
+    if (props.variant === 'delete') return 'transparent';
+    return 'transparent';
+  }};
+  color: ${(props) => {
+    if (props.variant === 'edit') return '#ffffff';
+    if (props.variant === 'cancel') return '#000000';
+    if (props.variant === 'delete') return 'var(--danger-color, #dc3545)';
+    return 'var(--text-color)';
+  }};
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  position: relative;
+  z-index: 10;
+
+  &:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus {
+    outline: 2px solid ${(props) => {
+      if (props.variant === 'edit') return 'var(--primary-color)';
+      if (props.variant === 'cancel') return 'var(--warning-color, #ffc107)';
+      if (props.variant === 'delete') return 'var(--danger-color, #dc3545)';
+      return 'var(--text-color)';
+    }};
+    outline-offset: 2px;
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+  }
+`;
+
+export const ActionsTableCell = styled(TableCell)`
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px 4px;
+  height: 100%;
+
+  & > div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+  }
+`;
+
+export const StatusCell = styled(TableCell)`
+  vertical-align: middle;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  
+  & > div {
+    width: 100%;
   }
 `;

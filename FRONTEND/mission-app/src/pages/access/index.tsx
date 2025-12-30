@@ -1,21 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom"; // Ajout pour la navigation
-import { ChevronDown, ChevronUp, X, List, Search, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import {
-  FiltersContainer,
-  FiltersHeader,
-  FiltersTitle,
-  FiltersControls,
-  FilterControlButton,
-  FiltersSection,
-  FormTableSearch,
-  FormRow,
-  FormFieldCell,
-  FormLabelSearch,
-  StyledAutoCompleteInput,
-  FiltersActions,
-  ButtonReset,
   ButtonSearch,
   TableContainer,
   DataTable,
@@ -24,11 +11,8 @@ import {
   TableHeadCell,
   TableRow,
   TableCell,
-  FiltersToggle,
-  ButtonShowFilters,
   Loading,
   NoDataMessage,
-  Separator,
   ActionsSelect,
   SelectionInfo,
 } from "@/styles/table-styles";
@@ -53,12 +37,11 @@ interface AlertState {
 }
 
 const RoleCountCell: React.FC<{ roleName: string }> = ({ roleName }) => {
-  const navigate = useNavigate(); // Hook pour navigation
+  const navigate = useNavigate();
   const { data } = useRoleUserCount(roleName);
   const count = data?.data || 0;
 
   const handleClick = useCallback(() => {
-    // Navigation vers la liste des utilisateurs avec filtre "Access" pré-rempli par le nom du rôle
     navigate(`/utilisateur?role=${encodeURIComponent(roleName)}`);
   }, [navigate, roleName]);
 
@@ -85,10 +68,10 @@ const RoleCountCell: React.FC<{ roleName: string }> = ({ roleName }) => {
 };
 
 const RoleList: React.FC = () => {
-  const [filters, setFilters] = useState<FiltersState>({
+  const [] = useState<FiltersState>({
     name: "",
   });
-  const [appliedFilters, setAppliedFilters] = useState<FiltersState>({
+  const [appliedFilters] = useState<FiltersState>({
     name: "",
   });
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
@@ -99,8 +82,6 @@ const RoleList: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [showConfirmUpdateModal, setShowConfirmUpdateModal] = useState<boolean>(false);
   const [pendingEditValues, setPendingEditValues] = useState<{ name: string; description: string } | null>(null);
-  const [isMinimized, setIsMinimized] = useState<boolean>(false);
-  const [isHidden, setIsHidden] = useState<boolean>(false);
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState<boolean>(false);
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
@@ -137,8 +118,6 @@ const RoleList: React.FC = () => {
     return Array.from(groupsMap.values());
   }, [roles]);
 
-  const hasFilters: boolean = (filters.name || "").trim() !== "";
-
   const filteredRoles = useMemo(() => {
     let filtered = roles;
 
@@ -151,7 +130,6 @@ const RoleList: React.FC = () => {
     return filtered;
   }, [roles, appliedFilters]);
 
-  // Sélection via clic simple sur la ligne entière
   const handleRowSelection = useCallback((roleId: string) => {
     if (selectedRoles.includes(roleId)) {
       setSelectedRoles([]);
@@ -160,7 +138,6 @@ const RoleList: React.FC = () => {
     }
   }, [selectedRoles]);
 
-  // Édition via double-clic sur la ligne entière
   const handleRowDoubleClick = useCallback((role: RoleWithGroupedHabilitations) => {
     if (!canModifyRole) {
       setAlert({ isOpen: true, type: "warning", message: "Vous n'avez pas les droits pour modifier ce rôle." });
@@ -282,18 +259,6 @@ const RoleList: React.FC = () => {
     );
   }, [pendingEditValues, editingRole, userId, originalValues, updateRoleMutation, refetchRoles, handleCancelUpdateConfirm]);
 
-  const handleFilterSubmit = useCallback((event: React.FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    setAppliedFilters(filters);
-  }, [filters]);
-
-  const handleResetFilters = useCallback((): void => {
-    const resetFilters: FiltersState = { name: "" };
-    setFilters(resetFilters);
-    setAppliedFilters(resetFilters);
-    setAlert({ isOpen: true, type: "info", message: "Filtres réinitialisés." });
-  }, []);
-
   const handleActionsChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const action = e.target.value;
     if (action === "modify" && canModifyHabilities) {
@@ -349,12 +314,6 @@ const RoleList: React.FC = () => {
     });
     setShowDeleteModal(false);
   }, [selectedRoles, userId, deleteRoleMutation, refetchRoles]);
-
-  const handleNameChange = useCallback((value: string): void => {
-    setFilters((prev) => ({ ...prev, name: value }));
-  }, []);
-
-  const nameSuggestions = useMemo(() => roles.map((role) => role.name), [roles]);
 
   const selectedCountText = useMemo(
     () => `${selectedRoles.length} élément${selectedRoles.length !== 1 ? "s" : ""} sélectionné${selectedRoles.length !== 1 ? "s" : ""}`,
@@ -452,82 +411,6 @@ const RoleList: React.FC = () => {
         cancelLabel="Annuler"
         showActions={true}
       />
-
-      {/* === SECTION FILTRES === */}
-      {!isHidden && (
-        <FiltersContainer $isMinimized={isMinimized}>
-          <FiltersHeader>
-            <FiltersTitle>Filtre</FiltersTitle>
-            <FiltersControls>
-              <FilterControlButton
-                $isMinimized={isMinimized}
-                onClick={() => setIsMinimized((p) => !p)}
-                title={isMinimized ? "Développer" : "Réduire"}
-              >
-                {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-              </FilterControlButton>
-              <FilterControlButton $isClose onClick={() => setIsHidden(true)} title="Fermer">
-                <X size={16} />
-              </FilterControlButton>
-            </FiltersControls>
-          </FiltersHeader>
-
-          {!isMinimized && (
-            <FiltersSection>
-              <Separator />
-              <form onSubmit={handleFilterSubmit}>
-                <FormTableSearch>
-                  <tbody>
-                    <FormRow>
-                      <FormFieldCell style={{ width: "100%" }}>
-                        <FormLabelSearch>Nom du rôle</FormLabelSearch>
-                        <StyledAutoCompleteInput
-                          value={filters.name || ""}
-                          onChange={handleNameChange}
-                          suggestions={nameSuggestions}
-                          maxVisibleItems={5}
-                          placeholder="Rechercher par nom..."
-                          disabled={isRolesLoading}
-                          fieldType="role"
-                          fieldLabel="rôle"
-                          showAddOption={false}
-                        />
-                      </FormFieldCell>
-                    </FormRow>
-                  </tbody>
-                </FormTableSearch>
-
-                <Separator />
-
-                <FiltersActions>
-                  <ButtonReset
-                    type="button"
-                    onClick={handleResetFilters}
-                    disabled={!hasFilters || isRolesLoading}
-                    title="Effacer"
-                  >
-                    Effacer filtres
-                  </ButtonReset>
-                  <ButtonSearch type="submit" disabled={isRolesLoading} title="Rechercher">
-                    <Search size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-                    Rechercher
-                  </ButtonSearch>
-                </FiltersActions>
-              </form>
-            </FiltersSection>
-          )}
-        </FiltersContainer>
-      )}
-
-      {/* === TOGGLE FILTRES === */}
-      {isHidden && (
-        <FiltersToggle>
-          <ButtonShowFilters type="button" onClick={() => setIsHidden(false)}>
-            <List size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-            Afficher les filtres
-          </ButtonShowFilters>
-        </FiltersToggle>
-      )}
 
       <TableContainer>
         <TableHeader>

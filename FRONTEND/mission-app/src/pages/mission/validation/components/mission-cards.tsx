@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-// Importations Lucide-React
 import {
     Clock as ClockIcon,
     CheckCircle,
@@ -11,13 +10,13 @@ import {
     User,
     AlertTriangle,
     ArrowRight,
-    Eye, // Ajout pour l'icône "Voir détails"
+    Eye, 
 } from "lucide-react";
 import {
     Loading,
     NoDataMessage,
-    StatusBadge,
 } from "@/styles/table-styles";
+import { StatusBadge, STATUSES } from "@/components/status";
 import Pagination from "@/components/pagination"; 
 import {
     CardsPaginationContainer,
@@ -29,7 +28,6 @@ import {
     CardHeader,
     CardTitle,
     CardInfo,
-    // Nouveaux styles pour les boutons d'actions
     ActionButton,
     ActionsContainer,
 } from "@/styles/card-styles";
@@ -47,6 +45,7 @@ interface LoadingState {
 interface AppliedFilters {
   employeeId: string;
   employeeName: string;
+  employeeMatricule: string;
   status: string;
   validationDateFrom?: string;
   validationDateTo?: string;
@@ -100,37 +99,17 @@ const MissionCards: React.FC<MissionCardsProps> = ({
     };
 
     /**
-     * Retourne le badge de statut stylisé.
+     * Récupère la configuration du statut depuis STATUSES
      */
-    const getStatusBadge = (status: string) => {
-        let statusInfo;
-        switch (status) {
-            case 'pending':
-                statusInfo = { icon: ClockIcon, text: "En attente", class: "status-pending" };
-                break;
-            case 'approved':
-                statusInfo = { icon: CheckCircle, text: "Validé", class: "status-approved" };
-                break;
-            case 'rejected':
-            case 'Annulé':
-                statusInfo = { icon: XCircle, text: status === 'rejected' ? "Rejetée" : "Annulé", class: "status-cancelled" };
-                break;
-            default:
-                statusInfo = { icon: ClockIcon, text: "Inconnu", class: "status-pending" };
-        }
-
-        const Icon = statusInfo.icon;
-        return (
-            <StatusBadge className={statusInfo.class}>
-                <Icon size={10} /> {statusInfo.text}
-            </StatusBadge>
-        );
+    const getStatusObject = (status: string) => {
+        return STATUSES.find(s => s.id === status) || { id: status, label: status, color: '#6b7280', category: 'progress' as const };
     };
 
     // Vérifie si des filtres sont appliqués pour afficher le message "NoData" approprié
     const hasFilters =
         appliedFilters.employeeId ||
         appliedFilters.employeeName ||
+        appliedFilters.employeeMatricule || // Ajout du filtrage par matricule
         appliedFilters.status ||
         appliedFilters.validationDateFrom ||
         appliedFilters.validationDateTo ||
@@ -298,7 +277,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
             <CardsContainer
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gridTemplateColumns: `repeat(${pageSize === 3 ? 3 : 3}, 1fr)`,
                   gap: 'var(--spacing-md, 1rem)',
                   alignItems: 'stretch',
                 }}
@@ -329,7 +308,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                                     <CardTitle title={mission.title} style={{ fontSize: '0.875rem' }}>
                                         {mission.title}
                                     </CardTitle>
-                                    {getStatusBadge(mission.status)}
+                                    <StatusBadge status={getStatusObject(mission.status)} />
                                 </CardHeader>
                                 
                                 {/* 3. Informations de la mission - DESIGN AMÉLIORÉ ET RÉDUIT */}
@@ -519,7 +498,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
                     <NoDataMessage>
                         {hasFilters
                             ? "Aucune mission ne correspond aux critères de recherche."
-                            : "Aucune mission trouvée."}
+                            : "Aucune mission validation trouvée."}
                     </NoDataMessage>
                 )}
             </CardsContainer>
@@ -527,7 +506,7 @@ const MissionCards: React.FC<MissionCardsProps> = ({
             {/* Pagination */}
             {totalEntries > 0 && (
                 <Pagination
-                    currentPage={currentPage}
+                    currentPage={currentPage} 
                     pageSize={pageSize}
                     totalEntries={totalEntries}
                     onPageChange={handlePageChange}

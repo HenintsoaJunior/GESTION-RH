@@ -3,7 +3,12 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
-import { useLastThreeUnreadNotifications, useUnreadNotificationCount } from "@/api/notifications/services";
+import { 
+  useUnreadNotifications, 
+  useUnreadNotificationCount,
+  useMarkNotificationAsRead,
+  useMarkAllNotificationsAsRead 
+} from "@/api/notifications/services";
 import {
   Header as HeaderStyled,
   HeaderLeft,
@@ -67,12 +72,18 @@ const Header: React.FC<HeaderProps> = ({
   setActive,
 }) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+  const [markedAsRead, setMarkedAsRead] = useState<Set<string>>(new Set());
 
-  const { data: notificationsData = [], isLoading: notifLoading, error: notifError } = useLastThreeUnreadNotifications(user?.userId);
+  const { data: notificationsData = [], isLoading: notifLoading, error: notifError } = useUnreadNotifications(user?.userId);
   const { data: unreadCountData = { unreadCount: 0 }, isLoading: countLoading } = useUnreadNotificationCount(user?.userId);
+  
+  const { mutate: markAsRead } = useMarkNotificationAsRead(user?.userId);
+  const { mutate: markAllAsRead } = useMarkAllNotificationsAsRead(user?.userId);
 
-  const notifications: Notification[] = notificationsData || [];
-  const unreadCount: number = unreadCountData?.unreadCount || 0;
+  const notifications: Notification[] = notificationsData.filter(
+    (notification) => !markedAsRead.has(notification.notificationId)
+  );
+  const unreadCount: number = unreadCountData?.unreadCount - markedAsRead.size;
   const errorMessage = notifError ? `Erreur lors du chargement des notifications: ${notifError.message || "Une erreur inconnue s'est produite."}` : null;
 
   const { logout: handleLogout, isLoading: logoutLoading } = useLogoutUser(
@@ -86,6 +97,19 @@ const Header: React.FC<HeaderProps> = ({
 
   const toggleNotifications = (): void => {
     setIsNotificationsOpen((prev) => !prev);
+  };
+
+  const handleMarkAsRead = (notificationId: string): void => {
+    markAsRead({ notificationId });
+    setMarkedAsRead(prev => new Set([...prev, notificationId]));
+  };
+
+  const handleMarkAllAsRead = (): void => {
+    if (notifications.length > 0) {
+      markAllAsRead();
+      const allIds = notifications.map(n => n.notificationId);
+      setMarkedAsRead(prev => new Set([...prev, ...allIds]));
+    }
   };
 
   const onLogoutClick = () => {
@@ -136,11 +160,18 @@ const Header: React.FC<HeaderProps> = ({
           </NotificationButton>
           {isNotificationsOpen && (
             <NotificationDropdown>
-              <DropdownItem to="/notifications" onClick={() => setIsNotificationsOpen(false)}>
-                <FaIcons.FaBell className="dropdown-icon" />
-                <span>Voir toutes les notifications</span>
-              </DropdownItem>
+              
+              {notifications.length > 0 && (
+                <>
+                  <DropdownItem to="#" onClick={handleMarkAllAsRead}>
+                    <FaIcons.FaCheckCircle className="dropdown-icon" />
+                    <span>Tout marquer comme lu</span>
+                  </DropdownItem>
+                </>
+              )}
+              
               <DropdownDivider />
+              
               {notifLoading || countLoading ? (
                 <NotificationItem>
                   <span>Chargement des notifications...</span>
@@ -155,8 +186,19 @@ const Header: React.FC<HeaderProps> = ({
                 </NotificationItem>
               ) : (
                 notifications.map((notification) => (
-                  <NotificationItem key={notification.notificationId}>
-                    <span>{notification.notification.title}</span>
+                  <NotificationItem 
+                    key={notification.notificationId}
+                    onClick={() => handleMarkAsRead(notification.notificationId)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{notification.notification.title}</span>
+                      <FaIcons.FaCheck 
+                        size={12} 
+                        style={{ color: '#5a9625', marginLeft: '8px' }}
+                        title="Marquer comme lu"
+                      />
+                    </div>
                     <small>
                       {notification.createdAt
                         ? new Date(notification.createdAt).toLocaleTimeString([], {
@@ -189,10 +231,10 @@ const Header: React.FC<HeaderProps> = ({
               <span>Mon profil</span>
             </DropdownItem>
             <DropdownDivider />
-            <DropdownItem to="#" onClick={onLogoutClick}>  {/* Ajout de to="#" pour satisfaire le type Link sans navigation effective */}
+            <DropdownItem to="#" onClick={onLogoutClick}>
               <FaIcons.FaSignOutAlt className="dropdown-icon" />
               <span>Déconnexion</span>
-              {logoutLoading && <span className="loading"> (Déconnexion...)</span>}  {/* Optionnel : Indicateur de chargement */}
+              {logoutLoading && <span className="loading"> (Déconnexion...)</span>}
             </DropdownItem>
           </UserDropdownMenu>
         </UserProfileDropdown>

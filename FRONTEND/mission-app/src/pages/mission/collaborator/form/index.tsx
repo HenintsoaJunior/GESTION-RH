@@ -34,73 +34,6 @@ interface MissionFormProps {
   onFormSuccess: (type: string, message: string) => void;
 }
 
-interface Beneficiary {
-  beneficiary: string;
-  matricule: string;
-  function: string;
-  base: string;
-  direction: string;
-  department: string;
-  service: string;
-  costCenter: string;
-  transport: string;
-  departureDate: string;
-  departureTime: string;
-  returnDate: string;
-  returnTime: string;
-  missionDuration: string | number;
-}
-
-interface MissionFormData {
-  missionType?: string;
-  missionTitle?: string;
-  description?: string;
-  location?: string;
-  beneficiary: Beneficiary;
-  startDate?: string;
-  endDate?: string;
-  type: string;
-}
-
-interface UseMissionFormReturn {
-  currentStep: number;
-  formData: MissionFormData;
-  isSubmitting: boolean;
-  hasClickedSubmit: boolean;
-  alert: {
-    isOpen: boolean;
-    type: "success" | "info" | "error" | "warning";
-    message: string;
-  };
-  setAlert: (alert: UseMissionFormReturn["alert"]) => void;
-  errorModal: {
-    isOpen: boolean;
-    message: string;
-  };
-  setErrorModal: (errorModal: UseMissionFormReturn["errorModal"]) => void;
-  regionDisplayNames: string[];
-  suggestions: {
-    beneficiary: { displayName: string }[];
-    transport: { type: string }[];
-  };
-  isLoading: {
-    regions: boolean;
-    employees: boolean;
-    transports: boolean;
-    missionDetail?: boolean;
-  };
-  fieldErrors: { [key: string]: string[] };
-  handleInputChange: (
-    e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } },
-    section?: string
-  ) => void;
-  handleAddNewSuggestion: (type: string, value: string) => void;
-  handleNext: () => void;
-  handlePrevious: () => void;
-  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
-  handleCancel: () => void;
-}
-
 const MissionForm: React.FC<MissionFormProps> = ({ 
   isOpen, 
   onClose, 
@@ -135,7 +68,7 @@ const MissionForm: React.FC<MissionFormProps> = ({
         handlePrevious,
         handleSubmit,
         handleCancel,
-    } = hookReturn as unknown as UseMissionFormReturn;
+    } = hookReturn;
 
     // Configuration de Modal au montage du composant
     useEffect(() => {
@@ -155,7 +88,7 @@ const MissionForm: React.FC<MissionFormProps> = ({
 
     // Mémorisation des textes dynamiques
     const popupTitle = useMemo(() => 
-      isUpdateMode ? "Mise à Jour de la Mission" : "Création et Assignation d'une Mission",
+      isUpdateMode ? "Mise à Jour de la Mission" : "Formulaire de Demande de Mission",
       [isUpdateMode]
     );
     const submitText = useMemo(() => 
@@ -175,6 +108,23 @@ const MissionForm: React.FC<MissionFormProps> = ({
     const handleErrorModalClose = useCallback(() => {
       setErrorModal({ isOpen: false, message: "" });
     }, [setErrorModal]);
+
+    // Fonction pour adapter les données du formulaire pour CompensationStep
+    const getCompensationStepFormData = useMemo(() => {
+      return {
+        missionType: formData.missionType,
+        type: formData.type,
+        startDate: formData.startDate || undefined,
+        endDate: formData.endDate || undefined,
+        beneficiary: {
+          departureDate: formData.beneficiary.departureDate || "",
+          departureTime: formData.beneficiary.departureTime || "",
+          returnDate: formData.beneficiary.returnDate || "",
+          returnTime: formData.beneficiary.returnTime || "",
+          missionDuration: formData.beneficiary.missionDuration || "",
+        }
+      };
+    }, [formData]);
 
     // Ne pas afficher le popup si non ouvert
     if (!isOpen) return null;
@@ -283,7 +233,7 @@ const MissionForm: React.FC<MissionFormProps> = ({
                             {/* Étape 2: Compensation et soumission */}
                             <StepContent active={currentStep === 2}>
                                 <CompensationStep
-                                    formData={formData}
+                                    formData={getCompensationStepFormData}
                                     fieldErrors={fieldErrors}
                                     isSubmitting={isProcessing}
                                     handleInputChange={handleInputChange}

@@ -6,7 +6,7 @@ const COMPENSATIONS_BY_EMPLOYEE_AND_MISSION_KEY = ['compensationsByEmployeeAndMi
 const TOTAL_NOT_PAID_KEY = ['compensation', 'total-notpaid'] as const;
 const COMPENSATIONS_BY_STATUS_KEY = ['compensationsByStatus'] as const;
 
-export interface MissionAssignationSearchFilters {
+export interface MissionSearchFilters {
   employeeId?: string;
   matricule?: string[];
   missionId?: string;
@@ -117,20 +117,6 @@ interface Lieu {
   updatedAt: string | null;
 }
 
-interface Mission {
-  missionId: string;
-  missionType: string;
-  name: string;
-  description: string;
-  status: string;
-  startDate: string;
-  endDate: string;
-  lieuId: string;
-  lieu: Lieu;
-  createdAt: string;
-  updatedAt: string | null;
-}
-
 interface Transport {
   transportId: string;
   type: string;
@@ -138,24 +124,30 @@ interface Transport {
   updatedAt: string;
 }
 
-export interface MissionAssignation {
-  assignationId: string;
-  employeeId: string;
+export interface Mission {
   missionId: string;
-  transportId: string | null;
+  missionType: number;
+  type: number;
+  name: string;
+  description: string;
+  status: number;
+  startDate: string;
+  endDate: string;
   departureDate: string;
   departureTime: string;
   returnDate: string;
   returnTime: string;
   duration: number;
   isValidated: number;
-  employee: Employee;
-  mission: Mission;
-  transport: Transport | null;
-  type: string;
   allocatedFund: number;
+  employeeId: string;
+  lieuId: string;
+  transportId: string;
+  lieu: Lieu;
+  employee: Employee;
+  transport: Transport;
   createdAt: string;
-  updatedAt: string | null;
+  updatedAt: string;
 }
 
 export interface Compensation {
@@ -194,18 +186,19 @@ interface ApiResponse<T> {
 }
 
 type CompensationsByEmployeeAndMissionResponse = ApiResponse<{
-  assignation: MissionAssignation;
+  mission: Mission;
   compensations: Compensation[];
 }>;
 
 export type CompensationsByStatusResponse = ApiResponse<{
-  data: Array<{
-    assignation: MissionAssignation;
+  items: Array<{
+    mission: Mission;
     compensations: Compensation[];
   }>;
   totalCount: number;
   page: number;
   pageSize: number;
+  totalPages: number;
 }>;
 
 interface TotalNotPaid {
@@ -224,7 +217,7 @@ export interface GenerateMissionOrderResult {
   status: string;
 }
 
-export interface ExportMissionAssignationResult {
+export interface ExportMissionResult {
   fileName: string;
   status: string;
 }
@@ -271,9 +264,9 @@ export const useTotalNotPaid = () => {
   });
 };
 
-export const useExportMissionAssignationExcel = () => {
-  return useMutation<ExportMissionAssignationResult, Error, MissionAssignationSearchFilters>({
-    mutationFn: async (filters: MissionAssignationSearchFilters) => {
+export const useExportMissionExcel = () => {
+  return useMutation<ExportMissionResult, Error, MissionSearchFilters>({
+    mutationFn: async (filters: MissionSearchFilters) => {
       const config = {
         responseType: 'blob' as const,
         headers: {
@@ -303,7 +296,7 @@ export const useExportMissionAssignationExcel = () => {
       const contentDisposition = response.headers['content-disposition'];
       const extractFilename = (header?: string): string => {
         if (!header) {
-          return `Mission_Assignations_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.xlsx`;
+          return `Missions_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.xlsx`;
         }
 
         const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
@@ -316,12 +309,12 @@ export const useExportMissionAssignationExcel = () => {
           return standardMatch[1];
         }
 
-        return `Mission_Assignations_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.xlsx`;
+        return `Missions_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.xlsx`;
       };
 
       const fileName = contentDisposition
         ? extractFilename(contentDisposition)
-        : `Mission_Assignations_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.xlsx`;
+        : `Missions_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.xlsx`;
 
       // Create and trigger download
       const urlBlob = window.URL.createObjectURL(blob);
@@ -341,8 +334,24 @@ export const useExportMissionAssignationExcel = () => {
   });
 };
 
-export const useCompensationsByStatus = (status?: string, page: number = 1, pageSize: number = 10) => {
-  const queryKey = [...COMPENSATIONS_BY_STATUS_KEY, status, page, pageSize] as const;
+export interface CompensationFilters {
+  employeeId?: string;
+  employeeMatricule?: string;
+  status?: string;
+  requestDateFrom?: string;
+  requestDateTo?: string;
+  validationDateFrom?: string;
+  validationDateTo?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export const useCompensationsByStatus = (
+  page: number = 1, 
+  pageSize: number = 10,
+  filters?: Omit<CompensationFilters, 'page' | 'pageSize'>
+) => {
+  const queryKey = [...COMPENSATIONS_BY_STATUS_KEY, page, pageSize, filters] as const;
 
   return useQuery<CompensationsByStatusResponse, Error>({
     queryKey,
@@ -352,40 +361,98 @@ export const useCompensationsByStatus = (status?: string, page: number = 1, page
         pageSize: pageSize.toString(),
       });
 
-      if (status !== undefined) {
-        params.append('status', status);
+      if (filters?.employeeId && filters.employeeId.trim() !== "") {
+        params.append('employeeId', filters.employeeId);
       }
 
-      const response = await api.get(`/api/Compensation/by-status?${params.toString()}`);
-      return response.data;
+      if (filters?.employeeMatricule && filters.employeeMatricule.trim() !== "") {
+        params.append('EmployeeMatricule', filters.employeeMatricule);
+      }
+
+      if (filters?.status && filters.status.trim() !== "") {
+        params.append('status', filters.status);
+      }
+
+      if (filters?.requestDateFrom && filters.requestDateFrom.trim() !== "") {
+        params.append('requestDateFrom', filters.requestDateFrom);
+      }
+
+      if (filters?.requestDateTo && filters.requestDateTo.trim() !== "") {
+        params.append('requestDateTo', filters.requestDateTo);
+      }
+
+      if (filters?.validationDateFrom && filters.validationDateFrom.trim() !== "") {
+        params.append('validationDateFrom', filters.validationDateFrom);
+      }
+
+      if (filters?.validationDateTo && filters.validationDateTo.trim() !== "") {
+        params.append('validationDateTo', filters.validationDateTo);
+      }
+
+      const url = `/api/Compensation/by-status?${params.toString()}`;
+
+      try {
+        const response = await api.get(url);
+        
+        if (response.data?.data?.items) {
+          console.log(`✅ Récupéré ${response.data.data.items.length} items de compensation`);
+        } else {
+          console.log('⚠️ Aucun item trouvé dans la réponse');
+        }
+        
+        return response.data;
+      } catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+          console.error('📡 Détails de l\'erreur Axios:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            url: error.config?.url
+          });
+        }
+        console.error('❌ useQuery a échoué');
+        throw error;
+      }
     },
+    // Supprimez onError et onSuccess ici car ils ne sont pas supportés dans useQuery
   });
 };
-
 
 export const useUpdateStatus = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<UpdateStatusResponse, Error, { employeeId: string; assignationId: string; status: string }>({
-    mutationFn: async ({ employeeId, assignationId, status }) => {
-      if (!employeeId || !assignationId || !status) {
-        throw new Error('Employee ID, Assignation ID, and Status are required');
+  return useMutation<UpdateStatusResponse, Error, { employeeId: string; missionId: string; status: string }>({
+    mutationFn: async ({ employeeId, missionId, status }) => {
+      if (!employeeId || !missionId || !status) {
+        throw new Error('Employee ID, Mission ID, and Status are required');
       }
       try {
-        const response = await api.put(`/api/Compensation/${employeeId}/${assignationId}/status`, status);
+        const response = await api.put(
+          `/api/Compensation/employee/${employeeId}/mission/${missionId}/status`, 
+          { status }  
+        );
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
-          return error.response.data;
+          const apiMessage = error.response.data?.message || 'Erreur inconnue';
+          throw new Error(apiMessage);
         }
-        throw error;
+        throw new Error('Erreur réseau ou inconnue');
       }
     },
-    onSuccess: () => {
-      // Invalidate relevant queries to refetch updated data
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: COMPENSATIONS_BY_STATUS_KEY });
       queryClient.invalidateQueries({ queryKey: TOTAL_NOT_PAID_KEY });
-      // Note: Specific employee/mission queries would need to be invalidated separately if params are passed
+      
+      queryClient.invalidateQueries({ 
+        queryKey: ['compensation', variables.employeeId, variables.missionId] 
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['compensations'] });
+      
+    },
+    onError: (error) => {
+      console.error('Erreur lors de la mise à jour du statut:', error.message);
     },
   });
 };

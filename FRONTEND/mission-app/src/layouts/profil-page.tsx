@@ -21,11 +21,10 @@ import {
   FieldEmpty,
   RolesContainer,
   RoleBadge,
-  StatusBadge,
-  StatusToggleContainer, 
-  StatusToggleButton,
+  
 } from '@/styles/profil-styles'; 
-import { useUserInfo, useUserAvailability, useUpdateUserAvailability } from '@/api/users/services';
+import { useUserInfo } from '@/api/users/services';
+import { getInitials } from '@/utils/initials';
 
 interface Role {
   role: {
@@ -46,7 +45,7 @@ interface User {
 
 const ProfilePage = () => {
   const [userId, setUserId] = useState<string | undefined>(undefined);
-  const [currentStatus, setCurrentStatus] = useState<'disponible' | 'absent'>('disponible');
+ 
 
   useEffect(() => {
     const fetchUserId = () => {
@@ -69,16 +68,7 @@ const ProfilePage = () => {
   }, []);
 
   const { data: userInfosResponse } = useUserInfo(userId);
-  const { data: availabilityResponse } = useUserAvailability(userId);
-  const { mutate: updateStatus } = useUpdateUserAvailability();
-
   const user = useMemo(() => userInfosResponse?.data?.[0] || null, [userInfosResponse]) as User | null;
-
-  const fetchedStatus = availabilityResponse?.data?.status || 'disponible';
-
-  useEffect(() => {
-    setCurrentStatus(fetchedStatus as 'disponible' | 'absent');
-  }, [fetchedStatus]);
 
   const userRoles = user?.roles || [];
   const notSpecified = 'Non spécifié';
@@ -88,18 +78,7 @@ const ProfilePage = () => {
   );
 
   // Fonction pour afficher le badge de statut
-  const displayStatus = (status: 'disponible' | 'absent') => (
-    <StatusBadge variant={status}>
-      {status.charAt(0).toUpperCase() + status.slice(1)}
-    </StatusBadge>
-  );
-
-  // Fonction pour toggler le statut
-  const toggleStatus = () => {
-    if (!userId) return;
-    const newStatus = currentStatus === 'disponible' ? 'absent' : 'disponible';
-    updateStatus({ userId, status: newStatus });
-  };
+ 
 
   return (
     <ProfilePageContainer>
@@ -108,7 +87,7 @@ const ProfilePage = () => {
           <ProfileHeader>
             <ProfileAvatar>
               <AvatarText>
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                {user?.name ? getInitials(user.name) : 'JD'}
               </AvatarText>
             </ProfileAvatar>
             <ProfileHeaderInfo>
@@ -116,17 +95,6 @@ const ProfilePage = () => {
               <MainEmail>{user?.email || notSpecified}</MainEmail>
             </ProfileHeaderInfo>
           </ProfileHeader>
-
-          {/* Nouvelle carte dédiée au statut, positionnée en haut de la sidebar pour une meilleure visibilité */}
-          <ProfileCard>
-            <SectionTitle>Statut</SectionTitle>
-            <StatusToggleContainer>
-              {displayStatus(currentStatus)}
-              <StatusToggleButton onClick={toggleStatus}>
-                Modifier
-              </StatusToggleButton>
-            </StatusToggleContainer>
-          </ProfileCard>
 
           <ProfileCard>
             <SectionTitle>Rôles</SectionTitle>
@@ -163,7 +131,7 @@ const ProfilePage = () => {
             <ProfileCard>
               <SectionTitle>Détails de l'Organisation</SectionTitle>
               <InfoGroup>
-                <InfoLabel>Département</InfoLabel>
+                <InfoLabel>Direction</InfoLabel>
                 {displayValue(user?.department)}
               </InfoGroup>
             </ProfileCard>

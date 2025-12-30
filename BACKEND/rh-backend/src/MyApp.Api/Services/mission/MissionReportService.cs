@@ -10,7 +10,7 @@ namespace MyApp.Api.Services.mission
     {
         Task<IEnumerable<MissionReport>> GetAllAsync();
         Task<MissionReport> GetByIdAsync(string id);
-        Task<IEnumerable<MissionReport>> GetByAssignationIdAsync(string assignationId);
+        Task<IEnumerable<MissionReport>> GetByMissionIdAsync(string assignationId);
         Task<string> CreateAsync(MissionReportDTOForm dto);
         Task<bool> UpdateAsync(string id, MissionReportDTOForm dto);
         Task<bool> DeleteAsync(string id, string userId);
@@ -78,22 +78,22 @@ namespace MyApp.Api.Services.mission
             }
         }
 
-        public async Task<IEnumerable<MissionReport>> GetByAssignationIdAsync(string assignationId)
+        public async Task<IEnumerable<MissionReport>> GetByMissionIdAsync(string missionId)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(assignationId))
+                if (string.IsNullOrWhiteSpace(missionId))
                 {
-                    _logger.LogWarning("Tentative de récupération des rapports de mission avec un assignationId null ou vide");
-                    throw new ArgumentException("L'ID d'assignation ne peut pas être null ou vide", nameof(assignationId));
+                    _logger.LogWarning("Tentative de récupération des rapports de mission avec un missionId null ou vide");
+                    throw new ArgumentException("L'ID d'assignation ne peut pas être null ou vide", nameof(missionId));
                 }
 
-                _logger.LogInformation("Récupération des rapports de mission pour assignationId: {AssignationId}", assignationId);
-                return await _repository.GetByAssignationIdAsync(assignationId);
+                _logger.LogInformation("Récupération des rapports de mission pour missionId: {missionId}", missionId);
+                return await _repository.GetByMissionIdAsync(missionId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des rapports de mission pour assignationId: {AssignationId}", assignationId);
+                _logger.LogError(ex, "Erreur lors de la récupération des rapports de mission pour missionId: {missionId}", missionId);
                 throw;
             }
         }
@@ -110,8 +110,8 @@ namespace MyApp.Api.Services.mission
 
                 if (string.IsNullOrWhiteSpace(dto.UserId))
                     throw new ArgumentException("L'ID utilisateur est requis", nameof(dto.UserId));
-                if (string.IsNullOrWhiteSpace(dto.AssignationId))
-                    throw new ArgumentException("L'ID d'assignation est requis", nameof(dto.AssignationId));
+                if (string.IsNullOrWhiteSpace(dto.MissionId))
+                    throw new ArgumentException("L'ID d'assignation est requis", nameof(dto.MissionId));
 
                 var entity = new MissionReport(dto)
                 {

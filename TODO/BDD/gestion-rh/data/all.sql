@@ -395,51 +395,46 @@ INSERT INTO module (module_id, module_name, description, created_at, updated_at)
 ('logs', 'Logs', 'Suivi et journalisation des actions utilisateurs et systèmes', GETDATE(), GETDATE()),
 ('treasury', 'Trésorerie', 'Gestion des flux financiers et de la trésorerie', GETDATE(), GETDATE()),
 ('referentiel', 'Référentiel', 'Gestion des données référentielles', GETDATE(), GETDATE()),
-('import', 'Import', 'Gestion des imports de données et fichiers', GETDATE(), GETDATE()); 
+('import', 'Import', 'Gestion des imports de données et fichiers', GETDATE(), GETDATE());
 
--- Insertion des menus (ajout du menu pour 'tableau_de_bord' en position 1 dans 'navigation', mission décalé à 2)
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_dashboard', 'tableau_de_bord', 'fa-tachometer-alt', '/tableau-bord', 1, 1, 'tableau_de_bord', 'navigation', GETDATE(), GETDATE()),
-('menu2', 'mission', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', GETDATE(), GETDATE());
+-- Insertion de tous les menus dans une seule instruction
+INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, is_visible, created_at, updated_at) VALUES
+-- Navigation section
+('menu_dashboard', 'tableau_de_bord', 'fa-tachometer-alt', '/tableau-bord', 1, 1, 'tableau_de_bord', 'navigation', 1, GETDATE(), GETDATE()),
+('menu2', 'Suivi des Missions', 'fa-briefcase', '/mission', 1, 2, 'mission', 'navigation', 1, GETDATE(), GETDATE()),
+('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', 1, GETDATE(), GETDATE()),
+('menu2_7', 'Workflow Validateurs', 'fa-users-cog', '/validators_flow', 1, 3, 'mission', 'navigation', 1, GETDATE(), GETDATE()),
+('menu2_3', 'Missions', 'fa-list', '/mission/list', 1, 4, 'mission', 'navigation', 1, GETDATE(), GETDATE()),
+('menu2_4', 'Missions archivées', 'fa-archive', '/mission/archived', 1, 5, 'mission', 'navigation', 1, GETDATE(), GETDATE()),
+('menu2_5', 'trésorerie', 'fa-money-bill-alt', '/treasury', 1, 6, 'treasury', 'navigation', 1, GETDATE(), GETDATE()),
+('menu2_6', 'maps', 'fa-map', '/mission/maps', 1, 7, 'mission', 'navigation', 1, GETDATE(), GETDATE()),
 
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu0', 'utilisateurs', 'fa-users', '/utilisateur', 1, 1, 'user', 'administration', GETDATE(), GETDATE());
+-- Administration section
+('menu0', 'utilisateurs', 'fa-users', '/utilisateur', 1, 1, 'user', 'administration', 1, GETDATE(), GETDATE()),
+('menu_hab', 'Droit & Accès', 'fa-shield-alt', '/droit-access', 1, 2, 'habilitation', 'administration', 1, GETDATE(), GETDATE()),
+('menu_hab_2', 'accès', 'fa-list', '/access/list', 1, 3, 'habilitation', 'administration', 1, GETDATE(), GETDATE()),
+('menu_hab_3', 'Habilitation', 'fa-key', '/habilitation', 1, 6, 'habilitation', 'administration', 1, GETDATE(), GETDATE()),
+('menu_referentiel', 'référentiel', 'fa-database', '/referentiel', 1, 3, 'referentiel', 'administration', 1, GETDATE(), GETDATE()),
+('menu_import', 'import', 'fa-upload', '/import', 1, 4, 'import', 'administration', 1, GETDATE(), GETDATE()),
+('menu_logs', 'logs', 'fa-file-alt', '/logs', 1, 5, 'logs', 'administration', 1, GETDATE(), GETDATE());
 
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_hab', 'Droit & Accès', 'fa-shield-alt', '/droit-access', 1, 2, 'habilitation', 'administration', GETDATE(), GETDATE()),
-('menu_hab_2', 'accès', 'fa-list', '/access/list', 1, 3, 'habilitation', 'administration', GETDATE(), GETDATE());
-
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_referentiel', 'référentiel', 'fa-database', '/referentiel', 1, 3, 'referentiel', 'administration', GETDATE(), GETDATE()),  -- Position 3 pour Référentiel (au-dessus de Import)
-('menu_import', 'import', 'fa-upload', '/import', 1, 4, 'import', 'administration', GETDATE(), GETDATE()),  -- Import décalé à position 4
-('menu_logs', 'logs', 'fa-file-alt', '/logs', 1, 5, 'logs', 'administration', GETDATE(), GETDATE());  -- Logs décalé à position 5
-
--- Navigation: mission (ajout du menu 'maps' en position 7 sous mission, après trésorerie en position 6)
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu2_0', 'validation', 'fa-tasks', '/mission/to-validate', 1, 1, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_3', 'Missions', 'fa-list', '/mission/list', 1, 4, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_4', 'Missions archivées', 'fa-archive', '/mission/archived', 1, 5, 'mission', 'navigation', GETDATE(), GETDATE()),
-('menu2_5', 'trésorerie', 'fa-money-bill-alt', '/treasury', 1, 6, 'treasury', 'navigation', GETDATE(), GETDATE()),
-('menu2_6', 'maps', 'fa-map', '/mission/maps', 1, 7, 'mission', 'navigation', GETDATE(), GETDATE());
-
-INSERT INTO menu (menu_id, menu_key, icon, link, is_enabled, position, module_id, section, created_at, updated_at) VALUES
-('menu_hab_3', 'Habilitation', 'fa-key', '/habilitation', 1, 6, 'habilitation', 'administration', GETDATE(), GETDATE());
-
+-- Insertion de toutes les hiérarchies de menus dans une seule instruction
 INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
+-- Menus racines (sans parent)
 ('h_dashboard', NULL, 'menu_dashboard', GETDATE(), GETDATE()),
 ('h0', NULL, 'menu0', GETDATE(), GETDATE()),
 ('h_hab', NULL, 'menu_hab', GETDATE(), GETDATE()),
-('h_hab_2', 'menu_hab', 'menu_hab_2', GETDATE(), GETDATE()),
-('h_referentiel', NULL, 'menu_referentiel', GETDATE(), GETDATE()), 
-('h_import', NULL, 'menu_import', GETDATE(), GETDATE()),  
-('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),  
+('h_referentiel', NULL, 'menu_referentiel', GETDATE(), GETDATE()),
+('h_import', NULL, 'menu_import', GETDATE(), GETDATE()),
+('h_logs', NULL, 'menu_logs', GETDATE(), GETDATE()),
 ('h4', NULL, 'menu2', GETDATE(), GETDATE()),
+
+-- Sous-menus (avec parent)
+('h_hab_2', 'menu_hab', 'menu_hab_2', GETDATE(), GETDATE()),
+('h_hab_3', 'menu_hab', 'menu_hab_3', GETDATE(), GETDATE()),
 ('h2_0', 'menu2', 'menu2_0', GETDATE(), GETDATE()),
+('h2_7', 'menu2', 'menu2_7', GETDATE(), GETDATE()),
 ('h6', 'menu2', 'menu2_3', GETDATE(), GETDATE()),
 ('h7', 'menu2', 'menu2_4', GETDATE(), GETDATE()),
 ('h8', 'menu2', 'menu2_5', GETDATE(), GETDATE()),
 ('h9', 'menu2', 'menu2_6', GETDATE(), GETDATE());
-
-INSERT INTO menu_hierarchy (hierarchy_id, parent_menu_id, menu_id, created_at, updated_at) VALUES
-('h_hab_3', 'menu_hab', 'menu_hab_3', GETDATE(), GETDATE());
-

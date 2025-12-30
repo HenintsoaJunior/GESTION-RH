@@ -10,6 +10,12 @@ export const NOTIFICATIONS_BY_USER_KEY = ['notifications', 'by-user'] as const;
 export const NOTIFICATIONS_UNREAD_COUNT_BY_MENU_KEY = ['notifications', 'unread-count-by-menu'] as const;
 export const NOTIFICATIONS_UNREAD_KEY = ['notifications', 'unread'] as const;
 
+export interface MarkAllNotificationsReadResponse {
+  success: boolean;
+  message: string;
+  markedCount: number;
+}
+
 export interface NotificationData {
   notificationId: string;
   userId: string;
@@ -80,6 +86,46 @@ export const formatNotificationData = (notificationRecipient: RawNotificationRec
 };
 
 // ---------------------------------------------------------------------
+export const useMarkAllNotificationsAsRead = (userId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<MarkAllNotificationsReadResponse, Error, void>({
+    mutationFn: async () => {
+      const response = await axios.put<MarkAllNotificationsReadResponse>(
+        `${BASE_URL}/api/notifications/by-user/${userId}/mark-all-as-read`,
+        {},
+        {
+          headers: {
+            accept: '*/*',
+          },
+        }
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalider toutes les requêtes liées aux notifications
+      const notificationKeys = [
+        NOTIFICATIONS_LAST_THREE_UNREAD_KEY,
+        NOTIFICATIONS_UNREAD_COUNT_KEY,
+        NOTIFICATIONS_BY_USER_KEY,
+        NOTIFICATIONS_UNREAD_COUNT_BY_MENU_KEY,
+        NOTIFICATIONS_UNREAD_KEY,
+      ];
+
+      notificationKeys.forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: [...key, userId] });
+      });
+
+      // Optionnel: Mettre à jour le cache immédiatement pour un meilleur UX
+      queryClient.setQueryData([...NOTIFICATIONS_UNREAD_COUNT_KEY, userId], { unreadCount: 0 });
+      queryClient.setQueryData([...NOTIFICATIONS_LAST_THREE_UNREAD_KEY, userId], []);
+      queryClient.setQueryData([...NOTIFICATIONS_UNREAD_KEY, userId], []);
+    },
+    onError: (error) => {
+      console.error('Error marking all notifications as read:', error);
+    },
+  });
+};
 
 export const useLastThreeUnreadNotifications = (userId?: string) => {
   return useQuery<NotificationData[], Error>({

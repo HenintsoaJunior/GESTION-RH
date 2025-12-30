@@ -6,16 +6,15 @@ import axios from 'axios';
 // Query keys
 const EXPENSE_REPORT_KEY = ['expense-report', 'total-notreimbursed'] as const;
 const EXPENSE_REPORT_TYPES_BASE_KEY = ['expenseReportTypes'] as const;
-const EXPENSE_REPORTS_BY_ASSIGNATION_BASE_KEY = ['expenseReportsByAssignation'] as const;
+const EXPENSE_REPORTS_BY_MISSION_BASE_KEY = ['expenseReportsByMission'] as const;
 const TOTAL_REIMBURSED_AMOUNT_BASE_KEY = ['totalReimbursedAmount'] as const;
 const TOTAL_NOT_REIMBURSED_AMOUNT_BASE_KEY = ['totalNotReimbursedAmount'] as const;
 const TOTAL_REIMBURSED_COUNT_BASE_KEY = ['totalReimbursedCount'] as const;
 const TOTAL_NOT_REIMBURSED_COUNT_BASE_KEY = ['totalNotReimbursedCount'] as const;
-const TOTAL_AMOUNT_BY_ASSIGNATION_BASE_KEY = ['totalAmountByAssignation'] as const;
-const STATUS_BY_ASSIGNATION_BASE_KEY = ['statusByAssignation'] as const;
-const DISTINCT_MISSION_ASSIGNATIONS_BASE_KEY = ['distinctMissionAssignations'] as const;
+const TOTAL_AMOUNT_BY_MISSION_BASE_KEY = ['totalAmountByMission'] as const;
+const STATUS_BY_MISSION_BASE_KEY = ['statusByMission'] as const;
+const DISTINCT_MISSIONS_BASE_KEY = ['distinctMissions'] as const;
 const EXPENSE_REPORTS_BY_STATUS_BASE_KEY = ['expenseReportsByStatus'] as const;
-
 
 // Interfaces for nested objects
 interface Employee {
@@ -39,10 +38,9 @@ interface Employee {
   updatedAt: string | null;
 }
 
-export interface MissionAssignation {
-  assignationId: string;
+export interface Mission {
+  missionId: string;
   employeeId: string | null;
-  missionId: string | null;
   transportId: string | null;
   departureDate: string | null;
   departureTime: string | null;
@@ -51,7 +49,6 @@ export interface MissionAssignation {
   duration: number;
   isValidated: number;
   employee: Employee | null;
-  mission: unknown | null;
   transport: unknown | null;
   type: string;
   allocatedFund: number;
@@ -62,7 +59,7 @@ export interface MissionAssignation {
 export interface ExpenseReport {
   expenseReportId: string;
   userId: string;
-  assignationId: string;
+  missionId: string;
   status: string;
   totalAmount: number;
   isReimbursed: boolean;
@@ -95,7 +92,7 @@ export interface ExpenseLine {
   amount: number;
   amountMGA: number;
   rate: number;
-  assignationId?: string;
+  missionId?: string;
   expenseReportTypeId?: string;
   userId?: string;
   customFields: Record<string, unknown>;
@@ -114,7 +111,6 @@ export interface Attachment {
 
 export interface ExpenseSummary {
   missionId: string;
-  assignationId: string;
   missionTitled: string;
   status: string;
   employeeName: string;
@@ -155,14 +151,14 @@ type TotalNotReimbursedCountResponseData = {
   totalNotReimbursedCount: number;
 };
 
-type TotalAmountByAssignationResponseData = {
+type TotalAmountByMissionResponseData = {
   totalAmount: number;
 };
 
-export type StatusByAssignationResponseData = string[];
+export type StatusByMissionResponseData = string[];
 
-type DistinctMissionAssignationsResponseData = {
-  items: MissionAssignation[];
+type DistinctMissionsResponseData = {
+  items: Mission[];
   totalCount: number;
   pageNumber: number;
   pageSize: number;
@@ -189,7 +185,7 @@ type TotalNotReimbursedResponse = ApiResponse<TotalNotReimbursed>;
 // Request interfaces
 export interface CreateExpenseReportRequest {
   userId: string;
-  assignationId: string;
+  missionId: string;
   expenseLinesByType: Record<string, ExpenseLine[]>;
   attachments: Attachment[];
 }
@@ -198,7 +194,7 @@ export interface CreateExpenseReportRequest {
 const mapToApiFormat = (data: CreateExpenseReportRequest) => {
   return {
     UserId: data.userId,
-    AssignationId: data.assignationId,
+    MissionId: data.missionId,
     ExpenseLinesByType: Object.entries(data.expenseLinesByType).reduce((acc, [key, lines]) => {
       acc[key] = lines.map(line => ({
         Titled: line.titled,
@@ -210,7 +206,7 @@ const mapToApiFormat = (data: CreateExpenseReportRequest) => {
         CustomFields: line.customFields || {},
         // Propagate top-level IDs to each line to satisfy backend validation
         UserId: data.userId,
-        AssignationId: data.assignationId,
+        MissionId: data.missionId,
       }));
       return acc;
     }, {} as Record<string, any>),
@@ -259,28 +255,28 @@ export const useCreateExpenseReport = () => {
       }
     },
     onSuccess: (_, variables) => {
-      const { assignationId } = variables;
-      queryClient.invalidateQueries({ queryKey: [...EXPENSE_REPORTS_BY_ASSIGNATION_BASE_KEY, assignationId] });
+      const { missionId } = variables;
+      queryClient.invalidateQueries({ queryKey: [...EXPENSE_REPORTS_BY_MISSION_BASE_KEY, missionId] });
       queryClient.invalidateQueries({ queryKey: TOTAL_REIMBURSED_AMOUNT_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: TOTAL_NOT_REIMBURSED_AMOUNT_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: TOTAL_REIMBURSED_COUNT_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: TOTAL_NOT_REIMBURSED_COUNT_BASE_KEY });
-      queryClient.invalidateQueries({ queryKey: [...TOTAL_AMOUNT_BY_ASSIGNATION_BASE_KEY, assignationId] });
-      queryClient.invalidateQueries({ queryKey: [...STATUS_BY_ASSIGNATION_BASE_KEY, assignationId] });
+      queryClient.invalidateQueries({ queryKey: [...TOTAL_AMOUNT_BY_MISSION_BASE_KEY, missionId] });
+      queryClient.invalidateQueries({ queryKey: [...STATUS_BY_MISSION_BASE_KEY, missionId] });
     },
   });
 };
 
-// Hook for fetching expense reports by assignation ID
-export const useExpenseReportsByAssignationId = (assignationId?: string) => {
+// Hook for fetching expense reports by mission ID
+export const useExpenseReportsByMissionId = (missionId?: string) => {
   return useQuery<ApiResponse<ExpenseReportsResponseData>, Error>({
-    queryKey: [...EXPENSE_REPORTS_BY_ASSIGNATION_BASE_KEY, assignationId],
+    queryKey: [...EXPENSE_REPORTS_BY_MISSION_BASE_KEY, missionId],
     queryFn: async () => {
-      if (!assignationId) {
-        throw new Error("assignationId est requis.");
+      if (!missionId) {
+        throw new Error("missionId est requis.");
       }
       try {
-        const response = await api.get(`/api/ExpenseReport/assignation/${assignationId}`);
+        const response = await api.get(`/api/ExpenseReport/mission/${missionId}`);
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -289,7 +285,7 @@ export const useExpenseReportsByAssignationId = (assignationId?: string) => {
         throw error;
       }
     },
-    enabled: !!assignationId,
+    enabled: !!missionId,
   });
 };
 
@@ -365,16 +361,16 @@ export const useTotalNotReimbursedCount = () => {
   });
 };
 
-// Hook for total amount by assignation ID
-export const useTotalAmountByAssignationId = (assignationId?: string) => {
-  return useQuery<ApiResponse<TotalAmountByAssignationResponseData>, Error>({
-    queryKey: [...TOTAL_AMOUNT_BY_ASSIGNATION_BASE_KEY, assignationId],
+// Hook for total amount by mission ID
+export const useTotalAmountByMissionId = (missionId?: string) => {
+  return useQuery<ApiResponse<TotalAmountByMissionResponseData>, Error>({
+    queryKey: [...TOTAL_AMOUNT_BY_MISSION_BASE_KEY, missionId],
     queryFn: async () => {
-      if (!assignationId) {
-        throw new Error("assignationId est requis.");
+      if (!missionId) {
+        throw new Error("missionId est requis.");
       }
       try {
-        const response = await api.get(`/api/ExpenseReport/total-amount/${assignationId}`);
+        const response = await api.get(`/api/ExpenseReport/total-amount/${missionId}`);
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -383,20 +379,20 @@ export const useTotalAmountByAssignationId = (assignationId?: string) => {
         throw error;
       }
     },
-    enabled: !!assignationId,
+    enabled: !!missionId,
   });
 };
 
-// Hook for distinct statuses by assignation ID
-export const useStatusByAssignationId = (assignationId?: string) => {
-  return useQuery<ApiResponse<StatusByAssignationResponseData>, Error>({
-    queryKey: [...STATUS_BY_ASSIGNATION_BASE_KEY, assignationId],
+// Hook for distinct statuses by mission ID
+export const useStatusByMissionId = (missionId?: string) => {
+  return useQuery<ApiResponse<StatusByMissionResponseData>, Error>({
+    queryKey: [...STATUS_BY_MISSION_BASE_KEY, missionId],
     queryFn: async () => {
-      if (!assignationId) {
-        throw new Error("assignationId est requis.");
+      if (!missionId) {
+        throw new Error("missionId est requis.");
       }
       try {
-        const response = await api.get(`/api/ExpenseReport/status/${assignationId}`);
+        const response = await api.get(`/api/ExpenseReport/status/${missionId}`);
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -405,23 +401,23 @@ export const useStatusByAssignationId = (assignationId?: string) => {
         throw error;
       }
     },
-    enabled: !!assignationId,
+    enabled: !!missionId,
   });
 };
 
-// Hook for reimbursing expense reports by assignation ID
-export const useReimburseByAssignationId = () => {
+// Hook for reimbursing expense reports by mission ID
+export const useReimburseByMissionId = () => {
   const queryClient = useQueryClient();
-  return useMutation<ApiResponse<ReimburseResponseData>, Error, { assignationId: string; userId: string }>({
-    mutationFn: async ({ assignationId, userId }) => {
-      if (!assignationId) {
-        throw new Error("assignationId est requis.");
+  return useMutation<ApiResponse<ReimburseResponseData>, Error, { missionId: string; userId: string }>({
+    mutationFn: async ({ missionId, userId }) => {
+      if (!missionId) {
+        throw new Error("missionId est requis.");
       }
       if (!userId) {
         throw new Error("userId est requis.");
       }
       try {
-        const response = await api.post(`/api/ExpenseReport/reimburse/${assignationId}?userId=${userId}`);
+        const response = await api.post(`/api/ExpenseReport/reimburse/mission/${missionId}?userId=${userId}`);
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -430,28 +426,28 @@ export const useReimburseByAssignationId = () => {
         throw error;
       }
     },
-    onSuccess: (_, { assignationId }) => {
-      queryClient.invalidateQueries({ queryKey: [...EXPENSE_REPORTS_BY_ASSIGNATION_BASE_KEY, assignationId] });
+    onSuccess: (_, { missionId }) => {
+      queryClient.invalidateQueries({ queryKey: [...EXPENSE_REPORTS_BY_MISSION_BASE_KEY, missionId] });
       queryClient.invalidateQueries({ queryKey: TOTAL_REIMBURSED_AMOUNT_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: TOTAL_NOT_REIMBURSED_AMOUNT_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: TOTAL_REIMBURSED_COUNT_BASE_KEY });
       queryClient.invalidateQueries({ queryKey: TOTAL_NOT_REIMBURSED_COUNT_BASE_KEY });
-      queryClient.invalidateQueries({ queryKey: [...TOTAL_AMOUNT_BY_ASSIGNATION_BASE_KEY, assignationId] });
-      queryClient.invalidateQueries({ queryKey: [...STATUS_BY_ASSIGNATION_BASE_KEY, assignationId] });
-      queryClient.invalidateQueries({ queryKey: [...EXPENSE_REPORTS_BY_STATUS_BASE_KEY, assignationId] });
+      queryClient.invalidateQueries({ queryKey: [...TOTAL_AMOUNT_BY_MISSION_BASE_KEY, missionId] });
+      queryClient.invalidateQueries({ queryKey: [...STATUS_BY_MISSION_BASE_KEY, missionId] });
+      queryClient.invalidateQueries({ queryKey: [...EXPENSE_REPORTS_BY_STATUS_BASE_KEY, missionId] });
     },
   });
 };
 
-// Hook for getting distinct mission assignations with optional status filter and pagination
-export const useDistinctMissionAssignations = (options: { status?: string; pageNumber?: number; pageSize?: number } = {}) => {
+// Hook for getting distinct missions with optional status filter and pagination
+export const useDistinctMissions = (options: { status?: string; pageNumber?: number; pageSize?: number } = {}) => {
   const { status, pageNumber = 1, pageSize = 10 } = options;
   const queryKey = [
-    ...DISTINCT_MISSION_ASSIGNATIONS_BASE_KEY,
+    ...DISTINCT_MISSIONS_BASE_KEY,
     { status, pageNumber, pageSize }
   ];
 
-  return useQuery<ApiResponse<DistinctMissionAssignationsResponseData>, Error>({
+  return useQuery<ApiResponse<DistinctMissionsResponseData>, Error>({
     queryKey,
     queryFn: async () => {
       try {
@@ -461,7 +457,7 @@ export const useDistinctMissionAssignations = (options: { status?: string; pageN
         queryParams.append("pageNumber", pageNumber.toString());
         queryParams.append("pageSize", pageSize.toString());
 
-        const response = await api.get(`/api/ExpenseReport/distinct-mission-assignations?${queryParams}`);
+        const response = await api.get(`/api/ExpenseReport/distinct-missions?${queryParams}`);
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -473,25 +469,52 @@ export const useDistinctMissionAssignations = (options: { status?: string; pageN
   });
 };
 
-// Hook for getting expense reports by status with pagination
-export const useExpenseReportsByStatus = (options: { status?: string; page?: number; pageSize?: number } = {}) => {
-  const { status, page = 1, pageSize = 10 } = options;
+// Dans votre fichier @/api/mission/expense_report/services.ts
+export const useExpenseReportsByFilters = (
+  filters: {
+    status?: string;
+    employeeName?: string;
+    employeeCode?: string;  // AJOUTEZ CETTE LIGNE
+    missionType?: string;
+    paymentDateMin?: string;
+    paymentDateMax?: string;
+    page?: number;
+    pageSize?: number;
+  } = {}
+) => {
+  const {
+    status,
+    employeeName,
+    employeeCode,  // AJOUTEZ CETTE LIGNE
+    missionType,
+    paymentDateMin,
+    paymentDateMax,
+    page = 1,
+    pageSize = 10
+  } = filters;
+
   const queryKey = [
     ...EXPENSE_REPORTS_BY_STATUS_BASE_KEY,
-    { status, page, pageSize }
+    { status, employeeName, employeeCode, missionType, paymentDateMin, paymentDateMax, page, pageSize }
   ];
 
   return useQuery<ApiResponse<ByStatusResponseData>, Error>({
     queryKey,
     queryFn: async () => {
       try {
-        // Build query parameters
         const queryParams = new URLSearchParams();
+        
         if (status) queryParams.append("status", status);
+        if (employeeName) queryParams.append("employeeName", employeeName);
+        if (employeeCode) queryParams.append("employeeCode", employeeCode);
+        if (missionType) queryParams.append("missionType", missionType);
+        if (paymentDateMin) queryParams.append("paymentDateMin", paymentDateMin);
+        if (paymentDateMax) queryParams.append("paymentDateMax", paymentDateMax);
+        
         queryParams.append("page", page.toString());
         queryParams.append("pageSize", pageSize.toString());
 
-        const response = await api.get(`/api/ExpenseReport/by-status?${queryParams}`);
+        const response = await api.get(`/api/ExpenseReport/by-filters?${queryParams}`);
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -500,9 +523,9 @@ export const useExpenseReportsByStatus = (options: { status?: string; page?: num
         throw error;
       }
     },
+    enabled: true, 
   });
 };
-
 
 export const useTotalNotReimbursed = () => {
   return useQuery<TotalNotReimbursedResponse, Error>({

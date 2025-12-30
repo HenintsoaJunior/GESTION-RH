@@ -121,6 +121,11 @@ namespace MyApp.Api.Repositories.users
                 var name = filters.Name.ToLower();
                 query = query.Where(u => u.Name != null && u.Name.ToLower().Contains(name));
             }
+            if (!string.IsNullOrWhiteSpace(filters.Matricule))
+            {
+                var matricule = filters.Matricule.ToLower();
+                query = query.Where(u => u.Matricule != null && u.Matricule.ToLower().Contains(matricule));
+            }
 
             if (!string.IsNullOrWhiteSpace(filters.Department))
             {

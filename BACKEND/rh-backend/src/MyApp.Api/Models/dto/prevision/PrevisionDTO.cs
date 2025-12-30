@@ -9,6 +9,11 @@ public class PrevisionPriceDtoForm
 
     [Required]
     public DateTime DepartureDate { get; set; }
+    [Required]
+    public int IsPaid { get; set; } // 0 = non payé,
+    
+    [Required]
+    public string MissionId { get; set; } = null!;
 }
 
 public class PrevisionPriceDeleteDto

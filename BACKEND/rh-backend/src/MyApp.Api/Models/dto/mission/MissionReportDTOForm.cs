@@ -6,7 +6,7 @@ namespace MyApp.Api.Models.dto.mission
     {
         public string Text { get; set; } = string.Empty;
         public string UserId { get; set; } = null!;
-        public string AssignationId { get; set; } = null!;
+        public string MissionId { get; set; } = null!;
         public List<MissionReportAttachmentDTO> Attachments { get; set; } = new List<MissionReportAttachmentDTO>();
     }
 

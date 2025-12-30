@@ -31,7 +31,7 @@ namespace MyApp.Api.Services.mission
 
         public async Task<Transport?> VerifyTransportByTypeAsync(string type)
         {
-            if(type.IsNullOrEmpty()) return null;
+            if (string.IsNullOrWhiteSpace(type)) return null;
             var transports = await GetByTypeAsync(type);
             var transport = transports.FirstOrDefault();
             if (transport == null)

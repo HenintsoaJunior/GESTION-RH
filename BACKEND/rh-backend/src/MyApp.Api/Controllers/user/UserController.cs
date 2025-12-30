@@ -445,27 +445,27 @@ public class UserController : ControllerBase
 /// 
 
 
-    // [HttpGet("{matricule}/superior")]
-    // public async Task<ActionResult<UserDto>> GetSuperior(string matricule)
-    // {
-    //     try
-    //     {
-    //         var superior = await _userService.GetSuperiorAsync(matricule);
-    //         if (superior == null)
-    //             return NotFound("No superior found for the specified user.");
+    [HttpGet("{matricule}/superior")]
+    public async Task<ActionResult<UserDto>> GetSuperior(string matricule)
+    {
+        try
+        {
+            var superior = await _userService.GetSuperiorAsync(matricule);
+            if (superior == null)
+                return NotFound("No superior found for the specified user.");
 
-    //         return Ok(superior);
-    //     }
-    //     catch (ArgumentException ex)
-    //     {
-    //         return BadRequest(ex.Message);
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         Console.WriteLine(e);
-    //         throw;
-    //     }
-    // }
+            return Ok(superior);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
 
     // [HttpGet("drh")]
     // public async Task<ActionResult<UserDto>> GetDrh()

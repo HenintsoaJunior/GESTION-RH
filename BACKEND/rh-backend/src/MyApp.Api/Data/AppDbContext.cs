@@ -7,10 +7,13 @@ using MyApp.Api.Entities.menu;
 using MyApp.Api.Entities.mission;
 using MyApp.Api.Entities.notifications;
 using MyApp.Api.Entities.prevision;
+using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Entities.site;
 using MyApp.Api.Entities.tmp;
 using MyApp.Api.Entities.users;
 using MyApp.Api.Entities.zones;
+using MyApp.Api.enums;
+using MyApp.Api.Extensions;
 
 namespace MyApp.Api.Data
 {
@@ -32,7 +35,6 @@ namespace MyApp.Api.Data
         public DbSet<Log> Logs { get; set; }
         public DbSet<MissionValidation> MissionValidations { get; set; }
         public DbSet<CategoriesOfEmployee> CategoriesOfEmployees { get; set; }
-        public DbSet<MissionAssignation> MissionAssignations { get; set; }
         public DbSet<Lieu> Lieux { get; set; }
         public DbSet<Mission> Missions { get; set; } 
         public DbSet<CompensationScale> CompensationScales { get; set; } 
@@ -67,10 +69,43 @@ namespace MyApp.Api.Data
         public DbSet<PrevisionPrice> PrevisionPrices { get; set; }
         public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
 
+        public DbSet<ValidatorsFlow> ValidatorsFlows { get; set; }
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Mission>(entity =>
+            {
+                entity.Property(e => e.MissionType)
+                    .HasConversion(
+                        v => v.GetEnumMemberValue(),                             
+                        v => v.ParseFromMemberValue<MissionType>())              
+                    .HasColumnType("varchar(20)")
+                    .HasMaxLength(20)
+                    .HasDefaultValue(MissionType.Unknown)
+                    .IsRequired();
+
+                entity.Property(e => e.Status)
+                    .HasConversion(
+                        v => v.GetEnumMemberValue(),
+                        v => v.ParseFromMemberValue<MissionStatus>())
+                    .HasColumnType("varchar(30)")
+                    .HasMaxLength(30)
+                    .HasDefaultValue(MissionStatus.PendingApproval)
+                    .IsRequired();
+
+                entity.Property(e => e.Type)
+                    .HasConversion(
+                        v => v.GetEnumMemberValue(),
+                        v => v.ParseFromMemberValue<PaymentType>())
+                    .HasColumnType("varchar(30)")
+                    .HasMaxLength(30)
+                    .HasDefaultValue(PaymentType.Indemnite)
+                    .IsRequired();
+            });
+            
             modelBuilder.Entity<Menu>()
                 .HasIndex(m => m.MenuKey)
                 .IsUnique();
@@ -101,11 +136,17 @@ namespace MyApp.Api.Data
                 entity.HasIndex(e => e.GenderId);
 
                 entity.HasIndex(e => new { e.LastName, e.FirstName });
-            });
+            });            
         }
-
-
-    // RECRUTEMENT
         
+
+
+    // RECRUTEMENT UNIQUEMENT
+        public DbSet<RecruitmentRequest> RecruitmentRequests {get; set;}
+        public DbSet<ReplacementReason> ReplacementReasons {get; set;}
+        public DbSet<JobDescriptionStatus> JobDescriptionStatus {get; set;}
+        public DbSet<RequestStatus> RequestStatuses {get; set;}
+        public DbSet<SiteRequest> SiteRequests {get; set;}
+        public DbSet<RequestValidation> RequestValidations {get; set;}
     }
 }

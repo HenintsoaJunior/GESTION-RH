@@ -2,7 +2,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import styled from "styled-components";
-import { CheckCircle, Send, Edit2, Trash2, X, ArrowLeft, ChevronDown, Eye, Download, Folder, FileText } from "lucide-react";
+import { CheckCircle, Send, Edit2, Trash2, X, ArrowLeft, ChevronDown, Eye, Download, Folder, FileText, AlertCircle } from "lucide-react";
 import { useParams, useNavigate, Routes, Route, useLocation } from "react-router-dom";
 import {
   TabContainer,
@@ -58,17 +58,19 @@ import {
 } from "@/styles/detailsmission-styles";
 import { handleFileView } from "@/utils/file-utils";
 import {
-  useSearchMissionAssignations,
+  useGetMissionById,
   useGenerateMissionOrder,
   useGenerateATD,
-  usePreviewMissionOrder,
   usePreviewATD,
-  type MissionAssignation,
-  type GenerateMissionOrderData,
-  type GenerateATDData,
-  type PreviewPdfResult,
+  usePreviewMissionOrder,
+  useGenerateAccommodationCertificate,
+  usePreviewAccommodationCertificate,
+  type Mission,
+  MissionStatusEnum,
+  MissionTypeEnum,
+  normalizeMissionStatus,
 } from "@/api/mission/services";
-import { useGetMissionValidationsByAssignationId } from "@/api/mission/validation/services";
+import { useGetMissionValidationsByMissionId } from "@/api/mission/validation/services";
 import {
   useCommentsByMission,
   useCreateComment,
@@ -77,12 +79,11 @@ import {
 } from "@/api/comment/services";
 import {
   useCompensationsByEmployeeAndMission,
-  useExportMissionAssignationExcel,
+  useExportMissionExcel,
   type Compensation,
 } from "@/api/mission/compensation(indemnité)/services";
 import { formatDate } from "@/utils/date-converter";
-import { StatusBadge } from "@/styles/table-styles";
-import { getStatusBadgeClass, englishToFrench } from "@/utils/status";
+import { STATUSES, StatusBadge, type Status } from "@/components/status";
 import {
   CommentSection,
   CommentInputGroup,
@@ -96,6 +97,15 @@ import {
   CommentActionButton,
 } from "@/styles/comment-styles";
 import { getInitials } from "@/utils/initials";
+import { useMissionReports } from "@/api/mission/report/services";
+
+// Définir PaymentTypeEnum localement si nécessaire
+const PaymentTypeEnum = {
+  Indemnite: 1,
+  NoteFrais: 2,
+} as const;
+
+type PaymentTypeEnum = typeof PaymentTypeEnum[keyof typeof PaymentTypeEnum];
 
 interface Comment {
   commentId: string;
@@ -180,12 +190,10 @@ interface MissionPaymentState {
   totalAmount: number;
 }
 
-
-// Types for attachments
 interface DocumentAttachment {
   id: string;
   name: string;
-  fileContent?: string; // Optional base64
+  fileContent?: string; 
   fileName: string;
   fileSize?: number;
   fileType: string;
@@ -198,6 +206,21 @@ interface ModalContent {
   isBlobUrl?: boolean;
   extension?: string;
   error?: string;
+}
+
+interface GenerateMissionOrderData {
+  missionId?: string;
+  employeeId?: string;
+}
+
+interface GenerateATDData {
+  employeeId?: string;
+}
+
+interface PreviewPdfResult {
+  blobUrl: string;
+  fileName: string;
+  status: string;
 }
 
 const PREDEFINED_DOCUMENTS: Omit<DocumentAttachment, 'fileContent'>[] = [
@@ -227,7 +250,37 @@ const PREDEFINED_DOCUMENTS: Omit<DocumentAttachment, 'fileContent'>[] = [
   },
 ];
 
-// FilePreviewModal Component
+// Fonction pour mapper MissionStatusEnum vers les IDs de STATUSES - CORRIGÉE
+const mapMissionStatusToStatusId = (status: MissionStatusEnum): string => {
+  const statusMap: Record<MissionStatusEnum, string> = {
+    [MissionStatusEnum.Unknown]: "unknown",
+    [MissionStatusEnum.PendingApproval]: "pending approval",
+    [MissionStatusEnum.PaymentInProgress]: "payment in progress",
+    [MissionStatusEnum.Planned]: "planned",
+    [MissionStatusEnum.InProgress]: "in progress",
+    [MissionStatusEnum.Completed]: "completed",
+    [MissionStatusEnum.Closed]: "closed",
+    [MissionStatusEnum.Canceled]: "canceled",
+    [MissionStatusEnum.MissionRejected]: "mission rejected",
+  };
+  return statusMap[status] || "unknown";
+};
+
+// Fonction pour trouver le statut correspondant dans STATUSES - UTILISANT LA MÊME LOGIQUE QUE MissionTable
+const findStatusFromMissionStatus = (missionStatus: MissionStatusEnum): Status | undefined => {
+  const statusId = mapMissionStatusToStatusId(missionStatus);
+  return STATUSES.find(status => status.id === statusId);
+};
+
+const getMissionTypeDisplay = (missionType: MissionTypeEnum): string => {
+  const typeMap: Record<MissionTypeEnum, string> = {
+    [MissionTypeEnum.Unknown]: "Inconnu",
+    [MissionTypeEnum.National]: "Nationale",
+    [MissionTypeEnum.International]: "Internationale",
+  };
+  return typeMap[missionType] || "Inconnu";
+};
+
 interface FilePreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -268,15 +321,14 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ isOpen, onClose, co
   );
 };
 
-// MissionAttachments Component (per employee)
 interface MissionAttachmentsProps {
   documents: DocumentAttachment[];
   onGenerateOrder: () => Promise<void>;
   onGenerateEmploye: () => Promise<void>;
-  onGenerateHebergement?: () => Promise<void>; // Optional for international
+  onGenerateHebergement?: () => Promise<void>; 
   onPreviewOrder: (data: GenerateMissionOrderData) => Promise<PreviewPdfResult>;
   onPreviewEmploye: (data: GenerateATDData) => Promise<PreviewPdfResult>;
-  onPreviewHebergement?: (data: GenerateATDData) => Promise<PreviewPdfResult>; // Optional for international
+  onPreviewHebergement?: (data: GenerateMissionOrderData) => Promise<PreviewPdfResult>; 
   employeeId: string;
   missionId: string;
 }
@@ -322,7 +374,7 @@ const MissionAttachments: React.FC<MissionAttachmentsProps> = ({
             previewResult = await onPreviewEmploye({ employeeId });
             break;
           case "attestation-hebergement":
-            if (onPreviewHebergement) previewResult = await onPreviewHebergement({ employeeId });
+            if (onPreviewHebergement) previewResult = await onPreviewHebergement({ missionId, employeeId });
             break;
         }
         if (previewResult) {
@@ -358,7 +410,7 @@ const MissionAttachments: React.FC<MissionAttachmentsProps> = ({
           break;
       }
     } catch {
-      // Error handled by alert in generate functions
+      // Erreur gérée dans la fonction parent
     }
   }, [onGenerateOrder, onGenerateEmploye, onGenerateHebergement]);
 
@@ -432,6 +484,72 @@ type TabButtonProps = {
 const StyledTabButton = styled.button<TabButtonProps>`
   ${TabButton}
 `;
+
+// Composant pour l'alerte dans l'onglet Allocation
+interface AllocationNoteAlertProps {
+  missionStatus: MissionStatusEnum;
+  missionType?: MissionTypeEnum;
+  paymentType?: number; // PaymentTypeEnum est numérique (1 ou 2)
+}
+
+const AllocationNoteAlert: React.FC<AllocationNoteAlertProps> = ({ 
+  missionStatus, 
+  missionType,
+  paymentType 
+}) => {
+  const normalizedStatus = normalizeMissionStatus(missionStatus);
+  
+  const isMissionCompleted = normalizedStatus === MissionStatusEnum.Completed;
+  const isMissionClosed = normalizedStatus === MissionStatusEnum.Closed;
+  
+  if (isMissionCompleted || isMissionClosed) {
+    return null;
+  }
+  
+  // Déterminer le texte en fonction du type de mission et de paiement
+  let alertText = "Allocation non disponible";
+  let detailedText = "L'allocation ne peut être consultée que lorsque la mission est terminée.";
+  
+  if (missionType === MissionTypeEnum.National) {
+    if (paymentType === PaymentTypeEnum.NoteFrais) {
+      alertText = "Note de frais non disponible";
+      detailedText = "La note de frais ne peut être créée que lorsque la mission est terminée.";
+    } else if (paymentType === PaymentTypeEnum.Indemnite) {
+      alertText = "Indemnités non disponibles";
+      detailedText = "Les indemnités ne peuvent être consultées que lorsque la mission est terminée.";
+    }
+  } else if (missionType === MissionTypeEnum.International) {
+    alertText = "Indemnités non disponibles";
+    detailedText = "Les indemnités internationales ne peuvent être consultées que lorsque la mission est terminée.";
+  }
+  
+  return (
+    <div
+      style={{
+        backgroundColor: "#fff3cd",
+        border: "1px solid #ffeaa7",
+        borderRadius: "var(--radius-sm)",
+        padding: "var(--spacing-md)",
+        margin: "var(--spacing-md) 0",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "var(--spacing-sm)",
+      }}
+    >
+      <AlertCircle size={20} color="#856404" />
+      <div>
+        <div style={{ fontWeight: "bold", color: "#856404", marginBottom: "4px" }}>
+          {alertText}
+        </div>
+        <div style={{ color: "#856404", fontSize: "14px" }}>
+          {detailedText}
+          <br />
+          Statut actuel : <strong>{findStatusFromMissionStatus(normalizedStatus)?.label || "En cours"}</strong>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const useAlert = () => {
   const [alert, setAlert] = useState<AlertState>({
@@ -598,30 +716,35 @@ const useComments = (missionId: string, userId: string | null, showAlert: (type:
 const useMissionData = (
   missionId: string
 ) => {
-  const [assignations, setAssignations] = useState<MissionAssignation[]>([]);
+  const [mission, setMission] = useState<Mission | null>(null);
   const [validationSteps, setValidationSteps] = useState<ValidationStep[]>([]);
-  const [totalEntries, setTotalEntries] = useState(0);
-  const currentPage = 1;
-  const pageSize = 100;
+  const [hasReport, setHasReport] = useState<boolean>(false);
 
-  const { data: searchResponse, isLoading: searchLoading, refetch: refetchSearch } = useSearchMissionAssignations(
-    { missionId },
-    currentPage,
-    pageSize
-  );
+  const { data: missionResponse, isLoading: missionLoading, refetch: refetchMission } = useGetMissionById(missionId);
 
-  const assignationId = assignations[0]?.assignationId;
-  const { data: validationsResponse, isLoading: validationsLoading } = useGetMissionValidationsByAssignationId(assignationId);
+  const { data: validationsResponse, isLoading: validationsLoading } = useGetMissionValidationsByMissionId(missionId);
+
+  const { data: allReportsResponse, isLoading: reportsLoading } = useMissionReports();
 
   useEffect(() => {
-    if (searchResponse?.data?.data) {
-      setAssignations(searchResponse.data.data);
-      setTotalEntries(searchResponse.data.totalCount || 0);
+    if (missionResponse?.data) {
+      setMission(missionResponse.data);
     } else {
-      setAssignations([]);
-      setTotalEntries(0);
+      setMission(null);
     }
-  }, [searchResponse]);
+  }, [missionResponse]);
+
+  useEffect(() => {
+    if (allReportsResponse?.data && missionId) {
+      const reports = allReportsResponse.data;
+      const reportExists = reports.some((report: any) => 
+        report.missionId && report.missionId.trim() === missionId.trim()
+      );
+      setHasReport(reportExists);
+    } else {
+      setHasReport(false);
+    }
+  }, [allReportsResponse, missionId]);
 
   const mapValidationsToSteps = useCallback((validations: any[]) => {
     const stepMapping: Record<string, { title: string; subtitle: string; order: number }> = {
@@ -688,17 +811,13 @@ const useMissionData = (
     return validationSteps.every((step) => step.status === "approved");
   }, [validationSteps]);
 
-  const mission = useMemo(() => assignations[0]?.mission, [assignations]);
-
   return {
-    assignations,
-    validationSteps,
     mission,
-    isLoading: searchLoading || validationsLoading,
-    totalEntries,
-    currentStep: 0,
+    validationSteps,
+    isLoading: missionLoading || validationsLoading || reportsLoading,
     isMissionFullyValidated,
-    refetch: refetchSearch,
+    hasReport,
+    refetch: refetchMission,
   };
 };
 
@@ -706,6 +825,7 @@ interface Tab {
   label: string;
   onClick: () => void;
   path: string;
+  disabled?: boolean;
 }
 
 const DetailsMission: React.FC = () => {
@@ -730,15 +850,15 @@ const DetailsMission: React.FC = () => {
     handleEditComment,
   } = useComments(missionId || "", userId, showAlert);
   const {
-    assignations,
-    validationSteps,
     mission,
+    validationSteps,
     isLoading: missionLoading,
     isMissionFullyValidated,
-    refetch: refetchMissionData,
+    hasReport,
+    refetch: refetchMission,
   } = useMissionData(missionId || "");
 
-  const [selectedAssignationId, setSelectedAssignationId] = useState<string | null>(null);
+  const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [missionPayment, setMissionPayment] = useState<MissionPaymentState>({
     dailyPaiements: [],
@@ -758,26 +878,29 @@ const DetailsMission: React.FC = () => {
 
   const generateOrderMutation = useGenerateMissionOrder();
   const generateATDMutation = useGenerateATD();
+  const generateHebergementMutation = useGenerateAccommodationCertificate();
   const previewOrderMutation = usePreviewMissionOrder();
   const previewATDMutation = usePreviewATD();
-  const exportExcelMutation = useExportMissionAssignationExcel();
+  const previewHebergementMutation = usePreviewAccommodationCertificate();
+  const exportExcelMutation = useExportMissionExcel();
+  
   const { data: compensationsResponse, isLoading: compensationsLoading } = useCompensationsByEmployeeAndMission(
     selectedEmployeeId ?? undefined,
     missionId
   );
 
-  const fullBasePath = `/mission/collaborateur/${missionId}`;
+  const fullBasePath = `/mission/${missionId}`;
 
   useEffect(() => {
     if (missionId) {
-      refetchMissionData();
+      refetchMission();
     }
-  }, [missionId, refetchMissionData]);
+  }, [missionId, refetchMission]);
 
   useEffect(() => {
-    if (compensationsResponse?.data) {
+    if (compensationsResponse?.data && mission) {
       const responseData = compensationsResponse.data;
-      const { assignation, compensations } = responseData;
+      const { compensations } = responseData;
       const totalAmount = compensations.reduce((sum, comp) => {
         const communicationAmount = comp.communicationAmount ?? 0;
         const visaAmount = comp.visaAmount ?? 0;
@@ -820,7 +943,8 @@ const DetailsMission: React.FC = () => {
           if ((comp.transportAmount ?? 0) > 0) {
             compensationScales.push({ 
               amount: comp.transportAmount!, 
-              transportId: assignation.transportId ?? undefined 
+              expenseType: { type: "Transport" },
+              transportId: mission.transportId ?? undefined 
             });
           }
           if ((comp.breakfastAmount ?? 0) > 0) {
@@ -877,24 +1001,24 @@ const DetailsMission: React.FC = () => {
             compensationScales,
           };
         })
-        .filter((payment) => payment.compensationScales.length > 0); // Optional: filter out days with no compensations
+        .filter((payment) => payment.compensationScales.length > 0);
 
       const assignmentDetails: AssignmentDetails = {
-        beneficiary: `${assignation.employee.firstName} ${assignation.employee.lastName}`,
-        matricule: assignation.employee.employeeCode ?? '',
-        missionTitle: assignation.mission.name ?? '',
-        function: assignation.employee.jobTitle ?? '',
-        base: assignation.employee.site.siteName ?? '',
-        meansOfTransport: assignation.transport?.type ?? "Non spécifié",
-        direction: assignation.employee.direction.directionName ?? '',
-        departmentService: `${assignation.employee.department.departmentName ?? ''} / ${assignation.employee.service.serviceName ?? ''}`,
-        costCenter: assignation.allocatedFund,
-        departureDate: assignation.departureDate ?? '',
-        departureTime: assignation.departureTime ?? '',
-        missionDuration: assignation.duration,
-        returnDate: assignation.returnDate ?? '',
-        returnTime: assignation.returnTime ?? '',
-        startDate: assignation.mission.startDate ?? '',
+        beneficiary: `${mission.employee.firstName} ${mission.employee.lastName}`,
+        matricule: mission.employee.employeeCode ?? '',
+        missionTitle: mission.name ?? '',
+        function: mission.employee.jobTitle ?? '',
+        base: mission.employee.site.siteName ?? '',
+        meansOfTransport: mission.transport?.type ?? "Non spécifié",
+        direction: mission.employee.direction?.directionName ?? '',
+        departmentService: `${mission.employee.department?.departmentName ?? ''} / ${mission.employee.service?.serviceName ?? ''}`,
+        costCenter: mission.allocatedFund,
+        departureDate: mission.departureDate ?? '',
+        departureTime: mission.departureTime ?? '',
+        missionDuration: mission.duration,
+        returnDate: mission.returnDate ?? '',
+        returnTime: mission.returnTime ?? '',
+        startDate: mission.startDate ?? '',
       };
 
       setMissionPayment({
@@ -903,7 +1027,7 @@ const DetailsMission: React.FC = () => {
         totalAmount,
       });
     }
-  }, [compensationsResponse]);
+  }, [compensationsResponse, mission]);
 
   const handleExportPDF = useCallback(
     async (employeeId: string): Promise<void> => {
@@ -942,12 +1066,12 @@ const DetailsMission: React.FC = () => {
         throw new Error("Employee ID est requis pour prévisualiser l'attestation employé.");
       }
 
-      const result = await previewATDMutation.mutateAsync(data);
+      const result = await previewATDMutation.mutateAsync({ employeeId: data.employeeId });
       return result;
     },
     [showAlert, previewATDMutation]
   );
-
+  
   const handleExportAttestationEmploye = useCallback(
     async (employeeId: string): Promise<void> => {
       if (!missionId || !employeeId) {
@@ -973,37 +1097,26 @@ const DetailsMission: React.FC = () => {
       }
 
       try {
-        // TODO: Remplacer par la vraie mutation API pour générer l'attestation hébergement
-        // Ex: await generateAttestationHebergementMutation.mutateAsync({ missionId, employeeId });
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Simulation de chargement
+        const data = { missionId, employeeId };
+        await generateHebergementMutation.mutateAsync(data);
       } catch (errorMessage: unknown) {
         showAlert("error", `Erreur lors de la génération de l'attestation hébergement: ${errorMessage}`);
       }
     },
-    [missionId, showAlert]
+    [missionId, showAlert, generateHebergementMutation]
   );
 
   const handlePreviewAttestationHebergement = useCallback(
-    async (data: GenerateATDData): Promise<PreviewPdfResult> => {
-      if (!data.employeeId) {
-        showAlert("error", "Employee ID est requis pour prévisualiser l'attestation hébergement.");
-        throw new Error("Employee ID est requis pour prévisualiser l'attestation hébergement.");
+    async (data: GenerateMissionOrderData): Promise<PreviewPdfResult> => {
+      if (!data.employeeId || !data.missionId) {
+        showAlert("error", "Mission ID et Employee ID sont requis pour prévisualiser l'attestation hébergement.");
+        throw new Error("Mission ID et Employee ID sont requis pour prévisualiser l'attestation hébergement.");
       }
 
-      try {
-        // TODO: Similar for preview hebergement
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Simulation
-        // Mock result for now
-        return {
-          blobUrl: URL.createObjectURL(new Blob(['Mock PDF content'], { type: 'application/pdf' })),
-          fileName: `Attestation_Hebergement-${data.employeeId}-${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`,
-          status: "success"
-        };
-      } catch (errorMessage: unknown) {
-        throw new Error(`Erreur lors de la prévisualisation de l'attestation hébergement: ${errorMessage}`);
-      }
+      const result = await previewHebergementMutation.mutateAsync(data);
+      return result;
     },
-    [showAlert]
+    [showAlert, previewHebergementMutation]
   );
 
   const handleExportExcel = useCallback(() => {
@@ -1058,37 +1171,28 @@ const DetailsMission: React.FC = () => {
     navigate(-1);
   }, [navigate]);
 
-  const handleNavigateToPayment = useCallback((employeeId: string, assignationId: string) => {
+  const handleNavigateToPayment = useCallback((employeeId: string, missionId: string) => {
     setSelectedEmployeeId(employeeId);
-    setSelectedAssignationId(assignationId);
-    navigate(`${fullBasePath}/payment/${assignationId}`);
+    setSelectedMissionId(missionId);
+    navigate(`${fullBasePath}/payment/${missionId}`);
   }, [navigate, fullBasePath]);
 
-  const handleNavigateToNote = useCallback((assignationId: string) => {
-    setSelectedAssignationId(assignationId);
-    navigate(`${fullBasePath}/note/${assignationId}`);
-  }, [navigate, fullBasePath]);
-
-  const handleNavigateToReport = useCallback((assignationId: string, employeeId: string) => {
-    setSelectedAssignationId(assignationId);
+  const handleNavigateToReport = useCallback((missionId: string, employeeId: string) => {
+    setSelectedMissionId(missionId);
     setSelectedEmployeeId(employeeId);
-    navigate(`${fullBasePath}/report/${assignationId}`);
+    navigate(`${fullBasePath}/report/${missionId}`);
   }, [navigate, fullBasePath]);
-
-  const firstAssignation = assignations[0];
 
   const tabs = useMemo((): Tab[] => {
-    if (!firstAssignation || !mission) return [];
+    if (!mission) return [];
 
-    const assignmentType = firstAssignation.type;
-    const employeeId = firstAssignation.employee.employeeId;
-    const assignationId = firstAssignation.assignationId;
+    const employeeId = mission.employeeId;
+    const missionId = mission.missionId;
+    const missionStatus = normalizeMissionStatus(mission.status);
 
-    const isMissionComplete = mission.status?.toLowerCase() === "complete";
-
-    const shouldShowRendu = 
-      (assignmentType === "Indemnité" || assignmentType === "Note de frais") 
-      && isMissionComplete; 
+    const isMissionClosed = missionStatus === MissionStatusEnum.Closed;
+    const isMissionComplete = missionStatus === MissionStatusEnum.Completed;
+    const shouldShowRendu = isMissionComplete || isMissionClosed;
 
     const tabList: Tab[] = [
       {
@@ -1099,43 +1203,37 @@ const DetailsMission: React.FC = () => {
     ];
 
     if (isMissionFullyValidated) {
-      if (assignmentType === "Indemnité") {
-        tabList.push({
-          label: "Indemnités",
-          onClick: () => handleNavigateToPayment(employeeId, assignationId),
-          path: `payment/${assignationId}`,
-        });
-      }
-      if (assignmentType === "Note de frais") {
-        tabList.push({
-          label: "Note de Frais",
-          onClick: () => handleNavigateToNote(assignationId),
-          path: `note/${assignationId}`,
-        });
-      }
+      tabList.push({
+        label: "Allocation",
+        onClick: () => handleNavigateToPayment(employeeId, missionId),
+        path: `payment/${missionId}`,
+      });
 
       if (shouldShowRendu) {
         tabList.push({
           label: "Rendu",
-          onClick: () => handleNavigateToReport(assignationId, employeeId),
-          path: `report/${assignationId}`,
+          onClick: () => handleNavigateToReport(missionId, employeeId),
+          path: `report/${missionId}`,
         });
       }
     }
 
     return tabList;
   }, [
-    firstAssignation,
     mission,
     handleNavigateToPayment,
-    handleNavigateToNote,
     handleNavigateToReport,
     navigate,
     fullBasePath,
     isMissionFullyValidated
   ]);
 
-  // Fonction pour rendre les onglets sans les boutons PDF
+  const getMissionStatus = useMemo(() => {
+    if (!mission) return undefined;
+    const normalizedStatus = normalizeMissionStatus(mission.status);
+    return findStatusFromMissionStatus(normalizedStatus);
+  }, [mission]);
+
   const renderTabsOnly = () => (
     <StyledTabContainer>
       {tabs.map((tab, tabIndex) => {
@@ -1146,7 +1244,7 @@ const DetailsMission: React.FC = () => {
             $isActive={location.pathname === fullPath}
             $hasBorderRight={tabIndex < tabs.length - 1}
             onClick={tab.onClick}
-            disabled={isGlobalLoading}
+            disabled={isGlobalLoading || (tab.disabled ?? false)}
           >
             {tab.label}
           </StyledTabButton>
@@ -1159,13 +1257,13 @@ const DetailsMission: React.FC = () => {
     return (
       <LoadingContainer>
         <LoadingSpinner />
-        Mission ID manquante
+        Mission ID manquant
       </LoadingContainer>
     );
   }
 
-  const assignedPersonsNames = assignations.length > 0 
-    ? assignations.map(a => `${a.employee.firstName} ${a.employee.lastName}`).join(', ') 
+  const assignedPersonsNames = mission 
+    ? `${mission.employee.firstName} ${mission.employee.lastName}`
     : 'Aucune personne assignée';
 
   const renderRestrictedAccess = () => (
@@ -1206,15 +1304,15 @@ const DetailsMission: React.FC = () => {
               <HeaderTitleSection>
                 <PageTitle>{assignedPersonsNames}</PageTitle>
                 <PageSubtitle>
-                  {firstAssignation && ` N° Assignation: ${firstAssignation.assignationId}`}
+                  {mission && ` N° Mission: ${mission.missionId}`}
                 </PageSubtitle>
               </HeaderTitleSection>
             </HeaderCenter>
             <HeaderActions>
-              {mission && (
-                <StatusBadge className={getStatusBadgeClass(mission.status)}>
-                  {englishToFrench[mission.status?.trim().toLowerCase()] || mission.status}
-                </StatusBadge>
+              {getMissionStatus && (
+                <div style={{ minHeight: '32px', display: 'flex', alignItems: 'center' }}>
+                  <StatusBadge status={getMissionStatus} />
+                </div>
               )}
             </HeaderActions>
           </PageHeader>
@@ -1229,87 +1327,77 @@ const DetailsMission: React.FC = () => {
                 <>
                   {renderTabsOnly()}
                   <div style={{ marginTop: '50px' }} />
-                  {/* <Separator /> */}
                   
-                  <SectionTitle>Personnes Assignées à la Mission</SectionTitle>
-                  {assignations.length > 0 ? (
-                    assignations.map((assignation, index) => {
-                      const employee = assignation.employee;
-                      const initials = `${employee.firstName?.[0] || ''}${employee.lastName?.[0] || ''}`.toUpperCase();
-                      const showHebergement = mission?.missionType === "international";
-
-                      return (
-                        <DetailSection
-                          key={`${assignation.assignationId}-${index}`}
-                          style={{
-                            marginBottom: "var(--spacing-md)",
-                            padding: "var(--spacing-md)",
-                            border: "1px solid var(--border-light)",
-                            borderRadius: "var(--radius-sm)",
-                            backgroundColor: "var(--bg-primary)",
-                          }}
-                        >
-                          <ValidatorItem style={{ marginBottom: "var(--spacing-md)" }}>
-                            <Avatar size="40px">{initials}</Avatar>
-                            <ValidatorInfo>
-                              <ValidatorName>
-                                {employee.firstName} {employee.lastName} ({employee.direction?.acronym})
-                              </ValidatorName>
-                            </ValidatorInfo>
-                          </ValidatorItem>
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "repeat(3, 1fr)",
-                              gap: "var(--spacing-sm)",
-                            }}
-                          >
-                            <InfoItem>
-                              <InfoLabel>Matricule</InfoLabel>
-                              <InfoValue>{employee.employeeCode || "Non spécifié"}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                              <InfoLabel>Fonction</InfoLabel>
-                              <InfoValue>{employee.jobTitle || "Non spécifié"}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                              <InfoLabel>Site</InfoLabel>
-                              <InfoValue>{employee.site?.siteName || "Non spécifié"}</InfoValue>
-                            </InfoItem>
-                            
-                            <InfoItem>
-                              <InfoLabel>Moyen de Transport</InfoLabel>
-                              <InfoValue>{assignation.transport?.type || "Non spécifié"}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                              <InfoLabel>Direction</InfoLabel>
-                              <InfoValue>{employee.direction?.directionName || "Non spécifié"}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                              <InfoLabel>Département</InfoLabel>
-                              <InfoValue>{employee.department?.departmentName || "Non spécifié"}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                              <InfoLabel>Service</InfoLabel>
-                              <InfoValue>{employee.service?.serviceName || "Non spécifié"}</InfoValue>
-                            </InfoItem>
-                          </div>
-                          {isMissionFullyValidated && (
-                            <MissionAttachments
-                              documents={documents}
-                              onGenerateOrder={() => handleExportPDF(assignation.employee.employeeId)}
-                              onGenerateEmploye={() => handleExportAttestationEmploye(assignation.employee.employeeId)}
-                              onGenerateHebergement={showHebergement ? () => handleExportAttestationHebergement(assignation.employee.employeeId) : undefined}
-                              onPreviewOrder={handlePreviewOrder}
-                              onPreviewEmploye={handlePreviewATD}
-                              onPreviewHebergement={showHebergement ? handlePreviewAttestationHebergement : undefined}
-                              employeeId={assignation.employee.employeeId}
-                              missionId={missionId || ""}
-                            />
-                          )}
-                        </DetailSection>
-                      );
-                    })
+                  <SectionTitle>Personne Assignée à la Mission</SectionTitle>
+                  {mission ? (
+                    <DetailSection
+                      style={{
+                        marginBottom: "var(--spacing-md)",
+                        padding: "var(--spacing-md)",
+                        border: "1px solid var(--border-light)",
+                        borderRadius: "var(--radius-sm)",
+                        backgroundColor: "var(--bg-primary)",
+                      }}
+                    >
+                      <ValidatorItem style={{ marginBottom: "var(--spacing-md)" }}>
+                        <Avatar size="40px">{getInitials(`${mission.employee.firstName} ${mission.employee.lastName}`)}</Avatar>
+                        <ValidatorInfo>
+                          <ValidatorName>
+                            {mission.employee.firstName} {mission.employee.lastName} ({mission.employee.direction?.acronym})
+                          </ValidatorName>
+                        </ValidatorInfo>
+                      </ValidatorItem>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gap: "var(--spacing-sm)",
+                        }}
+                      >
+                        <InfoItem>
+                          <InfoLabel>Matricule</InfoLabel>
+                          <InfoValue>{mission.employee.employeeCode || "Non spécifié"}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Fonction</InfoLabel>
+                          <InfoValue>{mission.employee.jobTitle || "Non spécifié"}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Site</InfoLabel>
+                          <InfoValue>{mission.employee.site?.siteName || "Non spécifié"}</InfoValue>
+                        </InfoItem>
+                        
+                        <InfoItem>
+                          <InfoLabel>Moyen de Transport</InfoLabel>
+                          <InfoValue>{mission.transport?.type || "Non spécifié"}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Direction</InfoLabel>
+                          <InfoValue>{mission.employee.direction?.directionName || "Non spécifié"}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Département</InfoLabel>
+                          <InfoValue>{mission.employee.department?.departmentName || "Non spécifié"}</InfoValue>
+                        </InfoItem>
+                        <InfoItem>
+                          <InfoLabel>Service</InfoLabel>
+                          <InfoValue>{mission.employee.service?.serviceName || "Non spécifié"}</InfoValue>
+                        </InfoItem>
+                      </div>
+                      {isMissionFullyValidated && (
+                        <MissionAttachments
+                          documents={documents}
+                          onGenerateOrder={() => handleExportPDF(mission.employeeId)}
+                          onGenerateEmploye={() => handleExportAttestationEmploye(mission.employeeId)}
+                          onGenerateHebergement={mission.missionType === MissionTypeEnum.International ? () => handleExportAttestationHebergement(mission.employeeId) : undefined}
+                          onPreviewOrder={handlePreviewOrder}
+                          onPreviewEmploye={handlePreviewATD}
+                          onPreviewHebergement={mission.missionType === MissionTypeEnum.International ? handlePreviewAttestationHebergement : undefined}
+                          employeeId={mission.employeeId}
+                          missionId={missionId || ""}
+                        />
+                      )}
+                    </DetailSection>
                   ) : (
                     <div
                       style={{
@@ -1318,7 +1406,7 @@ const DetailsMission: React.FC = () => {
                         color: "var(--text-secondary)",
                       }}
                     >
-                      Aucune personne assignée à la mission {missionId || "inconnue"}.
+                      Aucune mission trouvée avec l'ID {missionId}.
                     </div>
                   )}
                   <Separator />
@@ -1327,8 +1415,8 @@ const DetailsMission: React.FC = () => {
                       <SectionTitle>Informations Générales de la Mission</SectionTitle>
                       <InfoGrid style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
                         <InfoItem>
-                          <InfoLabel>N° Assignation</InfoLabel>
-                          <InfoValue>{firstAssignation?.assignationId || "Non spécifié"}</InfoValue>
+                          <InfoLabel>N° Mission</InfoLabel>
+                          <InfoValue>{mission.missionId || "Non spécifié"}</InfoValue>
                         </InfoItem>
 
                         <InfoItem>
@@ -1338,12 +1426,12 @@ const DetailsMission: React.FC = () => {
                           </InfoValue>
                         </InfoItem>
                         <InfoItem>
-                          <InfoLabel>Type d'Assignation</InfoLabel>
-                          <InfoValue>{firstAssignation.type || "Non spécifié"}</InfoValue>
+                          <InfoLabel>Type de Mission</InfoLabel>
+                          <InfoValue>{getMissionTypeDisplay(mission.missionType)}</InfoValue>
                         </InfoItem>
                         <InfoItem>
                           <InfoLabel>Zone</InfoLabel>
-                          <InfoValue>{mission.missionType}</InfoValue>
+                          <InfoValue>{getMissionTypeDisplay(mission.missionType)}</InfoValue>
                         </InfoItem>
                         <InfoItem>
                           <InfoLabel>Lieu/Pays</InfoLabel>
@@ -1356,7 +1444,7 @@ const DetailsMission: React.FC = () => {
                         </InfoItem>
                         <InfoItem>
                           <InfoLabel>Date et Heure de Départ</InfoLabel>
-                          <InfoValue>{firstAssignation ? `${formatDate(firstAssignation.departureDate)} ${firstAssignation.departureTime || ''}` : "Non spécifié"}</InfoValue>
+                          <InfoValue>{`${formatDate(mission.departureDate)} ${mission.departureTime || ''}`}</InfoValue>
                         </InfoItem>
                         
                         <InfoItem>
@@ -1366,11 +1454,11 @@ const DetailsMission: React.FC = () => {
                         
                         <InfoItem>
                           <InfoLabel>Date et Heure de Retour</InfoLabel>
-                          <InfoValue>{firstAssignation ? `${formatDate(firstAssignation.returnDate)} ${firstAssignation.returnTime || ''}` : "Non spécifié"}</InfoValue>
+                          <InfoValue>{`${formatDate(mission.returnDate)} ${mission.returnTime || ''}`}</InfoValue>
                         </InfoItem>
                         <InfoItem>
                           <InfoLabel>Durée</InfoLabel>
-                          <InfoValue>{firstAssignation?.duration || 0} jours</InfoValue>
+                          <InfoValue>{mission.duration || 0} jours</InfoValue>
                         </InfoItem>
                         <InfoItem style={{ gridColumn: "span 3" }}>
                           <InfoLabel>Description</InfoLabel>
@@ -1408,7 +1496,6 @@ const DetailsMission: React.FC = () => {
                       <CommentText>Aucun commentaire pour cette mission.</CommentText>
                     ) : (
                       comments.map((commentItem) => {
-                        
                         return (
                           <CommentItem key={commentItem.commentId}>
                             <Avatar size="32px">{getInitials(commentItem.creator.name)}</Avatar>
@@ -1469,26 +1556,126 @@ const DetailsMission: React.FC = () => {
               }
             />
             <Route
-              path="payment/:assignationId"
+              path="payment/:missionId"
               element={
                 <>
                   {renderTabsOnly()}
-                  {isMissionFullyValidated && missionPayment.assignmentDetails ? (
-                    <OMPayment
-                      missionPayment={missionPayment as MissionPayment}
-                      selectedAssignmentId={selectedAssignationId || ""}
-                      onBack={handleBackToMissionDetails}
-                      onExportExcel={handleExportExcel}
-                      formatDate={formatDate}
-                      missionId={missionId || ""}
-                      employeeId={selectedEmployeeId || ""}
-                    />
+                  {isMissionFullyValidated && mission ? (
+                    (() => {
+                      const isMissionCompleted = 
+                        normalizeMissionStatus(mission.status) === MissionStatusEnum.Completed || 
+                        normalizeMissionStatus(mission.status) === MissionStatusEnum.Closed;
+                      
+                      // Mission nationale avec note de frais
+                      const isNationalWithNoteFrais = 
+                        mission.missionType === MissionTypeEnum.National && 
+                        mission.type === PaymentTypeEnum.NoteFrais;
+                      
+                      // Mission nationale avec indemnités
+                      const isNationalWithIndemnite = 
+                        mission.missionType === MissionTypeEnum.National && 
+                        mission.type === PaymentTypeEnum.Indemnite;
+                      
+                      // Mission internationale (peut avoir les deux : indemnités ET notes de frais)
+                      const isInternational = 
+                        mission.missionType === MissionTypeEnum.International;
+                      
+                      // CAS 1: Mission nationale avec note de frais
+                      if (isNationalWithNoteFrais) {
+                        // Pour les missions nationales avec note de frais, on affiche seulement si la mission est terminée
+                        if (!isMissionCompleted) {
+                          return (
+                            <AllocationNoteAlert 
+                              missionStatus={mission.status} 
+                              missionType={mission.missionType}
+                              paymentType={mission.type as number}
+                            />
+                          );
+                        }
+                        // Mission terminée : on affiche OMNoteDeFrais
+                        return (
+                          <OMNoteDeFrais
+                            selectedMissionId={selectedMissionId || ""}
+                            onBack={handleBackToMissionDetails}
+                          />
+                        );
+                      }
+                      
+                      // CAS 2: Mission nationale avec indemnités
+                      if (isNationalWithIndemnite && missionPayment.assignmentDetails) {
+                        // Pour les missions nationales avec indemnités, on affiche OMPayment
+                        // Les indemnités sont disponibles même si la mission n'est pas terminée
+                        return (
+                          <OMPayment
+                            missionPayment={missionPayment as MissionPayment}
+                            selectedMissionId={selectedMissionId || ""}
+                            onBack={handleBackToMissionDetails}
+                            onExportExcel={handleExportExcel}
+                            formatDate={formatDate}
+                            missionId={missionId || ""}
+                            employeeId={selectedEmployeeId || ""}
+                          />
+                        );
+                      }
+                      
+                      // CAS 3: Mission internationale
+                      if (isInternational) {
+                        // Pour les missions internationales, on affiche OMNoteDeFrais
+                        // qui gère à la fois les notes de frais ET les indemnités avancées
+                        return (
+                          <OMNoteDeFrais
+                            selectedMissionId={selectedMissionId || ""}
+                            onBack={handleBackToMissionDetails}
+                            missionPayment={missionPayment as MissionPayment}
+                          />
+                        );
+                      }
+                      
+                      // CAS 4: Pour les autres cas (mission nationale sans type défini ou avec une valeur inconnue)
+                      if (mission.missionType === MissionTypeEnum.National && missionPayment.assignmentDetails) {
+                        // Par défaut, on affiche OMPayment si des données sont disponibles
+                        return (
+                          <OMPayment
+                            missionPayment={missionPayment as MissionPayment}
+                            selectedMissionId={selectedMissionId || ""}
+                            onBack={handleBackToMissionDetails}
+                            onExportExcel={handleExportExcel}
+                            formatDate={formatDate}
+                            missionId={missionId || ""}
+                            employeeId={selectedEmployeeId || ""}
+                          />
+                        );
+                      }
+                      
+                      // CAS 5: Mission nationale avec indemnités mais sans données
+                      if (isNationalWithIndemnite || mission.missionType === MissionTypeEnum.National) {
+                        return (
+                          <LoadingContainer>
+                            <LoadingSpinner />
+                            Chargement des indemnités...
+                          </LoadingContainer>
+                        );
+                      }
+                      
+                      // CAS 6: Type de mission inconnu
+                      return (
+                        <div
+                          style={{
+                            textAlign: "center",
+                            padding: "var(--spacing-lg)",
+                            color: "var(--text-secondary)",
+                          }}
+                        >
+                          Type de mission non pris en charge pour l'allocation.
+                        </div>
+                      );
+                    })()
                   ) : (
                     <LoadingContainer>
                       {isMissionFullyValidated ? (
                         <>
                           <LoadingSpinner />
-                          Chargement du paiement...
+                          Chargement de l'allocation...
                         </>
                       ) : (
                         renderRestrictedAccess()
@@ -1499,40 +1686,17 @@ const DetailsMission: React.FC = () => {
               }
             />
             <Route
-              path="note/:assignationId"
+              path="report/:missionId"
               element={
                 <>
                   {renderTabsOnly()}
-                  {isMissionFullyValidated && selectedAssignationId ? (
-                    <OMNoteDeFrais
-                      selectedAssignmentId={selectedAssignationId}
-                      onBack={handleBackToMissionDetails}
-                    />
-                  ) : (
-                    <LoadingContainer>
-                      {isMissionFullyValidated ? (
-                        <>
-                          <LoadingSpinner />
-                          Chargement de la note de frais...
-                        </>
-                      ) : (
-                        renderRestrictedAccess()
-                      )}
-                    </LoadingContainer>
-                  )}
-                </>
-              }
-            />
-            <Route
-              path="report/:assignationId"
-              element={
-                <>
-                  {renderTabsOnly()}
-                  {isMissionFullyValidated && selectedAssignationId ? (
+                  {isMissionFullyValidated && selectedMissionId ? (
                     <MissionReport
                       userId={userId}
-                      assignationId={selectedAssignationId}
+                      missionId={selectedMissionId}
                       onBack={handleBackToMissionDetails}
+                      isMissionClosed={mission ? normalizeMissionStatus(mission.status) === MissionStatusEnum.Closed : false}
+                      hasReport={hasReport}
                     />
                   ) : (
                     <LoadingContainer>
