@@ -69,6 +69,9 @@ namespace MyApp.Api.Data
         public DbSet<PrevisionPrice> PrevisionPrices { get; set; }
         public DbSet<MenuHierarchy> MenuHierarchies { get; set; }
 
+        public DbSet<ValidatorsFlow> ValidatorsFlows { get; set; }
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

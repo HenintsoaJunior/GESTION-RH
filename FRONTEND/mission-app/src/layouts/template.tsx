@@ -616,6 +616,14 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
         isActive: true,
       });
     }
+
+    else if (currentPath === "/validators_flow") {
+      breadcrumbs.push({
+        title: "Validators",
+        path: "/validators_flow",
+        isActive: true,
+      });
+    }
     
     // MISSION - Carte
     else if (currentPath === "/mission/maps") {

@@ -32,6 +32,7 @@ import Home from '@/pages/Home';
 import RequestList from './pages/recruitment/request/request-list';
 import ProtectedRequestDetails from './pages/recruitment/request/request-details';
 import DraftRequestList from './pages/recruitment/validation/draft-request-list';
+import { ValidateursPage } from '@/pages/mission/validators_flow';
 // import { useAuthSync } from '@/utils/use-auth-sync';
 function App() {
 
@@ -70,11 +71,11 @@ function App() {
         <Route path="/referentiel/transport" element={<TransportList />} />
         <Route path="/referentiel/compensation-scale" element={<CompensationScalesPage />} />
         <Route path="/referentiel/geo-zone" element={<GeoZoneList />} />
-        
 
         {/* MISSION */}
         <Route path="/mission/list" element={<MissionList />} />
         <Route path="/mission/maps" element={<MissionsEnCoursMapPage />} />
+        <Route path="/validators_flow" element={<ValidateursPage />} />
         <Route path="/mission/:missionId/*" element={<DetailsMission />} />
         <Route path="/mission/to-validate" element={<MissionValidationPage />} />
         {/* TRESO */}

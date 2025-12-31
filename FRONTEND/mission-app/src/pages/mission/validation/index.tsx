@@ -54,7 +54,7 @@ const MissionValidationPage = () => {
         handleRowClick={(missionId) => {
           const mission = missions.find((m) => m.id === missionId);
           if (mission?.missionId) {
-            navigate(`/mission/collaborateur/${mission.missionId}`);
+            navigate(`/mission/${mission.missionId}`);
           } else {
             console.warn("Mission or missionId not found for details navigation:", missionId);
           }

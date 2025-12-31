@@ -157,7 +157,7 @@ const MissionCalendar: React.FC<MissionCalendarProps> = ({ missions }) => {
   };
 
   const handleMissionClick = (missionId: string) => {
-    navigate(`/mission/collaborateur/${missionId}`);
+    navigate(`/mission/${missionId}`);
   };
 
   const handleDayClick = (date: Date) => {
