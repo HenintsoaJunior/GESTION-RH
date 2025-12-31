@@ -1,6 +1,15 @@
 /* Désactiver temporairement les contraintes FK */
 EXEC sp_msforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT ALL";
 
+DECLARE @sql NVARCHAR(MAX) = '';
+SELECT @sql += '
+ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) +
+'.' + QUOTENAME(OBJECT_NAME(parent_object_id)) +
+' DROP CONSTRAINT ' + QUOTENAME(name)
+FROM sys.foreign_keys;
+EXEC sp_executesql @sql;
+
+
 DROP TABLE IF EXISTS tmp_employee;
 DROP TABLE IF EXISTS notification_recipients;
 DROP TABLE IF EXISTS notifications;
@@ -54,22 +63,27 @@ DROP TABLE IF EXISTS tests;
 DROP TABLE IF EXISTS evaluations;
 DROP TABLE IF EXISTS candidatures;
 DROP TABLE IF EXISTS skills;
-DROP TABLE IF EXISTS jobs_suitabilities;
+DROP TABLE IF EXISTS job_suitabilities;
 DROP TABLE IF EXISTS job_experiences;
 DROP TABLE IF EXISTS formations;
-DROP TABLE IF EXISTS jobs_validations;
-DROP TABLE IF EXISTS Attributions;
+DROP TABLE IF EXISTS job_validations;
+DROP TABLE IF EXISTS job_attributions;
 DROP TABLE IF EXISTS job_descriptions;
+DROP TABLE IF EXISTS requests_per_validators;
 DROP TABLE IF EXISTS requests_validations;
 DROP TABLE IF EXISTS sites_requests;
+DROP TABLE IF EXISTS job_descriptions_status;
 DROP TABLE IF EXISTS recruitment_requests;
 DROP TABLE IF EXISTS evaluation_types;
 DROP TABLE IF EXISTS personnal_suitabilities;
 DROP TABLE IF EXISTS educations;
+DROP TABLE IF EXISTS soft_skills;
+DROP TABLE IF EXISTS job_soft_skills;
 DROP TABLE IF EXISTS level_educations;
-DROP TABLE IF EXISTS job_descriptions_status;
 DROP TABLE IF EXISTS requests_status;
 DROP TABLE IF EXISTS replacement_reasons;
+
+DROP FUNCTION fn_pending_recruitment_requests;
 
 /* Réactiver les contraintes FK */
 EXEC sp_msforeachtable "ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL";

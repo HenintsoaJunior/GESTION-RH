@@ -14,8 +14,12 @@ public class RequestListDTO
 
 public class RequestDetailsDTO
 {
-    public string Id  {get; set;} = null!;
+    public string Id {get; set;} = null!;
+    public string Post {get; set;} = null!;
     public string ApplicantUser {get; set;} = null!;
+    public string Direction {get; set;} = null!;
+    public string Department {get; set;} = null!;
+    public string Service {get; set;} = null!;
     public string Status {get; set;} = null!;
     public bool IsReplacement {get; set;}
     public DateOnly? ReplacementDate {get; set;}
@@ -31,6 +35,21 @@ public class RequestDetailsDTO
     public bool IsPlanned {get; set;}
     public string? NotPlannedReason {get; set;}
 }
+
+
+public class RequestValidationDTO
+{
+    public string Direction {get; set;} = null!;
+    public string? ApplicantUser {get; set;}
+    public string? SignatureBase64 { get; set; }
+}
+
+public class RequestDetailsResponseDTO
+{
+    public RequestDetailsDTO Details { get; set; } = null!;
+    public List<RequestValidationDTO> Validations { get; set; } = [];
+}
+
 
 
 public class FilterRequestListDTO

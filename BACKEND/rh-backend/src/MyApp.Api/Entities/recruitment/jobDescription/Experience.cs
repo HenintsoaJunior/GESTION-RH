@@ -7,13 +7,13 @@ namespace MyApp.Api.Entities.recruitment;
 public class Experience
 {
     [Key]
-    [Column("experience_id")]
+    [Column("job_experience_id")]
     public string Id { get; set; } = null!;
 
-    [Column("experience_years")]
+    [Column("job_experience_years")]
     public short ExperienceYears { get; set; }
 
-    [Column("experience_post")]
+    [Column("job_experience_post")]
     public string ExperiencePost { get; set; } = null!;
 
     [ForeignKey("job_description_id")]

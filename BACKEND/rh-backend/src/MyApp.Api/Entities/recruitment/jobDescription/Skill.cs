@@ -13,6 +13,6 @@ public class Skill
     [ForeignKey("job_description_id")]
     public JobDescription JobDescription { get; set; } = null!;
 
-    [Column("label")]
+    [Column("skill_label")]
     public string Label { get; set; } = null!;
 }

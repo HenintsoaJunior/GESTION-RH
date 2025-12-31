@@ -3,14 +3,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyApp.Api.Entities.recruitment;
 
-[Table("attributions")]
+[Table("job_attributions")]
 public class Attribution
 {
     [Key]
-    [Column("attribution_id")]
+    [Column("job_attribution_id")]
     public string Id { get; set; } = null!;
 
-    [Column("attribution")]
+    [Column("job_attribution")]
     public string Label { get; set; } = null!;
 
     [ForeignKey("job_description_id")]

@@ -27,7 +27,7 @@ namespace MyApp.Api.Models.dto.recruitment
     // Qualités perso et compétences
         [Required(ErrorMessage = "Les qualités personnelles sont obligatoires.")]
         [MinLength(1)]
-        public SuitabilityDTO[] Suitabilities { get; set; } = null!;
+        public SoftSkillDTO[] SoftSkills { get; set; } = null!;
 
         [Required(ErrorMessage = "Les compétences sont obligatoires.")]
         [MinLength(1, ErrorMessage = "Au moins une compétence est requise.")]
@@ -46,16 +46,16 @@ namespace MyApp.Api.Models.dto.recruitment
     public class ExperienceDTO
     {
         [Required]
-        public string ExperiencePost { get; set; } = null!;
+        public string Post { get; set; } = null!;
 
         [Required]
-        public short ExperienceYears { get; set; }
+        public short Years { get; set; }
     }
 
-    public class SuitabilityDTO
+    public class SoftSkillDTO
     {
         [Required]
-        public string PersonnalSuitabilityId { get; set; } = null!;
+        public string Id { get; set; } = null!;
     }
 
     public class SkillDTO

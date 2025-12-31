@@ -15,4 +15,12 @@ public class JobDescription : BaseEntity
 
     [ForeignKey("request_id")]
     public RecruitmentRequest Request { get; set; } = null!;
+
+// Collections
+    public List<Attribution> Attributions { get; set; } = [];
+    public List<Experience> Experiences { get; set; } = [];
+    public List<Formation> Formations { get; set; } = [];
+    public List<JobDescriptionSoftSkill> SoftSkills { get; set; } = [];
+    public List<Skill> Skills { get; set; } = [];
+    public List<JobDescriptionValidation> Validations { get; set; } = [];
 }

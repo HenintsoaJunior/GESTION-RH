@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using MyApp.Api.Models.classes.notifications;
 using Hangfire;
 using MyApp.Api.Services.mission;
+using MyApp.Api.Services.recruitment;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,14 +20,16 @@ if (OperatingSystem.IsLinux())
 }
 
 var frontendUrl = builder.Configuration["API_FRONT"];
+builder.WebHost.UseUrls(
+    "http://0.0.0.0:5183"
+);
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
 
-        policy.WithOrigins(frontendUrl ?? "http://localhost:5173")
-
+        policy.WithOrigins(frontendUrl ?? "http://10.0.105.122:5173")
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -107,6 +110,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.AddHostedService<MissionStatusBackgroundService>();
+// Seed pour le recrutement
+builder.Services.AddScoped<RecruitmentSeedService>();
 
 var app = builder.Build();
 
@@ -118,6 +123,11 @@ RecurringJob.AddOrUpdate(
     "update-mission-statuses",
     () => MissionStatusUpdater.UpdateMissionStatuses(),
     Cron.Minutely);
+
+using (var scope = app.Services.CreateScope()) {
+    var seed = scope.ServiceProvider.GetRequiredService<RecruitmentSeedService>();
+    await seed.SeedAllAsync();
+}
 
 app.UseForwardedHeaders();
 

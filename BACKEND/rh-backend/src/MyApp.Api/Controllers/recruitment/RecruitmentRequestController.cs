@@ -78,13 +78,22 @@ public class RecruitmentRequestController(IRequestService _service,
     [HttpGet("{id}/details")]
     [AllowAnonymous]
     public async Task<IActionResult> GetRequestDetails([FromRoute] string id) {
-        if(!User.Identity?.IsAuthenticated ?? true) {
-            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        }
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
 
         try {
-            var results = await _service.GetRequestDetails(id);
-            return Ok(new { data = results, status = 200, message = "success" });
+            var details = await _service.GetRequestDetails(id);
+            var validations = await _service.GetValidationsWithSignatures(id);
+
+            return Ok(new {
+                data = new RequestDetailsResponseDTO {
+                    Details = details,
+                    Validations = validations
+                },
+                status = 200,
+                message = "success"
+            });
         }
         catch (ArgumentException ex) {
             return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });

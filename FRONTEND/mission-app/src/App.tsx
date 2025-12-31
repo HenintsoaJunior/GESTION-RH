@@ -72,10 +72,9 @@ function App() {
         <Route path="/referentiel/geo-zone" element={<GeoZoneList />} />
         
 
-         {/* MISSION */}
+        {/* MISSION */}
         <Route path="/mission/list" element={<MissionList />} />
         <Route path="/mission/maps" element={<MissionsEnCoursMapPage />} />
-
         <Route path="/mission/:missionId/*" element={<DetailsMission />} />
         <Route path="/mission/to-validate" element={<MissionValidationPage />} />
         {/* TRESO */}
@@ -83,9 +82,9 @@ function App() {
         <Route path="/treasury/compensation" element={<CompensationMission />} />
         <Route path="/treasury/remboursement" element={<Reimbursement />} />
 
+        {/* RECRUTEMENT */}
         <Route path="/recrutement/demandes/liste" element={<RequestList />} />
         <Route path="/recrutement/demandes/:id/details" element={<ProtectedRequestDetails />} />
-
         <Route path="/recrutement/demandes/validation" element={<DraftRequestList />} />
         
         {/* ERROR */}

@@ -20,6 +20,7 @@ public interface IRequestValidationRepository
     Task<bool> HasNotYetValidatedRequest(User user, RecruitmentRequest req);
     Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(string validatorId, FilterRequestListDTO filters, int page, int pageSize);
     Task AddRequestInValidations(RecruitmentRequest req, List<UserDto> users);
+    Task<List<RequestValidation>> GetAllValidation(string requestId);
 }
 
 
@@ -320,6 +321,15 @@ public class RequestValidationRepository : IRequestValidationRepository
         await _dbCtx.RequestsPerValidators.AddRangeAsync(requests);
     }
 
+
+    public async Task<List<RequestValidation>> GetAllValidation(string requestId) {
+        var request = await _reqRepo.GetRecruitmentRequestById(requestId);
+
+        return await _dbCtx.RequestValidations.Include(r => r.Validator)
+            .Where(r => 
+                r.Signature!=null && r.Request == request)
+            .AsNoTracking().ToListAsync();
+    }
 }
 
 // userId-DAF : 00425 : 11715a63-e237-46b3-b568-ffa6fc087000

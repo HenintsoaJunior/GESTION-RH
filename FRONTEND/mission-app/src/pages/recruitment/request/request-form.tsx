@@ -103,8 +103,8 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                 if (axios.isAxiosError(error)) {
                     const status = error.response?.status;
                     const backendMessage =
-                        (error.response?.data as any)?.message ??
-                        (error.response?.data as any)?.error ??
+                        (error.response?.data)?.message ??
+                        (error.response?.data)?.error ??
                         error.message;
 
                     showError(

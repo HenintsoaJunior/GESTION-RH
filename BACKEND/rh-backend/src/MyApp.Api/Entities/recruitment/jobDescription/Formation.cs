@@ -3,11 +3,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyApp.Api.Entities.recruitment;
 
-[Table("formations")]
+[Table("job_formations")]
 public class Formation
 {
     [Key]
-    [Column("formation_id")]
+    [Column("job_formation_id")]
     public string Id { get; set; } = null!;
 
     [ForeignKey("education_id")]

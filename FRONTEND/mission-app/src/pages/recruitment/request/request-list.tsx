@@ -11,8 +11,6 @@ import {
   TableHeadCell,
   TableRow,
   TableCell,
-//   EditButton,
-//   CancelButton,
   ButtonSearch,
   FiltersContainer,
   FiltersHeader,

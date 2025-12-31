@@ -2,6 +2,7 @@ using Hangfire.Common;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.recruitment;
+using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Utils.generator;
 
 namespace MyApp.Api.Repositories.recruitment;
@@ -10,20 +11,37 @@ public interface IJobDescriptionRepository
 {
 // CRUD educations
     Task<List<Education>> GetAllEducations(string? name, int page, int pageSize);
+    Task<List<Education>> GetAllEducations();
     Task<Education> GetEducationById(string id);
     Task AddEducation(Education education);
     Task DeleteEducation(Education education);
     Task UpdateEducation(Education last, Education newEducation);
 
-// CRUD TDR ou fiche de poste
+// Fiche de poste
     Task AddJobDescription(JobDescription job);
+    Task<JobDescription> GetJobDescription(string id);
+    Task<JobDescription> GetJobDescriptionByRequest(RecruitmentRequest req);
 
+    Task AddJobAttribution(Attribution param);
     Task AddFormation(Formation param);
     Task<List<Formation>> GetAllFormations();
 
-    Task AddJobDescriptionSuitability(JobDescriptionSuitability job);
+    Task AddSoftSkill(SoftSkill param);
+    Task<List<SoftSkill>> GetAllSoftSkills();
+    Task<SoftSkill> GetSoftSkillById(string id);
+    Task AddJobDescriptionSoftSkill(JobDescriptionSoftSkill job);
 
     Task AddSkill(Skill param);
+    Task AddExperience(Experience param);
+
+    Task<LevelEducation> GetLevelEducationById(string id);
+    Task<List<LevelEducation>> GetAllLevelEducations();
+    void Attach<TEntity>(TEntity entity) where TEntity : class;
+    Task<bool> EducationExistsByLabel(string label);
+    Task<bool> SoftSkillExistsByLabel(string label);
+
+// Commit de transaction
+    Task SaveChangesAsync();
 }
 
 
@@ -55,62 +73,146 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
 
     // Pagination
         var paged = await query.OrderBy(e => e.Name) 
-            .Skip((page-1) * pageSize).Take(pageSize)
+            .Skip((page-1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         return paged;
     }
 
+    public async Task<List<Education>> GetAllEducations() {
+        var results = await _dbCtx.Educations
+            .AsNoTracking().Where(e => !e.IsDeleted).ToListAsync();
 
-    public async Task AddEducation(Education education) {
-        education.Id = _seq.GenerateSequence("seq_education_id", "ETD");
-
-        await _dbCtx.Educations.AddAsync(education);
-        await _dbCtx.SaveChangesAsync();
+        return results;
     }
 
-    public async Task DeleteEducation(Education education) {
+
+    public async Task<bool> EducationExistsByLabel(string label) {
+        return await _dbCtx.Educations.AnyAsync(e => 
+            e.Name.ToLower().Equals(label.ToLower())
+        );
+    }
+
+    public async Task<bool> SoftSkillExistsByLabel(string label) {
+        return await _dbCtx.SoftSkills.AnyAsync(e => 
+            e.Name.ToLower().Equals(label.ToLower())
+        );
+    }
+
+
+    public Task DeleteEducation(Education education) {
         education.IsDeleted = true;
-        await _dbCtx.SaveChangesAsync();
+        return Task.CompletedTask;
     }
 
     public async Task UpdateEducation(Education last, Education newEducation) {
         last.Name = newEducation.Name;
         last.IsDeleted = false;
-        await _dbCtx.SaveChangesAsync();
     }
 
 
     public async Task AddJobDescription(JobDescription job) {
         job.Id = _seq.GenerateSequence("seq_job_description_id", "TDR_NUM");
-
         await _dbCtx.JobDescriptions.AddAsync(job);
-        await _dbCtx.SaveChangesAsync();
+    }
+
+    public async Task<JobDescription> GetJobDescription(string id) {
+        var result = await _dbCtx.JobDescriptions
+            .Include(r => r.Formations).ThenInclude(f => f.Education)
+            .Include(r => r.Experiences)
+            .Include(r => r.SoftSkills).ThenInclude(s => s.SoftSkill)
+            .Include(r => r.Skills)
+            .FirstOrDefaultAsync(r => r.Id == id) ?? 
+            throw new ArgumentException("Fiche de poste introuvable");
+
+        return result;
+    }
+
+    public async Task<JobDescription> GetJobDescriptionByRequest(RecruitmentRequest req) {
+        var result = await _dbCtx.JobDescriptions
+            .Include(r => r.Attributions)
+            .Include(r => r.Formations)
+                .ThenInclude(f => f.Education)
+            .Include(f => f.Formations)
+                .ThenInclude(f => f.LevelEducation)
+            .Include(r => r.Experiences)
+            .Include(r => r.SoftSkills).ThenInclude(s => s.SoftSkill)
+            .Include(r => r.Skills)
+            .FirstOrDefaultAsync(j => j.Request.Id == req.Id) ?? 
+            throw new ArgumentException("Fiche de poste introuvable");
+
+        return result;
+    }
+
+
+    public async Task AddEducation(Education education) {
+        education.Id = _seq.GenerateSequence("seq_education_id", "ETD");
+        await _dbCtx.Educations.AddAsync(education);
     }
 
     public async Task AddFormation(Formation param) {
         param.Id = _seq.GenerateSequence("seq_formation_id", "FRT");
-
         await _dbCtx.Formations.AddAsync(param);
-        await _dbCtx.SaveChangesAsync();
     }
 
-    public async Task AddJobDescriptionSuitability(JobDescriptionSuitability job) {
-        job.Id = _seq.GenerateSequence("seq_job_suitability_id", "FCH_QLT");
-
-        await _dbCtx.JobDescriptionSuitabilities.AddAsync(job);
-        await _dbCtx.SaveChangesAsync();
+    public async Task AddJobDescriptionSoftSkill(JobDescriptionSoftSkill job) {
+        job.Id = _seq.GenerateSequence("seq_job_soft_skill_id", "FCH_QUA");
+        await _dbCtx.JobDescriptionSoftSkills.AddAsync(job);
     }
-
-    public async Task AddSkill(Skill param) {
-        param.Id = _seq.GenerateSequence("seq_skill_id", "CMC");
-
-        await _dbCtx.Skills.AddAsync(param);
-        await _dbCtx.SaveChangesAsync();
-    }
-
 
     public async Task<List<Formation>> GetAllFormations() {
         return await _dbCtx.Formations.AsNoTracking().ToListAsync();
     }
+
+    public async Task AddJobAttribution(Attribution param) {
+        param.Id = _seq.GenerateSequence("seq_job_attribution_id", "FCH_ATT");
+        await _dbCtx.Attributions.AddAsync(param);
+    }
+
+    public async Task AddExperience(Experience param) {
+        param.Id = _seq.GenerateSequence("seq_experience_id", "EXP");
+        await _dbCtx.Experiences.AddAsync(param);
+    }
+
+    public async Task AddSoftSkill(SoftSkill param) {
+        param.Id = _seq.GenerateSequence("seq_soft_skill_id", "QUA_PER");
+        await _dbCtx.SoftSkills.AddAsync(param);
+    }
+
+    public async Task AddSkill(Skill param) {
+        param.Id = _seq.GenerateSequence("seq_skill_id", "CMC");
+        await _dbCtx.Skills.AddAsync(param);
+    }
+
+
+    public async Task<LevelEducation> GetLevelEducationById(string id) {
+        var result = await _dbCtx.LevelEducations.FindAsync(id) 
+         ?? throw new ArgumentException("Niveau d'étude introuvable");
+
+        return result;
+    }
+
+    public async Task<List<LevelEducation>> GetAllLevelEducations() {
+        return await _dbCtx.LevelEducations.AsNoTracking().ToListAsync();
+    }
+
+
+    public async Task<SoftSkill> GetSoftSkillById(string id) {
+        var result = await _dbCtx.SoftSkills.FindAsync(id) 
+         ?? throw new ArgumentException("Qualité personnelle introuvable");
+
+        return result;
+    }
+
+    public async Task<List<SoftSkill>> GetAllSoftSkills() {
+        return await _dbCtx.SoftSkills.AsNoTracking().ToListAsync();
+    }
+
+    public async Task SaveChangesAsync() => await _dbCtx.SaveChangesAsync();
+
+    public void Attach<TEntity>(TEntity entity) where TEntity : class {
+        _dbCtx.Attach(entity);
+    }
+
 }

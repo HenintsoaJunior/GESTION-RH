@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.recruitment;
+using MyApp.Api.Entities.site;
 using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Utils.generator;
 
@@ -15,6 +16,8 @@ public interface IRequestRepository
     // Task UpdateRequest(string requestId, RequestFormDTO data);
     Task<RequestDetailsDTO> GetRequestDetails(string id);
     Task<RecruitmentRequest> GetRecruitmentRequestById(string requestId);
+
+    Task<List<Site>> GetSitesAsync(RecruitmentRequest request); 
 }
 
 
@@ -206,6 +209,7 @@ public class RequestRepository : IRequestRepository
         return new RequestDetailsDTO
         {
             Id = request.Id,
+            Post = request.Post,
             ApplicantUser = request.ApplicantUser.Name??"",
             Status = lastStatus,
             IsReplacement = request.IsReplacement,
@@ -226,14 +230,25 @@ public class RequestRepository : IRequestRepository
 
 
     public async Task<RecruitmentRequest> GetRecruitmentRequestById(string requestId) {
-        var request = await _dbCtx.RecruitmentRequests.FindAsync(requestId) ?? 
+        var request = await _dbCtx.RecruitmentRequests
+            .Include(r => r.ApplicantUser)
+            .FirstOrDefaultAsync(r => r.Id == requestId) ?? 
          throw new ArgumentException("Demande de recrutement introuvable");
         
         return request;
     }
 
 
-    // public async Task UpdateRequest(string requestId, RequestFormDTO data) {
-        
-    // }
+    public async Task<List<Site>> GetSitesAsync(RecruitmentRequest request) {
+        var recruitmentRequest = await _dbCtx.RecruitmentRequests
+            .Include(r => r.SitesRequests)
+                .ThenInclude(sr => sr.Site)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == request.Id);
+
+        return recruitmentRequest?
+            .SitesRequests
+            .Select(sr => sr.Site)
+            .ToList() ?? new List<Site>();
+    }
 }

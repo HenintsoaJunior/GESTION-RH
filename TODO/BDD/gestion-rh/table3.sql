@@ -115,7 +115,7 @@ CREATE TABLE job_attributions(
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
 );
  
-CREATE TABLE jobs_validations(
+CREATE TABLE job_validations(
    job_validation_id VARCHAR(50) NOT NULL,
    created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
    updated_at DATETIME2,
@@ -128,31 +128,31 @@ CREATE TABLE jobs_validations(
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
 );
  
-CREATE TABLE jobs_formations(
-   formation_id VARCHAR(50) NOT NULL,
+CREATE TABLE job_formations(
+   job_formation_id VARCHAR(50) NOT NULL,
    education_id VARCHAR(50) NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
    level_education_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(formation_id),
+   PRIMARY KEY(job_formation_id),
    FOREIGN KEY(education_id) REFERENCES educations(education_id),
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id),
    FOREIGN KEY(level_education_id) REFERENCES level_educations(level_education_id)
 );
  
-CREATE TABLE jobs_job_experiences(
-   experience_id VARCHAR(50) NOT NULL,
-   experience_years SMALLINT NOT NULL DEFAULT 0,
-   experience_post VARCHAR(50)  NOT NULL,
+CREATE TABLE job_experiences(
+   job_experience_id VARCHAR(50) NOT NULL,
+   job_experience_years SMALLINT NOT NULL DEFAULT 0,
+   job_experience_post VARCHAR(50)  NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(experience_id),
+   PRIMARY KEY(job_experience_id),
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
 );
  
-CREATE TABLE jobs_suitabilities(
-   job_suitability_id VARCHAR(50) NOT NULL,
+CREATE TABLE job_soft_skills(
+   job_soft_skill_id VARCHAR(50) NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
    soft_skill_id VARCHAR(50) NOT NULL,
-   PRIMARY KEY(job_suitability_id),
+   PRIMARY KEY(job_soft_skill_id),
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id),
    FOREIGN KEY(soft_skill_id) REFERENCES soft_skills(soft_skill_id)
 );
@@ -239,7 +239,7 @@ CREATE TABLE requests_per_validators(
 --             ROW_NUMBER() OVER (
 --                 PARTITION BY rpv.request_id
 --                 ORDER BY rpv.requests_per_validator_id
---             ) AS order
+--             ) AS v_order
 --         FROM requests_per_validators rpv
 --         WHERE rpv.is_validated = 0
 --     )
@@ -250,6 +250,6 @@ CREATE TABLE requests_per_validators(
 --           SELECT 1
 --           FROM ranked_validators p
 --           WHERE p.request_id = rv.request_id
---             AND p.rn < rv.rn
+--             AND p.v_order < rv.v_order
 --       )
 -- );

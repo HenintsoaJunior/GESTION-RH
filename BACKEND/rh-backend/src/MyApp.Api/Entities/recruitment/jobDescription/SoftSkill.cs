@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyApp.Api.Entities.recruitment;
 
-[Table("personnal_suitabilities")]
-public class PersonnalSuitability
+[Table("soft_skills")]
+public class SoftSkill
 {
     [Key]
     [Column("soft_skill_id")]

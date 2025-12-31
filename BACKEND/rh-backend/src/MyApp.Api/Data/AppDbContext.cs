@@ -156,8 +156,8 @@ namespace MyApp.Api.Data
         public DbSet<JobDescriptionStatus> JobDescriptionStatuses {get; set;}
         public DbSet<JobDescriptionValidation> JobDescriptionValidations {get; set;}
         public DbSet<LevelEducation> LevelEducations {get; set;}
-        public DbSet<PersonnalSuitability> PersonnalSuitabilities {get; set;}
-        public DbSet<JobDescriptionSuitability> JobDescriptionSuitabilities {get; set;}
+        public DbSet<SoftSkill> SoftSkills {get; set;}
+        public DbSet<JobDescriptionSoftSkill> JobDescriptionSoftSkills {get; set;}
         public DbSet<Skill> Skills { get; set; }
     } 
 }

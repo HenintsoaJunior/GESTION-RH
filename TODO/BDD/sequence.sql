@@ -607,10 +607,10 @@ CREATE SEQUENCE seq_request_id
 -- GO
 
 
-IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_id_site_request')
-    DROP SEQUENCE seq_id_site_request;
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_site_request_id')
+    DROP SEQUENCE seq_site_request_id;
 -- GO
-CREATE SEQUENCE seq_id_site_request
+CREATE SEQUENCE seq_site_request_id
     AS INT
     START WITH 1
     INCREMENT BY 1
@@ -646,10 +646,10 @@ CREATE SEQUENCE seq_job_description_id
 -- GO
 
 
-IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_attribution_id')
-    DROP SEQUENCE seq_attribution_id;
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_job_attribution_id')
+    DROP SEQUENCE seq_job_attribution_id;
 -- GO
-CREATE SEQUENCE seq_attribution_id
+CREATE SEQUENCE seq_job_attribution_id
     AS INT
     START WITH 1
     INCREMENT BY 1
@@ -672,10 +672,10 @@ CREATE SEQUENCE seq_job_validation_id
 -- GO
 
 
-IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_formation_id')
-    DROP SEQUENCE seq_formation_id;
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_job_formation_id')
+    DROP SEQUENCE seq_job_formation_id;
 -- GO
-CREATE SEQUENCE seq_formation_id
+CREATE SEQUENCE seq_job_formation_id
     AS INT
     START WITH 1
     INCREMENT BY 1
@@ -685,10 +685,10 @@ CREATE SEQUENCE seq_formation_id
 -- GO
 
 
-IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_experience_id')
-    DROP SEQUENCE seq_experience_id;
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_job_experience_id')
+    DROP SEQUENCE seq_job_experience_id;
 -- GO
-CREATE SEQUENCE seq_experience_id
+CREATE SEQUENCE seq_job_experience_id
     AS INT
     START WITH 1
     INCREMENT BY 1
@@ -698,10 +698,10 @@ CREATE SEQUENCE seq_experience_id
 -- GO
 
 
-IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_job_suitability_id')
-    DROP SEQUENCE seq_job_suitability_id;
+IF EXISTS (SELECT * FROM sys.sequences WHERE name = 'seq_job_soft_skill_id')
+    DROP SEQUENCE seq_job_soft_skill_id;
 -- GO
-CREATE SEQUENCE seq_job_suitability_id
+CREATE SEQUENCE seq_job_soft_skill_id
     AS INT
     START WITH 1
     INCREMENT BY 1

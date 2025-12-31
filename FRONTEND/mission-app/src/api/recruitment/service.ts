@@ -3,6 +3,7 @@ import axios from 'axios';
 import api from '@/utils/axios-config';
 import type { RecruitmentRequestForm } from '@/pages/recruitment/request/hooks/use-request-form';
 import type { RequestValidationFormDTO } from '@/pages/recruitment/validation/components/validation-form';
+import type { JobDescriptionForm } from '@/pages/recruitment/job-description/hooks/use-job-form';
 
 // Base key pour React Query
 const SEARCH_REQUESTS_BASE_KEY = ['searchRequests'] as const;
@@ -11,6 +12,8 @@ const SEARCH_STATUSES_BASE_KEY = ['searchRequestStatuses'] as const;
 const SEARCH_REASONS_BASE_KEY = ['searchReasons'] as const;
 const SEARCH_PENDED_REQUESTS_BASE_KEY = ['searchPendedRequests'] as const;
 const CHECK_ACCESS_BASE_KEY = ['isUserValidator'] as const;
+const HAS_JOB_DESC_BASE_KEY = ['hasJobDescription'] as const;
+const SEARCH_JOB_DESC_BASE_KEY = ['searchJobDescriptions'] as const;
 
 // Types
 export interface FilterRequestDTO {
@@ -34,7 +37,11 @@ export interface RequestDTO {
 
 export interface RequestDetailsDTO {
     id: string;
+    post: string;
     applicantUser: string;
+    direction: string;
+    department: string;
+    service: string;
     status: string;
     isReplacement: boolean;
     replacementDate?: string | null;
@@ -47,7 +54,16 @@ export interface RequestDetailsDTO {
     monthDuration?: number | null;
     beginningDate: string; 
     validationLevel: number;
+    isPlanned?: boolean;
+    notPlannedReason?: string | null;
 }
+
+export interface RequestValidationDTO {
+    direction: string;
+    applicantUser: string;
+    signatureBase64?: string | null;
+}
+
 
 export interface DocumentDTO {
     id: string;
@@ -60,6 +76,18 @@ interface CreateRequestResponse {
     message: string;
 }
 
+export interface JobDescriptionDetails {
+  id: string;
+  post: string;
+  requestId: string;
+  mission: string;
+  attributions: string[];
+  formations: string[];
+  experiences: string[];
+  softSkills: string[];
+  skills: string[];
+  lastTitular: string | null;
+}
 
 // Hook pour rechercher les demandes
 export const useSearchRequests = (
@@ -179,19 +207,27 @@ export const useGetUsersByDirection = (direction: string) => {
 export const useGetRecruitmentRequestDetails = (id: string) => {
     const queryKey = [...SEARCH_REQUEST_DETAILS_BASE_KEY, id] as const;
 
-    return useQuery<{ data: RequestDetailsDTO }, Error>({
+    return useQuery<{
+        details: RequestDetailsDTO;
+        validations: RequestValidationDTO[];
+    }, Error>({
         queryKey,
         queryFn: async () => {
             try {
                 const response = await api.get(`/api/recruitment/requests/${id}/details`);
-                return response.data;
-            } catch(error) {
-                if(axios.isAxiosError(error) && error.response) {
-                    throw new Error(error.response.data?.message || 'Erreur serveur');
+
+                    return {
+                    details: response.data.data.details,
+                    validations: response.data.data.validations
+                };
+            } catch (error) {
+                if (axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || "Erreur serveur");
                 }
                 throw error;
             }
-        }
+        },
+        enabled: !!id
     });
 };
 
@@ -260,5 +296,114 @@ export const useHasValidationInRecruitment = (user: string | undefined) => {
             }
         },
         enabled: !!user
+    });
+};
+
+
+export const useGetAllEducations = () => {
+    return useQuery<{ data: DocumentDTO[] }, Error>({
+        queryKey: ['getAllEducations'] as const,
+
+        queryFn: async () => {
+            try {
+                const response = await api.get(`/api/recruitment/params/educations`);
+                return response.data;
+            } catch(error) {
+                if(axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || 'Erreur serveur');
+                }
+                throw error;
+            }
+        }
+    });
+};
+
+export const useGetAllLevelEducations = () => {
+    return useQuery<{ data: DocumentDTO[] }, Error>({
+        queryKey: ['getAllLevelEducations'] as const,
+
+        queryFn: async () => {
+            try {
+                const response = await api.get(`/api/recruitment/params/level-educations`);
+                return response.data;
+            } catch(error) {
+                if(axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || 'Erreur serveur');
+                }
+                throw error;
+            }
+        }
+    });
+};
+
+export const useGetAllSoftSkills = () => {
+    return useQuery<{ data: DocumentDTO[] }, Error>({
+        queryKey: ['getAllSoftSkills'] as const,
+
+        queryFn: async () => {
+            try {
+                const response = await api.get(`/api/recruitment/params/soft-skills`);
+                return response.data;
+            } catch(error) {
+                if(axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || 'Erreur serveur');
+                }
+                throw error;
+            }
+        }
+    });
+};
+
+export const useAddJobDescription = () => {
+    const queryClient = useQueryClient();
+    return useMutation<CreateRequestResponse, Error, JobDescriptionForm>({
+        mutationFn: (data) => api.post('/api/recruitment/job-descriptions', data)
+            .then(r => r.data),
+        onSuccess: () => queryClient.invalidateQueries({ 
+            queryKey: SEARCH_JOB_DESC_BASE_KEY 
+        }),
+    });
+};
+
+export const useGetJobDescriptionDetails = (id: string) => {
+    const queryKey = [...SEARCH_JOB_DESC_BASE_KEY, id] as const;
+
+    return useQuery<{data: JobDescriptionDetails}, Error>({
+        queryKey,
+        queryFn: async () => {
+            try {
+                const response = await api.get(`/api/recruitment/job-descriptions/requests/${id}`);
+
+                return response.data;
+            } catch (error) {
+                if(axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || "Erreur serveur");
+                }
+                throw error;
+            }
+        },
+        enabled: !!id
+    });
+};
+
+export const useHasJobDescription = (id: string) => {
+    const queryKey = [...HAS_JOB_DESC_BASE_KEY, id] as const;
+
+    return useQuery<{hasJobDescription:boolean}, Error>({
+        queryKey,
+        queryFn: async () => {
+            try {
+                const response = await api.get(`/api/recruitment/job-descriptions/requests/${id}/has`);
+                const hasValue = response.data.data;
+
+                return {hasJobDescription : hasValue};
+            } catch (error) {
+                if(axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || "Erreur serveur");
+                }
+                throw error;
+            }
+        },
+        enabled: !!id
     });
 };

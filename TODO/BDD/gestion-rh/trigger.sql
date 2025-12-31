@@ -1,3 +1,5 @@
+-- AVEC l'utilisateur sa, entrez : ALTER ROLE db_owner ADD MEMBER user_test;
+
 CREATE OR ALTER PROCEDURE sp_update_all_mission_status
 AS
 BEGIN
