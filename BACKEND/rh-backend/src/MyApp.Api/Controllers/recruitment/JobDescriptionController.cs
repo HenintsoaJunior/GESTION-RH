@@ -34,6 +34,47 @@ public class JobDescriptionController(IJobDescriptionService service)
     }
 
 
+    [HttpGet("{id}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetJobDescriptionById([FromRoute] string id) {
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try {
+            var jobDescription = await _service.GetJobDescriptionEditById(id);
+            return Ok(new { data = jobDescription, status = 200, message = "Fiche de poste trouvée avec succès" });
+        }
+        catch(ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch(Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
+
+
+    [HttpPut("{id}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> UpdateJobDescription([FromRoute] string id, 
+        [FromBody] JobDescriptionFormDTO data) {
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try {
+            await _service.UpdateJobDescription(id, data);
+            return Ok(new { data = (object?)null, status = 200, message = "Fiche de poste mise à jour avec succès" });
+        }
+        catch(ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch(Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
+
+
     [HttpGet("requests/{requestId}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetJobDescription([FromRoute] string requestId) {

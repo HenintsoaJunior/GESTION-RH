@@ -23,6 +23,17 @@ export interface JobDescriptionForm {
   softSkills: { id: string }[];
 }
 
+export interface JobDescriptionEditForm {
+  id: string;
+  requestId: string;
+  mission: string;
+  attributions: string[];
+  skills: { label: string }[];
+  formations: Formation[];
+  experiences: Experience[];
+  softSkills: { id: string }[];
+}
+
 const useCreateJobDescriptionForm = (requestId: string) => {
   const [currentStep, setCurrentStep] = useState(1);
 

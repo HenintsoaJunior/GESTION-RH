@@ -33,3 +33,31 @@ public class RequestFormDTO
     public bool IsPlanned {get; set;}
     public string? NotPlannedReason {get; set;}
 }
+
+
+public class RequestEditDTO
+{
+    public string Id { get; set; } = null!;
+
+    public string Post { get; set; } = null!;
+    public short Effective { get; set; }
+
+    public string? ContractId { get; set; }
+    public string? ContractPrecision { get; set; }
+    public short? MonthDuration { get; set; }
+
+    public string[] Sites { get; set; } = [];
+
+    public bool IsReplacement { get; set; }
+    public string? ReplacementReasonId { get; set; }
+    public DateOnly? ReplacementDate { get; set; }
+    public string? ReasonPrecision { get; set; }
+    public string? LastTitularId { get; set; }
+
+    public bool IsPlanned { get; set; }
+    public string? NotPlannedReason { get; set; }
+
+    public DateOnly BeginningDate { get; set; }
+
+    public string ApplicantUserId { get; set; } = null!;
+}

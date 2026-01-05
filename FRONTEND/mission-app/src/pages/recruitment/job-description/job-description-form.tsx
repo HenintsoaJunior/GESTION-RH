@@ -29,11 +29,12 @@ import axios from "axios";
 import useCreateJobDescriptionForm from "./hooks/use-job-form";
 import FormationExperienceStep from "./components/experience-step";
 import SkillStep from "./components/skill-step";
-import { useAddJobDescription } from "@/api/recruitment/service";
+import { useAddJobDescription, useUpdateJobDescription } from "@/api/recruitment/service";
 
 interface JobDescriptionFormProps {
     isOpen: boolean;
     requestId: string;
+    mode: "create" | "edit";
     onClose: () => void;
     onFormSuccess: (type: "error" | "success" | "info", message: string) => void;
 }
@@ -42,7 +43,8 @@ const JobDescriptionForm: React.FC<JobDescriptionFormProps> = ({
     isOpen,
     requestId,
     onClose,
-    onFormSuccess
+    onFormSuccess,
+    mode
 }) => {
     const {
         currentStep,
@@ -55,7 +57,8 @@ const JobDescriptionForm: React.FC<JobDescriptionFormProps> = ({
         handleReset
     } = useCreateJobDescriptionForm(requestId);
 
-  const createJobDescription = useAddJobDescription();
+    const createJobDescription = useAddJobDescription();
+    const updateJobDescription = useUpdateJobDescription();
 
     const [alert, setAlert] = useState<{
         isOpen: boolean;
@@ -84,16 +87,26 @@ const JobDescriptionForm: React.FC<JobDescriptionFormProps> = ({
         }
 
         try {
-            console.log("FormData en cours :", formData);
-            await createJobDescription.mutateAsync(formData);
+            if (mode === "edit") {
+                await updateJobDescription.mutateAsync(formData);
 
-            setAlert({
-                isOpen: true,
-                type: "success",
-                message: "Fiche de poste créée avec succès !"
-            });
+                onFormSuccess("success", "Fiche de poste mise à jour avec succès !");
+                setAlert({
+                    isOpen: true,
+                    type: "success",
+                    message: "Fiche de poste modifiée avec succès !"
+                });
+            } else {
+                await createJobDescription.mutateAsync(formData);
+                
+                onFormSuccess("success", "Fiche de poste créée avec succès !");
+                setAlert({
+                    isOpen: true,
+                    type: "success",
+                    message: "Fiche de poste créée avec succès !"
+                });
+            }
 
-            onFormSuccess("success", "Fiche de poste créée avec succès !");
             handleReset();
             onClose();
         } 

@@ -24,32 +24,43 @@ import Alert from "@/components/alert";
 import PostInformationsStep from "./components/post-info-step";
 import RecruitmentReasonStep from "./components/reasons-step";
 import useRecruitmentForm from "./hooks/use-request-form";
-import { useCreateRecruitmentRequest } from "@/api/recruitment/service";
+import { useCreateRecruitmentRequest, useGetRecruitmentRequest, useUpdateRecruitmentRequest } from "@/api/recruitment/service";
 import axios from "axios";
 
 interface RecruitmentRequestFormProps {
     isOpen: boolean;
     onClose: () => void;
     onFormSuccess: (type: string, message: string) => void;
+    requestId?: string;
 }
 
 const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
-  isOpen,
-  onClose,
-  onFormSuccess
+    isOpen,
+    onClose,
+    onFormSuccess,
+    requestId
 }) => {
-    const {
-      currentStep,
-      formData,
-      fieldErrors,
-      handleInputChange,
-      validateStep2,
-      handleNext,
-      handlePrevious,
-      handleReset,
-    } = useRecruitmentForm();
+    const isUpdate = Boolean(requestId);
+    const { data: initialData, isLoading: isLoadingInitialData } = 
+        useGetRecruitmentRequest(requestId);
 
+    const {
+        currentStep,
+        formData,
+        fieldErrors,
+        handleInputChange,
+        validateStep2,
+        handleNext,
+        handlePrevious,
+        handleReset,
+    } = useRecruitmentForm({
+        mode: isUpdate ? "edit" : "create",
+        initialData
+    });
+
+// Mutations
     const createRequest = useCreateRecruitmentRequest();
+    const updateRequest = useUpdateRecruitmentRequest(requestId);
 
     const [sharedDirection, setSharedDirection] = useState<string>("");
 
@@ -60,44 +71,49 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
     const handleAlertClose = useCallback(() => setAlert((a) => ({ ...a, isOpen: false })), []);
     const showError = useCallback((message: string) => setAlert({ isOpen: true, type: "error", message }), []);
 
-    if (!isOpen) return null;
+    if(!isOpen) return null;
+    if (isUpdate && isLoadingInitialData) return <div>Chargement des données...</div>;
+
+// Construction payload propre
+    const buildPayload = () => ({
+        ...formData,
+        contractId: formData.contractId === "other" ? null : formData.contractId,
+        replacementReasonId: formData.replacementReasonId === "other" ? null : formData.replacementReasonId,
+        beginningDate: new Date(formData.beginningDate).toISOString().split("T")[0]
+    });
 
     const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
       
-        if (currentStep === 1) {
-                handleNext();
-                return;
+        if(currentStep === 1) {
+            handleNext();
+            return;
         }
 
-        if (currentStep === 2) {
+        if(currentStep === 2) {
             const ok = validateStep2();
-            if (!ok) {
+            if(!ok) {
                 showError("Veuillez corriger les erreurs avant de valider.");
                 return;
             }
 
             try {
-                if(formData.contractId==="other") formData.contractId=null;
-                if(formData.replacementReasonId==="other") formData.replacementReasonId=null;
+                const payload = buildPayload();
 
-                const beginningDate = new Date(formData.beginningDate);
-                formData.beginningDate = beginningDate.toISOString().split('T')[0];
+                if (isUpdate && requestId) {
+                    await updateRequest.mutateAsync(payload);
+                    setAlert({ isOpen: true, type: "success", message: "Demande mise à jour avec succès !" });
+                    onFormSuccess("success", "Demande mise à jour avec succès !");
+                } else {
+                    await createRequest.mutateAsync(payload);
+                    setAlert({ isOpen: true, type: "success", message: "Demande créée avec succès !" });
+                    onFormSuccess("success", "Demande créée avec succès !");
+                }
 
-            // Envoi du formulaire
-                await createRequest.mutateAsync(formData);
-
-            // Message de succès
-                setAlert({ isOpen: true, type: "success", message: "Demande créée avec succès !" });
-
-            // Callback parent pour notifier succès
-                onFormSuccess("success", "Demande créée avec succès !");
-
-            // Reset formulaire et fermeture
                 handleReset();
                 onClose();
-
-            } catch (error: unknown) {
+            } 
+            catch (error: unknown) {
                 console.error("Erreur lors de la création :", error);
 
                 if (axios.isAxiosError(error)) {
@@ -119,7 +135,6 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                     showError("Erreur inconnue lors de la création de la demande.");
                 }
             }
-
         }
     };
 

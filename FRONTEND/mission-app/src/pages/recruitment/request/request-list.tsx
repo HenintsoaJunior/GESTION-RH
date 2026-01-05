@@ -66,6 +66,7 @@ interface AlertState {
 // Composant
 const RequestList: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
+    const [editingRequestId, setEditingRequestId] = useState<string | null>(null);
     const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
   
     const [filters, setFilters] = useState<FiltersState>({
@@ -192,7 +193,8 @@ const RequestList: React.FC = () => {
         setPage(1);
     }, []);
 
-    const handleOpenForm = useCallback(() => {
+    const handleOpenForm = useCallback((requestId?: string) => {
+        setEditingRequestId(requestId || null);
         setIsFormOpen(true);
     }, []);
 
@@ -237,7 +239,11 @@ const RequestList: React.FC = () => {
         {isFormOpen && (
             <RecruitmentRequestForm
                 isOpen={isFormOpen}
-                onClose={() => setIsFormOpen(false)}
+                requestId={editingRequestId || undefined}
+                onClose={() => {
+                    setIsFormOpen(false);
+                    setEditingRequestId(null); // reset après fermeture
+                }}
                 onFormSuccess={handleFormSuccess}
             />
         )}
@@ -350,13 +356,13 @@ const RequestList: React.FC = () => {
         <TableContainer>
             <TableHeader>
                 <TableTitle>Liste des demandes de recrutement</TableTitle>
+
                 { canAddRequest && (
-                    <ButtonSearch onClick={handleOpenForm}>
+                    <ButtonSearch onClick={() => handleOpenForm(undefined)}>
                         <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
                         Faire une demande
                     </ButtonSearch>
                 )}
-               
             </TableHeader>
 
             <DataTable>
@@ -376,7 +382,7 @@ const RequestList: React.FC = () => {
                     {isLoading ? (
                     <TableRow>
                         <TableCell colSpan={7}>
-                        <Loading>Chargement des données...</Loading>
+                            <Loading>Chargement des données...</Loading>
                         </TableCell>
                     </TableRow>
                     ) : requests.length > 0 ? (
@@ -384,9 +390,7 @@ const RequestList: React.FC = () => {
                         <TableRow key={req.id}>
                             <TableCell>
                                 { canViewDetails ? (
-                                    <Link to={`/recrutement/demandes/${req.id}/details`} className="link">
-                                    {req.id}
-                                    </Link>
+                                    <Link to={`/recrutement/demandes/${req.id}/details`} className="link">{req.id}</Link>
                                 ) : ( req.id ) }
                             </TableCell>
                             <TableCell>{req.post}</TableCell>
@@ -400,7 +404,7 @@ const RequestList: React.FC = () => {
                                 {req.sendingDate ? new Date(req.sendingDate).toLocaleDateString("fr-FR") : "N/A"}
                             </TableCell>
                             <TableCell style={{ textAlign: "center" }}>
-                                <EditButton onClick={() => console.log("Edited")}>
+                                <EditButton onClick={() => handleOpenForm(req.id)}>
                                     <Edit size={16} />
                                 </EditButton>
                                 { canCancelRequest && (

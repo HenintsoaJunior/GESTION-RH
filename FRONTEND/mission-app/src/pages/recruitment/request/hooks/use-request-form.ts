@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useGetContractTypes, type ContractType } from "@/api/contract/services";
 import { useEmployeeInformations, type EmployeeInformations } from "@/api/users/services";
+import type { RequestEditDTO } from "@/api/recruitment/service";
 
 type FieldErrors = { [key: string]: string[] };
 
 interface RecruitmentRequestFormProps {
+  mode: "create" | "edit";
+  initialData?: RequestEditDTO;
   initialContractId?: string;
   initialStartDate?: string | null;
 }
@@ -29,12 +32,16 @@ export interface RecruitmentRequestForm
   notPlannedReason: string | null;
 }
 
-const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormProps = {}) => {
+const useRecruitmentForm = ({ 
+  mode = "create",
+  initialData, 
+  initialContractId = "" 
+} : RecruitmentRequestFormProps) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [formData, setFormData] = useState<RecruitmentRequestForm>({
     post: "",
-    effective: 0,
-    contractId: initialContractId,
+    effective: null,
+    contractId: initialContractId || null,
     contractPrecision: null,
     monthDuration: null,
     sites: [],
@@ -63,7 +70,7 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
 
   // prefill applicantUserId from current user if available
   useEffect(() => {
-    if (currentUserId && !formData.applicantUserId) {
+    if(currentUserId && !formData.applicantUserId) {
       setFormData((prev) => ({ ...prev, applicantUserId: String(currentUserId) }));
       setFieldErrors((prev) => {
         const copy = { ...prev };
@@ -73,6 +80,33 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);
+
+// Pré-remplissage des données initiales
+  useEffect(() => {
+    if (mode === "edit" && initialData) {
+      setFormData({
+        post: initialData.post ?? "",
+        effective: initialData.effective ?? null,
+        contractId: initialData.contractId ?? null,
+        contractPrecision: initialData.contractPrecision ?? null,
+        monthDuration: initialData.monthDuration ?? null,
+        sites: initialData.sites ?? [],
+        applicantUserId: currentUserId ?? "",
+        isReplacement: initialData.isReplacement ?? false,
+        replacementReasonId: initialData.replacementReasonId ?? "other",
+        replacementDate: initialData.replacementDate ?? null,
+        reasonPrecision: initialData.reasonPrecision ?? null,
+        lastTitularId: initialData.lastTitularId ?? null,
+        isPlanned: initialData.isPlanned ?? true,
+        notPlannedReason: initialData.notPlannedReason ?? null,
+        beginningDate: initialData.beginningDate ?? "",
+      });
+
+      setCurrentStep(1);
+      setFieldErrors({});
+    }
+  }, [mode, initialData, currentUserId]);
+
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: string | number | boolean | null } }) => {
@@ -129,8 +163,10 @@ const useRecruitmentForm = ({ initialContractId = "" }: RecruitmentRequestFormPr
 
     const postValue = formData.post ?? "";
     const effective = formData.effective;
-    const contractId = formData.contractId ?? null;
-    const applicantId = formData.applicantUserId ?? "";
+    const contractId = formData.contractId ?? "other";
+    const applicantId = currentUserId;
+
+    console.log("Contract ID : ", contractId);
     const contractPrecision = formData.contractPrecision ?? null;
     const monthDuration = formData.monthDuration ?? null;
 

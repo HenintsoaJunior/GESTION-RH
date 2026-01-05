@@ -19,8 +19,8 @@ public interface IJobDescriptionRepository
 
 // Fiche de poste
     Task AddJobDescription(JobDescription job);
-    Task<JobDescription> GetJobDescription(string id);
-    Task<JobDescription> GetJobDescriptionByRequest(RecruitmentRequest req);
+    Task<JobDescription> GetJobDescriptionById(string id);
+    Task<JobDescription?> GetJobDescriptionByRequest(RecruitmentRequest req);
 
     Task AddJobAttribution(Attribution param);
     Task AddFormation(Formation param);
@@ -39,9 +39,16 @@ public interface IJobDescriptionRepository
     void Attach<TEntity>(TEntity entity) where TEntity : class;
     Task<bool> EducationExistsByLabel(string label);
     Task<bool> SoftSkillExistsByLabel(string label);
+    Task UpdateJobDescription(JobDescription last, JobDescription newJob);
 
 // Commit de transaction
     Task SaveChangesAsync();
+
+    void RemoveAttributions(IEnumerable<Attribution> items);
+    void RemoveFormations(IEnumerable<Formation> items);
+    void RemoveExperiences(IEnumerable<Experience> items);
+    void RemoveSoftSkills(IEnumerable<JobDescriptionSoftSkill> items);
+    void RemoveSkills(IEnumerable<Skill> items);
 }
 
 
@@ -117,9 +124,13 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
         await _dbCtx.JobDescriptions.AddAsync(job);
     }
 
-    public async Task<JobDescription> GetJobDescription(string id) {
+    public async Task<JobDescription> GetJobDescriptionById(string id) {
         var result = await _dbCtx.JobDescriptions
-            .Include(r => r.Formations).ThenInclude(f => f.Education)
+            .Include(r => r.Attributions)
+            .Include(r => r.Formations)
+                .ThenInclude(f => f.Education)
+            .Include(r => r.Formations)
+                .ThenInclude(f => f.LevelEducation)
             .Include(r => r.Experiences)
             .Include(r => r.SoftSkills).ThenInclude(s => s.SoftSkill)
             .Include(r => r.Skills)
@@ -129,7 +140,7 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
         return result;
     }
 
-    public async Task<JobDescription> GetJobDescriptionByRequest(RecruitmentRequest req) {
+    public async Task<JobDescription?> GetJobDescriptionByRequest(RecruitmentRequest req) {
         var result = await _dbCtx.JobDescriptions
             .Include(r => r.Attributions)
             .Include(r => r.Formations)
@@ -139,8 +150,7 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
             .Include(r => r.Experiences)
             .Include(r => r.SoftSkills).ThenInclude(s => s.SoftSkill)
             .Include(r => r.Skills)
-            .FirstOrDefaultAsync(j => j.Request.Id == req.Id) ?? 
-            throw new ArgumentException("Fiche de poste introuvable");
+            .FirstOrDefaultAsync(j => j.Request.Id == req.Id);
 
         return result;
     }
@@ -215,4 +225,42 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
         _dbCtx.Attach(entity);
     }
 
+
+    public void RemoveAttributions(IEnumerable<Attribution> items) {
+        if (items == null || !items.Any()) return;
+        _dbCtx.Attributions.RemoveRange(items);
+    }
+
+    public void RemoveFormations(IEnumerable<Formation> items) {
+        if (items == null || !items.Any()) return;
+        _dbCtx.Formations.RemoveRange(items);
+    }
+
+    public void RemoveExperiences(IEnumerable<Experience> items) {
+        if (items == null || !items.Any()) return;
+        _dbCtx.Experiences.RemoveRange(items);
+    }
+
+    public void RemoveSoftSkills(IEnumerable<JobDescriptionSoftSkill> items) {
+        if (items == null || !items.Any()) return;
+        _dbCtx.JobDescriptionSoftSkills.RemoveRange(items);
+    }
+
+    public void RemoveSkills(IEnumerable<Skill> items) {
+        if (items == null || !items.Any()) return;
+        _dbCtx.Skills.RemoveRange(items);
+    }
+
+
+    public async Task UpdateJobDescription(JobDescription last, JobDescription newJob) {
+        last.Mission = newJob.Mission;
+        last.Attributions = newJob.Attributions;
+        last.Experiences = newJob.Experiences;
+        last.Formations = newJob.Formations;
+        last.Skills = newJob.Skills;
+        last.SoftSkills = newJob.SoftSkills;
+        last.RequestId = newJob.RequestId;
+
+        await _dbCtx.SaveChangesAsync();
+    }
 }

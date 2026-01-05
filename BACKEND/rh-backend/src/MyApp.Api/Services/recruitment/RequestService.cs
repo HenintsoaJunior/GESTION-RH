@@ -18,7 +18,10 @@ public interface IRequestService
     Task<List<RequestStatus>> GetAllStatuses();
     Task<RequestDetailsDTO> GetRequestDetails(string id);
     Task<List<RequestValidationDTO>> GetValidationsWithSignatures(string id);
+    Task<RequestEditDTO> GetById(string id);
     Task DeleteRequest(string requestId);
+    Task UpdateRequest(string requestId, RequestFormDTO data);
+    Task<RecruitmentRequest> GetRecruitmentRequestById(string requestId);
 }
 
 public class RequestService(
@@ -168,6 +171,48 @@ public class RequestService(
         }   
         catch(Exception ex) {
             _logger.LogError(ex, "Erreur lors de la recherche des validations");
+            throw;
+        }
+    }
+
+
+    public async Task<RecruitmentRequest> GetRecruitmentRequestById(string requestId) {
+        return await _repo.GetRecruitmentRequestById(requestId);
+    }
+
+
+    public async Task<RequestEditDTO> GetById(string id) {
+        return await _repo.GetById(id);
+    }
+
+
+    public async Task UpdateRequest(string requestId, RequestFormDTO data) {
+        using var transaction = await _dbCtx.Database.BeginTransactionAsync();
+
+        try {
+            _logger.LogInformation("Mise à jour de la demande en cours ...");
+            var lastRequest = await GetRecruitmentRequestById(requestId);
+
+        // Vérification du statut
+            if(!lastRequest.LastStatus.ToLower().Equals("brouillon")) {
+                throw new Exception("Impossible de modifier une demande en cours ou déjà validée");
+            }
+
+        // Vérification de la direction
+            var applicant = await _userRepo.GetByIdAsync(data.ApplicantUserId)
+             ?? throw new ArgumentException("Demandeur non trouvé");
+            if(applicant.Department != lastRequest.ApplicantUser.Department) {
+                throw new Exception("Impossible de modifier les demandes des autres directions");
+            }
+
+            await _repo.UpdateRequest(lastRequest, data);
+            await _dbCtx.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex, "Erreur lors de la mise à jour de la demande");
+            await transaction.RollbackAsync();
             throw;
         }
     }

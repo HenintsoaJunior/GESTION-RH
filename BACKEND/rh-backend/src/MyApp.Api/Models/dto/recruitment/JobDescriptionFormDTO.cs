@@ -34,6 +34,25 @@ namespace MyApp.Api.Models.dto.recruitment
         public SkillDTO[] Skills { get; set; } = null!;
     }
 
+
+    public class JobDescriptionEditDTO
+    {
+        public string Id { get; set; } = null!;
+    // Infos générales
+        public string RequestId { get; set; } = null!;
+        public string Mission { get; set; } = null!;
+        public string[] Attributions { get; set; } = null!;
+
+    // Formations et expériences
+        public FormationDTO[] Formations { get; set; } = null!;
+        public ExperienceDTO[] Experiences { get; set; } = null!;
+
+    // Qualités perso et compétences
+        public SoftSkillDTO[] SoftSkills { get; set; } = null!;
+        public SkillDTO[] Skills { get; set; } = null!;
+    }
+
+
     public class FormationDTO
     {
         [Required]

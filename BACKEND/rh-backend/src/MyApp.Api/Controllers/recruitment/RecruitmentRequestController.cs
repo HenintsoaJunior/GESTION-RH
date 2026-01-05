@@ -34,6 +34,29 @@ public class RecruitmentRequestController(IRequestService _service,
     }
 
 
+    [HttpGet("{id}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetRequestById([FromRoute] string id) {
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try {
+            var lastRequest = await _service.GetById(id);
+
+            return Ok(new {
+                data = lastRequest, status = 200, message = "success"
+            });
+        }
+        catch (ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
+
+
     [HttpPost]
     [AllowAnonymous]
     public async Task<IActionResult> AddRequest([FromBody] RequestFormDTO data)
@@ -198,6 +221,27 @@ public class RecruitmentRequestController(IRequestService _service,
         try {
             var hasRequests = await _validationService.HasRequestsToValidate(user);
             return Ok(new { data = hasRequests, status = 200, message = "success" });
+        }
+        catch (ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch (Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
+
+
+    [HttpPut("{id}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> UpdateRequest([FromRoute] string id,
+     [FromBody] RequestFormDTO data) {
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try {
+            await _service.UpdateRequest(id, data);
+            return Ok(new { data = (object?)null, status = 200, message = "Demande mise à jour avec succès" });
         }
         catch (ArgumentException ex) {
             return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });

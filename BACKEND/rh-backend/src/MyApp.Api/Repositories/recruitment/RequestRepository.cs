@@ -12,8 +12,9 @@ public interface IRequestRepository
     Task<List<RequestStatus>> GetAllStatuses();
     Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO dto, int page, int pageSize);
     Task<RecruitmentRequest> AddRequest(RequestFormDTO data);
+    Task<RequestEditDTO> GetById(string id);
     Task DeleteRequest(RecruitmentRequest request);
-    // Task UpdateRequest(string requestId, RequestFormDTO data);
+    Task UpdateRequest(RecruitmentRequest lastRequest, RequestFormDTO data);
     Task<RequestDetailsDTO> GetRequestDetails(string id);
     Task<RecruitmentRequest> GetRecruitmentRequestById(string requestId);
 
@@ -232,6 +233,11 @@ public class RequestRepository : IRequestRepository
     public async Task<RecruitmentRequest> GetRecruitmentRequestById(string requestId) {
         var request = await _dbCtx.RecruitmentRequests
             .Include(r => r.ApplicantUser)
+            .Include(r => r.Contract)
+            .Include(r => r.ReplacementReason)
+            .Include(r => r.LastTitular)
+            .Include(r => r.SitesRequests)
+                .ThenInclude(sr => sr.Site)
             .FirstOrDefaultAsync(r => r.Id == requestId) ?? 
          throw new ArgumentException("Demande de recrutement introuvable");
         
@@ -250,5 +256,89 @@ public class RequestRepository : IRequestRepository
             .SitesRequests
             .Select(sr => sr.Site)
             .ToList() ?? new List<Site>();
+    }
+
+
+    public async Task<RequestEditDTO> GetById(string id) {
+        var request = await this.GetRecruitmentRequestById(id);
+
+        return new RequestEditDTO
+        {
+            Id = request.Id,
+            Post = request.Post,
+            Effective = request.Effective,
+
+            ContractId = request.Contract?.ContractTypeId,
+            ContractPrecision = request.ContractPrecision,
+            MonthDuration = request.MonthDuration,
+
+            Sites = request.SitesRequests.Select(sr => sr.Site.SiteId).ToArray(),
+
+            IsReplacement = request.IsReplacement,
+            ReplacementReasonId = request.ReplacementReason?.Id,
+            ReplacementDate = request.ReplacementDate,
+            ReasonPrecision = request.ReasonPrecision,
+            LastTitularId = request.LastTitular?.UserId,
+
+            IsPlanned = request.IsPlanned,
+            NotPlannedReason = request.NotPlannedReason,
+
+            BeginningDate = request.BeginningDate,
+            ApplicantUserId = request.ApplicantUser.UserId
+        };
+    }
+
+
+    public async Task UpdateRequest(RecruitmentRequest lastRequest, RequestFormDTO data) {
+        try {
+            var replacementReason = await _dbCtx.ReplacementReasons.FindAsync(
+                data.ReplacementReasonId);
+
+            var lastTitular = await _dbCtx.Users.FindAsync(data.LastTitularId);
+            var contract = await _dbCtx.ContractTypes.FirstOrDefaultAsync(
+                c => c.ContractTypeId == data.ContractId
+            );
+
+            lastRequest.Post = data.Post;
+            lastRequest.Effective = data.Effective;
+
+            lastRequest.IsReplacement = data.IsReplacement;
+            lastRequest.ReplacementReason = replacementReason;
+            lastRequest.ReplacementDate = data.ReplacementDate;
+            lastRequest.ReasonPrecision = data.ReasonPrecision;
+            lastRequest.LastTitular = lastTitular;
+
+            lastRequest.Contract = contract;
+            lastRequest.ContractPrecision = data.ContractPrecision;
+            lastRequest.MonthDuration = data.MonthDuration;
+
+            lastRequest.BeginningDate = data.BeginningDate;
+            lastRequest.IsPlanned = data.IsPlanned;
+            lastRequest.NotPlannedReason = data.NotPlannedReason;
+            lastRequest.UpdatedAt = DateTime.UtcNow;
+
+        // Mettre à jour les sites associés
+            var existingSites = await _dbCtx.SitesRequests
+                .Where(sr => sr.Request.Id == lastRequest.Id)
+                .ToListAsync();
+
+            _dbCtx.SitesRequests.RemoveRange(existingSites);
+
+            for(int i=0; i<data.Sites.Length; i++) {
+                var siteRequest = new SiteRequest
+                {
+                    Id = _generator.GenerateSequence("seq_id_site_request", "DMD_REC_SITE"),
+                    Request = lastRequest,
+                    Site = await _dbCtx.Sites.FirstOrDefaultAsync(s => s.SiteId == data.Sites[i]) 
+                        ?? throw new Exception("Site introuvable")
+                };
+                await _dbCtx.SitesRequests.AddAsync(siteRequest);
+            }
+
+            await _dbCtx.SaveChangesAsync();
+        }
+        catch {
+            throw;
+        }
     }
 }

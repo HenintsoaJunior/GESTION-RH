@@ -3,7 +3,7 @@ import axios from 'axios';
 import api from '@/utils/axios-config';
 import type { RecruitmentRequestForm } from '@/pages/recruitment/request/hooks/use-request-form';
 import type { RequestValidationFormDTO } from '@/pages/recruitment/validation/components/validation-form';
-import type { JobDescriptionForm } from '@/pages/recruitment/job-description/hooks/use-job-form';
+import type { JobDescriptionEditForm, JobDescriptionForm } from '@/pages/recruitment/job-description/hooks/use-job-form';
 
 // Base key pour React Query
 const SEARCH_REQUESTS_BASE_KEY = ['searchRequests'] as const;
@@ -56,6 +56,25 @@ export interface RequestDetailsDTO {
     validationLevel: number;
     isPlanned?: boolean;
     notPlannedReason?: string | null;
+}
+
+export interface RequestEditDTO {
+    id: string;
+    post: string;
+    effective: number;
+    contractId: string | null;
+    contractPrecision: string | null;
+    monthDuration: number | null;
+    sites: string[];
+    isReplacement: boolean;
+    replacementReasonId?: string | null;
+    replacementDate?: string | null;
+    reasonPrecision?: string | null;
+    lastTitularId?: string | null;
+    isPlanned: boolean;
+    notPlannedReason: string | null;
+    beginningDate: string; 
+    applicantUserId: string;
 }
 
 export interface RequestValidationDTO {
@@ -164,7 +183,9 @@ export const useGetReplacementReasons = () => {
 export const useCreateRecruitmentRequest = () => {
     const queryClient = useQueryClient();
     return useMutation<CreateRequestResponse, Error, RecruitmentRequestForm>({
-        mutationFn: (data) => api.post('/api/recruitment/requests', data).then(r => r.data),
+        mutationFn: async (data) => 
+            await api.post('/api/recruitment/requests', data).then(r => r.data),
+
         onSuccess: () => queryClient.invalidateQueries({ 
             queryKey: SEARCH_REQUESTS_BASE_KEY 
         }),
@@ -405,5 +426,57 @@ export const useHasJobDescription = (id: string) => {
             }
         },
         enabled: !!id
+    });
+};
+
+
+// UPDATE : Demande de recrutement
+export const useGetRecruitmentRequest = (id?: string) => {
+    return useQuery<RequestEditDTO, Error>({
+        queryKey: ["getRecruitmentRequestById", id],
+        queryFn: async () => {
+            const response = await api.get(`/api/recruitment/requests/${id}`);
+            return response.data.data;
+        },
+        enabled: !!id, // ⛔️ n'appelle pas si id undefined
+    });
+};
+
+export const useUpdateRecruitmentRequest = (id?: string) => {
+    const queryClient = useQueryClient();
+
+    return useMutation<CreateRequestResponse, Error, RecruitmentRequestForm>({
+        mutationFn: async (data) => 
+            await api.put(`/api/recruitment/requests/${id}`, data).then(r => r.data),
+
+        onSuccess: () => queryClient.invalidateQueries({ 
+            queryKey: SEARCH_REQUESTS_BASE_KEY 
+        }),
+    });
+};
+
+
+// UPDATE : Fiche de poste
+export const useGetJobDescription = (id?: string) => {
+    return useQuery<RequestEditDTO, Error>({
+        queryKey: ["getJobDescriptionById", id],
+        queryFn: async () => {
+            const response = await api.get(`/api/recruitment/job-descriptions/${id}`);
+            return response.data.data;
+        },
+        enabled: !!id, // ⛔️ n'appelle pas si id undefined
+    });
+};
+
+export const useUpdateJobDescription = (id? : string) => {
+    const queryClient = useQueryClient();
+
+    return useMutation<CreateRequestResponse, Error, JobDescriptionForm>({
+        mutationFn: async (data) => 
+            await api.put(`/api/recruitment/job-descriptions/${id}`, data).then(r => r.data),
+
+        onSuccess: () => queryClient.invalidateQueries({ 
+            queryKey: SEARCH_JOB_DESC_BASE_KEY 
+        }),
     });
 };
