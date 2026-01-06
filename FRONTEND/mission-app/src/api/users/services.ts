@@ -584,9 +584,6 @@ export const useEmployeeInformations = () => {
         const employeeInfo = resp2.data.data;
         const superiorInfo = resp3.data.data[0] ?? {};
 
-        // console.log('User Data:', userInfo);
-        // console.log('Superior Data:', employeeInfo);
-
         const employeeData: EmployeeInformations = {
           id: userInfo.userId,
           name: userInfo.name,

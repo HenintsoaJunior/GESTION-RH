@@ -48,6 +48,8 @@ interface PostInformationStepProps {
 
 interface CurrentUser {
 	id?: string;
+	name?: string;
+	jobTitle?: string;
 	direction?: string;
 	department?: string;
 	service?: string;
@@ -83,6 +85,8 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 
 	const currentUser: CurrentUser | null = employee? {
 		id: employee.id,
+		name: employee.name,
+		jobTitle: employee.post,
 		direction: employee.direction,
 		department: employee.department,
 		service: employee.service,
@@ -129,7 +133,7 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 							onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
 							placeholder="0"
 							disabled={isSubmitting}
-							className={fieldErrors.effective ? "input-error" : ""}
+							className={`no-spinner ${fieldErrors.effective ? "input-error" : ""}`}
 						/>
 						{fieldErrors.effective && fieldErrors.effective.length > 0 && (
 							<ErrorMessage>{fieldErrors.effective.join(", ")}</ErrorMessage>
@@ -316,7 +320,7 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 								<FormInput
 									type="text"
 									name="managerName"
-									value={currentUser?.managerName || ""}
+									value={currentUser?.name || ""}
 									readOnly
 									disabled
 								/>
@@ -328,7 +332,7 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 								<FormInput
 									type="text"
 									name="managerFunction"
-									value={currentUser?.managerFunction || ""}
+									value={currentUser?.jobTitle || ""}
 									readOnly
 									disabled
 								/>

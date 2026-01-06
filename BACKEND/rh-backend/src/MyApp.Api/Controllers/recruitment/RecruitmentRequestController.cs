@@ -16,12 +16,13 @@ public class RecruitmentRequestController(IRequestService _service,
     public async Task<IActionResult> SearchRequests([FromQuery] FilterRequestListDTO filters, 
         [FromQuery] int page=1, [FromQuery] int pageSize=10
     ) {
-        if(!User.Identity?.IsAuthenticated ?? true) {
+        var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if(string.IsNullOrEmpty(userEmail))
             return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        }
 
         try {
-            var (results, totalCount) = await _service.SearchRequests(filters, page, pageSize);
+            var (results, totalCount) = await _service.SearchRequests(filters, userEmail, page, pageSize);
             var responseData = new { results, totalCount, page, pageSize };
             return Ok(new { data = responseData, status = 200, message = "success" });
         }

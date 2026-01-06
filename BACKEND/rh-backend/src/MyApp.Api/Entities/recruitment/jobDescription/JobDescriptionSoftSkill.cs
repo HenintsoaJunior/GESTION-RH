@@ -10,9 +10,16 @@ public class JobDescriptionSoftSkill
     [Column("job_soft_skill_id")]
     public string Id { get; set; } = null!;
 
-    [ForeignKey("soft_skill_id")]
+    [Column("soft_skill_id")]
+    public string SoftSkillId { get; set; } = null!;
+
+    [ForeignKey(nameof(SoftSkillId))]
     public SoftSkill SoftSkill { get; set; } = null!;
 
-    [ForeignKey("job_description_id")]
+
+    [Column("job_description_id")]
+    public string JobDescriptionId { get; set; } = null!;
+
+    [ForeignKey(nameof(JobDescriptionId))]
     public JobDescription JobDescription { get; set; } = null!;
 }

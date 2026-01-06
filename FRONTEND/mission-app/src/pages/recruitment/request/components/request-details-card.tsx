@@ -64,6 +64,8 @@ const RequestDetailsCard: React.FC<Props> = ({ hasJobDescription, details, valid
         {isFormOpen && (
             <JobDescriptionForm
                 isOpen={isFormOpen}
+                mode="create"
+                jobId={null}
                 requestId={details.id}
                 onClose={() => setIsFormOpen(false)}
                 onFormSuccess={handleFormSuccess}

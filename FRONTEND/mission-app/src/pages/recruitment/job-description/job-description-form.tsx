@@ -1,6 +1,6 @@
 import { Save, X } from "lucide-react";
 import * as FaIcons from "react-icons/fa";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import {
     PopupOverlay,
@@ -29,11 +29,12 @@ import axios from "axios";
 import useCreateJobDescriptionForm from "./hooks/use-job-form";
 import FormationExperienceStep from "./components/experience-step";
 import SkillStep from "./components/skill-step";
-import { useAddJobDescription, useUpdateJobDescription } from "@/api/recruitment/service";
+import { useAddJobDescription, useGetJobDescription, useUpdateJobDescription } from "@/api/recruitment/service";
 
 interface JobDescriptionFormProps {
     isOpen: boolean;
     requestId: string;
+    jobId: string | null;
     mode: "create" | "edit";
     onClose: () => void;
     onFormSuccess: (type: "error" | "success" | "info", message: string) => void;
@@ -42,6 +43,7 @@ interface JobDescriptionFormProps {
 const JobDescriptionForm: React.FC<JobDescriptionFormProps> = ({
     isOpen,
     requestId,
+    jobId,
     onClose,
     onFormSuccess,
     mode
@@ -49,6 +51,7 @@ const JobDescriptionForm: React.FC<JobDescriptionFormProps> = ({
     const {
         currentStep,
         formData,
+        setFormData,
         fieldErrors,
         handleInputChange,
         validateStep3,
@@ -57,8 +60,25 @@ const JobDescriptionForm: React.FC<JobDescriptionFormProps> = ({
         handleReset
     } = useCreateJobDescriptionForm(requestId);
 
+    const { data: jobToEdit } = useGetJobDescription(
+        mode === "edit" ? jobId : null
+    );
+    useEffect(() => {
+        if (mode === "edit" && jobToEdit) {
+            setFormData({
+                requestId: jobToEdit.requestId,
+                mission: jobToEdit.mission,
+                attributions: jobToEdit.attributions,
+                formations: jobToEdit.formations,
+                experiences: jobToEdit.experiences,
+                softSkills: jobToEdit.softSkills,
+                skills: jobToEdit.skills,
+            });
+        }
+    }, [mode, jobToEdit, setFormData]);
+
     const createJobDescription = useAddJobDescription();
-    const updateJobDescription = useUpdateJobDescription();
+    const updateJobDescription = useUpdateJobDescription(requestId);
 
     const [alert, setAlert] = useState<{
         isOpen: boolean;
@@ -125,7 +145,10 @@ const JobDescriptionForm: React.FC<JobDescriptionFormProps> = ({
         <PopupOverlay>
             <PagePopup>
                 <PopupHeader>
-                    <PopupTitle>Création de fiche de poste</PopupTitle>
+                    {jobId ? 
+                        (<PopupTitle>Modification du TDR</PopupTitle>) 
+                        : (<PopupTitle>Création de TDR</PopupTitle>)
+                    }
                     <PopupClose onClick={() => { handleReset(); onClose(); }}>
                         <X size={20} />
                     </PopupClose>
@@ -187,7 +210,8 @@ const JobDescriptionForm: React.FC<JobDescriptionFormProps> = ({
                                         <FaIcons.FaArrowLeft /> Précédent
                                     </PreviousButton>
                                     <ButtonPrimary type="submit">
-                                        <Save size={16} /> Valider
+                                        <Save size={16} />
+                                        {jobId ? " Mettre à jour" : " Créer le TDR"}
                                     </ButtonPrimary>
                                 </StepNavigation>
                             </StepContent>

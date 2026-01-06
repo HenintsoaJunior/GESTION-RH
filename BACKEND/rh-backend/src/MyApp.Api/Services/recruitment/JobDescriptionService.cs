@@ -25,14 +25,14 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
 
     public async Task AddJobDescription(JobDescriptionFormDTO data) {
         try {
-            _log.LogInformation("Création de fiche de poste en cours");
+            _log.LogInformation("Création d'un TDR en cours");
 
             RecruitmentRequest request = await _reqRepo.GetRecruitmentRequestById(data.RequestId);
-            if(!request.LastStatus.Equals("Validée")) 
-                throw new ArgumentException("Impossible de la créer avec demande invalide");
+            if(!request.LastStatus.ToLower().Equals("validée")) 
+                throw new ArgumentException("Impossible d'en créer avec une demande non validée");
 
             if(this.GetJobDescription(request.Id)!=null)
-                throw new ArgumentException("Une seule fiche par demande autorisée");
+                throw new ArgumentException("Un seul TDR par demande autorisé");
 
             var jobDescription = new JobDescription
             {
@@ -51,7 +51,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
                 });
             }
 
-            // Formations
+        // Formations
             foreach (var dto in data.Formations) {
                 var education = new Education { Id = dto.EducationId };
                 var level = new LevelEducation { Id = dto.LevelEducationId };
@@ -67,7 +67,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
                 });
             }
 
-            // Expériences
+        // Expériences
             foreach (var dto in data.Experiences) {
                 await _jobDescRepo.AddExperience(new Experience
                 {
@@ -77,7 +77,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
                 });
             }
 
-            // Soft skills
+        // Soft skills
             foreach (var dto in data.SoftSkills) {
                 var softSkill = new SoftSkill { Id = dto.Id };
                 _jobDescRepo.Attach(softSkill);
@@ -90,7 +90,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
                 );
             }
 
-            // Skills
+        // Skills
             foreach (var dto in data.Skills) {
                 await _jobDescRepo.AddSkill(new Skill
                 {
@@ -99,11 +99,11 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
                 });
             }
 
-            // COMMIT
+        // COMMIT
             await _jobDescRepo.SaveChangesAsync();
         }
         catch (Exception ex) {
-            _log.LogError(ex, "Erreur de création de fiche de poste");
+            _log.LogError(ex, "Erreur de création d'un TDR");
             throw;
         }
     }
@@ -111,7 +111,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
 
     public async Task<JobDescriptionDTO?> GetJobDescription(string requestId) {
         try {
-            _log.LogInformation("Recherche de fiche de poste en cours");
+            _log.LogInformation("Recherche de TDR en cours");
             JobDescriptionDTO result = new();
 
             RecruitmentRequest request = await _reqRepo.GetRecruitmentRequestById(requestId);
@@ -151,7 +151,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             return result;   
         }
         catch (Exception ex) {
-            _log.LogError(ex, "Erreur de recherche de fiche de poste");
+            _log.LogError(ex, "Erreur de recherche de TDR");
             throw;
         }
     }
@@ -165,29 +165,29 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
 
     public async Task UpdateJobDescription(string requestId, JobDescriptionFormDTO data) {
         try {
-            _log.LogInformation("Mise à jour de fiche de poste en cours");
+            _log.LogInformation("Mise à jour du TDR en cours");
 
             RecruitmentRequest request = await _reqRepo.GetRecruitmentRequestById(requestId);
             JobDescription? lastJobDesc = await _jobDescRepo.GetJobDescriptionByRequest(request);
 
             if(lastJobDesc == null)
-                throw new ArgumentException("Aucune fiche de poste à mettre à jour");
+                throw new ArgumentException("Aucun TDR à mettre à jour");
 
             lastJobDesc.Mission = data.Mission;
             lastJobDesc.RequestId = requestId; // safe
 
-            // =========================
-            // Nettoyage des collections
-            // =========================
+        // =========================
+        // Nettoyage des collections
+        // =========================
             _jobDescRepo.RemoveAttributions(lastJobDesc.Attributions);
             _jobDescRepo.RemoveFormations(lastJobDesc.Formations);
             _jobDescRepo.RemoveExperiences(lastJobDesc.Experiences);
             _jobDescRepo.RemoveSoftSkills(lastJobDesc.SoftSkills);
             _jobDescRepo.RemoveSkills(lastJobDesc.Skills);
 
-            // =========================
-            // Réinsertion
-            // =========================
+        // =========================
+        // Réinsertion
+        // =========================
 
             // Attributions
             foreach (var label in data.Attributions) {
@@ -200,17 +200,11 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
 
             // Formations
             foreach (var dto in data.Formations) {
-                var education = new Education { Id = dto.EducationId };
-                var level = new LevelEducation { Id = dto.LevelEducationId };
-
-                _jobDescRepo.Attach(education);
-                _jobDescRepo.Attach(level);
-
                 await _jobDescRepo.AddFormation(new Formation
                 {
                     JobDescription = lastJobDesc,
-                    Education = education,
-                    LevelEducation = level
+                    EducationId = dto.EducationId,
+                    LevelEducationId = dto.LevelEducationId
                 });
             }
 
@@ -226,13 +220,10 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
 
             // Soft skills
             foreach (var dto in data.SoftSkills) {
-                var softSkill = new SoftSkill { Id = dto.Id };
-                _jobDescRepo.Attach(softSkill);
-
                 await _jobDescRepo.AddJobDescriptionSoftSkill(new JobDescriptionSoftSkill
                 {
                     JobDescription = lastJobDesc,
-                    SoftSkill = softSkill
+                    SoftSkillId = dto.Id
                 });
             }
 
@@ -249,15 +240,15 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             await _jobDescRepo.SaveChangesAsync();
         }
         catch (Exception ex) {
-            _log.LogError(ex, "Erreur de mise à jour de fiche de poste");
+            _log.LogError(ex, "Erreur de mise à jour de TDR");
             throw;
         }
     }
-
+    
 
     public async Task<JobDescriptionEditDTO?> GetJobDescriptionEditById(string id) {
         try {
-            _log.LogInformation("Recherche de fiche de poste par ID en cours");
+            _log.LogInformation("Recherche de TDR par ID en cours");
 
             JobDescription jobDesc = await _jobDescRepo.GetJobDescriptionById(id);
 
@@ -292,7 +283,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             return result;
         }
         catch (Exception ex) {
-            _log.LogError(ex, "Erreur de recherche de fiche de poste par ID");
+            _log.LogError(ex, "Erreur de recherche de TDR par ID");
             throw;
         }
     }

@@ -13,15 +13,12 @@ import {
   TableCell,
   ButtonSearch,
   FiltersContainer,
-  FiltersHeader,
-  FiltersTitle,
   FiltersSection,
   FormTableSearch,
   FormRow,
   FormFieldCell,
   FormLabelSearch,
   FormInputSearch,
-  StyledAutoCompleteInput,
   Separator,
   FiltersActions,
   ButtonReset,
@@ -29,6 +26,7 @@ import {
   NoDataMessage,
   EditButton,
   CancelButton,
+  StyledSelect,
 } from "@/styles/table-styles";
 
 import { useSearchRequests, useSearchRequestStatuses, type FilterRequestDTO, type DocumentDTO, useDeleteRequest } from "@/api/recruitment/service";
@@ -44,6 +42,7 @@ import RecruitmentRequestForm from "./request-form";
 import { useHasHabilitation } from "@/api/users/services";
 import ProtectedRoute from "@/components/protected-route";
 import axios from "axios";
+import RequestTabs from "./components/request-tabs";
 
 // Types
 interface FiltersState {
@@ -68,7 +67,18 @@ const RequestList: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
     const [editingRequestId, setEditingRequestId] = useState<string | null>(null);
     const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
-  
+    
+    const [activeTab, setActiveTab] = useState<'mes' | 'toutes'>('mes');
+    const tabTitles = useMemo(() => [
+        { key: 'toutes', label: 'Toutes les demandes' },
+        { key: 'mes', label: 'Mes demandes' },
+    ], []);
+
+    const handleTabChange = useCallback((tab: string) => {
+        setActiveTab(tab as 'mes' | 'toutes');
+        setPage(1); // reset pagination si nécessaire
+    }, []);
+
     const [filters, setFilters] = useState<FiltersState>({
         post: "",
         status: "",
@@ -92,37 +102,19 @@ const RequestList: React.FC = () => {
     const allDirections = useMemo(() => directionsResponse?.data || [], [directionsResponse]);
     const allContracts = useMemo(() => contractsResponse?.data || [], [contractsResponse]);
     const allRequestStatuses = useMemo(() => requestStatusesResponse?.data || [], [requestStatusesResponse]);
-    
-// Suggestions pour autocomplete
-    const directionSuggestions = useMemo(() => allDirections.map((d) => d.directionName), [allDirections]);
-    const filteredDirectionSuggestions = useMemo(
-        () => directionSuggestions.filter((s) => s.toLowerCase().includes((filters.direction || "").toLowerCase())),
-        [directionSuggestions, filters.direction]
-    );
-
-    const contractSuggestions = useMemo(() => allContracts.map((ct) => ct.label), [allContracts]);
-    const filteredContractSuggestions = useMemo(
-        () => contractSuggestions.filter((s) => s.toLowerCase().includes((filters.contract || "").toLowerCase())),
-        [contractSuggestions, filters.contract]
-    );
-
-    const statusSuggestions = useMemo(() => allRequestStatuses.map((ct) => ct.name), [allRequestStatuses]);
-    const filteredStatusSuggestions = useMemo(
-        () => statusSuggestions.filter((s) => s.toLowerCase().includes((filters.status || "").toLowerCase())),
-        [statusSuggestions, filters.status]
-    );
 
 // Filtres de recherche envoyés à l'API
     const searchFilters: FilterRequestDTO = useMemo(
         () => ({
-          post: appliedFilters.post.trim() || undefined,
-          direction: appliedFilters.direction.trim() || undefined,
-          contract: appliedFilters.contract.trim() || undefined,
-          status: appliedFilters.status || undefined,
-          minDate: appliedFilters.dateMin.trim() || undefined,
-          maxDate: appliedFilters.dateMax.trim() || undefined,
+            post: appliedFilters.post.trim() || undefined,
+            direction: appliedFilters.direction.trim() || undefined,
+            contract: appliedFilters.contract.trim() || undefined,
+            status: appliedFilters.status || undefined,
+            minDate: appliedFilters.dateMin.trim() || undefined,
+            maxDate: appliedFilters.dateMax.trim() || undefined,
+            scope: activeTab, // Onglet actif
         }),
-        [appliedFilters]
+        [appliedFilters, activeTab]
     );
     const { data: searchResponse, isLoading, error, refetch } = useSearchRequests(searchFilters, page, pageSize);
 
@@ -198,28 +190,13 @@ const RequestList: React.FC = () => {
         setIsFormOpen(true);
     }, []);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+        ) => {
         const { name, value } = e.target;
         setFilters((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleDirectionChange = (value: string) => {
-        setFilters((prev) => ({ ...prev, direction: value }));
-        const matched = allDirections.find((d) => d.directionName === value);
-        setFilters((prev) => ({ ...prev, selectedDirection: matched || null }));
-    };
-
-    const handleContractChange = (value: string) => {
-        setFilters((prev) => ({ ...prev, contract: value }));
-        const matched = allContracts.find((ct) => ct.code === value);
-        setFilters((prev) => ({ ...prev, selectedContract: matched || null }));
-    };
-
-    const handleStatusChange = (value: string) => {
-        setFilters((prev) => ({ ...prev, status: value }));
-        const matched = allRequestStatuses.find((s) => s.name === value);
-        setFilters((prev) => ({ ...prev, selectedStatus: matched || null }));
-    };
 
     const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setPageSize(Number(e.target.value));
@@ -250,9 +227,6 @@ const RequestList: React.FC = () => {
 
         {/* Filtres */}
         <FiltersContainer>
-            <FiltersHeader>
-                <FiltersTitle>Filtrage des demandes</FiltersTitle>
-            </FiltersHeader>
             <FiltersSection>
                 <Separator />
                 <form onSubmit={handleFilterSubmit}>
@@ -260,7 +234,7 @@ const RequestList: React.FC = () => {
                         <tbody>
                             {/* Ligne 1 : Poste, Direction, Contrat, Statut */}
                             <FormRow>
-                                <FormFieldCell style={{ width: "28%" }}>
+                                <FormFieldCell style={{ width: "30%" }}>
                                     <FormLabelSearch>Poste</FormLabelSearch>
                                     <FormInputSearch
                                         name="post"
@@ -271,53 +245,61 @@ const RequestList: React.FC = () => {
                                     />
                                 </FormFieldCell>
 
-                                <FormFieldCell style={{ width: "24%" }}>
+                                <FormFieldCell style={{ width: "10%" }}>
                                     <FormLabelSearch>Direction</FormLabelSearch>
-                                    <StyledAutoCompleteInput
-                                        value={filters.direction || ""}
-                                        onChange={handleDirectionChange}
-                                        suggestions={filteredDirectionSuggestions}
-                                        maxVisibleItems={5}
-                                        placeholder="Sélectionner..."
+                                    <StyledSelect
+                                        name="direction"
+                                        value={filters.direction}
+                                        onChange={handleInputChange}
                                         disabled={isLoading}
-                                        fieldType="direction"
-                                        fieldLabel="Direction"
-                                    />
+                                        >
+                                        <option value="">Toutes</option>
+                                        {allDirections.map((d) => (
+                                            <option key={d.directionId} value={d.directionName}>
+                                            {d.directionName}
+                                            </option>
+                                        ))}
+                                    </StyledSelect>
                                 </FormFieldCell>
 
-                                <FormFieldCell style={{ width: "24%" }}>
+                                <FormFieldCell style={{ width: "10%" }}>
                                     <FormLabelSearch>Contrat</FormLabelSearch>
-                                    <StyledAutoCompleteInput
-                                        value={filters.contract || ""}
-                                        onChange={handleContractChange}
-                                        suggestions={filteredContractSuggestions}
-                                        maxVisibleItems={5}
-                                        placeholder="Sélectionner..."
+                                    <StyledSelect
+                                        name="contract"
+                                        value={filters.contract}
+                                        onChange={handleInputChange}
                                         disabled={isLoading}
-                                        fieldType="contract"
-                                        fieldLabel="Contract"
-                                    />
+                                        >
+                                        <option value="">Tous</option>
+                                        {allContracts.map((c) => (
+                                            <option key={c.code} value={c.code}>
+                                            {c.label}
+                                            </option>
+                                        ))}
+                                    </StyledSelect>
                                 </FormFieldCell>
 
-                                <FormFieldCell style={{ width: "24%" }}>
+                                <FormFieldCell style={{ width: "10%" }}>
                                     <FormLabelSearch>Statut</FormLabelSearch>
-                                    <StyledAutoCompleteInput
-                                        value={filters.status || ""}
-                                        onChange={handleStatusChange}
-                                        suggestions={filteredStatusSuggestions}
-                                        maxVisibleItems={5}
-                                        placeholder="Sélectionner..."
-                                        disabled={isLoading}
-                                        fieldType="status"
-                                        fieldLabel="Status"
-                                    />
+                                    <StyledSelect
+                                    name="status"
+                                    value={filters.status}
+                                    onChange={handleInputChange}
+                                    disabled={isLoading}
+                                    >
+                                    <option value="">Tous</option>
+                                    {allRequestStatuses.map((s) => (
+                                        <option key={s.name} value={s.name}>
+                                        {s.name}
+                                        </option>
+                                    ))}
+                                    </StyledSelect>
                                 </FormFieldCell>
-                            </FormRow>
+                            {/* </FormRow>
 
-                            {/* Ligne 2 : Date min, Date max*/}
-                            <FormRow>
-                                <FormFieldCell style={{ width: "28%" }}>
-                                    <FormLabelSearch>Début d'envoi</FormLabelSearch>
+                            <FormRow> */}
+                                <FormFieldCell style={{ width: "20%" }}>
+                                    <FormLabelSearch>Début de demande</FormLabelSearch>
                                     <FormInputSearch
                                         name="dateMin" type="date"
                                         value={filters.dateMin}
@@ -326,8 +308,8 @@ const RequestList: React.FC = () => {
                                     />
                                 </FormFieldCell>
 
-                                <FormFieldCell style={{ width: "28%" }}>
-                                    <FormLabelSearch>Fin d'envoi</FormLabelSearch>
+                                <FormFieldCell style={{ width: "20%" }}>
+                                    <FormLabelSearch>Fin de demande</FormLabelSearch>
                                     <FormInputSearch
                                         name="dateMax" type="date"
                                         value={filters.dateMax}
@@ -353,6 +335,12 @@ const RequestList: React.FC = () => {
             </FiltersSection>
         </FiltersContainer>
 
+        <RequestTabs
+            activeTab={activeTab}
+            tabTitles={tabTitles}
+            onTabChange={handleTabChange}
+        />
+
         <TableContainer>
             <TableHeader>
                 <TableTitle>Liste des demandes de recrutement</TableTitle>
@@ -360,7 +348,7 @@ const RequestList: React.FC = () => {
                 { canAddRequest && (
                     <ButtonSearch onClick={() => handleOpenForm(undefined)}>
                         <Plus size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-                        Faire une demande
+                        Créer une demande
                     </ButtonSearch>
                 )}
             </TableHeader>
@@ -374,7 +362,7 @@ const RequestList: React.FC = () => {
                         <TableHeadCell>Contrat</TableHeadCell>
                         <TableHeadCell>Date souhaitée</TableHeadCell>
                         <TableHeadCell>Statut</TableHeadCell>
-                        <TableHeadCell>Date d'envoi</TableHeadCell>
+                        <TableHeadCell>Date de demande</TableHeadCell>
                         <TableHeadCell style={{ width: "100px", textAlign: "center" }}>Actions</TableHeadCell>
                     </tr>
                 </thead>

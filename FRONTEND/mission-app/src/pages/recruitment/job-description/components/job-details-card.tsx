@@ -1,24 +1,33 @@
 import React from "react";
 import { useGetJobDescriptionDetails, type JobDescriptionDetails } from "@/api/recruitment/service";
 import { exportJobToPDF } from "../utils/pdfExport";
-import { FaFilePdf } from "react-icons/fa";
+import { FaFilePdf, FaPen } from "react-icons/fa";
+import { useHasHabilitation } from "@/api/users/services";
 
 interface Props {
     requestId: string;
+    onEdit: (jobId: string) => void;
 }
 
-const JobDetailsCard: React.FC<Props> = ({ requestId }) => {
+const JobDetailsCard: React.FC<Props> = ({ requestId, onEdit }) => {
     const { data, isLoading, error } = useGetJobDescriptionDetails(requestId);
 
-    if (isLoading) return <p>Chargement de la fiche de poste...</p>;
+// Gestion Habilitations
+    const userData = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = userData?.userId || "";
+
+    const canExportPDF = useHasHabilitation(userId, "Exporter PDF TDR");
+    const canModify = useHasHabilitation(userId, "Modifier TDR");
+
+    if (isLoading) return <p>Chargement du TDR...</p>;
     if (error) return <p>Erreur : {error.message}</p>;
-    if (!data) return <p>Aucune fiche de poste trouvée.</p>;
+    if (!data) return <p>Aucun TDR trouvé.</p>;
 
     const job: JobDescriptionDetails = data.data;
     
     return (
         <div className="job-details-card">
-            <h3>Fiche de poste associée : </h3>
+            <h3>Terme de référence associé : </h3>
             <p>
                 <span className="label">Référence : </span> 
                 <span className="value">{job.id}</span>
@@ -82,9 +91,19 @@ const JobDetailsCard: React.FC<Props> = ({ requestId }) => {
                 </p>
             )}
 
-            <button className="export-btn" onClick={() => exportJobToPDF(job)}>
-                <FaFilePdf size={16} />Exporter
-            </button>
+            <div className="actions-bar">
+                {canExportPDF && (
+                    <button className="export-btn" onClick={() => exportJobToPDF(job)}>
+                        <FaFilePdf size={16} />Exporter
+                    </button>
+                )}
+                
+                {canModify && (
+                    <button className="export-btn tdr-btn" onClick={() => onEdit(job.id)}>
+                        <FaPen size={16} />Modifier le TDR
+                    </button>
+                )}
+            </div>
         </div>
     );
 };

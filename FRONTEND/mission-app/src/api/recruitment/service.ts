@@ -23,6 +23,8 @@ export interface FilterRequestDTO {
     direction?: string;
     maxDate?: string;
     minDate?: string;
+// Onglet actif
+    scope: string; // "mes" | "toutes"
 }
 
 export interface RequestDTO {
@@ -107,6 +109,7 @@ export interface JobDescriptionDetails {
   skills: string[];
   lastTitular: string | null;
 }
+
 
 // Hook pour rechercher les demandes
 export const useSearchRequests = (
@@ -457,8 +460,8 @@ export const useUpdateRecruitmentRequest = (id?: string) => {
 
 
 // UPDATE : Fiche de poste
-export const useGetJobDescription = (id?: string) => {
-    return useQuery<RequestEditDTO, Error>({
+export const useGetJobDescription = (id: string | null) => {
+    return useQuery<JobDescriptionEditForm, Error>({
         queryKey: ["getJobDescriptionById", id],
         queryFn: async () => {
             const response = await api.get(`/api/recruitment/job-descriptions/${id}`);
@@ -468,12 +471,12 @@ export const useGetJobDescription = (id?: string) => {
     });
 };
 
-export const useUpdateJobDescription = (id? : string) => {
+export const useUpdateJobDescription = (requestId : string | null) => {
     const queryClient = useQueryClient();
 
     return useMutation<CreateRequestResponse, Error, JobDescriptionForm>({
         mutationFn: async (data) => 
-            await api.put(`/api/recruitment/job-descriptions/${id}`, data).then(r => r.data),
+            await api.put(`/api/recruitment/job-descriptions/${requestId}`, data).then(r => r.data),
 
         onSuccess: () => queryClient.invalidateQueries({ 
             queryKey: SEARCH_JOB_DESC_BASE_KEY 

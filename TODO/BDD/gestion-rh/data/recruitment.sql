@@ -39,12 +39,12 @@ INSERT INTO habilitations (habilitation_id, group_id, label, description) VALUES
 ('HAB_032', 'HABG_004', 'Créer demande recrutement', 'Permet de créer une demande de recrutement'),
 ('HAB_033', 'HABG_004', 'Annuler demande recrutement', 'Permet d’annuler une demande de recrutement'),
 ('HAB_034', 'HABG_004', 'Afficher détails demande recrutement', 'Permet de voir les détails d’une demande de recrutement'),
-('HAB_035', 'HABG_004', 'Créer fiche de poste', 'Permet de créer une fiche de poste'),
-('HAB_036', 'HABG_004', 'Modifier fiche de poste', 'Permet de modifier une fiche de poste'),
-('HAB_037', 'HABG_004', 'Afficher fiche de poste', 'Permet d’afficher la fiche de poste spécifiée'),
-('HAB_038', 'HABG_004', 'Supprimer fiche de poste', 'Permet de supprimer une fiche de poste'),
+('HAB_035', 'HABG_004', 'Créer TDR', 'Permet de créer un TDR'),
+('HAB_036', 'HABG_004', 'Modifier TDR', 'Permet de modifier un TDR'),
+('HAB_037', 'HABG_004', 'Afficher TDR', 'Permet d’afficher le TDR spécifié'),
+('HAB_038', 'HABG_004', 'Supprimer TDR', 'Permet de supprimer un TDR'),
 ('HAB_039', 'HABG_004', 'Exporter PDF demande recrutement', 'Permet d’éxporter en PDF une demande de recrutement'),
-('HAB_040', 'HABG_004', 'Exporter PDF fiche de poste', 'Permet d’éxporter en PDF une fiche de poste');
+('HAB_040', 'HABG_004', 'Exporter PDF TDR', 'Permet d’éxporter en PDF un TDR');
 
 INSERT INTO replacement_reasons (replacement_reason_id, reason_name) VALUES
 ('RR_001', 'Décès'),

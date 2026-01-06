@@ -26,6 +26,7 @@ import RecruitmentReasonStep from "./components/reasons-step";
 import useRecruitmentForm from "./hooks/use-request-form";
 import { useCreateRecruitmentRequest, useGetRecruitmentRequest, useUpdateRecruitmentRequest } from "@/api/recruitment/service";
 import axios from "axios";
+import "../style.css";
 
 interface RecruitmentRequestFormProps {
     isOpen: boolean;
@@ -142,7 +143,10 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
         <PopupOverlay>
             <PagePopup>
                 <PopupHeader>
-                    <PopupTitle>Demande de recrutement</PopupTitle>
+                    {isUpdate ? 
+                        <PopupTitle>Modification de la demande</PopupTitle> 
+                        : <PopupTitle>Demande de recrutement</PopupTitle>
+                    }
                     <PopupClose
                         onClick={() => { handleReset(); onClose(); }}
                         aria-label="Fermer le formulaire"
@@ -229,7 +233,9 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                                         aria-label="Valider la demande"
                                     >
                                         <Save size={16} aria-hidden="true" />
-                                        <span>Valider</span>
+                                        {isUpdate ? 
+                                            <span>Mettre à jour</span> : <span>Créer la demande</span>
+                                        }
                                     </ButtonPrimary>
                                 </StepNavigation>
                             </StepContent>

@@ -76,6 +76,9 @@ public class RequestValidationRepository : IRequestValidationRepository
             .Select(r => r.ApplicantUser)
             .FirstOrDefaultAsync() ?? throw new ArgumentException("Demandeur introuvable"); 
         
+        var superior = await _userService.GetSuperiorAsync(requestor.Matricule)
+            ?? throw new ArgumentException("Supérieur hiérarchique introuvable");
+        
         var tutelleDirector = await _userService.GetDirecteurTutelleAsync(requestor.Matricule)
             ?? throw new ArgumentException("Directeur de tutelle introuvable");
         var tutelleDirectorDto = new UserDto {
@@ -89,7 +92,15 @@ public class RequestValidationRepository : IRequestValidationRepository
             SuperiorName = tutelleDirector.SuperiorName
         };
 
-    // Premier validateur
+    // Validateurs : N+1 et Directeur de tutelle
+        int count = 0;
+        for(int i=0; i<directors.Count; i++) {
+            if(directors[i].UserId==requestor.UserId || directors[i].UserId==superior.UserId) {
+                count += 1; break;
+            }
+        }
+        if(count == 0) validators.Add(superior);
+
         validators.Add(tutelleDirectorDto);
 
     // Les autres validateurs
@@ -98,7 +109,7 @@ public class RequestValidationRepository : IRequestValidationRepository
         foreach(var dept in order) {
             var dir = directors.FirstOrDefault(d => d.Department == dept);
 
-            if (dir != null && dir.Department != tutelleDirectorDto.Department) {
+            if(dir != null && dir.Department != tutelleDirectorDto.Department) {
                 validators.Add(dir);
             }
         }

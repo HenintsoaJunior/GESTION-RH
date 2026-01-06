@@ -60,4 +60,5 @@ public class FilterRequestListDTO
     public string? direction {get; set;}
     public DateOnly? maxDate {get; set;}
     public DateOnly? minDate {get; set;}
+    public string? Scope { get; set; } // "mes" | "toutes"
 }

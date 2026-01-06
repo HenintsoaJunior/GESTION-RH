@@ -13,7 +13,8 @@ namespace MyApp.Api.Services.recruitment;
 
 public interface IRequestService
 {
-    Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO filters, int page, int pageSize);
+    Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO filters,
+     string currentUserEmail, int page, int pageSize);
     Task AddRequest(RequestFormDTO data);
     Task<List<RequestStatus>> GetAllStatuses();
     Task<RequestDetailsDTO> GetRequestDetails(string id);
@@ -39,11 +40,12 @@ public class RequestService(
 
 
     public async Task<(List<RequestListDTO>, int)> SearchRequests(
-        FilterRequestListDTO filters, int page, int pageSize
+        FilterRequestListDTO filters, string currentUserEmail, int page, int pageSize
     ) {
         try {
             _logger.LogInformation("Recherche des demandes avec filtres, page={Page}, pageSize={PageSize}", page, pageSize);
-            return await _repo.SearchRequests(filters, page, pageSize);
+            _logger.LogInformation("Utilisateur en cours : {user}", currentUserEmail);
+            return await _repo.SearchRequests(filters, currentUserEmail, page, pageSize);
         }
         catch(Exception ex) {
             _logger.LogError(ex, "Erreur lors de la recherche des demandes");

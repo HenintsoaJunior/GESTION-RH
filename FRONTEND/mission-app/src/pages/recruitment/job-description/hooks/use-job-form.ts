@@ -194,6 +194,7 @@ const useCreateJobDescriptionForm = (requestId: string) => {
     /* state */
     currentStep,
     formData,
+    setFormData,
     fieldErrors,
 
     /* form */

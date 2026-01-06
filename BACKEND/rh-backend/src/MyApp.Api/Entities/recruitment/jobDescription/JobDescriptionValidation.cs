@@ -17,6 +17,10 @@ public class JobDescriptionValidation : BaseEntity
     [ForeignKey("status_id")]
     public JobDescriptionStatus Status { get; set; } = null!;
 
-    [ForeignKey("job_description_id")]
+
+    [Column("job_description_id")]
+    public string JobDescriptionId { get; set; } = null!;
+
+    [ForeignKey(nameof(JobDescriptionId))]
     public JobDescription JobDescription { get; set; } = null!;
 }

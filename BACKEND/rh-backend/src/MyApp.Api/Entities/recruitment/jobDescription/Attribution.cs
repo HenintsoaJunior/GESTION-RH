@@ -13,6 +13,9 @@ public class Attribution
     [Column("job_attribution")]
     public string Label { get; set; } = null!;
 
-    [ForeignKey("job_description_id")]
+    [Column("job_description_id")]
+    public string JobDescriptionId { get; set; } = null!;
+
+    [ForeignKey(nameof(JobDescriptionId))]
     public JobDescription JobDescription { get; set; } = null!;
 }

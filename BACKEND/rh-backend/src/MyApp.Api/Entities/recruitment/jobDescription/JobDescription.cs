@@ -13,11 +13,13 @@ public class JobDescription : BaseEntity
     [Column("mission")]
     public string Mission { get; set; } = null!;
 
+
     [Column("request_id")]
     public string RequestId { get; set; } = null!;
 
     [ForeignKey(nameof(RequestId))]
     public RecruitmentRequest Request { get; set; } = null!;
+
 
 // Collections
     public List<Attribution> Attributions { get; set; } = [];

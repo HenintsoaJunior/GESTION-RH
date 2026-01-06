@@ -10,7 +10,8 @@ namespace MyApp.Api.Repositories.recruitment;
 public interface IRequestRepository
 {
     Task<List<RequestStatus>> GetAllStatuses();
-    Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO dto, int page, int pageSize);
+    Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO dto,
+     string currentUserEmail, int page, int pageSize);
     Task<RecruitmentRequest> AddRequest(RequestFormDTO data);
     Task<RequestEditDTO> GetById(string id);
     Task DeleteRequest(RecruitmentRequest request);
@@ -33,7 +34,7 @@ public class RequestRepository : IRequestRepository
 
 
     public async Task<(List<RequestListDTO>, int)> SearchRequests(
-        FilterRequestListDTO dto, int page, int pageSize
+        FilterRequestListDTO dto, string currentUserEmail, int page, int pageSize
     ) {
         var query = _dbCtx.RecruitmentRequests
             .AsNoTracking()
@@ -51,6 +52,9 @@ public class RequestRepository : IRequestRepository
 
         if (!string.IsNullOrWhiteSpace(dto.direction))
             query = query.Where(r => r.ApplicantUser.Department == dto.direction);
+        
+        if (!string.IsNullOrWhiteSpace(dto.Scope) && dto.Scope.ToLower().Equals("mes"))
+            query = query.Where(r => r.ApplicantUser.Email == currentUserEmail);
 
         if (dto.minDate.HasValue)
             query = query.Where(r => DateOnly.FromDateTime(r.CreatedAt) >= dto.minDate.Value);

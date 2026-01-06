@@ -16,6 +16,9 @@ public class Experience
     [Column("job_experience_post")]
     public string ExperiencePost { get; set; } = null!;
 
-    [ForeignKey("job_description_id")]
+    [Column("job_description_id")]
+    public string JobDescriptionId { get; set; } = null!;
+
+    [ForeignKey(nameof(JobDescriptionId))]
     public JobDescription JobDescription { get; set; } = null!;
 }
