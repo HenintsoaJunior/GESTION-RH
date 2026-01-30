@@ -51,7 +51,6 @@ Remplacez les placeholders dans la section `"ConnectionStrings"` par vos identif
   },
   "AllowedHosts": "*"
 }
-
 ````
 
 ### 1.2 Configuration de l'API (Frontend)
@@ -69,12 +68,15 @@ La base de données doit être initialisée et peuplée avant le lancement de l'
 1.  **Démarrage de SQL Server :** Assurez-vous que votre instance **SQL Server** est en cours d'exécution.
 2.  **Exécution des Scripts :** Connectez-vous à la base de données configurée (voir 1.1) et exécutez les scripts SQL **dans l'ordre strict suivant** :
 
-* **Fichier :** `TODO/BDD`
-
-      * `index.sql` (Création des tables et index)
-      * `sequence.sql` (Création des séquences, si nécessaire)
-      * `data.sql` (Insertion des données initiales / de test)
-
+* **Fichier :** `TODO/BDD/gestion-rh`
+      * `data/all.sql` 
+      * `data/mission.sql` 
+      * `data/recruitment.sql` 
+      * `sequence.sql`
+      * `table1.sql`
+      * `table2.sql`
+      * `table3.sql`
+      * `trigger.sql`
 -----
 
 ## 💻 Étape 3 : Lancement du Backend (.NET 8+)
@@ -100,11 +102,11 @@ Le serveur d'API écoute sur le **Port 5432**.
 
 ## 🖥️ Étape 4 : Lancement du Frontend (Node 19+)
 
-Le client web écoute sur le **Port 3000**.
+Le client web écoute sur le **Port 5173**.
 
 1.  **Navigation :** Ouvrez un **nouveau** terminal et déplacez-vous vers le répertoire du projet Frontend :
     ```bash
-    cd FRONTEND/rh-front
+    cd FRONTEND/mission-app
     ```
 2.  **Installation des Dépendances (Première fois uniquement) :** Installez toutes les dépendances :
     ```bash
@@ -114,7 +116,7 @@ Le client web écoute sur le **Port 3000**.
     ```bash
     npm start
     ```
-    *(Le Frontend se compilera et devrait ouvrir l'application dans votre navigateur sur `http://localhost:3000`.)*
+    *(Le Frontend se compilera et devrait ouvrir l'application dans votre navigateur sur `http://localhost:5173`.)*
 
 -----
 
@@ -123,7 +125,7 @@ Le client web écoute sur le **Port 3000**.
 # GESTION-RH
 
 - **FRONTEND**
-  - rh-front
+  - mission-app
     - src
 - **BACKEND**
   - rh-backend
@@ -140,7 +142,32 @@ Le client web écoute sur le **Port 3000**.
 | Composant | Technologie | Port |
 | :--- | :--- | :--- |
 | **Backend** | .NET 8 (API) | **5432** |
-| **Frontend** | Node/React | **3000** |
+| **Frontend** | Node/React | **5173** |
 
+
+
+GESTION DES Mission
+
+BACK : 10.0.180.37:8089
+FRONT : 10.0.180.37:8090
+
+
+Accès FTP: (login et mdp)
+10.0.180.37
+
+BACK >> gdm_bo/G3m1@b0
+FRONT >> gdm_fo / G3m1@f0
+
+
+BASE 
+10.0.180.37
+
+INSTANCE : TNR-SRV-DEV1\SQL_DEV1
+Nom de la base : GESTIONDEMISSION_DB
+
+>> sa_gdm / S@gmmXdb
+
+
+MDP DEFAULT : Mission@2025***
 ```
 ```
