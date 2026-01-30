@@ -1,3 +1,4 @@
+
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -83,7 +84,6 @@ public class AuthService : IAuthService
             ["st144"] = ("1234", "kanto.randriamampianina@ravinala-airports.aero"),
             ["ST144"] = ("1234", "kanto.randriamampianina@ravinala-airports.aero"),
             ["00386"] = ("1234", "dominique.rakotomamonjy@ravinala-airports.aero"),
-            ["00431"] = ("1234", "daniel.lefebvre@ravinala-airports.aero"),
         };
 
         if (hardcodedUsers.TryGetValue(username, out var info) && info.Password == password)
@@ -126,7 +126,7 @@ public class AuthService : IAuthService
                 return new LdapValidationResult { Type = "invalid_email", Message = "Matricule ou mot de passe incorrect" };
 
             // bool isValid = context.ValidateCredentials(username, password, ContextOptions.Negotiate);
-            bool isValid = true;
+             bool isValid = password == "Mission@2025***";
             
             if (!isValid)
             {
