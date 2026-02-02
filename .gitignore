@@ -24,7 +24,6 @@ ehthumbs.db
 /FRONTEND/rh-front/node_modules/
 /FRONTEND/rh-front/build/
 /FRONTEND/rh-front/dist/
-/FRONTEND/rh-front/.env
 /FRONTEND/rh-front/.next/
 /FRONTEND/rh-front/.turbo/
 /FRONTEND/rh-front/.cache/
@@ -33,7 +32,6 @@ ehthumbs.db
 # --- Visual Studio & .NET (BACKEND) ---
 
 /BACKEND/rh-backend/src/MyApp.Api/publish
-/BACKEND/rh-backend/src/MyApp.Api/appsettings.json
 /BACKEND/rh-backend/src/MyApp.Api/bin
 /BACKEND/rh-backend/src/MyApp.Api/Migrations
 /BACKEND/rh-backend/src/MyApp.Api/obj
