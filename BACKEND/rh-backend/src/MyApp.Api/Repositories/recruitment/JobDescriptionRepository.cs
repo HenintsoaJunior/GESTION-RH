@@ -20,6 +20,7 @@ public interface IJobDescriptionRepository
 // Fiche de poste
     Task AddJobDescription(JobDescription job);
     Task<JobDescription> GetJobDescriptionById(string id);
+    Task<JobDescriptionStatus> GetJobDescriptionStatusById(string statusId);
     Task<JobDescription?> GetJobDescriptionByRequest(RecruitmentRequest req);
 
     Task AddJobAttribution(Attribution param);
@@ -33,6 +34,7 @@ public interface IJobDescriptionRepository
 
     Task AddSkill(Skill param);
     Task AddExperience(Experience param);
+    Task AddValidation(JobDescriptionValidation validation);
 
     Task<LevelEducation> GetLevelEducationById(string id);
     Task<List<LevelEducation>> GetAllLevelEducations();
@@ -87,6 +89,13 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
         return paged;
     }
 
+
+    public async Task<JobDescriptionStatus> GetJobDescriptionStatusById(string statusId) {
+        return await _dbCtx.JobDescriptionStatuses.AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id==statusId) ??
+            throw new ArgumentException("Statut de TDR introuvable");
+    }
+
     public async Task<List<Education>> GetAllEducations() {
         var results = await _dbCtx.Educations
             .AsNoTracking().Where(e => !e.IsDeleted).ToListAsync();
@@ -108,20 +117,24 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
     }
 
 
-    public Task DeleteEducation(Education education) {
+    public async Task DeleteEducation(Education education) {
         education.IsDeleted = true;
-        return Task.CompletedTask;
+        await SaveChangesAsync();
     }
 
     public async Task UpdateEducation(Education last, Education newEducation) {
         last.Name = newEducation.Name;
         last.IsDeleted = false;
+
+        await SaveChangesAsync();
     }
 
 
     public async Task AddJobDescription(JobDescription job) {
         job.Id = _seq.GenerateSequence("seq_job_description_id", "TDR_NUM");
         await _dbCtx.JobDescriptions.AddAsync(job);
+
+        await SaveChangesAsync();
     }
 
     public async Task<JobDescription> GetJobDescriptionById(string id) {
@@ -196,6 +209,12 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
     }
 
 
+    public async Task AddValidation(JobDescriptionValidation validation) {
+        validation.Id = _seq.GenerateSequence("seq_job_validation_id", "TDR_VAL");
+        await _dbCtx.JobDescriptionValidations.AddAsync(validation);
+    }
+
+
     public async Task<LevelEducation> GetLevelEducationById(string id) {
         var result = await _dbCtx.LevelEducations.FindAsync(id) 
          ?? throw new ArgumentException("Niveau d'étude introuvable");
@@ -261,6 +280,6 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
         last.SoftSkills = newJob.SoftSkills;
         last.RequestId = newJob.RequestId;
 
-        await _dbCtx.SaveChangesAsync();
+        await SaveChangesAsync();
     }
 }

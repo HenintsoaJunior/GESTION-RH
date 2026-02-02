@@ -20,10 +20,8 @@ import {
   FiltersActions,
   ButtonReset,
   ButtonSearch,
-  TableContainer,
   DataTable,
   TableTitle,
-  TableHeader,
   TableHeadCell,
   TableRow,
   TableCell,
@@ -37,7 +35,9 @@ import {
   ActionsSelect,
   SelectionInfo,
   RoleBadge,
-  RolesContainer
+  RolesContainer,
+  NewTableHeader,
+  NewTableContainer
 } from "@/styles/table-styles";
 import {
   useUsers,
@@ -528,8 +528,8 @@ const UserList: React.FC = () => {
       )}
 
       {/* === TABLEAU === */}
-      <TableContainer>
-        <TableHeader>
+      <NewTableContainer>
+        <NewTableHeader>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-lg)" }}>
             <TableTitle>Liste</TableTitle>
             {hasAnyHabilitation && selectedUsers.length > 0 && (
@@ -552,7 +552,7 @@ const UserList: React.FC = () => {
               {isSyncLoading ? "Synchronisation..." : "Actualiser"}
             </ButtonSearch>
           </div>
-        </TableHeader>
+        </NewTableHeader>
         <div className="table-wrapper">
           <DataTable>
             <thead>
@@ -637,7 +637,7 @@ const UserList: React.FC = () => {
             setPageSize(Number(e.target.value))
           }
         />
-      </TableContainer>
+      </NewTableContainer>
     </>
   );
 };

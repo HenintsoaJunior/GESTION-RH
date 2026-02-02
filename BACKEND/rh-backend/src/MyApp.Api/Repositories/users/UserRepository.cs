@@ -33,9 +33,12 @@ namespace MyApp.Api.Repositories.users
         Task<IEnumerable<string>> GetUserRolesAsync(string userId);
         Task<IEnumerable<string>> GetUserHabilitationAsync(string userId);
         Task<User?> GetDirectorByDepartmentAsync(string department);
+        Task<User?> GetGeneralDirector();
         Task<IEnumerable<string>> GetDistinctDepartmentsAsync();
         Task<int> GetUserCountByRoleAsync(string role);
         Task<IEnumerable<UserDto2>> GetUsersByDirection(string name);
+        Task<IEnumerable<UserDto2>> GetUsersByAdmin();
+        Task<bool> IsEmailAdmin(string email);
     }
 
     public class UserRepository : IUserRepository
@@ -95,16 +98,34 @@ namespace MyApp.Api.Repositories.users
             if (string.IsNullOrWhiteSpace(department))
                 throw new ArgumentException("Department cannot be null or empty.", nameof(department));
 
+            var currentDG = await GetGeneralDirector();
             return await _context.Users
                 .AsNoTracking()
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .Where(u => u.Department == department &&
-                            u.Position != null &&
-                            (u.Position.Contains("Directeur") ||
-                            u.Position.Contains("Directrice") ||
-                            u.Position.Contains("Director") ||
-                            u.Position.Contains("Manager")))
+                    u.Name!=null && !u.Name.Equals("") &&
+                    u.Position != null &&
+                        (u.Position.Contains("Directeur") ||
+                        u.Position.Contains("Directrice") ||
+                        u.Position.Contains("Director")) &&
+                    u.SuperiorId!.Equals(currentDG!.UserId)
+                )
+                .OrderBy(u => u.Name)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<User?> GetGeneralDirector() {
+            return await _context.Users
+                .AsNoTracking()
+                .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+                .Where(u => u.Name!=null && !u.Name.Equals("") &&
+                    u.Position != null &&
+                        (u.Position.Contains("Directeur") ||
+                        u.Position.Contains("Directrice") ||
+                        u.Position.Contains("Director")) &&
+                    u.Department!=null && u.Department.Equals("DGE")
+                )
                 .OrderBy(u => u.Name)
                 .FirstOrDefaultAsync();
         }
@@ -143,7 +164,7 @@ namespace MyApp.Api.Repositories.users
             var totalCount = await query.CountAsync();
 
             var results = await query
-                .OrderBy(u => u.Name)
+                .OrderBy(u => u.Matricule)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -309,6 +330,7 @@ namespace MyApp.Api.Repositories.users
         {
             var query = _context.Users
                 .AsNoTracking()
+                .OrderBy(u => u.Matricule)
                 .Select(u => new UserDto
                 {
                     UserId = u.UserId,
@@ -336,6 +358,7 @@ namespace MyApp.Api.Repositories.users
         {
             return await _context.Users
                 .AsNoTracking()
+                .OrderBy(u => u.Matricule)
                 .Select(u => new UserDto
                 {
                     UserId = u.UserId,
@@ -359,6 +382,7 @@ namespace MyApp.Api.Repositories.users
                 {
                     var batch = await _context.Users
                         .AsNoTracking()
+                        .OrderBy(u => u.Matricule)
                         .Select(u => new UserDto
                         {
                             UserId = u.UserId,
@@ -517,9 +541,34 @@ namespace MyApp.Api.Repositories.users
         public async Task<IEnumerable<UserDto2>> GetUsersByDirection(string name) {
             var users = await _context.Users
                 .Where(u => (u.Department??"").ToLower().Equals(name.ToLower()))
+                .OrderBy(u => u.Matricule)
                 .Select(u => new UserDto2 {
                     Id = u.UserId, 
-                    Name = u.Name ?? "",
+                    Name = (u.Name!=null && u.Name.Trim()!="") ? u.Name : u.Matricule,
+                }).AsNoTracking().ToListAsync();
+
+            return users;
+        }
+
+
+        public async Task<bool> IsEmailAdmin(string email) {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+
+            return await _context.UserRoles.AnyAsync(u =>
+                u.User != null &&
+                u.Role != null &&
+                u.User.Email.ToLower().Equals(email.ToLower()) &&
+                u.Role.Name.ToLower().Equals("admin")
+            );
+        }
+
+
+        public async Task<IEnumerable<UserDto2>> GetUsersByAdmin() {
+            var users = await _context.Users
+                .OrderBy(u => u.Matricule)
+                .Select(u => new UserDto2 {
+                    Id = u.UserId, 
+                    Name = (u.Name!=null && u.Name.Trim()!="") ? u.Name : u.Matricule,
                 }).AsNoTracking().ToListAsync();
 
             return users;

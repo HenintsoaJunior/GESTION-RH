@@ -153,6 +153,34 @@ export const TableContainer = styled.div`
   }
 `;
 
+export const NewTableContainer = styled.div`
+  position: relative;
+  background: var(--bg-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  box-sizing: border-box;
+
+  border-top: 5px solid var(--border-color);
+
+  padding-left: var(--spacing-3xl);
+  padding-right: var(--spacing-3xl);
+  padding-bottom: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+
+  @media (max-width: 768px) {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+  }
+
+  .table-wrapper {
+    max-height: calc(100vh - 280px); /* zone scrollable */
+    overflow-y: auto;
+    overflow-x: auto;
+    margin-top: var(--spacing-md);
+  }
+`;
+
+
 export const DataTable = styled.table`
   width: 100%;
   border-collapse: collapse;
@@ -175,6 +203,27 @@ export const TableHeader = styled.div`
   }
 `;
 
+export const NewTableHeader = styled.div`
+  position: sticky;
+  top: var(--header-height); /* hauteur du Header global */
+  z-index: 500;
+  background: var(--bg-primary);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) 0;
+
+  border-bottom: 1px solid var(--border-color);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: stretch;
+  }
+`;
+
+
 export const TableTitle = styled.h2`
   font-size: var(--font-size-lg);
   font-weight: 600;
@@ -182,6 +231,18 @@ export const TableTitle = styled.h2`
   margin: 0;
   font-family: var(--font-family);
 `;
+
+export const TableActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+`;
+
 
 export const TableRow = styled.tr<TableRowProps>`
   cursor: ${({ $clickable }) => ($clickable ? "pointer" : "default")};
@@ -1003,6 +1064,42 @@ export const ButtonConfirm = styled.button`
   line-height: 1;
   transition: all 0.2s ease;
   background-color: var(--primary-color);
+  color: #ffffff;
+  min-width: 70px;
+
+  &:hover {
+    background-color: var(--primary-hover);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    min-width: unset;
+  }
+`;
+
+export const ButtonConfirmSecondary = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  box-shadow: var(--shadow-sm);
+  height: 32px;
+  line-height: 1;
+  transition: all 0.2s ease;
+  background-color: rgb(157, 157, 156);
   color: #ffffff;
   min-width: 70px;
 

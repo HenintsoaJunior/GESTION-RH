@@ -25,6 +25,9 @@ namespace MyApp.Api.Entities.direction
         [ForeignKey("DepartmentId")]
         public Department? Department { get; set; }
 
+        [Column("is_active")]
+        public bool IsActive { get; set; } = true;
+
         public Service()
         {
         }

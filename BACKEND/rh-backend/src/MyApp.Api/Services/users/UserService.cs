@@ -40,6 +40,8 @@ namespace MyApp.Api.Services.users
         Task<UserDto?> GetDirecteurTutelleAsync(string userMatricule);
         Task<UserDto?> GetResponsableSousDirecteurTutelleAsync(string userMatricule);
         Task<IEnumerable<UserDto2>> GetUsersByDirection(string directionId);
+        Task<IEnumerable<UserDto2>> GetUsersByAdmin();
+        Task<bool> IsEmailAdmin(string email);
         Task<bool> IsDirecteurTutelleAsync(string userId);
     }
 
@@ -321,6 +323,18 @@ namespace MyApp.Api.Services.users
 
             IEnumerable<UserDto2> users = await _repository.GetUsersByDirection(directionId);
             return users;
+        }
+
+        public async Task<IEnumerable<UserDto2>> GetUsersByAdmin() {
+            IEnumerable<UserDto2> users = await _repository.GetUsersByAdmin();
+            return users;
+        }
+
+        public async Task<bool> IsEmailAdmin(string email) {
+            if (string.IsNullOrWhiteSpace(email))
+                throw new ArgumentException("L'email ne peut pas être vide.");
+
+            return await _repository.IsEmailAdmin(email);
         }
         
         private static UserDto MapToDto(User user)

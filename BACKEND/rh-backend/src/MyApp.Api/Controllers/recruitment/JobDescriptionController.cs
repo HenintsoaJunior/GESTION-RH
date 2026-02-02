@@ -113,4 +113,24 @@ public class JobDescriptionController(IJobDescriptionService service)
             return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
         }
     }
+
+
+    // [HttpPost("{id}/validate")]
+    // [AllowAnonymous]
+    // public async Task<IActionResult> ValidateJobDescription([FromRoute] string id) {
+    //     // if(!User.Identity?.IsAuthenticated ?? true) {
+    //     //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+    //     // }
+
+    //     try {
+    //         var value = await _service.HasJobDescription(requestId);
+    //         return Ok(new { data = value, status = 200, message = "Réponse obtenue avec succès" });
+    //     }
+    //     catch(ArgumentException ex) {
+    //         return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+    //     }
+    //     catch(Exception ex) {
+    //         return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+    //     }
+    // }
 }

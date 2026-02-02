@@ -558,13 +558,9 @@ export interface EmployeeInformations {
   service: string;
   department: string;
   direction: string;
-  superiorId?: string;
-  superiorName?: string;
-  superiorPost?: string;
 }
 
-export const useEmployeeInformations = () => {
-  const userId = JSON.parse(localStorage.getItem("user") || "null")?.userId;
+export const useEmployeeInformations = (userId?:string) => {
   const queryKey = [...USER_COLLABORATORS_MATRICULES_BASE_KEY, userId] as const;
 
   return useQuery<EmployeeInformations, Error>({
@@ -577,29 +573,29 @@ export const useEmployeeInformations = () => {
         const resp1 = await api.get(`/api/User/${userId}/info`);
         const userInfo = resp1.data.data[0] ?? {};
 
-        const [resp2, resp3] = await Promise.all([
-          api.get(`/api/Employee/matricule/${userInfo.matricule}`),
-          api.get(`/api/User/${userInfo.superiorId}/info`)
+        const [resp2] = await Promise.all([
+          api.get(`/api/User/${userInfo.matricule}/superior`),
         ]);
-        const employeeInfo = resp2.data.data;
-        const superiorInfo = resp3.data.data[0] ?? {};
+        const superiorInfo = resp2.data;
+
+        const [resp3] = await Promise.all([
+          api.get(`/api/Employee/matricule/${superiorInfo.matricule}`),
+        ]);
+        const employeeSupInfo = resp3.data.data;
 
         const employeeData: EmployeeInformations = {
           id: userInfo.userId,
           name: userInfo.name,
           matricule: userInfo.matricule,
           post: userInfo.position,
-          superiorId: userInfo.superiorId,
-          superiorName: userInfo.superiorName,
           direction: userInfo.department,
-          department: employeeInfo.department.departmentName,
-          service: employeeInfo.service.serviceName,
-          superiorPost: superiorInfo.position
+          department: employeeSupInfo.department.departmentName,
+          service: employeeSupInfo.service.serviceName,
         };
 
-
         return employeeData;
-      } catch (error) {
+      } 
+      catch (error) {
         if (axios.isAxiosError(error) && error.response) {
           return error.response.data;
         }

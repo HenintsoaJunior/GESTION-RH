@@ -11,10 +11,18 @@ public class JobDescriptionValidation : BaseEntity
     [Column("job_validation_id")]
     public string Id { get; set; } = null!;
 
-    [ForeignKey("user_id")]
-    public User User { get; set; } = null!;
 
-    [ForeignKey("status_id")]
+    [Column("user_id")]
+    public string ValidatorId { get; set; } = null!;
+
+    [ForeignKey(nameof(ValidatorId))]
+    public User Validator { get; set; } = null!;
+
+
+    [Column("status_id")]
+    public string StatusId { get; set; } = null!;
+
+    [ForeignKey(nameof(StatusId))]
     public JobDescriptionStatus Status { get; set; } = null!;
 
 

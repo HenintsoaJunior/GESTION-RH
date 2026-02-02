@@ -10,6 +10,20 @@ FROM sys.foreign_keys;
 EXEC sp_executesql @sql;
 
 
+/* --- Supprimer toutes les procédures --- */
+DROP PROCEDURE IF EXISTS sp_update_all_mission_status;
+DROP PROCEDURE IF EXISTS sp_upsert_general_director;
+DROP PROCEDURE IF EXISTS sp_upsert_department_directors;
+DROP PROCEDURE IF EXISTS sp_upsert_drh;
+DROP PROCEDURE IF EXISTS sp_upsert_department_chiefs;
+DROP PROCEDURE IF EXISTS sp_upsert_all_validators_main;
+DROP PROCEDURE IF EXISTS sp_reset_validators_flow;
+/* --- Supprimer les triggers --- */
+DROP TRIGGER IF EXISTS trg_UpdateLastStatus;
+/* --- Supprimer les fonctions --- */
+DROP FUNCTION IF EXISTS fn_pending_recruitment_requests;
+
+
 DROP TABLE IF EXISTS tmp_employee;
 DROP TABLE IF EXISTS notification_recipients;
 DROP TABLE IF EXISTS notifications;
@@ -65,7 +79,9 @@ DROP TABLE IF EXISTS candidatures;
 DROP TABLE IF EXISTS skills;
 DROP TABLE IF EXISTS job_suitabilities;
 DROP TABLE IF EXISTS job_experiences;
+DROP TABLE IF EXISTS validators_flow;
 DROP TABLE IF EXISTS formations;
+DROP TABLE IF EXISTS job_formations;
 DROP TABLE IF EXISTS job_validations;
 DROP TABLE IF EXISTS job_attributions;
 DROP TABLE IF EXISTS job_descriptions;
@@ -74,6 +90,7 @@ DROP TABLE IF EXISTS requests_validations;
 DROP TABLE IF EXISTS sites_requests;
 DROP TABLE IF EXISTS job_descriptions_status;
 DROP TABLE IF EXISTS recruitment_requests;
+DROP TABLE IF EXISTS posts_types;
 DROP TABLE IF EXISTS evaluation_types;
 DROP TABLE IF EXISTS personnal_suitabilities;
 DROP TABLE IF EXISTS educations;
@@ -82,8 +99,6 @@ DROP TABLE IF EXISTS job_soft_skills;
 DROP TABLE IF EXISTS level_educations;
 DROP TABLE IF EXISTS requests_status;
 DROP TABLE IF EXISTS replacement_reasons;
-
-DROP FUNCTION fn_pending_recruitment_requests;
 
 /* Réactiver les contraintes FK */
 EXEC sp_msforeachtable "ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL";

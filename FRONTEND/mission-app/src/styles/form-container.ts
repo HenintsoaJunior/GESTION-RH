@@ -337,7 +337,7 @@ export const FormRadio = styled.input.attrs({ type: "radio" })`
 // Form Section Header
 export const FormSectionTitle = styled.h3`
   margin: var(--spacing-lg) 0 var(--spacing-md) 0;
-  font-size: var(--font-size-xl); 
+  font-size: var(--font-size-lg); 
   font-weight: 600;
   color: var(--text-color);
   position: relative;
@@ -893,6 +893,13 @@ export const StepContent = styled.div.withConfig({
 export const StepNavigation = styled(FormActions)`
   justify-content: space-between;
 `;
+
+export const FirstStepNavigation = styled(FormActions)`
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column-reverse;
+`;
+
 
 export const NextButton = styled(SubmitButton)``;
 

@@ -92,7 +92,7 @@
   /* === Layout === */
   --sidebar-width: 270px; /* Modifié à 260px */
   --sidebar-collapsed-width: 60px; /* Réduit de 80px */
-  --header-height: 70px; /* Second bloc */
+  --header-height: 50px; /* Second bloc */
   --transition-speed: 0.3s; /* Second bloc */
 
   /* === Couleurs additionnelles === */

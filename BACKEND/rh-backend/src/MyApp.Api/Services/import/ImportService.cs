@@ -173,11 +173,11 @@ namespace MyApp.Api.Services.import
                 await GetDistinctNationalitiesAsync();
                 await GetDistinctContractTypesAsync();
                 await GetDistinctEmployeeCategoriesAsync();
-                await GetDistinctDirectionsAsync();
-                await GetDistinctDepartmentsAsync();
-                await GetDistinctServicesAsync();
+                // await GetDistinctDirectionsAsync();
+                // await GetDistinctDepartmentsAsync();
+                // await GetDistinctServicesAsync();
                 await GetDistinctUnitsAsync();
-                await GetDistinctEmployeesAsync();
+                // await GetDistinctEmployeesAsync();
 
                 return result;
             }
@@ -581,283 +581,229 @@ namespace MyApp.Api.Services.import
         }
 
         public async Task<IEnumerable<Unit>> GetDistinctUnitsAsync()
+{
+    try
+    {
+        var tmpEmployees = await _tmpEmployeeService.GetAllAsync();
+        var allServices  = await _serviceService.GetAllAsync();
+        var allUnits     = await _unitService.GetAllAsync();
+
+        // Unités distinctes depuis le CSV
+        var distinctUnits = tmpEmployees
+            .Where(e => !string.IsNullOrWhiteSpace(e.Unite))
+            .Select(e => e.Unite!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var units = new List<Unit>();
+
+        foreach (var unitName in distinctUnits)
+        {
+            // 1️⃣ Si l’unité existe déjà → on la réutilise
+            var existingUnit = allUnits.FirstOrDefault(u =>
+                u.UnitName.Equals(unitName, StringComparison.OrdinalIgnoreCase));
+
+            if (existingUnit != null)
+            {
+                units.Add(existingUnit);
+                continue;
+            }
+
+            // 2️⃣ Trouver une ligne CSV correspondant à cette unité
+            var employee = tmpEmployees.FirstOrDefault(e =>
+                !string.IsNullOrWhiteSpace(e.Unite) &&
+                !string.IsNullOrWhiteSpace(e.Service) &&
+                e.Unite.Equals(unitName, StringComparison.OrdinalIgnoreCase));
+
+            if (employee == null)
+            {
+                _logger.LogWarning(
+                    "Skipping creation of unit '{UnitName}' due to missing service information",
+                    unitName
+                );
+                continue;
+            }
+
+            // 3️⃣ Trouver le service correspondant
+            // ⚠️ Ici on accepte plusieurs services portant le même nom
+            // → on prend le premier trouvé (logique métier actuelle)
+            var service = allServices.FirstOrDefault(s =>
+                s.ServiceName.Equals(employee.Service, StringComparison.OrdinalIgnoreCase));
+
+            if (service == null)
+            {
+                _logger.LogWarning(
+                    "Skipping creation of unit '{UnitName}' due to missing service '{ServiceName}'",
+                    unitName,
+                    employee.Service
+                );
+                continue;
+            }
+
+            // 4️⃣ Créer l’unité
+            var createDto = new UnitDTOForm
+            {
+                UnitName  = unitName,
+                ServiceId = service.ServiceId
+            };
+
+            var newUnit = await _unitService.AddAsync(createDto);
+            units.Add(newUnit);
+        }
+
+        return units;
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error retrieving distinct units from temporary employees");
+        throw new InvalidOperationException(
+            $"Failed to retrieve distinct units: {ex.Message}",
+            ex
+        );
+    }
+}
+
+
+public async Task<IEnumerable<Employee>> GetDistinctEmployeesAsync()
+{
+    string Clean(string? v) => v?.Trim() ?? string.Empty;
+
+    try
+    {
+        var tmpEmployees = await _tmpEmployeeService.GetAllAsync();
+
+        var distinctEmployees = tmpEmployees
+            .Where(e => !string.IsNullOrWhiteSpace(e.Mle))
+            .GroupBy(e => Clean(e.Mle), StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
+
+        var sites       = await _siteService.GetAllAsync();
+        var genders     = await _genderService.GetAllAsync();
+        var directions  = await _directionService.GetAllAsync();
+        var contracts   = await _contractTypeService.GetAllAsync();
+        var departments = await _departmentService.GetAllAsync();
+        var services    = await _serviceService.GetAllAsync();
+        var units       = await _unitService.GetAllAsync();
+        var categories  = await _employeeCategoryService.GetAllAsync();
+
+        var created = new List<Employee>();
+
+        foreach (var t in distinctEmployees)
         {
             try
             {
-                var tmpEmployees = await _tmpEmployeeService.GetAllAsync();
+                var mle  = Clean(t.Mle);
+                var nom  = Clean(t.Nom);
+                var site = Clean(t.Site);
+                var sexe = Clean(t.Sexe);
+                var dir  = Clean(t.Direction);
 
-                var distinctUnits = tmpEmployees
-                    .Where(e => !string.IsNullOrWhiteSpace(e.Unite))
-                    .Select(e => e.Unite!)
-                    .Distinct(StringComparer.OrdinalIgnoreCase) 
-                    .ToList();
-
-                var unitToServiceMap = tmpEmployees
-                    .Where(e => !string.IsNullOrWhiteSpace(e.Unite) && !string.IsNullOrWhiteSpace(e.Service))
-                    .ToLookup(e => e.Unite!, e => e.Service!, StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(l => l.Key, l => l.First(), StringComparer.OrdinalIgnoreCase);
-
-                var allServices = await _serviceService.GetAllAsync();
-                var serviceByName = allServices.ToDictionary(
-                    s => s.ServiceName, 
-                    s => s, 
-                    StringComparer.OrdinalIgnoreCase
-                );
-
-                var allUnits = await _unitService.GetAllAsync();
-                var existingUnitByName = allUnits.ToDictionary(
-                    u => u.UnitName, 
-                    u => u, 
-                    StringComparer.OrdinalIgnoreCase
-                );
-
-                var units = new List<Unit>();
-                foreach (var unitName in distinctUnits)
+                if (string.IsNullOrEmpty(nom) ||
+                    string.IsNullOrEmpty(site) ||
+                    string.IsNullOrEmpty(sexe) ||
+                    string.IsNullOrEmpty(dir))
                 {
-                    if (existingUnitByName.TryGetValue(unitName, out var existingUnit))
-                    {
-                        units.Add(existingUnit);
-                    }
-                    else
-                    {
-                        if (unitToServiceMap.TryGetValue(unitName, out var serviceName))
-                        {
-                            if (serviceByName.TryGetValue(serviceName, out var service))
-                            {
-                                var createDto = new UnitDTOForm 
-                                { 
-                                    UnitName = unitName,
-                                    ServiceId = service.ServiceId
-                                };
-                                var newUnit = await _unitService.AddAsync(createDto);
-                                units.Add(newUnit);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("Skipping creation of unit '{UnitName}' due to missing associated service '{ServiceName}'", unitName, serviceName);
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Skipping creation of unit '{UnitName}' due to missing associated service", unitName);
-                        }
-                    }
+                    _logger.LogWarning(
+                        "⛔ SKIP {Mle} - missing required fields (Nom/Site/Sexe/Direction)",
+                        mle
+                    );
+                    continue;
                 }
 
-                return units;
+                var siteEntity = sites.FirstOrDefault(s =>
+                    s.Code.Equals(site, StringComparison.OrdinalIgnoreCase));
+
+                if (siteEntity == null)
+                {
+                    _logger.LogError("⛔ SKIP {Mle} - Site '{Site}' not found", mle, site);
+                    continue;
+                }
+
+                var genderEntity = genders.FirstOrDefault(g =>
+                    g.Code.Equals(sexe, StringComparison.OrdinalIgnoreCase));
+
+                if (genderEntity == null)
+                {
+                    _logger.LogError("⛔ SKIP {Mle} - Gender '{Sexe}' not found", mle, sexe);
+                    continue;
+                }
+
+                var directionEntity = directions.FirstOrDefault(d =>
+                    d.DirectionName.Equals(dir, StringComparison.OrdinalIgnoreCase));
+
+                if (directionEntity == null)
+                {
+                    _logger.LogError("⛔ SKIP {Mle} - Direction '{Direction}' not found", mle, dir);
+                    continue;
+                }
+
+                var contractEntity = !string.IsNullOrWhiteSpace(t.TypeContrat)
+                    ? contracts.FirstOrDefault(c =>
+                        c.Code.Equals(Clean(t.TypeContrat), StringComparison.OrdinalIgnoreCase))
+                    : null;
+
+                var departmentEntity = !string.IsNullOrWhiteSpace(t.Department)
+                    ? departments.FirstOrDefault(d =>
+                        d.DepartmentName.Equals(Clean(t.Department), StringComparison.OrdinalIgnoreCase))
+                    : null;
+
+                var serviceEntity = !string.IsNullOrWhiteSpace(t.Service)
+                    ? services.FirstOrDefault(s =>
+                        s.ServiceName.Equals(Clean(t.Service), StringComparison.OrdinalIgnoreCase))
+                    : null;
+
+                var unitEntity = !string.IsNullOrWhiteSpace(t.Unite)
+                    ? units.FirstOrDefault(u =>
+                        u.UnitName.Equals(Clean(t.Unite), StringComparison.OrdinalIgnoreCase))
+                    : null;
+
+                var dto = new EmployeeFormDTO
+                {
+                    EmployeeCode   = mle,
+                    LastName       = nom,
+                    FirstName      = Clean(t.Prenom),
+                    Category       = Clean(t.Categorie),
+                    BirthDate      = t.DateNaissance,
+                    BirthPlace     = Clean(t.LieuNaissance),
+                    IdNumber       = Clean(t.NumeroCin),
+                    IdIssueDate    = t.DateCin,
+                    IdIssuePlace   = Clean(t.LieuCin),
+                    PhoneNumber    = Clean(t.Telephone),
+                    HireDate       = t.DateAnciennete,
+                    JobTitle       = Clean(t.IntitulePoste),
+                    ContractEndDate= t.DateFinContrat,
+
+                    SiteId         = siteEntity.SiteId,
+                    GenderId       = genderEntity.GenderId,
+                    DirectionId    = directionEntity.DirectionId,
+                    ContractTypeId = contractEntity?.ContractTypeId,
+                    DepartmentId   = departmentEntity?.DepartmentId,
+                    ServiceId      = serviceEntity?.ServiceId,
+                    UnitId         = unitEntity?.UnitId
+                };
+
+                var emp = await _employeeService.AddAsync(dto);
+                created.Add(emp);
+
+                _logger.LogInformation("✅ CREATED employee {Mle}", mle);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving distinct units from temporary employees");
-                throw new InvalidOperationException($"Failed to retrieve distinct units: {ex.Message}", ex);
+                _logger.LogError(ex, "🔥 ERROR creating employee {Mle}", t.Mle);
             }
         }
 
-        public async Task<IEnumerable<Employee>> GetDistinctEmployeesAsync()
-        {
-            try
-            {
-                var tmpEmployees = await _tmpEmployeeService.GetAllAsync();
+        _logger.LogWarning("🎯 EMPLOYEE IMPORT DONE - Created: {Count}", created.Count);
+        return created;
+    }
+    catch (Exception ex)
+    {
+        _logger.LogCritical(ex, "💥 EMPLOYEE IMPORT FAILED");
+        throw;
+    }
+}
 
-                var distinctEmployees = tmpEmployees
-                    .Where(e => !string.IsNullOrWhiteSpace(e.Mle))
-                    .GroupBy(e => e.Mle, StringComparer.OrdinalIgnoreCase)
-                    .Select(g => g.First())
-                    .ToList();
 
-                int totalDistinct = distinctEmployees.Count;
-
-                int skippedRequired = 0;
-                int skippedSite = 0;
-                int skippedGender = 0;
-                int skippedInvalidContractType = 0;
-                int skippedDirection = 0;
-                int skippedCategory = 0; 
-                int skippedExisting = 0;
-                int created = 0;
-                int errors = 0;
-
-                var allSites = await _siteService.GetAllAsync();
-                var allGenders = await _genderService.GetAllAsync();
-                var allContractTypes = await _contractTypeService.GetAllAsync();
-                var allDirections = await _directionService.GetAllAsync();
-                var allDepartments = await _departmentService.GetAllAsync();
-                var allServices = await _serviceService.GetAllAsync();
-                var allUnits = await _unitService.GetAllAsync();
-                var allEmployeeCategories = await _employeeCategoryService.GetAllAsync();
-
-                var siteByCode = allSites
-                .Where(s => !string.IsNullOrWhiteSpace(s.Code))
-                .ToDictionary(s => s.Code!, s => s, StringComparer.OrdinalIgnoreCase);
-                var genderByCode = allGenders.ToDictionary(g => g.Code, g => g, StringComparer.OrdinalIgnoreCase);
-                var contractTypeByCode = allContractTypes.ToDictionary(c => c.Code, c => c, StringComparer.OrdinalIgnoreCase);
-                var directionByName = allDirections.ToDictionary(d => d.DirectionName, d => d, StringComparer.OrdinalIgnoreCase);
-                var departmentByName = allDepartments.ToDictionary(d => d.DepartmentName, d => d, StringComparer.OrdinalIgnoreCase);
-                var serviceByName = allServices.ToDictionary(s => s.ServiceName, s => s, StringComparer.OrdinalIgnoreCase);
-                var unitByName = allUnits.ToDictionary(u => u.UnitName, u => u, StringComparer.OrdinalIgnoreCase);
-                var employeeCategoryByCode = allEmployeeCategories.ToDictionary(c => c.Code, c => c, StringComparer.OrdinalIgnoreCase);
-
-                // Get all existing employees once
-                var allExistingEmployees = await _employeeService.GetAllAsync();
-                var existingEmployeeByCode = allExistingEmployees
-                    .Where(e => !string.IsNullOrWhiteSpace(e.EmployeeCode))
-                    .ToDictionary(e => e.EmployeeCode!, e => e, StringComparer.OrdinalIgnoreCase);
-
-                var employees = new List<Employee>();
-
-                foreach (var tmpEmployee in distinctEmployees)
-                {
-                    try
-                    {
-                        // Validate required fields (TypeContrat non requis, Prenom non requis)
-                        if (string.IsNullOrWhiteSpace(tmpEmployee.Nom) || 
-                            string.IsNullOrWhiteSpace(tmpEmployee.Site) ||
-                            string.IsNullOrWhiteSpace(tmpEmployee.Sexe) ||
-                            string.IsNullOrWhiteSpace(tmpEmployee.Direction))
-                        {
-                            _logger.LogWarning("Skipping employee with code '{Mle}' due to missing required fields", tmpEmployee.Mle);
-                            skippedRequired++;
-                            continue;
-                        }
-
-                        // Get or validate foreign key references
-                        if (!siteByCode.TryGetValue(tmpEmployee.Site, out var site))
-                        {
-                            _logger.LogWarning("Skipping employee with code '{Mle}' due to invalid site '{Site}'", tmpEmployee.Mle, tmpEmployee.Site);
-                            skippedSite++;
-                            continue;
-                        }
-
-                        if (!genderByCode.TryGetValue(tmpEmployee.Sexe, out var gender))
-                        {
-                            _logger.LogWarning("Skipping employee with code '{Mle}' due to invalid gender '{Sexe}'", tmpEmployee.Mle, tmpEmployee.Sexe);
-                            skippedGender++;
-                            continue;
-                        }
-
-                        string? contractTypeId = null;
-                        if (!string.IsNullOrWhiteSpace(tmpEmployee.TypeContrat))
-                        {
-                            if (!contractTypeByCode.TryGetValue(tmpEmployee.TypeContrat, out var contractType))
-                            {
-                                _logger.LogWarning("Skipping employee with code '{Mle}' due to invalid contract type '{TypeContrat}'", tmpEmployee.Mle, tmpEmployee.TypeContrat);
-                                skippedInvalidContractType++;
-                                continue;
-                            }
-                            contractTypeId = contractType.ContractTypeId;
-                        }
-                        else
-                        {
-                            _logger.LogDebug("Employee '{Mle}' has no ContractType; using null value", tmpEmployee.Mle);
-                        }
-
-                        if (!directionByName.TryGetValue(tmpEmployee.Direction, out var direction))
-                        {
-                            _logger.LogWarning("Skipping employee with code '{Mle}' due to invalid direction '{Direction}'", tmpEmployee.Mle, tmpEmployee.Direction);
-                            skippedDirection++;
-                            continue;
-                        }
-
-                        string? departmentId = null;
-                        if (!string.IsNullOrWhiteSpace(tmpEmployee.Department) && 
-                            departmentByName.TryGetValue(tmpEmployee.Department, out var department))
-                        {
-                            departmentId = department.DepartmentId;
-                        }
-
-                        string? serviceId = null;
-                        if (!string.IsNullOrWhiteSpace(tmpEmployee.Service) && 
-                            serviceByName.TryGetValue(tmpEmployee.Service, out var service))
-                        {
-                            serviceId = service.ServiceId;
-                        }
-
-                        string? unitId = null;
-                        if (!string.IsNullOrWhiteSpace(tmpEmployee.Unite) && 
-                            unitByName.TryGetValue(tmpEmployee.Unite, out var unit))
-                        {
-                            unitId = unit.UnitId;
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(tmpEmployee.Mle) && 
-                        existingEmployeeByCode.TryGetValue(tmpEmployee.Mle, out var existingEmployee))
-                        {
-                            employees.Add(existingEmployee);
-                            _logger.LogInformation("Employee with code '{Mle}' already exists, skipping creation", tmpEmployee.Mle);
-                            skippedExisting++;
-                            continue;
-                        }
-
-                        var employeeForm = new EmployeeFormDTO
-                        {
-                            EmployeeCode = tmpEmployee.Mle ?? string.Empty,
-                            LastName = tmpEmployee.Nom ?? string.Empty,
-                            FirstName = tmpEmployee.Prenom ?? string.Empty,
-                            Category = tmpEmployee.Categorie ?? string.Empty,
-                            BirthDate = tmpEmployee.DateNaissance,
-                            BirthPlace = tmpEmployee.LieuNaissance ?? string.Empty,
-                            IdNumber = tmpEmployee.NumeroCin ?? string.Empty,
-                            IdIssueDate = tmpEmployee.DateCin,
-                            IdIssuePlace = tmpEmployee.LieuCin ?? string.Empty,
-                            PhoneNumber = tmpEmployee.Telephone ?? string.Empty,
-                            HireDate = tmpEmployee.DateAnciennete,
-                            JobTitle = tmpEmployee.IntitulePoste ?? string.Empty,
-                            ContractEndDate = tmpEmployee.DateFinContrat,
-                            SiteId = site.SiteId,
-                            GenderId = gender.GenderId,
-                            ContractTypeId = contractTypeId,
-                            DirectionId = direction.DirectionId,
-                            DepartmentId = departmentId,
-                            ServiceId = serviceId,
-                            UnitId = unitId
-                        };
-
-                        // Create new employee
-                        var newEmployee = await _employeeService.AddAsync(employeeForm);
-                        employees.Add(newEmployee);
-
-                        // Associate category if present (optional)
-                        if (!string.IsNullOrWhiteSpace(tmpEmployee.Categorie))
-                        {
-                            if (employeeCategoryByCode.TryGetValue(tmpEmployee.Categorie, out var empCategory))
-                            {
-                                var createCatDto = new CreateCategoriesOfEmployeeDTO
-                                {
-                                    EmployeeId = newEmployee.EmployeeId,
-                                    EmployeeCategoryId = empCategory.EmployeeCategoryId
-                                };
-                                await _categoriesOfEmployeeService.AddAsync(createCatDto);
-                                _logger.LogInformation("Successfully associated category '{Categorie}' to employee '{Mle}'", tmpEmployee.Categorie, tmpEmployee.Mle);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("Skipping category association for employee '{Mle}' due to invalid category '{Categorie}'", tmpEmployee.Mle, tmpEmployee.Categorie);
-                                skippedCategory++;
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogDebug("Employee '{Mle}' has no category; skipping association", tmpEmployee.Mle);
-                        }
-                        
-                        _logger.LogInformation("Successfully created employee with code '{Mle}'", tmpEmployee.Mle);
-                        created++;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error processing employee with code '{Mle}'", tmpEmployee.Mle);
-                        errors++;
-                        // Continue processing other employees
-                    }
-                }
-
-                return employees;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving distinct employees from temporary employees");
-                throw new InvalidOperationException($"Failed to retrieve distinct employees: {ex.Message}", ex);
-            }
-        }
     }
 }

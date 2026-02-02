@@ -54,30 +54,30 @@ const InputWrapper = styled.div<{ className?: string }>`
   }
 `;
 
-const IconButton = styled.span<{ $disabled?: boolean }>`
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 8px 12px;
-  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
-  background: transparent;
-  border-left: 1px solid #dee2e6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
+// const IconButton = styled.span<{ $disabled?: boolean }>`
+//   position: absolute;
+//   right: 0;
+//   top: 50%;
+//   transform: translateY(-50%);
+//   padding: 8px 12px;
+//   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
+//   background: transparent;
+//   border-left: 1px solid #dee2e6;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   transition: background 0.2s;
+//   opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
 
-  &:hover:not(:disabled) {
-    background: ${({ $disabled }) => ($disabled ? 'transparent' : '#e9ecef')};
-  }
+//   &:hover:not(:disabled) {
+//     background: ${({ $disabled }) => ($disabled ? 'transparent' : '#e9ecef')};
+//   }
 
-  svg {
-    font-size: 12px;
-    color: #6c757d;
-  }
-`;
+//   svg {
+//     font-size: 12px;
+//     color: #6c757d;
+//   }
+// `;
 
 const Dropdown = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== 'scrollable',
@@ -251,15 +251,17 @@ const AutoCompleteInput: React.FC<AutoCompleteInputProps> = ({
           aria-autocomplete="list"
           aria-controls="autocomplete-dropdown"
         />
-        <IconButton
+        <FaIcons.FaSearch />
+        {/* <IconButton
           $disabled={disabled}
           onClick={() => !disabled && setIsOpen(!isOpen)}
           aria-label={isOpen ? "Masquer les suggestions" : "Afficher les suggestions"}
           role="button"
           tabIndex={disabled ? -1 : 0}
         >
+          
           {isOpen ? <FaIcons.FaAngleUp /> : <FaIcons.FaAngleDown />}
-        </IconButton>
+        </IconButton> */}
       </InputWrapper>
 
       {isOpen && !disabled && (

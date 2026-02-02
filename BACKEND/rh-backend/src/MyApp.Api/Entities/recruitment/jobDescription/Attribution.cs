@@ -13,6 +13,7 @@ public class Attribution
     [Column("job_attribution")]
     public string Label { get; set; } = null!;
 
+
     [Column("job_description_id")]
     public string JobDescriptionId { get; set; } = null!;
 

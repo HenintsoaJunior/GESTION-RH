@@ -25,6 +25,9 @@ namespace MyApp.Api.Entities.direction
         [ForeignKey("DirectionId")]
         public Direction? Direction { get; set; }
 
+        [Column("is_active")]
+        public bool IsActive { get; set; } = true;
+
         public Department()
         {
         }

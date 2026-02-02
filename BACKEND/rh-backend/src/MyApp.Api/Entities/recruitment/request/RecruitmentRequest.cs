@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using MyApp.Api.Entities.contract;
 using MyApp.Api.Entities.users;
 
@@ -32,25 +33,60 @@ public class RecruitmentRequest : BaseEntity
     public DateOnly? ReplacementDate {get; set;}
 
 
-    [ForeignKey("applicant_user")]
+    [Column("applicant_user_id")]
+    public string ApplicantUserId {get; set;} = null!;
+
+    [ForeignKey(nameof(ApplicantUserId))]
     public User ApplicantUser {get; set;} = null!;
 
-    [ForeignKey("replacement_reason_id")]
+
+    [Column("hierarchical_manager_id")]
+    public string HierarchicalManagerId {get; set;} = null!;
+
+    [ForeignKey(nameof(HierarchicalManagerId))]
+    public User HierarchicalManager {get; set;} = null!;
+
+
+    [Column("functional_manager_id")]
+    public string FunctionalManagerId {get; set;} = null!;
+
+    [ForeignKey(nameof(FunctionalManagerId))]
+    public User FunctionalManager {get; set;} = null!;
+
+
+    [Column("created_by")]
+    public string CreatorId {get; set;} = null!;
+
+    [ForeignKey(nameof(CreatorId))]
+    public User Creator {get; set;} = null!;
+
+
+    [Column("replacement_reason_id")]
+    public string? ReplacementReasonId {get; set;}
+
+    [ForeignKey(nameof(ReplacementReasonId))]
     public ReplacementReason? ReplacementReason {get; set;}
+
 
     [Column("reason_precision")]
     public string? ReasonPrecision {get; set;}
 
-    [ForeignKey("last_titular_user")]
+    [Column("last_titular_user")]
+    public string? LastTitularUserId {get; set;}
+
+    [ForeignKey(nameof(LastTitularUserId))]
     public User? LastTitular {get; set;}
 
 
-    [ForeignKey("contract_type_id")]
+    [Column("contract_type_id")]
+    public string? ContractTypeId {get; set;}
+
+    [ForeignKey(nameof(ContractTypeId))]
     public ContractType? Contract {get; set;}
+
 
     [Column("contract_precision")]
     public string? ContractPrecision {get; set;}
-
 
     [Column("is_planned")]
     public bool IsPlanned {get; set;}
@@ -64,9 +100,11 @@ public class RecruitmentRequest : BaseEntity
     [Column("is_deleted")]
     public bool IsDeleted  { get; set; } = false;
 
+    [JsonIgnore]
     public List<SiteRequest> SitesRequests { get; set; }
      = new List<SiteRequest>();
 
+    [JsonIgnore]
     public ICollection<RequestsPerValidator> RequestsPerValidators { get; set; }
     = new List<RequestsPerValidator>();
 }

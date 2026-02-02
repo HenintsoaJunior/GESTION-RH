@@ -15,8 +15,9 @@ public interface IRequestValidationRepository
 {
     Task<List<UserDto>> GetAllDirectorsValidator();
     Task<List<UserDto>> GetAllDirectorValidator(string requestId);
+    Task<UserDto?> GetNextValidator(string requestId);
     Task<RequestStatus> GetNextValidatedStatus(RecruitmentRequest req, int validatorCount);
-    Task DoValidationForRequest(CreateRequestValidationDTO data);
+    Task<RecruitmentRequest> DoValidationForRequest(CreateRequestValidationDTO data);
     Task<bool> HasNotYetValidatedRequest(User user, RecruitmentRequest req);
     Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(string validatorId, FilterRequestListDTO filters, int page, int pageSize);
     Task AddRequestInValidations(RecruitmentRequest req, List<UserDto> users);
@@ -28,12 +29,12 @@ public class RequestValidationRepository : IRequestValidationRepository
 {
     private readonly AppDbContext _dbCtx;
     private readonly IUserService _userService;
-    private readonly IRequestRepository _reqRepo;
+    private readonly IRecruitmentRequestRepository _reqRepo;
     private readonly ISequenceGenerator _seqGenerator;
 
     public RequestValidationRepository(
      AppDbContext ctx, IUserService service,
-     IRequestRepository reqRepo, ISequenceGenerator generator) {
+     IRecruitmentRequestRepository reqRepo, ISequenceGenerator generator) {
         _dbCtx = ctx; _userService = service; _reqRepo = reqRepo;
         _seqGenerator = generator;
     }
@@ -42,20 +43,31 @@ public class RequestValidationRepository : IRequestValidationRepository
     public async Task<List<UserDto>> GetAllDirectorsValidator() {
         var query = @"
             SELECT 
-                user_id       AS UserId,
-                name          AS Name,
-                email         AS Email,
-                matricule     AS Matricule,
-                department    AS Department,
-                position      AS Position,
-                superior_id   AS SuperiorId,
-                superior_name AS SuperiorName
-            FROM users
-            WHERE (position LIKE 'Directeur%' OR position LIKE 'Directrice%')
-            AND (department = @p0 OR department = @p1 OR department = @p2)";
+                u0.user_id       AS UserId,
+                u0.name          AS Name,
+                u0.email         AS Email,
+                u0.matricule     AS Matricule,
+                u0.department    AS Department,
+                u0.position      AS Position,
+                u0.superior_id   AS SuperiorId,
+                u0.superior_name AS SuperiorName
+            FROM users u0
+            LEFT JOIN users u1 
+                ON u0.superior_id = u1.user_id
+            WHERE
+                (u0.position LIKE 'Directeur%' OR u0.position LIKE 'Directrice%')
+                AND u0.department IN (@p1, @p2, @p3)
+                AND (
+                    u1.department = @p0
+                    OR (
+                        u0.department = @p0
+                        AND u0.superior_id IS NULL
+                    )
+                )
+            ";
 
         var directors = await _dbCtx.Database.SqlQueryRaw<UserDto>(
-            query, ["DAF", "DRH", "DGE"]
+            query, ["DGE", "DAF", "DRH", "DGE"]
         )
         .AsNoTracking()
         .ToListAsync();
@@ -81,6 +93,7 @@ public class RequestValidationRepository : IRequestValidationRepository
         
         var tutelleDirector = await _userService.GetDirecteurTutelleAsync(requestor.Matricule)
             ?? throw new ArgumentException("Directeur de tutelle introuvable");
+
         var tutelleDirectorDto = new UserDto {
             UserId = tutelleDirector.UserId,
             Name = tutelleDirector.Name,
@@ -95,7 +108,9 @@ public class RequestValidationRepository : IRequestValidationRepository
     // Validateurs : N+1 et Directeur de tutelle
         int count = 0;
         for(int i=0; i<directors.Count; i++) {
-            if(directors[i].UserId==requestor.UserId || directors[i].UserId==superior.UserId) {
+            if(directors[i].UserId==requestor.UserId // Demandeur == Un des directeurs
+             || directors[i].UserId==superior.UserId // Supérieur == Un des directeurs
+            ) { 
                 count += 1; break;
             }
         }
@@ -115,6 +130,28 @@ public class RequestValidationRepository : IRequestValidationRepository
         }
         
         return validators;
+    }
+
+
+    public async Task<UserDto?> GetNextValidator(string requestId) {
+        var request = await _dbCtx.RequestsPerValidators
+            .Include(r => r.Validator)
+            .Where(r => 
+                r.RequestId==requestId && r.IsValidated==false)
+            .FirstOrDefaultAsync();
+
+        if(request==null) return null;
+
+        var validator = new UserDto {
+            UserId = request.Validator.UserId,
+            Name = request.Validator.Name,
+            Email = request.Validator.Email,
+            Matricule = request.Validator.Matricule,
+            Position = request.Validator.Position,
+            SuperiorId = request.Validator.SuperiorId,
+            SuperiorName = request.Validator.SuperiorName,
+        };
+        return validator;
     }
 
 
@@ -150,8 +187,7 @@ public class RequestValidationRepository : IRequestValidationRepository
     }
 
 
-    public async Task DoValidationForRequest(CreateRequestValidationDTO data) {
-        byte[]? signatureBytes = null; 
+    public async Task<RecruitmentRequest> DoValidationForRequest(CreateRequestValidationDTO data) {
         RequestStatus? newStatus = null;
 
         var userValidator = await _dbCtx.Users.FindAsync(data.ValidatorId)
@@ -173,15 +209,6 @@ public class RequestValidationRepository : IRequestValidationRepository
 
     // Traitement des statuts
         if (data.Status.Equals("Approuver", StringComparison.OrdinalIgnoreCase)) {
-            if (string.IsNullOrWhiteSpace(data.Signature))
-                throw new ArgumentException("Signature obligatoire pour approuver la demande");
-
-            var base64Data = data.Signature.Contains(',') 
-                ? data.Signature.Split(',')[1] 
-                : data.Signature;
-
-            signatureBytes = Convert.FromBase64String(base64Data);
-
         // Renvoie un RequestStatus existant
             newStatus = await this.GetNextValidatedStatus(request, validators.Count);
         }
@@ -194,35 +221,35 @@ public class RequestValidationRepository : IRequestValidationRepository
         }
         else throw new ArgumentException("Décision inconnue");
 
-        _dbCtx.Attach(newStatus);
+        // _dbCtx.Attach(newStatus);
         RequestValidation validation = new RequestValidation {
             Id = _seqGenerator.GenerateSequence("seq_request_validation_id", "DMD_REC_VAL"),
             Comments = data.Comments,
-            Request = request,
-            Signature = signatureBytes,
-            Status = newStatus,  
-            Validator = userValidator,
+            RequestId = request.Id,
+            StatusId = newStatus.Id,  
+            ValidatorId = userValidator.UserId,
         };
 
     // Modification de la validation
         var req = await _dbCtx.RequestsPerValidators
             .FirstOrDefaultAsync(r => 
-                r.Validator == userValidator &&  r.Request == request
+                r.Validator == userValidator && r.Request == request
             );
 
         if(req != null) req.IsValidated = true;
 
         await _dbCtx.RequestValidations.AddAsync(validation);
         await _dbCtx.SaveChangesAsync();
+
+        return request;
     }
 
 
-   public async Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
+    public async Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
         string validatorId,
         FilterRequestListDTO filters,
-        int page,
-        int pageSize)
-    {
+        int page, int pageSize
+    ) {
         // Vérifier l'existence du validateur
         if (!await _dbCtx.Users.AsNoTracking().AnyAsync(u => u.UserId == validatorId))
             throw new ArgumentException("Validateur introuvable");
@@ -260,8 +287,8 @@ public class RequestValidationRepository : IRequestValidationRepository
             requestIdsQuery = requestIdsQuery.Where(id =>
                 _dbCtx.RecruitmentRequests.Any(r =>
                     r.Id == id &&
-                    r.ApplicantUser.Department != null &&
-                    r.ApplicantUser.Department.ToUpper() == filters.direction.ToUpper()));
+                    r.HierarchicalManager.Department != null &&
+                    r.HierarchicalManager.Department.ToUpper() == filters.direction.ToUpper()));
 
         if (filters.minDate.HasValue)
             requestIdsQuery = requestIdsQuery.Where(id =>
@@ -290,7 +317,7 @@ public class RequestValidationRepository : IRequestValidationRepository
 
         var pagedRequests = await _dbCtx.RecruitmentRequests
             .Where(r => pageIds.Contains(r.Id))
-            .Include(r => r.ApplicantUser)
+            .Include(r => r.HierarchicalManager)
             .Include(r => r.Contract)
             .Include(r => r.SitesRequests)
                 .ThenInclude(sr => sr.Site)
@@ -298,15 +325,20 @@ public class RequestValidationRepository : IRequestValidationRepository
             .Select(r => new RequestDetailsDTO
             {
                 Id = r.Id,
+                HierarchicalManager = r.HierarchicalManager.Name ?? "",
+                FunctionalManager = r.FunctionalManager.Name ?? "",
                 ApplicantUser = r.ApplicantUser.Name ?? "",
+                Creator = r.Creator.Name ?? "",
+                Direction = r.Creator.Department ?? "",
                 Status = r.LastStatus,
                 Sites = r.SitesRequests.Select(sr => sr.Site.SiteName).ToArray(),
-                Contract = r.Contract != null ? r.Contract.Code : null,
+                Contract = r.Contract != null ? r.Contract.Code : r.ContractPrecision,
                 BeginningDate = r.BeginningDate,
                 ValidationLevel = _dbCtx.RequestsPerValidators
                     .Count(v => v.Request.Id == r.Id && v.IsValidated),
                 IsPlanned = r.IsPlanned,
-                NotPlannedReason = r.NotPlannedReason
+                NotPlannedReason = r.NotPlannedReason,
+                SendingDate = r.CreatedAt
             })
             .ToListAsync();
 
@@ -319,14 +351,14 @@ public class RequestValidationRepository : IRequestValidationRepository
 
         foreach (var userDto in users) {
             var user = await _userService.GetByIdAsync(userDto.UserId) 
-                    ?? throw new ArgumentException("Utilisateur non trouvé");
+                ?? throw new ArgumentException("Utilisateur non trouvé");
 
-            _dbCtx.Users.Attach(user);
-            requests.Add(
-             new RequestsPerValidator {
+            requests.Add(new RequestsPerValidator 
+            {
                 Id = _seqGenerator.GenerateSequence("seq_requests_per_validator_id", "DMD_PVLD"),
-                Validator = user,
-                Request = req, IsValidated = false
+                ValidatorId = user.UserId,
+                RequestId = req.Id, 
+                IsValidated = false
             });
         }
         await _dbCtx.RequestsPerValidators.AddRangeAsync(requests);
@@ -336,13 +368,13 @@ public class RequestValidationRepository : IRequestValidationRepository
     public async Task<List<RequestValidation>> GetAllValidation(string requestId) {
         var request = await _reqRepo.GetRecruitmentRequestById(requestId);
 
-        return await _dbCtx.RequestValidations.Include(r => r.Validator)
-            .Where(r => 
-                r.Signature!=null && r.Request == request)
+        return await _dbCtx.RequestValidations
+            .Include(r => r.Validator)
+            .Include(r => r.Status)
+            .Where(r => r.RequestId.Equals(requestId))
             .AsNoTracking().ToListAsync();
     }
 }
 
-// userId-DAF : 00425 : 11715a63-e237-46b3-b568-ffa6fc087000
 // userId-DRH : 00182 : 002b1f12-e8c5-4a30-81ca-e8532855de71
 // userId-DGE : 00431 : ec738732-6e94-4288-be4a-c098408d199d

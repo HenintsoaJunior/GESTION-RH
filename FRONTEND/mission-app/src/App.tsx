@@ -29,10 +29,10 @@ import CompensationMission from '@/pages/mission/treso/components/compensation_m
 import Reimbursement from '@/pages/mission/treso/components/reimbursement';
 import MissionsEnCoursMapPage from './pages/maps';
 import Home from '@/pages/Home';
-import RequestList from './pages/recruitment/request/request-list';
-import ProtectedRequestDetails from './pages/recruitment/request/request-details';
-import DraftRequestList from './pages/recruitment/validation/draft-request-list';
 import { ValidateursPage } from '@/pages/mission/validators_flow';
+import RequestList from './pages/recruitment/request/list';
+import DraftRequestList from './pages/recruitment/request/validation/list';
+import RequestDetails from './pages/recruitment/request/details';
 // import { useAuthSync } from '@/utils/use-auth-sync';
 function App() {
 
@@ -85,7 +85,7 @@ function App() {
 
         {/* RECRUTEMENT */}
         <Route path="/recrutement/demandes/liste" element={<RequestList />} />
-        <Route path="/recrutement/demandes/:id/details" element={<ProtectedRequestDetails />} />
+        <Route path="/recrutement/demandes/:id/details" element={<RequestDetails />} />
         <Route path="/recrutement/demandes/validation" element={<DraftRequestList />} />
         
         {/* ERROR */}

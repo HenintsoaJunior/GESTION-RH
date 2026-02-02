@@ -21,6 +21,9 @@ namespace MyApp.Api.Entities.direction
         [MaxLength(20)]
         public string? Acronym { get; set; }
 
+        [Column("is_active")]
+        public bool IsActive { get; set; } = true;
+
         public Direction()
         {
         }

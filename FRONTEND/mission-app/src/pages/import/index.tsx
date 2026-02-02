@@ -8,19 +8,13 @@ import {
   FiltersControls,
   FilterControlButton,
   FiltersSection,
-  FormTableSearch,
-  FormRow,
-  FormFieldCell,
   FormLabelSearch,
   FiltersActions,
-  ButtonReset,
   ButtonSearch,
-  FiltersToggle,
-  ButtonShowFilters,
   Separator,
 } from "@/styles/table-styles";
 import Alert from "@/components/alert";
-import { useImport } from "@/api/import/services";
+import { useEmpImport, useImport, useOrgImport } from "@/api/import/services";
 
 interface AlertState {
   isOpen: boolean;
@@ -29,11 +23,21 @@ interface AlertState {
 }
 
 const ImportPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'importer' | 'reinitialiser'>('importer');
+  const [activeTab, setActiveTab] =
+    useState<'autres' | 'organigramme' | 'collaborateurs' | 'reinitialiser'>('organigramme');
+
   const [selectedEmployeeFile, setSelectedEmployeeFile] = useState<File | null>(null);
-  const [alert, setAlert] = useState<AlertState>({ isOpen: false, type: "info", message: "" });
-  const [isMinimized, setIsMinimized] = useState<boolean>(false);
-  const [isHidden, setIsHidden] = useState<boolean>(false);
+  const [selectedOtherFile, setSelectedOtherFile] = useState<File | null>(null);
+  const [selectedOrgFile, setSelectedOrgFile] = useState<File | null>(null);
+
+  const [alert, setAlert] = useState<AlertState>({
+    isOpen: false,
+    type: "info",
+    message: "",
+  });
+
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
 
   const {
     importFiles,
@@ -44,26 +48,72 @@ const ImportPage: React.FC = () => {
     resetError,
   } = useImport();
 
-  const handleEmployeeFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] || null;
-    setSelectedEmployeeFile(file);
-  };
+  const {
+    importOrg,
+    isOrgImporting,
+    orgImportError,
+  } = useOrgImport();
 
-  const handleImportSubmit = async () => {
-    if (!selectedEmployeeFile) {
-      setAlert({ isOpen: true, type: "warning", message: "Veuillez sélectionner un fichier à importer." });
+  const {
+    importEmp,
+    isEmpImporting,
+    empImportError,
+  } = useEmpImport();
+
+  const handleFileImport = async () => {
+    if (!selectedOtherFile) {
+      setAlert({ isOpen: true, type: "warning", message: "Veuillez sélectionner un fichier pour les entités." });
       return;
     }
 
     try {
-      await importFiles({
-        employeeFile: selectedEmployeeFile,
+      await importFiles({ employeeFile: selectedOtherFile });
+      setAlert({ isOpen: true, type: "success", message: "Import des entités réussi." });
+      setSelectedOtherFile(null);
+    } catch {
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: importError?.message || "Erreur lors de l'import des entités.",
       });
-      setAlert({ isOpen: true, type: "success", message: "Import effectué avec succès." });
+    }
+  };
+
+  const handleOrgImport = async () => {
+    if (!selectedOrgFile) {
+      setAlert({ isOpen: true, type: "warning", message: "Veuillez sélectionner un fichier organigramme." });
+      return;
+    }
+
+    try {
+      await importOrg(selectedOrgFile);
+      setAlert({ isOpen: true, type: "success", message: "Import des organigramme réussi." });
+      setSelectedOrgFile(null);
+    } catch {
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: orgImportError?.message || "Erreur lors de l'import des organigramme.",
+      });
+    }
+  };
+
+  const handleEmpImport = async () => {
+    if (!selectedEmployeeFile) {
+      setAlert({ isOpen: true, type: "warning", message: "Veuillez sélectionner un fichier collaborateur." });
+      return;
+    }
+
+    try {
+      await importEmp(selectedEmployeeFile);
+      setAlert({ isOpen: true, type: "success", message: "Import des collaborateurs réussi." });
       setSelectedEmployeeFile(null);
     } catch {
-      const errorMessage = importError?.message || "Erreur lors de l'import.";
-      setAlert({ isOpen: true, type: "error", message: errorMessage });
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: empImportError?.message || "Erreur lors de l'import des collaborateurs.",
+      });
     }
   };
 
@@ -72,13 +122,18 @@ const ImportPage: React.FC = () => {
       await resetData();
       setAlert({ isOpen: true, type: "success", message: "Données réinitialisées avec succès." });
     } catch {
-      const errorMessage = resetError?.message || "Erreur lors de la réinitialisation.";
-      setAlert({ isOpen: true, type: "error", message: errorMessage });
+      setAlert({
+        isOpen: true,
+        type: "error",
+        message: resetError?.message || "Erreur lors de la réinitialisation.",
+      });
     }
   };
 
   const tabTitles = [
-    { key: 'importer' as const, label: 'Importer' },
+    { key: 'organigramme' as const, label: 'Organigramme' },
+    { key: 'autres' as const, label: 'Autres' },
+    { key: 'collaborateurs' as const, label: 'Collaborateurs' },
     { key: 'reinitialiser' as const, label: 'Réinitialiser' },
   ];
 
@@ -94,213 +149,159 @@ const ImportPage: React.FC = () => {
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     selectedFile: File | null;
     disabled: boolean;
-  }) => {
-    const clearFile = () => {
-      const dt = new DataTransfer();
-      const event = {
-        target: {
-          files: dt.files,
-        },
-      } as React.ChangeEvent<HTMLInputElement>;
-      onChange(event);
-    };
-
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-xs)" }}>
-        <label
-          htmlFor="file-upload"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "var(--spacing-sm)",
-            padding: "var(--spacing-md)",
-            backgroundColor: selectedFile ? "var(--success-bg)" : "var(--bg-secondary)",
-            border: `1px dashed ${selectedFile ? "var(--success-color)" : "var(--border-color)"}`,
-            borderRadius: "var(--border-radius-md)",
-            cursor: disabled ? "not-allowed" : "pointer",
-            color: disabled ? "var(--text-disabled)" : "var(--text-color)",
-            transition: "none", // Pas d'animation
-            fontSize: "0.875rem",
-            fontWeight: "var(--font-weight-medium)",
-            opacity: disabled ? 0.6 : 1,
-          }}
-        >
-          <Upload size={16} />
-          {selectedFile ? `Remplacer ${label}` : `Choisir un fichier pour ${label}`}
-        </label>
+  }) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-xs)" }}>
+      <label
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "var(--spacing-sm)",
+          padding: "var(--spacing-md)",
+          backgroundColor: selectedFile ? "var(--success-bg)" : "var(--bg-secondary)",
+          border: `1px dashed ${selectedFile ? "var(--success-color)" : "var(--border-color)"}`,
+          borderRadius: "var(--border-radius-md)",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.6 : 1,
+        }}
+      >
+        <Upload size={16} />
+        {selectedFile ? `Remplacer ${label}` : `Choisir un fichier pour ${label}`}
         <input
-          id="file-upload"
           type="file"
           accept={accept}
           onChange={onChange}
           disabled={disabled}
           style={{ display: "none" }}
         />
-        {selectedFile && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--spacing-sm)",
-              padding: "var(--spacing-sm) var(--spacing-md)",
-              backgroundColor: "var(--bg-tertiary)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "var(--border-radius-sm)",
-              fontSize: "0.875rem",
-              color: "var(--text-secondary)",
-            }}
-          >
-            <FileText size={14} />
-            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {selectedFile.name}
-            </span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                clearFile();
-              }}
-              disabled={disabled}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: disabled ? "not-allowed" : "pointer",
-                color: "var(--danger-color)",
-                padding: 0,
-                opacity: disabled ? 0.6 : 1,
-              }}
-              title="Supprimer"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
+      </label>
+
+      {selectedFile && (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--spacing-sm)",
+          padding: "var(--spacing-sm)",
+          border: "1px solid var(--border-color)",
+          borderRadius: "var(--border-radius-sm)",
+        }}>
+          <FileText size={14} />
+          <span style={{ flex: 1 }}>{selectedFile.name}</span>
+          <X
+            size={14}
+            style={{ cursor: "pointer" }}
+            onClick={() => onChange({
+              target: { files: new DataTransfer().files }
+            } as React.ChangeEvent<HTMLInputElement>)}
+          />
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <>
-      <Alert
-        type={alert.type}
-        message={alert.message}
-        isOpen={alert.isOpen}
-        onClose={() => setAlert({ ...alert, isOpen: false })}
-      />
+      <Alert {...alert} onClose={() => setAlert({ ...alert, isOpen: false })} />
 
-      {!isHidden && (
-        <FiltersContainer $isMinimized={isMinimized}>
-          <FiltersHeader>
-            <FiltersTitle>Options d'Import</FiltersTitle>
-            <FiltersControls>
-              <FilterControlButton
-                $isMinimized={isMinimized}
-                onClick={() => setIsMinimized((p) => !p)}
-                title={isMinimized ? "Développer" : "Réduire"}
-              >
-                {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-              </FilterControlButton>
-              <FilterControlButton $isClose onClick={() => setIsHidden(true)} title="Fermer">
-                <X size={16} />
-              </FilterControlButton>
-            </FiltersControls>
-          </FiltersHeader>
+      <FiltersContainer $isMinimized={isMinimized}>
+        <FiltersHeader>
+          <FiltersTitle>Options d'Import</FiltersTitle>
+          <FiltersControls>
+            <FilterControlButton onClick={() => setIsMinimized(!isMinimized)}>
+              {isMinimized ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </FilterControlButton>
+            <FilterControlButton $isClose onClick={() => setIsHidden(!isHidden)}>
+              <X size={16} />
+            </FilterControlButton>
+          </FiltersControls>
+        </FiltersHeader>
 
-          {!isMinimized && (
-            <FiltersSection>
-              <Separator />
-              <div style={{ display: "flex", gap: "0", marginBottom: "var(--spacing-md)" }}>
-                {tabTitles.map((tab, index) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    style={{
-                      padding: "var(--spacing-sm) var(--spacing-md)",
-                      background: "transparent",
-                      color: activeTab === tab.key ? "var(--primary-color)" : "var(--text-color)",
-                      border: "none",
-                      borderBottom: activeTab === tab.key ? "3px solid var(--primary-color)" : "1px solid var(--border-color)",
-                      borderRight: index < tabTitles.length - 1 ? "1px solid var(--border-color)" : "none",
-                      borderRadius: "0",
-                      cursor: "pointer",
-                      fontWeight: activeTab === tab.key ? "var(--font-weight-semibold)" : "var(--font-weight-normal)",
-                      fontFamily: "var(--font-family)",
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+        {!isMinimized && !isHidden && (
+          <FiltersSection>
+            <Separator />
+            <div style={{ display: "flex", marginBottom: "var(--spacing-md)" }}>
+              {tabTitles.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  style={{
+                    padding: "var(--spacing-sm) var(--spacing-md)",
+                    borderBottom: activeTab === tab.key ? "3px solid var(--primary-color)" : "1px solid var(--border-color)",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-              {activeTab === 'importer' && (
-                <form onSubmit={(e) => { e.preventDefault(); handleImportSubmit(); }}>
-                  <FormTableSearch>
-                    <tbody>
-                      <FormRow>
-                        <FormFieldCell style={{ width: "100%" }}>
-                          <FormLabelSearch>Fichier Collaborateurs (CSV)</FormLabelSearch>
-                          <FileUploadField
-                            label="Collaborateurs"
-                            accept=".csv, .xlsx, .xls"
-                            onChange={handleEmployeeFileChange}
-                            selectedFile={selectedEmployeeFile}
-                            disabled={isImporting}
-                          />
-                        </FormFieldCell>
-                      </FormRow>
-                    </tbody>
-                  </FormTableSearch>
-
-                  <Separator />
-
-                  <FiltersActions>
-                    <ButtonReset
-                      type="button"
-                      onClick={() => {
-                        setSelectedEmployeeFile(null);
-                      }}
-                      disabled={isImporting}
-                      title="Effacer sélection"
-                    >
-                      Effacer
-                    </ButtonReset>
-                    <ButtonSearch type="submit" disabled={isImporting || !selectedEmployeeFile} title="Importer">
-                      <Upload size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-                      {isImporting ? "Import en cours..." : "Importer"}
-                    </ButtonSearch>
-                  </FiltersActions>
-                </form>
-              )}
-
-              {activeTab === 'reinitialiser' && (
-                <div style={{ textAlign: "center", padding: "var(--spacing-xl)" }}>
-                  <p style={{ marginBottom: "var(--spacing-lg)", color: "var(--text-secondary)" }}>
-                    Cette action réinitialisera toutes les données des employés et missions. Êtes-vous sûr ?
-                  </p>
-                  <ButtonSearch
-                    onClick={handleResetSubmit}
-                    disabled={isResetting}
-                    title="Réinitialiser"
-                    style={{ backgroundColor: "var(--danger-color)", color: "var(--text-white)" }}
-                  >
-                    <RefreshCw size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-                    {isResetting ? "Réinitialisation en cours..." : "Réinitialiser"}
+            {activeTab === 'autres' && (
+              <>
+                <FormLabelSearch>Fichier Autres (CSV)</FormLabelSearch>
+                <FileUploadField
+                  label="Autres"
+                  accept=".csv"
+                  onChange={(e) => setSelectedOtherFile(e.target.files?.[0] || null)}
+                  selectedFile={selectedOtherFile}
+                  disabled={isImporting}
+                />
+                <FiltersActions>
+                  <ButtonSearch disabled={isImporting} onClick={handleFileImport}>
+                    {isImporting ? "Import en cours..." : "Importer"}
                   </ButtonSearch>
-                </div>
-              )}
-            </FiltersSection>
-          )}
-        </FiltersContainer>
-      )}
+                </FiltersActions>
+              </>
+            )}
 
-      {isHidden && (
-        <FiltersToggle>
-          <ButtonShowFilters type="button" onClick={() => setIsHidden(false)}>
-            <Upload size={16} style={{ marginRight: "var(--spacing-sm)" }} />
-            Options d'Import
-          </ButtonShowFilters>
-        </FiltersToggle>
-      )}
+            {activeTab === 'organigramme' && (
+              <>
+                <FormLabelSearch>Fichier Organigramme (CSV)</FormLabelSearch>
+                <FileUploadField
+                  label="Organigramme"
+                  accept=".csv"
+                  onChange={(e) => setSelectedOrgFile(e.target.files?.[0] || null)}
+                  selectedFile={selectedOrgFile}
+                  disabled={isOrgImporting}
+                />
+                <FiltersActions>
+                  <ButtonSearch disabled={isOrgImporting} onClick={handleOrgImport}>
+                    {isOrgImporting ? "Import en cours..." : "Importer"}
+                  </ButtonSearch>
+                </FiltersActions>
+              </>
+            )}
+
+            {activeTab === 'collaborateurs' && (
+              <>
+                <FormLabelSearch>Fichier Collaborateurs (CSV)</FormLabelSearch>
+                <FileUploadField
+                  label="Collaborateur"
+                  accept=".csv"
+                  onChange={(e) => setSelectedEmployeeFile(e.target.files?.[0] || null)}
+                  selectedFile={selectedEmployeeFile}
+                  disabled={isEmpImporting}
+                />
+                <FiltersActions>
+                  <ButtonSearch disabled={isEmpImporting} onClick={handleEmpImport}>
+                    {isEmpImporting ? "Import en cours..." : "Importer"}
+                  </ButtonSearch>
+                </FiltersActions>
+              </>
+            )}
+
+            {activeTab === 'reinitialiser' && (
+              <div style={{ textAlign: "center" }}>
+                <ButtonSearch
+                  onClick={handleResetSubmit}
+                  disabled={isResetting}
+                  style={{ backgroundColor: "var(--danger-color)", color: "#fff" }}
+                >
+                  <RefreshCw size={16} />
+                  {isResetting ? "Réinitialisation..." : "Réinitialiser"}
+                </ButtonSearch>
+              </div>
+            )}
+          </FiltersSection>
+        )}
+      </FiltersContainer>
     </>
   );
 };

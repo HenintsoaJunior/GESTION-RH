@@ -7,7 +7,7 @@ namespace MyApp.Api.Controllers.recruitment;
 
 [ApiController]
 [Route("api/recruitment/requests")]
-public class RecruitmentRequestController(IRequestService _service, 
+public class RecruitmentRequestController(IRecruitmentRequestService _service, 
     IRequestValidationService _validationService) 
  : ControllerBase
 {
@@ -18,8 +18,9 @@ public class RecruitmentRequestController(IRequestService _service,
     ) {
         var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-        if(string.IsNullOrEmpty(userEmail))
-            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        if(string.IsNullOrEmpty(userEmail)) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });   
+        }
 
         try {
             var (results, totalCount) = await _service.SearchRequests(filters, userEmail, page, pageSize);
@@ -38,9 +39,9 @@ public class RecruitmentRequestController(IRequestService _service,
     [HttpGet("{id}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetRequestById([FromRoute] string id) {
-        // if(!User.Identity?.IsAuthenticated ?? true) {
-        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        // }
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
 
         try {
             var lastRequest = await _service.GetById(id);
@@ -60,15 +61,14 @@ public class RecruitmentRequestController(IRequestService _service,
 
     [HttpPost]
     [AllowAnonymous]
-    public async Task<IActionResult> AddRequest([FromBody] RequestFormDTO data)
-    {
+    public async Task<IActionResult> AddRequest([FromBody] RequestFormDTO data) {
         if(!User.Identity?.IsAuthenticated ?? true) {
             return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
         }
 
         try {
-            await _service.AddRequest(data);
-            return Ok(new { data = (object?)null, status = 200, message = "Demande ajoutée avec succès" });
+            string reqId = await _service.AddRequest(data);
+            return Ok(new { data = reqId, status = 200, message = "Demande créée avec succès" });
         }
         catch(ArgumentException ex) {
             return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
@@ -102,13 +102,13 @@ public class RecruitmentRequestController(IRequestService _service,
     [HttpGet("{id}/details")]
     [AllowAnonymous]
     public async Task<IActionResult> GetRequestDetails([FromRoute] string id) {
-        // if(!User.Identity?.IsAuthenticated ?? true) {
-        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        // }
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
 
         try {
             var details = await _service.GetRequestDetails(id);
-            var validations = await _service.GetValidationsWithSignatures(id);
+            var validations = await _service.GetValidationsByRequestId(id);
 
             return Ok(new {
                 data = new RequestDetailsResponseDTO {
@@ -131,9 +131,9 @@ public class RecruitmentRequestController(IRequestService _service,
     [HttpDelete("{id}")]
     [AllowAnonymous]
     public async Task<IActionResult> DeleteRequest([FromRoute] string id) {
-        // if(!User.Identity?.IsAuthenticated ?? true) {
-        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        // }
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
 
         try {
             await _service.DeleteRequest(id);
@@ -151,9 +151,9 @@ public class RecruitmentRequestController(IRequestService _service,
     [HttpGet("{id}/validators")]
     [AllowAnonymous]
     public async Task<IActionResult> GetRequestValidators([FromRoute] string id) {
-        // if(!User.Identity?.IsAuthenticated ?? true) {
-        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        // }
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
 
         try {
             var results = await _validationService.GetAllDirectorValidator(id);
@@ -170,11 +170,10 @@ public class RecruitmentRequestController(IRequestService _service,
 
     [HttpPost("validate")]
     [AllowAnonymous]
-    public async Task<IActionResult> ValidateRecruitmentRequest([FromBody] CreateRequestValidationDTO data)
-    {
-        // if(!User.Identity?.IsAuthenticated ?? true) {
-        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        // }
+    public async Task<IActionResult> ValidateRecruitmentRequest([FromBody] CreateRequestValidationDTO data) {
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
 
         try {
             await _validationService.DoValidationForRequest(data);
@@ -194,9 +193,9 @@ public class RecruitmentRequestController(IRequestService _service,
     public async Task<IActionResult> SearchPendedRequests([FromBody] string validatorId,
         [FromQuery] FilterRequestListDTO filters, [FromQuery] int page=1, [FromQuery] int pageSize=10
     ) {
-        // if(!User.Identity?.IsAuthenticated ?? true) {
-        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        // }
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
 
         try {
             var (results, totalCount) = await _validationService.GetAllPendedRecruitmentRequest(validatorId, filters, page, pageSize);
@@ -215,9 +214,9 @@ public class RecruitmentRequestController(IRequestService _service,
     [HttpGet("check-validator")]
     [AllowAnonymous]
     public async Task<IActionResult> HasRequestsToValidate([FromQuery] string user) {
-        // if(!User.Identity?.IsAuthenticated ?? true) {
-        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        // }
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
 
         try {
             var hasRequests = await _validationService.HasRequestsToValidate(user);
@@ -236,9 +235,9 @@ public class RecruitmentRequestController(IRequestService _service,
     [AllowAnonymous]
     public async Task<IActionResult> UpdateRequest([FromRoute] string id,
      [FromBody] RequestFormDTO data) {
-        // if(!User.Identity?.IsAuthenticated ?? true) {
-        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        // }
+        if(!User.Identity?.IsAuthenticated ?? true) {
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        }
 
         try {
             await _service.UpdateRequest(id, data);

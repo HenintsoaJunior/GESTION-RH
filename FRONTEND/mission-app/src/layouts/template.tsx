@@ -151,6 +151,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   const hasVoirLogs = useHasHabilitation(user.userId, "Voir les logs");
   const hasVoirMission = useHasHabilitation(user.userId, "Voir les missions");
   const hasVoirValidation = useHasHabilitation(user.userId, "Voir la validation des missions");
+  // const hasVoirValidationRecrutement = useHasHabilitation(user.userId, "Voir la validation des recrutements");
   const hasVoirMissions = useHasHabilitation(user.userId, "Voir la liste des missions");
   const hasVoirMissionsArchivees = useHasHabilitation(user.userId, "Voir les missions archivées");
   const hasVoirTresorier = useHasHabilitation(user.userId, "Voir la trésorerie");
@@ -160,7 +161,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   const { data: hasValidationLine = true } = useHasValidationLine(user.userId);
 // Vérification de l'accès 
   const { data: recruitmentValidationData } = useHasValidationInRecruitment(user.userId);
-  const hasValidationInRecruitment = recruitmentValidationData?.hasValidation ?? false;
+  const hasSeeValidationInRecruitment = (recruitmentValidationData?.hasValidation) ?? false;
 
   const habilitationsMap = useMemo(() => ({
     utilisateurs: hasVoirUtilisateurs,
@@ -171,7 +172,8 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     logs: hasVoirLogs,
     mission: hasVoirMission,
     validation: hasVoirValidation && hasValidationLine,
-    "Validation des demandes": hasValidationInRecruitment,
+    "Validations": hasSeeValidationInRecruitment,
+    "Statistiques": hasVoirTableauBord,
     Missions: hasVoirMissions,
     "Missions archivées": hasVoirMissionsArchivees,
     trésorerie: hasVoirTresorier,
@@ -192,7 +194,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     hasVoirHabilitation,
     hasVoirTableauBord,
     hasValidationLine,
-    hasValidationInRecruitment
+    hasSeeValidationInRecruitment
   ]);
 
   const getHasAccess = useCallback((menuKey: string): boolean => {

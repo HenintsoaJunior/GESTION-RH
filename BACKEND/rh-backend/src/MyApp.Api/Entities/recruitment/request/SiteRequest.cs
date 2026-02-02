@@ -11,9 +11,17 @@ public class SiteRequest
     [Column("id_site_request")]
     public string Id {get; set;} = null!;
 
-    [ForeignKey("site_id")]
+
+    [Column("site_id")]
+    public string SiteId {get; set;} = null!;
+
+    [ForeignKey(nameof(SiteId))]
     public Site Site {get; set;} = null!;
 
-    [ForeignKey("request_id")]
+
+    [Column("request_id")]
+    public string RequestId {get; set;} = null!;
+
+    [ForeignKey(nameof(RequestId))]
     public RecruitmentRequest Request {get; set;} = null!;
 }

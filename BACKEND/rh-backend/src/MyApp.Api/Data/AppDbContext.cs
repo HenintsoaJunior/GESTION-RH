@@ -146,6 +146,7 @@ namespace MyApp.Api.Data
         public DbSet<RecruitmentRequest> RecruitmentRequests {get; set;}
         public DbSet<ReplacementReason> ReplacementReasons {get; set;}
         public DbSet<RequestStatus> RequestStatuses {get; set;}
+        public DbSet<PostType> PostTypes {get; set;}
         public DbSet<SiteRequest> SitesRequests {get; set;}
         public DbSet<RequestValidation> RequestValidations {get; set;}
         public DbSet<RequestsPerValidator> RequestsPerValidators {get; set;}

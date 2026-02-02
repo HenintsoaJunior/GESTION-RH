@@ -441,21 +441,28 @@ public class UserController : ControllerBase
     }
 
 
-    [HttpGet("directions/{id}")]
+    [HttpGet("directions/{code}")]
     [AllowAnonymous]
-    public async Task<ActionResult> GetUsersByDirection(string id)
+    public async Task<ActionResult> GetUsersByDirection([FromRoute]string code, [FromQuery]bool all)
     {
-        // if (!User.Identity?.IsAuthenticated ?? true)
-        // {
-        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        // }
+        var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if(string.IsNullOrEmpty(userEmail))
+            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
 
         try {
-            if (string.IsNullOrEmpty(id)) {
+            IEnumerable<UserDto2> users = new List<UserDto2>();
+
+            if (string.IsNullOrEmpty(code)) {
                 return BadRequest(new { data = (object?)null, status = 400, message = "ID de la direction ne doit pas être vide." });
             }
 
-            var users = await _userService.GetUsersByDirection(id);
+            if (all==true) {
+                users = await _userService.GetUsersByAdmin();
+            }
+            else {
+                users = await _userService.GetUsersByDirection(code);
+            }
+            
             if (users == null) {
                 return NotFound(new { data = (object?)null, status = 404, message = "Direction not found." });
             }
@@ -466,9 +473,8 @@ public class UserController : ControllerBase
         {
             return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            Console.WriteLine(e);
             return StatusCode(500, new { data = (object?)null, status = 500, message = "error" });
         }
     }

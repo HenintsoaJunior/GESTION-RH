@@ -16,7 +16,11 @@ public class RequestDetailsDTO
 {
     public string Id {get; set;} = null!;
     public string Post {get; set;} = null!;
-    public string ApplicantUser {get; set;} = null!;
+    public short Effective {get; set;}
+    public string ApplicantUser { get; set; } = null!;
+    public string HierarchicalManager {get; set;} = null!;
+    public string FunctionalManager {get; set;} = null!;
+    public string Creator {get; set;} = null!;
     public string Direction {get; set;} = null!;
     public string Department {get; set;} = null!;
     public string Service {get; set;} = null!;
@@ -34,14 +38,16 @@ public class RequestDetailsDTO
     public int ValidationLevel {get; set;}
     public bool IsPlanned {get; set;}
     public string? NotPlannedReason {get; set;}
+    public DateTime SendingDate {get; set;}
 }
 
 
 public class RequestValidationDTO
 {
     public string Direction {get; set;} = null!;
-    public string? ApplicantUser {get; set;}
-    public string? SignatureBase64 { get; set; }
+    public string? Validator {get; set;}
+    public DateTime? ValidatedAt {get; set;}
+    public string? Status {get; set;}
 }
 
 public class RequestDetailsResponseDTO
@@ -49,7 +55,6 @@ public class RequestDetailsResponseDTO
     public RequestDetailsDTO Details { get; set; } = null!;
     public List<RequestValidationDTO> Validations { get; set; } = [];
 }
-
 
 
 public class FilterRequestListDTO

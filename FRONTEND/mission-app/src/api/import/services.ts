@@ -3,6 +3,33 @@ import axios, { AxiosError } from 'axios';
 import { BASE_URL } from '@/config/api-config';
 
 export const IMPORT_KEY = ['import'] as const;
+export const ORG_IMPORT_KEY = ['org-import'] as const;
+export const EMP_IMPORT_KEY = ['org-import'] as const;
+
+interface OrgImportResponseData {
+  totalRows: number;
+  directionsInserted: number;
+  departmentsInserted: number;
+  servicesInserted: number;
+}
+
+interface EmpImportResult {
+  totalRows: number;
+  inserted: number;
+  errors: string[];
+}
+
+interface OrgImportResponse {
+  data: OrgImportResponseData;
+  status: number;
+  message: string;
+}
+
+interface ApiErrorResponse {
+  status: number;
+  message: string;
+  data: null;
+}
 
 interface ImportFilesParams {
   employeeFile: File;
@@ -179,5 +206,125 @@ export const useImport = () => {
     resetData: resetMutation.mutateAsync,
     isResetting: resetMutation.isPending,
     resetError: resetMutation.error,
+  };
+};
+
+
+export const useOrgImport = () => {
+  const importOrgMutation = useMutation<OrgImportResponse, Error, File>({
+    mutationKey: [...ORG_IMPORT_KEY, 'import'],
+    mutationFn: async (file) => {
+      console.log('Org import started:', file);
+
+      if (!file) {
+        throw new Error('Organization file must be provided');
+      }
+
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      if (fileExtension !== 'csv') {
+        throw new Error('Only CSV files are allowed');
+      }
+
+      if (file.size === 0) {
+        throw new Error('File is empty');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await axios.post<OrgImportResponse>(
+          `${BASE_URL}/api/import/import-org`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Accept: '*/*',
+            },
+            timeout: 30000,
+          }
+        );
+
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const axiosError = error as AxiosError<ApiErrorResponse>;
+          if (axiosError.response) {
+            throw new Error(axiosError.response.data?.message || 'Organization import failed');
+          }
+          if (axiosError.request) {
+            throw new Error('No response from server');
+          }
+        }
+        throw new Error('Unexpected error during organization import');
+      }
+    },
+  });
+
+  return {
+    importOrg: importOrgMutation.mutateAsync,
+    isOrgImporting: importOrgMutation.isPending,
+    orgImportError: importOrgMutation.error,
+    orgImportData: importOrgMutation.data,
+  };
+};
+
+
+export const useEmpImport = () => {
+  const importEmpMutation = useMutation<EmpImportResult, Error, File>({
+    mutationKey: [...EMP_IMPORT_KEY, 'import'],
+    mutationFn: async (file) => {
+      console.log('Emp import started:', file);
+
+      if (!file) {
+        throw new Error('Employee file must be provided');
+      }
+
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      if (fileExtension !== 'csv') {
+        throw new Error('Only CSV files are allowed');
+      }
+
+      if (file.size === 0) {
+        throw new Error('File is empty');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await axios.post<EmpImportResult>(
+          `${BASE_URL}/api/import/import-emp`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Accept: '*/*',
+            },
+            timeout: 30000,
+          }
+        );
+
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const axiosError = error as AxiosError<ApiErrorResponse>;
+          if (axiosError.response) {
+            throw new Error(axiosError.response.data?.message || 'Employee import failed');
+          }
+          if (axiosError.request) {
+            throw new Error('No response from server');
+          }
+        }
+        throw new Error('Unexpected error during organization import');
+      }
+    },
+  });
+
+  return {
+    importEmp: importEmpMutation.mutateAsync,
+    isEmpImporting: importEmpMutation.isPending,
+    empImportError: importEmpMutation.error,
+    empImportData: importEmpMutation.data,
   };
 };

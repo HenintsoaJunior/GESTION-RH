@@ -16,6 +16,7 @@ public class RecruitmentSeedService
         var defaultEducations = new[] {
             "Informatique",
             "Maintenance informatique",
+            "Ressource Humaine",
             "Commerce et Marketing",
             "Finance et Comptabilité",
             "Communication",

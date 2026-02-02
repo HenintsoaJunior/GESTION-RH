@@ -11,11 +11,20 @@ public class RequestsPerValidator
     [Column("requests_per_validator_id")]
     public string Id {get; set;} = null!;
 
-    [ForeignKey("request_id")]
+
+    [Column("request_id")]
+    public string RequestId {get; set;} = null!;
+
+    [ForeignKey(nameof(RequestId))]
     public RecruitmentRequest Request {get; set;} = null!;
 
-    [ForeignKey("validator_id")]
+
+    [Column("validator_id")]
+    public string ValidatorId {get; set;} = null!;
+
+    [ForeignKey(nameof(ValidatorId))]
     public User Validator {get; set;} = null!;
+
 
     [Column("is_validated")]
     public bool IsValidated {get; set;} = false;

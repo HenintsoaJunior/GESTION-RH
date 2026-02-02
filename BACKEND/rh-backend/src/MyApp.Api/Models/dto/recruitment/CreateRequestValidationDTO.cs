@@ -13,7 +13,5 @@ public class CreateRequestValidationDTO
     [Required(ErrorMessage = "Décision du validateur obligatoire")]
     public string Status {get; set;} = null!;
 
-    public string? Signature {get; set;}
-
     public string? Comments {get; set;}
 }

@@ -16,6 +16,7 @@ public class Experience
     [Column("job_experience_post")]
     public string ExperiencePost { get; set; } = null!;
 
+
     [Column("job_description_id")]
     public string JobDescriptionId { get; set; } = null!;
 

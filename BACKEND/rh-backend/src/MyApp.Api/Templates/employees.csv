@@ -1,0 +1,270 @@
+﻿MAT;NOM;PRENOMS;SITE;FONCTION;SERVICE;DEPARTEMENT;DIRECTIONNAME;DIRECTION;DATE D'EMBAUCHE;DATE FIN CONTRAT;TYPE D'HEURE;GENRE;Nationalité
+0004;RAFIDIARISOA;Bodomalala;TNR;Juriste Junior;JURIDIQUE;JURIDIQUE;Direction Juridique et Assurances;DJA;02/11/2016;;SUPPORT;Féminin;Malagasy
+0005;ANDRIAMPARANY;Fenitra Nomena;TNR;Cheffe de Département Qualité et Gestion des Risques;QUALITE ET GESTION DE RISQUE;QUALITE ET GESTION DE RISQUE;Direction Qualité et RSE;DQRSE;02/11/2016;;SUPPORT;Féminin;Malagasy
+0006;RAKOTOZAFY;Mamy Lala;TNR;Chargée Administrative et Communication;COMMUNICATION;COMMUNICATION;Direction Générale;DGE;15/11/2016;;SUPPORT;Féminin;Malagasy
+0010;RAZANAKOLONA;Nadya Mamitiana;TNR;Assistante Technique;PROJETS ET INGENIERIE;PROJETS ET INGENIERIE;Direction Générale;DGE;01/12/2016;;SUPPORT;Féminin;Malagasy
+0011;RALAIARIMANANA;Haingotiana;TNR;Attachée de Direction;DIRECTION GENERALE;DIRECTION GENERALE;Direction Générale;DGE;01/12/2016;;SUPPORT;Féminin;Malagasy
+0012;RAMANOELINA;Naly Nantenaina;TNR;Chef de Service Electricité ;ELECTRICITE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;01/12/2016;;SUPPORT;Masculin;Malagasy
+0016;RAHARIMANANTSOA;Cathia Vololomanana;TNR;Comptable Fournisseurs;FINANCES ET COMPTABILITE;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;12/12/2016;;SUPPORT;Féminin;Malagasy
+0018;RABIAZAMAHOLY;Fanja Lalaina;TNR;Coordinatrice Terminal AOCC-SLOT;PROGRAMME ET RESSOURCES;PROGRAMME ET RESSOURCES;Direction des Opérations;DOP;15/12/2016;;DECALE;Féminin;Malagasy
+0023;RAZAFIMALALA;Marie Jeanne J.;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/03/1991;;DECALE;Féminin;Malagasy
+0024;BAKOMALALA;Hanitriniaina Rajao.;TNR;Assistante Comptable;FINANCES ET COMPTABILITE;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;01/03/1991;;SUPPORT;Féminin;Malagasy
+0033;VOLAMARY;Odette;NOS;Agent Polyvalent;SCAN;SCAN;Direction des Opérations;DOP;01/03/1991;;SUPPORT;Féminin;Malagasy
+0034;RANDRIAMBOAVONJY;Jean Richard;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/03/1991;;SUPPORT;Masculin;Malagasy
+0036;RAZALINE;;TNR;Responsable d'Exploitation de Permanence;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;30/04/1991;;DECALE;Féminin;Malagasy
+0037;RAZANAMANDIMBISOA;Andriananja;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;03/06/1991;;DECALE;Masculin;Malagasy
+0041;RAKOTONDRABE;Desire;TNR;Conducteur de balayeuse;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;08/01/1992;;SUPPORT;Masculin;Malagasy
+0046;RAKOTOVELO;Charles;TNR;Technicien de Curage;CVC ET PLOMBERIE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;08/01/1992;;DECALE;Masculin;Malagasy
+0049;RAKOTOMANANA;Pierre;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;18/08/1992;;DECALE;Masculin;Malagasy
+0052;RABARIJAONA;Mamitiana;TNR;Responsable d'Exploitation de Permanence;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;02/11/1992;;DECALE;Féminin;Malagasy
+0053;RAVELOSOA;Hanitranjara Rachel;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;12/11/1992;;DECALE;Féminin;Malagasy
+0054;RAKOTOARISOA; Earilala F. Harizo;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;02/05/1993;;DECALE;Masculin;Malagasy
+0057;ANDRIANJANAHARY;Honore Jules;TNR;Superviseur Exploitation;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/08/1996;;SUPPORT;Masculin;Malagasy
+0058;BENARSON;;NOS;Agent Caisse;SCAN;SCAN;Direction des Opérations;DOP;01/08/1996;;SUPPORT;Masculin;Malagasy
+0059;BIRA;Christophe;NOS;Agent Polyvalent Exploitation;SCAN;SCAN;Direction des Opérations;DOP;01/02/1997;;SUPPORT;Masculin;Malagasy
+0063;ANDRIANATONISOLO;Ericka Marius;TNR;Agent de piste;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;01/05/1997;;DECALE;Masculin;Malagasy
+0064;RAHARINAIVO;Alain;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/05/1997;;DECALE;Masculin;Malagasy
+0065;RANDRIAMAMORY;Henri;TNR;Assistant Achats et Magasin;ACHATS;ACHATS;Direction Administrative et Financière;DAF;01/07/1999;;SUPPORT;Masculin;Malagasy
+0067;RAKOTOMAHEFA;Sylvain Mamy Tina;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/07/1999;;DECALE;Masculin;Malagasy
+0068;RALIJAONA;Jean Francois;TNR;Technicien de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/07/1999;;SUPPORT;Masculin;Malagasy
+0070;RANDRIANARISON;Germain Dieudonne;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/07/1999;;DECALE;Masculin;Malagasy
+0071;ANDRIATSALAMA;Rasolofoniaina Patri;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/07/1999;;DECALE;Masculin;Malagasy
+0072;RAZANABOLA;Clarisse;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/07/1999;;DECALE;Féminin;Malagasy
+0075;SOLOMAMY;Yvon Frederson;TNR;Conducteur de Passerelle;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/07/1999;;DECALE;Masculin;Malagasy
+0077;RAKOTONIRINA;Victor;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/07/1999;;DECALE;Masculin;Malagasy
+0079;RAFANOMEZANTSOA;Lantoniaina;TNR;Technicien de Curage;CVC ET PLOMBERIE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;01/06/2001;;DECALE;Masculin;Malagasy
+0086;RAZAFINDRALAMBO;Prinsy Andriamparany;TNR;Agent Plomberie;CVC ET PLOMBERIE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;15/11/2004;;DECALE;Masculin;Malagasy
+0087;RALAIKOTONILALA;Franq Brice;TNR;Agent Plomberie;CVC ET PLOMBERIE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;15/11/2004;;DECALE;Masculin;Malagasy
+0088;RAKOTOARIMANANA;Vonjiniaina A;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/01/2005;;DECALE;Masculin;Malagasy
+0090;ANDRIANANTOANDRO;Hantanirina Dyna;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/01/2005;;DECALE;Féminin;Malagasy
+0092;RAMAHANDRISOA;Maminiaina Pasca;TNR;Agent Statistique Parking;FINANCES ET COMPTABILITE;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;01/01/2005;;SUPPORT;Masculin;Malagasy
+0094;TONGAZARA;Theogene;NOS;Agent d'entretien;SCAN;SCAN;Direction des Opérations;DOP;01/01/2005;;SUPPORT;Masculin;Malagasy
+0095;RAZAKAMANANTSOA;Maminiaina;TNR;Responsable d'Exploitation de Permanence;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;16/08/2005;;DECALE;Féminin;Malagasy
+0096;MAMIZARA;Natacha;NOS;Technicienne de Surface;SCAN;SCAN;Direction des Opérations;DOP;01/01/2006;;SUPPORT;Féminin;Malagasy
+0097;JOMA;Phillipine;NOS;Technicienne de Surface;SCAN;SCAN;Direction des Opérations;DOP;01/01/2006;;SUPPORT;Féminin;Malagasy
+0098;TOMBO;Laurette;NOS;Technicienne de Surface;SCAN;SCAN;Direction des Opérations;DOP;01/01/2006;;SUPPORT;Féminin;Malagasy
+0099;RASOANANTENAINA;Lydia Lucky;NOS;Technicienne de Surface;SCAN;SCAN;Direction des Opérations;DOP;01/01/2006;;SUPPORT;Féminin;Malagasy
+0100;RAMILIJAONA;Rabemanantsoa Caroli;TNR;Responsable d'Exploitation de Permanence;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;13/02/2006;;DECALE;Féminin;Malagasy
+0101;RAZANAMAHEFA;Hanitra Irene;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;20/02/2006;;DECALE;Féminin;Malagasy
+0102;RAKOTOZANDRY;Virginie;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;20/02/2006;;DECALE;Féminin;Malagasy
+0103;RAZAFINDRAKOTO;Jean Jacques;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;20/02/2006;;DECALE;Masculin;Malagasy
+0104;RAHARISON;Andriamialisoa Elisa;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;23/08/2006;;DECALE;Féminin;Malagasy
+0106;RAJAONARIVONY;Hina Soaniaina;TNR;Superviseur Exploitation;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;30/05/2007;;DECALE;Féminin;Malagasy
+0108;RANDRIANARIVO;Solo Herinavalon;TNR;Chauffeur de Tracteur;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;01/08/2007;;SUPPORT;Masculin;Malagasy
+0109;RASOLOARISON;Pascal;TNR;Conducteur de balayeuse;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;15/09/2007;;SUPPORT;Masculin;Malagasy
+0110;MAMPIONONA;N. Tahiriniaina;TNR;Assistante  Saisie Statistiques et Facturation;FACTURATION ET STATISTIQUES;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;19/09/2007;;SUPPORT;Féminin;Malagasy
+0112;RAMAHANDRIMBOLATIANA;Olivier;TNR;Chauffeur;ACHATS;ACHATS;Direction Administrative et Financière;DAF;02/11/2007;;SUPPORT;Masculin;Malagasy
+0113;ANDRIANJAFY;Jimmy;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;21/11/2007;;DECALE;Masculin;Malagasy
+0114;BERAOLONA;Georges Noel;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;09/06/2008;;DECALE;Masculin;Malagasy
+0115;RAZAFIMANANTSOA;Njaka A.;TNR;Projeteur-métreur;PROJETS ET INGENIERIE;PROJETS ET INGENIERIE;Direction Générale;DGE;09/06/2008;;SUPPORT;Masculin;Malagasy
+0116;RAMANANDRAITSIORY;A. Herijaona;TNR;Superviseur Exploitation;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;09/06/2008;;DECALE;Masculin;Malagasy
+0117;RAJAOHARILALA;T. Marka;TNR;Superviseur Exploitation;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;09/06/2008;;DECALE;Masculin;Malagasy
+0118;RAVONINJATOVO;Serge Petain;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;09/06/2008;;DECALE;Masculin;Malagasy
+0119;RATSIMBA;Rantoanina Toavina;TNR;Chef de Service Relations Sociales;RELATIONS SOCIALES;RESSOURCES HUMAINES;Direction des Ressources Humaines;DRH;22/09/2008;;SUPPORT;Masculin;Malagasy
+0120;RASOLOFONIAINA;Toetra Andoarinelina;NOS;Chef de Quart;SCAN;SCAN;Direction des Opérations;DOP;01/10/2008;;SUPPORT;Masculin;Malagasy
+0121;RAKOTOARIVELO;Volahasina;TNR;Conducteur de Passerelle;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/10/2008;;DECALE;Masculin;Malagasy
+0122;ANDRIANASOLO;Herve Nirina;TNR;Conducteur de Passerelle;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/10/2008;;DECALE;Masculin;Malagasy
+0123;HARIMALALA;Bodo Seheno;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/10/2008;;DECALE;Féminin;Malagasy
+0124;LI SUO TSAN;Razanamalala Murie;TNR;Secrétaire;DEVELOPPEMENT RH;DEVELOPPEMENT RH;Direction des Ressources Humaines;DRH;01/10/2008;;SUPPORT;Féminin;Malagasy
+0125;HARISOA;Nofy;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/10/2008;;DECALE;Féminin;Malagasy
+0127;RAKOTOARISOA;Soloniaina Vero;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/10/2008;;DECALE;Féminin;Malagasy
+0128;TSIMAFAITSE;Brunton Jacques;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/10/2008;;DECALE;Masculin;Malagasy
+0129;RANDRIANARISOA;Maminiaina N.;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/10/2008;;DECALE;Masculin;Malagasy
+0130;RAZAFIMAZAVA;Christian;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/10/2008;;DECALE;Masculin;Malagasy
+0131;RANDRIANARIVO;Fernand;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/10/2008;;DECALE;Masculin;Malagasy
+0132;RAKOTONDRAZAKA;Vero Angeline;NOS;Cheffe de Quart;SCAN;SCAN;Direction des Opérations;DOP;02/01/2009;;SUPPORT;Féminin;Malagasy
+0133;ANDRIANALIVOLA;Noro Herimanitra R.;TNR;Responsable Landside et Accès;LANDSIDE ET ACCES;DIRECTION GENERALE;Direction Générale;DGE;12/01/2009;;SUPPORT;Féminin;Malagasy
+0134;RAZAKARIVONY;Luc Gabriel;TNR;Agent de piste;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;09/02/2009;;DECALE;Masculin;Malagasy
+0135;RAZAFINDRAKOTO;Mamy Harilala F;TNR;Agent de piste;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;09/02/2009;;DECALE;Masculin;Malagasy
+0136;RABEARISOLO;Rivo Njakatiana;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;09/02/2009;;DECALE;Masculin;Malagasy
+0138;RAHAJARISOA;Volana;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;20/10/2011;;DECALE;Féminin;Malagasy
+0139;ANDOLALA;Armand;TNR;Superviseur Maintenance AOCC;MAINTENANCE OPERATIONNELLE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;09/01/2012;;DECALE;Masculin;Malagasy
+0141;RANDRIANALISOA;Haingonirainy;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;15/03/2012;;DECALE;Féminin;Malagasy
+0142;RASOANATOANDRO;Rose Delman;TNR;Opératrice d'Incinérateur;ELECTROMECANIQUE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;20/06/2012;;DECALE;Féminin;Malagasy
+0143;RAKOTOSON;Odilon Brisquimi;TNR;Opérateur d'Incinérateur;ELECTROMECANIQUE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;20/06/2012;;DECALE;Masculin;Malagasy
+0144;RAZANAJAFY;Minosoa Veronique;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/07/2012;;DECALE;Féminin;Malagasy
+0146;RAFANOMEZANTSOA;Fetranirina Odon;TNR;Opérateur d'Incinérateur;ELECTROMECANIQUE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;22/10/2012;;DECALE;Masculin;Malagasy
+0147;VOAVY;Robinse;TNR;Chauffeur de Tracteur;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;01/01/2013;;SUPPORT;Masculin;Malagasy
+0148;ANDRIAMIHAVANA;Thierry Francisko;NOS;Agent d'entretien;SCAN;SCAN;Direction des Opérations;DOP;01/01/2013;;SUPPORT;Masculin;Malagasy
+0150;ZARATOMBO;Francois;NOS;Agent de piste;SCAN;SCAN;Direction des Opérations;DOP;01/01/2013;;SUPPORT;Masculin;Malagasy
+0151;RAZAFIMANDIMBY;Closmine Raissa;NOS;Technicienne de Surface;SCAN;SCAN;Direction des Opérations;DOP;01/01/2013;;SUPPORT;Féminin;Malagasy
+0152;TOMBOSOA;Floria;NOS;Technicienne de Surface;SCAN;SCAN;Direction des Opérations;DOP;01/01/2013;;SUPPORT;Féminin;Malagasy
+0153;SOATOMBO;Bienvenue;NOS;Technicienne de Surface;SCAN;SCAN;Direction des Opérations;DOP;01/01/2013;;SUPPORT;Féminin;Malagasy
+0154;RAJAOZARA;Bruno;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;14/01/2013;;DECALE;Masculin;Malagasy
+0155;MARIARISOA;Mamie;TNR;Conductrice de Passerelle;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;28/01/2013;;DECALE;Féminin;Malagasy
+0157;JAOTOMBO;Jean Martin;NOS;Agent d'entretien;SCAN;SCAN;Direction des Opérations;DOP;01/01/2013;;SUPPORT;Masculin;Malagasy
+0161;RAKOTOARISOA;Sambatra;TNR;Responsable Planification et SGS;SGS;SGS;Direction Générale;DGE;07/02/2014;;SUPPORT;Masculin;Malagasy
+0162;RAHERISOA;Gilbert;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/03/2014;;DECALE;Masculin;Malagasy
+0163;RAJAONARIVELO;Tony Johary;TNR;Responsable Programmes et Ressources;PROGRAMME ET RESSOURCES;PROGRAMME ET RESSOURCES;Direction des Opérations;DOP;04/04/2014;;SUPPORT;Masculin;Malagasy
+0164;RAKOTONIRINA;Jean Christian;TNR;Magasinier;ACHATS;ACHATS;Direction Administrative et Financière;DAF;01/09/2014;;SUPPORT;Masculin;Malagasy
+0165;ANDRIANOMENY;Johary Zo;TNR;Assistante aux Usagers;LANDSIDE ET ACCES;DIRECTION GENERALE;Direction Générale;DGE;19/03/2015;;SUPPORT;Féminin;Malagasy
+0166;TSIALA;Ganjah Kennedy;TNR;Electromécanicien;ELECTROMECANIQUE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;11/01/2016;;SUPPORT;Masculin;Malagasy
+0167;TIARAY;Onja Zoeliniaina;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;11/01/2016;;DECALE;Masculin;Malagasy
+0169;RAHARISON;A. Tahina;TNR;Référent Abonnement Parking et Badges;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;08/02/2016;;SUPPORT;Masculin;Malagasy
+0171;ANDRIAMILANTO;Harisolo Francia;TNR;Chargée E-Réputation;COMMUNICATION;COMMUNICATION;Direction Générale;DGE;06/09/2016;;SUPPORT;Féminin;Malagasy
+0173;RANDRIANANDRAINA;Andriantsoa Rianando;TNR;Superviseur Maintenance AOCC;MAINTENANCE OPERATIONNELLE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;02/01/2017;;DECALE;Masculin;Malagasy
+0174;RAJERISON RASAONA;Andry Lova Tiana;TNR;Chef de Département Technique NOS;TECHNIQUE NOS;TECHNIQUE NOS;Direction Générale;DGE;01/01/2017;;SUPPORT;Masculin;Malagasy
+0177;RAHANTAMALALA;Seheno Sandrine;TNR;Cheffe de Département Communication et Relations Publiques;COMMUNICATION;COMMUNICATION;Direction Générale;DGE;01/01/2017;;SUPPORT;Féminin;Malagasy
+0181;RABESON;Josie;TNR;Cheffe de Département Juridique et Compliance;JURIDIQUE;JURIDIQUE;Direction Juridique et Assurances;DJA;23/01/2017;;SUPPORT;Féminin;Malagasy
+0182;RASOLOMANANA;Dealilalaina Sedera;TNR;Directrice des Ressources Humaines;RESSOURCES HUMAINES;RESSOURCES HUMAINES;Direction des Ressources Humaines;DRH;01/02/2017;;SUPPORT;Féminin;Malagasy
+0183;RAMAROLAHY;Andrianantenaina;TNR;Chef de Département Comptabilité et Facturation;COMPTABILITE ET FACTURATION;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;09/02/2017;;SUPPORT;Masculin;Malagasy
+0186;RAKOTONDRAMANANA;Felana Tatamosoa;TNR;Project Management Officer;SYSTEMES D'INFORMATION;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;20/03/2017;;SUPPORT;Féminin;Malagasy
+0190;ANDRIAMIHANTARISOA;Tahiry Harinjaka;TNR;Agent de Maintenance Infrastructure;BATIMENT ET INFRASTRUCTURES;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;07/04/2017;;SUPPORT;Masculin;Malagasy
+0192;RAVOAVITAHINA;Jean Aimé;TNR;Technicien Electricité;ELECTRICITE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;07/04/2017;;DECALE;Masculin;Malagasy
+0195;RAKOTONDRAMAZAVA;Voahirana Michou;TNR;Contrôleuse de Crédit et Facturation;FACTURATION ET STATISTIQUES;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;02/05/2017;;SUPPORT;Féminin;Malagasy
+0196;RATELOSON;Aina Sandy;TNR;Assistant Saisie Statistiques et Facturation;FACTURATION ET STATISTIQUES;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;02/05/2017;;SUPPORT;Masculin;Malagasy
+0197;NAMELANATOANDRO;Fetrarinosy Aurélia;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;08/05/2017;;DECALE;Féminin;Malagasy
+0198;RAKOTOMANGA;Meja;TNR;Coordinatrice Terminal AOCC-SLOT;PROGRAMME ET RESSOURCES;PROGRAMME ET RESSOURCES;Direction des Opérations;DOP;15/05/2017;;DECALE;Féminin;Malagasy
+0199;ANDRIANARISON;Natacha Hariniaina;TNR;Responsable d'Exploitation de Permanence;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;15/05/2017;;DECALE;Féminin;Malagasy
+0200;RANDRIAMIHARISOA;Solonirina;TNR;Coordinatrice Terminal AOCC-SLOT;PROGRAMME ET RESSOURCES;PROGRAMME ET RESSOURCES;Direction des Opérations;DOP;18/05/2017;;DECALE;Féminin;Malagasy
+0201;MANDIMBIHARISETRA;Ainimpanana;TNR;Responsable Airside;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;29/05/2017;;SUPPORT;Masculin;Malagasy
+0202;ANDRIANJAFINIRINA;Mahandry Joël;NOS;Responsable d'Exploitation;SCAN;SCAN;Direction des Opérations;DOP;29/05/2017;;SUPPORT;Masculin;Malagasy
+0203;KANDRY;Stéphane;TNR;Coordinateur Terminal AOCC-SLOT;PROGRAMME ET RESSOURCES;PROGRAMME ET RESSOURCES;Direction des Opérations;DOP;29/05/2017;;SUPPORT;Masculin;Malagasy
+0204;RAJAONARIVELO;Iharimbinintsoa;TNR;Superviseur Exploitation;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;29/05/2017;;DECALE;Masculin;Malagasy
+0205;RANDRIANARIVONY;Zo Tokiniaina;TNR;Coordinateur Terminal AOCC-SLOT;PROGRAMME ET RESSOURCES;PROGRAMME ET RESSOURCES;Direction des Opérations;DOP;29/05/2017;;DECALE;Masculin;Malagasy
+0206;RABETOKOTANY;Ianjanirina;TNR;Responsable de la Documentation Opérationnelle;DOP;DOP;Direction des Opérations;DOP;02/06/2017;;SUPPORT;Féminin;Malagasy
+0208;RAFANILONIAINA;Fanjanirina;TNR;Responsable des Recettes au Comptant;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;12/06/2017;;SUPPORT;Féminin;Malagasy
+0217;RAZAFINDRALAMBO;Andriamanamisata;TNR;Responsable Production IT;SYSTEMES D'INFORMATION;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;05/10/2017;;SUPPORT;Masculin;Malagasy
+0218;RAZANAHOERA;Tahina Vero Lanto;TNR;Technicienne de Surface;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;16/10/2017;;DECALE;Féminin;Malagasy
+0219;ANDRIATSIADIANA;Tolojanahary Hobby;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;16/10/2017;;DECALE;Masculin;Malagasy
+0221;RASOLONIAINA;Litania;TNR;Coordinatrice Terminal AOCC-SLOT;PROGRAMME ET RESSOURCES;PROGRAMME ET RESSOURCES;Direction des Opérations;DOP;20/10/2017;;DECALE;Féminin;Malagasy
+0222;RATSIMBAZAFY;Felaniaina Onivololo;TNR;Directrice QRSE;QRSE;QRSE;Direction Qualité et RSE;DQRSE;30/10/2017;;SUPPORT;Féminin;Malagasy
+0224;ANDRIAMIHAJA;Herimalala Naly;TNR;Responsable des Activités Fret;FRET;FRET;Direction Commerciale et Marketing;DCM;08/12/2017;;SUPPORT;Masculin;Malagasy
+0225;RALISON;Faliniaina Christian;TNR;Référent Abonnement Parking et Badges;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;08/12/2017;;SUPPORT;Masculin;Malagasy
+0226;RAZAFIMAHATRATRA;Nirina Marius;TNR;Chef de Département Airside;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;18/12/2017;;SUPPORT;Masculin;Malagasy
+0229;RAKOTONDRATSIMBA;Hanitra Nadia;TNR;Cheffe de Département Marketing;MARKETING;MARKETING;Direction Commerciale et Marketing;DCM;02/01/2018;;SUPPORT;Féminin;Malagasy
+0232;RANDRIANARIVELO;Fanilomanantsoa;TNR;Responsable Planification et GMAO;METHODE;METHODE;Direction Générale;DGE;22/01/2018;;DECALE;Masculin;Malagasy
+0233;RASAMOELY;Fanja Miary;TNR;Cheffe de Département Terminal;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/02/2018;;SUPPORT;Féminin;Malagasy
+0234;ANDRIANTOLOTIANA RAVONIRINA;Herimboahary Dinaris;TNR;Chef de Service Statistiques et Facturation;FINANCES ET COMPTABILITE;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;05/02/2018;;SUPPORT;Masculin;Malagasy
+0235;HENINTSOA;Nora Christian;NOS;Agent Polyvalent Maintenance;TECHNIQUE NOS;TECHNIQUE NOS;Direction Générale;DGE;09/03/2018;;SUPPORT;Masculin;Malagasy
+0236;ANDRIAMASY;Hans Lalaina;TNR;Superviseur Exploitation;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;09/03/2018;;DECALE;Masculin;Malagasy
+0241;RANDRIAMIARANTSOA;Haja;TNR;Comptable Trésorerie Senior;TRESORERIE;INGENIERIE ET CONTRÔLE FINANCIER;Direction Administrative et Financière;DAF;23/03/2018;;SUPPORT;Masculin;Malagasy
+0243;RAHERINOMENA;Noroseheno;TNR;Chargée Trésorerie;TRESORERIE;INGENIERIE ET CONTRÔLE FINANCIER;Direction Administrative et Financière;DAF;17/04/2018;;SUPPORT;Féminin;Malagasy
+0244;RAVELOJAON;Soanomena Elizah;TNR;Responsable RSE;QRSE;QRSE;Direction Qualité et RSE;DQRSE;17/04/2018;;SUPPORT;Féminin;Malagasy
+0249;ANTILAHY;Jaoravoana Jean;NOS;Agent d'entretien;SCAN;SCAN;Direction des Opérations;DOP;01/06/2018;;SUPPORT;Masculin;Malagasy
+0250;SAY;Elysée;NOS;Agent de Piste;SCAN;SCAN;Direction des Opérations;DOP;01/06/2018;;SUPPORT;Masculin;Malagasy
+0252;RANDRIAMANANTENA;Herisoa Josianne;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;27/06/2018;;DECALE;Féminin;Malagasy
+0256;RAHAJATAFITASOA;Laingo;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;16/07/2018;;DECALE;Féminin;Malagasy
+0257;RAOILIMANANA;Elinirina;TNR;Coordinatrice Terminal AOCC-SLOT;PROGRAMME ET RESSOURCES;PROGRAMME ET RESSOURCES;Direction des Opérations;DOP;16/07/2018;;DECALE;Féminin;Malagasy
+0260;RANARISON;Fanomezantsoa;TNR;Agent de Maintenance Infrastructure;BATIMENT ET INFRASTRUCTURES;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;10/08/2018;;SUPPORT;Masculin;Malagasy
+0261;RAKOTOMAMONJY;Fanomezana Mampionona;TNR;Responsable Pôle Aviation;ACTIVITES AERONAUTIQUES;ACTIVITES AERONAUTIQUES;Direction Commerciale et Marketing;DCM;10/08/2018;;SUPPORT;Féminin;Malagasy
+0269;RANDRIAMANAMPISOA;Hariliva Mampionina;NOS;Agent de piste;SCAN;SCAN;Direction des Opérations;DOP;10/09/2018;;SUPPORT;Masculin;Malagasy
+0272;ANDRIANASOA;Tojotahina;TNR;Chef de Service Electromécanique;ELECTROMECANIQUE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;08/10/2018;;SUPPORT;Masculin;Malagasy
+0274;RAKOTONIRAINY;Rija Masinjaka;TNR;Responsable Travaux;PROJETS ET INGENIERIE;PROJETS ET INGENIERIE;Direction Générale;DGE;15/10/2018;;SUPPORT;Masculin;Malagasy
+0275;RANDRIANANTENAINA;Mamy;TNR;Comptable Clients;FINANCES ET COMPTABILITE;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;02/11/2018;;SUPPORT;Féminin;Malagasy
+0279;RAKOTOARISOA;Mamy Vonjimampianina;TNR;Chef de département Infrastructures IT;INFRASTRUCTURE IT;INFRASTRUCTURE IT;Direction des Systèmes d'Information;DSI;16/11/2018;;SUPPORT;Masculin;Malagasy
+0281;RAZAFINDRABE;Herilala Zo Faniry;TNR;Juriste Junior;JURIDIQUE;JURIDIQUE;Direction Juridique et Assurances;DJA;02/01/2019;;SUPPORT;Masculin;Malagasy
+0283;RATSIRAHONANA;Robert;NOS;Technicien AOS/IT;SCAN;SCAN;Direction des Systèmes d'Information;DSI;18/01/2019;;SUPPORT;Masculin;Malagasy
+0284;RAZAFIMAMONJY;Elie Jean Roger;NOS;Technicien AOS/IT;SCAN;SCAN;Direction des Systèmes d'Information;DSI;18/01/2019;;SUPPORT;Masculin;Malagasy
+0285;RALAIARIMALALA;Nathalie Doriane;TNR;Responsable Support;SUPPORT IT;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;01/02/2019;;SUPPORT;Féminin;Malagasy
+0289;RAJOHNSON;Zoelisoa Lalaina;TNR;Directrice Commerciale et Marketing;DCM;DCM;Direction Commerciale et Marketing;DCM;25/02/2019;;SUPPORT;Féminin;Malagasy
+0291;RAKOTOARIMANANA;Andriaparatiana H.;TNR;Administrateur Systèmes;INFRASTRUCTURE IT;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;04/03/2019;;SUPPORT;Masculin;Malagasy
+0292;RATSARASATA;Nina Navalona;TNR;Responsable Santé et Sécurité au Travail;QRSE;QRSE;Direction Qualité et RSE;DQRSE;20/03/2019;;SUPPORT;Féminin;Malagasy
+0294;MIANDRISOA;Sitraka Christian;TNR;Coursier Moto;ACHATS;ACHATS;Direction Administrative et Financière;DAF;20/03/2019;;SUPPORT;Masculin;Malagasy
+0295;RAKOTOARIMANANA;Maheriarivelo;TNR;Coursier Moto;ACHATS;ACHATS;Direction Administrative et Financière;DAF;20/03/2019;;SUPPORT;Masculin;Malagasy
+0297;RAKOTOZAFY;Minosoa Tatamo;TNR;Cheffe de Département des Activités Aéronautiques;ACTIVITES AERONAUTIQUES;ACTIVITES AERONAUTIQUES;Direction Commerciale et Marketing;DCM;28/05/2019;;SUPPORT;Féminin;Malagasy
+0298;RAKOTONDRAJOA;Safidy;TNR;Responsable Applicatif;APPLICATIONS IT;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;28/05/2019;;SUPPORT;Masculin;Malagasy
+0299;RAKOTONIRINA;Tovondrainy;TNR;Comptable Immobilisation et Taxes;FINANCES ET COMPTABILITE;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;01/07/2019;;SUPPORT;Masculin;Malagasy
+0300;RATSIMBAZAFY;Mbonitahina;TNR;Chef Superviseur Services Généraux;ACHATS;ACHATS;Direction Administrative et Financière;DAF;01/07/2019;;SUPPORT;Masculin;Malagasy
+0305;RABENARISON;Rotsy Fanaja;TNR;Responsable Data;APPLICATIONS IT;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;16/09/2019;;SUPPORT;Féminin;Malagasy
+0313;NARIZAFY;Rija Masinisa;TNR;Chef de Service CVC et Plomberie;CVC ET PLOMBERIE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;03/02/2020;;SUPPORT;Masculin;Malagasy
+0314;RABEHANTA;Hajatiana;TNR;Administrateur Réseaux;INFRASTRUCTURE IT;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;06/02/2020;;SUPPORT;Masculin;Malagasy
+0315;ANDRIANARIMANANA;Henintsoa Fitiavana;TNR;Technicien AOS & IT;SUPPORT IT;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;06/02/2020;;DECALE;Masculin;Malagasy
+0318;RAKOTOZANANY ANDRIANARISATA;Rindra Clark;TNR;Chef de Service Bâtiment et Infrastructures;BATIMENT ET INFRASTRUCTURES;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;24/02/2020;;SUPPORT;Masculin;Malagasy
+0322;ANDRIANIAINA;Fandresena Vatosoa;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;02/03/2020;;DECALE;Féminin;Malagasy
+0323;RABEMANANTSOA;Sahaza Manoa;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;02/03/2020;;DECALE;Féminin;Malagasy
+0324;ANDRIANOMENJANAHARY;Nantenaina Mielle;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;02/03/2020;;DECALE;Féminin;Malagasy
+0325;RAKOTOFIRINGA;Famenontsoa Sandra;TNR;Coordinatrice Terminal AOCC-SLOT;PROGRAMME ET RESSOURCES;PROGRAMME ET RESSOURCES;Direction des Opérations;DOP;02/03/2020;;DECALE;Féminin;Malagasy
+0326;SAHALASOA;Rahantamahatsangy;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;02/03/2020;;DECALE;Féminin;Malagasy
+0327;ROSS;Jessica Santatriniai;TNR;Coordinatrice Terminal AOCC-SLOT;PROGRAMME ET RESSOURCES;PROGRAMME ET RESSOURCES;Direction des Opérations;DOP;02/03/2020;;DECALE;Féminin;Malagasy
+0328;MEVA SOLO;Toany;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;02/03/2020;;DECALE;Féminin;Malagasy
+0329;RANJALAHY;Mandimby Harivola;TNR;Electromécanicien;ELECTROMECANIQUE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;09/03/2020;;SUPPORT;Masculin;Malagasy
+0330;FIDIMANANTSOA;Lai Linda;TNR;Contrôleuse Financière Junior;ANALYSE ET CONTRÔLE FINANCIER;INGENIERIE ET CONTRÔLE FINANCIER;Direction Administrative et Financière;DAF;19/06/2020;;SUPPORT;Féminin;Malagasy
+0331;RAZAFINDRAMANITRA;Henintsoa Hariniaina;TNR;Superviseur Maintenance AOCC;MAINTENANCE OPERATIONNELLE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;07/09/2020;;DECALE;Masculin;Malagasy
+0333;RAJOHNSON;Dina Mickaël;TNR;Chef de Département Ingénieurie et Contrôle Financier;INGENIERIE ET CONTRÔLE FINANCIER;INGENIERIE ET CONTRÔLE FINANCIER;Direction Administrative et Financière;DAF;05/10/2020;;SUPPORT;Masculin;Malagasy
+0334;PETIT;Caroline Nelly;TNR;Directrice des Opérations;DOP;DOP;Direction des Opérations;DOP;01/10/2020;;SUPPORT;Féminin;Expat
+0339;RANDRIANIRINA;François Manantsoa;TNR;Responsable Paie;REMUNERATION;DEVELOPPEMENT RH ET REMUNERATION;Direction des Ressources Humaines;DRH;26/03/2021;;SUPPORT;Masculin;Malagasy
+0340;ANDRIAMORASATA;Ginot Franck;NOS;Chef d'équipe Technique;TECHNIQUE NOS;TECHNIQUE NOS;Direction Générale;DGE;01/07/2021;;SUPPORT;Masculin;Malagasy
+0343;TOMBO;Damien Jaquinot;NOS;Conducteur d'engins;SCAN;SCAN;Direction des Opérations;DOP;10/08/2021;;SUPPORT;Masculin;Malagasy
+0348;RAKOTOMANDIMBY;Andrianina Luc;TNR;Chef de Département Maintenance Opérationnelle;MAINTENANCE OPERATIONNELLE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;08/10/2021;;SUPPORT;Masculin;Malagasy
+0349;TRION;Aina Mahaitia Elia;TNR;Technicien AOS/IT;SUPPORT IT;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;03/11/2021;;DECALE;Masculin;Malagasy
+0350;ANDRIAMAHOLY;Fanirisoa Narindra;TNR;Cheffe de Département Projets et Ingénierie;PROJETS ET INGENIERIE;PROJETS ET INGENIERIE;Direction Générale;DGE;03/11/2021;;SUPPORT;Féminin;Malagasy
+0354;RAKOTONDRASOA;Tefiniaina Tahiana;TNR;Directeur Juridique et Assurances;JURIDIQUE;JURIDIQUE;Direction Juridique et Assurances;DJA;11/04/2022;;SUPPORT;Masculin;Malagasy
+0356;RAHARIVELO;Mialy;TNR;Chargée Facturation Extra Aéroportuaire;FACTURATION ET STATISTIQUES;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;02/05/2022;;SUPPORT;Féminin;Malagasy
+0358;RASOLOFONDRAMANAMBE;Sedera;TNR;Chef de Département Développement RH et Rémunération;DEVELOPPEMENT RH ET REMUNERATION;DEVELOPPEMENT RH ET REMUNERATION;Direction des Ressources Humaines;DRH;01/06/2022;;SUPPORT;Masculin;Malagasy
+0359;ANDRIANASOLO;Niaina Hasina;TNR;Agent de piste;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;01/06/2022;;DECALE;Masculin;Malagasy
+0360;RAMAROJAONA;Sitraka David;TNR;Agent de piste;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;01/06/2022;;DECALE;Masculin;Malagasy
+0361;RAZAFINDRAKOTO;Maminiaina Elysé;TNR;Agent de piste;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;01/06/2022;;DECALE;Masculin;Malagasy
+0362;RAVELOMANANTSOA;Mikaela;TNR;Technicien AOS/IT;SUPPORT IT;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;04/07/2022;;DECALE;Masculin;Malagasy
+0364;RAMAROSON;Andrianina;TNR;Assistant Juridique et Assurances;JURIDIQUE;JURIDIQUE;Direction Juridique et Assurances;DJA;04/07/2022;;SUPPORT;Masculin;Malagasy
+0365;NIRIARISON;Mamy Gaël;TNR;Responsable des Activités non Aéronautiques;ACTIVITES NON AERONAUTIQUES;ACTIVITES NON AERONAUTIQUES;Direction Commerciale et Marketing;DCM;04/07/2022;;SUPPORT;Masculin;Malagasy
+0366;SOLOHERINJATOVO;Menja Joël;NOS;Correspondant Qualité et RSE;QRSE;QRSE;Direction Qualité et RSE;DQRSE;11/07/2022;;SUPPORT;Masculin;Malagasy
+0370;ANDRIAMANANTENASOA;Nadya;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;08/08/2022;;DECALE;Féminin;Malagasy
+0372;ESSOMBA NDONG;Martial Guy;TNR;Ingénieur d'Exploitation Aéroportuaire;PROGRAMME ET RESSOURCES;PROGRAMME ET RESSOURCES;Direction des Opérations;DOP;19/09/2022;;SUPPORT;Masculin;Expat
+0373;RAVELOMANANTSOA;Koloina Fiona;TNR;Assistante Maintenance;MAINTENANCE OPERATIONNELLE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;02/11/2022;;SUPPORT;Féminin;Malagasy
+0374;RATEFIARIMALALA;Alexandrine Fabricia;TNR;Assistante Comptable Fournisseurs;FINANCES ET COMPTABILITE;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;02/11/2022;;SUPPORT;Féminin;Malagasy
+0375;RAJAONAH TEFY;Antonio Patrick;TNR;Adjoint Responsable SGS et Conformité Aéroportuaire;SGS;SGS;Direction Générale;DGE;01/12/2022;;SUPPORT;Masculin;Malagasy
+0379;RAZANAJATOVO;Malalatina Jocelyne;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;16/01/2023;;DECALE;Féminin;Malagasy
+0382;VAVIHELY;Noella Velonjara;TNR;Agent Caisse;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;13/03/2023;;DECALE;Féminin;Malagasy
+0383;BENAMAHARO;Tantely Haingosoa;TNR;Responsable Administrative et Recrutement;DEVELOPPEMENT RH;DEVELOPPEMENT RH;Direction des Ressources Humaines;DRH;16/03/2023;;SUPPORT;Féminin;Malagasy
+0385;RAMANITRA;Zo Ndriantsoa;TNR;Responsable Planification et GMAO;METHODE;METHODE;Direction Générale;DGE;11/04/2023;;SUPPORT;Masculin;Malagasy
+0386;RAKOTOMAMONJY ANDRIANARIVELO;Michaël Dominique;TNR;Directeur des Systèmes d'Information;SYSTEMES D'INFORMATION;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;15/05/2023;;SUPPORT;Masculin;Malagasy
+0387;RALAMBOMIHAJA;Mialintsoa Sariaka;TNR;Responsable Environnement;QRSE;QRSE;Direction Qualité et RSE;DQRSE;02/05/2023;;SUPPORT;Féminin;Malagasy
+0388;RAMIANDRISOA;Toky Hasina Lucas;TNR;Analyste Financier;ANALYSE ET CONTRÔLE FINANCIER;INGENIERIE ET CONTRÔLE FINANCIER;Direction Administrative et Financière;DAF;01/06/2023;;SUPPORT;Masculin;Malagasy
+0389;RIVONIRINA;Tanjona;TNR;Chef de Département Relations sociales et Qualité de vie au travail;RELATIONS SOCIALES;RELATIONS SOCIALES ET QVT;Direction des Ressources Humaines;DRH;01/06/2023;;SUPPORT;Masculin;Malagasy
+0390;ATEIFA;Lionel Hachim;TNR;Responsable Administratif et Gestion de Contrat;DCM;DCM;Direction Commerciale et Marketing;DCM;01/06/2023;;SUPPORT;Masculin;Malagasy
+0392;RAJAONARIVONY;Rado Andriniaina;TNR;Responsable Sécurité des Systèmes d'Information;SYSTEMES D'INFORMATION;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;06/07/2023;;SUPPORT;Masculin;Malagasy
+0394;RATSIATOSIKA RADISON;Mitantsoa Sitraka;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/08/2023;;DECALE;Masculin;Malagasy
+0395;RANIVO ANDRIAMANANA;Soalandy Maholy;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/08/2023;;DECALE;Féminin;Malagasy
+0396;ANDRIAMAMONJY;Ralph Antony;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;01/08/2023;;DECALE;Masculin;Malagasy
+0397;ANDRIAMASOANDRO NOMENJANAHARY;Oeliarisoa;TNR;Chef de Département Immobilier;IMMOBILIER;IMMOBILIER;Direction Commerciale et Marketing;DCM;01/09/2023;;SUPPORT;Féminin;Malagasy
+0399;RAJAOFERA;Vatosoa;TNR;Responsable Compétences et Performances;DEVELOPPEMENT RH;DEVELOPPEMENT RH;Direction des Ressources Humaines;DRH;14/09/2023;;SUPPORT;Féminin;Malagasy
+0400;RAHARITIANA;Mahefa;TNR;Superviseur Maintenance AOCC;MAINTENANCE OPERATIONNELLE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;14/09/2023;;DECALE;Masculin;Malagasy
+0401;RAZANAMPARANY;Fetra Henri Willy;TNR;Chef de Département Achats;ACHATS;ACHATS;Direction Administrative et Financière;DAF;14/09/2023;;SUPPORT;Masculin;Malagasy
+0403;RAMANANTSOA;Rivo Arlala;TNR;Chef Superviseur Travaux Maintenance;BATIMENT ET INFRASTRUCTURES;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;02/10/2023;;SUPPORT;Masculin;Malagasy
+0406;RAKOTOMAHANDRY;Kajasoa;TNR;Chargée de Projet;PROJETS ET INGENIERIE;PROJETS ET INGENIERIE;Direction Générale;DGE;23/10/2023;;SUPPORT;Féminin;Malagasy
+0407;RAJAONARIVONY;Andrianaivo Christian;TNR;Assistant Fret;FRET;FRET;Direction Commerciale et Marketing;DCM;14/11/2023;;SUPPORT;Masculin;Malagasy
+0408;TADZONG NGOUGNOU;Joël Gaël;TNR;Directeur Administratif et Financier;DAF;DAF;Direction Administrative et Financière;DAF;18/12/2023;;SUPPORT;Masculin;Camérounais
+0410;FALIA;Tiavina Princia;TNR;Assistante Ressources Humaines;RESSOURCES HUMAINES;RESSOURCES HUMAINES;Direction des Ressources Humaines;DRH;02/01/2024;;SUPPORT;Féminin;Malagasy
+0412;RAFANOMEZANTSOA;Daoroson Solofoniaina Kevin;TNR;Agent d'Accueil;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;02/01/2024;;DECALE;Masculin;Malagasy
+0413;RASOLOARIZAFY;Mirana;TNR;Assistante  Pôle Tourisme;ACTIVITES AERONAUTIQUES;ACTIVITES AERONAUTIQUES;Direction Commerciale et Marketing;DCM;02/01/2024;;SUPPORT;Féminin;Malagasy
+0414;RAKOTOVAO;Faranirina Aromanda;TNR;Acheteuse Senior;ACHATS;ACHATS;Direction Administrative et Financière;DAF;15/01/2024;;SUPPORT;Féminin;Malagasy
+0415;RANDRIANASOLO;Narindrasoa Ruth;TNR;Chargée de Documentation du Système de Gestion de la Sécurité;SGS;SGS;Direction Générale;DGE;05/02/2024;;SUPPORT;Féminin;Malagasy
+0416;RAFANOMEZANTSOA;Rado Milanto;TNR;Chef Comptable;FINANCES ET COMPTABILITE;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;19/02/2024;;SUPPORT;Masculin;Malagasy
+0417;RAZAFINDRAKOTO;Ny Aina Zo;TNR;Responsable Courant Faible;MAINTENANCE OPERATIONNELLE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;19/02/2024;;SUPPORT;Masculin;Malagasy
+0418;ANDRIATSILAVINA;Damien Lionnel;TNR;Chef de Département Transformation Digitale;TRANSFORMATION DIGITALE;TRANSFORMATION DIGITALE;Direction des Systèmes d'Information;DSI;04/03/2024;;SUPPORT;Masculin;Malagasy
+0420;RAKOTOARIVONY;Vaniala;TNR;Contrôleuse Financière;ANALYSE ET CONTRÔLE FINANCIER;INGENIERIE ET CONTRÔLE FINANCIER;Direction Administrative et Financière;DAF;25/03/2024;;SUPPORT;Féminin;Malagasy
+0421;HARVEL RAMANAMISA;Elsy;TNR;Cheffe de Département Développement des Activités Non Aéronautiques;ACTIVITES NON AERONAUTIQUES;ACTIVITES NON AERONAUTIQUES;Direction Commerciale et Marketing;DCM;15/04/2024;;SUPPORT;Féminin;Malagasy
+0422;RAKOTONDRAINIBE;Haingomanitra Henri;TNR;Agent Plomberie;CVC ET PLOMBERIE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;16/04/2024;;DECALE;Masculin;Malagasy
+0424;ANDRIANIRINA;Mamy ;TNR;Assistant Achat et Gestion de Stock;ACHATS;ACHATS;Direction Administrative et Financière;DAF;23/05/2024;;SUPPORT;Masculin;Malagasy
+0428;RASOARAHONA;Nanoanirina Jonathan;TNR;Agent de Piste;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;17/06/2024;;DECALE;Masculin;Malagasy
+0429;RAZAFIMAHEFA;Nomena Josua;TNR;Technicien de Curage;CVC ET PLOMBERIE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;17/07/2024;;DECALE;Masculin;Malagasy
+0430;RANAIVOARISON;Jean Marie Rémi;TNR;Chauffeur Tracteur;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;25/07/2024;;SUPPORT;Masculin;Malagasy
+0431;LEFEBVRE;Daniel Louis;TNR;Directeur Général;DGE;DGE;Direction Générale;DGE;01/08/2024;;SUPPORT;Masculin;Français
+0433;MAMITIANA;Nandrianina;TNR;Electromécanicien;ELECTROMECANIQUE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;07/08/2024;;DECALE;Masculin;Malagasy
+0434;MAHEFA;Paul Ferdinah;TNR;Electromécanicien;ELECTROMECANIQUE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;07/08/2024;;DECALE;Masculin;Malagasy
+0436;RABE;Irintsoa Mirindra;TNR;Assistante Exécutive;QRSE;QRSE;Direction Qualité et RSE;DQRSE;02/09/2024;;SUPPORT;Féminin;Malagasy
+0437;ADANY TOTO;Amirany Julinho;NOS;Agent d'entretien;SCAN;SCAN;Direction des Opérations;DOP;07/10/2024;;SUPPORT;Masculin;Malagasy
+0439;NANTENAINA;Tsiferana Christien;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;18/11/2024;;DECALE;Masculin;Malagasy
+0440;NOMENJANAHARY;Tojo Famonjena;TNR;Agent d'entretien;TERMINAL ET LANDSIDE;TERMINAL ET LANDSIDE;Direction des Opérations;DOP;18/11/2024;;DECALE;Masculin;Malagasy
+0441;ANDRIANARIVONIRINA;Elie Advocat;TNR;Technicien Electricité;ELECTRICITE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;25/11/2024;;DECALE;Masculin;Malagasy
+0444;RAKOTOARIJAONA;Mbolatiana David;TNR;Agent Plomberie;CVC ET PLOMBERIE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;16/12/2024;;DECALE;Masculin;Malagasy
+0446;RAKOTOMAVO;Ranavalomasoandro Christelle;TNR;Cheffe de Projet SI et Innovation;TRANSFORMATION DIGITALE;TRANSFORMATION DIGITALE;Direction des Systèmes d'Information;DSI;27/01/2025;;SUPPORT;Féminin;Malagasy
+0447;RAJAONARISON;Hermélan;NOS;Technicien AOS / IT;SUPPORT IT;SCAN;Direction des Systèmes d'Information;DSI;07/02/2025;;DECALE;Masculin;Malagasy
+0448;MAMISOLO;Anatole CHristiano;NOS;Agent de piste;SCAN;SCAN;Direction des Opérations;DOP;07/02/2025;;DECALE;Masculin;Malagasy
+0449;SYLVIANNO;Marc Alexandre;NOS;Agent de piste;SCAN;SCAN;Direction des Opérations;DOP;07/02/2025;;DECALE;Masculin;Malagasy
+0450;VITANALLAH FAZARAHLIE;Nourah Poutroof;TNR;Chef de Département Méthode;METHODE;METHODE;Direction Générale;DGE;13/02/2025;;SUPPORT;Masculin;Malagasy
+0451;ANDRIATIANA;T. Jackies Johannot;TNR;Responsable Fiscalités;COMPTABILITE ET FACTURATION;COMPTABILITE ET FACTURATION;Direction Administrative et Financière;DAF;17/02/2025;;SUPPORT;Masculin;Malagasy
+0452;RATINARILALA;Riana Eddy Fleury;TNR;Technicien AOS / IT;SUPPORT IT;SYSTEMES D'INFORMATION;Direction des Systèmes d'Information;DSI;05/03/2025;;DECALE;Masculin;Malagasy
+0453;RAJAONARIMANANA;Haja Lalaina Michel;NOS;Agent Polyvalent Maintenance;TECHNIQUE NOS;TECHNIQUE NOS;Direction Générale;DGE;05/03/2025;;DECALE;Masculin;Malagasy
+0454;RABEARIFETRA ANDRIANIRINA;Remby;TNR;Technicien Electricité;ELECTRICITE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;05/03/2025;;DECALE;Masculin;Malagasy
+0455;RAFALIMANANA;Rianala Mandresy Jhonnia;TNR;Assistante Administrative et Commerciale;DCM;DCM;Direction Commerciale et Marketing;DCM;24/03/2025;;SUPPORT;Féminin;Malagasy
+0456;RAMALANJAONA;Lala Tiana;TNR;Responsable Communication Corporate et Marque Employeur;COMMUNICATION;COMMUNICATION;Direction Générale;DGE;24/03/2025;;SUPPORT;Féminin;Malagasy
+0457;RASON;Aina Loïc;TNR;Chargé de Communication Digitale;COMMUNICATION;COMMUNICATION;Direction Générale;DGE;24/03/2025;;SUPPORT;Masculin;Malagasy
+0459;RAKOTOARISON;Tiavina Gaël;TNR;Technicien Data;TRANSFORMATION DIGITALE;TRANSFORMATION DIGITALE;Direction des Systèmes d'Information;DSI;07/04/2025;;SUPPORT;Masculin;Malagasy
+0460;RASAMOELINA;Hasina Manjakarivelo;TNR;Responsable Qualité et Gestion des Risques;QUALITE ET GESTION DE RISQUE;QUALITE ET GESTION DE RISQUE;Direction Qualité et RSE;DQRSE;05/05/2025;;SUPPORT;Masculin;Malagasy
+0461;RANDRIAMANANTSOA;Sitraka Henintsoa;TNR;Assistant Administratif et Gestionnaire de Documents;JURIDIQUE;JURIDIQUE;Direction Juridique et Assurances;DJA;05/05/2025;;SUPPORT;Masculin;Malagasy
+0462;RAKOTOARIMANANA;Fanomezantsoa Noel;TNR;Agent Plomberie;CVC ET PLOMBERIE;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;12/05/2025;;DECALE;Masculin;Malagasy
+0463;RAVOHITSOA;Anjarasolo Mbolaniaina Mialy Tiana;TNR;Agent de Maintenance Infrastructure;BATIMENT ET INFRASTRUCTURES;MAINTENANCE OPERATIONNELLE;Direction Générale;DGE;04/08/2025;;SUPPORT;Masculin;Malagasy
+0464;IHARITIANA;Holisoa;TNR;Acheteuse Junior;ACHATS;ACHATS;Direction Administrative et Financière;DAF;01/12/2025;;SUPPORT;Féminin;Malagasy
+0465;RAKOTOMALALA;Jean Marie Haja Maminiaina;TNR;Agent de piste;AIRSIDE;AIRSIDE;Direction des Opérations;DOP;01/12/2025;;DECALE;Masculin;Malagasy

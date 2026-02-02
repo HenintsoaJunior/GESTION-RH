@@ -42,7 +42,7 @@ export const PopupHeader = styled.div`
 
 export const PopupTitle = styled.h2`
   margin: 0;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xl);
   font-weight: 600;
   color: var(--text-primary);
   font-family: var(--font-family);

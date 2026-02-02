@@ -121,9 +121,9 @@ const Home: React.FC = () => {
   return (
     <HomeContainer>
       <HeroSection>
-        <HeroTitle>Bienvenue sur la Plateforme de Gestion des Missions 🏠</HeroTitle>
+        <HeroTitle>Bienvenue sur la Plateforme de Portail RH 🏠</HeroTitle>
         <HeroSubtitle>
-          Solution complète pour digitaliser et optimiser le processus de gestion des missions professionnelles de Ravinala Airports.
+          Solution complète pour digitaliser et optimiser le processus de gestion des missions professionnelles et recrutements de Ravinala Airports.
         </HeroSubtitle>
       </HeroSection>
 

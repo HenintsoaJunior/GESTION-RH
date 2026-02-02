@@ -11,18 +11,27 @@ public class RequestValidation : BaseEntity
     [Column("request_validation_id")]
     public string Id {get; set;} = null!;
 
-    [Column("signature_url")]
-    public byte[]? Signature {get; set;}
-
     [Column("comments")]
     public string? Comments {get; set;}
 
-    [ForeignKey("user_id")]
+
+    [Column("user_id")]
+    public string ValidatorId {get; set;} = null!;
+    
+    [ForeignKey(nameof(ValidatorId))]
     public User Validator {get; set;} = null!;
 
-    [ForeignKey("status_id")]
+
+    [Column("status_id")]
+    public string StatusId {get; set;} = null!;
+
+    [ForeignKey(nameof(StatusId))]
     public RequestStatus Status {get; set;} = null!;
 
-    [ForeignKey("request_id")]
+
+    [Column("request_id")]
+    public string RequestId {get; set;} = null!;
+
+    [ForeignKey(nameof(RequestId))]
     public RecruitmentRequest Request {get; set;} = null!;
 }

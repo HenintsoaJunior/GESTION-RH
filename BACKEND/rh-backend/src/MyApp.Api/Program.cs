@@ -13,6 +13,8 @@ using MyApp.Api.Services.mission;
 using MyApp.Api.Services.recruitment;
 
 var builder = WebApplication.CreateBuilder(args);
+// string frontUrl = "http://10.0.105.194:5173";
+string frontUrl = "http://localhost:5173";
 
 if (OperatingSystem.IsLinux())
 {
@@ -29,7 +31,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
 
-        policy.WithOrigins(frontendUrl ?? "http://10.0.105.122:5173")
+        policy.WithOrigins(frontendUrl ?? frontUrl)
               .AllowAnyMethod()
               .AllowAnyHeader();
     });

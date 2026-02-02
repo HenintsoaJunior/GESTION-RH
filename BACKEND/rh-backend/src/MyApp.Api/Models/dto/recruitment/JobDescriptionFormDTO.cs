@@ -32,6 +32,9 @@ namespace MyApp.Api.Models.dto.recruitment
         [Required(ErrorMessage = "Les compétences sont obligatoires.")]
         [MinLength(1, ErrorMessage = "Au moins une compétence est requise.")]
         public SkillDTO[] Skills { get; set; } = null!;
+
+    // Créateur de TDR
+        public string CreatorId { get; set; } = null!;
     }
 
 

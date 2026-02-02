@@ -1,7 +1,11 @@
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Entities.site;
+using MyApp.Api.Models.dto.notifications;
 using MyApp.Api.Models.dto.recruitment;
+using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.recruitment;
+using MyApp.Api.Services.logs;
+using MyApp.Api.Services.notifications;
 
 namespace MyApp.Api.Services.recruitment;
 
@@ -16,11 +20,16 @@ public interface IJobDescriptionService
 
 
 public class JobDescriptionService(IJobDescriptionRepository rep,
- IRequestRepository req, ILogger<JobDescriptionService> log)
+ IRecruitmentRequestRepository req, 
+ ILogger<JobDescriptionService> log, ILogService logS,
+ IJobDescriptionValidationRepository repo2, INotificationsService notif)
 : IJobDescriptionService {
     private readonly IJobDescriptionRepository _jobDescRepo = rep;
-    private readonly IRequestRepository _reqRepo = req;
+    private readonly IRecruitmentRequestRepository _reqRepo = req;
+    private readonly IJobDescriptionValidationRepository _validationRepo = repo2;
     private readonly ILogger<JobDescriptionService> _log = log;
+    private readonly INotificationsService _notifService = notif;
+    private readonly ILogService _logService = logS;
 
 
     public async Task AddJobDescription(JobDescriptionFormDTO data) {
@@ -31,13 +40,19 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             if(!request.LastStatus.ToLower().Equals("validée")) 
                 throw new ArgumentException("Impossible d'en créer avec une demande non validée");
 
-            if(this.GetJobDescription(request.Id)!=null)
+            var jobWithRequest = await this.GetJobDescription(request.Id);
+            if(jobWithRequest!=null) {
+                _log.LogInformation(jobWithRequest.Id);
                 throw new ArgumentException("Un seul TDR par demande autorisé");
+            }
 
-            var jobDescription = new JobDescription
-            {
+        // Statut "En attente" par défaut
+            var defaultStatus = await _jobDescRepo.GetJobDescriptionStatusById("STF_001");
+                
+            var jobDescription = new JobDescription {
                 Mission = data.Mission,
-                Request = request
+                RequestId = request.Id,
+                LastStatus = defaultStatus.Name
             };
 
             await _jobDescRepo.AddJobDescription(jobDescription);
@@ -46,24 +61,18 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             foreach (var label in data.Attributions) {
                 await _jobDescRepo.AddJobAttribution(new Attribution
                 {
-                    JobDescription = jobDescription,
+                    JobDescriptionId = jobDescription.Id,
                     Label = label
                 });
             }
 
         // Formations
             foreach (var dto in data.Formations) {
-                var education = new Education { Id = dto.EducationId };
-                var level = new LevelEducation { Id = dto.LevelEducationId };
-
-                _jobDescRepo.Attach(education);
-                _jobDescRepo.Attach(level);
-
-                await _jobDescRepo.AddFormation(new Formation
+                await _jobDescRepo.AddFormation(new Formation 
                 {
-                    JobDescription = jobDescription,
-                    Education = education,
-                    LevelEducation = level
+                    JobDescriptionId = jobDescription.Id,
+                    EducationId = dto.EducationId,
+                    LevelEducationId = dto.LevelEducationId
                 });
             }
 
@@ -71,7 +80,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             foreach (var dto in data.Experiences) {
                 await _jobDescRepo.AddExperience(new Experience
                 {
-                    JobDescription = jobDescription,
+                    JobDescriptionId = jobDescription.Id,
                     ExperiencePost = dto.Post,
                     ExperienceYears = dto.Years
                 });
@@ -79,28 +88,36 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
 
         // Soft skills
             foreach (var dto in data.SoftSkills) {
-                var softSkill = new SoftSkill { Id = dto.Id };
-                _jobDescRepo.Attach(softSkill);
-
-                await _jobDescRepo.AddJobDescriptionSoftSkill(
-                    new JobDescriptionSoftSkill {
-                        JobDescription = jobDescription,
-                        SoftSkill = softSkill
-                    }
-                );
+                await _jobDescRepo.AddJobDescriptionSoftSkill(new JobDescriptionSoftSkill 
+                {
+                    JobDescriptionId = jobDescription.Id,
+                    SoftSkillId = dto.Id
+                });
             }
 
         // Skills
             foreach (var dto in data.Skills) {
                 await _jobDescRepo.AddSkill(new Skill
                 {
-                    JobDescription = jobDescription,
+                    JobDescriptionId = jobDescription.Id,
                     Label = dto.Label
                 });
             }
 
+        // Validation du TDR
+            var validation = new JobDescriptionValidation {
+                ValidatorId = data.CreatorId,
+                StatusId = "STF_001",
+                JobDescriptionId = jobDescription.Id
+            };
+            await _jobDescRepo.AddValidation(validation);
+
         // COMMIT
             await _jobDescRepo.SaveChangesAsync();
+
+        // LOG
+            await _logService.LogAsync("INSERTION TDR", "termes_reference",
+             request.Creator.UserId);
         }
         catch (Exception ex) {
             _log.LogError(ex, "Erreur de création d'un TDR");
@@ -126,6 +143,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             result.LastTitular = request.LastTitular?.Name;
             result.Id = jobDesc.Id;
             result.Mission = jobDesc.Mission;
+            result.CreatedAt = jobDesc.CreatedAt;
 
         // Attributions
             result.Attributions = jobDesc.Attributions
@@ -138,7 +156,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
 
             result.Experiences = jobDesc.Experiences
                 .Select(e => 
-                    $"Minimum {e.ExperienceYears} an(s) au poste de {e.ExperiencePost.ToLower()}").ToArray();
+                    $"Minimum {e.ExperienceYears} an(s) au poste de \"{e.ExperiencePost}\" ou poste équivalent").ToArray();
 
         // SoftSkills
             result.SoftSkills = jobDesc.SoftSkills
@@ -170,8 +188,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             RecruitmentRequest request = await _reqRepo.GetRecruitmentRequestById(requestId);
             JobDescription? lastJobDesc = await _jobDescRepo.GetJobDescriptionByRequest(request);
 
-            if(lastJobDesc == null)
-                throw new ArgumentException("Aucun TDR à mettre à jour");
+            if(lastJobDesc == null) throw new ArgumentException("Aucun TDR à mettre à jour");
 
             lastJobDesc.Mission = data.Mission;
             lastJobDesc.RequestId = requestId; // safe
@@ -188,12 +205,11 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
         // =========================
         // Réinsertion
         // =========================
-
             // Attributions
             foreach (var label in data.Attributions) {
                 await _jobDescRepo.AddJobAttribution(new Attribution
                 {
-                    JobDescription = lastJobDesc,
+                    JobDescriptionId = lastJobDesc.Id,
                     Label = label
                 });
             }
@@ -202,7 +218,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             foreach (var dto in data.Formations) {
                 await _jobDescRepo.AddFormation(new Formation
                 {
-                    JobDescription = lastJobDesc,
+                    JobDescriptionId = lastJobDesc.Id,
                     EducationId = dto.EducationId,
                     LevelEducationId = dto.LevelEducationId
                 });
@@ -212,7 +228,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             foreach (var dto in data.Experiences) {
                 await _jobDescRepo.AddExperience(new Experience
                 {
-                    JobDescription = lastJobDesc,
+                    JobDescriptionId = lastJobDesc.Id,
                     ExperiencePost = dto.Post,
                     ExperienceYears = dto.Years
                 });
@@ -222,7 +238,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             foreach (var dto in data.SoftSkills) {
                 await _jobDescRepo.AddJobDescriptionSoftSkill(new JobDescriptionSoftSkill
                 {
-                    JobDescription = lastJobDesc,
+                    JobDescriptionId = lastJobDesc.Id,
                     SoftSkillId = dto.Id
                 });
             }
@@ -231,13 +247,17 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             foreach (var dto in data.Skills) {
                 await _jobDescRepo.AddSkill(new Skill
                 {
-                    JobDescription = lastJobDesc,
+                    JobDescriptionId = lastJobDesc.Id,
                     Label = dto.Label
                 });
             }
 
             // Commit
             await _jobDescRepo.SaveChangesAsync();
+
+            // LOG
+            await _logService.LogAsync("MODIFICATION TDR", "termes_reference",
+             request.Creator.UserId);
         }
         catch (Exception ex) {
             _log.LogError(ex, "Erreur de mise à jour de TDR");
@@ -284,6 +304,41 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
         }
         catch (Exception ex) {
             _log.LogError(ex, "Erreur de recherche de TDR par ID");
+            throw;
+        }
+    }
+
+
+    public async Task ValidateJobDescription(JobDescriptionValidationDTO data) {
+        try {
+            _log.LogInformation("En cours de faire la validation ...");
+            var jobDesc = await _validationRepo.ValidateJobDescription(data);
+
+        // Tous les validateurs en même temps
+            List<UserDto> validators = await _validationRepo.GetAllValidators(data.JobDescId);
+            List<string> validatorsIds = validators.Select(u=>u.UserId).ToList();
+
+        // Envoi de notification au créateur
+            if(validators!=null) {
+                var notification = new NotificationFormDTO
+                {
+                    Title = $"Votre TDR a été validée",
+                    Message = $"Le TDR au poste de \"{jobDesc.Request.Post}\" est validé.",
+                    Type = "recruitment",
+                    RelatedTable = "TDRs",
+                    RelatedMenu = "collaborateur",
+                    RelatedId = jobDesc.Id,
+                    Priority = 2,
+                    UserIds = validatorsIds,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+            // Envoi de notification
+                await _notifService.CreateAsync(notification, null);
+            }
+        }
+        catch(Exception ex) {
+            _log.LogError(ex, "Erreur lors de la validation");
             throw;
         }
     }

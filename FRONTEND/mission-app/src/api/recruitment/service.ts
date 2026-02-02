@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import api from '@/utils/axios-config';
-import type { RecruitmentRequestForm } from '@/pages/recruitment/request/hooks/use-request-form';
-import type { RequestValidationFormDTO } from '@/pages/recruitment/validation/components/validation-form';
-import type { JobDescriptionEditForm, JobDescriptionForm } from '@/pages/recruitment/job-description/hooks/use-job-form';
-
+import type { RecruitmentRequestForm } from '@/pages/recruitment/request/form/hooks/use-request-form';
+import type { JobDescriptionEditForm, JobDescriptionForm } from '@/pages/recruitment/job-description/form/hooks/use-job-form';
+import type { RequestValidationFormDTO } from '@/pages/recruitment/request/validation/components/refuse-request-form';
 // Base key pour React Query
 const SEARCH_REQUESTS_BASE_KEY = ['searchRequests'] as const;
 const SEARCH_REQUEST_DETAILS_BASE_KEY = ['searchRequestDetails'] as const;
@@ -14,6 +13,7 @@ const SEARCH_PENDED_REQUESTS_BASE_KEY = ['searchPendedRequests'] as const;
 const CHECK_ACCESS_BASE_KEY = ['isUserValidator'] as const;
 const HAS_JOB_DESC_BASE_KEY = ['hasJobDescription'] as const;
 const SEARCH_JOB_DESC_BASE_KEY = ['searchJobDescriptions'] as const;
+// const SEARCH_POST_TYPES_KEY = ['searchPostTypes'] as const;
 
 // Types
 export interface FilterRequestDTO {
@@ -25,6 +25,15 @@ export interface FilterRequestDTO {
     minDate?: string;
 // Onglet actif
     scope: string; // "mes" | "toutes"
+}
+
+export interface FilterPendedRequestDTO {
+    post?: string;
+    contract?: string;
+    status?: string;
+    direction?: string;
+    maxDate?: string;
+    minDate?: string;
 }
 
 export interface RequestDTO {
@@ -40,7 +49,11 @@ export interface RequestDTO {
 export interface RequestDetailsDTO {
     id: string;
     post: string;
+    effective:number;
     applicantUser: string;
+    creator: string;
+    hierarchicalManager: string;
+    functionalManager: string;
     direction: string;
     department: string;
     service: string;
@@ -58,6 +71,7 @@ export interface RequestDetailsDTO {
     validationLevel: number;
     isPlanned?: boolean;
     notPlannedReason?: string | null;
+    sendingDate: string;
 }
 
 export interface RequestEditDTO {
@@ -77,12 +91,16 @@ export interface RequestEditDTO {
     notPlannedReason: string | null;
     beginningDate: string; 
     applicantUserId: string;
+    creatorId: string;
+    hierarchicalManagerId: string;
+    functionalManagerId: string;
 }
 
 export interface RequestValidationDTO {
     direction: string;
-    applicantUser: string;
-    signatureBase64?: string | null;
+    validator: string;
+    validatedAt: string;
+    status: string;
 }
 
 
@@ -92,7 +110,7 @@ export interface DocumentDTO {
 }
 
 interface CreateRequestResponse {
-    data: null;
+    data: string | null;
     status: boolean;
     message: string;
 }
@@ -100,6 +118,7 @@ interface CreateRequestResponse {
 export interface JobDescriptionDetails {
   id: string;
   post: string;
+  createdAt: string;
   requestId: string;
   mission: string;
   attributions: string[];
@@ -195,7 +214,7 @@ export const useCreateRecruitmentRequest = () => {
     });
 };
 
-export const useDeleteRequest = () => {
+export const useDeleteRecruitmentRequest = () => {
     const queryClient = useQueryClient(); // pour rafraîchir les listes après suppression
 
     return useMutation({
@@ -210,12 +229,15 @@ export const useDeleteRequest = () => {
 };
 
 
-export const useGetUsersByDirection = (direction: string) => {
+export const useGetUsersByDirection = (direction: string, all=false) => {
     return useQuery<{ data: DocumentDTO[] }, Error>({
         queryKey: ['usersByDirection', direction] as const,
+        enabled: !!direction,
         queryFn: async () => {
             try {
-                const response = await api.get(`/api/User/directions/${direction}`);
+                const response = await api.get(`/api/User/directions/${direction}`, {
+                    params: {all}
+                });
                 return response.data;
             } catch(error) {
                 if(axios.isAxiosError(error) && error.response) {
@@ -269,7 +291,7 @@ export const useValidateRecruitmentRequest = () => {
 
 export const useSearchPendedRequests = (
     validatorId:string, 
-    filters: FilterRequestDTO, page:number = 1, pageSize:number = 10
+    filters: FilterPendedRequestDTO, page:number = 1, pageSize:number = 10
 ) => {
     const queryKey = [...SEARCH_PENDED_REQUESTS_BASE_KEY, { validatorId, page, pageSize }] as const;
 
@@ -483,3 +505,20 @@ export const useUpdateJobDescription = (requestId : string | null) => {
         }),
     });
 };
+
+// export const useGetPostTypes = () => {
+//     return useQuery<{ data: DocumentDTO[] }, Error>({
+//         queryKey: SEARCH_POST_TYPES_KEY,
+//         queryFn: async () => {
+//             try {
+//                 const response = await api.get(`/api/recruitment/requests/post-types`);
+//                 return response.data;
+//             } catch(error) {
+//                 if(axios.isAxiosError(error) && error.response) {
+//                     throw new Error(error.response.data?.message || 'Erreur serveur');
+//                 }
+//                 throw error;
+//             }
+//         }
+//     });
+// };

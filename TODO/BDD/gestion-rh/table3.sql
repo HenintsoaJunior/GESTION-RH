@@ -43,6 +43,13 @@ CREATE TABLE evaluation_types(
    max_point DECIMAL(10,2)   NOT NULL,
    PRIMARY KEY(evaluation_type_id)
 );
+
+CREATE TABLE posts_types(
+   post_type_id VARCHAR(50) NOT NULL,
+   post_type_name VARCHAR(50)  NOT NULL,
+   is_deleted BIT NOT NULL DEFAULT 0,
+   PRIMARY KEY(post_type_id)
+);
  
 CREATE TABLE recruitment_requests(
    request_id VARCHAR(50) NOT NULL,
@@ -56,7 +63,9 @@ CREATE TABLE recruitment_requests(
    is_deleted BIT NOT NULL DEFAULT 0,
    created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
    updated_at DATETIME2,
-   applicant_user VARCHAR(250) NOT NULL,
+   applicant_user_id VARCHAR(250) NOT NULL,
+   functional_manager_id VARCHAR(250) NOT NULL,
+   hierarchical_manager_id VARCHAR(250) NOT NULL,
    replacement_reason_id VARCHAR(50),
    reason_precision VARCHAR(70),
    contract_type_id VARCHAR(50),
@@ -65,13 +74,15 @@ CREATE TABLE recruitment_requests(
    not_planned_reason VARCHAR(70),
    last_status VARCHAR(50),
    PRIMARY KEY(request_id),
-   FOREIGN KEY(applicant_user) REFERENCES users(user_id),
+   FOREIGN KEY(applicant_user_id) REFERENCES users(user_id),
+   FOREIGN KEY(functional_manager_id) REFERENCES users(user_id),
+   FOREIGN KEY(hierarchical_manager_id) REFERENCES users(user_id),
    FOREIGN KEY(replacement_reason_id) REFERENCES replacement_reasons(replacement_reason_id),
    FOREIGN KEY(contract_type_id) REFERENCES contract_types(contract_type_id),
    FOREIGN KEY(last_titular_user) REFERENCES users(user_id)
 );
 
- 
+
 CREATE TABLE sites_requests(
    id_site_request VARCHAR(50) NOT NULL,
    site_id VARCHAR(50) NOT NULL,
@@ -85,7 +96,6 @@ CREATE TABLE requests_validations(
    request_validation_id VARCHAR(50) NOT NULL,
    created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
    updated_at DATETIME2,
-   signature_url VARBINARY(MAX),
    comments VARCHAR(max),
    user_id VARCHAR(250) NOT NULL,
    status_id VARCHAR(50) NOT NULL,
@@ -223,33 +233,60 @@ CREATE TABLE requests_per_validators(
    FOREIGN KEY(request_id) REFERENCES recruitment_requests(request_id),
    FOREIGN KEY(validator_id) REFERENCES users(user_id)
 );
+GO
+
+-- =============================
+-- ALTERS
+-- =============================
+
+ALTER TABLE direction
+ADD is_active BIT NOT NULL
+    CONSTRAINT DF_direction_is_active DEFAULT 1;
+GO
+ALTER TABLE department
+ADD is_active BIT NOT NULL
+    CONSTRAINT DF_department_is_active DEFAULT 1;
+GO
+ALTER TABLE service
+ADD is_active BIT NOT NULL
+    CONSTRAINT DF_service_is_active DEFAULT 1;
+GO
 
 
--- CREATE FUNCTION dbo.fn_pending_recruitment_requests
--- (
---     @validator_id NVARCHAR(50)
--- )
--- RETURNS TABLE
--- AS
--- RETURN
--- (
---     WITH ranked_validators AS (
---         SELECT
---             rpv.*,
---             ROW_NUMBER() OVER (
---                 PARTITION BY rpv.request_id
---                 ORDER BY rpv.requests_per_validator_id
---             ) AS v_order
---         FROM requests_per_validators rpv
---         WHERE rpv.is_validated = 0
---     )
---     SELECT rv.*
---     FROM ranked_validators rv
---     WHERE rv.validator_id = @validator_id
---       AND NOT EXISTS (
---           SELECT 1
---           FROM ranked_validators p
---           WHERE p.request_id = rv.request_id
---             AND p.v_order < rv.v_order
---       )
--- );
+-- Request creator
+ALTER TABLE recruitment_requests
+ADD created_by VARCHAR(250) NOT NULL;
+
+ALTER TABLE recruitment_requests
+ADD CONSTRAINT FK_recruitment_requests_created_by
+FOREIGN KEY (created_by)
+REFERENCES users(user_id);
+GO
+
+-- Job description status
+ALTER TABLE job_descriptions ADD last_status VARCHAR(50);
+
+-- =============================
+-- FUNCTIONS
+-- =============================
+
+CREATE FUNCTION dbo.fn_pending_recruitment_requests ( 
+   @validator_id NVARCHAR(50) 
+) 
+RETURNS TABLE AS RETURN 
+( 
+   WITH ranked_validators AS ( 
+      SELECT rpv.*, ROW_NUMBER() OVER (
+         PARTITION BY rpv.request_id ORDER BY rpv.requests_per_validator_id 
+      ) 
+      AS v_order 
+      FROM requests_per_validators rpv 
+      WHERE rpv.is_validated = 0 
+   ) 
+   SELECT rv.* FROM ranked_validators rv 
+   WHERE rv.validator_id = @validator_id AND NOT EXISTS ( 
+      SELECT 1 FROM ranked_validators p 
+      WHERE p.request_id = rv.request_id AND p.v_order < rv.v_order 
+   )
+);
+GO

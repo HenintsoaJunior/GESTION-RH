@@ -132,7 +132,7 @@ const Modal: React.FC<ModalProps> = ({
       >
         <PopupHeader style={{ padding: "20px 30px", borderBottom: "1px solid var(--border-light)" }}>
           <PopupTitle id="modal-title" style={{ display: "flex", alignItems: "center", fontSize: "1.2rem" }}>
-            {getIcon()} {title}
+            {getIcon()} <span style={{marginLeft:"5px"}}>{title}</span>
           </PopupTitle>
           <button
             onClick={onClose}

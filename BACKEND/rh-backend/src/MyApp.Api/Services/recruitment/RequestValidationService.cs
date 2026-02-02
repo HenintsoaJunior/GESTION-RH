@@ -1,7 +1,9 @@
 using MyApp.Api.Models.dto.mission;
+using MyApp.Api.Models.dto.notifications;
 using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.recruitment;
+using MyApp.Api.Services.notifications;
 
 namespace MyApp.Api.Services.recruitment;
 
@@ -16,11 +18,13 @@ public interface IRequestValidationService
 }
 
 public class RequestValidationService(
-    IRequestValidationRepository r1, ILogger<RequestValidationService> log
-) : IRequestValidationService
+    IRequestValidationRepository r1, ILogger<RequestValidationService> log,
+    INotificationsService notif
+) : IRequestValidationService 
 {
     private readonly ILogger<RequestValidationService> _logger = log;
     private readonly IRequestValidationRepository _repo = r1;
+    private readonly INotificationsService _notifService = notif;
 
 
     public async Task<List<UserDto>> GetAllDirectorValidator(string requestId) {
@@ -38,7 +42,35 @@ public class RequestValidationService(
     public async Task DoValidationForRequest(CreateRequestValidationDTO data) {
         try {
             _logger.LogInformation("En cours de faire la validation ...");
-            await _repo.DoValidationForRequest(data);
+            var request = await _repo.DoValidationForRequest(data);
+
+        // Tous les validateurs en même temps
+            List<UserDto> validators = await _repo.GetAllDirectorValidator(request.Id);
+            List<string> validatorsIds = validators.Select(u=>u.UserId).ToList();
+
+        // // Le prochain validateur seulement
+            // var validators = await _repo.GetNextValidator(data.RequestId);
+            // List<string> validatorsIds = [];
+
+            if(validators!=null) {
+                // validatorsIds.Add(validators.UserId);
+
+                var notification = new NotificationFormDTO
+                {
+                    Title = $"Une nouvelle demande de recrutement a été créée",
+                    Message = $"Demande de recrutement au poste de '{request.Post}' en attente de validation.",
+                    Type = "recruitment",
+                    RelatedTable = "recruitment_requests",
+                    RelatedMenu = "collaborateur",
+                    RelatedId = request.Id,
+                    Priority = 2,
+                    UserIds = validatorsIds,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+            // Envoi de notification
+                await _notifService.CreateAsync(notification, null);
+            }
         }
         catch(Exception ex) {
             _logger.LogError(ex, "Erreur lors de la validation");
