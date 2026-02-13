@@ -347,13 +347,20 @@ export const Header = styled.header<{ $isOpen: boolean }>`
   padding: 0 var(--spacing-2xl);
   padding-left: calc(var(--spacing-2xl) + ${({ $isOpen }) => $isOpen ? 'var(--sidebar-width)' : '0px'});
   box-shadow: var(--shadow-sm);
-  flex-wrap: nowrap;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 999;
   font-family: var(--font-family);
+
+  @media (max-width: 1024px) {
+    padding: 0 var(--spacing-md);
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 var(--spacing-sm);
+  }
 `;
 
 export const HeaderLeft = styled.div`
@@ -573,14 +580,14 @@ export const UserInfo = styled.div`
 
   &.large {
     .user-name {
-      font-size: 1rem;
-      font-weight: 700;
+      font-size: clamp(0.85rem, 1vw, 0.95rem);
+      font-weight: 600;
       color: #222;
       line-height: 1.2;
     }
 
     .user-email {
-      font-size: 0.85rem;
+      font-size: clamp(0.7rem, 0.9vw, 0.8rem);
       color: #666;
       margin-top: 2px;
     }
@@ -589,15 +596,16 @@ export const UserInfo = styled.div`
   &.small {
     .user-name {
       font-weight: var(--font-weight-medium);
-      font-size: var(--font-size-xs);
+      font-size: clamp(0.75rem, 0.8vw, var(--font-size-xs));
     }
 
     .user-role {
-      font-size: var(--font-size-xs);
+      font-size: clamp(0.7rem, 0.8vw, var(--font-size-xs));
       color: var(--text-muted);
     }
   }
 `;
+
 
 export const UserProfileDropdown = styled.div`
   display: flex;

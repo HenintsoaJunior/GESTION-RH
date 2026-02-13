@@ -4,16 +4,18 @@ import api from '@/utils/axios-config';
 import type { RecruitmentRequestForm } from '@/pages/recruitment/request/form/hooks/use-request-form';
 import type { JobDescriptionEditForm, JobDescriptionForm } from '@/pages/recruitment/job-description/form/hooks/use-job-form';
 import type { RequestValidationFormDTO } from '@/pages/recruitment/request/validation/components/refuse-request-form';
+import { formatRequestId } from '@/pages/recruitment/request/form';
 // Base key pour React Query
 const SEARCH_REQUESTS_BASE_KEY = ['searchRequests'] as const;
 const SEARCH_REQUEST_DETAILS_BASE_KEY = ['searchRequestDetails'] as const;
 const SEARCH_STATUSES_BASE_KEY = ['searchRequestStatuses'] as const;
 const SEARCH_REASONS_BASE_KEY = ['searchReasons'] as const;
 const SEARCH_PENDED_REQUESTS_BASE_KEY = ['searchPendedRequests'] as const;
+const SEARCH_PENDED_JOB_DESCRIPTIONS_BASE_KEY = ['searchPendedJobDescriptions'] as const;
 const CHECK_ACCESS_BASE_KEY = ['isUserValidator'] as const;
 const HAS_JOB_DESC_BASE_KEY = ['hasJobDescription'] as const;
 const SEARCH_JOB_DESC_BASE_KEY = ['searchJobDescriptions'] as const;
-// const SEARCH_POST_TYPES_KEY = ['searchPostTypes'] as const;
+const SEARCH_POST_TYPES_KEY = ['searchPostTypes'] as const;
 
 // Types
 export interface FilterRequestDTO {
@@ -53,7 +55,9 @@ export interface RequestDetailsDTO {
     applicantUser: string;
     creator: string;
     hierarchicalManager: string;
+    hierarchicalManagerPost: string;
     functionalManager: string;
+    functionalManagerPost: string;
     direction: string;
     department: string;
     service: string;
@@ -74,6 +78,18 @@ export interface RequestDetailsDTO {
     sendingDate: string;
 }
 
+export interface JobDescriptionDetailsDTO {
+    id: string;
+    requestId: string;
+    lastStatus: string;
+    post: string;
+    applicantUser: string;
+    creator: string;
+    direction: string;
+    createdAt: string;
+    level: number;
+}
+
 export interface RequestEditDTO {
     id: string;
     post: string;
@@ -92,6 +108,7 @@ export interface RequestEditDTO {
     beginningDate: string; 
     applicantUserId: string;
     creatorId: string;
+    direction: string | null;
     hierarchicalManagerId: string;
     functionalManagerId: string;
 }
@@ -127,6 +144,7 @@ export interface JobDescriptionDetails {
   softSkills: string[];
   skills: string[];
   lastTitular: string | null;
+  lastStatus: string;
 }
 
 
@@ -256,15 +274,16 @@ export const useGetRecruitmentRequestDetails = (id: string) => {
     return useQuery<{
         details: RequestDetailsDTO;
         validations: RequestValidationDTO[];
+        tdrValidations: RequestValidationDTO[];
     }, Error>({
         queryKey,
         queryFn: async () => {
             try {
                 const response = await api.get(`/api/recruitment/requests/${id}/details`);
-
-                    return {
+                return {
                     details: response.data.data.details,
-                    validations: response.data.data.validations
+                    validations: response.data.data.validations,
+                    tdrValidations: response.data.data.tdrValidations,
                 };
             } catch (error) {
                 if (axios.isAxiosError(error) && error.response) {
@@ -300,6 +319,35 @@ export const useSearchPendedRequests = (
         queryFn: async () => {
             try {
                 const response = await api.post('/api/recruitment/requests/pended', validatorId, {
+                    params: { ...filters, page, pageSize },
+                });
+                const apiData = response.data.data;
+
+                return {
+                    list: apiData.results,
+                    totalCount: apiData.totalCount
+                };
+            } catch(error) {
+                if(axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || 'Erreur serveur');
+                }
+                throw error;
+            }
+        }
+    });
+};
+
+
+export const useSearchPendedJobDescriptions = (
+    filters: FilterPendedRequestDTO, page:number = 1, pageSize:number = 10
+) => {
+    const queryKey = [...SEARCH_PENDED_JOB_DESCRIPTIONS_BASE_KEY, { filters, page, pageSize }] as const;
+
+    return useQuery<{ list: JobDescriptionDetailsDTO[]; totalCount: number }, Error>({
+        queryKey,
+        queryFn: async () => {
+            try {
+                const response = await api.get('/api/recruitment/job-descriptions/pended', {
                     params: { ...filters, page, pageSize },
                 });
                 const apiData = response.data.data;
@@ -418,7 +466,7 @@ export const useGetJobDescriptionDetails = (id: string) => {
         queryKey,
         queryFn: async () => {
             try {
-                const response = await api.get(`/api/recruitment/job-descriptions/requests/${id}`);
+                const response = await api.get(`/api/recruitment/job-descriptions/requests/${formatRequestId(id)}`);
 
                 return response.data;
             } catch (error) {
@@ -435,14 +483,14 @@ export const useGetJobDescriptionDetails = (id: string) => {
 export const useHasJobDescription = (id: string) => {
     const queryKey = [...HAS_JOB_DESC_BASE_KEY, id] as const;
 
-    return useQuery<{hasJobDescription:boolean}, Error>({
+    return useQuery<{hasJobDescription:boolean, id?: string}, Error>({
         queryKey,
         queryFn: async () => {
             try {
-                const response = await api.get(`/api/recruitment/job-descriptions/requests/${id}/has`);
-                const hasValue = response.data.data;
-
-                return {hasJobDescription : hasValue};
+                const response = await api.get(`/api/recruitment/job-descriptions/requests/${formatRequestId(id)}/has`);
+                const respValue = response.data.data;
+                
+                return {hasJobDescription : respValue.value, id: respValue.id};
             } catch (error) {
                 if(axios.isAxiosError(error) && error.response) {
                     throw new Error(error.response.data?.message || "Erreur serveur");
@@ -456,23 +504,24 @@ export const useHasJobDescription = (id: string) => {
 
 
 // UPDATE : Demande de recrutement
-export const useGetRecruitmentRequest = (id?: string) => {
+export const useGetRecruitmentRequest = (id: string) => {
     return useQuery<RequestEditDTO, Error>({
         queryKey: ["getRecruitmentRequestById", id],
         queryFn: async () => {
-            const response = await api.get(`/api/recruitment/requests/${id}`);
+            const response = await api.get(`/api/recruitment/requests/${formatRequestId(id)}`);
             return response.data.data;
         },
         enabled: !!id, // ⛔️ n'appelle pas si id undefined
     });
 };
 
-export const useUpdateRecruitmentRequest = (id?: string) => {
+export const useUpdateRecruitmentRequest = (id: string) => {
     const queryClient = useQueryClient();
 
     return useMutation<CreateRequestResponse, Error, RecruitmentRequestForm>({
         mutationFn: async (data) => 
-            await api.put(`/api/recruitment/requests/${id}`, data).then(r => r.data),
+            await api.put(`/api/recruitment/requests/${formatRequestId(id)}`, data)
+            .then(r => r.data),
 
         onSuccess: () => queryClient.invalidateQueries({ 
             queryKey: SEARCH_REQUESTS_BASE_KEY 
@@ -506,19 +555,48 @@ export const useUpdateJobDescription = (requestId : string | null) => {
     });
 };
 
-// export const useGetPostTypes = () => {
-//     return useQuery<{ data: DocumentDTO[] }, Error>({
-//         queryKey: SEARCH_POST_TYPES_KEY,
-//         queryFn: async () => {
-//             try {
-//                 const response = await api.get(`/api/recruitment/requests/post-types`);
-//                 return response.data;
-//             } catch(error) {
-//                 if(axios.isAxiosError(error) && error.response) {
-//                     throw new Error(error.response.data?.message || 'Erreur serveur');
-//                 }
-//                 throw error;
-//             }
-//         }
-//     });
-// };
+export const useCanValidateJobDescription = (userId: string | undefined) => {
+    return useQuery<{hasValidation: boolean}, Error>({
+        queryKey: ["canValidateJobDescription", userId],
+        queryFn: async () => {
+            const response = await api.get(`/api/recruitment/job-descriptions/can-validate/${userId}`);
+            const apiData = response.data.data;
+
+            return { hasValidation: apiData };
+        },
+        enabled: !!userId, // ⛔️ n'appelle pas si id undefined
+    });
+};
+
+export interface JobDescriptionValidationDTO {
+    jobDescId: string;
+    validatorId: string;
+}
+
+export const useValidateJobDescriptionMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation<CreateRequestResponse, Error, JobDescriptionValidationDTO>({
+        mutationFn: (data) => api.post('/api/recruitment/job-descriptions/validate', data)
+         .then(r => r.data),
+        onSuccess: () => queryClient.invalidateQueries({ 
+            queryKey: SEARCH_JOB_DESC_BASE_KEY 
+        }),
+    });
+};
+
+export const useGetPostTypes = () => {
+    return useQuery<{ data: DocumentDTO[] }, Error>({
+        queryKey: SEARCH_POST_TYPES_KEY,
+        queryFn: async () => {
+            try {
+                const response = await api.get(`/api/recruitment/requests/post-types`);
+                return response.data;
+            } catch(error) {
+                if(axios.isAxiosError(error) && error.response) {
+                    throw new Error(error.response.data?.message || 'Erreur serveur');
+                }
+                throw error;
+            }
+        }
+    });
+};

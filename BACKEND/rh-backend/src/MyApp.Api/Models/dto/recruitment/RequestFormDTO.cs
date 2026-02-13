@@ -27,6 +27,7 @@ public class RequestFormDTO
     [Required(ErrorMessage = "Date de prise de service obligatoire")]
     public DateOnly BeginningDate {get; set;}
 
+    public string Direction { get; set; } = null!;
     public string ApplicantUserId { get; set; } = null!;
     public string HierarchicalManagerId {get; set;} = null!;
     public string FunctionalManagerId {get; set;} = null!;
@@ -62,6 +63,7 @@ public class RequestEditDTO
 
     public DateOnly BeginningDate { get; set; }
 
+    public string Direction { get; set; } = null!;
     public string ApplicantUserId { get; set; } = null!;
     public string HierarchicalManagerId { get; set; } = null!;
     public string FunctionalManagerId {get; set;} = null!;

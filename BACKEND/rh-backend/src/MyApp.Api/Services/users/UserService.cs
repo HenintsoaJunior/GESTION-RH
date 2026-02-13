@@ -337,7 +337,7 @@ namespace MyApp.Api.Services.users
             return await _repository.IsEmailAdmin(email);
         }
         
-        private static UserDto MapToDto(User user)
+        public static UserDto MapToDto(User user)
         {
             return new UserDto
             {
@@ -352,7 +352,7 @@ namespace MyApp.Api.Services.users
             };
         }
 
-        private static UserInfoDto Map2ToDto(User user)
+        public static UserInfoDto Map2ToDto(User user)
         {
             return new UserInfoDto
             {

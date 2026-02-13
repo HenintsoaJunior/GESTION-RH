@@ -4,7 +4,7 @@ import type { Skill, SoftSkill } from "../components/skill-step";
 type FieldErrors = { [key: string]: string[] };
 
 export interface Formation {
-  educationId: string;
+  formations: string;
   levelEducationId: string;
 }
 
@@ -70,7 +70,7 @@ const useCreateJobDescriptionForm = (requestId: string) => {
       e:
         | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
         | { target: { name: string; value: string | number | string[]
-            | { educationId: string; levelEducationId: string }[]
+            | { formations: string; levelEducationId: string }[]
             | { post: string; years: number | "" }[]
             | SoftSkill[] | Skill[]
          } }
@@ -105,11 +105,15 @@ const useCreateJobDescriptionForm = (requestId: string) => {
 /* =======================
     VALIDATIONS
 ======================= */
+  const stripHtml = (html: string) =>
+  html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, "").trim();
+
+
 /* ===== STEP 1 ===== */
   const validateStep1 = useCallback(() => {
     const errors: FieldErrors = {};
 
-    if (!formData.mission.trim()) {
+    if (!stripHtml(formData.mission)) {
         errors.mission = ["La mission est obligatoire"];
     }
 
@@ -135,11 +139,11 @@ const useCreateJobDescriptionForm = (requestId: string) => {
     /* FORMATIONS */
     if(!formData.formations || formData.formations.length === 0) {
       errors.formations = [
-        "Ajoutez au moins une étude"
+        "Ajoutez au moins une formation ou étude"
       ];
     }
     if(formData.formations.some(f => 
-      !f.educationId || !f.levelEducationId)) {
+      !f.formations || !f.levelEducationId)) {
       errors.formations = [
         "Toutes les formations doivent être complétées"
       ];

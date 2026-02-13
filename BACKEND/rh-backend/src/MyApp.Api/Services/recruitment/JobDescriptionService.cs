@@ -1,9 +1,11 @@
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Entities.site;
+using MyApp.Api.Entities.users;
 using MyApp.Api.Models.dto.notifications;
 using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.recruitment;
+using MyApp.Api.Repositories.users;
 using MyApp.Api.Services.logs;
 using MyApp.Api.Services.notifications;
 
@@ -11,18 +13,25 @@ namespace MyApp.Api.Services.recruitment;
 
 public interface IJobDescriptionService
 {
+    Task<(List<JobDescriptionDetailsDTO>, int)> GetAllPendedJobDescriptions(
+        FilterRequestListDTO filters, int page, int pageSize
+    );
     Task AddJobDescription(JobDescriptionFormDTO data);
     Task<JobDescriptionDTO?> GetJobDescription(string requestId);
-    Task<bool> HasJobDescription(string requestId);
+    Task<(bool, string?)> HasJobDescription(string requestId);
     Task<JobDescriptionEditDTO?> GetJobDescriptionEditById(string id);
     Task UpdateJobDescription(string requestId, JobDescriptionFormDTO data);
+    Task<bool> CanValidateJobDescription(string userId);
+    Task ValidateJobDescription(JobDescriptionValidationDTO data);
+    Task<List<JobDescriptionValidationDetailsDTO>> GetAllValidationsByRequestId(string requestId);
 }
 
 
 public class JobDescriptionService(IJobDescriptionRepository rep,
  IRecruitmentRequestRepository req, 
  ILogger<JobDescriptionService> log, ILogService logS,
- IJobDescriptionValidationRepository repo2, INotificationsService notif)
+ IJobDescriptionValidationRepository repo2, INotificationsService notif,
+ IRoleHabilitationRepository repo3, IUserRepository uRepo)
 : IJobDescriptionService {
     private readonly IJobDescriptionRepository _jobDescRepo = rep;
     private readonly IRecruitmentRequestRepository _reqRepo = req;
@@ -30,6 +39,8 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
     private readonly ILogger<JobDescriptionService> _log = log;
     private readonly INotificationsService _notifService = notif;
     private readonly ILogService _logService = logS;
+    private readonly IRoleHabilitationRepository _roleHabRepo = repo3;
+    private readonly IUserRepository _userRepo = uRepo;
 
 
     public async Task AddJobDescription(JobDescriptionFormDTO data) {
@@ -71,7 +82,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
                 await _jobDescRepo.AddFormation(new Formation 
                 {
                     JobDescriptionId = jobDescription.Id,
-                    EducationId = dto.EducationId,
+                    Formations = dto.Formations,
                     LevelEducationId = dto.LevelEducationId
                 });
             }
@@ -112,8 +123,25 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             };
             await _jobDescRepo.AddValidation(validation);
 
+        // Envoi de notification au validateur de TDR
+            var validators = await _validationRepo.GetAllJobDescriptionValidators();
+            List<string> validatorsIds = validators.Select(v => v.UserId).ToList();
+        
         // COMMIT
             await _jobDescRepo.SaveChangesAsync();
+
+            var notification = new NotificationFormDTO {
+                Title = $"Un nouveau TDR a été créé",
+                Message = $"Le TDR au poste de \"{jobDescription.Request.Post}\" est en attente de validation.",
+                Type = "recruitment",
+                RelatedTable = "TDRs",
+                RelatedMenu = "collaborateur",
+                RelatedId = jobDescription.Id,
+                Priority = 2,
+                UserIds = validatorsIds,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _notifService.CreateAsync(notification, null);
 
         // LOG
             await _logService.LogAsync("INSERTION TDR", "termes_reference",
@@ -144,6 +172,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
             result.Id = jobDesc.Id;
             result.Mission = jobDesc.Mission;
             result.CreatedAt = jobDesc.CreatedAt;
+            result.LastStatus = jobDesc.LastStatus;
 
         // Attributions
             result.Attributions = jobDesc.Attributions
@@ -152,11 +181,13 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
         // Formations et Expériences
             result.Formations = jobDesc.Formations
                 .Select(f => 
-                    $"{f.Education.Name} de niveau {f.LevelEducation.Name}").ToArray();
+                    $"{f.Formations} ; Niveau {f.LevelEducation.Name}").ToArray();
 
             result.Experiences = jobDesc.Experiences
-                .Select(e => 
-                    $"Minimum {e.ExperienceYears} an(s) au poste de \"{e.ExperiencePost}\" ou poste équivalent").ToArray();
+                .Select(e => {
+                    string yearsLabel = e.ExperienceYears > 1 ? "ans" : "an";
+                    return $"{e.ExperiencePost} (Minimum {e.ExperienceYears} {yearsLabel})";
+                }).ToArray();
 
         // SoftSkills
             result.SoftSkills = jobDesc.SoftSkills
@@ -175,9 +206,11 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
     }
 
 
-    public async Task<bool> HasJobDescription(string requestId) {
+    public async Task<(bool, string?)> HasJobDescription(string requestId) {
         _log.LogInformation("Vérification de l'éxistence en cours");
-        return await this.GetJobDescription(requestId)!=null;
+        var jobDesc = await this.GetJobDescription(requestId);
+
+        return (jobDesc != null, jobDesc?.Id);
     }
 
 
@@ -219,7 +252,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
                 await _jobDescRepo.AddFormation(new Formation
                 {
                     JobDescriptionId = lastJobDesc.Id,
-                    EducationId = dto.EducationId,
+                    Formations = dto.Formations,
                     LevelEducationId = dto.LevelEducationId
                 });
             }
@@ -282,7 +315,7 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
                 Attributions = jobDesc.Attributions.Select(a => a.Label).ToArray(),
                 Formations = jobDesc.Formations.Select(f => new FormationDTO
                 {
-                    EducationId = f.Education.Id,
+                    Formations = f.Formations,
                     LevelEducationId = f.LevelEducation.Id
                 }).ToArray(),
                 Experiences = jobDesc.Experiences.Select(e => new ExperienceDTO
@@ -309,13 +342,29 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
     }
 
 
+    public async Task<(List<JobDescriptionDetailsDTO>, int)> GetAllPendedJobDescriptions(
+        FilterRequestListDTO filters, int page, int pageSize
+    ) {
+        try {
+            _log.LogInformation("Récupération des TDR en attente de validation ...");
+
+            return await _jobDescRepo.GetAllPendedJobDescriptions(
+                filters, page, pageSize);
+        }
+        catch(Exception ex) {
+            _log.LogError(ex, "Erreur lors de la récupération des TDR en attente de validation");
+            throw;
+        }
+    }
+
+
     public async Task ValidateJobDescription(JobDescriptionValidationDTO data) {
         try {
             _log.LogInformation("En cours de faire la validation ...");
             var jobDesc = await _validationRepo.ValidateJobDescription(data);
 
-        // Tous les validateurs en même temps
-            List<UserDto> validators = await _validationRepo.GetAllValidators(data.JobDescId);
+        // Tous les validateurs
+            List<UserDto> validators = await _validationRepo.GetAllJobDescriptionValidators();
             List<string> validatorsIds = validators.Select(u=>u.UserId).ToList();
 
         // Envoi de notification au créateur
@@ -323,13 +372,13 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
                 var notification = new NotificationFormDTO
                 {
                     Title = $"Votre TDR a été validée",
-                    Message = $"Le TDR au poste de \"{jobDesc.Request.Post}\" est validé.",
+                    Message = $"Le TDR au poste de \"{jobDesc.Request.Post}\" est validé par {validators[0].Name}.",
                     Type = "recruitment",
                     RelatedTable = "TDRs",
                     RelatedMenu = "collaborateur",
                     RelatedId = jobDesc.Id,
                     Priority = 2,
-                    UserIds = validatorsIds,
+                    UserIds = [jobDesc.Request.ApplicantUser.UserId],
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -339,6 +388,30 @@ public class JobDescriptionService(IJobDescriptionRepository rep,
         }
         catch(Exception ex) {
             _log.LogError(ex, "Erreur lors de la validation");
+            throw;
+        }
+    }
+
+
+    public async Task<bool> CanValidateJobDescription(string userId) {
+        List<UserDto> validators = await _validationRepo.GetAllJobDescriptionValidators();
+        
+        for(int i=0; i<validators.Count; i++) {
+            bool isValidator = validators.Any(v => v.UserId==userId);
+
+            if(isValidator==true) return true;
+        }
+        return false;
+    }
+
+
+    public async Task<List<JobDescriptionValidationDetailsDTO>> GetAllValidationsByRequestId(string requestId) {
+        try {
+            _log.LogInformation("Récupération des validations de TDR ...");
+            return await _validationRepo.GetAllValidationsByRequestId(requestId);
+        }
+        catch(Exception ex) {
+            _log.LogError(ex, "Erreur lors de la récupération des validations de TDR");
             throw;
         }
     }

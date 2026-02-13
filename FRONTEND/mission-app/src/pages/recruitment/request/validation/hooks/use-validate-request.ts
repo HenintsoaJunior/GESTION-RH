@@ -68,8 +68,7 @@ const useValidateRequest = (): UseValidateRequestReturn => {
     };
 
     const submitValidation = async (data: RequestValidationFormDTO) => {
-        console.log("Validation envoyée :", data);
-
+        // console.log("Validation envoyée :", data);
     // Envoi du formulaire vers le backend
         await validate.mutateAsync(data);
     };

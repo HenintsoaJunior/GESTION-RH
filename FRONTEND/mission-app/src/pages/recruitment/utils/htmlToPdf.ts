@@ -1,8 +1,28 @@
 import type { JobDescriptionDetails, RequestDetailsDTO, RequestValidationDTO } from "@/api/recruitment/service";
+import CenturyRegular from "@/assets/fonts/CenturyGothicPaneuropeanRegular.ttf?url";
+// import CenturyBold from "@/assets/fonts/CenturyGothicPaneuropeanBold.ttf?url";
+import CenturySemiBold from "@/assets/fonts/CenturyGothicPaneuropeanSemiBold.ttf?url";
+import { fetchFontAsBase64 } from "./pdfExport";
 
-const basePdfStyles = () => `
+const basePdfStyles = async () => {
+  const regularBase64 = await fetchFontAsBase64(CenturyRegular);
+  const semiBoldBase64 = await fetchFontAsBase64(CenturySemiBold);
+  // const boldBase64 = await fetchFontAsBase64(CenturyBold);
+
+  return `
+  @font-face {
+    font-family: 'CenturyGothic';
+    src: url('data:font/truetype;charset=utf-8;base64,${regularBase64}') format('truetype');
+    font-weight: normal;
+  }
+  @font-face {
+    font-family: 'CenturyGothic';
+    src: url('data:font/truetype;charset=utf-8;base64,${semiBoldBase64}') format('truetype');
+    font-weight: bold;
+  }
+
   body {
-    font-family: "Times New Roman", Times, serif;
+    font-family: 'CenturyGothic', sans-serif;
     font-size: 14px;
     line-height: 1.5;
     color: #222;
@@ -55,8 +75,8 @@ const basePdfStyles = () => `
   .no-break {
     page-break-inside: avoid;
     break-inside: avoid;
-  }
-`;
+  }`;
+};
 
 const recruitmentRequestStyles = () => `
   .section-title {
@@ -196,10 +216,12 @@ export const formatDate = (d?: string | null) =>
 // FONCTIONS DE GENERATION PDF
 // ============================================
 
-export function buildRecruitmentRequestHtml(
+export async function buildRecruitmentRequestHtml(
   details: RequestDetailsDTO,
   validations: RequestValidationDTO[]
 ) {
+  const styles = await basePdfStyles();
+
   return `
   <!DOCTYPE html>
   <html lang="fr">
@@ -207,37 +229,39 @@ export function buildRecruitmentRequestHtml(
     <meta charset="UTF-8">
     <title>Demande de recrutement</title>
     <style>
-      ${basePdfStyles()}
+      ${styles}
       ${recruitmentRequestStyles()}
     </style>
   </head>
   <body>
     <div class="page">
 
-      <!-- INTITULÉ / EFFECTIF -->
+    <!-- INTITULÉ / EFFECTIF -->
       <div class="job-header">
         <div><span class="label">Intitulé du poste :</span> <span class="value">${details.post ?? "—"}</span></div>
         <div><span class="label">Effectif :</span> <span class="value">${details.effective ?? "—"}</span></div>
       </div>
 
-      <!-- NATURE -->
+    <!-- NATURE -->
       <div class="section">
         <div class="section-title">Nature du contrat</div>
         <div class="sub-section"><span class="label">Type :</span> <span class="value">${details.contract ?? details.contractPrecision ?? "—"}</span></div>
         ${details.contract !== "CDI" ? `<div class="sub-section"><span class="label">Durée :</span> <span class="value">${details.monthDuration ? details.monthDuration + " mois" : "—"}</span></div>` : ""}
       </div>
 
-      <!-- RATTACHEMENT -->
+    <!-- RATTACHEMENT -->
       <div class="section">
         <div class="section-title">Rattachement du poste</div>
         <div class="sub-section"><span class="label">Direction :</span> <span class="value">${details.direction ?? "—"}</span></div>
         <div class="sub-section"><span class="label">Département :</span> <span class="value">${details.department ?? "—"}</span></div>
         <div class="sub-section"><span class="label">Service :</span> <span class="value">${details.service ?? "—"}</span></div>
         <div class="sub-section"><span class="label">Rattachement hiérarchique :</span> <span class="value">${details.hierarchicalManager ?? "—"}</span></div>
+        <div class="sub-section"><span class="label">Fonction :</span> <span class="value">${details.hierarchicalManagerPost ?? "—"}</span></div>
         <div class="sub-section"><span class="label">Rattachement fonctionnel :</span> <span class="value">${details.functionalManager ?? "—"}</span></div>
+        <div class="sub-section"><span class="label">Fonction :</span> <span class="value">${details.functionalManagerPost ?? "—"}</span></div>
       </div>
 
-      <!-- MOTIF -->
+    <!-- MOTIF -->
       <div class="section">
         <div class="section-title">Motif du recrutement</div>
         <div class="sub-section"><span class="label">Remplacement :</span> <span class="value">${details.isReplacement ? "OUI" : "NON"}</span></div>
@@ -250,15 +274,15 @@ export function buildRecruitmentRequestHtml(
         ${!details.isPlanned ? `<div class="sub-section"><span class="label">Explications de création :</span> <span class="value">${details.notPlannedReason ?? "—"}</span></div>` : ""}
       </div>
 
-      <!-- DATE DE PRISE -->
+    <!-- DATE DE PRISE -->
       <div class="section">
         <div class="section-title">Date de prise de service souhaitée</div>
         <div class="sub-section"><span class="value">${formatDate(details.beginningDate)}</span></div>
       </div>
 
-      <!-- VALIDATIONS -->
+    <!-- VALIDATIONS -->
       <div class="section">
-        <div class="section-title">Validations de la demande</div>
+        <div class="section-title">Validations :</div>
         <table class="border">
           <tr>
             ${validations.map(v => `<td class="center validator-name">${v.validator}</td>`).join("")}
@@ -269,7 +293,7 @@ export function buildRecruitmentRequestHtml(
         </table>
       </div>
 
-      <!-- FOOTER -->
+    <!-- FOOTER -->
       <div class="section">
         <strong>Reçu par la Direction des Ressources Humaines le :</strong>
         ........................................................
@@ -281,10 +305,11 @@ export function buildRecruitmentRequestHtml(
 }
 
 
-export function buildRecruitmentJobDescriptionHtml(
+export async function buildRecruitmentJobDescriptionHtml(
   details: RequestDetailsDTO,
   job: JobDescriptionDetails
 ) {
+  const styles = await basePdfStyles();
   const buildList = (items: string[]) =>
     items.length
       ? `<ul>${items.map(i => `<li>${i}</li>`).join("")}</ul>`
@@ -297,7 +322,7 @@ export function buildRecruitmentJobDescriptionHtml(
     <meta charset="UTF-8">
     <title>Fiche de poste</title>
     <style>
-      ${basePdfStyles()}
+      ${styles}
       ${jobDescriptionStyles()}
     </style>
   </head>

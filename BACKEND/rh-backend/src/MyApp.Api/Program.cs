@@ -21,7 +21,7 @@ if (OperatingSystem.IsLinux())
     AppContext.SetSwitch("System.Drawing.EnableUnixSupport", true);
 }
 
-var frontendUrl = builder.Configuration["API_FRONT"];
+var frontendUrl = builder.Configuration["API_FRONT"] ?? frontUrl;
 builder.WebHost.UseUrls(
     "http://0.0.0.0:5183"
 );
@@ -30,10 +30,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-
-        policy.WithOrigins(frontendUrl ?? frontUrl)
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        policy.WithOrigins(frontendUrl, frontUrl)
+            .AllowAnyMethod()
+            .AllowAnyHeader();
     });
 });
 
@@ -125,11 +124,6 @@ RecurringJob.AddOrUpdate(
     "update-mission-statuses",
     () => MissionStatusUpdater.UpdateMissionStatuses(),
     Cron.Minutely);
-
-using (var scope = app.Services.CreateScope()) {
-    var seed = scope.ServiceProvider.GetRequiredService<RecruitmentSeedService>();
-    await seed.SeedAllAsync();
-}
 
 app.UseForwardedHeaders();
 

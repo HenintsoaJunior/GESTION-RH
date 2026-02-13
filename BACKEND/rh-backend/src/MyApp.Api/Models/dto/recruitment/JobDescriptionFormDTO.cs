@@ -59,7 +59,7 @@ namespace MyApp.Api.Models.dto.recruitment
     public class FormationDTO
     {
         [Required]
-        public string EducationId { get; set; } = null!;
+        public string Formations { get; set; } = null!;
 
         [Required]
         public string LevelEducationId { get; set; } = null!;

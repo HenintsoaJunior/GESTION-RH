@@ -38,6 +38,10 @@ interface RecruitmentRequestFormProps {
     requestId?: string;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
+export const formatRequestId = (id: string | null) => {
+  return id?.replace(/\//g, "_") ?? null;
+};
 
 const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
     isOpen,
@@ -103,7 +107,7 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
 
     const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-      
+        
         if(currentStep === 1) {
             handleNext(isRegularisation); return;
         }
@@ -134,7 +138,7 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                 onClose();
                 
                 const createReqId = resp.data;
-                navigate(`/recrutement/demandes/${requestId??createReqId}/details`);
+                navigate(`/recrutement/demandes/${formatRequestId(requestId??createReqId)}/details`);
             } 
             catch (error: unknown) {
                 if (axios.isAxiosError(error)) {
@@ -204,6 +208,7 @@ const RecruitmentRequestForm: React.FC<RecruitmentRequestFormProps> = ({
                                         sites: formData.sites,
                                         applicantUserId: formData.applicantUserId ?? "",
                                         creatorId: currentUser?.id ?? "",
+                                        direction: formData.direction ?? "",
                                         functionalManagerId: formData.functionalManagerId ?? "",
                                         hierarchicalManagerId: formData.hierarchicalManagerId ?? "",
                                     }}

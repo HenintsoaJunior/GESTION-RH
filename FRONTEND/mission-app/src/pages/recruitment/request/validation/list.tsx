@@ -7,7 +7,7 @@ import {
   TableHeader,
 } from "@/styles/table-styles";
 
-import { useSearchPendedRequests, type FilterPendedRequestDTO } from "@/api/recruitment/service";
+import { useCanValidateJobDescription, useHasValidationInRecruitment, useSearchPendedJobDescriptions, useSearchPendedRequests, type FilterPendedRequestDTO } from "@/api/recruitment/service";
 import { useGetContractTypes } from "@/api/contract/services";
 import { useGetAllDirections } from "@/api/direction/services";
 
@@ -18,6 +18,10 @@ import { useNavigate } from "react-router-dom";
 import DraftRequestCards from "./components/draft-request-card";
 import DraftRequestFilters from "./components/draft-request-filters";
 import { formatDate } from "date-fns";
+import type { TabValidationKey } from "./components/validation-tabs";
+import ValidationTabs from "./components/validation-tabs";
+import DraftJobCards from "./components/draft-job-card";
+import { formatRequestId } from "../form";
 
 // Types pour filtres
 interface FiltersState {
@@ -47,6 +51,24 @@ const DraftRequestList: React.FC = () => {
         selectedDirection: null,
         selectedContract: null,
         dateRange: [null, null],
+    });
+
+    const validator = JSON.parse(localStorage.getItem("user") || "{}");
+    const validatorId = validator?.userId || "";
+
+// Gestion des habilitations
+    const {data: requestValidator} = useHasValidationInRecruitment(validatorId);
+    const canViewRequests = requestValidator?.hasValidation;
+
+    const {data: tdrValidator} = useCanValidateJobDescription(validatorId);
+    const canViewJobDescriptions = tdrValidator?.hasValidation;
+    
+    const [activeTab, setActiveTab] = useState<TabValidationKey>(() => {
+        let saved = sessionStorage.getItem("lastActiveValidationTab") as TabValidationKey | null;
+        if(canViewJobDescriptions) saved = "tdr";
+        else saved = "demandes";
+
+        return saved;
     });
 
     const [appliedFilters, setAppliedFilters] = useState<FiltersState>({ ...filters });
@@ -79,18 +101,25 @@ const DraftRequestList: React.FC = () => {
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = userData?.userId || "";
 
-    const { data: searchResponse, isLoading, error, refetch } = useSearchPendedRequests(userId, searchFilters, page, pageSize);
-    const requests = useMemo(() => searchResponse?.list || [], [searchResponse]);
+// Demandes en attente / TDR en attente
+    const { data: requestResponse, isLoading, error, refetch } 
+        = useSearchPendedRequests(userId, searchFilters, page, pageSize);
+    const requests = useMemo(() => requestResponse?.list || [], [requestResponse]);
+
+    const { data: jobDescriptionResponse, isLoading: isLoadingJobDesc, error: errorJobDesc, refetch: refetchJobDesc } 
+        = useSearchPendedJobDescriptions(searchFilters, page, pageSize);
+    const jobDescriptions = useMemo(() => jobDescriptionResponse?.list || [], [jobDescriptionResponse]);
 
     // Mise à jour totalCount
     useEffect(() => {
-        setTotalCount(searchResponse?.totalCount || 0);
-    }, [searchResponse]);
+        setTotalCount(requestResponse?.totalCount || 0);
+    }, [requestResponse]);
 
     // Refetch quand appliedFilters, page ou pageSize changent
     useEffect(() => {
         refetch();
-    }, [appliedFilters, page, pageSize, refetch]);
+        refetchJobDesc();
+    }, [appliedFilters, page, pageSize, refetch, refetchJobDesc]);
 
     const handleFilterSubmit = useCallback(() => {
         setAppliedFilters(filters);
@@ -117,7 +146,7 @@ const DraftRequestList: React.FC = () => {
         setPage(1);
     };
 
-    if (error) return <div>Une erreur est survenue lors du chargement des données.</div>;
+    if (error || errorJobDesc) return <div>Une erreur est survenue lors du chargement des données.</div>;
 
     return (<>
         <Alert
@@ -138,24 +167,56 @@ const DraftRequestList: React.FC = () => {
             onReset={handleResetFilters}
         />
 
-        <TableContainer>
-            <TableHeader>
-                <TableTitle>Liste des demandes en attente</TableTitle>
-            </TableHeader>
+        <ValidationTabs
+            activeTab={activeTab}
+            onTabChange={tab => { 
+                setActiveTab(tab); setPage(1); 
+                sessionStorage.setItem("lastActiveValidationTab", tab); 
+            }}
+            canViewRequests={canViewRequests}
+            canViewJobDescriptions={canViewJobDescriptions}
+        />
 
-            <DraftRequestCards
-                requests={requests}
-                isLoading={isLoading}
-                totalEntries={totalCount}
-                currentPage={page}
-                pageSize={pageSize}
-                handlePageChange={setPage}
-                handlePageSizeChange={handlePageSizeChange}
-                formatDate={(date) => formatDate(new Date(date), "dd/MM/yyyy à HH:mm")}
-                handleRowClick={(id) => {
-                    navigate(`/recrutement/demandes/${id}/details?validateur=${userId}`);
-                }}
-            />
+        <TableContainer>
+            {activeTab === "demandes" && (<>
+                <TableHeader>
+                    <TableTitle>Liste des demandes en attente</TableTitle>
+                </TableHeader>
+
+                <DraftRequestCards
+                    requests={requests}
+                    isLoading={isLoading}
+                    totalEntries={totalCount}
+                    currentPage={page}
+                    pageSize={pageSize}
+                    handlePageChange={setPage}
+                    handlePageSizeChange={handlePageSizeChange}
+                    formatDate={(date) => formatDate(new Date(date), "dd/MM/yyyy à HH:mm")}
+                    handleRowClick={(id) => {
+                        navigate(`/recrutement/demandes/${formatRequestId(id)}/details?validateur=${userId}`);
+                    }}
+                />
+            </>)}
+            
+            {activeTab === "tdr" && (<>
+                <TableHeader>
+                    <TableTitle>Liste des TDR en attente</TableTitle>
+                </TableHeader>
+
+                <DraftJobCards
+                    jobDescriptions={jobDescriptions}
+                    isLoading={isLoadingJobDesc}
+                    totalEntries={totalCount}
+                    currentPage={page}
+                    pageSize={pageSize}
+                    handlePageChange={setPage}
+                    handlePageSizeChange={handlePageSizeChange}
+                    formatDate={(date) => formatDate(new Date(date), "dd/MM/yyyy à HH:mm")}
+                    handleRowClick={(requestId) => {
+                        navigate(`/recrutement/demandes/${formatRequestId(requestId)}/details?validateur=${userId}`);
+                    }}
+                />
+            </>)}
         </TableContainer>
     </>);
 };

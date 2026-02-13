@@ -24,8 +24,9 @@ export interface RecruitmentRequestForm {
   // traçabilité
   applicantUserId: string;
   creatorId: string;
-
+  
   // rattachements
+  direction: string | null;
   hierarchicalManagerId: string;
   functionalManagerId: string;
 
@@ -69,6 +70,7 @@ const useRecruitmentForm = ({
     creatorId: "",
     hierarchicalManagerId: "",
     functionalManagerId: "",
+    direction: null,
     isReplacement: false,
     replacementReasonId: null,
     replacementDate: null,
@@ -122,6 +124,7 @@ const useRecruitmentForm = ({
         sites: initialData.sites ?? [],
         applicantUserId: initialData.applicantUserId ?? currentUserId ?? "",
         creatorId: currentUserId ?? "",
+        direction: initialData.direction ?? null,
         hierarchicalManagerId: initialData.hierarchicalManagerId ?? "",
         functionalManagerId: initialData.functionalManagerId ?? "",
         isReplacement: initialData.isReplacement ?? false,
@@ -261,7 +264,7 @@ const useRecruitmentForm = ({
       return merged;
     });
 
-    console.log("erreurs :",errors);
+    console.log("form :",formData);
 
     return Object.keys(errors).length === 0;
   }, [formData, contracts, currentUserId]);
@@ -370,6 +373,7 @@ const useRecruitmentForm = ({
       sites: [],
       applicantUserId: currentUserId || "",
       creatorId: currentUserId || "",
+      direction: null,
       hierarchicalManagerId: "",
       functionalManagerId: "",
       isReplacement: false,

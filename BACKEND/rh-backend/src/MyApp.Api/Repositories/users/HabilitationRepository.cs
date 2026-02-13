@@ -9,6 +9,7 @@ public interface IHabilitationRepository
     Task<(IEnumerable<Habilitation>, int)> GetAllPaginatedAsync(int page, int pageSize, string? label = null);
     Task<IEnumerable<Habilitation>> GetAllAsync();
     Task<Habilitation?> GetByIdAsync(string id);
+    Task<Habilitation?> GetByLabelAsync(string label);
     Task<IEnumerable<Habilitation>> GetByGroupIdsAsync(string[] groupIds);
     Task AddAsync(Habilitation habilitation);
     Task UpdateAsync(Habilitation habilitation);
@@ -61,6 +62,14 @@ public class HabilitationRepository : IHabilitationRepository
             .AsNoTracking()
             .Include(h => h.Group)
             .FirstOrDefaultAsync(h => h.HabilitationId == id);
+    }
+
+    public async Task<Habilitation?> GetByLabelAsync(string label)
+    {
+        return await _context.Habilitations
+            .AsNoTracking()
+            .Include(h => h.Group)
+            .FirstOrDefaultAsync(h => h.Label == label);
     }
 
     public async Task<IEnumerable<Habilitation>> GetByGroupIdsAsync(string[] groupIds)

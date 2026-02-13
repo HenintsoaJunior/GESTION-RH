@@ -10,12 +10,9 @@ public class Formation
     [Column("job_formation_id")]
     public string Id { get; set; } = null!;
 
-    [Column("education_id")]
-    public string EducationId { get; set; } = null!;
-
-    [ForeignKey(nameof(EducationId))]
-    public Education Education { get; set; } = null!;
-
+    [Column("job_formation")]
+    public string Formations { get; set; } = null!;
+    
 
     [Column("job_description_id")]
     public string JobDescriptionId { get; set; } = null!;

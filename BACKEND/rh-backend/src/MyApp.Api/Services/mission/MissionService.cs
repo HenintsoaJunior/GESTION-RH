@@ -862,7 +862,6 @@ namespace MyApp.Api.Services.mission
             return PDFStream.ToArray();
         }
 
-
         public async Task<byte[]> GenerateATDPDFAsync(string employeeId)
         {
             var employee = await _employeeService.GetByIdAsync(employeeId);

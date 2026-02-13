@@ -10,3 +10,8 @@ public class JobDescriptionValidationDTO
     [Required(ErrorMessage = "Validateur obligatoire")]
     public string ValidatorId {get; set;} = null!;
 }
+
+
+public class JobDescriptionValidationDetailsDTO : RequestValidationDTO
+{
+}

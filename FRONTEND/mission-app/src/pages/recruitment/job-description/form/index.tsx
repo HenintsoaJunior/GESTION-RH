@@ -35,6 +35,7 @@ import { useAddJobDescription, useGetJobDescription, useUpdateJobDescription } f
 interface JobDescriptionFormProps {
     isOpen: boolean;
     requestId: string;
+    post: string;
     jobId: string | null;
     mode: "create" | "edit";
     onClose: () => void;
@@ -43,7 +44,7 @@ interface JobDescriptionFormProps {
 
 const JobDescriptionForm: React.FC<JobDescriptionFormProps> = ({
     isOpen,
-    requestId,
+    requestId, post,
     jobId,
     onClose,
     onFormSuccess,
@@ -115,20 +116,20 @@ const JobDescriptionForm: React.FC<JobDescriptionFormProps> = ({
             if (mode === "edit") {
                 await updateJobDescription.mutateAsync(formData);
 
-                onFormSuccess("success", "Fiche de poste mise à jour avec succès !");
+                onFormSuccess("success", "TDR mise à jour avec succès !");
                 setAlert({
                     isOpen: true,
                     type: "success",
-                    message: "Fiche de poste modifiée avec succès !"
+                    message: "TDR modifiée avec succès !"
                 });
             } else {
                 await createJobDescription.mutateAsync(formData);
                 
-                onFormSuccess("success", "Fiche de poste créée avec succès !");
+                onFormSuccess("success", "TDR créée avec succès !");
                 setAlert({
                     isOpen: true,
                     type: "success",
-                    message: "Fiche de poste créée avec succès !"
+                    message: "TDR créée avec succès !"
                 });
             }
 
@@ -174,6 +175,7 @@ const JobDescriptionForm: React.FC<JobDescriptionFormProps> = ({
                         <GenericForm onSubmit={onSubmit}>
                             <StepContent active={currentStep === 1}>
                                 <AttributionStep requestId={requestId}
+                                post={post}
                                 formData={formData}
                                 fieldErrors={fieldErrors}
                                 handleInputChange={handleInputChange}

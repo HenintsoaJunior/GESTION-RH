@@ -11,9 +11,11 @@ import {
     ErrorMessage
 } from "@/styles/form-container";
 import { Plus, Minus } from "lucide-react";
+import { StyledRichTextEditor } from "@/components/rich-text-editor";
 
 interface Props {
     requestId: string;
+    post: string;
     formData: {
         mission: string;
         attributions: string[];
@@ -26,12 +28,10 @@ interface Props {
 }
 
 const AttributionStep: React.FC<Props> = ({
-    requestId,
-    formData,
-    fieldErrors = {},
+    requestId, post,
+    formData, fieldErrors = {},
     handleInputChange
 }) => {
-
     const addAttribution = () => {
         handleInputChange({
             target: {
@@ -66,7 +66,7 @@ const AttributionStep: React.FC<Props> = ({
                     {/* DEMANDE */}
                     <FormRow>
                         <FormFieldCell colSpan={2}>
-                            <FormLabelRequired>Demande</FormLabelRequired>
+                            <FormLabelRequired>Demande {`(${post})`}</FormLabelRequired>
                             <FormInput
                                 name="requestId"
                                 value={requestId}
@@ -80,24 +80,19 @@ const AttributionStep: React.FC<Props> = ({
                     <FormRow>
                         <FormFieldCell colSpan={2}>
                             <FormLabelRequired>Mission</FormLabelRequired>
-                            <textarea
-                                name="mission"
-                                value={formData.mission}
-                                onChange={(e) =>
-                                    handleInputChange({
-                                        target: { name: "mission", value: e.target.value }
-                                    })
+
+                            <StyledRichTextEditor
+                                placeholder="Décrire la mission..."
+                                initialValue={formData.mission}
+                                onChange={(html) =>
+                                handleInputChange({
+                                    target: { name: "mission", value: html }
+                                })
                                 }
-                                style={{
-                                    width: "100%",
-                                    minHeight: 120,
-                                    borderColor: fieldErrors.mission ? "red" : undefined
-                                }}
                             />
+
                             {fieldErrors.mission && (
-                                <ErrorMessage>
-                                    {fieldErrors.mission.join(", ")}
-                                </ErrorMessage>
+                                <ErrorMessage>{fieldErrors.mission.join(", ")}</ErrorMessage>
                             )}
                         </FormFieldCell>
                     </FormRow>
@@ -120,40 +115,23 @@ const AttributionStep: React.FC<Props> = ({
                         return (
                             <FormRow key={index}>
                                 <FormFieldCell colSpan={2}>
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 8
-                                        }}
-                                    >
-                                        {/* Index */}
-                                        <span
-                                            style={{
-                                                width: 24,
-                                                textAlign: "center",
-                                                fontWeight: 500
-                                            }}
-                                        >
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }} >
+                                        <span style={{ width: 24, textAlign: "center", fontWeight: 500 }} >
                                             {index + 1}
                                         </span>
 
-                                        <FormInput
-                                            type="text"
-                                            value={attr}
+                                        <FormInput type="text" value={attr}
                                             onChange={(e) =>
                                                 updateAttribution(e.target.value, index)
                                             }
                                             placeholder="Entrée + Entrée"
                                             style={{
-                                                flex: 1,
-                                                borderColor: hasError ? "red" : undefined
+                                                flex: 1, borderColor: hasError ? "red" : undefined
                                             }}
                                         />
 
                                         {index > 0 && (
-                                            <button
-                                                type="button"
+                                            <button type="button"
                                                 onClick={() => removeAttribution(index)}
                                                 style={{ padding: "0 8px" }}
                                             >
@@ -184,6 +162,7 @@ const AttributionStep: React.FC<Props> = ({
                                 type="button"
                                 onClick={addAttribution}
                                 style={{
+                                    fontFamily: "inherit",
                                     display: "flex",
                                     alignItems: "center",
                                     gap: 4,

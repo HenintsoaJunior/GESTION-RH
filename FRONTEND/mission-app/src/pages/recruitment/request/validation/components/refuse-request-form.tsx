@@ -20,6 +20,11 @@ export interface RequestValidationFormDTO {
     comments: string | null;
 }
 
+export interface JobDescriptionValidationFormDTO {
+    jobDescId: string;
+    validatorId: string;
+}
+
 interface RequestValidationFormProps {
     formData: RequestValidationFormDTO;
     fieldErrors: { [key: string]: string[] };

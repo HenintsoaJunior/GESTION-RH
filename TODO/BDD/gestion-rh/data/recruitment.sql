@@ -32,7 +32,7 @@ INSERT INTO job_descriptions_status (status_id, status_name) VALUES
 
 -- HABILITATIONS ET GROUPES
 INSERT INTO habilitation_groups (group_id, label) VALUES
-('HABG_004', 'Gestion des Recrutements');
+('HABG_004', 'Suivi de Recrutement');
 
 INSERT INTO habilitations (habilitation_id, group_id, label, description) VALUES
 ('HAB_031', 'HABG_004', 'Lister demandes recrutement', 'Permet de voir la liste des demandes de recrutement'),
@@ -56,29 +56,39 @@ INSERT INTO replacement_reasons (replacement_reason_id, reason_name) VALUES
 ('RR_006', 'Rupture de contrat à l’amiable'),
 ('RR_007', 'Mobilité interne');
 
+INSERT INTO soft_skills (soft_skill_id, soft_skill_name) VALUES
+('SS_0001', 'Communication'),
+('SS_0002', 'Travail en équipe'),
+('SS_0003', 'Réactivité'),
+('SS_0004', 'Adaptabilité'),
+('SS_0005', 'Fléxibilité'),
+('SS_0006', 'Leadership'),
+('SS_0007', 'Créativité'),
+('SS_0008', 'Sérieux'),
+('SS_0009', 'Esprit critique'),
+('SS_0010', 'Persévérance'),
+('SS_0011', 'Organisation'),
+('SS_0012', 'Autonomie');
+
 
 INSERT INTO level_educations (level_education_id, level_education_name) VALUES
-('NIV_ETU_0001', '6ème'),
-('NIV_ETU_0002', '5ème'),
-('NIV_ETU_0003', '4ème'),
-('NIV_ETU_0004', '3ème'),
-('NIV_ETU_0005', 'Seconde'),
-('NIV_ETU_0006', 'Première'),
-('NIV_ETU_0007', 'Terminale'),
-('NIV_ETU_0008', 'Bac +1'),
-('NIV_ETU_0009', 'Bac +2'),
-('NIV_ETU_0010', 'Bac +3'),
-('NIV_ETU_0011', 'Bac +4'),
-('NIV_ETU_0012', 'Bac +5'),
-('NIV_ETU_0013', 'Bac +6'),
-('NIV_ETU_0014', 'Bac +7'),
-('NIV_ETU_0015', 'Bac +8');
+('NIV_ETU_0001', 'Seconde'),
+('NIV_ETU_0002', 'Première'),
+('NIV_ETU_0003', 'Terminale'),
+('NIV_ETU_0004', 'Bac +1'),
+('NIV_ETU_0005', 'Bac +2'),
+('NIV_ETU_0006', 'Bac +3'),
+('NIV_ETU_0007', 'Bac +4'),
+('NIV_ETU_0008', 'Bac +5'),
+('NIV_ETU_0009', 'Bac +6'),
+('NIV_ETU_0010', 'Bac +7'),
+('NIV_ETU_0011', 'Bac +8');
 
 
 INSERT INTO posts_types (post_type_id, post_type_name) VALUES
 ('TYP_POS-0001', 'Poste à responsabilité'),
 ('TYP_POS-0002', 'Poste technique');
-
+    
 
 INSERT INTO role_habilitation (habilitation_id, role_id) VALUES
 ('HAB_031', 'ROLE_001'),

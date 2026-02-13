@@ -61,7 +61,7 @@ const RequestDetailsCard: React.FC<Props> = ({ details, validations }) => {
               <div className="actions-bar">
                 <ButtonConfirm
                   style={{ background:"var(--pdf-color)" }}
-                  onClick={() => exportRequestToPDF(details, validations)}
+                  onClick={async () => await exportRequestToPDF(details, validations)}
                 >
                   <FaFilePdf /> Exporter en PDF
                 </ButtonConfirm>
@@ -93,11 +93,20 @@ const RequestDetailsCard: React.FC<Props> = ({ details, validations }) => {
         {/* ===== ORGANISATION ===== */}
         <section className="details-section">
           <h3>Organisation</h3>
-          <LabelValue label="Direction" value={details.direction} />
-          <LabelValue label="Département" value={details.department} />
-          <LabelValue label="Service" value={details.service} />
-          <LabelValue label="Rattachement hiérarchique" value={details.hierarchicalManager} />
-          <LabelValue label="Rattachement fonctionnel" value={details.functionalManager} />
+          <nav>
+            <LabelValue label="Direction" value={details.direction} />
+            <LabelValue label="Département" value={details.department} />
+          </nav>
+          
+          <nav>
+            <LabelValue label="Rattachement hiérarchique" value={details.hierarchicalManager} />
+            <LabelValue label="Fonction" value={details.hierarchicalManagerPost} />
+          </nav>
+          
+          <nav>
+            <LabelValue label="Rattachement fonctionnel" value={details.functionalManager} />
+            <LabelValue label="Fonction" value={details.functionalManagerPost} />
+          </nav>
         </section>
 
         {/* ===== CONTRAT ===== */}

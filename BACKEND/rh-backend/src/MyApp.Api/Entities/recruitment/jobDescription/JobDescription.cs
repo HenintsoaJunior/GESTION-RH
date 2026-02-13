@@ -14,7 +14,7 @@ public class JobDescription : BaseEntity
     public string Mission { get; set; } = null!;
 
     [Column("last_status")]
-    public string? LastStatus { get; set; }
+    public string LastStatus { get; set; } = null!;
 
     [Column("request_id")]
     public string RequestId { get; set; } = null!;

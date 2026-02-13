@@ -31,7 +31,7 @@ import {
 import TemplateFooter from "./template-footer";
 import { getInitials } from "@/utils/initials";
 import { ToastContainer } from "@/components/notification-toast";
-import { useHasValidationInRecruitment } from "@/api/recruitment/service";
+import { useCanValidateJobDescription, useHasValidationInRecruitment } from "@/api/recruitment/service";
 
 interface Menu {
   menuKey: string;
@@ -160,8 +160,11 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
 
   const { data: hasValidationLine = true } = useHasValidationLine(user.userId);
 // Vérification de l'accès 
-  const { data: recruitmentValidationData } = useHasValidationInRecruitment(user.userId);
-  const hasSeeValidationInRecruitment = (recruitmentValidationData?.hasValidation) ?? false;
+  const { data: requestValidation } = useHasValidationInRecruitment(user.userId);
+  const { data: jobDescValidation } = useCanValidateJobDescription(user.userId);
+  
+  const canSeeValidationInRecruitment = (requestValidation?.hasValidation) ?? false;
+  const canSeeJobDescriptionValidation = (jobDescValidation?.hasValidation) ?? false;
 
   const habilitationsMap = useMemo(() => ({
     utilisateurs: hasVoirUtilisateurs,
@@ -172,7 +175,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     logs: hasVoirLogs,
     mission: hasVoirMission,
     validation: hasVoirValidation && hasValidationLine,
-    "Validations": hasSeeValidationInRecruitment,
+    "Validations": canSeeValidationInRecruitment || canSeeJobDescriptionValidation,
     "Statistiques": hasVoirTableauBord,
     Missions: hasVoirMissions,
     "Missions archivées": hasVoirMissionsArchivees,
@@ -194,7 +197,8 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
     hasVoirHabilitation,
     hasVoirTableauBord,
     hasValidationLine,
-    hasSeeValidationInRecruitment
+    canSeeValidationInRecruitment,
+    canSeeJobDescriptionValidation,
   ]);
 
   const getHasAccess = useCallback((menuKey: string): boolean => {

@@ -17,6 +17,7 @@ import {
     type DocumentDTO,
 } from "@/api/recruitment/service";
 import { StyledSelect } from "@/styles/table-styles";
+import { addWeeks } from "date-fns";
 
 export interface RecruitmentReasonForm {
     isReplacement: boolean;
@@ -52,6 +53,9 @@ const RecruitmentReasonStep: React.FC<RecruitmentReasonStepProps> = ({
     isSubmitting = false,
     handleInputChange,
 }) => {
+    const today = new Date();
+    const weekAfter = addWeeks(today, 1).toISOString().split("T")[0]; // Format YYYY-MM-DD pour l'input date
+    
     /** Motifs */
     const { data: reasonsResponse, isLoading: reasonsLoading } = useGetReplacementReasons();
     const reasons: DocumentDTO[] = useMemo(() => reasonsResponse?.data || [], [reasonsResponse]);
@@ -315,6 +319,7 @@ const RecruitmentReasonStep: React.FC<RecruitmentReasonStepProps> = ({
                             type="date"
                             name="beginningDate"
                             value={formData.beginningDate || ""}
+                            min={weekAfter}
                             onChange={(e) => handleInputChange(e)}
                             disabled={isSubmitting}
                             className={

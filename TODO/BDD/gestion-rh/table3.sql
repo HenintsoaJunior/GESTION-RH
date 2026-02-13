@@ -119,7 +119,7 @@ CREATE TABLE job_descriptions(
  
 CREATE TABLE job_attributions(
    job_attribution_id VARCHAR(50) NOT NULL,
-   job_attribution VARCHAR(150)  NOT NULL,
+   job_attribution VARCHAR(max)  NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(job_attribution_id),
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
@@ -140,19 +140,17 @@ CREATE TABLE job_validations(
  
 CREATE TABLE job_formations(
    job_formation_id VARCHAR(50) NOT NULL,
-   education_id VARCHAR(50) NOT NULL,
+   job_formation VARCHAR(max) NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
    level_education_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(job_formation_id),
-   FOREIGN KEY(education_id) REFERENCES educations(education_id),
-   FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id),
-   FOREIGN KEY(level_education_id) REFERENCES level_educations(level_education_id)
+   FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
 );
  
 CREATE TABLE job_experiences(
    job_experience_id VARCHAR(50) NOT NULL,
    job_experience_years SMALLINT NOT NULL DEFAULT 0,
-   job_experience_post VARCHAR(50)  NOT NULL,
+   job_experience_post VARCHAR(max)  NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
    PRIMARY KEY(job_experience_id),
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
@@ -170,7 +168,7 @@ CREATE TABLE job_soft_skills(
 CREATE TABLE skills(
    skill_id VARCHAR(50) NOT NULL,
    job_description_id VARCHAR(50) NOT NULL,
-   skill_label VARCHAR(100) NOT NULL,
+   skill_label VARCHAR(max) NOT NULL,
    PRIMARY KEY(skill_id),
    FOREIGN KEY(job_description_id) REFERENCES job_descriptions(job_description_id)
 );
@@ -180,8 +178,8 @@ CREATE TABLE candidatures(
    first_name VARCHAR(50)  NOT NULL,
    last_name VARCHAR(50)  NOT NULL,
    email_contact VARCHAR(50)  NOT NULL,
-   cv_url VARCHAR(150)  NOT NULL,
-   lm_url VARCHAR(150)  NOT NULL,
+   cv_url VARCHAR(150),
+   lm_url VARCHAR(150),
    created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
    updated_at DATETIME2,
    job_description_id VARCHAR(50) NOT NULL,
@@ -238,7 +236,7 @@ GO
 -- =============================
 -- ALTERS
 -- =============================
-
+-- Organigram
 ALTER TABLE direction
 ADD is_active BIT NOT NULL
     CONSTRAINT DF_direction_is_active DEFAULT 1;
@@ -252,8 +250,7 @@ ADD is_active BIT NOT NULL
     CONSTRAINT DF_service_is_active DEFAULT 1;
 GO
 
-
--- Request creator
+-- Request
 ALTER TABLE recruitment_requests
 ADD created_by VARCHAR(250) NOT NULL;
 
@@ -263,9 +260,18 @@ FOREIGN KEY (created_by)
 REFERENCES users(user_id);
 GO
 
--- Job description status
+-- Job description
 ALTER TABLE job_descriptions ADD last_status VARCHAR(50);
-
+GO
+ALTER TABLE job_experiences
+ALTER COLUMN job_experience_post VARCHAR(max) NOT NULL;
+GO
+ALTER TABLE skills
+ALTER COLUMN skill_label VARCHAR(max) NOT NULL;
+GO
+ALTER TABLE job_attributions
+ALTER COLUMN job_attribution VARCHAR(max) NOT NULL;
+GO
 -- =============================
 -- FUNCTIONS
 -- =============================

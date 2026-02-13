@@ -82,6 +82,7 @@ public class JobDescriptionController(IJobDescriptionService service)
         //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
         // }
 
+        requestId = requestId.Replace("_", "/");
         try {
             var jobDescription = await _service.GetJobDescription(requestId);
             return Ok(new { data = jobDescription, status = 200, message = "Fiche de poste trouvée avec succès" });
@@ -103,7 +104,28 @@ public class JobDescriptionController(IJobDescriptionService service)
         // }
 
         try {
-            var value = await _service.HasJobDescription(requestId);
+            requestId = requestId.Replace("_", "/");
+            var (value, id) = await _service.HasJobDescription(requestId);
+            return Ok(new { data = new { value, id }, status = 200, message = "Réponse obtenue avec succès" });
+        }
+        catch(ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch(Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
+
+
+    [HttpGet("can-validate/{userId}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> CanValidateJobDescription([FromRoute] string userId) {
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try {
+            var value = await _service.CanValidateJobDescription(userId);
             return Ok(new { data = value, status = 200, message = "Réponse obtenue avec succès" });
         }
         catch(ArgumentException ex) {
@@ -115,22 +137,51 @@ public class JobDescriptionController(IJobDescriptionService service)
     }
 
 
-    // [HttpPost("{id}/validate")]
-    // [AllowAnonymous]
-    // public async Task<IActionResult> ValidateJobDescription([FromRoute] string id) {
-    //     // if(!User.Identity?.IsAuthenticated ?? true) {
-    //     //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-    //     // }
+    [HttpPost("validate")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ValidateJobDescription([FromBody] JobDescriptionValidationDTO dto) {
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
 
-    //     try {
-    //         var value = await _service.HasJobDescription(requestId);
-    //         return Ok(new { data = value, status = 200, message = "Réponse obtenue avec succès" });
-    //     }
-    //     catch(ArgumentException ex) {
-    //         return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
-    //     }
-    //     catch(Exception ex) {
-    //         return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
-    //     }
-    // }
+        try {
+            await _service.ValidateJobDescription(dto);
+            return Ok(new { data = (object?)null, status = 200, message = "TDR validé avec succès" });
+        }
+        catch(ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch(Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
+
+
+    [HttpGet("pended")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAllPendedJobDescriptions( 
+        [FromQuery] FilterRequestListDTO filters, 
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10
+    ) {
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
+
+        try {
+            var (results, totalCount) = await _service.GetAllPendedJobDescriptions(
+                filters, page, pageSize
+            );
+            var responseData = new { results, totalCount, page, pageSize };
+            return Ok(new { 
+                data = responseData, status = 200, 
+                message = "Liste des TDRs en attente obtenue avec succès" 
+            });
+        }
+        catch(ArgumentException ex) {
+            return BadRequest(new { data = (object?)null, status = 400, message = ex.Message });
+        }
+        catch(Exception ex) {
+            return StatusCode(500, new { data = (object?)null, status = 500, message = ex.Message });
+        }
+    }
 }

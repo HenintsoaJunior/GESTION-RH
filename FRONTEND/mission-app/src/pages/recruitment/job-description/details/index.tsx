@@ -8,11 +8,12 @@ import LabelList from "./components/LabelList";
 import { ButtonConfirm, ButtonConfirmSecondary } from "@/styles/table-styles";
 import LabelValueList from "./components/LabelValueList";
 import { formatDate } from "date-fns";
+import RecruitmentStatusTag from "@/components/recruitment-status";
 
 interface Props {
-    requestId: string;
-    details: RequestDetailsDTO;
-    onEdit: (jobId: string) => void;
+  requestId: string;
+  details: RequestDetailsDTO;
+  onEdit: (jobId: string) => void;
 }
 
 const JobDetailsCard: React.FC<Props> = ({ requestId, details, onEdit }) => {
@@ -47,20 +48,24 @@ const JobDetailsCard: React.FC<Props> = ({ requestId, details, onEdit }) => {
             {canExportPDF && (
               <ButtonConfirm
               style={{ background: "var(--pdf-color)" }}
-                onClick={() => exportJobDescriptionToPDF(details, job)}
+                onClick={async () => await exportJobDescriptionToPDF(details, job)}
                 >
                 <FaFilePdf /> Exporter PDF
               </ButtonConfirm>
             )}
 
-            {canModify && (
+            {(canModify && job.lastStatus.toLowerCase() === "en attente") && (
               <ButtonConfirmSecondary
-              className="tdr-btn"
-              onClick={() => onEdit(job.id)}
+                className="tdr-btn"
+                onClick={() => onEdit(job.id)}
               >
                 <FaPen /> Modifier
               </ButtonConfirmSecondary>
             )}
+
+            <LabelValue label="Statut">
+              <RecruitmentStatusTag status={job.lastStatus}/>
+            </LabelValue>
           </div>
         </div>
       </div>

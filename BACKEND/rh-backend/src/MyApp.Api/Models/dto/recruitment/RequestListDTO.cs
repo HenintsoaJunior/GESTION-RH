@@ -19,7 +19,9 @@ public class RequestDetailsDTO
     public short Effective {get; set;}
     public string ApplicantUser { get; set; } = null!;
     public string HierarchicalManager {get; set;} = null!;
+    public string HierarchicalManagerPost {get; set;} = null!;
     public string FunctionalManager {get; set;} = null!;
+    public string FunctionalManagerPost {get; set;} = null!;
     public string Creator {get; set;} = null!;
     public string Direction {get; set;} = null!;
     public string Department {get; set;} = null!;
@@ -45,6 +47,7 @@ public class RequestDetailsDTO
 public class RequestValidationDTO
 {
     public string Direction {get; set;} = null!;
+    public string? ValidatorId {get; set;}
     public string? Validator {get; set;}
     public DateTime? ValidatedAt {get; set;}
     public string? Status {get; set;}
@@ -54,6 +57,7 @@ public class RequestDetailsResponseDTO
 {
     public RequestDetailsDTO Details { get; set; } = null!;
     public List<RequestValidationDTO> Validations { get; set; } = [];
+    public List<JobDescriptionValidationDetailsDTO> TdrValidations { get; set; } = [];
 }
 
 

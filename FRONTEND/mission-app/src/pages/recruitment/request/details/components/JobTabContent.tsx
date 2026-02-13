@@ -59,6 +59,7 @@ const JobTabContent: React.FC<{
 
     <JobDescriptionForm
       isOpen={isFormOpen}
+      post={details.post}
       requestId={requestId}
       jobId={jobId}
       mode={mode}

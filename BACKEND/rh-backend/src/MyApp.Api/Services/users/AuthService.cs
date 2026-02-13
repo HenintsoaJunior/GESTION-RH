@@ -42,28 +42,28 @@ public class AuthService : IAuthService
     {
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             return new ValidationResult { Message = "Username and password are required", Type = "invalid_input" };
-        try
-        {
-            var ldapResult = await ValidateLdapCredentialsAsync(username, password);
-            if (ldapResult.Type == "success")
-            {
-                var dbUser = await GetUserFromDatabaseAsync(ldapResult.EmailAddress);
-                return ValidateUserAccess(dbUser);
-            }
-            else if (ldapResult.Type == "ldap_unavailable" || ldapResult.Type == "ldap_error")
-            {
-                return await FallbackValidateAsync(username, password);
-            }
-            else
-            {
-                return new ValidationResult { Message = ldapResult.Message, Type = ldapResult.Type };
-            }
-        }
-        
         // try
         // {
-        //     return await FallbackValidateAsync(username, password);
+        //     var ldapResult = await ValidateLdapCredentialsAsync(username, password);
+        //     if (ldapResult.Type == "success")
+        //     {
+        //         var dbUser = await GetUserFromDatabaseAsync(ldapResult.EmailAddress);
+        //         return ValidateUserAccess(dbUser);
+        //     }
+        //     else if (ldapResult.Type == "ldap_unavailable" || ldapResult.Type == "ldap_error")
+        //     {
+        //         return await FallbackValidateAsync(username, password);
+        //     }
+        //     else
+        //     {
+        //         return new ValidationResult { Message = ldapResult.Message, Type = ldapResult.Type };
+        //     }
         // }
+        
+        try
+        {
+            return await FallbackValidateAsync(username, password);
+        }
         catch (Exception ex)
         {
             return new ValidationResult { Message = $"An error occurred during authentication: {ex.Message}", Type = "error" };
@@ -76,6 +76,7 @@ public class AuthService : IAuthService
         {
 
             ["00446"] = ("1234", "christelle.rakotomavo@ravinala-airports.aero"),
+            ["00459"] = ("1234", "gael.rakotoarison@ravinala-airports.aero"),
             ["st154"] = ("1234", "miantsafitia.rakotoarimanana@ravinala-airports.aero"),
             ["st155"] = ("1234", "mandaniaina.andriambololona@ravinala-airports.aero"),
             ["st173"] = ("1234", "jeanfrancois.andriamanantsoa@ravinala-airports.aero"),
@@ -83,8 +84,14 @@ public class AuthService : IAuthService
             ["00182"] = ("1234", "sedera.rasolomanana@ravinala-airports.aero"),
             ["00418"] = ("1234", "damien.andriantsilavina@ravinala-airports.aero"),
             ["st144"] = ("1234", "kanto.randriamampianina@ravinala-airports.aero"),
-            ["ST144"] = ("1234", "kanto.randriamampianina@ravinala-airports.aero"),
-            ["00386"] = ("1234", "dominique.rakotomamonjy@ravinala-airports.aero")
+            ["00386"] = ("1234", "dominique.rakotomamonjy@ravinala-airports.aero"),
+            ["00383"] = ("1234", "tantely.benamaharo@ravinala-airports.aero"),
+            ["00431"] = ("1234", "daniel.lefebvre@ravinala-airports.aero"),
+            ["00425"] = ("1234", "romain.pierru@ravinala-airports.aero"),
+            ["00408"] = ("1234", "joel.tadzong@ravinala-airports.aero"),
+            ["00416"] = ("1234", "rado.rafanomezantsoa@ravinala-airports.aero"),
+            ["00334"] = ("1234", "caroline.petit@ravinala-airports.aero"),
+            ["00183"] = ("1234", "naina.ramarolahy@ravinala-airports.aero")
         };
 
         if (hardcodedUsers.TryGetValue(username, out var info) && info.Password == password)
@@ -126,8 +133,8 @@ public class AuthService : IAuthService
             if (string.IsNullOrEmpty(user.EmailAddress))
                 return new LdapValidationResult { Type = "invalid_email", Message = "Matricule ou mot de passe incorrect" };
 
-            // bool isValid = context.ValidateCredentials(username, password, ContextOptions.Negotiate);
-             bool isValid = password == "Mission@2025***";
+            bool isValid = context.ValidateCredentials(username, password, ContextOptions.Negotiate);
+            //  bool isValid = password == "Mission@2025***";
             
             if (!isValid)
             {

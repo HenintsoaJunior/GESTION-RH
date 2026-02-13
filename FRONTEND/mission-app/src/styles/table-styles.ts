@@ -1534,6 +1534,10 @@ export const StyledSelect = styled.select`
     border: 1px solid var(--primary-color);
   }
 
+  &[size]:not([size="1"]) {
+    height: auto;
+  }
+
   &:focus {
     border: 1px solid var(--primary-color);
     background-color: #ffffff;

@@ -3,14 +3,16 @@ using MyApp.Api.Models.dto.notifications;
 using MyApp.Api.Models.dto.recruitment;
 using MyApp.Api.Models.dto.users;
 using MyApp.Api.Repositories.recruitment;
+using MyApp.Api.Repositories.users;
 using MyApp.Api.Services.notifications;
+using MyApp.Api.Services.users;
 
 namespace MyApp.Api.Services.recruitment;
 
 public interface IRequestValidationService
 {
     Task<List<UserDto>> GetAllDirectorValidator(string requestId);
-    Task DoValidationForRequest(CreateRequestValidationDTO data);
+    Task ValidateRequest(CreateRequestValidationDTO data);
     Task<(List<RequestDetailsDTO>, int)> GetAllPendedRecruitmentRequest(
         string validatorId, FilterRequestListDTO filters, int page, int pageSize
     );
@@ -19,12 +21,13 @@ public interface IRequestValidationService
 
 public class RequestValidationService(
     IRequestValidationRepository r1, ILogger<RequestValidationService> log,
-    INotificationsService notif
+    INotificationsService notif, IRecruitmentRequestService s2
 ) : IRequestValidationService 
 {
     private readonly ILogger<RequestValidationService> _logger = log;
     private readonly IRequestValidationRepository _repo = r1;
     private readonly INotificationsService _notifService = notif;
+    private readonly IRecruitmentRequestService _reqService = s2;
 
 
     public async Task<List<UserDto>> GetAllDirectorValidator(string requestId) {
@@ -39,26 +42,22 @@ public class RequestValidationService(
     }
 
 
-    public async Task DoValidationForRequest(CreateRequestValidationDTO data) {
+    public async Task ValidateRequest(CreateRequestValidationDTO data) {
         try {
             _logger.LogInformation("En cours de faire la validation ...");
-            var request = await _repo.DoValidationForRequest(data);
+            var request = await _repo.ValidateRequest(data);
 
-        // Tous les validateurs en même temps
-            List<UserDto> validators = await _repo.GetAllDirectorValidator(request.Id);
-            List<string> validatorsIds = validators.Select(u=>u.UserId).ToList();
-
-        // // Le prochain validateur seulement
-            // var validators = await _repo.GetNextValidator(data.RequestId);
-            // List<string> validatorsIds = [];
+        // Le prochain validateur seulement
+            var validators = await _reqService.GetNextValidator(data.RequestId);
+            List<string> validatorsIds = [];
 
             if(validators!=null) {
-                // validatorsIds.Add(validators.UserId);
+                validatorsIds.Add(validators.UserId);
 
                 var notification = new NotificationFormDTO
                 {
                     Title = $"Une nouvelle demande de recrutement a été créée",
-                    Message = $"Demande de recrutement au poste de '{request.Post}' en attente de validation.",
+                    Message = $"Demande de recrutement au poste de '{request.Post}' en attente de votre validation.",
                     Type = "recruitment",
                     RelatedTable = "recruitment_requests",
                     RelatedMenu = "collaborateur",
@@ -67,8 +66,21 @@ public class RequestValidationService(
                     UserIds = validatorsIds,
                     CreatedAt = DateTime.UtcNow
                 };
-
-            // Envoi de notification
+                await _notifService.CreateAsync(notification, null);
+            }
+            else {
+                var notification = new NotificationFormDTO
+                {
+                    Title = $"Votre demande de recrutement est validée",
+                    Message = $"Votre demande de recrutement au poste de '{request.Post}' est complètement validée .",
+                    Type = "recruitment",
+                    RelatedTable = "recruitment_requests",
+                    RelatedMenu = "collaborateur",
+                    RelatedId = request.Id,
+                    Priority = 2,
+                    UserIds = [request.ApplicantUser.UserId],
+                    CreatedAt = DateTime.UtcNow
+                };
                 await _notifService.CreateAsync(notification, null);
             }
         }
@@ -84,6 +96,7 @@ public class RequestValidationService(
     ) {
         try {
             _logger.LogInformation("Recherche des demandes en attente ...");
+
             return await _repo.GetAllPendedRecruitmentRequest(
                 validatorId, filters, page, pageSize
             );
@@ -110,4 +123,5 @@ public class RequestValidationService(
             throw;
         }
     }
+
 }

@@ -8,7 +8,8 @@ namespace MyApp.Api.Controllers.recruitment;
 [ApiController]
 [Route("api/recruitment/requests")]
 public class RecruitmentRequestController(IRecruitmentRequestService _service, 
-    IRequestValidationService _validationService) 
+    IRequestValidationService _validationService,
+    IJobDescriptionService _jobDescService) 
  : ControllerBase
 {
     [HttpGet]
@@ -44,6 +45,7 @@ public class RecruitmentRequestController(IRecruitmentRequestService _service,
         }
 
         try {
+            id = id.Replace("_", "/");
             var lastRequest = await _service.GetById(id);
 
             return Ok(new {
@@ -102,18 +104,21 @@ public class RecruitmentRequestController(IRecruitmentRequestService _service,
     [HttpGet("{id}/details")]
     [AllowAnonymous]
     public async Task<IActionResult> GetRequestDetails([FromRoute] string id) {
-        if(!User.Identity?.IsAuthenticated ?? true) {
-            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        }
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
 
         try {
+            id = id.Replace("_", "/");
             var details = await _service.GetRequestDetails(id);
             var validations = await _service.GetValidationsByRequestId(id);
+            var tdrValidations = await _jobDescService.GetAllValidationsByRequestId(id);
 
             return Ok(new {
                 data = new RequestDetailsResponseDTO {
-                    Details = details,
-                    Validations = validations
+                    Details = details, 
+                    Validations = validations,
+                    TdrValidations = tdrValidations
                 },
                 status = 200,
                 message = "success"
@@ -136,6 +141,7 @@ public class RecruitmentRequestController(IRecruitmentRequestService _service,
         }
 
         try {
+            id = id.Replace("_", "/");
             await _service.DeleteRequest(id);
             return Ok(new { data = id, status = 200, message = "success" });
         }
@@ -151,11 +157,12 @@ public class RecruitmentRequestController(IRecruitmentRequestService _service,
     [HttpGet("{id}/validators")]
     [AllowAnonymous]
     public async Task<IActionResult> GetRequestValidators([FromRoute] string id) {
-        if(!User.Identity?.IsAuthenticated ?? true) {
-            return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
-        }
+        // if(!User.Identity?.IsAuthenticated ?? true) {
+        //     return Unauthorized(new { data = (object?)null, status = 401, message = "unauthorized" });
+        // }
 
         try {
+            id = id.Replace("_", "/");
             var results = await _validationService.GetAllDirectorValidator(id);
             return Ok(new { data = results, status = 200, message = "success" });
         }
@@ -176,7 +183,8 @@ public class RecruitmentRequestController(IRecruitmentRequestService _service,
         }
 
         try {
-            await _validationService.DoValidationForRequest(data);
+            data.RequestId = data.RequestId.Replace("_", "/");
+            await _validationService.ValidateRequest(data);
             return Ok(new { data = (object?)null, status = 200, message = "Validation faite avec succès" });
         }
         catch(ArgumentException ex) {
@@ -240,6 +248,7 @@ public class RecruitmentRequestController(IRecruitmentRequestService _service,
         }
 
         try {
+            id = id.Replace("_", "/");
             await _service.UpdateRequest(id, data);
             return Ok(new { data = (object?)null, status = 200, message = "Demande mise à jour avec succès" });
         }

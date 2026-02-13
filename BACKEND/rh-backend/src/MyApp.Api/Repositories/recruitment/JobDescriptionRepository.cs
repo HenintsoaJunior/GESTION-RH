@@ -51,6 +51,10 @@ public interface IJobDescriptionRepository
     void RemoveExperiences(IEnumerable<Experience> items);
     void RemoveSoftSkills(IEnumerable<JobDescriptionSoftSkill> items);
     void RemoveSkills(IEnumerable<Skill> items);
+
+// Liste des TDR en attente
+    Task<(List<JobDescriptionDetailsDTO>, int)> GetAllPendedJobDescriptions(FilterRequestListDTO filters
+     , int page, int pageSize);
 }
 
 
@@ -141,11 +145,10 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
         var result = await _dbCtx.JobDescriptions
             .Include(r => r.Attributions)
             .Include(r => r.Formations)
-                .ThenInclude(f => f.Education)
-            .Include(r => r.Formations)
                 .ThenInclude(f => f.LevelEducation)
             .Include(r => r.Experiences)
-            .Include(r => r.SoftSkills).ThenInclude(s => s.SoftSkill)
+            .Include(r => r.SoftSkills)
+                .ThenInclude(s => s.SoftSkill)
             .Include(r => r.Skills)
             .FirstOrDefaultAsync(r => r.Id == id) ?? 
             throw new ArgumentException("Fiche de poste introuvable");
@@ -156,12 +159,11 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
     public async Task<JobDescription?> GetJobDescriptionByRequest(RecruitmentRequest req) {
         var result = await _dbCtx.JobDescriptions
             .Include(r => r.Attributions)
-            .Include(r => r.Formations)
-                .ThenInclude(f => f.Education)
             .Include(f => f.Formations)
                 .ThenInclude(f => f.LevelEducation)
             .Include(r => r.Experiences)
-            .Include(r => r.SoftSkills).ThenInclude(s => s.SoftSkill)
+            .Include(r => r.SoftSkills)
+                .ThenInclude(s => s.SoftSkill)
             .Include(r => r.Skills)
             .FirstOrDefaultAsync(j => j.Request.Id == req.Id);
 
@@ -210,7 +212,7 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
 
 
     public async Task AddValidation(JobDescriptionValidation validation) {
-        validation.Id = _seq.GenerateSequence("seq_job_validation_id", "TDR_VAL");
+        validation.Id = _seq.GenerateSequence("seq_job_validation_id", "VAL_TDR");
         await _dbCtx.JobDescriptionValidations.AddAsync(validation);
     }
 
@@ -281,5 +283,58 @@ public class JobDescriptionRepository(AppDbContext ctx, ISequenceGenerator seq) 
         last.RequestId = newJob.RequestId;
 
         await SaveChangesAsync();
+    }
+
+
+    public async Task<(List<JobDescriptionDetailsDTO>, int)> GetAllPendedJobDescriptions(
+        FilterRequestListDTO filters, int page, int pageSize
+    ) {
+        var query = _dbCtx.JobDescriptions.AsNoTracking()
+            .Include(jd => jd.Request).ThenInclude(r => r.Creator)
+            .Include(jd => jd.Request).ThenInclude(r => r.ApplicantUser)
+            .Where(jd => jd.LastStatus.ToLower() == "en attente");
+
+        // 🔍 Filtres
+        if (!string.IsNullOrWhiteSpace(filters.post))
+            query = query.Where(jd =>
+                jd.Request.Post.ToUpper().Contains(filters.post.ToUpper()));
+
+        if (!string.IsNullOrWhiteSpace(filters.direction))
+            query = query.Where(jd =>
+                jd.Request.Creator.Department != null &&
+                jd.Request.Creator.Department.ToUpper() == filters.direction.ToUpper());
+
+        if (filters.minDate.HasValue)
+            query = query.Where(jd =>
+                jd.Request.CreatedAt >= filters.minDate.Value
+                    .ToDateTime(TimeOnly.MinValue));
+
+        if (filters.maxDate.HasValue)
+            query = query.Where(jd =>
+                jd.Request.CreatedAt <= filters.maxDate.Value
+                    .ToDateTime(TimeOnly.MaxValue));
+
+        // Count avant pagination
+        int totalCount = await query.CountAsync();
+
+        // Pagination + projection DTO
+        var items = await query
+            .OrderByDescending(jd => jd.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(jd => new JobDescriptionDetailsDTO {
+                Id = jd.Id,
+                RequestId = jd.RequestId,
+                Post = jd.Request.Post,
+                Direction = jd.Request.Creator.Department ?? "",
+                ApplicantUser = jd.Request.ApplicantUser.Name ?? "",
+                Creator = jd.Request.Creator.Name ?? "",
+                CreatedAt = jd.Request.CreatedAt,
+                LastStatus = jd.LastStatus,
+                Level = 0
+            })
+            .ToListAsync();
+
+        return (items, totalCount);
     }
 }

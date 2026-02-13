@@ -115,7 +115,10 @@ const RequestList: React.FC = () => {
         onSuccess: data => setAlert({ isOpen: true, type: "success", message: data.message || "Demande supprimée !" }),
         onError: error => {
           if(axios.isAxiosError(error) && error.response) {
-            setAlert({ isOpen: true, type: "error", message: error.response.data?.message || "Erreur lors de la suppression" });
+            setAlert({ 
+              isOpen: true, type: "error", 
+              message: error.response.data?.message || "Erreur lors de la suppression" 
+            });
           }
         }
       });
@@ -190,7 +193,10 @@ const RequestList: React.FC = () => {
 
     <RequestTabs
       activeTab={activeTab}
-      onTabChange={tab => { setActiveTab(tab); setPage(1); sessionStorage.setItem("lastActiveRequestTab", tab); }}
+      onTabChange={tab => { 
+        setActiveTab(tab); setPage(1); 
+        sessionStorage.setItem("lastActiveRequestTab", tab); 
+      }}
       canViewAllRequests={canViewAllRequests}
       canViewCollaboratorRequests={canViewCollaboratorRequests}
     />

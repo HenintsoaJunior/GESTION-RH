@@ -4,6 +4,7 @@ import { TableRow, TableCell, EditButton, CancelButton } from "@/styles/table-st
 import { Link } from "react-router-dom";
 import type { RecruitmentRequest } from "@/types/recruitment";
 import RecruitmentStatusTag from "@/components/recruitment-status";
+import { formatRequestId } from "../../form";
 
 interface RequestTableRowProps {
   request: RecruitmentRequest;
@@ -19,7 +20,7 @@ const RequestTableRow: React.FC<RequestTableRowProps> = ({ request, canEditReque
     <TableRow>
       <TableCell>
         {/* {canViewDetails ?  */}
-        <Link style={{ textDecoration: "none" }} to={`/recrutement/demandes/${request.id}/details`}>{request.id}</Link>
+        <Link style={{ textDecoration: "none" }} to={`/recrutement/demandes/${formatRequestId(request.id)}/details`}>{request.id}</Link>
         {/* } */}
       </TableCell>
       <TableCell>{request.post}</TableCell>

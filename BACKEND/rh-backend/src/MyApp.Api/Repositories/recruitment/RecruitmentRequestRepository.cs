@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.recruitment;
 using MyApp.Api.Entities.site;
@@ -10,6 +11,9 @@ namespace MyApp.Api.Repositories.recruitment;
 
 public interface IRecruitmentRequestRepository
 {
+    Task<IDbContextTransaction> BeginTransactionAsync();
+    Task CommitTransactionAsync(IDbContextTransaction transaction);
+    Task SaveAsync();
     Task<List<RequestStatus>> GetAllStatuses();
     Task<(List<RequestListDTO>, int)> SearchRequests(FilterRequestListDTO dto,
      string currentUserEmail, int page, int pageSize);
@@ -33,6 +37,19 @@ public class RecruitmentRequestRepository : IRecruitmentRequestRepository
     public RecruitmentRequestRepository(AppDbContext ctx, ISequenceGenerator sqc,
      IUserService uService) {
         _dbCtx = ctx; _generator = sqc; _userService = uService;
+    }
+
+
+    public async Task<IDbContextTransaction> BeginTransactionAsync() {
+        return await _dbCtx.Database.BeginTransactionAsync();
+    }
+
+    public async Task SaveAsync() {
+        await _dbCtx.SaveChangesAsync();
+    }
+
+    public async Task CommitTransactionAsync(IDbContextTransaction transaction) {
+        await transaction.CommitAsync();
     }
 
 
@@ -129,10 +146,11 @@ public class RecruitmentRequestRepository : IRecruitmentRequestRepository
             var defaultStatus = await _dbCtx.RequestStatuses.FindAsync("STD_001")
                 ?? throw new ArgumentException("Statut par défaut introuvable");
 
+            var actualYear = DateTime.UtcNow.Year.ToString().Substring(2);
         // Construire la demande
             var request = new RecruitmentRequest
             {
-                Id = _generator.GenerateSequence("seq_request_id", "DMD_REC"),
+                Id = _generator.GenerateSequence("seq_request_id", $"DR-{data.Direction}/{actualYear}", 6, ""),
                 Post = data.Post,
                 Effective = data.Effective,
 
@@ -229,8 +247,6 @@ public class RecruitmentRequestRepository : IRecruitmentRequestRepository
             .OrderBy(v => v.CreatedAt)
             .AsNoTracking().ToListAsync();
 
-        var lastStatus = validations.LastOrDefault()?.Status?.Name ?? "Inconnu";
-
         int validationLevel = validations.Count-1;
 
     // Construire le DTO
@@ -240,10 +256,12 @@ public class RecruitmentRequestRepository : IRecruitmentRequestRepository
             Post = request.Post,
             Effective = request.Effective,
             HierarchicalManager = request.HierarchicalManager.Name??"",
+            HierarchicalManagerPost = request.HierarchicalManager.Position??"",
             FunctionalManager = request.FunctionalManager.Name??"",
+            FunctionalManagerPost = request.FunctionalManager.Position??"",
             ApplicantUser = request.ApplicantUser.Name??"",
             Creator = request.Creator.Name??"",
-            Status = lastStatus,
+            Status = request.LastStatus,
             IsReplacement = request.IsReplacement,
             ReplacementDate = request.ReplacementDate,
             ReplacementReason = request.ReplacementReason?.Name,

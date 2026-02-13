@@ -1,4 +1,3 @@
-using DocumentFormat.OpenXml.Spreadsheet;
 using MyApp.Api.Data;
 using MyApp.Api.Entities.employee;
 using MyApp.Api.Entities.recruitment;
@@ -10,6 +9,7 @@ using MyApp.Api.Repositories.users;
 using MyApp.Api.Services.employee;
 using MyApp.Api.Services.logs;
 using MyApp.Api.Services.notifications;
+using MyApp.Api.Services.users;
 
 namespace MyApp.Api.Services.recruitment;
 
@@ -25,18 +25,18 @@ public interface IRecruitmentRequestService
     Task DeleteRequest(string requestId);
     Task UpdateRequest(string requestId, RequestFormDTO data);
     Task<RecruitmentRequest> GetRecruitmentRequestById(string requestId);
+    Task<UserDto?> GetNextValidator(string requestId);
 }
 
 public class RecruitmentRequestService(
     IRecruitmentRequestRepository r1, ILogger<RecruitmentRequestService> log, IRequestValidationRepository r2,
-    AppDbContext ctx, INotificationsService notif, IUserRepository userRepo, IEmployeeService emp,
+    INotificationsService notif, IUserRepository userRepo, IEmployeeService emp,
     ILogService logService
 ) : IRecruitmentRequestService
 {
     private readonly ILogger<RecruitmentRequestService> _logger = log;
     private readonly IRecruitmentRequestRepository _repo = r1;
     private readonly IRequestValidationRepository _validationRepo = r2;
-    private readonly AppDbContext _dbCtx = ctx;
     private readonly INotificationsService _notifService = notif;
     private readonly IUserRepository _userRepo = userRepo;
     private readonly IEmployeeService _empService = emp;
@@ -58,28 +58,27 @@ public class RecruitmentRequestService(
 
 
     public async Task<string> AddRequest(RequestFormDTO data) {
-        using var transaction = await _dbCtx.Database.BeginTransactionAsync();
+        using var transaction = await _repo.BeginTransactionAsync();
 
         try {
             _logger.LogInformation("Insertion de la demande en cours ...");
             var request = await _repo.AddRequest(data);
-            await _dbCtx.SaveChangesAsync();
+            await _repo.SaveAsync();
+
+        // Validateurs fixes de la demande
+            var validators = await _validationRepo.GetAllDirectorValidator(request.Id);
+            await _validationRepo.AddRequestInValidations(request, validators);
 
         // Demandeur
             var requestor = await _userRepo.GetByIdAsync(data.ApplicantUserId)??
                 throw new ArgumentException("Demandeur non trouvé");
 
-        // Tous les validateurs en même temps
-            List<UserDto> validators = await _validationRepo.GetAllDirectorValidator(request.Id);
-            await _validationRepo.AddRequestInValidations(request, validators);
-            List<string> validatorsIds = validators.Select(u => u.UserId).ToList();
+        // Le validateur suivant seulement
+            var nextValidator = await GetNextValidator(request.Id);
+            List<string> validatorsIds = [];
             
-        // // Le validateur suivant seulement
-        //     var validators = await _validationRepo.GetNextValidator(request.Id);
-        //     List<string> validatorsIds = [];
-            
-            if(validators!=null) {
-                // validatorsIds.Add(validators.UserId);
+            if(nextValidator!=null) {
+                validatorsIds.Add(nextValidator.UserId);
 
                 var notification = new NotificationFormDTO
                 {
@@ -98,7 +97,7 @@ public class RecruitmentRequestService(
                 await _notifService.CreateAsync(notification, transaction);
             }
 
-            await _dbCtx.SaveChangesAsync();
+            await _repo.SaveAsync();
             await transaction.CommitAsync();
 
         // LOG D'ACTION
@@ -136,10 +135,10 @@ public class RecruitmentRequestService(
             var request = await _repo.GetRecruitmentRequestById(id);
 
             var empInfos = new Employee();
-            empInfos = await _empService.GetByMatricule(request.ApplicantUser.Matricule);
+            empInfos = await _empService.GetByMatricule(request.HierarchicalManager.Matricule);
 
             if(empInfos==null) {
-                var superior = await _userRepo.GetByIdAsync(request.ApplicantUser.SuperiorId??"");
+                var superior = await _userRepo.GetByIdAsync(request.HierarchicalManager.SuperiorId??"");
                 empInfos = await _empService.GetByMatricule(superior?.Matricule??"");
             }
 
@@ -178,32 +177,25 @@ public class RecruitmentRequestService(
             _logger.LogInformation("Recherche des validations en cours ...");
             
             var directors = await _validationRepo.GetAllDirectorValidator(id);
-            var requestValidations = await _validationRepo.GetAllValidation(id);
-
-        // Validations dans bases de données
-            var validationsDb = requestValidations.Select(validation => {
-                return new RequestValidationDTO {
-                    Direction = validation.Validator.Department ?? "",
-                    Validator = validation.Validator.Name ?? "",
-                    Status = validation?.Status.Name ?? "",
-                    ValidatedAt = validation?.CreatedAt
-                };
-            }).Skip(1).ToList();
-
-        // Validations par requête
+            var requestValidations = await _validationRepo.GetAllValidations(id);
+        // Validations enregistrées
+            var validationsDb = await _validationRepo.GetAllValidationsByRequest(id);
+        // Validations normales
             var validations = directors.Select(director => {
                 var validation = requestValidations
                     .FirstOrDefault(v => v.Validator.UserId == director.UserId);
 
                 return new RequestValidationDTO {
                     Direction = director.Department ?? "",
+                    ValidatorId = director.UserId,
                     Validator = director.Name,
                     Status = validation?.Status.Name,
                     ValidatedAt = validation?.CreatedAt
                 };
             }).ToList();
 
-            return validationsDb.Count == directors.Count ? validationsDb : validations;
+            // _logger.LogInformation("Validations : {Count}", validationsDb.Count);
+            return validationsDb.Count > 0 ? validationsDb : validations;
         }   
         catch(Exception ex) {
             _logger.LogError(ex, "Erreur lors de la recherche des validations");
@@ -223,7 +215,7 @@ public class RecruitmentRequestService(
 
 
     public async Task UpdateRequest(string requestId, RequestFormDTO data) {
-        using var transaction = await _dbCtx.Database.BeginTransactionAsync();
+        using var transaction = await _repo.BeginTransactionAsync();
 
         try {
             _logger.LogInformation("Mise à jour de la demande en cours ...");
@@ -247,7 +239,7 @@ public class RecruitmentRequestService(
             }
 
             await _repo.UpdateRequest(lastRequest, data);
-            await _dbCtx.SaveChangesAsync();
+            await _repo.SaveAsync();
 
             await transaction.CommitAsync();
 
@@ -258,6 +250,29 @@ public class RecruitmentRequestService(
         catch (Exception ex) {
             _logger.LogError(ex, "Erreur lors de la mise à jour de la demande");
             await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+
+    public async Task<UserDto?> GetNextValidator(string requestId) {
+        try {
+            _logger.LogInformation("Recherche du prochain validateur");
+
+            var validations = await GetValidationsByRequestId(requestId);
+            var nextValidatorId = validations
+                .Where(v => v.ValidatedAt == null)
+                .Select(v => v.ValidatorId)
+                .FirstOrDefault();
+
+            var nextValidator = nextValidatorId != null
+                ? await _userRepo.GetByIdAsync(nextValidatorId)
+                : null;
+
+            return nextValidator != null ? UserService.MapToDto(nextValidator) : null;
+        }
+        catch(Exception ex) {
+            _logger.LogError(ex, "Erreur lors de la recherche du prochain validateur");
             throw;
         }
     }

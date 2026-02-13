@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
     FormSectionTitle,
     FormTable,
@@ -10,19 +10,18 @@ import {
     ErrorMessage,
 } from "@/styles/form-container";
 import { Plus, Minus } from "lucide-react";
-import { useGetAllEducations, useGetAllLevelEducations } from "@/api/recruitment/service";
+import { useGetAllLevelEducations } from "@/api/recruitment/service";
 import { StyledSelect } from "@/styles/table-styles";
-
 
 interface Props {
     formData: {
-        formations: { educationId: string; levelEducationId: string }[];
+        formations: { formations: string; levelEducationId: string }[];
         experiences: { post: string; years: number | "" }[];
     };
     fieldErrors?: { [key: string]: string[] };
     handleInputChange: (
         e: { target: { name: string; value: string | number | string[] 
-            | { educationId: string; levelEducationId: string }[]
+            | { formations: string; levelEducationId: string }[]
             | { post: string; years: number | "" }[] } }
     ) => void;
 }
@@ -33,12 +32,10 @@ const FormationExperienceStep: React.FC<Props> = ({
     fieldErrors = {},
     handleInputChange
 }) => {
-    const { data: educationsResponse } = useGetAllEducations();
-    const { data: levelsResponse } = useGetAllLevelEducations();
+    const [selectSize, setSelectSize] = useState<number>(1);
+    const selectRef = useRef<HTMLSelectElement>(null);
 
-    const allEducations = useMemo(
-        () => educationsResponse?.data || [], [educationsResponse]
-    );
+    const { data: levelsResponse } = useGetAllLevelEducations();
     const allLevels = useMemo(
         () => levelsResponse?.data || [], [levelsResponse]
     );
@@ -46,10 +43,10 @@ const FormationExperienceStep: React.FC<Props> = ({
 /* FORMATIONS */
     const addFormation = () => {
         handleInputChange({
-        target: {
+            target: {
             name: "formations",
-            value: [...formData.formations, { educationId: "", levelEducationId: "" }]
-        }
+            value: [...formData.formations, { formations: "", levelEducationId: "" }]
+            }
         });
     };
 
@@ -59,18 +56,28 @@ const FormationExperienceStep: React.FC<Props> = ({
         handleInputChange({ target: { name: "formations", value: newFormations } });
     };
 
-    const updateFormation = (index: number, field: "educationId" | "levelEducationId", value: string) => {
+    const updateFormation = (
+        index: number,
+        field: "formations" | "levelEducationId",
+        value: string
+    ) => {
         const newFormations = [...formData.formations];
-        newFormations[index][field] = value;
-        handleInputChange({ target: { name: "formations", value: newFormations } });
+        newFormations[index] = {
+            ...newFormations[index],
+            [field]: value
+        };
+        handleInputChange({
+            target: { name: "formations", value: newFormations }
+        });
     };
+
 
 /* EXPERIENCES */
     const addExperience = () => {
         handleInputChange({
             target: {
-                name: "experiences",
-                value: [...formData.experiences, { post: "", years: "" }]
+            name: "experiences",
+            value: [...formData.experiences, { post: "", years: "" }]
             }
         });
     };
@@ -107,52 +114,67 @@ const FormationExperienceStep: React.FC<Props> = ({
 
     return ( <>
         <FormSectionTitle>Formations</FormSectionTitle>
-
         <FormTable>
-            <tbody>
-            {formData.formations.map((formation, index) => {
-                return (
-                <FormRow key={index}>
-                    <FormFieldCell>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ width: 24, textAlign: "center", fontWeight: 500 }}>{index + 1}</span>
-                        
-                        <StyledSelect
-                            size={5}
-                            value={formation.educationId}
-                            onChange={(e) => updateFormation(index, "educationId", e.target.value)}
-                            disabled={!allEducations.length}
-                        >
-                            <option value="" disabled>Formation ou étude</option>
-                            {allEducations.map(e => (
-                                <option key={e.id} value={e.id}>{e.name}</option>
-                            ))}
-                        </StyledSelect>
+        <tbody>
+            {formData.formations.map((formation, index) => (
+            <FormRow key={index}>
+                <FormFieldCell>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ width: 24, textAlign: "center", fontWeight: 500 }}>
+                    {index + 1}
+                    </span>
 
-                        <StyledSelect
-                            size={5}
-                            value={formation.levelEducationId}
-                            onChange={(e) => updateFormation(index, "levelEducationId", e.target.value)}
-                            disabled={!allLevels.length}
-                        >
-                            <option value="" disabled>Niveau d'etude</option>
-                            {allLevels.map(l => (
-                                <option key={l.id} value={l.id}>{l.name}</option>
-                            ))}
-                        </StyledSelect>
+                {/* CHAMP LIBRE FORMATION */}
+                    <FormInput
+                    type="text"
+                    placeholder="Formation / Étude"
+                    value={formation.formations}
+                    onChange={(e) =>
+                        updateFormation(index, "formations", e.target.value)
+                    }
+                    style={{ flex: 2 }}
+                    />
 
-                        {index > 0 && (
-                            <button type="button" onClick={() => removeFormation(index)} style={{ padding: "0 8px" }}>
-                                <Minus size={16} />
-                            </button>
-                        )}
-                    </div>
-                    </FormFieldCell>
-                </FormRow>
-                );
-            })}
+                {/* NIVEAU D'ÉTUDE */}
+                    <StyledSelect
+                    ref={selectRef}
+                    value={formation.levelEducationId}
+                    size={selectSize ?? 5}
+                    disabled={!allLevels.length}
+                    onChange={(e) => {
+                        updateFormation(index, "levelEducationId", e.target.value);
+                        setSelectSize(1); selectRef.current?.blur();
+                    }
+                    }
+                    onFocus={() => setSelectSize(5)}
+                    onBlur={() => setSelectSize(1)}
+                    style={{ flex: 1 }}
+                    >
+                        <option value="" disabled>
+                            Niveau d'étude
+                        </option>
+                        {allLevels.map((l) => (
+                            <option key={l.id} value={l.id}>
+                            {l.name}
+                            </option>
+                        ))}
+                    </StyledSelect>
 
-            {fieldErrors.formations && fieldErrors.formations.length > 0 && (
+                    {index > 0 && (
+                    <button
+                        type="button"
+                        onClick={() => removeFormation(index)}
+                        style={{ padding: "0 8px" }}
+                    >
+                        <Minus size={16} />
+                    </button>
+                    )}
+                </div>
+                </FormFieldCell>
+            </FormRow>
+            ))}
+
+            {fieldErrors.formations && (
             <FormRow>
                 <FormFieldCell>
                 <ErrorMessage>{fieldErrors.formations.join(", ")}</ErrorMessage>
@@ -161,17 +183,21 @@ const FormationExperienceStep: React.FC<Props> = ({
             )}
 
             <FormRow>
-                <FormFieldCell>
-                <button type="button" onClick={addFormation} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px" }}>
-                    <Plus size={16} /> Ajouter une formation
+            <FormFieldCell>
+                <button
+                type="button"
+                onClick={addFormation}
+                style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px" }}
+                >
+                <Plus size={16} /> Ajouter une formation
                 </button>
-                </FormFieldCell>
+            </FormFieldCell>
             </FormRow>
-            </tbody>
+        </tbody>
         </FormTable>
 
-        <FormSectionTitle>Expériences</FormSectionTitle>
 
+        <FormSectionTitle>Expériences</FormSectionTitle>
         <FormTable>
             <tbody>
                 {formData.experiences.map((exp, index) => {
@@ -187,7 +213,7 @@ const FormationExperienceStep: React.FC<Props> = ({
                                 placeholder="Poste"
                                 value={exp.post}
                                 onChange={(e) => updateExperience(index, "post", e.target.value)}
-                                style={{ flex: 1, borderColor: hasError ? "red" : undefined }}
+                                style={{ flex: 2, borderColor: hasError ? "red" : undefined }}
                                 />
 
                                 <FormInput
@@ -196,7 +222,7 @@ const FormationExperienceStep: React.FC<Props> = ({
                                 placeholder="Années d'expérience"
                                 value={exp.years}
                                 onChange={(e) => updateExperience(index, "years", e.target.value)}
-                                style={{ width: 80, borderColor: hasError ? "red" : undefined }}
+                                style={{ flex: 1, borderColor: hasError ? "red" : undefined }}
                                 />
 
                                 {index > 0 && (

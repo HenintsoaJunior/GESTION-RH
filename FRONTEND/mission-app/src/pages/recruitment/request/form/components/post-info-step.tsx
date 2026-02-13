@@ -27,6 +27,7 @@ export interface PostInformationForm {
 	monthDuration?: string | null;
 	sites: string[];
 
+	direction: string | null;
 	applicantUserId: string;
 	creatorId: string;
 
@@ -171,9 +172,15 @@ const PostInformationStep: React.FC<PostInformationStepProps> = ({
 // DIRECTION et DEPARTEMENT à partir de R. hiérarchique
 	useEffect(() => {
 		if (hierarchicalUser?.direction) {
+			handleInputChange({
+				target: {
+					name: "direction", value: hierarchicalUser.direction
+				}
+			});
+
 			onDirectionChange?.(hierarchicalUser.direction);
 		}
-	}, [hierarchicalUser?.direction, onDirectionChange]);
+	}, [hierarchicalUser?.direction, handleInputChange, onDirectionChange]);
 
 
 	useEffect(() => {

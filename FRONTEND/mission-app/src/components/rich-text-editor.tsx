@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { styled } from "styled-components"
 
 // Types
 interface AttachmentValue {
@@ -124,12 +125,25 @@ export default function RichTextEditor({
 
         window.Quill.register(AttachmentBlot as unknown as QuillBlotStatic)
 
+        // Déclarer Font depuis Quill
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const Font = (window.Quill as any).import('formats/font') as any;
+        Font.whitelist = ['arial', 'serif', 'monospace', 'century-gothic'];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window.Quill as any).register(Font, true);
+
+        const style = document.createElement('style');
+        style.innerHTML = `
+          .ql-font-century-gothic { font-family: 'Century Gothic', Arial, sans-serif; }
+        `;
+        document.head.appendChild(style);
+
         quillRef.current = new window.Quill("#editor", {
           theme: "snow",
           modules: {
             toolbar: {
               container: [
-                [{ font: [] }, { size: ["small", false, "large", "huge"] }],
+                [{ font: ['Century Gothic', 'serif', 'monospace'] }, { size: ["small", false, "large", "huge"] }],
                 ["bold", "italic", "underline", "strike"],
                 [{ color: [] }, { background: [] }],
                 [{ list: "ordered" }, { list: "bullet" }],
@@ -137,7 +151,7 @@ export default function RichTextEditor({
                 ["link", "image", { attachment: true }],
                 ["clean"],
               ],
-              handlers: {
+              handlers: { 
                 attachment: function () {
                   const input = document.createElement("input")
                   input.setAttribute("type", "file")
@@ -206,7 +220,19 @@ export default function RichTextEditor({
   return (
     <div className="rich-editor-container">
       <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
-      <div id="editor" style={{ minHeight: "200px", opacity: disabled ? 0.5 : 1 }}></div>
+      <div id="editor" style={{ 
+        fontFamily: "'Century Gothic', sans-serif", 
+        minHeight: "100px", 
+        opacity: disabled ? 0.5 : 1 
+      }}></div>
     </div>
   )
 }
+
+
+export const StyledRichTextEditor = styled(RichTextEditor)`
+  .ql-editor {
+    font-family: 'Century Gothic', Arial, sans-serif;
+    font-size: 12px;
+  }
+`;

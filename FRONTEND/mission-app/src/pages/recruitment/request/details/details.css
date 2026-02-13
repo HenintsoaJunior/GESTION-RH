@@ -287,3 +287,9 @@
 .value-list li:last-child {
     margin-bottom: 0;
 }
+
+.details-section nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
