@@ -52,3 +52,4 @@ ehthumbs.db
 /FRONTEND/rh-front/package-lock.json
 
 *.sln
+BACKEND/rh-backend/src/MyApp.Api/appsettings.json
